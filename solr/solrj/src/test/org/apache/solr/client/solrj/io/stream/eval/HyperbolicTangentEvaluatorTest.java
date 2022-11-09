@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.HyperbolicTangentEvaluator;
@@ -47,10 +46,10 @@ public class HyperbolicTangentEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
 
     if (null == value) {
-      Assert.assertNull(result);
+      assertNull(result);
     } else {
-      Assert.assertTrue(result instanceof Number);
-      Assert.assertEquals(Math.tanh(value), ((Number) result).doubleValue());
+      assertTrue(result instanceof Number);
+      assertEquals(Math.tanh(value), ((Number) result).doubleValue(), 0.01);
     }
   }
 

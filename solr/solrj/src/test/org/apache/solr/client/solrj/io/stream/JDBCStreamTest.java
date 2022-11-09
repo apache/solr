@@ -24,9 +24,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -168,7 +168,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
             new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 4);
+    assertEquals(4, tuples.size());
     assertOrderOf(tuples, "CODE", "NL", "NO", "NP", "US");
     assertOrderOf(tuples, "COUNTRY_NAME", "Netherlands", "Norway", "Nepal", "United States");
 
@@ -301,12 +301,10 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       TupleStream selectStream =
           new SelectStream(
               jdbcStream,
-              new HashMap<>() {
-                {
-                  put("CODE", "code_s");
-                  put("COUNTRY_NAME", "name_s");
-                }
-              });
+              Map.of(
+                  "CODE", "code_s",
+                  "COUNTRY_NAME", "name_s"));
+
       TupleStream searchStream =
           factory.constructStream(
               "search("

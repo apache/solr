@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -47,23 +46,21 @@ public class RawValueEvaluatorTest extends SolrTestCase {
   public void rawTypes() throws Exception {
     Tuple tuple = new Tuple(values);
 
-    Assert.assertEquals(10L, factory.constructEvaluator("val(10)").evaluate(tuple));
-    Assert.assertEquals(-10L, factory.constructEvaluator("val(-10)").evaluate(tuple));
-    Assert.assertEquals(0L, factory.constructEvaluator("val(0)").evaluate(tuple));
-    Assert.assertEquals(10.5, factory.constructEvaluator("val(10.5)").evaluate(tuple));
-    Assert.assertEquals(-10.5, factory.constructEvaluator("val(-10.5)").evaluate(tuple));
-    Assert.assertEquals(true, factory.constructEvaluator("val(true)").evaluate(tuple));
-    Assert.assertEquals(false, factory.constructEvaluator("val(false)").evaluate(tuple));
-    Assert.assertNull(factory.constructEvaluator("val(null)").evaluate(tuple));
+    assertEquals(10L, factory.constructEvaluator("val(10)").evaluate(tuple));
+    assertEquals(-10L, factory.constructEvaluator("val(-10)").evaluate(tuple));
+    assertEquals(0L, factory.constructEvaluator("val(0)").evaluate(tuple));
+    assertEquals(10.5, factory.constructEvaluator("val(10.5)").evaluate(tuple));
+    assertEquals(-10.5, factory.constructEvaluator("val(-10.5)").evaluate(tuple));
+    assertEquals(true, factory.constructEvaluator("val(true)").evaluate(tuple));
+    assertEquals(false, factory.constructEvaluator("val(false)").evaluate(tuple));
+    assertNull(factory.constructEvaluator("val(null)").evaluate(tuple));
   }
 
   public void rawTypesAsPartOfOther() throws Exception {
     Tuple tuple = new Tuple(values);
 
-    Assert.assertEquals(15L, factory.constructEvaluator("add(val(10),val(5))").evaluate(tuple));
-    Assert.assertEquals(
-        true, factory.constructEvaluator("and(val(true),val(true))").evaluate(tuple));
-    Assert.assertEquals(
-        false, factory.constructEvaluator("and(val(false),val(false))").evaluate(tuple));
+    assertEquals(15L, factory.constructEvaluator("add(val(10),val(5))").evaluate(tuple));
+    assertEquals(true, factory.constructEvaluator("and(val(true),val(true))").evaluate(tuple));
+    assertEquals(false, factory.constructEvaluator("and(val(false),val(false))").evaluate(tuple));
   }
 }

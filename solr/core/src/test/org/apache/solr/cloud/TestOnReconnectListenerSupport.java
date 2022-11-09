@@ -116,7 +116,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     }
 
     // they shouldn't be equal after reload
-    assertTrue(!leaderCoreId.equals(reloadedLeaderCoreId));
+    assertNotEquals(leaderCoreId, reloadedLeaderCoreId);
 
     listeners = zkController.getCurrentOnReconnectListeners();
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);

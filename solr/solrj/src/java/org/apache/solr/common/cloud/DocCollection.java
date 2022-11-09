@@ -146,7 +146,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
           getChildNodesVersion(),
           newPerReplicaStates.cversion);
     }
-    if (getChildNodesVersion() == newPerReplicaStates.cversion) return this;
+    if (getChildNodesVersion() >= newPerReplicaStates.cversion) return this;
     Set<String> modifiedReplicas =
         PerReplicaStates.findModifiedReplicas(newPerReplicaStates, this.perReplicaStates);
     if (modifiedReplicas.isEmpty()) return this; // nothing is modified
@@ -427,12 +427,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     DocCollection other = (DocCollection) that;
     return super.equals(that)
         && Objects.equals(this.name, other.name)
-        && this.znodeVersion == other.znodeVersion;
+        && this.znodeVersion == other.znodeVersion
+        && this.getChildNodesVersion() == other.getChildNodesVersion();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, znodeVersion);
+    return Objects.hash(name, znodeVersion, getChildNodesVersion());
   }
 
   /**

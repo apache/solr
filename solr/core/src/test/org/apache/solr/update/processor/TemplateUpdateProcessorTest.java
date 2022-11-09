@@ -31,7 +31,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.rules.ExpectedException;
 
 public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
 
@@ -45,8 +44,6 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     cluster.deleteAllCollections();
     cluster.shutdown();
   }
-
-  @org.junit.Rule public ExpectedException expectedException = ExpectedException.none();
 
   public void testSimple() throws Exception {
 

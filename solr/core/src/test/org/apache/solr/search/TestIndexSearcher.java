@@ -148,8 +148,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
     assertEquals(
         "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt,
-        g.getValue());
+        sr3SearcherRegAt.toInstant(),
+        g.getValue().toInstant());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
@@ -174,12 +174,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     IndexReaderContext rCtx6 = sr6.getSearcher().getTopReaderContext();
     assertEquals(
         1, rCtx6.leaves().get(0).reader().numDocs()); // only a single doc left in the first segment
-    assertTrue(
-        !rCtx5
-            .leaves()
-            .get(0)
-            .reader()
-            .equals(rCtx6.leaves().get(0).reader())); // readers now different
+    assertNotEquals(
+        rCtx5.leaves().get(0).reader(), rCtx6.leaves().get(0).reader()); // readers now different
 
     sr5.close();
     sr6.close();
@@ -318,6 +314,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -390,6 +387,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -495,8 +493,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       try {
-        assert currentSearcher == null
-            : "SlowSearcherListener should only be used as FirstSearcherListener";
+        assertNull(
+            "SlowSearcherListener should only be used as FirstSearcherListener", currentSearcher);
         // simulate a slow searcher listener
         latch.await(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {

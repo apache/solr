@@ -524,6 +524,7 @@ public class FacetComponent extends SearchComponent {
     rb.addRequest(this, shardsRefineRequestPivot);
   }
 
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
 
     if (!rb.doFacets) return;
@@ -1451,6 +1452,7 @@ public class FacetComponent extends SearchComponent {
       counted = new FixedBitSet[rb.shards.length];
     }
 
+    @Override
     protected void fillParams(ResponseBuilder rb, SolrParams params, String field) {
       super.fillParams(rb, params, field);
       this.overrequestRatio =
@@ -1495,7 +1497,7 @@ public class FacetComponent extends SearchComponent {
 
       // the largest possible missing term is (initialMincount - 1) if we received
       // less than the number requested.
-      if (numRequested < 0 || numRequested != 0 && numReceived < numRequested) {
+      if (numRequested < 0 || (numRequested != 0 && numReceived < numRequested)) {
         last = Math.max(0, initialMincount - 1);
       }
 

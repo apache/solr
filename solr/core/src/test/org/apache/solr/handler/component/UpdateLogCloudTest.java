@@ -16,10 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.Deque;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -136,11 +137,8 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       return;
     }
 
-    final LinkedList<Long> absVersions = new LinkedList<>();
-    for (Long version : versions) {
-      absVersions.add(Math.abs(version));
-    }
-    Collections.sort(absVersions);
+    final Deque<Long> absVersions =
+        versions.stream().map(Math::abs).sorted().collect(Collectors.toCollection(ArrayDeque::new));
     final Long minVersion = absVersions.getFirst();
     final Long maxVersion = absVersions.getLast();
 

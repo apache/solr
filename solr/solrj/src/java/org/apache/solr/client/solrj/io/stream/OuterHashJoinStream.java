@@ -92,6 +92,7 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
     return expression;
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (null == workingFullTuple) {

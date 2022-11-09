@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,6 +60,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
 
   public abstract void open() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 
   public abstract Tuple read() throws IOException;
@@ -125,7 +125,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   static List<Replica> getReplicas(
       String zkHost, String collection, StreamContext streamContext, SolrParams requestParams)
       throws IOException {
-    List<Replica> replicas = new LinkedList<>();
+    List<Replica> replicas = new ArrayList<>();
 
     // SolrCloud Sharding
     SolrClientCache solrClientCache =
@@ -218,10 +218,12 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   }
 
   public static class IgnoreException extends IOException {
+    @Override
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }
 
+    @Override
     public String getMessage() {
       return "Early Client Disconnect";
     }

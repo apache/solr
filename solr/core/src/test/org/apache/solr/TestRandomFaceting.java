@@ -96,12 +96,12 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
     types.add(new FldType("small_tf", ZERO_ONE, new FVal(-4, 5)));
-    assert trieFields.matcher("small_tf").matches();
-    assert !trieFields.matcher("small_f").matches();
+    assertTrue(trieFields.matcher("small_tf").matches());
+    assertFalse(trieFields.matcher("small_f").matches());
 
     types.add(new FldType("foo_ti", ZERO_ONE, new IRange(-2, indexSize)));
-    assert trieFields.matcher("foo_ti").matches();
-    assert !trieFields.matcher("foo_i").matches();
+    assertTrue(trieFields.matcher("foo_ti").matches());
+    assertFalse(trieFields.matcher("foo_i").matches());
 
     types.add(
         new FldType(

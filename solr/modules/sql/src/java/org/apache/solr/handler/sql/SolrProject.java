@@ -53,6 +53,7 @@ class SolrProject extends Project implements SolrRel {
     return super.computeSelfCost(planner, mq).multiplyBy(0.1);
   }
 
+  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
     final SolrRules.RexToSolrTranslator translator =

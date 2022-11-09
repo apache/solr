@@ -46,8 +46,6 @@ public class GraphTest extends SolrCloudTestCase {
 
   private static final String id = "id";
 
-  private static final int TIMEOUT = 30;
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
@@ -109,10 +107,10 @@ public class GraphTest extends SolrCloudTestCase {
     paths = new HashSet<>();
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -130,10 +128,10 @@ public class GraphTest extends SolrCloudTestCase {
     paths = new HashSet<>();
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 2);
+    assertEquals(2, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, dave, alex, steve]"));
@@ -150,7 +148,7 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     // Test with depth 2
 
@@ -163,7 +161,7 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    assertTrue(tuples.size() == 0);
+    assertEquals(0, tuples.size());
 
     // Take out alex
     sParams = params("fq", "predicate_s:knows NOT to_s:alex");
@@ -175,10 +173,10 @@ public class GraphTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     paths = new HashSet<>();
     tuples = getTuples(stream);
-    assertTrue(tuples.size() == 1);
+    assertEquals(1, tuples.size());
 
     for (Tuple tuple : tuples) {
-      paths.add(tuple.getStrings("path").toString());
+      paths.add(tuple.get("path").toString());
     }
 
     assertTrue(paths.contains("[jim, stan, mary, steve]"));

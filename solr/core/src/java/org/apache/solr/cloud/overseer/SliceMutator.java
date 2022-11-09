@@ -31,9 +31,6 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
@@ -111,19 +108,7 @@ public class SliceMutator {
             coll,
             slice);
 
-    if (collection.isPerReplicaState()) {
-      PerReplicaStates prs =
-          PerReplicaStatesFetcher.fetch(
-              collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(
-          coll,
-          updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStatesOps.addReplica(
-              replica.getName(), replica.getState(), replica.isLeader(), prs),
-          true);
-    } else {
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
-    }
+    return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -177,7 +162,7 @@ public class SliceMutator {
           ZkCoreNodeProps.getCoreUrl(
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
-      if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
+      if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
         newLeader = replica = ReplicaMutator.setLeader(replica);

@@ -82,7 +82,7 @@ public class PlotStream extends TupleStream implements Expressible {
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - only string, evaluator, or stream named parameters are supported, but param %d is none of those",
+                "Invalid expression %s - only string, evaluator, or stream named parameters are supported, but param %s is none of those",
                 expression,
                 name));
       }
@@ -137,6 +137,7 @@ public class PlotStream extends TupleStream implements Expressible {
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
 
@@ -150,11 +151,13 @@ public class PlotStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (finished) {
@@ -209,19 +212,23 @@ public class PlotStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     // Nothing to do here
   }
 
+  @Override
   public void open() throws IOException {
     // nothing to do here
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return new SingleValueComparator();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

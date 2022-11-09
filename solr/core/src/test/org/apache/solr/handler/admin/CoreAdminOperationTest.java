@@ -41,6 +41,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     assumeWorkingMockito();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -49,6 +50,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     callInfo = new CoreAdminHandler.CallInfo(null, mockRequest, null, null);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -357,25 +359,6 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> CoreAdminOperation.REJOINLEADERELECTION_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.SERVER_ERROR.code);
-  }
-
-  @Test
-  public void testInvokeUnexpectedFailuresResultIn500Exception() {
-    final Throwable cause = new NullPointerException();
-    whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
-  }
-
-  @Test
-  public void testInvokeMissingClassParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
-
-    Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
-    assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
   @Test

@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -44,7 +45,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
-import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
@@ -791,10 +791,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return first;
   }
 
-  public static boolean eq(String a, String b) {
-    return a == b || (a != null && a.equals(b));
-  }
-
   public static int flags(Map<String, Integer> handle, Object key) {
     if (key == null) return 0;
     if (handle == null) return 0;
@@ -866,7 +862,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           bSkipped++;
           continue;
         }
-        if (eq(namea, nameb)) {
+        if (Objects.equals(namea, nameb)) {
           break;
         }
         return "." + namea + "!=" + nameb + " (unordered or missing)";
@@ -1040,9 +1036,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     if ((flags & FUZZY) != 0) {
       if ((a instanceof Double && b instanceof Double)) {
-        double aaa = ((Double) a).doubleValue();
-        double bbb = ((Double) b).doubleValue();
-        if (aaa == bbb || ((Double) a).isNaN() && ((Double) b).isNaN()) {
+        double aaa = (Double) a;
+        double bbb = (Double) b;
+        if (aaa == bbb || (((Double) a).isNaN() && ((Double) b).isNaN())) {
           return null;
         }
         if ((aaa == 0.0) || (bbb == 0.0)) {
@@ -1079,7 +1075,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.error("Mismatched responses:\n{}\n{}", a, b);
-      Assert.fail(cmp);
+      fail(cmp);
     }
   }
 
@@ -1135,14 +1131,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       public void evaluate() throws Throwable {
         distribSetUp();
         if (!distribSetUpCalled) {
-          Assert.fail("One of the overrides of distribSetUp does not propagate the call.");
+          fail("One of the overrides of distribSetUp does not propagate the call.");
         }
         try {
           callStatement();
         } finally {
           distribTearDown();
           if (!distribTearDownCalled) {
-            Assert.fail("One of the overrides of distribTearDown does not propagate the call.");
+            fail("One of the overrides of distribTearDown does not propagate the call.");
           }
         }
       }

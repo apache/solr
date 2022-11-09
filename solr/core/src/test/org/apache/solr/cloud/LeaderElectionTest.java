@@ -74,7 +74,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/collection2", true);
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(
@@ -537,12 +537,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                       server.expire(zk.getSessionId());
                     }
                   } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("error expiring session", e);
                   }
                   Thread.sleep(500);
-
                 } catch (Exception e) {
-
+                  log.error("error expiring session", e);
                 }
               }
             });

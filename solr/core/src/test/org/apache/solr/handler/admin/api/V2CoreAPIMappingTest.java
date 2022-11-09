@@ -215,9 +215,9 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("someNodeName", v1Params.get("nodeName"));
     assertEquals("someCoreNodeName", v1Params.get(CORE_NODE_NAME));
     assertEquals("someState", v1Params.get(ZkStateReader.STATE_PROP));
-    assertEquals(true, v1Params.getPrimitiveBool("checkLive"));
-    assertEquals(true, v1Params.getPrimitiveBool("onlyIfLeader"));
-    assertEquals(true, v1Params.getPrimitiveBool("onlyIfLeaderActive"));
+    assertTrue(v1Params.getPrimitiveBool("checkLive"));
+    assertTrue(v1Params.getPrimitiveBool("onlyIfLeader"));
+    assertTrue(v1Params.getPrimitiveBool("onlyIfLeaderActive"));
   }
 
   @Test

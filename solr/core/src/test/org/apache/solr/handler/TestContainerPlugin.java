@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -58,12 +58,13 @@ import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +83,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
    */
-  class CountingListener implements PackageListeners.Listener {
+  static class CountingListener implements PackageListeners.Listener {
     private Semaphore changeCalled = new Semaphore(0);
 
     @Override
@@ -96,7 +97,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void changed(PackageLoader.Package pkg, Ctx ctx) {
+    public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
       changeCalled.release();
     }
 
@@ -145,6 +146,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testApi() throws Exception {
     int version = phaser.getPhase();
@@ -210,17 +212,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      RemoteExecutionException e =
-          assertThrows(
-              RemoteExecutionException.class,
-              () -> getPlugin("/my-random-prefix/their/plugin").call());
-      assertEquals(404, e.code());
-      assertThat(
-          e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("Could not load plugin at"));
-      assertEquals(1, errors.getCount());
-    }
+    RemoteExecutionException e =
+        assertThrows(
+            RemoteExecutionException.class,
+            () -> getPlugin("/my-random-prefix/their/plugin").call());
+    assertEquals(404, e.code());
+
+    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";
@@ -299,7 +298,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
     listener.reset();
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = singletonList(FILE1);
@@ -465,7 +464,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       method = GET,
       path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
-  public class C2 {}
+  public static class C2 {}
 
   @EndPoint(
       method = GET,
@@ -499,7 +498,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
-    return () -> req.process(cluster.getSolrClient());
+    return () -> {
+      V2Response rsp = req.process(cluster.getSolrClient());
+      return rsp;
+    };
   }
 
   private V2Request postPlugin(Object payload) {

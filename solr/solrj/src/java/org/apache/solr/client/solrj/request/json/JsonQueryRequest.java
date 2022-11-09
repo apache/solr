@@ -422,6 +422,7 @@ public class JsonQueryRequest extends QueryRequest {
     return this;
   }
 
+  @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.ContentWriter() {
       @Override

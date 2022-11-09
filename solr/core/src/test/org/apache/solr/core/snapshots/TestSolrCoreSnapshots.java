@@ -276,7 +276,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Verify that the index directory contains only 1 index commit (which is not the same as the
       // snapshotted commit).
       Collection<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
-      assertTrue(commits.size() == 1);
+      assertEquals(1, commits.size());
       assertFalse(
           commits.stream()
               .filter(x -> x.getGeneration() == metaData.getGenerationNumber())

@@ -18,7 +18,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -52,7 +52,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                 f("source1_s", "Hello Flashman."),
                 f("source2_s", "Calling Flashman.")));
 
-    assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("dest_s"));
+    assertEquals(List.of("Flashman", "Flashman"), List.copyOf(doc.getFieldValues("dest_s")));
   }
 
   @Test
@@ -65,7 +65,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                 f("source1_s", "Currently we have Flashman. Not much else."),
                 f("source2_s", "Flashman. Is. Not. There.")));
 
-    assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("dest_s"));
+    assertEquals(List.of("Flashman", "Flashman"), List.copyOf(doc.getFieldValues("dest_s")));
   }
 
   @Test
@@ -79,7 +79,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                 f("source1_s", "Serendipitously, he was. I mean, Flashman. And yet."),
                 f("source2_s", "Correct, Flashman.")));
 
-    assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("dest_s"));
+    assertEquals(List.of("Flashman", "Flashman"), List.copyOf(doc.getFieldValues("dest_s")));
   }
 
   public void testMultipleExtracts() throws Exception {
@@ -98,13 +98,15 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                 f("descs", "Courage, Flashman.", "Ain't he Flashman."),
                 f("descriptions", "Flashman. Flashman. Flashman.")));
 
-    assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("people_s"));
+    assertEquals(List.of("Flashman", "Flashman"), List.copyOf(doc.getFieldValues("people_s")));
     assertEquals(
-        Arrays.asList("Flashman", "Flashman", "Flashman"), doc.getFieldValues("titular_people"));
-    assertEquals(Arrays.asList("Flashman", "Flashman"), doc.getFieldValues("key_desc_people"));
+        List.of("Flashman", "Flashman", "Flashman"),
+        List.copyOf(doc.getFieldValues("titular_people")));
     assertEquals(
-        Arrays.asList("Flashman", "Flashman", "Flashman"),
-        doc.getFieldValues("key_description_people"));
+        List.of("Flashman", "Flashman"), List.copyOf(doc.getFieldValues("key_desc_people")));
+    assertEquals(
+        List.of("Flashman", "Flashman", "Flashman"),
+        List.copyOf(doc.getFieldValues("key_description_people")));
     assertEquals(
         "Flashman", doc.getFieldValue("summary_person_s")); // {EntityType} field name interpolation
     assertEquals(
@@ -116,7 +118,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
 
     // regardless of chain, all of these checks should be equivalent
     for (String chain :
-        Arrays.asList(
+        List.of(
             "extract-single",
             "extract-single-regex",
             "extract-multi",
@@ -135,7 +137,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                   f("source0_s", "Totally Flashman."), // not extracted
                   f("source1_s", "One nation under Flashman.", "Good Flashman.")));
       assertNotNull(chain, d);
-      assertEquals(chain, Arrays.asList("Flashman", "Flashman"), d.getFieldValues("dest_s"));
+      assertEquals(chain, List.of("Flashman", "Flashman"), List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values
       d =
@@ -149,13 +151,13 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
       assertNotNull(chain, d);
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "Flashman", "Flashman"),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "Flashman", "Flashman"),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
 
     // should be equivalent for any chain matching source1_s and source2_s (but not source0_s)
     for (String chain :
-        Arrays.asList(
+        List.of(
             "extract-multi",
             "extract-multi-regex",
             "extract-array",
@@ -174,7 +176,9 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                   f("source2_s", "Indubitably Flashman.")));
       assertNotNull(chain, d);
       assertEquals(
-          chain, Arrays.asList("Flashman", "Flashman", "Flashman"), d.getFieldValues("dest_s"));
+          chain,
+          List.of("Flashman", "Flashman", "Flashman"),
+          List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values
       d =
@@ -189,13 +193,13 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
       assertNotNull(chain, d);
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "Flashman", "Flashman", "Flashman"),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "Flashman", "Flashman", "Flashman"),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
 
     // any chain that copies source1_s to dest_s should be equivalent for these assertions
     for (String chain :
-        Arrays.asList(
+        List.of(
             "extract-single",
             "extract-single-regex",
             "extract-multi",
@@ -211,7 +215,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
               chain,
               doc(f("id", "1111"), f("source1_s", "Always Flashman.", "Flashman. Noone else.")));
       assertNotNull(chain, d);
-      assertEquals(chain, Arrays.asList("Flashman", "Flashman"), d.getFieldValues("dest_s"));
+      assertEquals(chain, List.of("Flashman", "Flashman"), List.copyOf(d.getFieldValues("dest_s")));
 
       // append to existing values
       d =
@@ -224,8 +228,8 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
       assertNotNull(chain, d);
       assertEquals(
           chain,
-          Arrays.asList("orig1", "orig2", "Flashman", "Flashman"),
-          d.getFieldValues("dest_s"));
+          List.of("orig1", "orig2", "Flashman", "Flashman"),
+          List.copyOf(d.getFieldValues("dest_s")));
     }
   }
 
@@ -239,7 +243,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
                 f("foo_x3_x7_s", "Flashman. Whoa.")));
 
     assertNotNull(d);
-    assertEquals(Arrays.asList("Flashman", "Flashman"), d.getFieldValues("foo_y2_s"));
+    assertEquals(List.of("Flashman", "Flashman"), List.copyOf(d.getFieldValues("foo_y2_s")));
     assertEquals("Flashman", d.getFieldValue("foo_y3_y7_s"));
   }
 
@@ -258,12 +262,12 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
     assertNotNull(d);
     assertEquals(
         d.getFieldNames().toString(),
-        Arrays.asList("Flashman", "Flashman"),
-        d.getFieldValues("foo_person_y2_s"));
+        List.of("Flashman", "Flashman"),
+        List.copyOf(d.getFieldValues("foo_person_y2_s")));
     assertEquals(
         d.getFieldNames().toString(),
-        Arrays.asList("London", "London"),
-        d.getFieldValues("foo_location_y2_s"));
+        List.of("London", "London"),
+        List.copyOf(d.getFieldValues("foo_location_y2_s")));
     assertEquals(
         d.getFieldNames().toString(), "Flashman", d.getFieldValue("foo_person_y3_person_y7_s"));
     assertEquals(

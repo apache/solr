@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.function.field.AnalyticsField;
@@ -67,7 +66,7 @@ public class ReductionCollectionManager {
     Arrays.sort(
         reductionDataCollectors, (a, b) -> a.getExpressionStr().compareTo(b.getExpressionStr()));
 
-    reservations = new LinkedList<>();
+    reservations = new ArrayList<>();
     for (int i = 0; i < reductionDataCollectors.length; i++) {
       reductionDataCollectors[i].submitReservations(reservation -> reservations.add(reservation));
     }

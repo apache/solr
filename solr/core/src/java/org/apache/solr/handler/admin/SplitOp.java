@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -51,11 +53,19 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.SplitIndexCommand;
+import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * CoreAdminOp implementation for shard splits. This request is enqueued when {@link SplitShardCmd}
+ * is processed. This operation handles two types of requests: 1. If {@link
+ * CommonAdminParams#SPLIT_BY_PREFIX} is true, the request to calculate document ranges for the
+ * sub-shards is processed here. 2. For any split request, the actual index split is processed here.
+ * This calls into {@link UpdateHandler#split(SplitIndexCommand)} to execute split.
+ */
 class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,16 +73,18 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
 
+    // if split request has splitByPrefix set to true, we will first make a request to SplitOp
+    // to calculate the prefix ranges, and do the actual split in a separate request
     if (params.getBool(GET_RANGES, false)) {
       handleGetRanges(it, cname);
       return;
     }
 
+    // if not using splitByPrefix, determine split partitions
     List<DocRouter.Range> ranges = null;
 
     String[] pathsArr = params.getParams(PATH);
@@ -98,6 +110,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
+    // if not using splitByPrefix, ensure either path or targetCore specified
     if ((pathsArr == null || pathsArr.length == 0)
         && (newCoreNames == null || newCoreNames.length == 0)) {
       throw new SolrException(
@@ -124,7 +137,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
       DocRouter router = null;
       String routeFieldName = null;
+      // if in SolrCloud mode, get collection and shard names
       if (it.handler.coreContainer.isZooKeeperAware()) {
+        log.trace("SplitOp: Determine which router is associated with the shard for core");
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
         String collectionName =
             parentCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
@@ -145,6 +160,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       if (pathsArr == null) {
+        log.trace("SplitOp: Create array of paths for sub-shards of core");
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
@@ -189,6 +205,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
+        log.trace("SplitOp: Create cloud descriptors for sub-shards of core");
         for (SolrCore newcore : newCores) {
           // the index of the core changed from empty to have some data, its term must be not zero
           CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
@@ -204,7 +221,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       // After the split has completed, someone (here?) should start the process of replaying the
       // buffered updates.
     } catch (Exception e) {
-      log.error("ERROR executing split:", e);
+      log.error("ERROR executing split: ", e);
       throw e;
     } finally {
       if (req != null) req.close();
@@ -580,7 +597,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
     // The middle should never be the last, since that means that we won't actually do a split.
     // Minimising the error (above) should already ensure this never happens.
-    assert middle != last;
+    assert !Objects.equals(middle, last);
 
     // Make sure to include the shard's current range in the new ranges so we don't create useless
     // empty shards.

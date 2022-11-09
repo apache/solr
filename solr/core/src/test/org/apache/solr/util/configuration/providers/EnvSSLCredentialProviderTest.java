@@ -19,15 +19,16 @@ package org.apache.solr.util.configuration.providers;
 
 import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** */
-public class EnvSSLCredentialProviderTest {
+public class EnvSSLCredentialProviderTest extends SolrTestCase {
 
   @Test
   public void testGetCredentials() {
@@ -44,7 +45,7 @@ public class EnvSSLCredentialProviderTest {
     for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
         DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
       String expectedpw = "pw" + ++cnt;
-      assertThat(sut.getCredential(set.getKey()), is(expectedpw));
+      MatcherAssert.assertThat(sut.getCredential(set.getKey()), is(expectedpw));
     }
   }
 

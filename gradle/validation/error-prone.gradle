@@ -62,71 +62,36 @@ allprojects { prj ->
 
         options.errorprone.disableWarningsInGeneratedCode = true
         options.errorprone.errorproneArgs = [
-            '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
-
             // bug patterns related to our tests
             '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
             '-Xep:CatchFail:OFF', // our code is generally descriptive enough, fix case by case if tests fail
             '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
-            '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
-            '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
             '-Xep:StaticAssignmentInConstructor:OFF', // we assign SolrTestCaseJ4.configString in many tests, difficult to untangle
             '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 
-            '-Xep:AlmostJavadoc:OFF',
             '-Xep:AlreadyChecked:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
-            '-Xep:ArrayEquals:OFF',
-            '-Xep:ArrayHashCode:OFF',
-            '-Xep:ArrayToString:OFF',
             '-Xep:BadImport:OFF', // style preference that we don't want to enforce
-            '-Xep:BadInstanceof:OFF',
-            '-Xep:BadShiftAmount:OFF',
             '-Xep:CanIgnoreReturnValueSuggester:OFF',
-            '-Xep:ClassCanBeStatic:OFF',
-            '-Xep:CollectionUndefinedEquality:OFF',
-            '-Xep:ComplexBooleanConstant:OFF',
-            '-Xep:DoubleBraceInitialization:OFF',
+            '-Xep:ComplexBooleanConstant:OFF', // non trivial to fix in some cases
             '-Xep:DoubleCheckedLocking:OFF',
             '-Xep:EmptyCatch:OFF',
-            '-Xep:EqualsGetClass:OFF',
-            '-Xep:EqualsIncompatibleType:OFF',
-            '-Xep:EqualsUnsafeCast:OFF',
-            '-Xep:EscapedEntity:OFF',
             '-Xep:Finally:OFF',
-            '-Xep:FormatString:OFF',
             '-Xep:FutureReturnValueIgnored:OFF',
-            '-Xep:HidingField:OFF',
-            '-Xep:IdentityBinaryExpression:OFF',
-            '-Xep:IdentityHashMapUsage:OFF',
-            '-Xep:ImmutableEnumChecker:OFF',
-            '-Xep:InconsistentCapitalization:OFF',
-            '-Xep:InlineFormatString:OFF',
+            '-Xep:InlineFormatString:OFF', // this introduces redundancy in format strings
+            '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
             '-Xep:InputStreamSlowMultibyteRead:OFF',
-            '-Xep:IntLongMath:OFF',
-            '-Xep:InvalidBlockTag:OFF',
-            '-Xep:InvalidInlineTag:OFF',
-            '-Xep:InvalidParam:OFF',
-            '-Xep:JavaLangClash:OFF',
+            '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
             '-Xep:JavaUtilDate:OFF',
-            '-Xep:JdkObsolete:OFF',
-            '-Xep:LogicalAssignment:OFF',
-            '-Xep:MissingOverride:OFF',
-            '-Xep:MissingSummary:OFF',
+            '-Xep:MissingSummary:OFF', // style preference that we don't want to enforce
             '-Xep:MixedMutabilityReturnType:OFF',
-            '-Xep:ModifiedButNotUsed:OFF',
-            '-Xep:MutablePublicArray:OFF',
-            '-Xep:NarrowingCompoundAssignment:OFF',
+            '-Xep:MutablePublicArray:OFF', // this should be possible...
             '-Xep:NegativeCharLiteral:OFF',
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',
             '-Xep:ObjectToString:OFF',
-            '-Xep:ObjectsHashCodePrimitive:OFF',
-            '-Xep:OperatorPrecedence:OFF',
-            '-Xep:ProtectedMembersInFinalClass:OFF',
-            '-Xep:ReferenceEquality:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
             '-Xep:ShortCircuitBoolean:OFF',
@@ -139,11 +104,8 @@ allprojects { prj ->
             '-Xep:ThreadPriorityCheck:OFF',
             '-Xep:TypeParameterShadowing:OFF',
             '-Xep:TypeParameterUnusedInFormals:OFF',
-            '-Xep:UndefinedEquals:OFF',
-            '-Xep:UnescapedEntity:OFF',
-            '-Xep:UnicodeEscape:OFF',
-            '-Xep:UnnecessaryParentheses:OFF',
-            '-Xep:UnsynchronizedOverridesSynchronized:OFF',
+            '-Xep:UnicodeEscape:OFF', // can't enable since Lucene/Solr tests use unicode a bunch
+            '-Xep:UnnecessaryParentheses:OFF', // style preference that we don't want to enforce
             '-Xep:UnusedMethod:OFF',
             '-Xep:UnusedVariable:OFF',
             '-Xep:WaitNotInLoop:OFF',

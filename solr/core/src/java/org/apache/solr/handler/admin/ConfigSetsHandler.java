@@ -21,8 +21,14 @@ import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH
 
 import com.google.common.collect.Maps;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -35,6 +41,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.configsets.CreateConfigSetAPI;
 import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
@@ -136,7 +143,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         }
         break;
       case LIST:
-        new ListConfigSetsAPI(coreContainer).listConfigSet(req, rsp);
+        final ListConfigSetsAPI listConfigSetsAPI = new ListConfigSetsAPI(coreContainer);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listConfigSetsAPI.listConfigSet());
         break;
       case CREATE:
         final String newConfigSetName = req.getParams().get(NAME);
@@ -190,6 +198,27 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return true;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new CreateConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new DeleteConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetAPI(coreContainer)));
+    apis.addAll(AnnotatedApi.getApis(new UploadConfigSetFileAPI(coreContainer)));
+
+    return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(ListConfigSetsAPI.class);
   }
 
   @Override

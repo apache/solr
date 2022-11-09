@@ -87,8 +87,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private static CloudHttp2SolrClient httpBasedCloudSolrClient = null;
-  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
+  private static CloudSolrClient httpBasedCloudSolrClient = null;
+  private static CloudSolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -136,7 +136,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
-  private CloudHttp2SolrClient getRandomClient() {
+  private CloudSolrClient getRandomClient() {
     //    return random().nextBoolean()? zkBasedCloudSolrClient : httpBasedCloudSolrClient;
     return httpBasedCloudSolrClient;
   }
@@ -199,7 +199,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
-    CloudHttp2SolrClient client = getRandomClient();
+    CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);
     client.commit(COLLECTION);
@@ -278,7 +278,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+      try (SolrClient solrClient = getHttpSolrClient(url)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertEquals(1, docList.getNumFound());
@@ -324,7 +324,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+        try (SolrClient solrClient = getHttpSolrClient(url)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertEquals(1, docList.getNumFound());
@@ -372,12 +372,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
 
     List<String> sameShardRoutes = Lists.newArrayList();
+    List<Slice> expectedSlicesList = List.copyOf(expectedSlices);
     sameShardRoutes.add("0");
     for (int i = 1; i < n; i++) {
       String shardKey = Integer.toString(i);
-      Collection<Slice> slices = router.getSearchSlicesSingle(shardKey, null, col);
+      List<Slice> slices = List.copyOf(router.getSearchSlicesSingle(shardKey, null, col));
       log.info("Expected Slices {}", slices);
-      if (expectedSlices.equals(slices)) {
+      if (expectedSlicesList.equals(slices)) {
         sameShardRoutes.add(shardKey);
       }
     }
@@ -397,8 +398,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    int increaseFromExpectedUrls = 0;
-    int increaseFromUnexpectedUrls = 0;
+    long increaseFromExpectedUrls = 0;
+    long increaseFromUnexpectedUrls = 0;
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -452,8 +453,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("deprecation")
-  private void queryWithShardsPreferenceRules(
-      CloudHttp2SolrClient cloudClient, String collectionName) throws Exception {
+  private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient, String collectionName)
+      throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
@@ -530,7 +531,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   private void queryReplicaType(
-      CloudHttp2SolrClient cloudClient, Replica.Type typeToQuery, String collectionName)
+      CloudSolrClient cloudClient, Replica.Type typeToQuery, String collectionName)
       throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");
 
@@ -592,7 +593,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       throws SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collectionName, 15000, 60000)) {
+    try (SolrClient client = getHttpSolrClient(baseUrl + "/" + collectionName, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -751,7 +752,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
     final String url = r.getBaseUrl() + "/" + COLLECTION;
-    try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
+    try (SolrClient solrClient = getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -911,7 +912,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
-    CloudHttp2SolrClient client = httpBasedCloudSolrClient;
+    CloudSolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     new UpdateRequest().add(doc).commit(client, COLLECTION);
     assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
@@ -919,7 +920,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testCollectionDoesntExist() throws Exception {
-    CloudHttp2SolrClient client = getRandomClient();
+    CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     try {
       client.add("boguscollectionname", doc);
@@ -935,7 +936,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
-    assert cluster.getJettySolrRunners().size() >= 2;
+    assertTrue(cluster.getJettySolrRunners().size() >= 2);
 
     final JettySolrRunner old_leader_node = cluster.getJettySolrRunners().get(0);
     final JettySolrRunner new_leader_node = cluster.getJettySolrRunners().get(1);
@@ -1057,7 +1058,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   private void queryWithPreferReplicaTypes(
-      CloudHttp2SolrClient cloudClient, String preferReplicaTypes, String collectionName)
+      CloudSolrClient cloudClient, String preferReplicaTypes, String collectionName)
       throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");
     ModifiableSolrParams qParams = new ModifiableSolrParams();

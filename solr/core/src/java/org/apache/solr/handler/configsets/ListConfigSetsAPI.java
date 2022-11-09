@@ -16,34 +16,55 @@
  */
 package org.apache.solr.handler.configsets;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.common.util.NamedList;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 
 /**
  * V2 API for adding or updating a single file within a configset.
  *
  * <p>This API (GET /v2/cluster/configs) is analogous to the v1 /admin/configs?action=LIST command.
  */
-public class ListConfigSetsAPI extends ConfigSetAPIBase {
+@Path("/cluster/configs")
+public class ListConfigSetsAPI extends JerseyResource {
+
+  @Context public HttpHeaders headers;
+
+  private final CoreContainer coreContainer;
+
+  @Inject
   public ListConfigSetsAPI(CoreContainer coreContainer) {
-    super(coreContainer);
+    this.coreContainer = coreContainer;
   }
 
-  @EndPoint(method = GET, path = "/cluster/configs", permission = CONFIG_READ_PERM)
-  public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final NamedList<Object> results = new NamedList<>();
-    List<String> configSetsList = configSetService.listConfigs();
-    results.add("configSets", configSetsList);
-    SolrResponse response = new OverseerSolrResponse(results);
-    rsp.getValues().addAll(response.getResponse());
+  @GET
+  @Produces({"application/json", "application/javabin"})
+  @Operation(
+      summary = "List the configsets available to Solr.",
+      tags = {"configset"})
+  @PermissionName(CONFIG_READ_PERM)
+  public ListConfigsetsResponse listConfigSet() throws Exception {
+    final ListConfigsetsResponse response = instantiateJerseyResponse(ListConfigsetsResponse.class);
+    response.configSets = coreContainer.getConfigSetService().listConfigs();
+    return response;
+  }
+
+  /** Response body POJO for the {@link ListConfigSetsAPI} resource. */
+  public static class ListConfigsetsResponse extends SolrJerseyResponse {
+
+    @JsonProperty("configSets")
+    public List<String> configSets;
   }
 }

@@ -19,13 +19,12 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -223,7 +221,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
               .setRepositoryName(BACKUP_REPO_NAME)
-              .processAndWait(cluster.getSolrClient(), 20);
+              .processAndWait(cluster.getSolrClient(), 30);
       assertEquals(RequestStatusState.COMPLETED, result);
     }
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
@@ -344,38 +342,41 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           fail("This backup should be failed");
         }
       } catch (Exception e) {
-        // expected
-        e.printStackTrace();
+        log.error("expected", e);
       }
     }
   }
 
   protected void corruptIndexFiles() throws IOException {
-    Collection<Slice> slices = getCollectionState(getCollectionName()).getSlices();
-    Slice slice = slices.iterator().next();
-    JettySolrRunner leaderNode = cluster.getReplicaJetty(slice.getLeader());
+    List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
+    Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
+    JettySolrRunner leaderNode = cluster.getReplicaJetty(leader);
 
-    SolrCore solrCore = leaderNode.getCoreContainer().getCore(slice.getLeader().getCoreName());
-    Set<String> fileNames =
-        new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
-    File indexFolder = new File(solrCore.getIndexDir());
-    File fileGetCorrupted =
-        Stream.of(Objects.requireNonNull(indexFolder.listFiles()))
-            .filter(x -> fileNames.contains(x.getName()))
-            .findAny()
-            .get();
-    try (FileInputStream fis = new FileInputStream(fileGetCorrupted)) {
-      byte[] contents = fis.readAllBytes();
-      contents[contents.length - CodecUtil.footerLength() - 1] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 2] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 3] += 1;
-      contents[contents.length - CodecUtil.footerLength() - 4] += 1;
-      try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
-        fos.write(contents);
+    final Path fileToCorrupt;
+    try (SolrCore solrCore = leaderNode.getCoreContainer().getCore(leader.getCoreName())) {
+      Set<String> fileNames =
+          new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
+      final List<Path> indexFiles;
+      try (Stream<Path> indexFolderFiles = Files.list(Path.of(solrCore.getIndexDir()))) {
+        indexFiles =
+            indexFolderFiles
+                .filter(x -> fileNames.contains(x.getFileName().toString()))
+                .sorted()
+                .collect(Collectors.toList());
       }
-    } finally {
-      solrCore.close();
+      if (indexFiles.isEmpty()) {
+        return;
+      }
+      fileToCorrupt = indexFiles.get(random().nextInt(indexFiles.size()));
     }
+    final byte[] contents = Files.readAllBytes(fileToCorrupt);
+    for (int i = 1; i < 5; i++) {
+      int key = contents.length - CodecUtil.footerLength() - i;
+      if (key >= 0) {
+        contents[key] = (byte) (contents[key] + 1);
+      }
+    }
+    Files.write(fileToCorrupt, contents);
   }
 
   private void addDummyFileToIndex(BackupRepository repository, URI indexDir, String fileName)
@@ -507,7 +508,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
           assertEquals(RequestStatusState.COMPLETED, state);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          log.error("interrupted", e);
         }
         numBackup++;
       } else {

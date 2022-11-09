@@ -4,6 +4,90 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  9.2.0 ==================
+New Features
+---------------------
+
+* SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
+
+* SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
+
+Improvements
+---------------------
+
+* SOLR-16428: IgnoreLargeDocumentProcessorFactory now supports a "permissive" mode, where it logs and skips
+  offending documents but doesn't short-circuit the entire batch or return a 4xx error.  This mode can be enabled
+  by setting the `permissiveMode` boolean option to `true` in your solrconfig.xml's
+  IgnoreLargeDocumentProcessorFactory declaration. (Jason Gerlowski)
+
+* SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
+  ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+
+* SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
+
+* SOLR-16302: WARN when restoring backup if ConfigSet with same name already exists (Albert Moser via Kevin Risden)
+
+* SOLR-8803: Java will now crash the Solr process on OOME and create a crash file that logs the
+  cause.  This capability is now also present on Windows.  Before, with bin/solr but not
+  bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
+  window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
+
+* SOLR-15748: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
+  previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
+
+* SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+
+* SOLR-16436: Fix "false positive" suggestions from DirectSolrSpellChecker when using maxQueryFrequency > 1 in
+  multi-shard collections (hossman)
+
+* SOLR-15854: Upgrade semver library to fix versioning constraint bugs in the PackageManager. (Houston Putman, Kevin Risden)
+
+* SOLR-16160: UpdateXmlMessages duplicate data when data is removed and then added in the same message (Alex Deparvu via Kevin Risden)
+
+* SOLR-16483: Fix IndexOutOfBounds in RecursiveNumericEvaluator (Bendegúz Ács via Kevin Risden)
+
+* SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
+
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
+* SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
+
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
+Build
+---------------------
+* Upgrade forbiddenapis to 3.4 (Uwe Schindler)
+
+* SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
+
+* SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
+
+* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+
+Other Changes
+---------------------
+* SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
+  generically on localhost. (Mike Drob)
+
+* SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
+
+* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
+
+* SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
+
+* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
+
 ==================  9.1.0 ==================
 
 New Features
@@ -64,6 +148,10 @@ Improvements
 
 * SOLR-16361: mod() is now accurate for all integers, floats, doubles and longs upto 2^52 (Dan Rosher via Eric Pugh)
 
+* SOLR-16404: Prometheus Exporter: Use HTTP2 Solr clients. (Houston Putman)
+
+* SOLR-16429: The s3-repository module now supports AWS STS, and therefore Web Identity Tokens, by default. (Josh Souza via Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -81,8 +169,12 @@ Optimizations
 
 * SOLR-16328: intern() strings in DocCollection to reduce memory footprint (noble)
 
+* SOLR-16445: Leader message should only be sent when there is more than one (NRT+Tlog) replica (Hitesh Khamesra, noble via Ishan Chattopadhyaya)
+
 Bug Fixes
 ---------------------
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
@@ -131,13 +223,41 @@ Bug Fixes
 
 * SOLR-16417: NPE if facet query hits timeout or exception (Kevin Risden)
 
-* SOLR-16414 : Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
+* SOLR-16414: Race condition in PRS state updates (noble, Justin Sweeney, Patson Luk, Hitesh Khamesra, Ishan Chattopadhyaya)
 
 * SOLR-16418: Introduce SolrResponseUtil to handle NPE during query timeout or exception when parsing SolrResponse (Kevin Risden)
 
 * SOLR-16219: ICUCollationField protected field IllegalAccessException from different classloader (Michael Gibney)
 
 * SOLR-16426: LBHttp2SolrClient (and therefore CloudHttp2SolrClient) now respect requestWriter, responseParser and queryParam changes (Houston Putman)
+
+* SOLR-16232: Fix EnvVar usage in bin/solr (Houston Putman)
+
+* SOLR-16439: Cloud Node does not have Core, the admin UI cannot be displayed properly. (Shiming Li)
+
+* SOLR-16229: Http2SolrClient aborts requests on exception (Daniel Rabus, Tomás Fernández Löbbe)
+
+* SOLR-16457: solr.data.home should not be set to empty string in bin/solr (Kevin Risden)
+
+* SOLR-16433: Security Manager prevents Solr SQL from working (Kevin Risden)
+
+* SOLR-16460: ClusterState.copyWith is inconsistent (noble)
+
+* SOLR-16440: RefreshCollectionMessage in PRS should update Overseer's ZkStateWriter (noble, Ishan Chattopadhyaya)
+
+* SOLR-16453: Overseer doesn't handle PRS and non-PRS messages properly (Justin Sweeney, Hitesh Khamesra)
+
+* SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
+
+* SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
+
+* SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
+
+* SOLR-16412: Race condition could trigger error on concurrent SizeLimitedDistributedMap cleanup (Patson Luk via noble)
+
+* SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
+
+* SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
 
 Other Changes
 ---------------------
@@ -197,6 +317,18 @@ Other Changes
 * SOLR-16422: Upgrade Apache Zookeeper to 3.8.0 (Kevin Risden)
 
 * SOLR-16423: Upgrade Apache Hadoop to 3.3.4 (Kevin Risden)
+
+* SOLR-16450: Proper handling on watcher registration failure in ZkStateReader#waitForState() (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
+* SOLR-16482: Add an internal envVar for passing options to bin/solr that will not be overriden by the user. (Houston Putman)
+
+* SOLR-16486: Pin the OS Variant for the default base image of the Dockerfile (to Ubuntu 20). (Houston Putman, janhoy, Eva Müller)
 
 Build
 ---------------------

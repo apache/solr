@@ -60,8 +60,9 @@ public class TestDocSet extends SolrTestCase {
   }
 
   // test the DocSetCollector
+  @SuppressWarnings("BadShiftAmount")
   public void collect(DocSet set, int maxDoc) {
-    int smallSetSize = maxDoc >> 64 + 3;
+    int smallSetSize = maxDoc >> (64 + 3);
     if (set.size() > 1) {
       if (random().nextBoolean()) {
         smallSetSize = set.size() + random().nextInt(3) - 1; // test the bounds around smallSetSize
@@ -157,7 +158,7 @@ public class TestDocSet extends SolrTestCase {
     DocIterator i1 = d1.iterator();
     DocIterator i2 = d2.iterator();
 
-    assert (i1.hasNext() == i2.hasNext());
+    assertEquals(i1.hasNext(), i2.hasNext());
 
     for (; ; ) {
       boolean b1 = i1.hasNext();

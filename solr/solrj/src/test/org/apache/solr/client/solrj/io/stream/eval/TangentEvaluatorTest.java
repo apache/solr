@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -47,10 +46,10 @@ public class TangentEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
 
     if (null == value) {
-      Assert.assertNull(result);
+      assertNull(result);
     } else {
-      Assert.assertTrue(result instanceof Double);
-      Assert.assertEquals(Math.tan(value), result);
+      assertTrue(result instanceof Double);
+      assertEquals(Math.tan(value), result);
     }
   }
 

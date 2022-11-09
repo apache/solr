@@ -28,9 +28,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -75,7 +75,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /** Modifies the request to inlcude authentication params if needed, returns the request */
   private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
-      assert null != PASS;
+      assertNotNull(PASS);
       req.setBasicAuthCredentials(USER, PASS);
     }
     return req;
@@ -252,7 +252,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     final Set<String> shardsThatChange = new HashSet<>();
 
     int coresCompared = 0;
-    int totalDocsOnAllShards = 0;
+    long totalDocsOnAllShards = 0;
     final DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
@@ -315,7 +315,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (HttpSolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");
@@ -384,8 +384,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
         final String coreName,
         final long indexVersion,
         final long numDocs) {
-      assert null != shardName;
-      assert null != coreName;
+      assertNotNull(shardName);
+      assertNotNull(coreName);
 
       this.shardName = shardName;
       this.coreName = coreName;

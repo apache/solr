@@ -117,7 +117,7 @@ public class ComplementStream extends TupleStream implements Expressible {
 
     if (includeStreams) {
       // streams
-      if (streamA instanceof Expressible) {
+      if (streamA != null) {
         expression.addParameter(((Expressible) streamA).toExpression(factory));
       } else {
         throw new IOException(
@@ -156,11 +156,13 @@ public class ComplementStream extends TupleStream implements Expressible {
         .withHelper(eq.toExplanation(factory));
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamA.setStreamContext(context);
     this.streamB.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(streamA);
@@ -168,16 +170,19 @@ public class ComplementStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     streamA.open();
     streamB.open();
   }
 
+  @Override
   public void close() throws IOException {
     streamA.close();
     streamB.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     while (true) {
@@ -212,10 +217,12 @@ public class ComplementStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return streamA.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

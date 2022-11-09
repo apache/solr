@@ -28,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -114,7 +114,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> replicas =
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
-    assertTrue("Expected active 1 replicas for " + testCollectionName, replicas.size() == 1);
+    assertEquals("Expected active 1 replicas for " + testCollectionName, 1, replicas.size());
 
     List<SolrInputDocument> batch = new ArrayList<>(10);
     for (int i = 0; i < 15; i++) {
@@ -149,7 +149,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // so now kill the replica of shard2 and verify the achieved rf is only 1
     List<Replica> shard2Replicas =
         ensureAllReplicasAreActive(testCollectionName, "shard2", numShards, replicationFactor, 30);
-    assertTrue("Expected active 1 replicas for " + testCollectionName, replicas.size() == 1);
+    assertEquals("Expected active 1 replicas for " + testCollectionName, 1, replicas.size());
 
     getProxyForReplica(shard2Replicas.get(0)).close();
 
@@ -253,7 +253,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // Delete the docs by query indicated.
     req = new UpdateRequest();
-    req.deleteByQuery("id:(" + StringUtils.join(byQueriesSet, " OR ") + ")");
+    req.deleteByQuery("id:(" + StringUtils.join(byQueryList, " OR ") + ")");
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
   }
 
@@ -271,20 +271,21 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + collection;
-    try (HttpSolrClient solrServer = getHttpSolrClient(url)) {
+    try (SolrClient solrServer = getHttpSolrClient(url)) {
       NamedList<?> resp = solrServer.request(up);
       NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);
       // Note that this also tests if we're wonky and return an achieved rf greater than the number
       // of live replicas.
-      assertTrue(
+      assertEquals(
           "Expected rf="
               + expectedRf
               + " for batch but got "
               + batchRf
               + "; clusterState: "
               + printClusterStateInfo(),
-          batchRf == expectedRf);
+          (int) batchRf,
+          expectedRf);
     }
   }
 
@@ -300,7 +301,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> replicas =
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
-    assertTrue("Expected 2 active replicas for " + testCollectionName, replicas.size() == 2);
+    assertEquals("Expected 2 active replicas for " + testCollectionName, 2, replicas.size());
 
     log.info("Indexing docId=1");
     int rf = sendDoc(1);

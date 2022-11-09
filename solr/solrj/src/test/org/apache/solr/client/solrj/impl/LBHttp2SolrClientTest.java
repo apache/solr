@@ -16,19 +16,16 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.Test;
 
 /** Test the LBHttp2SolrClient. */
-public class LBHttp2SolrClientTest {
+public class LBHttp2SolrClientTest extends SolrTestCase {
 
   /**
    * Test method for {@link LBHttp2SolrClient#setParser(ResponseParser)}.

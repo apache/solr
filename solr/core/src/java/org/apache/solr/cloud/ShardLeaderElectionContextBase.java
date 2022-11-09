@@ -236,7 +236,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   zkController.getSolrCloudManager(),
                   zkStateReader);
         } else {
-          zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+          zkController.getOverseer().offerStateUpdate(m);
         }
       }
       if (coll != null && coll.isPerReplicaState()) {

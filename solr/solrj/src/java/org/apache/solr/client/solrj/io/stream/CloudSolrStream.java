@@ -233,7 +233,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
@@ -275,11 +278,13 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.trace = trace;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
   /** Opens the CloudSolrStream */
+  @Override
   public void open() throws IOException {
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
@@ -292,6 +297,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return this.eofTuples;
   }
 
+  @Override
   public List<TupleStream> children() {
     return solrStreams;
   }
@@ -428,6 +434,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   /** Closes the CloudSolrStream */
+  @Override
   public void close() throws IOException {
     if (solrStreams != null) {
       for (TupleStream solrStream : solrStreams) {
@@ -437,10 +444,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return comp;
   }
 
+  @Override
   public Tuple read() throws IOException {
     return _read();
   }
@@ -477,6 +486,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       this.comp = comp;
     }
 
+    @Override
     public int compareTo(TupleWrapper w) {
       if (this == w) {
         return 0;
@@ -490,6 +500,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
 
+    @Override
     public boolean equals(Object o) {
       return this == o;
     }
@@ -524,6 +535,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       this.comp = comp;
     }
 
+    @Override
     public TupleWrapper call() throws Exception {
       stream.open();
       TupleWrapper wrapper = new TupleWrapper(stream, comp);

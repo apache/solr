@@ -272,6 +272,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     this.fetchSize = fetchSize;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
@@ -315,6 +316,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
 
   /** Opens the JDBCStream */
+  @Override
   public void open() throws IOException {
     try {
       connection = getDriver().connect(connectionUrl, connectionProperties);
@@ -594,7 +596,7 @@ public class JDBCStream extends TupleStream implements Expressible {
                   throw new SQLException(
                       String.format(
                           Locale.ROOT,
-                          "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
+                          "Encountered a clob of length #%d in column '%s' (col #%d).  Max supported length is #%d.",
                           length,
                           columnName,
                           columnNumber,
@@ -614,6 +616,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
 
   /** Closes the JDBCStream */
+  @Override
   public void close() throws IOException {
     try {
       if (null != resultSet) { // it's not required in JDBC that ResultSet implements isClosed()
@@ -630,6 +633,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     try {

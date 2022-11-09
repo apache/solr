@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +59,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -125,16 +125,16 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.api.ApiRegistrar;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
+import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -146,6 +146,7 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.security.SolrNodeKeyPair;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
@@ -153,6 +154,8 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.server.ApplicationHandler;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -186,6 +189,12 @@ public class CoreContainer {
 
   private volatile PluginBag<SolrRequestHandler> containerHandlers =
       new PluginBag<>(SolrRequestHandler.class, null);
+
+  private volatile ApplicationHandler jerseyAppHandler;
+
+  public ApplicationHandler getJerseyApplicationHandler() {
+    return jerseyAppHandler;
+  }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
@@ -226,6 +235,8 @@ public class CoreContainer {
   protected final SolrResourceLoader loader;
 
   protected final Path solrHome;
+
+  protected final SolrNodeKeyPair nodeKeyPair;
 
   protected final CoresLocator coresLocator;
 
@@ -274,7 +285,7 @@ public class CoreContainer {
       new DelegatingPlacementPluginFactory();
 
   private PackageStoreAPI packageStoreAPI;
-  private PackageLoader packageLoader;
+  private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
 
@@ -379,12 +390,8 @@ public class CoreContainer {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
-
-    try {
-      containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
-    } catch (IOException | InvalidKeySpecException e) {
-      throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
-    }
+    this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
+    containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
@@ -629,6 +636,7 @@ public class CoreContainer {
    */
   protected CoreContainer(Object testConstructor) {
     solrHome = null;
+    nodeKeyPair = null;
     loader = null;
     coresLocator = null;
     cfg = null;
@@ -687,7 +695,7 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
-  public PackageLoader getPackageLoader() {
+  public SolrPackageLoader getPackageLoader() {
     return packageLoader;
   }
 
@@ -771,7 +779,7 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
       containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-      packageLoader = new PackageLoader(this);
+      packageLoader = new SolrPackageLoader(this);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
       containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
       ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
@@ -807,8 +815,6 @@ public class CoreContainer {
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-    ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
-    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
@@ -819,7 +825,6 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
-    ApiRegistrar.registerConfigsetApis(containerHandlers.getApiBag(), this);
 
     if (isZooKeeperAware()) {
       containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
@@ -1049,7 +1054,34 @@ public class CoreContainer {
                   clusterSingletons.getSingletons().put(singleton.getName(), singleton);
                 }
               });
+    }
 
+    final CoreContainer thisCCRef = this;
+    // Init the Jersey app once all CC endpoints have been registered
+    containerHandlers
+        .getJerseyEndpoints()
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                    .to(CoreContainer.class)
+                    .in(Singleton.class);
+              }
+            })
+        .register(
+            new AbstractBinder() {
+              @Override
+              protected void configure() {
+                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                    .to(SolrNodeKeyPair.class)
+                    .in(Singleton.class);
+              }
+            });
+    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+
+    // Do Node setup logic after all handlers have been registered.
+    if (isZooKeeperAware()) {
       clusterSingletons.setReady();
       if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
         try {
@@ -1063,6 +1095,7 @@ public class CoreContainer {
         zkSys.getZkController().checkOverseerDesignate();
       }
     }
+
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
     // the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;

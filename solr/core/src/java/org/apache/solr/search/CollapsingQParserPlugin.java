@@ -192,9 +192,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    static NullPolicy DEFAULT_POLICY = IGNORE;
+    static final NullPolicy DEFAULT_POLICY = IGNORE;
   }
 
+  @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new CollapsingQParser(qstr, localParams, params, request);
@@ -207,6 +208,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       super(qstr, localParams, params, request);
     }
 
+    @Override
     public Query parse() throws SyntaxError {
       try {
         return new CollapsingPostFilter(localParams, params, req);
@@ -216,12 +218,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  public static enum GroupHeadSelectorType {
+  public enum GroupHeadSelectorType {
     MIN,
     MAX,
     SORT,
     SCORE;
-    public static EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
+    public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
 
   /** Models all the information about how group head documents should be selected */
@@ -303,14 +305,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return this.collapseField;
     }
 
+    @Override
     public void setCache(boolean cache) {}
 
+    @Override
     public boolean getCache() {
       return false;
     }
 
     // Only a subset of fields in hashCode/equals?
 
+    @Override
     public int hashCode() {
       int hashCode = classHash();
       hashCode = 31 * hashCode + collapseField.hashCode();
@@ -319,6 +324,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return hashCode;
     }
 
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
@@ -334,10 +340,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       visitor.visitLeaf(this);
     }
 
+    @Override
     public int getCost() {
       return Math.max(super.getCost(), 100);
     }
 
+    @Override
     public String toString(String s) {
       return "CollapsingPostFilter(field="
           + this.collapseField
@@ -435,6 +443,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.nullPolicy = NullPolicy.fromString(localParams.get("nullPolicy"));
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public DelegatingCollector getFilterCollector(IndexSearcher indexSearcher) {
       try {
@@ -522,6 +531,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                   fieldInfo.getPointIndexDimensionCount(),
                   fieldInfo.getPointNumBytes(),
                   fieldInfo.getVectorDimension(),
+                  fieldInfo.getVectorEncoding(),
                   fieldInfo.getVectorSimilarityFunction(),
                   fieldInfo.isSoftDeletesField());
           newInfos.add(f);
@@ -533,10 +543,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.fieldInfos = infos;
     }
 
+    @Override
     public FieldInfos getFieldInfos() {
       return fieldInfos;
     }
 
+    @Override
     public SortedDocValues getSortedDocValues(String field) {
       return null;
     }
@@ -562,10 +574,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public float score;
     public int docId;
 
+    @Override
     public float score() {
       return score;
     }
 
+    @Override
     public int docID() {
       return docId;
     }
@@ -1135,10 +1149,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
     }
 
+    @Override
     public void setScorer(Scorable scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
+    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
@@ -1151,6 +1167,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void collect(int contextDoc) throws IOException {
       int globalDoc = contextDoc + this.docBase;
       int ord = -1;
@@ -1177,6 +1194,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseStrategy.collapse(ord, contextDoc, globalDoc);
     }
 
+    @Override
     public void finish() throws IOException {
       if (contexts.length == 0) {
         return;
@@ -1392,6 +1410,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.collapseStrategy.setScorer(scorer);
     }
 
+    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
@@ -1399,6 +1418,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
     }
 
+    @Override
     public void collect(int contextDoc) throws IOException {
       final int globalDoc = contextDoc + this.docBase;
       if (collapseValues.advanceExact(contextDoc)) {
@@ -1421,6 +1441,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void finish() throws IOException {
       if (contexts.length == 0) {
         return;
@@ -1502,7 +1523,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected final boolean needsScores;
     protected final boolean expandNulls;
     private final MergeBoost boostDocs;
-    private int docBase = 0;
 
     protected AbstractBlockCollector(
         final String collapseField,
@@ -2372,10 +2392,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
     }
 
+    @Override
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
 
       int currentVal;
@@ -2447,10 +2469,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
     }
 
+    @Override
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
 
       int currentMinMax;
@@ -2524,10 +2548,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
 
+    @Override
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
 
       long currentVal;
@@ -2608,10 +2634,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       functionValues = this.valueSource.getValues(rcontext, context);
     }
 
+    @Override
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
 
       float score = 0;
@@ -2909,6 +2937,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -2920,6 +2949,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return 0;
     }
 
+    @Override
     public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
       final int currentVal = advanceAndGetCurrentVal(contextDoc);
 
@@ -2944,6 +2974,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
       assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
 
@@ -3000,6 +3031,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -3011,6 +3043,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return Float.intBitsToFloat(0);
     }
 
+    @Override
     public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
       final float currentVal = advanceAndGetCurrentVal(contextDoc);
 
@@ -3035,6 +3068,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
       assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
       final float currentVal = advanceAndGetCurrentVal(contextDoc);
@@ -3106,6 +3140,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext context) throws IOException {
       functionValues = this.valueSource.getValues(rcontext, context);
@@ -3119,6 +3154,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return 0F;
     }
 
+    @Override
     public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
 
       float score = computeScoreIfNeeded4Collapse();
@@ -3151,6 +3187,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
       assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
 
@@ -3231,6 +3268,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return needsScores4Collapsing ? scorer.score() : 0F;
     }
 
+    @Override
     public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
       float score = computeScoreIfNeeded4Collapse();
 
@@ -3262,6 +3300,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
       assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
 
@@ -3408,6 +3447,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       // Add the (collected) boosted docs to the collapsedSet
       boostedDocs.forEach(
           new IntProcedure() {
+            @Override
             public void apply(int globalDoc) {
               collapsedSet.set(globalDoc);
             }
@@ -3692,36 +3732,42 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   private static class MaxIntComp implements IntCompare {
+    @Override
     public boolean test(int i1, int i2) {
       return i1 > i2;
     }
   }
 
   private static class MinIntComp implements IntCompare {
+    @Override
     public boolean test(int i1, int i2) {
       return i1 < i2;
     }
   }
 
   private static class MaxFloatComp implements FloatCompare {
+    @Override
     public boolean test(float i1, float i2) {
       return i1 > i2;
     }
   }
 
   private static class MinFloatComp implements FloatCompare {
+    @Override
     public boolean test(float i1, float i2) {
       return i1 < i2;
     }
   }
 
   private static class MaxLongComp implements LongCompare {
+    @Override
     public boolean test(long i1, long i2) {
       return i1 > i2;
     }
   }
 
   private static class MinLongComp implements LongCompare {
+    @Override
     public boolean test(long i1, long i2) {
       return i1 < i2;
     }

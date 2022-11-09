@@ -334,7 +334,7 @@ class SolrCores {
       if (core == null) {
         core = getTransientCacheHandler().getCore(name);
       }
-      if (core != null && coreId != null && coreId != core.uniqueId) return null;
+      if (core != null && coreId != null && !coreId.equals(core.uniqueId)) return null;
 
       if (core != null && incRefCount) {
         core.open();

@@ -82,7 +82,7 @@ public class DOMConfigNode implements ConfigNode {
       Node item = nlst.item(i);
       if (item.getNodeType() != Node.ELEMENT_NODE) continue;
       Boolean toContinue = fun.apply(new DOMConfigNode(item));
-      if (Boolean.FALSE == toContinue) break;
+      if (Boolean.FALSE.equals(toContinue)) break;
     }
   }
 

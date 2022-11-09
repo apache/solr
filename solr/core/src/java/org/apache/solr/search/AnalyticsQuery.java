@@ -28,18 +28,22 @@ import org.apache.solr.request.SolrRequestInfo;
  */
 public abstract class AnalyticsQuery extends ExtendedQueryBase implements PostFilter {
 
+  @Override
   public boolean getCache() {
     return false;
   }
 
+  @Override
   public int getCost() {
     return Math.max(super.getCost(), 100);
   }
 
+  @Override
   public boolean equals(Object o) {
     return this == o;
   }
 
+  @Override
   public int hashCode() {
     return System.identityHashCode(this);
   }
@@ -58,6 +62,7 @@ public abstract class AnalyticsQuery extends ExtendedQueryBase implements PostFi
     rb.addMergeStrategy(mergeStrategy);
   }
 
+  @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     ResponseBuilder rb = null;

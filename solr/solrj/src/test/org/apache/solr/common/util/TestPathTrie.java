@@ -63,7 +63,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
 
     templateValues.clear();
     assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt", templateValues));
-    assertEquals(templateValues.get("*"), null);
+    assertNull(templateValues.get("*"));
 
     templateValues.clear();
     assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
@@ -75,6 +75,6 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals("a", pathTrie.lookup("/1/2/3/4", templateValues));
     assertEquals(templateValues.get("x"), "3");
     pathTrie.remove(PathTrie.getPathSegments("/1/2/3/4"));
-    assertEquals(null, pathTrie.lookup("/1/2/3/4", null));
+    assertNull(pathTrie.lookup("/1/2/3/4", null));
   }
 }

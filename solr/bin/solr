@@ -830,7 +830,7 @@ function run_package() {
     fi
   fi
 
-  run_tool package -solrUrl "$runningSolrUrl" $@
+  run_tool package -solrUrl "$runningSolrUrl" "$@"
   #exit $?
 }
 
@@ -876,7 +876,7 @@ function stop_solr() {
 
   STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
   if [[ "${STAT:-Z}" != "Z" ]]; then
-    if [ -n "{$JSTACK:-}" ]; then
+    if [ -n "${JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
       $JSTACK $SOLR_PID
     elif [ "$JATTACH" != "" ]; then
@@ -1433,12 +1433,12 @@ fi
 
 
 if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export $@
+  run_tool export "$@"
   exit $?
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_package $@
+  run_package "$@"
   exit $?
 fi
 
@@ -1574,7 +1574,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1987,11 +1987,6 @@ if [[ -n ${SOLR_DATA_HOME:-} ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
   echo -e "\nSolr data home directory $SOLR_DATA_HOME not found!\n"
   exit 1
 fi
-if $verbose ; then
-  q=""
-else
-  q="-q"
-fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)
 if [ -z ${GC_LOG_OPTS+x} ]; then
@@ -2186,6 +2181,11 @@ function start_solr() {
     SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
+  # If there are internal options set by Solr (users should not use this variable), add them to SOLR_OPTS
+  if [ -n "$SOLR_OPTS_INTERNAL" ]; then
+    SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
+  fi
+
   # If a heap dump directory is specified, enable it in SOLR_OPTS
   if [[ -z "${SOLR_HEAP_DUMP_DIR:-}" ]] && [[ "${SOLR_HEAP_DUMP:-}" == "true" ]]; then
     SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
@@ -2203,17 +2203,17 @@ function start_solr() {
     echo -e "    SOLR_HOST       = ${SOLR_HOST:-}"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
-    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
-    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
+    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[*]}"
+    echo -e "    GC_TUNE         = ${GC_TUNE[*]}"
+    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[*]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
+      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_OPTS:-}" ]; then
-      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
+      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_ADDL_ARGS:-}" ]; then
@@ -2222,7 +2222,7 @@ function start_solr() {
 
     if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
       echo -e "    RMI_PORT        = ${RMI_PORT:-}"
-      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
+      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_LOG_LEVEL:-}" ]; then
@@ -2230,6 +2230,7 @@ function start_solr() {
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
+      SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
     echo
@@ -2243,14 +2244,28 @@ function start_solr() {
     exit 1
   fi
 
+  # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+  if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
+    SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
+    echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
+  fi
+
+  # Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory, see https://issues.apache.org/jira/browse/SOLR-16500
+  if [[ "$JAVA_VER_NUM" -eq "19" ]] ; then
+    SOLR_OPTS+=("--enable-preview")
+    echo "Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500"
+  fi
+
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" ${SOLR_LOG_LEVEL_OPT:-} -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=${SOLR_DATA_HOME:-}" "-Dsolr.install.dir=$SOLR_TIP" \
+    # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+    # OOME is thrown. Program operation after OOME is unpredictable.
+    "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

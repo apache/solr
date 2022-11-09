@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
@@ -36,14 +36,13 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -105,6 +104,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -399,18 +399,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
 
     // check the value in properties are correct
-    Iterator<? extends Map.Entry<String, ?>> it = properties.iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, ?> entry = it.next();
+    for (Map.Entry<String, ?> entry : properties) {
       String newValue = newProps != null ? newProps.get(entry.getKey()) : null;
       String oldValue = oldProps != null ? oldProps.get(entry.getKey()) : null;
       if (newValue != null) {
-        assertTrue(newValue.equals(entry.getValue()));
+        assertEquals(newValue, entry.getValue());
       } else if (oldValue != null) {
-        assertTrue(oldValue.equals(entry.getValue()));
+        assertEquals(oldValue, entry.getValue());
       } else {
         // not in either
-        assert (false);
+        fail();
       }
     }
   }
@@ -1031,10 +1029,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathUntrusted-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+
     try (SolrZkClient zkClient =
         new SolrZkClient(
             cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
       // New file with trusted request
+
       assertEquals(
           0,
           uploadSingleConfigSetFile(
@@ -1274,7 +1274,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("uploaded without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1309,7 +1310,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("without any authentication in place");
 
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1364,24 +1366,22 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertTrue(
         "managed-schema.xml file should have been uploaded",
         zkClient.exists("/configs/" + configSetName + suffix + "/managed-schema.xml", true));
-    assertTrue(
+    assertArrayEquals(
         "managed-schema.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        Arrays.equals(
-            zkClient.getData(
-                "/configs/" + configSetName + suffix + "/managed-schema.xml", null, null, true),
-            readFile("solr/configsets/upload/" + configSetName + "/managed-schema.xml")));
+        zkClient.getData(
+            "/configs/" + configSetName + suffix + "/managed-schema.xml", null, null, true),
+        readFile("solr/configsets/upload/" + configSetName + "/managed-schema.xml"));
 
     assertTrue(
         "solrconfig.xml file should have been uploaded",
         zkClient.exists("/configs/" + configSetName + suffix + "/solrconfig.xml", true));
     byte data[] = zkClient.getData("/configs/" + configSetName + suffix, null, null, true);
     // assertEquals("{\"trusted\": false}", new String(data, StandardCharsets.UTF_8));
-    assertTrue(
+    assertArrayEquals(
         "solrconfig.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        Arrays.equals(
-            zkClient.getData(
-                "/configs/" + configSetName + suffix + "/solrconfig.xml", null, null, true),
-            readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml")));
+        zkClient.getData(
+            "/configs/" + configSetName + suffix + "/solrconfig.xml", null, null, true),
+        readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml"));
   }
 
   private long uploadConfigSet(
@@ -1456,7 +1456,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               username,
               usePut);
       assertNotNull(map);
-      return (long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
+      return (Long) getObjectByPath(map, Arrays.asList("responseHeader", "status"));
     } // else "not" a V2 request...
 
     try {
@@ -1556,7 +1556,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private static void zip(File directory, File zipfile) throws IOException {
     URI base = directory.toURI();
-    Deque<File> queue = new LinkedList<File>();
+    Deque<File> queue = new ArrayDeque<>();
     queue.push(directory);
     OutputStream out = new FileOutputStream(zipfile);
     ZipOutputStream zout = new ZipOutputStream(out);
@@ -1827,6 +1827,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {
+    @Override
     public ConfigSetAdminRequest<Create, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
       return super.setAction(action);
     }
@@ -1842,6 +1843,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   public static class DeleteNoErrorChecking extends ConfigSetAdminRequest.Delete {
+    @Override
     public ConfigSetAdminRequest<Delete, ConfigSetAdminResponse> setAction(ConfigSetAction action) {
       return super.setAction(action);
     }

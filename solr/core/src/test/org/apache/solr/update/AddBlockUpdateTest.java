@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,10 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -67,13 +67,12 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -96,8 +95,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -323,10 +320,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     SolrInputDocument exceptionChildDoc = (SolrInputDocument) document1.get("child1_s").getValue();
     addChildren("child", exceptionChildDoc, 0, false);
 
-    thrown.expect(SolrException.class);
-    final String expectedMessage = "Anonymous child docs can only hang from others or the root";
-    thrown.expectMessage(expectedMessage);
-    indexSolrInputDocumentsDirectly(document1);
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        containsString("Anonymous child docs can only hang from others or the root"));
   }
 
   @Test
@@ -430,56 +428,17 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     List<SolrInputDocument> docs = new ArrayList<>();
 
-    SolrInputDocument document1 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "X");
+    SolrInputDocument document1 = new SolrInputDocument("id", id(), "parent_s", "X");
+    List<SolrInputDocument> ch1 =
+        Arrays.asList(
+            new SolrInputDocument("id", id(), "child_s", "y"),
+            new SolrInputDocument("id", id(), "child_s", "z"));
+    Collections.shuffle(ch1, random());
+    document1.addChildDocuments(ch1);
 
-            ArrayList<SolrInputDocument> ch1 =
-                new ArrayList<>(
-                    Arrays.asList(
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "y");
-                          }
-                        },
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "z");
-                          }
-                        }));
-
-            Collections.shuffle(ch1, random());
-            addChildDocuments(ch1);
-          }
-        };
-
-    SolrInputDocument document2 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "A");
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "b");
-                  }
-                });
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "c");
-                  }
-                });
-          }
-        };
+    SolrInputDocument document2 = new SolrInputDocument("id", id(), "parent_s", "A");
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "b"));
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "c"));
 
     docs.add(document1);
     docs.add(document2);
@@ -757,13 +716,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f2", "v2");
 
     int childsNum = atLeast(10);
-    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for (int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
       child.addField("key", (i + 5) * atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
-      children.put(childKey, child);
     }
 
     ByteArrayOutputStream os = new ByteArrayOutputStream();

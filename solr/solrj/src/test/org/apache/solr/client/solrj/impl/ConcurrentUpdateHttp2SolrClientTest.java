@@ -98,20 +98,23 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       int expectedSuccesses = ConcurrentUpdateSolrClientTest.TestServlet.numReqsRcvd.get();
       assertTrue(expectedSuccesses > 0); // at least one request must have been sent
 
-      assertTrue(
+      assertEquals(
           "Expected no errors but got " + errorCounter.get() + ", due to: " + errors.toString(),
-          errorCounter.get() == 0);
-      assertTrue(
+          0,
+          errorCounter.get());
+      assertEquals(
           "Expected " + expectedSuccesses + " successes, but got " + successCounter.get(),
-          successCounter.get() == expectedSuccesses);
+          successCounter.get(),
+          expectedSuccesses);
 
       int expectedDocs = numDocs * numRunnables;
-      assertTrue(
+      assertEquals(
           "Expected CUSS to send "
               + expectedDocs
               + " but got "
               + ConcurrentUpdateSolrClientTest.TestServlet.numDocsRcvd.get(),
-          ConcurrentUpdateSolrClientTest.TestServlet.numDocsRcvd.get() == expectedDocs);
+          ConcurrentUpdateSolrClientTest.TestServlet.numDocsRcvd.get(),
+          expectedDocs);
     }
   }
 
@@ -256,6 +259,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
         this.errors = errors;
       }
 
+      @Override
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }

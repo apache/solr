@@ -17,10 +17,9 @@
 package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.LengthEvaluator;
@@ -30,7 +29,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
 public class LengthEvaluatorTest extends SolrTestCase {
-
   StreamFactory factory;
   Map<String, Object> values;
 
@@ -50,42 +48,22 @@ public class LengthEvaluatorTest extends SolrTestCase {
     Object result;
 
     values.clear();
-    values.put(
-        "a",
-        new ArrayList<Integer>() {
-          {
-            add(1);
-            add(2);
-            add(4);
-          }
-        });
+    values.put("a", List.of(1, 2, 4));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(3L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(3L, result);
 
     values.clear();
-    values.put(
-        "a",
-        new ArrayList<String>() {
-          {
-            add("a");
-            add("b");
-          }
-        });
+    values.put("a", List.of("a", "b"));
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(2L, result);
 
     values.clear();
-    values.put(
-        "a",
-        new ArrayList<String>() {
-          {
-          }
-        });
+    values.put("a", List.of());
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(0L, result);
   }
 
   @Test
@@ -95,8 +73,8 @@ public class LengthEvaluatorTest extends SolrTestCase {
 
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(3L, result);
+    assertTrue(result instanceof Long);
+    assertEquals(3L, result);
   }
 
   @Test(expected = IOException.class)

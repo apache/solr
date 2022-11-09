@@ -21,10 +21,12 @@ import static org.apache.solr.common.params.CommonParams.ROWS;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -71,7 +73,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   protected transient Map<String, Tuple> eofTuples;
   protected transient CloudSolrClient cloudSolrClient;
   protected transient List<TupleStream> solrStreams;
-  protected transient LinkedList<TupleWrapper> tuples;
+  protected transient Deque<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
 
   public DeepRandomStream() {
@@ -231,7 +233,10 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(
           mParams.getMap().entrySet().stream()
-              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .map(
+                  e ->
+                      String.format(
+                          Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
               .collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
@@ -261,18 +266,21 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     this.trace = trace;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public void open() throws IOException {
-    this.tuples = new LinkedList<>();
+    this.tuples = new ArrayDeque<>();
     this.solrStreams = new ArrayList<>();
     this.eofTuples = Collections.synchronizedMap(new HashMap<>());
     constructStreams();
     openStreams();
   }
 
+  @Override
   public List<TupleStream> children() {
     return solrStreams;
   }
@@ -341,6 +349,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (solrStreams != null) {
       for (TupleStream solrStream : solrStreams) {
@@ -350,10 +359,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
+  @Override
   public StreamComparator getStreamSort() {
     return comp;
   }
 
+  @Override
   public Tuple read() throws IOException {
     return _read();
   }
@@ -390,6 +401,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       this.comp = comp;
     }
 
+    @Override
     public int compareTo(TupleWrapper w) {
       if (this == w) {
         return 0;
@@ -438,6 +450,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       this.comp = comp;
     }
 
+    @Override
     public TupleWrapper call() throws Exception {
       stream.open();
       TupleWrapper wrapper = new TupleWrapper(stream, comp);

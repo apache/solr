@@ -43,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -236,15 +235,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         .cluster
         .getSolrClient()
         .request(CollectionAdminRequest.createCollection("test", 1, 1));
-    expectThrows(
-        SolrException.class,
-        () -> {
-          testHarness
-              .get()
-              .cluster
-              .getSolrClient()
-              .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
-        });
+    Exception e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              testHarness
+                  .get()
+                  .cluster
+                  .getSolrClient()
+                  .query("test", new MapSolrParams(Collections.singletonMap("q", "a(bc")));
+            });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(3);
     assertAuditEvent(events.get(0), COMPLETED, "/admin/cores");
     assertAuditEvent(events.get(1), COMPLETED, "/admin/collections");
@@ -391,7 +391,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
         assertEquals(status.intValue(), e.getStatus());
       }
       if (params != null && params.length > 0) {
-        List<String> p = new LinkedList<>(Arrays.asList(params));
+        List<String> p = new ArrayList<>(Arrays.asList(params));
         while (p.size() >= 2) {
           String val = e.getSolrParamAsString(p.get(0));
           assertEquals(p.get(1), val);
@@ -552,7 +552,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // code. This all goes back to MiniSolrCloudCluster.close, which really _can_ throw an
   // InterruptedException
   @SuppressWarnings({"try"})
-  private class CallbackReceiver implements Runnable, AutoCloseable {
+  private static class CallbackReceiver implements Runnable, AutoCloseable {
     private final ServerSocket serverSocket;
     private BlockingQueue<AuditEvent> queue = new LinkedBlockingDeque<>();
 
@@ -591,14 +591,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     @Override
     public void close() throws Exception {
       serverSocket.close();
-      assertEquals(
-          "Unexpected AuditEvents still in the queue",
-          Collections.emptyList(),
-          new LinkedList<>(queue));
+      assertTrue("Unexpected AuditEvents still in the queue", queue.isEmpty());
     }
 
     public List<AuditEvent> waitForAuditEvents(final int expected) throws InterruptedException {
-      final LinkedList<AuditEvent> results = new LinkedList<>();
+      final List<AuditEvent> results = new ArrayList<>();
       for (int i = 1; i <= expected; i++) { // NOTE: counting from 1 for error message readability
         final AuditEvent e = queue.poll(120, TimeUnit.SECONDS);
         if (null == e) {
@@ -620,7 +617,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   // code. This all goes back to MiniSolrCloudCluster.close, which really _can_ throw an
   // InterruptedException
   @SuppressWarnings({"try"})
-  private class AuditTestHarness implements AutoCloseable {
+  private static class AuditTestHarness implements AutoCloseable {
     CallbackReceiver receiver;
     int callbackPort;
     Thread receiverThread;

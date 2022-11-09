@@ -55,6 +55,7 @@ public class CosineDistanceEvaluator extends RecursiveEvaluator {
 
     private static final long serialVersionUID = -9108154600539125566L;
 
+    @Override
     public double compute(double[] v1, double[] v2) throws DimensionMismatchException {
       return Precision.round(1 - Math.abs(CosineSimilarityEvaluator.cosineSimilarity(v1, v2)), 8);
     }

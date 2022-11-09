@@ -72,6 +72,7 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     rightStreamComparator = createSideComparator(eq, rightStream.getStreamSort());
   }
 
+  @Override
   protected void validateTupleOrder() throws IOException {
     if (!isValidTupleOrder()) {
       throw new IOException(

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.DivideEvaluator;
@@ -48,22 +47,22 @@ public class DivideEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.0 / 2, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.0 / 2, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1 / 2, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1 / 2, result);
 
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(1.1 / 2.1, result);
+    assertTrue(result instanceof Double);
+    assertEquals(1.1 / 2.1, result);
   }
 
   @Test(expected = IOException.class)
@@ -130,8 +129,8 @@ public class DivideEvaluatorTest extends SolrTestCase {
     values.put("b", 2);
     values.put("c", 3);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals((1.0 / (2.0 / 3)), result);
+    assertTrue(result instanceof Double);
+    assertEquals((1.0 / (2.0 / 3)), result);
   }
 
   @Test(expected = IOException.class)
@@ -153,6 +152,6 @@ public class DivideEvaluatorTest extends SolrTestCase {
     values.put("a", 0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(0D, result);
+    assertEquals(0D, result);
   }
 }

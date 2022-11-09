@@ -20,11 +20,13 @@ package org.apache.solr.client.solrj.io.graph;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,7 +72,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private int maxDepth;
   private String zkHost;
   private String collection;
-  private LinkedList<Tuple> shortestPaths = new LinkedList<>();
+  private final Deque<Tuple> shortestPaths = new ArrayDeque<>();
   private boolean found;
   private StreamContext streamContext;
   private int threads;
@@ -314,22 +316,26 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     ModifiableSolrParams mParams = new ModifiableSolrParams(queryParams);
     child.setExpression(
         mParams.getMap().entrySet().stream()
-            .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+            .map(
+                e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
             .collect(Collectors.joining(",")));
     explanation.addChild(child);
 
     return explanation;
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
+  @Override
   public void open() throws IOException {
 
     List<Map<String, List<String>>> allVisited = new ArrayList<>();
@@ -422,22 +428,22 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     Set<String> finalPaths = new HashSet<>();
     if (targets.size() > 0) {
       for (Edge edge : targets) {
-        List<LinkedList<String>> paths = new ArrayList<>();
-        LinkedList<String> path = new LinkedList<>();
+        List<Deque<String>> paths = new ArrayList<>();
+        Deque<String> path = new ArrayDeque<>();
         path.addFirst(edge.to);
         paths.add(path);
         // Walk back up the tree a collect the parent nodes.
         INNER:
         for (int i = allVisited.size() - 1; i >= 0; --i) {
           Map<String, List<String>> v = allVisited.get(i);
-          Iterator<LinkedList<String>> it = paths.iterator();
-          List<LinkedList<String>> newPaths = new ArrayList<>();
+          Iterator<Deque<String>> it = paths.iterator();
+          List<Deque<String>> newPaths = new ArrayList<>();
           while (it.hasNext()) {
-            LinkedList<String> p = it.next();
+            Deque<String> p = it.next();
             List<String> parents = v.get(p.peekFirst());
             if (parents != null) {
               for (String parent : parents) {
-                LinkedList<String> newPath = new LinkedList<>(p);
+                Deque<String> newPath = new ArrayDeque<>(p);
                 newPath.addFirst(parent);
                 newPaths.add(newPath);
               }
@@ -446,7 +452,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
           }
         }
 
-        for (List<String> p : paths) {
+        for (Deque<String> p : paths) {
           String s = p.toString();
           if (!finalPaths.contains(s)) {
             Tuple shortestPath = new Tuple("path", p);
@@ -467,6 +473,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       this.nodes = nodes;
     }
 
+    @Override
     public List<Edge> call() {
 
       ModifiableSolrParams joinParams = new ModifiableSolrParams(queryParams);
@@ -476,7 +483,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
       joinParams.set("qt", "/export");
       joinParams.set(SORT, toField + " asc," + fromField + " asc");
 
-      StringBuffer nodeQuery = new StringBuffer();
+      StringBuilder nodeQuery = new StringBuilder();
 
       for (String node : nodes) {
         nodeQuery.append(node).append(" ");
@@ -540,10 +547,12 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     return false;
   }
 
+  @Override
   public void close() throws IOException {
     this.found = false;
   }
 
+  @Override
   public Tuple read() throws IOException {
     if (shortestPaths.size() > 0) {
       found = true;
@@ -558,6 +567,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

@@ -61,6 +61,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.retries.to.followers");
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
@@ -125,7 +126,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       // SolrQuery("*:*")).getResults().getNumFound();
 
       // Wait until new leader is elected
-      while (deadJetty == leaderJetty) {
+      while (deadJetty.equals(leaderJetty)) {
         updateMappingsFromZk(this.jettys, this.clients);
         leaderJetty = shardToLeaderJetty.get("shard1");
       }
@@ -190,13 +191,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Exception e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Exception e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Exception t) {

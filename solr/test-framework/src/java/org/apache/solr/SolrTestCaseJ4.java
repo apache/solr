@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -157,6 +158,7 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -202,9 +204,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static volatile ExecutorService testExecutor;
 
-  protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
+  protected void writeCoreProperties(Path coreDirectory, String coreName) throws IOException {
     Properties props = new Properties();
-    props.setProperty("name", corename);
+    props.setProperty("name", coreName);
     props.setProperty("configSet", "collection1");
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
@@ -232,7 +234,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        assertThat(thrown.getMessage(), containsString(expectedString));
+        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -1825,7 +1827,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public boolean equals(Object o) {
       if (!(o instanceof Doc)) return false;
       Doc other = (Doc) o;
-      return this == other || id != null && id.equals(other.id);
+      return this == other || Objects.equals(id, other.id);
     }
 
     @Override

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
@@ -46,20 +45,19 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
-    Object result;
 
     values.put("a", 1L);
     values.put("b", 3L);
     values.put("c", 2L);
 
-    result = evaluator.evaluate(new Tuple(values));
+    Object tempResult = evaluator.evaluate(new Tuple(values));
+    assertTrue(tempResult instanceof List<?>);
 
-    Assert.assertTrue(result instanceof List<?>);
-
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals(1D, ((List<?>) result).get(0));
-    Assert.assertEquals(2D, ((List<?>) result).get(1));
-    Assert.assertEquals(3D, ((List<?>) result).get(2));
+    List<?> result = (List<?>) tempResult;
+    assertEquals(3, result.size());
+    assertEquals(1D, result.get(0));
+    assertEquals(2D, result.get(1));
+    assertEquals(3D, result.get(2));
   }
 
   @Test
@@ -67,20 +65,19 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
-    Object result;
 
     values.put("a", 1L);
     values.put("b", 3L);
     values.put("c", 2L);
 
-    result = evaluator.evaluate(new Tuple(values));
+    Object tempResult = evaluator.evaluate(new Tuple(values));
+    assertTrue(tempResult instanceof List<?>);
 
-    Assert.assertTrue(result instanceof List<?>);
-
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals(3D, ((List<?>) result).get(0));
-    Assert.assertEquals(2D, ((List<?>) result).get(1));
-    Assert.assertEquals(1D, ((List<?>) result).get(2));
+    List<?> result = (List<?>) tempResult;
+    assertEquals(3, result.size());
+    assertEquals(3D, result.get(0));
+    assertEquals(2D, result.get(1));
+    assertEquals(1D, result.get(2));
   }
 
   @Test
@@ -88,20 +85,19 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
-    Object result;
 
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
 
-    result = evaluator.evaluate(new Tuple(values));
+    Object tempResult = evaluator.evaluate(new Tuple(values));
+    assertTrue(tempResult instanceof List<?>);
 
-    Assert.assertTrue(result instanceof List<?>);
-
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("a", ((List<?>) result).get(0));
-    Assert.assertEquals("b", ((List<?>) result).get(1));
-    Assert.assertEquals("c", ((List<?>) result).get(2));
+    List<?> result = (List<?>) tempResult;
+    assertEquals(3, result.size());
+    assertEquals("a", result.get(0));
+    assertEquals("b", result.get(1));
+    assertEquals("c", result.get(2));
   }
 
   @Test
@@ -109,20 +105,19 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
-    Object result;
 
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
 
-    result = evaluator.evaluate(new Tuple(values));
+    Object tempResult = evaluator.evaluate(new Tuple(values));
+    assertTrue(tempResult instanceof List<?>);
 
-    Assert.assertTrue(result instanceof List<?>);
-
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("c", ((List<?>) result).get(0));
-    Assert.assertEquals("b", ((List<?>) result).get(1));
-    Assert.assertEquals("a", ((List<?>) result).get(2));
+    List<?> result = (List<?>) tempResult;
+    assertEquals(3, result.size());
+    assertEquals("c", result.get(0));
+    assertEquals("b", result.get(1));
+    assertEquals("a", result.get(2));
   }
 
   @Test
@@ -130,19 +125,18 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
-    Object result;
 
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
 
-    result = evaluator.evaluate(new Tuple(values));
+    Object tempResult = evaluator.evaluate(new Tuple(values));
+    assertTrue(tempResult instanceof List<?>);
 
-    Assert.assertTrue(result instanceof List<?>);
-
-    Assert.assertEquals(3, ((List<?>) result).size());
-    Assert.assertEquals("a", ((List<?>) result).get(0));
-    Assert.assertEquals("c", ((List<?>) result).get(1));
-    Assert.assertEquals("b", ((List<?>) result).get(2));
+    List<?> result = (List<?>) tempResult;
+    assertEquals(3, result.size());
+    assertEquals("a", result.get(0));
+    assertEquals("c", result.get(1));
+    assertEquals("b", result.get(2));
   }
 }

@@ -313,7 +313,7 @@ public abstract class FacetProcessor<T extends FacetRequest> {
   protected void processStats(
       SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount)
       throws IOException {
-    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
+    if ((docCount == 0 && !freq.processEmpty) || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }

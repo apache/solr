@@ -45,6 +45,7 @@ public class DriverImpl implements Driver {
     }
   }
 
+  @Override
   public Connection connect(String url, Properties props) throws SQLException {
     if (!acceptsURL(url)) {
       return null;
@@ -56,7 +57,7 @@ public class DriverImpl implements Driver {
 
     if (!props.containsKey("collection")) {
       throw new SQLException(
-          "The connection url has no connection properties. At a mininum the collection must be specified.");
+          "The connection url has no connection properties. At a minimum the collection must be specified.");
     }
     String collection = (String) props.remove("collection");
 
@@ -76,27 +77,33 @@ public class DriverImpl implements Driver {
     return connect(url, new Properties());
   }
 
+  @Override
   public int getMajorVersion() {
     return 1;
   }
 
+  @Override
   public int getMinorVersion() {
     return 0;
   }
 
+  @Override
   public boolean acceptsURL(String url) {
     return url != null && url.startsWith("jdbc:solr");
   }
 
+  @Override
   public boolean jdbcCompliant() {
     return false;
   }
 
+  @Override
   @SuppressForbidden(reason = "Required by jdbc")
   public Logger getParentLogger() {
     return null;
   }
 
+  @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
     return null;
   }

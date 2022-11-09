@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+}
+
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
@@ -31,6 +35,12 @@ configurations {
   }
 }
 
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file("build/generated/openapi")
+  prettyPrint = true
+}
+
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
@@ -42,6 +52,8 @@ dependencies {
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
+
+  implementation 'io.swagger.core.v3:swagger-annotations'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -80,6 +92,18 @@ dependencies {
   implementation 'org.eclipse.jetty.http2:http2-server'
 
   implementation 'javax.servlet:javax.servlet-api'
+
+  implementation "org.glassfish.jersey.containers:jersey-container-jetty-http"
+  permitUnusedDeclared "org.glassfish.jersey.containers:jersey-container-jetty-http"
+  implementation 'org.glassfish.jersey.inject:jersey-hk2'
+  permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
+  implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  implementation 'org.glassfish.jersey.core:jersey-common'
+  implementation 'org.glassfish.jersey.core:jersey-server'
+  implementation 'org.glassfish.hk2:hk2-api'
+  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
 
   // Non-API below; although there are exceptions
 
@@ -141,7 +165,7 @@ dependencies {
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
   // For Package Manager
-  implementation 'com.github.zafarkhaja:java-semver'
+  implementation 'org.semver4j:semver4j'
 
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
@@ -158,8 +182,6 @@ dependencies {
 
   implementation 'org.apache.commons:commons-exec'
 
-  implementation 'org.apache.commons:commons-text'
-
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
@@ -167,6 +189,9 @@ dependencies {
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
+  compileOnly 'org.osgi:osgi.annotation'
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
@@ -182,6 +207,11 @@ dependencies {
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
+
+  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
+  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+  permitTestUnusedDeclared 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

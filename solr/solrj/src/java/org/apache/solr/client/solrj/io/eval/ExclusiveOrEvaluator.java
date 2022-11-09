@@ -40,6 +40,7 @@ public class ExclusiveOrEvaluator extends RecursiveBooleanEvaluator implements M
     }
   }
 
+  @Override
   public Object doWork(Object... values) throws IOException {
     if (values.length < 2) {
       String message = null;

@@ -137,7 +137,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
+                "Invalid expression - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",
                 hasher));
       }
     }
@@ -207,11 +207,13 @@ public class HashJoinStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory, false).toString());
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.hashStream.setStreamContext(context);
     this.fullStream.setStreamContext(context);
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> l = new ArrayList<>();
     l.add(hashStream);
@@ -219,6 +221,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @Override
   public void open() throws IOException {
     hashStream.open();
     fullStream.open();
@@ -253,11 +256,13 @@ public class HashJoinStream extends TupleStream implements Expressible {
     return sb.toString();
   }
 
+  @Override
   public void close() throws IOException {
     hashStream.close();
     fullStream.close();
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     findNextWorkingFullTuple:
@@ -305,6 +310,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
     return fullStream.getStreamSort();
   }
 
+  @Override
   public int getCost() {
     return 0;
   }

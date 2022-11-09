@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
@@ -32,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -85,7 +85,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -161,7 +161,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -194,7 +194,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -291,15 +291,17 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testSanityCheckDomainMethods() {
     {
       final JoinDomain empty = new JoinDomain(null, null, null);
-      assertEquals(null, empty.toJSONFacetParamValue());
+      assertNull(empty.toJSONFacetParamValue());
       final SolrParams out = empty.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("qqq", out.get("q"));
     }
     {
       final JoinDomain join = new JoinDomain("xxx", "yyy", null);
-      assertEquals("domain:{join:{from:xxx,to:yyy}}", join.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{join:{from:xxx,to:yyy}}",
+          Objects.requireNonNull(join.toJSONFacetParamValue()).toString());
       final SolrParams out = join.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -307,16 +309,19 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
     {
       final JoinDomain filter = new JoinDomain(null, null, "zzz");
-      assertEquals("domain:{filter:'zzz'}", filter.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{filter:'zzz'}",
+          Objects.requireNonNull(filter.toJSONFacetParamValue()).toString());
       final SolrParams out = filter.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("zzz AND qqq", out.get("q"));
     }
     {
       final JoinDomain both = new JoinDomain("xxx", "yyy", "zzz");
       assertEquals(
-          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}", both.toJSONFacetParamValue().toString());
+          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}",
+          Objects.requireNonNull(both.toJSONFacetParamValue()).toString());
       final SolrParams out = both.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -730,7 +735,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     public TermFacet(
         String field, JoinDomain domain, Integer limit, Integer overrequest, Boolean refine) {
-      assert null != field;
+      assertNotNull(field);
       this.field = field;
       this.domain = domain;
       this.limit = limit;
@@ -794,8 +799,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static CharSequence toJSONFacetParamValue(Map<String, TermFacet> facets) {
-      assert null != facets;
-      assert 0 < facets.size();
+      assertNotNull(facets);
+      assertTrue(0 < facets.size());
       StringBuilder sb = new StringBuilder("{");
       for (String key : facets.keySet()) {
         sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
@@ -926,7 +931,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       Map<String, TermFacet> results = new LinkedHashMap<>();
       for (int i = 0; i < numFacets; i++) {
         final JoinDomain domain = JoinDomain.buildRandomDomain();
-        assert null != domain;
         final Integer limit = randomLimitParam(random());
         final Integer overrequest = randomOverrequestParam(random());
         final TermFacet facet =
@@ -962,7 +966,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * @param filter filter to apply to domain, null if domain involves no filtering
      */
     public JoinDomain(String from, String to, String filter) {
-      assert !((null == from) ^ (null == to)) : "if from is null, to must be null";
+      assertEquals("if from is null, to must be null", (null == from), (null == to));
       this.from = from;
       this.to = to;
       this.filter = filter;
@@ -978,7 +982,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       }
       StringBuilder sb = new StringBuilder("domain:{");
       if (null != from) {
-        assert null != to;
+        assertNotNull(to);
         sb.append("join:{from:").append(from).append(",to:").append(to).append("}");
         if (null != filter) {
           sb.append(",");
@@ -997,8 +1001,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * facet
      */
     public SolrParams applyDomainToQuery(String safeKey, SolrParams in) {
-      assert null
-          == in.get(safeKey); // shouldn't be possible if every facet uses a unique key string
+      // shouldn't be possible if every facet uses a unique key string
+      assertNull(in.get(safeKey));
 
       String q = in.get("q");
       final ModifiableSolrParams out = new ModifiableSolrParams(in);
@@ -1060,7 +1064,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

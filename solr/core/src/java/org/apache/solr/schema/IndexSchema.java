@@ -640,7 +640,7 @@ public class IndexSchema {
         }
 
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
-        if (Boolean.FALSE != explicitRequiredProp.get(uniqueKeyFieldName)) {
+        if (!Boolean.FALSE.equals(explicitRequiredProp.get(uniqueKeyFieldName))) {
           uniqueKeyField.required = true;
           requiredFields.add(uniqueKeyField);
         }
@@ -1148,14 +1148,17 @@ public class IndexSchema {
           super(regex, regex.substring(0, regex.length() - 1));
         }
 
+        @Override
         boolean matches(String name) {
           return name.startsWith(fixedStr);
         }
 
+        @Override
         String remainder(String name) {
           return name.substring(fixedStr.length());
         }
 
+        @Override
         String subst(String replacement) {
           return fixedStr + replacement;
         }
@@ -1166,14 +1169,17 @@ public class IndexSchema {
           super(regex, regex.substring(1));
         }
 
+        @Override
         boolean matches(String name) {
           return name.endsWith(fixedStr);
         }
 
+        @Override
         String remainder(String name) {
           return name.substring(0, name.length() - fixedStr.length());
         }
 
+        @Override
         String subst(String replacement) {
           return replacement + fixedStr;
         }
@@ -1184,14 +1190,17 @@ public class IndexSchema {
           super(regex, regex);
         }
 
+        @Override
         boolean matches(String name) {
           return regex.equals(name);
         }
 
+        @Override
         String remainder(String name) {
           return "";
         }
 
+        @Override
         String subst(String replacement) {
           return fixedStr;
         }
@@ -1555,6 +1564,7 @@ public class IndexSchema {
     private Set<String> requestedSourceFields;
     private Set<String> requestedDestinationFields;
 
+    @SuppressWarnings("ImmutableEnumChecker")
     public enum Handler {
       NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
@@ -1678,11 +1688,10 @@ public class IndexSchema {
   }
 
   public static Map<String, String> nameMapping =
-      Collections.unmodifiableMap(
-          Stream.of(SchemaProps.Handler.values())
-              .collect(
-                  Collectors.toMap(
-                      SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName)));
+      Stream.of(SchemaProps.Handler.values())
+          .collect(
+              Collectors.toUnmodifiableMap(
+                  SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
     return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
@@ -1708,8 +1717,7 @@ public class IndexSchema {
     SortedMap<String, List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
       copyFields = new ArrayList<>(copyFields);
-      Collections.sort(
-          copyFields,
+      copyFields.sort(
           (cf1, cf2) -> {
             // sources are all the same, just sorting by destination here
             return cf1.getDestination().getName().compareTo(cf2.getDestination().getName());
