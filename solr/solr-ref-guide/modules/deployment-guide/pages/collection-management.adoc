@@ -535,8 +535,14 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
-
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
+  {
+    "to": "new_name"
+  }
+'
+----
 ====
 --
 
@@ -552,7 +558,7 @@ s|Required |Default: none
 +
 Name of the existing SolrCloud collection or an alias that refers to exactly one collection and is not a Routed Alias.
 
-`target`::
+`target` (v1), `to` (v2)::
 +
 [%autowidth,frame=none]
 |===

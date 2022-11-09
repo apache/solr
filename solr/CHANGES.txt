@@ -47,6 +47,8 @@ Improvements
 * SOLR-11028: A v2 equivalent of the `/admin/collections?action= REPLACE` command is now available at
   `POST /api/cluster/nodes/nodeName/replace`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
