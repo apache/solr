@@ -22,7 +22,6 @@ io.dropwizard.metrics:*=4.1.5
 io.grpc:grpc-*=1.50.2
 io.jaegertracing:*=1.8.1
 io.netty:*=4.1.82.Final
-io.opentelemetry:opentelemetry-bom=1.19.0
 io.opentelemetry:opentelemetry-bom-alpha=1.19.0-alpha
 io.opentracing:*=0.33.0
 io.prometheus:*=0.2.0
