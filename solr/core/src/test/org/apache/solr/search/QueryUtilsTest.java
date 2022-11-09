@@ -32,6 +32,7 @@ import org.junit.Test;
 public class QueryUtilsTest extends SolrTestCaseJ4 {
 
   @Test
+  @SuppressWarnings("ReferenceEquality")
   public void testGetTaggedQueries() throws Exception {
     try {
       initCore("solrconfig.xml", "schema.xml");
