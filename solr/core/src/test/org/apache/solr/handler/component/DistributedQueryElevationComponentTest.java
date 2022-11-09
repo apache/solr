@@ -21,6 +21,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -166,9 +167,9 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = ((HttpSolrClient) clients.get(0)).getBaseURL();
+    final String clientUrl = jettys.get(0).getBaseUrl() + "/" + "collection1";
     try (SolrClient client =
-        new HttpSolrClient.Builder(clientUrl)
+        new Http2SolrClient.Builder(clientUrl)
             .withResponseParser(new BinaryResponseParser())
             .build(); ) {
       SolrQuery solrQuery =
