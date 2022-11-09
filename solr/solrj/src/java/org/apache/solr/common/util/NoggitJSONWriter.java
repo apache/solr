@@ -18,6 +18,7 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
+import java.util.function.BiConsumer;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.noggit.CharArr;
@@ -31,67 +32,57 @@ public class NoggitJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void write(Object o) {
+  public void handleUnknownClass(Object o) {
+    // avoid materializing MapWriter / IteratorWriter to Map / List
+    // instead serialize them directly
     if (o instanceof MapWriter) {
       MapWriter mapWriter = (MapWriter) o;
       startObject();
-      try {
-        mapWriter.writeMap(entryWriter());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+
+      mapWriter._forEachEntry(
+          new BiConsumer() {
+            boolean first = true;
+
+            @Override
+            public void accept(Object k, Object v) {
+              if (first) {
+                first = false;
+              } else {
+                writeValueSeparator();
+              }
+              indent();
+              writeString(k.toString());
+              writeNameSeparator();
+              write(v);
+            }
+          });
       endObject();
     } else if (o instanceof IteratorWriter) {
       IteratorWriter iteratorWriter = (IteratorWriter) o;
       startArray();
       try {
-        iteratorWriter.writeIter(itemWriter());
+        iteratorWriter.writeIter(
+            new IteratorWriter.ItemWriter() {
+              boolean first = true;
+
+              @Override
+              public IteratorWriter.ItemWriter add(Object o) {
+                if (first) {
+                  first = false;
+                } else {
+                  writeValueSeparator();
+                }
+                indent();
+                write(o);
+                return this;
+              }
+            });
       } catch (IOException e) {
         throw new RuntimeException("this should never happen", e);
       }
       endArray();
-    } else if (o instanceof MapWriter.StringValue) {
-      super.write(o.toString());
     } else {
-      super.write(o);
+      super.handleUnknownClass(o);
     }
-  }
-
-  private IteratorWriter.ItemWriter itemWriter() {
-    return new IteratorWriter.ItemWriter() {
-      private boolean first = true;
-
-      @Override
-      public IteratorWriter.ItemWriter add(Object o) {
-        if (first) {
-          first = false;
-        } else {
-          writeValueSeparator();
-        }
-        indent();
-        write(o);
-        return this;
-      }
-    };
-  }
-
-  private MapWriter.EntryWriter entryWriter() {
-    return new MapWriter.EntryWriter() {
-      private boolean first = true;
-
-      @Override
-      public MapWriter.EntryWriter put(CharSequence k, Object v) {
-        if (first) {
-          first = false;
-        } else {
-          writeValueSeparator();
-        }
-        indent();
-        writeString(k.toString());
-        writeNameSeparator();
-        write(v);
-        return this;
-      }
-    };
   }
 }
