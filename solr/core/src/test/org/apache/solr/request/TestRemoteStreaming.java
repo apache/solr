@@ -78,9 +78,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     String streamUrl = getServerUrl() + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-            getServerUrl()
-            + "/debug/dump?wt=xml&stream.url="
-            + URLEncoder.encode(streamUrl, "UTF-8");
+        getServerUrl() + "/debug/dump?wt=xml&stream.url=" + URLEncoder.encode(streamUrl, "UTF-8");
     String content = getUrlForString(getUrl);
     assertTrue(content.contains("1234"));
   }

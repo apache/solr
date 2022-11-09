@@ -22,7 +22,10 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.BeforeClass;
 
-/** A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the binary codec for communication. */
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the binary codec for
+ * communication.
+ */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryTest extends SolrExampleTests {
   @BeforeClass
