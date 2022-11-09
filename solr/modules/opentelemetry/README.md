@@ -8,7 +8,8 @@ and exposes a tracer configurator that can be enabled in the
 `<tracerConfig>` tag of `solr.xml`:
 
 ```xml
-<tracerConfig name="tracerConfig" class="org.apache.solr.otel.OtelTracerConfigurator" />
+
+<tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
 ```
 
 The tracer can be configured with environment variables, see https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/ and users can change both the exprter, trace propagator and many other settings.

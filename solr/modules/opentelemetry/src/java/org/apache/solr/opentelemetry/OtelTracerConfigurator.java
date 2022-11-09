@@ -1,4 +1,4 @@
-package org.apache.solr.otel;
+package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
