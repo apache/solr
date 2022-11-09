@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -599,63 +600,40 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     Random random = random();
     int numIterations = atLeast(3);
 
-    SolrClient client = getSolrClient();
+    try (SolrClient client = getSolrClient()) {
 
-    // save the old parser, so we can set it back.
-    // ResponseParser oldParser = null;
-    // if (client instanceof HttpSolrClient) {
-    //  HttpSolrClient httpSolrClient = (HttpSolrClient) client;
-    //  oldParser = httpSolrClient.getParser();
-    // }
+      for (int iteration = 0; iteration < numIterations; iteration++) {
 
-    // try {
-    for (int iteration = 0; iteration < numIterations; iteration++) {
-      // choose format
-      // Eric: I don't think we need this as the SolrExampleXMLTest uses an XML parser, and the
-      // SolrExampleBinaryTest uses the BinaryResponseParser...
-      // if (client instanceof HttpSolrClient) {
-      //  if (random.nextBoolean()) {
-      //    ((HttpSolrClient) client).setParser(new BinaryResponseParser());
-      //  } else {
-      //    ((HttpSolrClient) client).setParser(new XMLResponseParser());
-      //  }
-      /// }
+        int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
 
-      int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
+        // Empty the database...
+        client.deleteByQuery("*:*"); // delete everything!
 
-      // Empty the database...
-      client.deleteByQuery("*:*"); // delete everything!
+        List<SolrInputDocument> docs = new ArrayList<>();
+        for (int i = 0; i < numDocs; i++) {
+          // Now add something...
+          SolrInputDocument doc = new SolrInputDocument();
+          doc.addField("id", "" + i);
+          doc.addField("unicode_s", randomTestString(30));
+          docs.add(doc);
+        }
 
-      List<SolrInputDocument> docs = new ArrayList<>();
-      for (int i = 0; i < numDocs; i++) {
-        // Now add something...
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", "" + i);
-        doc.addField("unicode_s", randomTestString(30));
-        docs.add(doc);
-      }
+        client.add(docs);
+        client.commit();
 
-      client.add(docs);
-      client.commit();
+        SolrQuery query = new SolrQuery();
+        query.setQuery("*:*");
+        query.setRows(numDocs);
 
-      SolrQuery query = new SolrQuery();
-      query.setQuery("*:*");
-      query.setRows(numDocs);
+        QueryResponse rsp = client.query(query);
 
-      QueryResponse rsp = client.query(query);
-
-      for (int i = 0; i < numDocs; i++) {
-        String expected = (String) docs.get(i).getFieldValue("unicode_s");
-        String actual = (String) rsp.getResults().get(i).getFieldValue("unicode_s");
-        assertEquals(expected, actual);
+        for (int i = 0; i < numDocs; i++) {
+          String expected = (String) docs.get(i).getFieldValue("unicode_s");
+          String actual = (String) rsp.getResults().get(i).getFieldValue("unicode_s");
+          assertEquals(expected, actual);
+        }
       }
     }
-    // } finally {
-    // if (oldParser != null) {
-    // set the old parser back
-    // ((HttpSolrClient) client).setParser(oldParser);
-    // }
-    // }
   }
 
   @Test
