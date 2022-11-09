@@ -24,10 +24,8 @@ dependencies {
 
   // TODO: Prune down dependencies to the absolute necessary
 
-  implementation platform('io.opentelemetry:opentelemetry-bom')
   implementation platform('io.opentelemetry:opentelemetry-bom-alpha')
 
-//  implementation 'io.opentelemetry:opentelemetry-sdk-common'
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
