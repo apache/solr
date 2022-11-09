@@ -83,6 +83,14 @@ public interface MapWriter extends MapSerializable, NavigableObject {
 
   void writeMap(EntryWriter ew) throws IOException;
 
+  default MapWriter append(MapWriter another) {
+    MapWriter m = this;
+    return ew -> {
+      m.writeMap(ew);
+      another.writeMap(ew);
+    };
+  }
+
   /**
    * An interface to push one entry at a time to the output. The order of the keys is not defined,
    * but we assume they are distinct -- don't call {@code put} more than once for the same key.

@@ -309,10 +309,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  public void offer(MapWriter mw) throws KeeperException, InterruptedException {
-    offer(Utils.toJSON(mw));
-  }
-
   /**
    * Inserts data into queue. If there are no other queue consumers, the offered element will be
    * immediately visible when this method returns.
