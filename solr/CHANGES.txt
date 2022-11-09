@@ -62,9 +62,12 @@ Improvements
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
+* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
+
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
 
 Bug Fixes
 ---------------------
@@ -88,8 +91,6 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
-* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
-
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -112,6 +113,8 @@ Other Changes
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
+
+* SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
 
 ==================  9.1.0 ==================
 
@@ -285,6 +288,10 @@ Bug Fixes
 * SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
 
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
+* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
 
 Other Changes
 ---------------------

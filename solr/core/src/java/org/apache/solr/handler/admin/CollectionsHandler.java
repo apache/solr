@@ -219,6 +219,7 @@ import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.RenameCollectionAPI;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
@@ -2095,6 +2096,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SetCollectionPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;
   }
 
