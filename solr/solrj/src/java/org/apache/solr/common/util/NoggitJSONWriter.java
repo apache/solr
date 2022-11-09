@@ -32,6 +32,7 @@ public class NoggitJSONWriter extends JSONWriter {
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public void handleUnknownClass(Object o) {
     // avoid materializing MapWriter / IteratorWriter to Map / List
     // instead serialize them directly
