@@ -125,6 +125,8 @@ Other Changes
 
 * SOLR-16541: Eliminate the 'numShards' system property (noble)
 
+* SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
+
 ==================  9.1.0 ==================
 
 New Features
