@@ -64,32 +64,32 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Can't delete an ACTIVE shard
     expectThrows(
         Exception.class,
-        () -> CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient()));
+        () ->
+            CollectionAdminRequest.deleteShard(collection, "shard1")
+                .process(cluster.getSolrClient()));
 
     setSliceState(collection, "shard1", Slice.State.INACTIVE);
 
     // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
     waitForState(
-        "Expected 'shard1' to be removed",
-        collection,
-        (n, c) -> c.getSlice("shard1") == null);
+        "Expected 'shard1' to be removed", collection, (n, c) -> c.getSlice("shard1") == null);
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
     waitForState(
-        "Expected 'shard2' to be removed",
-        collection,
-        (n, c) -> c.getSlice("shard2") == null);
+        "Expected 'shard2' to be removed", collection, (n, c) -> c.getSlice("shard2") == null);
   }
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {
 
     // TODO can this be encapsulated better somewhere?
-    MapWriter m = ew -> ew.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower())
-            .put(slice, state.toString())
-            .put(ZkStateReader.COLLECTION_PROP, collection);
+    MapWriter m =
+        ew ->
+            ew.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower())
+                .put(slice, state.toString())
+                .put(ZkStateReader.COLLECTION_PROP, collection);
     final Overseer overseer = cluster.getOpenOverseer();
     if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       overseer
@@ -139,10 +139,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Delete shard 'a'
     CollectionAdminRequest.deleteShard(collection, "a").process(cluster.getSolrClient());
 
-    waitForState(
-        "Expected 'a' to be removed",
-        collection,
-        (n, c) -> c.getSlice("a") == null);
+    waitForState("Expected 'a' to be removed", collection, (n, c) -> c.getSlice("a") == null);
 
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
     assertFalse(
@@ -158,10 +155,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
         .setDeleteInstanceDir(false)
         .process(cluster.getSolrClient());
 
-    waitForState(
-        "Expected 'b' to be removed",
-        collection,
-        (n, c) -> c.getSlice("b") == null);
+    waitForState("Expected 'b' to be removed", collection, (n, c) -> c.getSlice("b") == null);
 
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
     assertTrue(

@@ -1220,8 +1220,9 @@ public class Overseer implements SolrCloseable {
    */
   public void sendQuitToOverseer(String overseerId) throws KeeperException, InterruptedException {
     getOverseerQuitNotificationQueue()
-        .offer(ew -> ew.put(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())
-                .put(ID, overseerId));
-
+        .offer(
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())
+                    .put(ID, overseerId));
   }
 }

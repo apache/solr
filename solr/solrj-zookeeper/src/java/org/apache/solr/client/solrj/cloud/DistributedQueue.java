@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.cloud;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Predicate;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;

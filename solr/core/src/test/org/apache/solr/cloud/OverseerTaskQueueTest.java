@@ -47,11 +47,13 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
 
     // Basic ops
     // Put an expected Overseer task onto the queue
-    MapWriter props = ew -> ew.put(CommonParams.NAME, "coll1")
-            .put(CollectionAdminParams.COLL_CONF, "myconf")
-            .put(CollectionHandlingUtils.NUM_SLICES, 1)
-            .put(ZkStateReader.REPLICATION_FACTOR, 3)
-            .put(CommonAdminParams.ASYNC, requestId);
+    MapWriter props =
+        ew ->
+            ew.put(CommonParams.NAME, "coll1")
+                .put(CollectionAdminParams.COLL_CONF, "myconf")
+                .put(CollectionHandlingUtils.NUM_SLICES, 1)
+                .put(ZkStateReader.REPLICATION_FACTOR, 3)
+                .put(CommonAdminParams.ASYNC, requestId);
     tq.offer(props);
 
     assertTrue(
@@ -71,8 +73,8 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     String watchID = tq.createResponseNode();
     String requestId2 = "baz";
 
-    tq.createRequestNode(Utils.toJSON(props.append(ew -> ew.put(CommonAdminParams.ASYNC, requestId2))),
-            watchID);
+    tq.createRequestNode(
+        Utils.toJSON(props.append(ew -> ew.put(CommonAdminParams.ASYNC, requestId2))), watchID);
 
     // Set a SolrResponse as the response node by removing the QueueEvent, as done in
     // OverseerTaskProcessor

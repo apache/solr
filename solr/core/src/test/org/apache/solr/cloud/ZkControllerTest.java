@@ -285,12 +285,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
         }
 
-        MapWriter propMap = ew -> ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
-                .put(COLLECTION_PROP, collectionName)
-                .put(SHARD_ID_PROP, "shard1")
-                .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:1_")
-                .put(ZkStateReader.CORE_NAME_PROP, collectionName)
-                .put(ZkStateReader.STATE_PROP, "active");
+        MapWriter propMap =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
+                    .put(COLLECTION_PROP, collectionName)
+                    .put(SHARD_ID_PROP, "shard1")
+                    .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:1_")
+                    .put(ZkStateReader.CORE_NAME_PROP, collectionName)
+                    .put(ZkStateReader.STATE_PROP, "active");
 
         if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           zkController
@@ -304,12 +306,14 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(propMap);
         }
 
-        propMap = ew -> ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
-                .put(COLLECTION_PROP, collectionName)
-                .put(SHARD_ID_PROP, "shard1")
-                .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:2_")
-                .put(ZkStateReader.CORE_NAME_PROP, collectionName)
-                .put(ZkStateReader.STATE_PROP, "down");
+        propMap =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
+                    .put(COLLECTION_PROP, collectionName)
+                    .put(SHARD_ID_PROP, "shard1")
+                    .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:2_")
+                    .put(ZkStateReader.CORE_NAME_PROP, collectionName)
+                    .put(ZkStateReader.STATE_PROP, "down");
         if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           zkController
               .getDistributedClusterStateUpdater()
