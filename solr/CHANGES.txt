@@ -64,6 +64,8 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
+* SOLR-16528: Jaegertracer module must include okhttp3 dependency (janhoy)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
