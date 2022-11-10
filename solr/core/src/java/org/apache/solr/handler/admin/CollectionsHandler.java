@@ -97,6 +97,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SYNCSHARD;
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
@@ -219,6 +221,7 @@ import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
+import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
@@ -1792,14 +1795,18 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     REPLACENODE_OP(
         REPLACENODE,
         (req, rsp, h) -> {
-          return copy(
-              req.getParams(),
-              null,
-              "source", // legacy
-              "target", // legacy
-              WAIT_FOR_FINAL_STATE,
-              CollectionParams.SOURCE_NODE,
-              CollectionParams.TARGET_NODE);
+          final SolrParams params = req.getParams();
+          final RequiredSolrParams requiredParams = req.getParams().required();
+          final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
+              new ReplaceNodeAPI.ReplaceNodeRequestBody();
+          requestBody.targetNodeName = params.get(TARGET_NODE);
+          requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+          requestBody.async = params.get(ASYNC);
+          final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse replaceNodeResponse =
+              replaceNodeAPI.replaceNode(requiredParams.get(SOURCE_NODE), requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
+          return null;
         }),
     MOVEREPLICA_OP(
         MOVEREPLICA,
@@ -1811,7 +1818,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               map,
               CollectionParams.FROM_NODE,
               CollectionParams.SOURCE_NODE,
-              CollectionParams.TARGET_NODE,
+              TARGET_NODE,
               WAIT_FOR_FINAL_STATE,
               IN_PLACE_MOVE,
               "replica",
@@ -2071,7 +2078,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(AddReplicaPropertyAPI.class);
+    return List.of(AddReplicaPropertyAPI.class, ReplaceNodeAPI.class);
   }
 
   @Override
