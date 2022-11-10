@@ -90,7 +90,6 @@ public class DeleteReplicaPropertyAPI extends AdminAPIBase {
       throw remoteResponse.getException();
     }
 
-    disableResponseCaching();
     return response;
   }
 
