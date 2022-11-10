@@ -12,6 +12,8 @@ New Features
 
 * SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
 
+* SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
+
 Improvements
 ---------------------
 
