@@ -1699,10 +1699,6 @@ public class ZkController implements Closeable {
       log.debug("publishing state={}", state);
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
-      if (numShards == null) { // XXX sys prop hack
-        log.debug("numShards not found on descriptor - reading it from system property");
-        numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
-      }
 
       assert collection != null && collection.length() > 0;
 
