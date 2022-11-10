@@ -12,6 +12,8 @@ and exposes a tracer configurator that can be enabled in the
 <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
 ```
 
+Start Solr with the module enabled: `bin/solr start -c -Dsolr.modules=opentracing`
+
 Configuration
 -------------
 The tracer can be configured through environment variables, see [OTEL SDK Environment Variables](https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/).

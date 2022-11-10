@@ -30,7 +30,7 @@ dependencies {
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
   implementation 'io.opentelemetry:opentelemetry-semconv'
-  implementation 'io.opentelemetry:opentelemetry-exporter-otlp-trace:1.14.0'
+  implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
   implementation 'io.opentelemetry:opentelemetry-exporter-jaeger'
   implementation 'io.opentelemetry:opentelemetry-exporter-zipkin'
 
