@@ -62,6 +62,8 @@ Improvements
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
+* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -111,6 +113,10 @@ Other Changes
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
+
+* SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
+
+* SOLR-16541: Eliminate the 'numShards' system property (noble)
 
 ==================  9.1.0 ==================
 
