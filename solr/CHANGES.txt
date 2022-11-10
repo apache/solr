@@ -80,6 +80,8 @@ Build
 
 Other Changes
 ---------------------
+* SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
+
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
   generically on localhost. (Mike Drob)
 
