@@ -17,15 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
@@ -34,11 +25,20 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 /**
  * Unit tests for {@link DeleteReplicaPropertyAPI}
  *
- * End-to-end functionality is tested implicitly through v1 integration tests, so the unit tests here focus primarily on
- * how the v1 code invokes the v2 API and how the v2 API crafts its overseer/Distributed State Processing RPC message.
+ * <p>End-to-end functionality is tested implicitly through v1 integration tests, so the unit tests
+ * here focus primarily on how the v1 code invokes the v2 API and how the v2 API crafts its
+ * overseer/Distributed State Processing RPC message.
  */
 public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
@@ -59,36 +59,48 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
     {
       final var noCollectionParams = new ModifiableSolrParams(allParams);
       noCollectionParams.remove(COLLECTION_PROP);
-      final SolrException e = expectThrows(SolrException.class, () -> {
-        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noCollectionParams);
-      });
+      final SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noCollectionParams);
+              });
       assertEquals("Missing required parameter: " + COLLECTION_PROP, e.getMessage());
     }
 
     {
       final var noShardParams = new ModifiableSolrParams(allParams);
       noShardParams.remove(SHARD_ID_PROP);
-      final SolrException e = expectThrows(SolrException.class, () -> {
-        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noShardParams);
-      });
+      final SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noShardParams);
+              });
       assertEquals("Missing required parameter: " + SHARD_ID_PROP, e.getMessage());
     }
 
     {
       final var noReplicaParams = new ModifiableSolrParams(allParams);
       noReplicaParams.remove(REPLICA_PROP);
-      final SolrException e = expectThrows(SolrException.class, () -> {
-        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noReplicaParams);
-      });
+      final SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noReplicaParams);
+              });
       assertEquals("Missing required parameter: " + REPLICA_PROP, e.getMessage());
     }
 
     {
       final var noPropertyParams = new ModifiableSolrParams(allParams);
       noPropertyParams.remove(PROPERTY_PROP);
-      final SolrException e = expectThrows(SolrException.class, () -> {
-        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noPropertyParams);
-      });
+      final SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noPropertyParams);
+              });
       assertEquals("Missing required parameter: " + PROPERTY_PROP, e.getMessage());
     }
   }
@@ -123,7 +135,9 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testRPCMessageCreation() {
-    final ZkNodeProps message = DeleteReplicaPropertyAPI.createRemoteMessage("someColl", "someShard", "someReplica", "somePropName");
+    final ZkNodeProps message =
+        DeleteReplicaPropertyAPI.createRemoteMessage(
+            "someColl", "someShard", "someReplica", "somePropName");
     final Map<String, Object> props = message.getProperties();
 
     assertEquals(5, props.size());

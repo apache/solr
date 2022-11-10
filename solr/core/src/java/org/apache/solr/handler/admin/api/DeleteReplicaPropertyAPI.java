@@ -17,7 +17,19 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -28,19 +40,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import javax.inject.Inject;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import java.util.Map;
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
 /**
  * V2 API for removing a property from a collection replica
@@ -95,18 +94,19 @@ public class DeleteReplicaPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  public static SolrJerseyResponse invokeUsingV1Inputs(DeleteReplicaPropertyAPI apiInstance, SolrParams solrParams) throws Exception {
-      final RequiredSolrParams requiredParams = solrParams.required();
-      final String propNameToDelete = requiredParams.get(PROPERTY_PROP);
-      final String trimmedPropNameToDelete =
-              propNameToDelete.startsWith(PROPERTY_PREFIX)
-                      ? propNameToDelete.substring(PROPERTY_PREFIX.length())
-                      : propNameToDelete;
-      return apiInstance.deleteReplicaProperty(
-                      requiredParams.get(COLLECTION_PROP),
-                      requiredParams.get(SHARD_ID_PROP),
-                      requiredParams.get(REPLICA_PROP),
-                      trimmedPropNameToDelete);
+  public static SolrJerseyResponse invokeUsingV1Inputs(
+      DeleteReplicaPropertyAPI apiInstance, SolrParams solrParams) throws Exception {
+    final RequiredSolrParams requiredParams = solrParams.required();
+    final String propNameToDelete = requiredParams.get(PROPERTY_PROP);
+    final String trimmedPropNameToDelete =
+        propNameToDelete.startsWith(PROPERTY_PREFIX)
+            ? propNameToDelete.substring(PROPERTY_PREFIX.length())
+            : propNameToDelete;
+    return apiInstance.deleteReplicaProperty(
+        requiredParams.get(COLLECTION_PROP),
+        requiredParams.get(SHARD_ID_PROP),
+        requiredParams.get(REPLICA_PROP),
+        trimmedPropNameToDelete);
   }
 
   // XXX should this command support followAliases?
