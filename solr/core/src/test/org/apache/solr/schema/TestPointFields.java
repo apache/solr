@@ -4702,7 +4702,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     long inc1;
     for (; ; ) {
       number2 = random().nextInt();
-      inc1 = number2 - number1;
+      inc1 = (long) number2 - number1;
       if (Math.abs(inc1) < (long) Integer.MAX_VALUE) {
         break;
       }

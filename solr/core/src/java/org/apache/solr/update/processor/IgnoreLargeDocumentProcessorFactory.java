@@ -115,7 +115,8 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   // package private for testing
   static class ObjectSizeEstimator {
     /** Sizes of primitive classes. */
-    private static final Map<Class<?>, Integer> primitiveSizes = new IdentityHashMap<>();
+    private static final IdentityHashMap<Class<?>, Integer> primitiveSizes =
+        new IdentityHashMap<>();
 
     static {
       primitiveSizes.put(boolean.class, 1);

@@ -495,11 +495,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
 
-                } catch (IOException e) {
-                  e.printStackTrace();
-                  throw new RuntimeException(e);
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error creating jetty", e);
                   throw new RuntimeException(e);
                 }
               });
@@ -537,11 +534,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                   coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                   SolrClient client = createNewSolrClient(j.getLocalPort());
                   clients.add(client);
-                } catch (IOException e) {
-                  e.printStackTrace();
-                  throw new RuntimeException(e);
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error creating jetty", e);
                   throw new RuntimeException(e);
                 }
               });
@@ -577,11 +571,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
                 SolrClient client = createNewSolrClient(j.getLocalPort());
                 clients.add(client);
-              } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
               } catch (Exception e) {
-                e.printStackTrace();
+                log.error("error creating jetty", e);
                 throw new RuntimeException(e);
               }
             });
@@ -1925,8 +1916,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try {
         commit();
       } catch (Throwable t) {
-        t.printStackTrace();
-        // we don't care if this commit fails on some nodes
+        log.error("we don't care if this commit fails on some nodes", t);
       }
 
       updateMappingsFromZk(jettys, clients);

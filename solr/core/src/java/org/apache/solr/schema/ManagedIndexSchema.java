@@ -378,7 +378,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1
-            || remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown()) {
+            || (remoteVersion < expectedZkVersion
+                && !zkController.getCoreContainer().isShutDown())) {
           try {
             HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
             NamedList<Object> zkversionResp = mrr.future.get();

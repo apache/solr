@@ -150,7 +150,7 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
-  Class<?> type;
+  final Class<?> type;
 
   Type(Class<?> type) {
     this.type = type;
