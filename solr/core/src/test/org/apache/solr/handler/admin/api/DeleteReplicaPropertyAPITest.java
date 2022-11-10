@@ -17,100 +17,98 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import io.opentracing.noop.NoopSpan;
-import java.util.Map;
-import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /** Unit tests for {@link DeleteReplicaPropertyAPI} */
 public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
-
-  private CoreContainer mockCoreContainer;
-  private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
-  private ArgumentCaptor<ZkNodeProps> messageCapturer;
-
-  private DeleteReplicaPropertyAPI deleteReplicaPropApi;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
     assumeWorkingMockito();
   }
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @Test
+  public void testV1InvocationThrowsErrorsIfRequiredParametersMissing() {
+    final var api = mock(DeleteReplicaPropertyAPI.class);
+    final var allParams = new ModifiableSolrParams();
+    allParams.add(COLLECTION_PROP, "someColl");
+    allParams.add(SHARD_ID_PROP, "someShard");
+    allParams.add(REPLICA_PROP, "someReplica");
+    allParams.add(PROPERTY_PROP, "somePropName");
 
-    mockCoreContainer = mock(CoreContainer.class);
-    mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
-    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
-        .thenReturn(new OverseerSolrResponse(new NamedList<>()));
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
-    queryResponse = new SolrQueryResponse();
-    messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
+    {
+      final var noCollectionParams = new ModifiableSolrParams(allParams);
+      noCollectionParams.remove(COLLECTION_PROP);
+      final SolrException e = expectThrows(SolrException.class, () -> {
+        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noCollectionParams);
+      });
+      assertEquals("Missing required parameter: " + COLLECTION_PROP, e.getMessage());
+    }
 
-    deleteReplicaPropApi =
-        new DeleteReplicaPropertyAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    {
+      final var noShardParams = new ModifiableSolrParams(allParams);
+      noShardParams.remove(SHARD_ID_PROP);
+      final SolrException e = expectThrows(SolrException.class, () -> {
+        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noShardParams);
+      });
+      assertEquals("Missing required parameter: " + SHARD_ID_PROP, e.getMessage());
+    }
+
+    {
+      final var noReplicaParams = new ModifiableSolrParams(allParams);
+      noReplicaParams.remove(REPLICA_PROP);
+      final SolrException e = expectThrows(SolrException.class, () -> {
+        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noReplicaParams);
+      });
+      assertEquals("Missing required parameter: " + REPLICA_PROP, e.getMessage());
+    }
+
+    {
+      final var noPropertyParams = new ModifiableSolrParams(allParams);
+      noPropertyParams.remove(PROPERTY_PROP);
+      final SolrException e = expectThrows(SolrException.class, () -> {
+        DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, noPropertyParams);
+      });
+      assertEquals("Missing required parameter: " + PROPERTY_PROP, e.getMessage());
+    }
   }
 
   @Test
-  public void testReportsErrorWhenCalledInStandaloneMode() {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(false);
+  public void testV1InvocationPassesAllProvidedParameters() throws Exception {
+    final var api = mock(DeleteReplicaPropertyAPI.class);
+    final var allParams = new ModifiableSolrParams();
+    allParams.add(COLLECTION_PROP, "someColl");
+    allParams.add(SHARD_ID_PROP, "someShard");
+    allParams.add(REPLICA_PROP, "someReplica");
+    allParams.add(PROPERTY_PROP, "somePropName");
 
-    final SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              deleteReplicaPropApi.deleteReplicaProperty(
-                  "someColl", "someShard", "someReplica", "somePropName");
-            });
-    assertEquals(400, e.code());
-    assertTrue(
-        "Exception message differed from expected: " + e.getMessage(),
-        e.getMessage().contains("not running in SolrCloud mode"));
+    DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, allParams);
+
+    verify(api).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
   }
 
   @Test
-  public void testCreatesValidOverseerMessage() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+  public void testV1InvocationTrimsPropertyNamePrefixIfProvided() throws Exception {
+    final var api = mock(DeleteReplicaPropertyAPI.class);
+    final var allParams = new ModifiableSolrParams();
+    allParams.add(COLLECTION_PROP, "someColl");
+    allParams.add(SHARD_ID_PROP, "someShard");
+    allParams.add(REPLICA_PROP, "someReplica");
+    allParams.add(PROPERTY_PROP, "property.somePropName"); // NOTE THE "property." prefix!
 
-    deleteReplicaPropApi.deleteReplicaProperty(
-        "someColl", "someShard", "someReplica", "somePropName");
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+    DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, allParams);
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
-    assertEquals("deletereplicaprop", createdMessageProps.get("operation"));
-    assertEquals("someColl", createdMessageProps.get("collection"));
-    assertEquals("someShard", createdMessageProps.get("shard"));
-    assertEquals("someReplica", createdMessageProps.get("replica"));
-    assertEquals("somePropName", createdMessageProps.get("property"));
-    assertFalse(
-        createdMessageProps.containsKey(
-            SHARD_UNIQUE)); // Omitted since not specified on request body
+    verify(api).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
   }
 }
