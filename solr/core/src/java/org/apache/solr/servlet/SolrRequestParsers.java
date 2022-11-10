@@ -62,8 +62,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -623,7 +621,7 @@ public class SolrRequestParsers {
       }
       // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a
       // Jetty class
-      req.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+      req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
 
       MultiMapSolrParams params = parseQueryString(req.getQueryString());
 
@@ -640,12 +638,6 @@ public class SolrRequestParsers {
         }
       }
       return params;
-    }
-
-    static boolean isMultipart(HttpServletRequest req) {
-      // Jetty utilities
-      return MimeTypes.Type.MULTIPART_FORM_DATA.is(
-          HttpFields.valueParameters(req.getContentType(), null));
     }
 
     /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
@@ -667,9 +659,14 @@ public class SolrRequestParsers {
     }
   }
 
+  public static boolean isMultipart(HttpServletRequest req) {
+    String ct = req.getContentType();
+    return ct != null && ct.startsWith("multipart/form-data");
+  }
+
   /** Clean up any files created by MultiPartInputStream. */
   static void cleanupMultipartFiles(HttpServletRequest request) {
-    if (!MultipartRequestParser.isMultipart(request)) {
+    if (!SolrRequestParsers.isMultipart(request)) {
       return;
     }
 
@@ -837,6 +834,11 @@ public class SolrRequestParsers {
           return parseQueryString(req.getQueryString());
         }
 
+        // This happens when Jetty redirected a request that initially had no content body
+        if (contentType.equals("application/octet-stream") && req.getContentLength() == 0) {
+          return parseQueryString(req.getQueryString());
+        }
+
         // OK, we have a BODY at this point
 
         boolean schemaRestPath = false;
@@ -869,7 +871,7 @@ public class SolrRequestParsers {
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (MultipartRequestParser.isMultipart(req)) {
+      if (isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

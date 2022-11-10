@@ -997,8 +997,8 @@ public class MiniSolrCloudCluster {
     @Override
     protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
       metricRegistry = new MetricRegistry();
-      com.codahale.metrics.jetty9.InstrumentedHandler metrics =
-          new com.codahale.metrics.jetty9.InstrumentedHandler(metricRegistry);
+      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
+          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }

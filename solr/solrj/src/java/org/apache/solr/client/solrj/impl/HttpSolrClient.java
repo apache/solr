@@ -508,7 +508,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       for (ContentStream content : streams) {
         String contentType = content.getContentType();
         if (contentType == null) {
-          contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+          contentType = "multipart/form-data"; // default
         }
         String name = content.getName();
         if (name == null) {
