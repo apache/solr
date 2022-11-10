@@ -114,6 +114,8 @@ Other Changes
 
 * SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
 
+* SOLR-16541: Eliminate the 'numShards' system property (noble)
+
 ==================  9.1.0 ==================
 
 New Features
