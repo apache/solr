@@ -110,7 +110,7 @@ public class DeleteReplicaPropertyAPI extends AdminAPIBase {
   }
 
   // XXX should this command support followAliases?
-  private ZkNodeProps createRemoteMessage(
+  public static ZkNodeProps createRemoteMessage(
       String collName, String shardName, String replicaName, String propName) {
     final Map<String, Object> messageProperties =
         Map.of(

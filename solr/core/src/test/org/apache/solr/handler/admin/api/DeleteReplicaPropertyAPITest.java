@@ -19,10 +19,14 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Map;
+
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
@@ -30,7 +34,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-/** Unit tests for {@link DeleteReplicaPropertyAPI} */
+/**
+ * Unit tests for {@link DeleteReplicaPropertyAPI}
+ *
+ * End-to-end functionality is tested implicitly through v1 integration tests, so the unit tests here focus primarily on
+ * how the v1 code invokes the v2 API and how the v2 API crafts its overseer/Distributed State Processing RPC message.
+ */
 public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -110,5 +119,18 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
     DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, allParams);
 
     verify(api).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
+  }
+
+  @Test
+  public void testRPCMessageCreation() {
+    final ZkNodeProps message = DeleteReplicaPropertyAPI.createRemoteMessage("someColl", "someShard", "someReplica", "somePropName");
+    final Map<String, Object> props = message.getProperties();
+
+    assertEquals(5, props.size());
+    assertEquals("deletereplicaprop", props.get(QUEUE_OPERATION));
+    assertEquals("someColl", props.get(COLLECTION_PROP));
+    assertEquals("someShard", props.get(SHARD_ID_PROP));
+    assertEquals("someReplica", props.get(REPLICA_PROP));
+    assertEquals("somePropName", props.get(PROPERTY_PROP));
   }
 }
