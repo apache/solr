@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
+
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -216,7 +219,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
   @Test
   public void testGoodSpreadDuringAssignWithNoTarget() throws Exception {
-    configureCluster(5)
+    configureCluster(4)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
@@ -233,17 +236,19 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     l = l.subList(2, l.size());
     String nodeToBeDecommissioned = l.get(0);
 
+    int numShards = 3;
+
     // TODO: tlog replicas do not work correctly in tests due to fault
     // TestInjection#waitForInSyncWithLeader
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(coll, "conf1", 4, 3, 0, 0);
+        CollectionAdminRequest.createCollection(coll, "conf1", numShards, 2, 0, 0);
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
 
     cluster.waitForActiveCollection(
         coll,
-        4,
-        4
+        numShards,
+        numShards
             * (create.getNumNrtReplicas()
                 + create.getNumPullReplicas()
                 + create.getNumTlogReplicas()));
@@ -258,7 +263,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(nodeToBeDecommissioned, null, true)
         .processAndWait("000", cloudClient, 15);
 
-    DocCollection collection = cloudClient.getClusterState().getCollection(coll);
+    DocCollection collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
+    assertNotNull("Collection cannot be null: " + coll, collection);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
@@ -319,9 +325,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         @Override
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-          params.set("source", sourceNode);
+          params.set(SOURCE_NODE, sourceNode);
           if (!StringUtils.isEmpty(targetNode)) {
-            params.setNonNull("target", targetNode);
+            params.setNonNull(TARGET_NODE, targetNode);
           }
           if (parallel != null) params.set("parallel", parallel.toString());
           return params;

@@ -192,7 +192,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    static NullPolicy DEFAULT_POLICY = IGNORE;
+    static final NullPolicy DEFAULT_POLICY = IGNORE;
   }
 
   @Override
@@ -218,12 +218,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  public static enum GroupHeadSelectorType {
+  public enum GroupHeadSelectorType {
     MIN,
     MAX,
     SORT,
     SCORE;
-    public static EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
+    public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
 
   /** Models all the information about how group head documents should be selected */
