@@ -161,15 +161,19 @@ public class ReplicateFromLeader {
     boolean hardCommitNewSearcher = uinfo.openSearcher;
     String pollIntervalStr = null;
     if (hardCommitMaxTime != -1) {
-      // configured hardCommit places a ceiling on the interval at which new segments will be available
+      // configured hardCommit places a ceiling on the interval at which new segments will be
+      // available
       // to replicate
-      if (softCommitMaxTime != -1 && (!hardCommitNewSearcher || softCommitMaxTime <= hardCommitMaxTime)) {
+      if (softCommitMaxTime != -1
+          && (!hardCommitNewSearcher || softCommitMaxTime <= hardCommitMaxTime)) {
         // softCommit is configured.
-        // Usually if softCommit is configured, `hardCommitNewSearcher==false`, in which case you want
+        // Usually if softCommit is configured, `hardCommitNewSearcher==false`, in which case you
+        // want
         // to calculate poll interval wrt the max of hardCommitTime (when segments are available to
         // replicate) and softCommitTime (when changes are visible).
         // But in the unusual case that hardCommit _does_ open a new searcher and
-        // `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause, setting poll interval
+        // `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause, setting poll
+        // interval
         // wrt `hardCommitMaxTime` alone.
         pollIntervalStr = toPollIntervalStr((Math.max(hardCommitMaxTime, softCommitMaxTime)) / 2);
       } else {
@@ -177,7 +181,7 @@ public class ReplicateFromLeader {
       }
     } else if (softCommitMaxTime != -1) {
       // visibility of changes places a ceiling on polling frequency
-      pollIntervalStr = toPollIntervalStr(softCommitMaxTime/2);
+      pollIntervalStr = toPollIntervalStr(softCommitMaxTime / 2);
     }
 
     return pollIntervalStr;
