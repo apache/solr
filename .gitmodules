@@ -1,0 +1,4 @@
+[submodule "lucene"]
+	path = lucene
+	url = git@github.com:cowpaths/lucene.git
+	branch = fs/branch_9_4_1
