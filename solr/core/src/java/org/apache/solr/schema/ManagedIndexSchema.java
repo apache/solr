@@ -311,7 +311,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           collection);
       Thread.currentThread().interrupt();
     } finally {
-      if (!parallelExecutor.isShutdown()) parallelExecutor.shutdown();
+      if (!ExecutorUtil.isShutdown(parallelExecutor)) parallelExecutor.shutdown();
     }
 
     if (log.isInfoEnabled()) {
