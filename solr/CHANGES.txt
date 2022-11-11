@@ -37,6 +37,8 @@ New Features
 
 * SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
 
+* SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
+
 Improvements
 ---------------------
 
