@@ -281,12 +281,15 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       '%s/solr.gpg.import.log' % tmpDir)
 
   if mavenURL is None:
+    stopGpgAgent(gpgHomeDir)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
+    stopGpgAgent(gpgHomeDir)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
+    stopGpgAgent(gpgHomeDir)
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
@@ -324,6 +327,11 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
           if line.lower().find('warning') != -1:
             print('      GPG: %s' % line.strip())
 
+      # Make sure to shutdown the GPG agent at the end
+      stopGpgAgent(gpgHomeDir)
+
+def stopGpgAgent(gpgHomeDir):
+  run('gpgconf --homedir %s --kill gpg-agent' % (gpgHomeDir))
 
 def testChanges(version, changesURLString):
   print('  check changes HTML...')
