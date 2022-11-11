@@ -39,6 +39,8 @@ New Features
 
 * SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
 
+* SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
+
 Improvements
 ---------------------
 
