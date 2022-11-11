@@ -931,6 +931,8 @@ def verifyMavenSigs(tmpDir, artifacts, keysFile):
     sys.stdout.write('.')
   print()
 
+  # Make sure to shutdown the GPG agent at the end
+  stopGpgAgent(gpgHomeDir, logFile)
 
 def print_warnings_in_file(file):
   with open(file) as f:
