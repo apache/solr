@@ -196,7 +196,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         UpdateParams.OPTIMIZE,
         UpdateParams.MAX_OPTIMIZE_SEGMENTS,
         UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
-        ShardParams._ROUTE_);
+        ShardParams._ROUTE_,
+        CommonParams.FAIL_ON_VERSION_CONFLICTS);
 
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
