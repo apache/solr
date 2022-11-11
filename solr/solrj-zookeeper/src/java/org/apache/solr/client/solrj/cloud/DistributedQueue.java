@@ -19,7 +19,10 @@ package org.apache.solr.client.solrj.cloud;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
 
 /** Distributed queue component. Methods largely follow those in {@link java.util.Queue}. */
 public interface DistributedQueue {
@@ -35,7 +38,11 @@ public interface DistributedQueue {
 
   byte[] take() throws Exception;
 
-  void offer(byte[] data) throws Exception;
+  void offer(byte[] data) throws KeeperException, InterruptedException;
+
+  default void offer(MapWriter mw) throws KeeperException, InterruptedException {
+    offer(Utils.toJSON(mw));
+  }
 
   /** Retrieve statistics about the queue size, operations and their timings. */
   Map<String, Object> getStats();
