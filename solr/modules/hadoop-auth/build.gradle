@@ -36,7 +36,7 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'javax.servlet:javax.servlet-api'
+  compileOnlyApi 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.google.guava:guava'
