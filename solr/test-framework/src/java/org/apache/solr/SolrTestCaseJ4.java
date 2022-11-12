@@ -92,7 +92,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -3234,14 +3233,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return col.iterator().next() instanceof SolrInputDocument;
     }
     return o instanceof SolrInputDocument;
-  }
-
-  public static String getUrlFrom(SolrClient solrClient) {
-    if (solrClient instanceof HttpSolrClient) {
-      return ((HttpSolrClient) solrClient).getBaseURL();
-    } else {
-      return null;
-    }
   }
 
   private static final Map<Class<?>, String> private_RANDOMIZED_NUMERIC_FIELDTYPES =

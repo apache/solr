@@ -32,6 +32,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -45,12 +46,14 @@ import org.junit.Test;
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
 
+  private static JettySolrRunner client;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     // this one has handleSelect=true which a test here needs
     File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    client = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
@@ -75,10 +78,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    String streamUrl = getUrlFrom(getSolrClient()) + "/select?q=*:*&fl=id&wt=csv";
+    String streamUrl = client.getBaseUrl().toString() + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-        getUrlFrom(getSolrClient())
+        client.getBaseUrl().toString()
             + "/debug/dump?wt=xml&stream.url="
             + URLEncoder.encode(streamUrl, "UTF-8");
     String content = getUrlForString(getUrl);
@@ -113,7 +116,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   /** Compose an url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return getUrlFrom(getSolrClient())
+    return client.getBaseUrl().toString()
         + "/update?commit=true&stream.body="
         + URLEncoder.encode(deleteQuery, "UTF-8");
   }
