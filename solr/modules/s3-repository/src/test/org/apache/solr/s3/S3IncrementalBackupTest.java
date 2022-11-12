@@ -38,7 +38,11 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder()
+          .silent()
+          .withInitialBuckets(BUCKET_NAME)
+          .withSecureConnection(false)
+          .build();
 
   public static final String SOLR_XML =
       "<solr>\n"

@@ -83,6 +83,24 @@ public class ExecutorUtil {
     void clean(AtomicReference<Object> ctx);
   }
 
+  public static boolean isShutdown(ExecutorService pool) {
+    try {
+      return pool.isShutdown();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  public static boolean isTerminated(ExecutorService pool) {
+    try {
+      return pool.isTerminated();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted

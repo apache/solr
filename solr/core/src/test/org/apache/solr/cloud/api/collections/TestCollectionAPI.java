@@ -77,9 +77,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
               .getIsCollectionApiDistributed();
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 0, 1, 1);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 0, 2, 1);
       } else {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 1, 0, 1);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2, 0, 1);
       }
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
@@ -381,7 +381,15 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           (liveNodes, docCollection) ->
               docCollection != null
                   && docCollection.getReplicas().stream()
-                      .anyMatch(r -> r.getState().equals(Replica.State.DOWN)));
+                      .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
+      zkStateReader.waitForState(
+          COLLECTION_NAME,
+          30,
+          TimeUnit.SECONDS,
+          (liveNodes, docCollection) ->
+              docCollection != null
+                  && docCollection.getActiveSlices().stream()
+                      .allMatch(r -> r.getLeader() != null && r.getLeader().isActive(liveNodes)));
 
       rsp = request.process(client).getResponse();
       collection =
