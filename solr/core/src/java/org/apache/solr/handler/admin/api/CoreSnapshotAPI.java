@@ -45,6 +45,7 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
@@ -57,8 +58,11 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
 
   @Inject
   public CoreSnapshotAPI(
-      SolrQueryRequest request, SolrQueryResponse response, CoreContainer coreContainer) {
-    super(coreContainer, request, response);
+      SolrQueryRequest request,
+      SolrQueryResponse response,
+      CoreContainer coreContainer,
+      CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker) {
+    super(coreContainer, coreAdminAsyncTracker, request, response);
   }
 
   /** This API is analogous to V1 (POST /solr/admin/cores?action=CREATESNAPSHOT) */

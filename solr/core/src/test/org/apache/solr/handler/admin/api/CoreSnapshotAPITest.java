@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
@@ -47,8 +48,12 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     SolrQueryRequest solrQueryRequest = req();
     SolrQueryResponse solrQueryResponse = new SolrQueryResponse();
     CoreContainer coreContainer = h.getCoreContainer();
+    CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
+        new CoreAdminHandler.CoreAdminAsyncTracker();
 
-    coreSnapshotAPI = new CoreSnapshotAPI(solrQueryRequest, solrQueryResponse, coreContainer);
+    coreSnapshotAPI =
+        new CoreSnapshotAPI(
+            solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
   }
 
   private List<String> snapshotsToCleanup = new ArrayList<>();

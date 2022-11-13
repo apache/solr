@@ -1096,24 +1096,19 @@ public class CoreContainer {
                       .to(SolrNodeKeyPair.class)
                       .in(Singleton.class);
                 }
-              });
+              })
+              .register(
+                      new AbstractBinder() {
+                        @Override
+                        protected void configure() {
+                          bindFactory(
+                                  new InjectionFactories.SingletonFactory<>(
+                                          coreAdminHandler.getCoreAdminAsyncTracker()))
+                                  .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                                  .in(Singleton.class);
+                        }
+                      });
       jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    }
-
-    // Do Node setup logic after all handlers have been registered.
-    if (isZooKeeperAware()) {
-      clusterSingletons.setReady();
-      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
-        try {
-          log.info("This node has been started as a preferred overseer");
-          zkSys.getZkController().setPreferredOverseer();
-        } catch (KeeperException | InterruptedException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
-      if (!distributedCollectionCommandRunner.isPresent()) {
-        zkSys.getZkController().checkOverseerDesignate();
-      }
     }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at
@@ -1276,11 +1271,6 @@ public class CoreContainer {
         }
       }
 
-      try {
-        customThreadPool.submit(CoreAdminAPIBase::shutdown);
-      } catch (Exception e) {
-        log.warn("Error shutting down CoreAdminAPIBase. Continuing to close CoreContainer.", e);
-      }
       try {
         if (coreAdminHandler != null) {
           customThreadPool.submit(
