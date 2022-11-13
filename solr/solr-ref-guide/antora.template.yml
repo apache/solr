@@ -31,6 +31,7 @@ nav:
 - modules/indexing-guide/indexing-nav.adoc
 - modules/query-guide/querying-nav.adoc
 - modules/upgrade-notes/upgrade-nav.adoc
+- modules/how-to-contribute/how-to-contribute-nav.adoc
 
 # The asciidoc attributes must be the last entry in this file
 asciidoc:
