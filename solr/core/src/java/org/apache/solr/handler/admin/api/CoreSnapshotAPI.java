@@ -61,10 +61,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     super(coreContainer, request, response);
   }
 
-  /**
-   * This API is analogous to V1 (POST
-   * /solr/admin/cores?action=CREATESNAPSHOT&core={coreName}&commitName={commitName}&async={taskId})
-   */
+  /** This API is analogous to V1 (POST /solr/admin/cores?action=CREATESNAPSHOT) */
   @POST
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -144,7 +141,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     public Collection<String> files;
   }
 
-  /** This API is analogous to V1 (GET /solr/admin/cores?action=LISTSNAPSHOTS&core={coreName}) */
+  /** This API is analogous to V1 (GET /solr/admin/cores?action=LISTSNAPSHOTS) */
   @GET
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
@@ -217,10 +214,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     }
   }
 
-  /**
-   * This API is analogous to V1 (DELETE
-   * /solr/admin/cores?action=DELETESNAPSHOT&core={coreName}&commitName={commitName})
-   */
+  /** This API is analogous to V1 (DELETE /solr/admin/cores?action=DELETESNAPSHOT) */
   @DELETE
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
