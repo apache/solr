@@ -59,7 +59,7 @@ public class NoggitJSONWriter extends JSONWriter {
 
   private IteratorWriter.ItemWriter itemWriter() {
     return new IteratorWriter.ItemWriter() {
-      private boolean first = true;
+      private boolean first;
 
       @Override
       public IteratorWriter.ItemWriter add(Object o) {
@@ -77,7 +77,7 @@ public class NoggitJSONWriter extends JSONWriter {
 
   private MapWriter.EntryWriter entryWriter() {
     return new MapWriter.EntryWriter() {
-      private boolean first = true;
+      private boolean first;
 
       @Override
       public MapWriter.EntryWriter put(CharSequence k, Object v) {
