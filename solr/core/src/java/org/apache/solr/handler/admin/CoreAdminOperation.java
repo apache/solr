@@ -69,7 +69,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -285,7 +284,8 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
         final CoreSnapshotAPI coreSnapshotAPI =
-            new CoreSnapshotAPI(it.req, it.rsp, coreContainer, null);
+            new CoreSnapshotAPI(
+                it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
         final CoreSnapshotAPI.ListSnapshotsResponse response =
             coreSnapshotAPI.listSnapshots(coreName, null);

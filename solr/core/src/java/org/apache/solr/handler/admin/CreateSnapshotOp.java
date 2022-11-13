@@ -32,7 +32,7 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
     final CoreSnapshotAPI coreSnapshotAPI =
-        new CoreSnapshotAPI(it.req, it.rsp, coreContainer, null);
+        new CoreSnapshotAPI(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
     final CoreSnapshotAPI.CreateSnapshotResponse response =
         coreSnapshotAPI.createSnapshot(coreName, commitName, null);

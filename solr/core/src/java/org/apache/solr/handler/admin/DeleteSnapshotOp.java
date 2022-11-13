@@ -33,7 +33,7 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
     final CoreSnapshotAPI coreSnapshotAPI =
-        new CoreSnapshotAPI(it.req, it.rsp, coreContainer, null);
+        new CoreSnapshotAPI(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
     final CoreSnapshotAPI.DeleteSnapshotResponse response =
         coreSnapshotAPI.deleteSnapshot(coreName, commitName, null);
