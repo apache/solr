@@ -129,8 +129,5 @@ public interface MapWriter extends MapSerializable, NavigableObject {
     }
   }
 
-  /** A marker interface to denote that this is to be serialized using {@link Object#toString()} */
-  interface StringValue {}
-
   MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
 }

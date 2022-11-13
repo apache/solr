@@ -28,9 +28,10 @@ import java.util.Set;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
+import org.noggit.JSONWriter;
 
 /** ZkNodeProps contains generic immutable properties. */
-public class ZkNodeProps implements MapWriter {
+public class ZkNodeProps implements JSONWriter.Writable, MapWriter {
 
   protected final Map<String, Object> propMap;
 
@@ -102,6 +103,11 @@ public class ZkNodeProps implements MapWriter {
       props = (Map<String, Object>) Utils.fromJSON(bytes);
     }
     return new ZkNodeProps(props);
+  }
+
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(propMap);
   }
 
   /** Get a string property value. */
