@@ -35,6 +35,12 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.MDC;
 
+/**
+ * A common parent for admin Core Jersey-based APIs.
+ *
+ * <p>This base class is used when creating Core APIs to allow extra bookkeeping tasks such as async
+ * requests handling.
+ */
 public abstract class CoreAdminAPIBase extends JerseyResource {
 
   private static final ExecutorService PARALLEL_EXECUTOR =
@@ -65,6 +71,24 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
     this.rsp = rsp;
   }
 
+  /**
+   * Wraps the subclasses logic with extra bookkeeping logic.
+   *
+   * <p>This method currently exists to enable async handling behavior for V2 Core APIs.
+   *
+   * <p>Since the logic for a given API lives inside the Supplier functional interface, checked
+   * exceptions can't be thrown directly to the calling method. To throw a checked exception out of
+   * the Supplier, wrap the exception using {@link CoreAdminAPIBase.CoreAdminAPIBaseException} and
+   * throw it instead. This handle method will retrieve the checked exception from {@link
+   * CoreAdminAPIBaseException} and throw it to the original calling method.
+   *
+   * @param solrJerseyResponse the response that the calling methods expects to return.
+   * @param coreName the name of the core that work is being done against.
+   * @param taskId an id provided for registering async work.
+   * @param actionName a name for the action being done.
+   * @param supplier the work that the calling method wants done.
+   * @return the supplied T solrJerseyResponse
+   */
   public <T extends SolrJerseyResponse> T handle(
       T solrJerseyResponse, String coreName, String taskId, String actionName, Supplier<T> supplier)
       throws Exception {
@@ -166,6 +190,9 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
     }
   }
 
+  /**
+   * Helper RuntimeException to allow passing checked exceptions to the caller of the handle method.
+   */
   protected static class CoreAdminAPIBaseException extends RuntimeException {
     Exception trueException;
 

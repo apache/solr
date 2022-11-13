@@ -51,6 +51,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/** V2 API for Creating, Listing, and Deleting Core Snapshots. */
 @Path("/cores/{coreName}/snapshots")
 public class CoreSnapshotAPI extends CoreAdminAPIBase {
 
@@ -60,6 +61,10 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     super(coreContainer, request, response);
   }
 
+  /**
+   * This API is analogous to V1 (POST
+   * /solr/admin/cores?action=CREATESNAPSHOT&core={coreName}&commitName={commitName}&async={taskId})
+   */
   @POST
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -116,6 +121,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
         });
   }
 
+  /** The Response for {@link CoreSnapshotAPI}'s {@link #createSnapshot(String, String, String)} */
   public static class CreateSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The name of the core.")
     @JsonProperty(CoreAdminParams.CORE)
@@ -138,6 +144,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     public Collection<String> files;
   }
 
+  /** This API is analogous to V1 (GET /solr/admin/cores?action=LISTSNAPSHOTS&core={coreName}) */
   @GET
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
@@ -185,12 +192,16 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
         });
   }
 
+  /** The Response for {@link CoreSnapshotAPI}'s {@link #listSnapshots(String, String)} */
   public static class ListSnapshotsResponse extends SolrJerseyResponse {
     @Schema(description = "The collection of snapshots found for the requested core.")
     @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)
     public Map<String, SnapshotInformation> snapshots;
   }
 
+  /**
+   * Contained in {@link ListSnapshotsResponse}, this holds information for a given core's Snapshot
+   */
   public static class SnapshotInformation implements JacksonReflectMapWriter {
     @Schema(description = "The generation value for the snapshot.")
     @JsonProperty(SolrSnapshotManager.GENERATION_NUM)
@@ -206,6 +217,10 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
     }
   }
 
+  /**
+   * This API is analogous to V1 (DELETE
+   * /solr/admin/cores?action=DELETESNAPSHOT&core={coreName}&commitName={commitName})
+   */
   @DELETE
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -255,6 +270,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
         });
   }
 
+  /** The Response for {@link CoreSnapshotAPI}'s {@link #deleteSnapshot(String, String, String)} */
   public static class DeleteSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The name of the core.")
     @JsonProperty(CoreAdminParams.CORE)
