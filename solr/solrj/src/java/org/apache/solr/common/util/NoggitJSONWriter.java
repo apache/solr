@@ -18,7 +18,6 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.util.function.BiConsumer;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.noggit.CharArr;
@@ -32,58 +31,67 @@ public class NoggitJSONWriter extends JSONWriter {
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public void handleUnknownClass(Object o) {
-    // avoid materializing MapWriter / IteratorWriter to Map / List
-    // instead serialize them directly
+  public void write(Object o) {
     if (o instanceof MapWriter) {
       MapWriter mapWriter = (MapWriter) o;
       startObject();
-
-      mapWriter._forEachEntry(
-          new BiConsumer() {
-            boolean first = true;
-
-            @Override
-            public void accept(Object k, Object v) {
-              if (first) {
-                first = false;
-              } else {
-                writeValueSeparator();
-              }
-              indent();
-              writeString(k.toString());
-              writeNameSeparator();
-              write(v);
-            }
-          });
+      try {
+        mapWriter.writeMap(entryWriter());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       endObject();
     } else if (o instanceof IteratorWriter) {
       IteratorWriter iteratorWriter = (IteratorWriter) o;
       startArray();
       try {
-        iteratorWriter.writeIter(
-            new IteratorWriter.ItemWriter() {
-              boolean first = true;
-
-              @Override
-              public IteratorWriter.ItemWriter add(Object o) {
-                if (first) {
-                  first = false;
-                } else {
-                  writeValueSeparator();
-                }
-                indent();
-                write(o);
-                return this;
-              }
-            });
+        iteratorWriter.writeIter(itemWriter());
       } catch (IOException e) {
         throw new RuntimeException("this should never happen", e);
       }
       endArray();
+    } else if (o instanceof MapWriter.StringValue) {
+      super.write(o.toString());
     } else {
-      super.handleUnknownClass(o);
+      super.write(o);
     }
+  }
+
+  private IteratorWriter.ItemWriter itemWriter() {
+    return new IteratorWriter.ItemWriter() {
+      private boolean first = true;
+
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) {
+        if (first) {
+          first = false;
+        } else {
+          writeValueSeparator();
+        }
+        indent();
+        write(o);
+        return this;
+      }
+    };
+  }
+
+  private MapWriter.EntryWriter entryWriter() {
+    return new MapWriter.EntryWriter() {
+      private boolean first = true;
+
+      @Override
+      public MapWriter.EntryWriter put(CharSequence k, Object v) {
+        if (first) {
+          first = false;
+        } else {
+          writeValueSeparator();
+        }
+        indent();
+        writeString(k.toString());
+        writeNameSeparator();
+        write(v);
+        return this;
+      }
+    };
   }
 }
