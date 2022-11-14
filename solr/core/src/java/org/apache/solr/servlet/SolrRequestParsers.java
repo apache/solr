@@ -62,7 +62,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -619,9 +618,10 @@ public class SolrRequestParsers {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Not multipart content! " + req.getContentType());
       }
-      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a
-      // Jetty class
-      req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+      // Magic way to tell Jetty dynamically we want multi-part processing.
+      // This is taken from:
+      // https://github.com/eclipse/jetty.project/blob/jetty-10.0.12/jetty-server/src/main/java/org/eclipse/jetty/server/Request.java#L144
+      req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
       MultiMapSolrParams params = parseQueryString(req.getQueryString());
 

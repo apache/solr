@@ -5,4 +5,19 @@
   <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
   <Set name="extractWAR">false</Set>
+  <Set name="parentLoaderPriority">true</Set>
+  <Call name="addServerClassMatcher">
+    <Arg>
+      <New id="removeServerClasses" class="org.eclipse.jetty.webapp.ClassMatcher">
+        <Arg>
+          <Array type="java.lang.String">
+            <Item>-org.eclipse.jetty.io.</Item>
+            <Item>-org.eclipse.jetty.http.</Item>
+            <Item>-org.eclipse.jetty.http2.</Item>
+            <Item>-org.eclipse.jetty.util.</Item>
+          </Array>
+        </Arg>
+      </New>
+    </Arg>
+  </Call>
 </Configure>
