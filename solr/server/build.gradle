@@ -121,7 +121,7 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
-  from(configurations.serverLib - configurations.solrCore, {
+  from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
     into "lib/"
   })
 
