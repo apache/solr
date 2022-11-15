@@ -29,7 +29,7 @@ configurations {
   serverLib
   solrCore
   runtimeClasspath {
-    extendsFrom serverLib, libExt
+    extendsFrom serverLib, libExt, solrCore
   }
   startJar
   webapp

@@ -25,7 +25,6 @@ description = 'Solr webapp'
 configurations {
   war {}
   serverLib
-  solrJettyClientLib
   solrCore
 }
 
