@@ -19,7 +19,8 @@
 allprojects {
     def vmOpts = [
         '-XX:+UseParallelGC',
-        '-XX:TieredStopAtLevel=1'
+        '-XX:TieredStopAtLevel=1',
+        '-XX:ActiveProcessorCount=1'
     ]
 
     // Inject vm options into custom javadoc rendering. We can't refer
@@ -32,5 +33,12 @@ allprojects {
     // down but I don't think there is any harm in keeping it broad.
     tasks.withType(JavaExec) {
         jvmArgs += vmOpts
+    }
+
+    // Tweak javac to not be too resource-hungry.
+    // This applies to any JVM when javac runs forked (e.g. error-prone)
+    // Avoiding the fork entirely is best.
+    tasks.withType(JavaCompile) { JavaCompile task ->
+        task.options.forkOptions.jvmArgs += vmOpts
     }
 }
