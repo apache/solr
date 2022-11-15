@@ -41,7 +41,8 @@ New Features
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
 
-* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` functionality for cloud. (Mikhail Khludnev)
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` functionality for cloud.
+ Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
 Improvements
 ---------------------
