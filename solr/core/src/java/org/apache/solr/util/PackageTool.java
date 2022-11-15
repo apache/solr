@@ -18,6 +18,8 @@ package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+import static org.apache.solr.util.SolrCLI.closeHttpSolrClient;
+import static org.apache.solr.util.SolrCLI.getHttpSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -27,14 +29,18 @@ import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 // import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -366,15 +372,19 @@ public class PackageTool extends SolrCLI.ToolBase {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    String systemInfoUrl = solrUrl + "/admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
+    Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
     try {
       // hit Solr to get system info
-      Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
+      NamedList<Object> systemInfo =
+          http2SolrClient.request(
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  CommonParams.SYSTEM_INFO_PATH,
+                  new ModifiableSolrParams()));
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(solrUrl + "/", systemInfo, httpClient);
+      Map<String, Object> status = statusTool.reportStatus(systemInfo, http2SolrClient);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -385,7 +395,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         zkHost = zookeeper;
       }
     } finally {
-      HttpClientUtil.close(httpClient);
+      closeHttpSolrClient(http2SolrClient);
     }
 
     return zkHost;
