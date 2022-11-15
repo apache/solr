@@ -41,6 +41,8 @@ New Features
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
 
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` functionality for cloud. (Mikhail Khludnev)
+
 Improvements
 ---------------------
 
@@ -60,21 +62,13 @@ Improvements
   cause.  This capability is now also present on Windows.  Before, with bin/solr but not
   bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
   window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
-
+  
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
-* SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
-
-* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
-
-* SOLR-11028: A v2 equivalent of the `/admin/collections?action= REPLACE` command is now available at
-  `POST /api/cluster/nodes/nodeName/replace`. (Joshua Ouma via Jason Gerlowski)
-
 Optimizations
 ---------------------
-
-* SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
+(No changes)
 
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
 
@@ -88,50 +82,18 @@ Bug Fixes
 
 * SOLR-16160: UpdateXmlMessages duplicate data when data is removed and then added in the same message (Alex Deparvu via Kevin Risden)
 
-* SOLR-16483: Fix IndexOutOfBounds in RecursiveNumericEvaluator (Bendegúz Ács via Kevin Risden)
-
-* SOLR-16363: DirectUpdateHandler2 should not throw UnknownFormatConversionException (Kevin Risden)
-
-* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
-
-* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
-
-* SOLR-10918: Fix IntPointField hashing for HLL (Houston Putman)
-
-* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
-
-* SOLR-16528: Jaegertracer module must include okhttp3 dependency (janhoy)
-
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
 
 * SOLR-16432: Upgrade the gradle wrapper to 7.5.1 (Shawn Heisey, Kevin Risden)
 
-* SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
-
-* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
-
 Other Changes
 ---------------------
-* SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
-
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
   generically on localhost. (Mike Drob)
 
 * SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
-
-* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
-
-* SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
-
-* SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
-
-* SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
-
-* SOLR-16541: Eliminate the 'numShards' system property (noble)
-
-* SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
 
 ==================  9.1.0 ==================
 
@@ -296,20 +258,6 @@ Bug Fixes
 
 * SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
 
-* SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
-
-* SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
-
-* SOLR-16412: Race condition could trigger error on concurrent SizeLimitedDistributedMap cleanup (Patson Luk via noble)
-
-* SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
-
-* SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
-
-* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
-
-* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
-
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
@@ -376,10 +324,6 @@ Other Changes
 * SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
 
 * SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
-
-* SOLR-16482: Add an internal envVar for passing options to bin/solr that will not be overriden by the user. (Houston Putman)
-
-* SOLR-16486: Pin the OS Variant for the default base image of the Dockerfile (to Ubuntu 20). (Houston Putman, janhoy, Eva Müller)
 
 Build
 ---------------------
