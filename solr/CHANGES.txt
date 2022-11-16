@@ -35,15 +35,6 @@ New Features
 
 * SOLR-16435: Add Request timeout to Http2SolrClient (Tomás Fernández Löbbe)
 
-* SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
-
-* SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
-
-* SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
-
-* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` functionality for cloud.
- Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
-
 Improvements
 ---------------------
 
@@ -67,6 +58,8 @@ Improvements
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. (Mikhail Khludnev)
+
 Optimizations
 ---------------------
 (No changes)
@@ -83,6 +76,10 @@ Bug Fixes
 
 * SOLR-16160: UpdateXmlMessages duplicate data when data is removed and then added in the same message (Alex Deparvu via Kevin Risden)
 
+* SOLR-16483: Fix IndexOutOfBounds in RecursiveNumericEvaluator (Bendegúz Ács via Kevin Risden)
+
+* SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -95,6 +92,8 @@ Other Changes
   generically on localhost. (Mike Drob)
 
 * SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
+
+* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
 ==================  9.1.0 ==================
 
@@ -259,6 +258,10 @@ Bug Fixes
 
 * SOLR-16463: Workaround for serious crash on JDK17+ due to JIT on caffeinecache (janhoy, Uwe Schindler)
 
+* SOLR-16478 :removing a replica should delete the PRS entry from the hostnode and not from overseer (Patson Luk via noble)
+
+* SOLR-16485: Fix NPE in ShardHandlerFactory when running in Standalone mode (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16351: Upgrade Carrot2 to 4.4.3, upgrade randomizedtesting to 2.8.0. (Dawid Weiss)
@@ -325,6 +328,10 @@ Other Changes
 * SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
 
 * SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
+* SOLR-16482: Add an internal envVar for passing options to bin/solr that will not be overriden by the user. (Houston Putman)
+
+* SOLR-16486: Pin the OS Variant for the default base image of the Dockerfile (to Ubuntu 20). (Houston Putman, janhoy, Eva Müller)
 
 Build
 ---------------------
