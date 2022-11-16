@@ -53,6 +53,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.ResponseWriters;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
@@ -210,24 +211,20 @@ public class BlobHandler extends RequestHandlerBase
           if (docs.totalHits.value > 0) {
             rsp.add(
                 ReplicationHandler.FILE_STREAM,
-                new SolrCore.RawWriter() {
-
-                  @Override
-                  public void write(OutputStream os) throws IOException {
-                    Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
-                    IndexableField sf = doc.getField("blob");
-                    FieldType fieldType = req.getSchema().getField("blob").getType();
-                    ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
-                    if (buf == null) {
-                      // should never happen unless a user wrote this document directly
-                      throw new SolrException(
-                          SolrException.ErrorCode.NOT_FOUND,
-                          "Invalid document . No field called blob");
-                    } else {
-                      os.write(buf.array(), buf.arrayOffset(), buf.limit());
-                    }
-                  }
-                });
+                    (ResponseWriters.RawWriter) os -> {
+                      Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                      IndexableField sf = doc.getField("blob");
+                      FieldType fieldType = req.getSchema().getField("blob").getType();
+                      ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
+                      if (buf == null) {
+                        // should never happen unless a user wrote this document directly
+                        throw new SolrException(
+                            SolrException.ErrorCode.NOT_FOUND,
+                            "Invalid document . No field called blob");
+                      } else {
+                        os.write(buf.array(), buf.arrayOffset(), buf.limit());
+                      }
+                    });
 
           } else {
             throw new SolrException(

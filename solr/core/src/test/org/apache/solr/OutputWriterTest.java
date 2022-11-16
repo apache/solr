@@ -67,10 +67,10 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
 
   public void testLazy() {
     PluginBag.PluginHolder<QueryResponseWriter> qrw =
-        h.getCore().getResponseWriters().getRegistry().get("useless");
+        h.getCore().getResponseWriters().getHolder("useless");
     assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
 
-    qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
+    qrw = h.getCore().getResponseWriters().getHolder("xml");
     assertTrue("Should not be a lazy class", qrw.isLoaded());
     assertSame("Should not be a lazy class", qrw.getClass(), PluginBag.PluginHolder.class);
   }

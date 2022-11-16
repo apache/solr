@@ -83,13 +83,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.*;
 import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrDeletionPolicy;
-import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
@@ -1582,7 +1577,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   /** This class is used to read and send files in the lucene index */
-  private class DirectoryFileStream implements SolrCore.RawWriter {
+  private class DirectoryFileStream implements ResponseWriters.RawWriter {
     protected SolrParams params;
 
     protected FastOutputStream fos;

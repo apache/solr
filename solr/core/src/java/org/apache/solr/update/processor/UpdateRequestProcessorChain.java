@@ -302,7 +302,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
       if (s.isEmpty()) continue;
       UpdateRequestProcessorFactory p = null;
       PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder =
-          core.getUpdateProcessors().getRegistry().get(s);
+          core.getUpdateProcessors().getHolder(s);
       if (holder instanceof PackagePluginHolder) {
         p = new LazyUpdateRequestProcessorFactory(holder);
       } else {

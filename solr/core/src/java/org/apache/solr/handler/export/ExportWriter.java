@@ -55,6 +55,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.core.ResponseWriters;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -91,7 +92,7 @@ import org.slf4j.LoggerFactory;
  * across the wire) and marked as sent (unset in the bitmap). This process repeats until all
  * matching documents have been sent.
  */
-public class ExportWriter implements SolrCore.RawWriter, Closeable {
+public class ExportWriter implements ResponseWriters.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String BATCH_SIZE_PARAM = "batchSize";

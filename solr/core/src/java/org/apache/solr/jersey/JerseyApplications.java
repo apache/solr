@@ -21,7 +21,8 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import javax.inject.Singleton;
-import org.apache.solr.core.PluginBag;
+
+import org.apache.solr.core.RequestHandlerBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,7 +45,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 public class JerseyApplications {
 
   public static class CoreContainerApp extends ResourceConfig {
-    public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public CoreContainerApp(RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry) {
       super();
 
       // Authentication and authorization
@@ -68,7 +69,7 @@ public class JerseyApplications {
             @Override
             protected void configure() {
               bindFactory(new MetricBeanFactory(beanRegistry))
-                  .to(PluginBag.JerseyMetricsLookupRegistry.class)
+                  .to(RequestHandlerBag.JerseyMetricsLookupRegistry.class)
                   .in(Singleton.class);
             }
           });
@@ -102,7 +103,7 @@ public class JerseyApplications {
 
   public static class SolrCoreApp extends CoreContainerApp {
 
-    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public SolrCoreApp(SolrCore solrCore, RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry) {
       super(beanRegistry);
 
       // Dependency Injection for Jersey resources

@@ -46,7 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.ResponseWriters;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -348,7 +348,7 @@ public class PackageStoreAPI {
       req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
       rsp.add(
           FILE_STREAM,
-          (SolrCore.RawWriter)
+          (ResponseWriters.RawWriter)
               os ->
                   packageStore.get(
                       path,

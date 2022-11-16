@@ -52,7 +52,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   public void testLazyLoading() {
     SolrCore core = h.getCore();
     PluginBag.PluginHolder<SolrRequestHandler> handler =
-        core.getRequestHandlers().getRegistry().get("/lazy");
+        core.getRequestHandlers().getHolder("/lazy");
     assertFalse(handler.isLoaded());
 
     assertU(

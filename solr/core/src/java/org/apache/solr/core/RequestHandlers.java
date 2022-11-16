@@ -33,7 +33,7 @@ public final class RequestHandlers {
 
   private final SolrCore core;
 
-  final PluginBag<SolrRequestHandler> handlers;
+  final RequestHandlerBag handlers;
 
   /**
    * Trim the trailing '/' if it's there, and convert null to empty string.
@@ -51,7 +51,7 @@ public final class RequestHandlers {
     this.core = core;
     // we need a thread safe registry since methods like register are currently documented to be
     // thread safe.
-    handlers = new PluginBag<>(SolrRequestHandler.class, core, true);
+    handlers = new RequestHandlerBag( core);
   }
 
   /**
@@ -79,7 +79,7 @@ public final class RequestHandlers {
   }
 
   /** Returns an unmodifiable Map containing the registered handlers */
-  public PluginBag<SolrRequestHandler> getRequestHandlers() {
+  public RequestHandlerBag getRequestHandlers() {
     return handlers;
   }
 

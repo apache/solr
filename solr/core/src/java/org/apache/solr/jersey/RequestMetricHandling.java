@@ -31,7 +31,8 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
-import org.apache.solr.core.PluginBag;
+
+import org.apache.solr.core.RequestHandlerBag;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
@@ -58,10 +59,10 @@ public class RequestMetricHandling {
 
     @Context private ResourceInfo resourceInfo;
 
-    private PluginBag.JerseyMetricsLookupRegistry beanRegistry;
+    private RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry;
 
     @Inject
-    public PreRequestMetricsFilter(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public PreRequestMetricsFilter(RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry) {
       this.beanRegistry = beanRegistry;
     }
 

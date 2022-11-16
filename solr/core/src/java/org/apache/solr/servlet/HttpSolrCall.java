@@ -101,6 +101,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.ResponseWriters;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
@@ -876,7 +877,7 @@ public class HttpSolrCall {
       }
     }
     QueryResponseWriter respWriter =
-        SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
+        ResponseWriters.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit()) {
@@ -905,8 +906,7 @@ public class HttpSolrCall {
     if (core != null) {
       return core.getQueryResponseWriter(wt);
     } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+      return ResponseWriters.getOrDefault(wt);
     }
   }
 

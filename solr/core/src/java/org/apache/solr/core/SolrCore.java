@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.core.ResponseWriters.DEFAULT_RESPONSE_WRITERS;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -1997,7 +1998,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           && searchComponents.get(name) instanceof HighlightComponent) {
         if (!HighlightComponent.COMPONENT_NAME.equals(name)) {
           searchComponents.put(
-              HighlightComponent.COMPONENT_NAME, searchComponents.getRegistry().get(name));
+              HighlightComponent.COMPONENT_NAME, searchComponents.getHolder(name));
         }
         break;
       }
@@ -2991,76 +2992,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public PluginBag<QueryResponseWriter> getResponseWriters() {
     return responseWriters;
   }
-
   private final PluginBag<QueryResponseWriter> responseWriters =
-      new PluginBag<>(QueryResponseWriter.class, this);
-  public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
-
-  static {
-    HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
-    m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JSONResponseWriter());
-    m.put("standard", m.get(CommonParams.JSON));
-    m.put("geojson", new GeoJSONResponseWriter());
-    m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
-    m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
-    m.put("csv", new CSVResponseWriter());
-    m.put("schema.xml", new SchemaXmlResponseWriter());
-    m.put("smile", new SmileResponseWriter());
-    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
-    DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
-    try {
-      m.put(
-          "xlsx",
-          (QueryResponseWriter)
-              Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-                  .getConstructor()
-                  .newInstance());
-    } catch (Exception e) {
-      // don't worry; extraction module not in class path
-    }
-  }
-
-  private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter() {
-      @Override
-      public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
-          throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
-        if (rawWriter != null) {
-          rawWriter.write(out);
-          if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
-        }
-      }
-
-      @Override
-      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
-        if (rawWriter != null) {
-          return rawWriter.getContentType();
-        } else {
-          return BinaryResponseParser.BINARY_CONTENT_TYPE;
-        }
-      }
-    };
-  }
-
+          new PluginBag<>(QueryResponseWriter.class, this, false,
+                  ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS, ResponseWriters.info);
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
     setLatestSchema(schema);
-  }
-
-  public interface RawWriter {
-    default String getContentType() {
-      return BinaryResponseParser.BINARY_CONTENT_TYPE;
-    }
-
-    void write(OutputStream os) throws IOException;
   }
 
   /**
@@ -3068,7 +3005,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * may also be configured.
    */
   private void initWriters() {
-    responseWriters.init(DEFAULT_RESPONSE_WRITERS, this);
+    responseWriters.init(null, this);
     // configure the default response writer; this one should never be null
     if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
   }

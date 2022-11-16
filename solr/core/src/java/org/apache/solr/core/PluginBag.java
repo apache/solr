@@ -16,9 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -32,24 +29,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
+
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
-import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,34 +47,16 @@ import org.slf4j.LoggerFactory;
 public class PluginBag<T> implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PluginHolder<T>> registry;
-  private final Map<String, PluginHolder<T>> immutableRegistry;
+  protected Map<String, PluginHolder<T>> registry;
   private String def;
   private final Class<T> klass;
-  private SolrCore core;
+  protected SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
-  private final ApiBag apiBag;
-  private final ResourceConfig jerseyResources;
 
-  public static class JerseyMetricsLookupRegistry
-      extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
-
-  private final JerseyMetricsLookupRegistry infoBeanByResource;
+  private Map<String, PluginHolder<T>> defaults;
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    if (klass == SolrRequestHandler.class) {
-      this.apiBag = new ApiBag(core != null);
-      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
-      this.jerseyResources =
-          (core == null)
-              ? new JerseyApplications.CoreContainerApp(infoBeanByResource)
-              : new JerseyApplications.SolrCoreApp(core, infoBeanByResource);
-    } else {
-      this.apiBag = null;
-      this.jerseyResources = null;
-      this.infoBeanByResource = null;
-    }
     this.core = core;
     this.klass = klass;
     // TODO: since reads will dominate writes, we could also think about creating a new instance of
@@ -93,12 +65,20 @@ public class PluginBag<T> implements AutoCloseable {
     // We could also perhaps make this constructor into a factory method to return different
     // implementations depending on thread safety needs.
     this.registry = needThreadSafety ? new ConcurrentHashMap<>() : new HashMap<>();
-    this.immutableRegistry = Collections.unmodifiableMap(registry);
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
     }
+  }
+
+  public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety, Map<String,
+          PluginHolder<T>> defaults,SolrConfig.SolrPluginInfo pluginMetaData) {
+    this.core = core;
+    this.klass = klass;
+    this.registry = needThreadSafety ? new ConcurrentHashMap<>(0) : new HashMap<>(0);
+    this.meta = pluginMetaData;
+    this.defaults = defaults;
   }
 
   /** Constructs a non-threadsafe plugin registry */
@@ -177,7 +157,12 @@ public class PluginBag<T> implements AutoCloseable {
   /** Get a plugin by name. If the plugin is not already instantiated, it is done here */
   public T get(String name) {
     PluginHolder<T> result = registry.get(name);
+    if(result == null && defaults != null) result = defaults.get(name);
     return result == null ? null : result.get();
+  }
+
+  public PluginHolder<T> getHolder(String name) {
+    return registry.get(name);
   }
 
   /**
@@ -193,7 +178,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public Set<String> keySet() {
-    return immutableRegistry.keySet();
+    return registry.keySet();
   }
 
   /** register a plugin by a name */
@@ -207,61 +192,8 @@ public class PluginBag<T> implements AutoCloseable {
 
   @SuppressWarnings({"unchecked"})
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
-    Boolean registerApi = null;
-    Boolean disableHandler = null;
-    if (plugin.pluginInfo != null) {
-      String registerAt = plugin.pluginInfo.attributes.get("registerPath");
-      if (registerAt != null) {
-        List<String> strs = StrUtils.splitSmart(registerAt, ',');
-        disableHandler = !strs.contains("/solr");
-        registerApi = strs.contains("/v2");
-      }
-    }
-
-    if (apiBag != null) {
-      if (plugin.isLoaded()) {
-        T inst = plugin.get();
-        if (inst instanceof ApiSupport) {
-          ApiSupport apiSupport = (ApiSupport) inst;
-          if (registerApi == null) registerApi = apiSupport.registerV2();
-          if (disableHandler == null) disableHandler = !apiSupport.registerV1();
-
-          if (registerApi) {
-            Collection<Api> apis = apiSupport.getApis();
-            if (apis != null) {
-              Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
-              for (Api api : apis) {
-                apiBag.register(api, nameSubstitutes);
-              }
-            }
-
-            // TODO Should we use <requestHandler name="/blah"> to override the path that each
-            //  resource registers under?
-            Collection<Class<? extends JerseyResource>> jerseyApis =
-                apiSupport.getJerseyResources();
-            if (!CollectionUtils.isEmpty(jerseyApis)) {
-              for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
-                if (log.isDebugEnabled()) {
-                  log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
-                }
-                jerseyResources.register(jerseyClazz);
-                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
-                // mapping
-                if (inst instanceof RequestHandlerBase) {
-                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
-                }
-              }
-            }
-          }
-        }
-      } else {
-        if (registerApi != null && registerApi)
-          apiBag.registerLazy((PluginHolder<SolrRequestHandler>) plugin, plugin.pluginInfo);
-      }
-    }
-    if (disableHandler == null) disableHandler = Boolean.FALSE;
     PluginHolder<T> old = null;
-    if (!disableHandler) old = registry.put(name, plugin);
+    old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
     if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
     // old instance has been replaced - close it to prevent mem leaks
@@ -277,10 +209,6 @@ public class PluginBag<T> implements AutoCloseable {
       log.warn("Multiple defaults for : {}", meta.getCleanTag());
     }
     this.def = def;
-  }
-
-  public Map<String, PluginHolder<T>> getRegistry() {
-    return immutableRegistry;
   }
 
   public boolean contains(String name) {
@@ -327,9 +255,11 @@ public class PluginBag<T> implements AutoCloseable {
             infos.stream().map(i -> i.name).collect(Collectors.toList()));
       }
     }
-    for (Map.Entry<String, T> e : defaults.entrySet()) {
-      if (!contains(e.getKey())) {
-        put(e.getKey(), new PluginHolder<>(null, e.getValue()));
+    if(defaults != null) {
+      for (Map.Entry<String, T> e : defaults.entrySet()) {
+        if (!contains(e.getKey())) {
+          put(e.getKey(), new PluginHolder<>(null, e.getValue()));
+        }
       }
     }
   }
@@ -341,7 +271,7 @@ public class PluginBag<T> implements AutoCloseable {
     return result.isLoaded();
   }
 
-  private void registerMBean(Object inst, SolrCore core, String pluginKey) {
+  protected void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
     if (inst instanceof SolrInfoBean) {
       SolrInfoBean mBean = (SolrInfoBean) inst;
@@ -398,7 +328,6 @@ public class PluginBag<T> implements AutoCloseable {
       return Optional.ofNullable(inst);
     }
 
-    @Override
     public T get() {
       return inst;
     }
@@ -436,7 +365,6 @@ public class PluginBag<T> implements AutoCloseable {
       return pluginInfo;
     }
 
-    @Override
     public String toString() {
       return String.valueOf(inst);
     }
@@ -517,22 +445,5 @@ public class PluginBag<T> implements AutoCloseable {
           localInst; // only assign the volatile until after the plugin is completely ready to use
       return true;
     }
-  }
-
-  public Api v2lookup(String path, String method, Map<String, String> parts) {
-    if (apiBag == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "this should not happen, looking up for v2 API at the wrong place");
-    }
-    return apiBag.lookup(path, method, parts);
-  }
-
-  public ApiBag getApiBag() {
-    return apiBag;
-  }
-
-  public ResourceConfig getJerseyEndpoints() {
-    return jerseyResources;
   }
 }
