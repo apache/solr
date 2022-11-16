@@ -80,12 +80,11 @@ public class ClusterAPI {
   @EndPoint(method = GET, path = "/node/heap", permission = COLL_READ_PERM)
   public void heap(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     Runtime rt = Runtime.getRuntime();
-    if(req.getParams().getBool("gc", false)) {
+    if (req.getParams().getBool("gc", false)) {
       rt.gc();
     }
-    rsp.add("heap",  rt.totalMemory() - rt.freeMemory());
+    rsp.add("heap", rt.totalMemory() - rt.freeMemory());
   }
-
 
   @EndPoint(method = GET, path = "/cluster/node-roles", permission = COLL_READ_PERM)
   public void roles(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {

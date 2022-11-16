@@ -40,9 +40,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * and is reused for all relevant queries.
  */
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
-  public static String CONTENT_TYPE_XML_UTF8 = "application/xml; charset=UTF-8";
-  public static String CONTENT_TYPE_TEXT_UTF8 = "text/plain; charset=UTF-8";
-  public static String CONTENT_TYPE_TEXT_ASCII = "text/plain; charset=US-ASCII";
+  String CONTENT_TYPE_XML_UTF8 = "application/xml; charset=UTF-8";
+  String CONTENT_TYPE_TEXT_UTF8 = "text/plain; charset=UTF-8";
+  String CONTENT_TYPE_TEXT_ASCII = "text/plain; charset=US-ASCII";
 
   /**
    * Write a SolrQueryResponse, this method must be thread save.
@@ -53,7 +53,7 @@ public interface QueryResponseWriter extends NamedListInitializedPlugin {
    * <p>There are no mandatory actions that write must perform. An empty write implementation would
    * fulfill all interface obligations.
    */
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+  void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException;
 
   /**
@@ -64,5 +64,5 @@ public interface QueryResponseWriter extends NamedListInitializedPlugin {
    *
    * @return a Content-Type string, which may not be null.
    */
-  public String getContentType(SolrQueryRequest request, SolrQueryResponse response);
+  String getContentType(SolrQueryRequest request, SolrQueryResponse response);
 }

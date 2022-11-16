@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.core.ResponseWriters.DEFAULT_RESPONSE_WRITERS;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -29,7 +28,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -78,7 +76,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -105,7 +102,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.IndexFetcher;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -120,21 +116,8 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.GeoJSONResponseWriter;
-import org.apache.solr.response.GraphMLResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -1954,7 +1937,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Returns an unmodifiable Map containing the registered handlers */
-  public PluginBag<SolrRequestHandler> getRequestHandlers() {
+  public RequestHandlerBag getRequestHandlers() {
     return reqHandlers.handlers;
   }
 
@@ -1997,8 +1980,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (searchComponents.isLoaded(name)
           && searchComponents.get(name) instanceof HighlightComponent) {
         if (!HighlightComponent.COMPONENT_NAME.equals(name)) {
-          searchComponents.put(
-              HighlightComponent.COMPONENT_NAME, searchComponents.getHolder(name));
+          searchComponents.put(HighlightComponent.COMPONENT_NAME, searchComponents.getHolder(name));
         }
         break;
       }
@@ -2992,9 +2974,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public PluginBag<QueryResponseWriter> getResponseWriters() {
     return responseWriters;
   }
+
   private final PluginBag<QueryResponseWriter> responseWriters =
-          new PluginBag<>(QueryResponseWriter.class, this, false,
-                  ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS, ResponseWriters.info);
+      new PluginBag<>(
+          QueryResponseWriter.class,
+          this,
+          false,
+          ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS,
+          ResponseWriters.info);
+
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
     setLatestSchema(schema);

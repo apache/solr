@@ -56,7 +56,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.RequestHandlerBag;
 import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
@@ -64,7 +64,6 @@ import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
@@ -74,8 +73,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     Map<String, Object[]> calls = new HashMap<>();
     Map<String, Object> out = new HashMap<>();
     CoreContainer mockCC = TestCoreAdminApis.getCoreContainerMock(calls, out);
-    PluginBag<SolrRequestHandler> containerHandlers =
-        new PluginBag<>(SolrRequestHandler.class, null, false);
+    RequestHandlerBag containerHandlers = new RequestHandlerBag(null);
     TestCollectionAPIs.MockCollectionsHandler collectionsHandler =
         new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
@@ -87,8 +85,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     containerHandlers.put(CONFIGSETS_HANDLER_PATH, new ConfigSetsHandler(mockCC));
     out.put("getRequestHandlers", containerHandlers);
 
-    PluginBag<SolrRequestHandler> coreHandlers =
-        new PluginBag<>(SolrRequestHandler.class, null, false);
+    RequestHandlerBag coreHandlers = new RequestHandlerBag(null);
     coreHandlers.put("/schema", new SchemaHandler());
     coreHandlers.put("/config", new SolrConfigHandler());
     coreHandlers.put("/admin/ping", new PingRequestHandler());
@@ -338,10 +335,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
   private SolrQueryResponse invoke(
-      PluginBag<SolrRequestHandler> reqHandlers,
-      String path,
-      String fullPath,
-      CoreContainer mockCC) {
+      RequestHandlerBag reqHandlers, String path, String fullPath, CoreContainer mockCC) {
     HashMap<String, String> parts = new HashMap<>();
     boolean containerHandlerLookup = mockCC.getRequestHandlers() == reqHandlers;
     path = path == null ? fullPath : path;

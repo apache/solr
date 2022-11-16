@@ -51,7 +51,7 @@ public final class RequestHandlers {
     this.core = core;
     // we need a thread safe registry since methods like register are currently documented to be
     // thread safe.
-    handlers = new RequestHandlerBag( core);
+    handlers = new RequestHandlerBag(core);
   }
 
   /**

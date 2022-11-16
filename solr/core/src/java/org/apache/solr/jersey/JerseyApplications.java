@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import javax.inject.Singleton;
-
 import org.apache.solr.core.RequestHandlerBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -103,7 +102,8 @@ public class JerseyApplications {
 
   public static class SolrCoreApp extends CoreContainerApp {
 
-    public SolrCoreApp(SolrCore solrCore, RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public SolrCoreApp(
+        SolrCore solrCore, RequestHandlerBag.JerseyMetricsLookupRegistry beanRegistry) {
       super(beanRegistry);
 
       // Dependency Injection for Jersey resources

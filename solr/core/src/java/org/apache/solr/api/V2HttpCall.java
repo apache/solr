@@ -51,13 +51,12 @@ import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.RequestHandlerBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.jersey.RequestContextKeys;
 import org.apache.solr.jersey.container.ContainerRequestUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -263,7 +262,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   public static Api getApiInfo(
-      PluginBag<SolrRequestHandler> requestHandlers,
+      RequestHandlerBag requestHandlers,
       String path,
       String method,
       String fullPath,

@@ -26,8 +26,8 @@ import org.glassfish.hk2.api.Factory;
  * <p>Currently, Jersey resources that have a corresponding v1 API produce the same metrics as their
  * v1 equivalent and rely on the v1 requestHandler instance to do so. Solr facilitates this by
  * building a map of the Jersey resource to requestHandler mapping (a {@link
- * RequestHandlerBag.JerseyMetricsLookupRegistry}), and injecting it into the pre- and
- * post- Jersey filters that handle metrics.
+ * RequestHandlerBag.JerseyMetricsLookupRegistry}), and injecting it into the pre- and post- Jersey
+ * filters that handle metrics.
  *
  * <p>This isn't ideal, as requestHandler's don't really "fit" conceptually here. But it's
  * unavoidable while we want our v2 APIs to exactly match the metrics produced by v1 calls.

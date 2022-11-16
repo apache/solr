@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
@@ -72,8 +71,12 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
-  public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety, Map<String,
-          PluginHolder<T>> defaults,SolrConfig.SolrPluginInfo pluginMetaData) {
+  public PluginBag(
+      Class<T> klass,
+      SolrCore core,
+      boolean needThreadSafety,
+      Map<String, PluginHolder<T>> defaults,
+      SolrConfig.SolrPluginInfo pluginMetaData) {
     this.core = core;
     this.klass = klass;
     this.registry = needThreadSafety ? new ConcurrentHashMap<>(0) : new HashMap<>(0);
@@ -157,7 +160,7 @@ public class PluginBag<T> implements AutoCloseable {
   /** Get a plugin by name. If the plugin is not already instantiated, it is done here */
   public T get(String name) {
     PluginHolder<T> result = registry.get(name);
-    if(result == null && defaults != null) result = defaults.get(name);
+    if (result == null && defaults != null) result = defaults.get(name);
     return result == null ? null : result.get();
   }
 
@@ -255,7 +258,7 @@ public class PluginBag<T> implements AutoCloseable {
             infos.stream().map(i -> i.name).collect(Collectors.toList()));
       }
     }
-    if(defaults != null) {
+    if (defaults != null) {
       for (Map.Entry<String, T> e : defaults.entrySet()) {
         if (!contains(e.getKey())) {
           put(e.getKey(), new PluginHolder<>(null, e.getValue()));

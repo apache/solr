@@ -876,8 +876,7 @@ public class HttpSolrCall {
             solrResp.getToLogAsString("[admin]"));
       }
     }
-    QueryResponseWriter respWriter =
-        ResponseWriters.get(solrReq.getParams().get(CommonParams.WT));
+    QueryResponseWriter respWriter = ResponseWriters.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit()) {

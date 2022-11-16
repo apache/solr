@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.VERSION;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -54,7 +53,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.ResponseWriters;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -211,7 +209,8 @@ public class BlobHandler extends RequestHandlerBase
           if (docs.totalHits.value > 0) {
             rsp.add(
                 ReplicationHandler.FILE_STREAM,
-                    (ResponseWriters.RawWriter) os -> {
+                (ResponseWriters.RawWriter)
+                    os -> {
                       Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
                       IndexableField sf = doc.getField("blob");
                       FieldType fieldType = req.getSchema().getField("blob").getType();

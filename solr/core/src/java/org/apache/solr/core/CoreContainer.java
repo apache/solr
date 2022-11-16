@@ -187,8 +187,7 @@ public class CoreContainer {
     }
   }
 
-  private volatile RequestHandlerBag containerHandlers =
-      new RequestHandlerBag( null);
+  private volatile RequestHandlerBag containerHandlers = new RequestHandlerBag(null);
 
   private volatile ApplicationHandler jerseyAppHandler;
 
@@ -338,7 +337,7 @@ public class CoreContainer {
     return RequestHandlerBase.getRequestHandler(path, containerHandlers);
   }
 
-  public PluginBag<SolrRequestHandler> getRequestHandlers() {
+  public RequestHandlerBag getRequestHandlers() {
     return this.containerHandlers;
   }
 
