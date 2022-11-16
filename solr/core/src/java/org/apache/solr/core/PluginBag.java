@@ -149,9 +149,9 @@ public class PluginBag<T> implements AutoCloseable {
    */
   boolean alias(String src, String target) {
     if (src == null) return false;
-    PluginHolder<T> a = registry.get(src);
+    PluginHolder<T> a = getHolder(src);
     if (a == null) return false;
-    PluginHolder<T> b = registry.get(target);
+    PluginHolder<T> b = getHolder(target);
     if (b != null) return false;
     registry.put(target, a);
     return true;
@@ -159,13 +159,14 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** Get a plugin by name. If the plugin is not already instantiated, it is done here */
   public T get(String name) {
-    PluginHolder<T> result = registry.get(name);
-    if (result == null && defaults != null) result = defaults.get(name);
+    PluginHolder<T> result = getHolder(name);
     return result == null ? null : result.get();
   }
 
   public PluginHolder<T> getHolder(String name) {
-    return registry.get(name);
+    PluginHolder<T> result = registry.get(name);
+    if (result == null && defaults != null) result = defaults.get(name);
+    return result;
   }
 
   /**
@@ -207,7 +208,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   void setDefault(String def) {
-    if (!registry.containsKey(def)) return;
+    if (getHolder(def) == null) return;
     if (this.def != null) {
       log.warn("Multiple defaults for : {}", meta.getCleanTag());
     }
@@ -215,7 +216,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public boolean contains(String name) {
-    return registry.containsKey(name);
+    return getHolder(name) != null;
   }
 
   String getDefault() {
