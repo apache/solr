@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
 import org.apache.solr.jersey.JerseyApplications;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -47,11 +48,6 @@ public class PluginBagTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOnlyInitsJerseyIfHoldingRequestHandlers() {
-    final RequestHandlerBag nonRequestHandlerBag = new RequestHandlerBag(null);
-    assertNull(
-        "Jersey app should not be created for plugin bags that aren't managing RequestHandler's",
-        nonRequestHandlerBag.getJerseyEndpoints());
-
     final RequestHandlerBag handlerPluginBag = new RequestHandlerBag(null);
     assertNotNull(
         "Jersey app should be created for plugin bags that manage RequestHandlers",
