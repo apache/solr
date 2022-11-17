@@ -1211,17 +1211,42 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     // Are all of our normal cached filters negative?
-    if (end > 0 && answer == null) {
-      answer = getLiveDocSet();
-    }
+    if (end > 0) {
+      if (answer == null) {
+        answer = getLiveDocSet();
+      }
 
-    // do negative queries first to shrink set size
-    for (int i = 0; i < end; i++) {
-      if (neg[i]) answer = answer.andNot(sets[i]);
-    }
+      // min size must be maxDoc based on BitDocSet conversion at the end
+      FixedBitSet tempAnswer = FixedBitSet.ensureCapacity(answer.getFixedBitSetClone(), maxDoc());
 
-    for (int i = 0; i < end; i++) {
-      if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
+      // do negative queries first to shrink set size
+      for (int i = 0; i < end; i++) {
+        if (neg[i]) {
+          // Clear any documents that are in the negative filter query
+          DocIterator iterator = sets[i].iterator();
+          while (iterator.hasNext()) {
+            int doc = iterator.nextDoc();
+            tempAnswer.clear(doc);
+          }
+        }
+      }
+
+      for (int i = 0; i < end; i++) {
+        if (!neg[i] && i != smallestIndex) {
+          DocIterator iterator = sets[i].iterator();
+          int doc = -1;
+          for (int j = 0; j < tempAnswer.length(); j++) {
+            if (doc < j && iterator.hasNext()) {
+              doc = iterator.nextDoc();
+            }
+            if (doc != j) {
+              tempAnswer.clear(j);
+            }
+          }
+        }
+      }
+
+      answer = new BitDocSet(tempAnswer);
     }
 
     // ignore "answer" if it simply matches all docs
