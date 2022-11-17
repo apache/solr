@@ -1357,9 +1357,9 @@ public class SolrCLI implements CLIO {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set(DISTRIB, "false");
-            try (Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(coreUrl).build()) {
-
-              qr = http2SolrClient.query(q);
+            int lastSlash = coreUrl.substring(0, coreUrl.length()-1).lastIndexOf('/');
+            try (Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build()) {
+              qr = http2SolrClient.query(coreUrl.substring(lastSlash+1, coreUrl.length()-1), q);
               numDocs = qr.getResults().getNumFound();
 
               NamedList<Object> systemInfo =
