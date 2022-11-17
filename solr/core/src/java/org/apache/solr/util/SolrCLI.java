@@ -1361,10 +1361,11 @@ public class SolrCLI implements CLIO {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set(DISTRIB, "false");
-            int lastSlash = coreUrl.substring(0, coreUrl.length()-1).lastIndexOf('/');
-            Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build();
+            int lastSlash = coreUrl.substring(0, coreUrl.length() - 1).lastIndexOf('/');
+            Http2SolrClient http2SolrClient =
+                new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build();
             try {
-              qr = http2SolrClient.query(coreUrl.substring(lastSlash+1, coreUrl.length()-1), q);
+              qr = http2SolrClient.query(coreUrl.substring(lastSlash + 1, coreUrl.length() - 1), q);
               numDocs = qr.getResults().getNumFound();
 
               NamedList<Object> systemInfo =
@@ -1942,10 +1943,9 @@ public class SolrCLI implements CLIO {
       ToolBase tool = null;
       try {
         NamedList<Object> systemInfo =
-            http2SolrClient
-                .request(
-                    new GenericSolrRequest(
-                        SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()));
+            http2SolrClient.request(
+                new GenericSolrRequest(
+                    SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()));
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           tool = new CreateCollectionTool(stdout);
         } else {
