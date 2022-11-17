@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.PluginBag;
 import org.junit.Test;
 
 /**
@@ -49,10 +50,10 @@ public class TestStandardQParsers extends SolrTestCase {
     List<String> notFinal = new ArrayList<>(QParserPlugin.standardPlugins.size());
     List<String> mismatch = new ArrayList<>(QParserPlugin.standardPlugins.size());
 
-    for (Map.Entry<String, QParserPlugin> pair : QParserPlugin.standardPlugins.entrySet()) {
+    for (Map.Entry<String, PluginBag.PluginHolder<QParserPlugin>> pair :
+        QParserPlugin.standardPlugins.entrySet()) {
       String regName = pair.getKey();
-      Class<? extends QParserPlugin> clazz = pair.getValue().getClass();
-      ;
+      Class<? extends QParserPlugin> clazz = pair.getValue().get().getClass();
 
       Field nameField = clazz.getField(FIELD_NAME);
       int modifiers = nameField.getModifiers();

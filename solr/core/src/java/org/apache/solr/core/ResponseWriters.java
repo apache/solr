@@ -132,12 +132,9 @@ public class ResponseWriters {
    * may also be configured.
    */
   public static PluginBag<QueryResponseWriter> create(SolrCore core) {
-    PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(
-            QueryResponseWriter.class,
-            core,
-            false,
-            DEFAULT_RESPONSE_WRITER_HOLDERS,
-            info);
+    PluginBag<QueryResponseWriter> responseWriters =
+        new PluginBag<>(
+            QueryResponseWriter.class, core, false, DEFAULT_RESPONSE_WRITER_HOLDERS, info);
 
     responseWriters.init(null, core);
     // configure the default response writer; this one should never be null

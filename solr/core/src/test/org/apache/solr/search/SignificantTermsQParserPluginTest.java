@@ -59,14 +59,13 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     assertEquals("significantTerms", SignificantTermsQParserPlugin.NAME);
     assertEquals(
         SignificantTermsQParserPlugin.class,
-        QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME).getClass());
+        QParserPlugin.get(SignificantTermsQParserPlugin.NAME).getClass());
   }
 
   @Test
   public void testEmptyCollectionDoesNotThrow() throws Exception {
     SolrCore emptyCore = h.getCore();
-    QParserPlugin qParserPlugin =
-        QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME);
+    QParserPlugin qParserPlugin = QParserPlugin.get(SignificantTermsQParserPlugin.NAME);
     Map<String, String> params = new HashMap<>();
     params.put("field", "cat");
     QParser parser =
@@ -99,8 +98,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     SolrCore dataCore = h.getCore();
     addTestDocs(dataCore);
 
-    QParserPlugin qParserPlugin =
-        QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME);
+    QParserPlugin qParserPlugin = QParserPlugin.get(SignificantTermsQParserPlugin.NAME);
     Map<String, String> params = new HashMap<>();
     params.put("field", "cat");
     QParser parser =

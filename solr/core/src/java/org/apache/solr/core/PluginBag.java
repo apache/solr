@@ -228,7 +228,7 @@ public class PluginBag<T> implements AutoCloseable {
     return removed == null ? null : removed.get();
   }
 
-  void init(Map<String, T> defaults, SolrCore solrCore) {
+  public void init(Map<String, T> defaults, SolrCore solrCore) {
     init(defaults, solrCore, solrCore.getSolrConfig().getPluginInfos(klass.getName()));
   }
 

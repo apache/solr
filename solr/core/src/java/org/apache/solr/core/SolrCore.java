@@ -1108,7 +1108,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initIndex(prev != null, reload);
 
       responseWriters = ResponseWriters.create(this);
-      qParserPlugins.init(QParserPlugin.standardPlugins, this);
+      qParserPlugins = QParserPlugin.create(this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
@@ -1757,7 +1757,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     if (reqHandlers != null) reqHandlers.close();
     if (responseWriters != null) responseWriters.close();
     searchComponents.close();
-    qParserPlugins.close();
+    if (qParserPlugins != null) qParserPlugins.close();
     valueSourceParsers.close();
     transformerFactories.close();
 
@@ -2975,14 +2975,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return responseWriters;
   }
 
-  private final PluginBag<QueryResponseWriter> responseWriters ;
+  private final PluginBag<QueryResponseWriter> responseWriters;
 
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
     setLatestSchema(schema);
   }
-
-
 
   /** Finds a writer by name, or returns the default writer if not found. */
   public final QueryResponseWriter getQueryResponseWriter(String writerName) {
@@ -2997,8 +2995,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return getQueryResponseWriter(request.getParams().get(CommonParams.WT));
   }
 
-  private final PluginBag<QParserPlugin> qParserPlugins =
-      new PluginBag<>(QParserPlugin.class, this);
+  private final PluginBag<QParserPlugin> qParserPlugins;
 
   public QParserPlugin getQueryPlugin(String parserName) {
     return qParserPlugins.get(parserName);
