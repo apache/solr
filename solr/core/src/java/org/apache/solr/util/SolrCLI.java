@@ -1096,15 +1096,19 @@ public class SolrCLI implements CLIO {
           }
         }
         Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-        NamedList<Object> response =
-            http2SolrClient.request(
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET, getUrlBuilder.toString(), paramsMap));
+        try {
+          NamedList<Object> response =
+              http2SolrClient.request(
+                  new GenericSolrRequest(
+                      SolrRequest.METHOD.GET, getUrlBuilder.toString(), paramsMap));
 
-        // pretty-print the response to stdout
-        CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(response.asMap());
-        echo(arr.toString());
+          // pretty-print the response to stdout
+          CharArr arr = new CharArr();
+          new JSONWriter(arr, 2).write(response.asMap());
+          echo(arr.toString());
+        } finally {
+          closeHttpSolrClient(http2SolrClient);
+        }
       }
     }
   } // end ApiTool class
@@ -1358,7 +1362,8 @@ public class SolrCLI implements CLIO {
             q.setRows(0);
             q.set(DISTRIB, "false");
             int lastSlash = coreUrl.substring(0, coreUrl.length()-1).lastIndexOf('/');
-            try (Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build()) {
+            Http2SolrClient http2SolrClient = new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build();
+            try {
               qr = http2SolrClient.query(coreUrl.substring(lastSlash+1, coreUrl.length()-1), q);
               numDocs = qr.getResults().getNumFound();
 
@@ -1385,6 +1390,8 @@ public class SolrCLI implements CLIO {
               } else {
                 replicaStatus = "error: " + exc;
               }
+            } finally {
+              closeHttpSolrClient(http2SolrClient);
             }
           }
 
@@ -1713,6 +1720,8 @@ public class SolrCLI implements CLIO {
       } catch (SolrServerException sse) {
         throw new Exception(
             "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
+      } finally {
+        closeHttpSolrClient(http2SolrClient);
       }
 
       if (cli.hasOption(OPTION_VERBOSE.getOpt())) {
