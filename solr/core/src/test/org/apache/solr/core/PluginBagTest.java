@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
 import org.apache.solr.jersey.JerseyApplications;
 import org.glassfish.jersey.server.ResourceConfig;

@@ -2975,13 +2975,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return responseWriters;
   }
 
-  private final PluginBag<QueryResponseWriter> responseWriters =
-      new PluginBag<>(
-          QueryResponseWriter.class,
-          this,
-          false,
-          ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS,
-          ResponseWriters.info);
+  private final PluginBag<QueryResponseWriter> responseWriters = ResponseWriters.constructBag(this);
 
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);

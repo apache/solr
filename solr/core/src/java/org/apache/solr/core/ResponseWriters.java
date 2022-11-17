@@ -20,8 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
@@ -44,56 +42,58 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 
 public class ResponseWriters {
-  public static final SolrConfig.SolrPluginInfo info =
+  private static final SolrConfig.SolrPluginInfo info =
       SolrConfig.classVsSolrPluginInfo.get(QueryResponseWriter.class.getName());
-  private static QueryResponseWriter standard;
+  private static final QueryResponseWriter standard = new JSONResponseWriter();
 
   public static QueryResponseWriter get(String name) {
-    return DEFAULT_RESPONSE_WRITERS.get(name);
+    PluginBag.PluginHolder<QueryResponseWriter> result = DEFAULT_RESPONSE_WRITER_HOLDERS.get(name);
+    return result == null ? null : result.get();
   }
 
   public static QueryResponseWriter getOrDefault(String name) {
-    QueryResponseWriter result = DEFAULT_RESPONSE_WRITERS.get(name);
-    return result == null ? standard : result;
+    PluginBag.PluginHolder<QueryResponseWriter> result = DEFAULT_RESPONSE_WRITER_HOLDERS.get(name);
+    return result == null ? standard : result.get();
   }
 
-  public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
   public static final Map<String, PluginBag.PluginHolder<QueryResponseWriter>>
       DEFAULT_RESPONSE_WRITER_HOLDERS;
 
   static {
-    HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
-    m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JSONResponseWriter());
-    m.put("standard", m.get(CommonParams.JSON));
-    m.put("geojson", new GeoJSONResponseWriter());
-    m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
-    m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
-    m.put("csv", new CSVResponseWriter());
-    m.put("schema.xml", new SchemaXmlResponseWriter());
-    m.put("smile", new SmileResponseWriter());
-    standard = m.get("standard");
-    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
-    DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
+    PluginBag.PluginHolder<QueryResponseWriter> json = wrap(standard);
+    ImmutableMap.Builder<String, PluginBag.PluginHolder<QueryResponseWriter>> m =
+        ImmutableMap.builder();
+    m.put("xml", wrap(new XMLResponseWriter()));
+    m.put(CommonParams.JSON, json);
+    m.put("standard", json);
+    m.put("geojson", wrap(new GeoJSONResponseWriter()));
+    m.put("graphml", wrap(new GraphMLResponseWriter()));
+    m.put("python", wrap(new PythonResponseWriter()));
+    m.put("php", wrap(new PHPResponseWriter()));
+    m.put("phps", wrap(new PHPSerializedResponseWriter()));
+    m.put("ruby", wrap(new RubyResponseWriter()));
+    m.put("raw", wrap(new RawResponseWriter()));
+    m.put(CommonParams.JAVABIN, wrap(new BinaryResponseWriter()));
+    m.put("csv", wrap(new CSVResponseWriter()));
+    m.put("schema.xml", wrap(new SchemaXmlResponseWriter()));
+    m.put("smile", wrap(new SmileResponseWriter()));
+    m.put(ReplicationHandler.FILE_STREAM, wrap(getFileStreamWriter()));
     try {
       m.put(
           "xlsx",
-          (QueryResponseWriter)
-              Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-                  .getConstructor()
-                  .newInstance());
+          wrap(
+              (QueryResponseWriter)
+                  Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
+                      .getConstructor()
+                      .newInstance()));
     } catch (Exception e) {
       // don't worry; extraction module not in class path
     }
-    ImmutableMap.Builder<String, PluginBag.PluginHolder<QueryResponseWriter>> b =
-        ImmutableMap.builder();
-    DEFAULT_RESPONSE_WRITERS.forEach((k, v) -> b.put(k, new PluginBag.PluginHolder<>(v, info)));
-    DEFAULT_RESPONSE_WRITER_HOLDERS = b.build();
+    DEFAULT_RESPONSE_WRITER_HOLDERS = m.build();
+  }
+
+  private static PluginBag.PluginHolder<QueryResponseWriter> wrap(QueryResponseWriter v) {
+    return new PluginBag.PluginHolder<>(v, info);
   }
 
   private static BinaryResponseWriter getFileStreamWriter() {
@@ -126,5 +126,14 @@ public class ResponseWriters {
     }
 
     void write(OutputStream os) throws IOException;
+  }
+
+  public static PluginBag<QueryResponseWriter> constructBag(SolrCore core) {
+    return new PluginBag<>(
+        QueryResponseWriter.class,
+        core,
+        false,
+        ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS,
+        ResponseWriters.info);
   }
 }
