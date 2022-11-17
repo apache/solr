@@ -1107,7 +1107,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.codec = initCodec(solrConfig, this.schema);
       initIndex(prev != null, reload);
 
-      initWriters();
+      responseWriters = ResponseWriters.create(this);
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
@@ -1755,7 +1755,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     if (reqHandlers != null) reqHandlers.close();
-    responseWriters.close();
+    if (responseWriters != null) responseWriters.close();
     searchComponents.close();
     qParserPlugins.close();
     valueSourceParsers.close();
@@ -2975,22 +2975,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return responseWriters;
   }
 
-  private final PluginBag<QueryResponseWriter> responseWriters = ResponseWriters.constructBag(this);
+  private final PluginBag<QueryResponseWriter> responseWriters ;
 
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
     setLatestSchema(schema);
   }
 
-  /**
-   * Configure the query response writers. There will always be a default writer; additional writers
-   * may also be configured.
-   */
-  private void initWriters() {
-    responseWriters.init(null, this);
-    // configure the default response writer; this one should never be null
-    if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
-  }
+
 
   /** Finds a writer by name, or returns the default writer if not found. */
   public final QueryResponseWriter getQueryResponseWriter(String writerName) {

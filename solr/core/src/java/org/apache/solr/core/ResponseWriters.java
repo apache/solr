@@ -127,13 +127,21 @@ public class ResponseWriters {
 
     void write(OutputStream os) throws IOException;
   }
+  /**
+   * Configure the query response writers. There will always be a default writer; additional writers
+   * may also be configured.
+   */
+  public static PluginBag<QueryResponseWriter> create(SolrCore core) {
+    PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(
+            QueryResponseWriter.class,
+            core,
+            false,
+            DEFAULT_RESPONSE_WRITER_HOLDERS,
+            info);
 
-  public static PluginBag<QueryResponseWriter> constructBag(SolrCore core) {
-    return new PluginBag<>(
-        QueryResponseWriter.class,
-        core,
-        false,
-        ResponseWriters.DEFAULT_RESPONSE_WRITER_HOLDERS,
-        ResponseWriters.info);
+    responseWriters.init(null, core);
+    // configure the default response writer; this one should never be null
+    if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
+    return responseWriters;
   }
 }
