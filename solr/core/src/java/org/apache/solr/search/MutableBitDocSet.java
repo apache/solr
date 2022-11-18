@@ -18,11 +18,24 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.FixedBitSet;
 
+/**
+ * A {@link BitDocSet} based implementation that mutates the underlying bits for andNot and
+ * intersection. This allows for computing the combinations of sets without duplicating the
+ * underlying array.
+ *
+ * @since solr 9.2
+ */
 public class MutableBitDocSet extends BitDocSet {
   public MutableBitDocSet(FixedBitSet bits) {
     super(bits);
   }
 
+  /**
+   * Returns the documents in this set that are not in the other set. This mutates the underlying
+   * bits so do not cache the returned bitset.
+   *
+   * @return a DocSet representing this AND NOT other
+   */
   @Override
   public DocSet andNot(DocSet other) {
     if (other instanceof BitDocSet) {
@@ -36,9 +49,18 @@ public class MutableBitDocSet extends BitDocSet {
         }
       }
     }
+
+    // We can't return just this since `size` is cached and
+    // we are changing the cardinality of the underlying bits.
     return new MutableBitDocSet(bits);
   }
 
+  /**
+   * Returns the intersection of this set with another set. This mutates the underlying bits so do
+   * not cache the returned bitset.
+   *
+   * @return a DocSet representing the intersection
+   */
   @Override
   public DocSet intersection(DocSet other) {
     // intersection is overloaded in the smaller DocSets to be more
@@ -49,6 +71,9 @@ public class MutableBitDocSet extends BitDocSet {
 
     // Default... handle with bitsets.
     bits.and(other.getFixedBitSet());
+
+    // We can't return just this since `size` is cached and
+    // we are changing the cardinality of the underlying bits.
     return new MutableBitDocSet(bits);
   }
 }
