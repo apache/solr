@@ -21,13 +21,37 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * A {@link BitDocSet} based implementation that mutates the underlying bits for andNot and
  * intersection. This allows for computing the combinations of sets without duplicating the
- * underlying array.
+ * underlying array. This MutableBitDocSet should not be cached because it can be modified.
  *
  * @since solr 9.2
  */
-public class MutableBitDocSet extends BitDocSet {
-  public MutableBitDocSet(FixedBitSet bits) {
+class MutableBitDocSet extends BitDocSet {
+  private MutableBitDocSet(FixedBitSet bits) {
     super(bits);
+  }
+
+  /**
+   * Returns a mutable BitDocSet that is a copy of the provided BitDocSet.
+   *
+   * @param bitDocSet a BitDocSet
+   * @return copy of bitDocSet that is now mutable
+   */
+  public static MutableBitDocSet fromBitDocSet(BitDocSet bitDocSet) {
+    return new MutableBitDocSet(bitDocSet.getFixedBitSetClone());
+  }
+
+  /**
+   * Returns a new BitDocSet with the same bits if the DocSet provided is a MutableBitDocSet.
+   * Otherwise, just returns the provided DocSet.
+   *
+   * @param docSet DocSet to unwrap if it is a MutableBitDocSet
+   * @return Unwrapped DocSet that is not mutable
+   */
+  public static DocSet unwrapIfMutable(DocSet docSet) {
+    if (docSet instanceof MutableBitDocSet) {
+      return new BitDocSet(((MutableBitDocSet) docSet).getBits());
+    }
+    return docSet;
   }
 
   /**
