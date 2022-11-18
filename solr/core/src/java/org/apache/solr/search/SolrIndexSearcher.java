@@ -1211,17 +1211,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     // Are all of our normal cached filters negative?
-    if (end > 0 && answer == null) {
-      answer = getLiveDocSet();
-    }
+    if (end > 0) {
+      if (answer == null) {
+        answer = getLiveDocSet();
+      }
 
-    // do negative queries first to shrink set size
-    for (int i = 0; i < end; i++) {
-      if (neg[i]) answer = answer.andNot(sets[i]);
-    }
+      answer =
+          new MutableBitDocSet(FixedBitSet.ensureCapacity(answer.getFixedBitSetClone(), maxDoc()));
 
-    for (int i = 0; i < end; i++) {
-      if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
+      // do negative queries first to shrink set size
+      for (int i = 0; i < end; i++) {
+        if (neg[i]) answer = answer.andNot(sets[i]);
+      }
+
+      for (int i = 0; i < end; i++) {
+        if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
+      }
     }
 
     // ignore "answer" if it simply matches all docs

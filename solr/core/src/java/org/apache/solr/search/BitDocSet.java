@@ -40,7 +40,7 @@ public class BitDocSet extends DocSet {
 
   // TODO consider SparseFixedBitSet alternative
 
-  private final FixedBitSet bits;
+  protected final FixedBitSet bits;
   int size; // number of docs in the set (cached for perf)
 
   public BitDocSet() {
