@@ -1216,8 +1216,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         answer = getLiveDocSet();
       }
 
-      answer =
-          new MutableBitDocSet(FixedBitSet.ensureCapacity(answer.getFixedBitSetClone(), maxDoc()));
+      // This optimizes for the case where we have more than 2 filters and instead
+      // of copying the bitsets we make one mutable bitset. We only need to do this
+      // for BitDocSet since it clones the backing bitset for andNot and intersection.
+      if (end > 1 && answer instanceof BitDocSet) {
+        FixedBitSet fixedBitSet =
+            FixedBitSet.ensureCapacity(answer.getFixedBitSetClone(), maxDoc());
+        answer = new MutableBitDocSet(fixedBitSet);
+      }
 
       // do negative queries first to shrink set size
       for (int i = 0; i < end; i++) {
