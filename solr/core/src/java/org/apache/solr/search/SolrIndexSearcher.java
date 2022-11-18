@@ -1151,20 +1151,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // This might become pf.answer but not if there are any non-cached filters
     DocSet answer = null;
 
-    boolean[] neg = new boolean[queries.size() + 1];
-    DocSet[] sets = new DocSet[queries.size() + 1];
+    boolean[] neg = new boolean[queries.size()];
+    DocSet[] sets = new DocSet[queries.size()];
     List<ExtendedQuery> notCached = null;
     List<PostFilter> postFilters = null;
 
-    int end = 0;
-    int smallestIndex = -1;
+    int end = 0; // size of "sets" and "neg"; parallel arrays
 
     if (setFilter != null) {
-      answer = sets[end++] = setFilter;
-      smallestIndex = end;
+      answer = setFilter;
     } // we are done with setFilter at this point
 
-    int smallestCount = Integer.MAX_VALUE;
     for (Query q : queries) {
       if (q instanceof ExtendedQuery) {
         ExtendedQuery eq = (ExtendedQuery) q;
@@ -1190,34 +1187,37 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
 
       Query posQuery = QueryUtils.getAbs(q);
-      sets[end] = getPositiveDocSet(posQuery);
+      DocSet docSet = getPositiveDocSet(posQuery);
       // Negative query if absolute value different from original
       if (Objects.equals(q, posQuery)) {
-        neg[end] = false;
-        // keep track of the smallest positive set.
+        // keep track of the smallest positive set; use "answer" for this.
         // This optimization is only worth it if size() is cached, which it would
         // be if we don't do any set operations.
-        int sz = sets[end].size();
-        if (sz < smallestCount) {
-          smallestCount = sz;
-          smallestIndex = end;
-          answer = sets[end];
+        if (answer == null) {
+          answer = docSet;
+          continue;
         }
+        if (docSet.size() < answer.size()) {
+          // swap answer & docSet so that answer is smallest
+          DocSet tmp = answer;
+          answer = docSet;
+          docSet = tmp;
+        }
+        neg[end] = false;
       } else {
         neg[end] = true;
       }
+      sets[end++] = docSet;
+    } // end of queries
 
-      end++;
-    }
-
-    // Are all of our normal cached filters negative?
     if (end > 0) {
+      // Are all of our normal cached filters negative?
       if (answer == null) {
         answer = getLiveDocSet();
       }
 
       // This optimizes for the case where we have more than 2 filters and instead
-      // of copying the bitsets we make one mutable bitset. We only need to do this
+      // of copying the bitsets we make one mutable bitset. We should only do this
       // for BitDocSet since it clones the backing bitset for andNot and intersection.
       if (end > 1 && answer instanceof BitDocSet) {
         answer = MutableBitDocSet.fromBitDocSet((BitDocSet) answer);
@@ -1229,7 +1229,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
 
       for (int i = 0; i < end; i++) {
-        if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
+        if (!neg[i]) answer = answer.intersection(sets[i]);
       }
 
       // Make sure to keep answer as an immutable DocSet if we made it mutable
