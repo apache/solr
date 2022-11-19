@@ -1191,12 +1191,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // Negative query if absolute value different from original
       if (Objects.equals(q, posQuery)) {
         // keep track of the smallest positive set; use "answer" for this.
-        // This optimization is only worth it if size() is cached, which it would
-        // be if we don't do any set operations.
         if (answer == null) {
           answer = docSet;
           continue;
         }
+        // note: assume that size() is cached.  It generally comes from the cache, so should be.
         if (docSet.size() < answer.size()) {
           // swap answer & docSet so that answer is smallest
           DocSet tmp = answer;
