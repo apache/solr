@@ -54,6 +54,12 @@ class MutableBitDocSet extends BitDocSet {
     return docSet;
   }
 
+  private void resetSize() {
+    // We need to reset size since we are changing the cardinality of the underlying bits and size
+    // is typically cached. This forces size to be recomputed as needed.
+    this.size = -1;
+  }
+
   @Override
   public DocIterator iterator() {
     throw new UnsupportedOperationException();
@@ -73,13 +79,12 @@ class MutableBitDocSet extends BitDocSet {
       return other.intersection(this);
     }
 
-    // Default... handle with bitsets.
-    FixedBitSet newbits = getBits();
+    // Operates directly on the underlying bitsets.
+    FixedBitSet newbits = getFixedBitSet();
     newbits.and(other.getFixedBitSet());
 
-    // We can't return just this since `size` is cached and
-    // we are changing the cardinality of the underlying bits.
-    return new MutableBitDocSet(newbits);
+    resetSize();
+    return this;
   }
 
   @Override
@@ -115,9 +120,9 @@ class MutableBitDocSet extends BitDocSet {
    */
   @Override
   public DocSet andNot(DocSet other) {
-    // We can't return just this since `size` is cached and
-    // we are changing the cardinality of the underlying bits.
-    return new MutableBitDocSet(this.andNot(getFixedBitSet(), other));
+    andNot(getFixedBitSet(), other);
+    resetSize();
+    return this;
   }
 
   @Override
