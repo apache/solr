@@ -40,7 +40,7 @@ public class BitDocSet extends DocSet {
 
   // TODO consider SparseFixedBitSet alternative
 
-  protected final FixedBitSet bits;
+  private final FixedBitSet bits;
   int size; // number of docs in the set (cached for perf)
 
   public BitDocSet() {
@@ -194,12 +194,13 @@ public class BitDocSet extends DocSet {
 
   @Override
   public DocSet andNot(DocSet other) {
-    return new BitDocSet(this.andNot(bits.clone(), other));
+    return new BitDocSet(this.andNot(getFixedBitSetClone(), other));
   }
 
   /**
-   * Helper method for andNot that takes FixedBitSet and DocSet.
-   * This returns the resulting bits andNoted together.
+   * Helper method for andNot that takes FixedBitSet and DocSet. This returns the resulting bits
+   * andNoted together.
+   *
    * @param bits bits to operate on
    * @param other The DocSet to compare to
    * @return Resulting andNoted FixedBitSet

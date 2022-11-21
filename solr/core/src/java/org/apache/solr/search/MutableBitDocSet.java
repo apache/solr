@@ -54,17 +54,9 @@ class MutableBitDocSet extends BitDocSet {
     return docSet;
   }
 
-  /**
-   * Returns the documents in this set that are not in the other set. This mutates the underlying
-   * bits so do not cache the returned bitset.
-   *
-   * @return a DocSet representing this AND NOT other
-   */
   @Override
-  public DocSet andNot(DocSet other) {
-    // We can't return just this since `size` is cached and
-    // we are changing the cardinality of the underlying bits.
-    return new MutableBitDocSet(this.andNot(bits, other));
+  public DocIterator iterator() {
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -82,10 +74,64 @@ class MutableBitDocSet extends BitDocSet {
     }
 
     // Default... handle with bitsets.
-    bits.and(other.getFixedBitSet());
+    FixedBitSet newbits = getBits();
+    newbits.and(other.getFixedBitSet());
 
     // We can't return just this since `size` is cached and
     // we are changing the cardinality of the underlying bits.
-    return new MutableBitDocSet(bits);
+    return new MutableBitDocSet(newbits);
+  }
+
+  @Override
+  public int intersectionSize(DocSet other) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean intersects(DocSet other) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int unionSize(DocSet other) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int andNotSize(DocSet other) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addAllTo(FixedBitSet target) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Returns the documents in this set that are not in the other set. This mutates the underlying
+   * bits so do not cache the returned bitset.
+   *
+   * @return a DocSet representing this AND NOT other
+   */
+  @Override
+  public DocSet andNot(DocSet other) {
+    // We can't return just this since `size` is cached and
+    // we are changing the cardinality of the underlying bits.
+    return new MutableBitDocSet(this.andNot(getFixedBitSet(), other));
+  }
+
+  @Override
+  public DocSet union(DocSet other) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public BitDocSet clone() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public String toString() {
+    return "MutableBitDocSet instance of " + super.toString();
   }
 }
