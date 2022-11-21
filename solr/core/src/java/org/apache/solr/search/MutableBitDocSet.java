@@ -62,21 +62,9 @@ class MutableBitDocSet extends BitDocSet {
    */
   @Override
   public DocSet andNot(DocSet other) {
-    if (other instanceof BitDocSet) {
-      bits.andNot(((BitDocSet) other).bits);
-    } else {
-      DocIterator iter = other.iterator();
-      while (iter.hasNext()) {
-        int doc = iter.nextDoc();
-        if (doc < bits.length()) {
-          bits.clear(doc);
-        }
-      }
-    }
-
     // We can't return just this since `size` is cached and
     // we are changing the cardinality of the underlying bits.
-    return new MutableBitDocSet(bits);
+    return new MutableBitDocSet(this.andNot(bits, other));
   }
 
   /**
