@@ -34,6 +34,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -631,12 +632,6 @@ public class SolrCLI implements CLIO {
     return HttpClientUtil.createClient(params);
   }
 
-  public static void closeHttpSolrClient(Http2SolrClient http2SolrClient) {
-    if (http2SolrClient != null) {
-      http2SolrClient.close();
-    }
-  }
-
   @SuppressWarnings("deprecation")
   public static void closeHttpClient(CloseableHttpClient httpClient) {
     if (httpClient != null) {
@@ -981,24 +976,21 @@ public class SolrCLI implements CLIO {
 
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-      Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
-      try {
+      try (var solrClient = getHttpSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
-            http2SolrClient.request(
+            solrClient.request(
                 new GenericSolrRequest(
                     SolrRequest.METHOD.GET,
                     CommonParams.SYSTEM_INFO_PATH,
                     new ModifiableSolrParams()));
         // convert raw JSON into user-friendly output
-        status = reportStatus(systemInfo, http2SolrClient);
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
+        status = reportStatus(systemInfo, solrClient);
       }
 
       return status;
     }
 
-    public Map<String, Object> reportStatus(NamedList<Object> info, Http2SolrClient http2SolrClient)
+    public Map<String, Object> reportStatus(NamedList<Object> info, Http2SolrClient solrClient)
         throws Exception {
       Map<String, Object> status = new LinkedHashMap<>();
 
@@ -1016,7 +1008,7 @@ public class SolrCLI implements CLIO {
 
       if ("solrcloud".equals(info.get("mode"))) {
         String zkHost = (String) info.get("zkHost");
-        status.put("cloud", getCloudStatus(http2SolrClient, zkHost));
+        status.put("cloud", getCloudStatus(solrClient, zkHost));
       }
 
       return status;
@@ -1027,13 +1019,12 @@ public class SolrCLI implements CLIO {
      * cluster.
      */
     @SuppressWarnings("unchecked")
-    protected Map<String, String> getCloudStatus(Http2SolrClient http2SolrClient, String zkHost)
+    protected Map<String, String> getCloudStatus(Http2SolrClient solrClient, String zkHost)
         throws Exception {
       Map<String, String> cloudStatus = new LinkedHashMap<>();
       cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
-      NamedList<Object> response =
-          http2SolrClient.request(new CollectionAdminRequest.ClusterStatus());
+      NamedList<Object> response = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
       NamedList<Object> cluster = (NamedList) response.get("cluster");
       List<String> liveNodes = (List<String>) cluster.get("live_nodes");
@@ -1077,37 +1068,28 @@ public class SolrCLI implements CLIO {
     protected void runImpl(CommandLine cli) throws Exception {
       String getUrl = cli.getOptionValue("get");
       if (getUrl != null) {
-        String[] urlAndParams = getUrl.split("\\?");
-        String[] getUrlSplit = urlAndParams[0].split("/");
-        String[] params = null;
-        if (urlAndParams.length > 1) {
-          params = urlAndParams[1].split("&");
-        }
-        String baseUrl = getUrlSplit[0] + "//" + getUrlSplit[2] + "/" + getUrlSplit[3];
-        StringBuilder getUrlBuilder = new StringBuilder();
-        for (int i = 4; i < getUrlSplit.length; i++) {
-          getUrlBuilder.append("/").append(getUrlSplit[i]);
-        }
+        URI uri = new URI(getUrl);
+        String baseUrl =
+            uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
         ModifiableSolrParams paramsMap = new ModifiableSolrParams();
-        if (params != null) {
-          for (String param : params) {
-            String[] paramSplit = param.split("=");
-            paramsMap.add(paramSplit[0], paramSplit[1]);
-          }
+        String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
+        for (String param : params) {
+          String[] paramSplit = param.split("=");
+          paramsMap.add(paramSplit[0], paramSplit[1]);
         }
-        Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-        try {
+        String path = uri.getPath();
+        try (var solrClient = getHttpSolrClient(baseUrl)) {
           NamedList<Object> response =
-              http2SolrClient.request(
+              solrClient.request(
                   new GenericSolrRequest(
-                      SolrRequest.METHOD.GET, getUrlBuilder.toString(), paramsMap));
+                      SolrRequest.METHOD.GET,
+                      path.substring(path.indexOf("/", path.indexOf("/") + 1)),
+                      paramsMap));
 
           // pretty-print the response to stdout
           CharArr arr = new CharArr();
           new JSONWriter(arr, 2).write(response.asMap());
           echo(arr.toString());
-        } finally {
-          closeHttpSolrClient(http2SolrClient);
         }
       }
     }
@@ -1362,14 +1344,12 @@ public class SolrCLI implements CLIO {
             q.setRows(0);
             q.set(DISTRIB, "false");
             int lastSlash = coreUrl.substring(0, coreUrl.length() - 1).lastIndexOf('/');
-            Http2SolrClient http2SolrClient =
-                new Http2SolrClient.Builder(coreUrl.substring(0, lastSlash)).build();
-            try {
-              qr = http2SolrClient.query(coreUrl.substring(lastSlash + 1, coreUrl.length() - 1), q);
+            try (var solrClient = getHttpSolrClient(coreUrl.substring(0, lastSlash))) {
+              qr = solrClient.query(coreUrl.substring(lastSlash + 1, coreUrl.length() - 1), q);
               numDocs = qr.getResults().getNumFound();
 
               NamedList<Object> systemInfo =
-                  http2SolrClient.request(
+                  solrClient.request(
                       new GenericSolrRequest(
                           SolrRequest.METHOD.GET,
                           CommonParams.SYSTEM_INFO_PATH,
@@ -1391,8 +1371,6 @@ public class SolrCLI implements CLIO {
               } else {
                 replicaStatus = "error: " + exc;
               }
-            } finally {
-              closeHttpSolrClient(http2SolrClient);
             }
           }
 
@@ -1521,11 +1499,10 @@ public class SolrCLI implements CLIO {
 
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-    Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
-    try {
+    try (var solrClient = getHttpSolrClient(solrUrl)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
-          http2SolrClient.request(
+          solrClient.request(
               new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
                   CommonParams.SYSTEM_INFO_PATH,
@@ -1533,7 +1510,7 @@ public class SolrCLI implements CLIO {
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, http2SolrClient);
+      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
       @SuppressWarnings("unchecked")
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -1543,8 +1520,6 @@ public class SolrCLI implements CLIO {
         }
         zkHost = zookeeper;
       }
-    } finally {
-      closeHttpSolrClient(http2SolrClient);
     }
 
     return zkHost;
@@ -1552,25 +1527,20 @@ public class SolrCLI implements CLIO {
 
   public static boolean safeCheckCollectionExists(String baseUrl, String collection) {
     boolean exists = false;
-    Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-    try {
-      NamedList<Object> existsCheckResult =
-          http2SolrClient.request(new CollectionAdminRequest.List());
+    try (var solrClient = getHttpSolrClient(baseUrl); ) {
+      NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
       exists = collections != null && collections.contains(collection);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here
-    } finally {
-      closeHttpSolrClient(http2SolrClient);
     }
     return exists;
   }
 
   public static boolean safeCheckCoreExists(String baseUrl, String coreName) {
     boolean exists = false;
-    Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-    try {
+    try (var solrClient = getHttpSolrClient(baseUrl)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {
@@ -1579,7 +1549,7 @@ public class SolrCLI implements CLIO {
           Thread.sleep(clamPeriodForStatusPollMs);
         }
         NamedList<Object> existsCheckResult =
-            CoreAdminRequest.getStatus(coreName, http2SolrClient).getCoreStatus(coreName);
+            CoreAdminRequest.getStatus(coreName, solrClient).getCoreStatus(coreName);
         @SuppressWarnings("unchecked")
         Map<String, Object> status = ((NamedList) existsCheckResult.get("status")).asMap();
         @SuppressWarnings("unchecked")
@@ -1594,8 +1564,6 @@ public class SolrCLI implements CLIO {
       } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here
-    } finally {
-      closeHttpSolrClient(http2SolrClient);
     }
     return exists;
   }
@@ -1712,17 +1680,14 @@ public class SolrCLI implements CLIO {
           "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-      try {
+      try (var solrClient = getHttpSolrClient(baseUrl)) {
         response =
-            http2SolrClient.request(
+            solrClient.request(
                 CollectionAdminRequest.createCollection(
                     collectionName, confname, numShards, replicationFactor));
       } catch (SolrServerException sse) {
         throw new Exception(
             "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
 
       if (cli.hasOption(OPTION_VERBOSE.getOpt())) {
@@ -1820,11 +1785,10 @@ public class SolrCLI implements CLIO {
 
       String coreName = cli.getOptionValue(NAME);
 
-      Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
       String coreRootDirectory = null; // usually same as solr home, but not always
-      try {
+      try (var solrClient = getHttpSolrClient(solrUrl)) {
         Map<String, Object> systemInfo =
-            http2SolrClient
+            solrClient
                 .request(
                     new GenericSolrRequest(
                         SolrRequest.METHOD.GET,
@@ -1846,9 +1810,6 @@ public class SolrCLI implements CLIO {
         if (coreRootDirectory == null) coreRootDirectory = (String) systemInfo.get("solr_home");
         if (coreRootDirectory == null)
           coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
-
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
 
       if (safeCheckCoreExists(solrUrl, coreName)) {
@@ -1888,10 +1849,9 @@ public class SolrCLI implements CLIO {
 
       echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
 
-      http2SolrClient = getHttpSolrClient(solrUrl);
-      try {
+      try (var solrClient = getHttpSolrClient(solrUrl); ) {
         Map<String, Object> json =
-            CoreAdminRequest.createCore(coreName, coreName, http2SolrClient)
+            CoreAdminRequest.createCore(coreName, coreName, solrClient)
                 .getCoreStatus(coreName)
                 .asMap();
         if (cli.hasOption(OPTION_VERBOSE.getOpt())) {
@@ -1906,8 +1866,6 @@ public class SolrCLI implements CLIO {
         /* create-core failed, cleanup the copied configset before propagating the error. */
         PathUtils.deleteDirectory(coreInstanceDir.toPath());
         throw e;
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
     }
   } // end CreateCoreTool class
@@ -1938,12 +1896,10 @@ public class SolrCLI implements CLIO {
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-      Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
-
       ToolBase tool = null;
-      try {
+      try (var solrClient = getHttpSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
-            http2SolrClient.request(
+            solrClient.request(
                 new GenericSolrRequest(
                     SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()));
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -1952,8 +1908,6 @@ public class SolrCLI implements CLIO {
           tool = new CreateCoreTool(stdout);
         }
         tool.runImpl(cli);
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
     }
   } // end CreateTool class
@@ -2522,10 +2476,9 @@ public class SolrCLI implements CLIO {
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-      Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
-      try {
+      try (var solrClient = getHttpSolrClient(solrUrl)) {
         Map<String, Object> systemInfo =
-            http2SolrClient
+            solrClient
                 .request(
                     new GenericSolrRequest(
                         SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()))
@@ -2533,10 +2486,8 @@ public class SolrCLI implements CLIO {
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           deleteCollection(cli);
         } else {
-          deleteCore(cli, http2SolrClient);
+          deleteCore(cli, solrClient);
         }
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
     }
 
@@ -2613,14 +2564,11 @@ public class SolrCLI implements CLIO {
           "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      Http2SolrClient http2SolrClient = getHttpSolrClient(baseUrl);
-      try {
-        response = http2SolrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
+      try (var solrClient = getHttpSolrClient(baseUrl)) {
+        response = solrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
       } catch (SolrServerException sse) {
         throw new Exception(
             "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
-      } finally {
-        closeHttpSolrClient(http2SolrClient);
       }
 
       if (deleteConfig) {
@@ -2647,7 +2595,7 @@ public class SolrCLI implements CLIO {
       echo("Deleted collection '" + collectionName + "' using CollectionAdminRequest");
     }
 
-    protected void deleteCore(CommandLine cli, Http2SolrClient http2SolrClient) throws Exception {
+    protected void deleteCore(CommandLine cli, Http2SolrClient solrClient) throws Exception {
       String coreName = cli.getOptionValue(NAME);
 
       echo("\nDeleting core '" + coreName);
@@ -2658,7 +2606,7 @@ public class SolrCLI implements CLIO {
         unloadRequest.setDeleteDataDir(true);
         unloadRequest.setDeleteInstanceDir(true);
         unloadRequest.setCoreName(coreName);
-        response = http2SolrClient.request(unloadRequest);
+        response = solrClient.request(unloadRequest);
       } catch (SolrServerException sse) {
         throw new Exception("Failed to delete core '" + coreName + "' due to: " + sse.getMessage());
       }

@@ -18,7 +18,6 @@ package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.util.SolrCLI.closeHttpSolrClient;
 import static org.apache.solr.util.SolrCLI.getHttpSolrClient;
 
 import java.lang.invoke.MethodHandles;
@@ -371,11 +370,10 @@ public class PackageTool extends SolrCLI.ToolBase {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    Http2SolrClient http2SolrClient = getHttpSolrClient(solrUrl);
-    try {
+    try (Http2SolrClient solrClient = getHttpSolrClient(solrUrl)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
-          http2SolrClient.request(
+          solrClient.request(
               new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
                   CommonParams.SYSTEM_INFO_PATH,
@@ -383,7 +381,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, http2SolrClient);
+      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -393,8 +391,6 @@ public class PackageTool extends SolrCLI.ToolBase {
         }
         zkHost = zookeeper;
       }
-    } finally {
-      closeHttpSolrClient(http2SolrClient);
     }
 
     return zkHost;
