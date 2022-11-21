@@ -954,21 +954,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return getLiveDocSet();
     }
 
+    DocSet answer;
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly
       // wait for the query to finish in parallel with our own results and if they complete first
       // use that instead, but we'll leave that to implement later.
-      DocSet answer = filterCache.get(query);
-      if (answer != null) {
-        return answer;
+      answer = filterCache.get(query);
+
+      // Not found in the cache so compute and put in the cache
+      if (answer == null) {
+        answer = getDocSetNC(query, null);
+        filterCache.put(query, answer);
       }
-      answer = getDocSetNC(query, null);
-      filterCache.put(query, answer);
-      return answer;
+    } else {
+      answer = filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
     }
-    return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
+
+    assert !(answer instanceof MutableBitDocSet) : "should not be mutable";
+    return answer;
   }
 
   private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
