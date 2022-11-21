@@ -27,6 +27,10 @@ grant {
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
 
+  // tmpdir
+  permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
+  permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
+
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
@@ -106,13 +110,12 @@ grant {
   permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
+  // needed by aws s3 sdk (Apache HTTP Client)
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
-
-  // needed by hadoop htrace
-  permission java.net.NetPermission "getNetworkInformation";
 
   // needed by DIH - possibly even after DIH is a package
   permission java.sql.SQLPermission "deregisterDriver";
@@ -146,6 +149,9 @@ grant {
   permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
   permission java.security.SecurityPermission "insertProvider";
 
+  // Needed by JWT integration tests & S3 clients
+  permission java.lang.RuntimePermission "setFactory";
+
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
   // SSL related properties for Solr tests
@@ -167,6 +173,10 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
+
+  // for Apache HttpClient useSystemProperties
+  permission java.net.NetPermission "getProxySelector";
+  permission java.net.NetPermission "requestPasswordAuthentication";
 };
 
 // additional permissions based on system properties set by /bin/solr
@@ -200,6 +210,11 @@ grant {
   permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
+
+  // Credentials for S3 Repository
+  permission java.io.FilePermission "${aws.sharedCredentialsFile}", "read,readlink";
+  permission java.io.FilePermission "${aws.configFile}", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";

@@ -17,21 +17,17 @@
 
 package org.apache.solr.util.tracing;
 
+import io.opentracing.propagation.TextMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import io.opentracing.propagation.TextMap;
 import org.apache.solr.client.solrj.SolrRequest;
 
-/**
- * An OpenTracing Carrier for injecting Span context through SolrRequest
- */
+/** An OpenTracing Carrier for injecting Span context through SolrRequest */
 public class SolrRequestCarrier implements TextMap {
 
-  @SuppressWarnings({"rawtypes"})
-  private final SolrRequest solrRequest;
+  private final SolrRequest<?> solrRequest;
 
-  public SolrRequestCarrier(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest) {
+  public SolrRequestCarrier(SolrRequest<?> solrRequest) {
     this.solrRequest = solrRequest;
   }
 

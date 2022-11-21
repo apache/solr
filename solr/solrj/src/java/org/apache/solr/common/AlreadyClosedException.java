@@ -16,25 +16,22 @@
  */
 package org.apache.solr.common;
 
-/**
- *
- */
+/** */
 public class AlreadyClosedException extends IllegalStateException {
 
   public AlreadyClosedException() {
     super();
   }
-  
+
   public AlreadyClosedException(String msg) {
     super(msg);
   }
-  
+
   public AlreadyClosedException(Throwable th) {
     super(th);
   }
-  
+
   public AlreadyClosedException(String msg, Throwable th) {
     super(msg, th);
   }
-
 }

@@ -17,12 +17,15 @@
 
 package org.apache.solr.handler.export;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import java.io.IOException;
 import java.util.Date;
 import java.util.function.LongFunction;
-
-import com.carrotsearch.hppc.IntObjectHashMap;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -40,8 +43,8 @@ class MultiFieldWriter extends FieldWriter {
   private final LongFunction<Object> bitsToValue;
   private IntObjectHashMap<Object> docValuesCache = new IntObjectHashMap<>();
 
-
-  public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
+  public MultiFieldWriter(
+      String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
     this.field = field;
     this.fieldType = fieldType;
     this.schemaField = schemaField;
@@ -53,19 +56,23 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
-  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
+  @Override
+  public boolean write(
+      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
+      throws IOException {
     if (this.fieldType.isPointField()) {
       int readerOrd = readerContext.ord;
       SortedNumericDocValues vals = null;
-      if(docValuesCache.containsKey(readerOrd)) {
-        SortedNumericDocValues sortedNumericDocValues = (SortedNumericDocValues) docValuesCache.get(readerOrd);
-        if(sortedNumericDocValues.docID() < sortDoc.docId) {
-          //We have not advanced beyond the current docId so we can use this docValues.
+      if (docValuesCache.containsKey(readerOrd)) {
+        SortedNumericDocValues sortedNumericDocValues =
+            (SortedNumericDocValues) docValuesCache.get(readerOrd);
+        if (sortedNumericDocValues.docID() < sortDoc.docId) {
+          // We have not advanced beyond the current docId so we can use this docValues.
           vals = sortedNumericDocValues;
         }
       }
 
-      if(vals == null) {
+      if (vals == null) {
         vals = DocValues.getSortedNumeric(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
@@ -74,25 +81,27 @@ class MultiFieldWriter extends FieldWriter {
 
       final SortedNumericDocValues docVals = vals;
 
-      out.put(this.field,
-          (IteratorWriter) w -> {
-            for (int i = 0, count = docVals.docValueCount(); i < count; i++) {
-              w.add(bitsToValue.apply(docVals.nextValue()));
-            }
-          });
+      out.put(
+          this.field,
+          (IteratorWriter)
+              w -> {
+                for (int i = 0, count = docVals.docValueCount(); i < count; i++) {
+                  w.add(bitsToValue.apply(docVals.nextValue()));
+                }
+              });
       return true;
     } else {
       int readerOrd = readerContext.ord;
       SortedSetDocValues vals = null;
-      if(docValuesCache.containsKey(readerOrd)) {
+      if (docValuesCache.containsKey(readerOrd)) {
         SortedSetDocValues sortedSetDocValues = (SortedSetDocValues) docValuesCache.get(readerOrd);
-        if(sortedSetDocValues.docID() < sortDoc.docId) {
-          //We have not advanced beyond the current docId so we can use this docValues.
+        if (sortedSetDocValues.docID() < sortDoc.docId) {
+          // We have not advanced beyond the current docId so we can use this docValues.
           vals = sortedSetDocValues;
         }
       }
 
-      if(vals == null) {
+      if (vals == null) {
         vals = DocValues.getSortedSet(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
@@ -101,35 +110,35 @@ class MultiFieldWriter extends FieldWriter {
 
       final SortedSetDocValues docVals = vals;
 
-      out.put(this.field,
-          (IteratorWriter) w -> {
-            long o;
-            while((o = docVals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              BytesRef ref = docVals.lookupOrd(o);
-              fieldType.indexedToReadable(ref, cref);
-              IndexableField f = fieldType.createField(schemaField, cref.toString());
-              if (f == null) w.add(cref.toString());
-              else w.add(fieldType.toObject(f));
-            }
-          });
+      out.put(
+          this.field,
+          (IteratorWriter)
+              w -> {
+                long o;
+                while ((o = docVals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                  BytesRef ref = docVals.lookupOrd(o);
+                  fieldType.indexedToReadable(ref, cref);
+                  IndexableField f = fieldType.createField(schemaField, cref.toString());
+                  if (f == null) w.add(cref.toString());
+                  else w.add(fieldType.toObject(f));
+                }
+              });
       return true;
     }
-
   }
-
 
   static LongFunction<Object> bitsToValue(FieldType fieldType) {
     switch (fieldType.getNumberType()) {
       case LONG:
-        return (bits)-> bits;
+        return (bits) -> bits;
       case DATE:
-        return (bits)-> new Date(bits);
+        return (bits) -> new Date(bits);
       case INTEGER:
-        return (bits)-> (int)bits;
+        return (bits) -> (int) bits;
       case FLOAT:
-        return (bits)-> NumericUtils.sortableIntToFloat((int)bits);
+        return (bits) -> NumericUtils.sortableIntToFloat((int) bits);
       case DOUBLE:
-        return (bits)-> NumericUtils.sortableLongToDouble(bits);
+        return (bits) -> NumericUtils.sortableLongToDouble(bits);
       default:
         throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
     }

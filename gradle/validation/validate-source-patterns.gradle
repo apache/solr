@@ -55,19 +55,17 @@ def extensions = [
     'py',
     'sh',
     'template',
+    'txt',
     'vm',
     'xml',
     'xsl',
 ]
 
-// Create source validation task local for each project's files.
-subprojects {
+// Create source validation task local to each project
+allprojects {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
-
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
@@ -80,53 +78,47 @@ subprojects {
       }
 
       // default excludes.
-      exclude 'build/**'
+      exclude '**/build/**'
+      exclude '**/.idea/**'
+      exclude '**/.gradle/**'
+
+      if (project == rootProject) {
+        // ourselves :-)
+        exclude 'gradle/validation/validate-source-patterns.gradle'
+      } else {
+        // ignore txt files in source resources and tests.
+        exclude 'src/**/*.txt'
+      }
     }
   }
 
   // Add source validation to per-project checks as well.
   check.dependsOn validateSourcePatterns
+
+  // Ensure validation runs prior to any compilation task. This also means
+  // no executable code can leak out to other modules.
+  tasks.withType(JavaCompile).configureEach {
+    mustRunAfter validateSourcePatterns
+  }
 }
 
 configure(project(':solr:core')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
   }
 }
 
-configure(rootProject) {
-  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
-    group = 'Verification'
-    description = 'Validate Source Patterns'
-
-    // This task has no proper outputs.
-    setupDummyOutputs(task)
-
-    sourceFiles = fileTree(projectDir) {
-      extensions.each{
-        include "**/*.${it}"
-      }
-
-      // We do not scan for *.txt by default (broken files in subprojects),
-      // but in root we can do this).
-      include '**/*.txt'
-
-      // Don't go into child projects (scanned separately).
-      childProjects.keySet().each{
-        exclude "${it}/**"
-      }
-
-      // default excludes.
-      exclude '**/build/**'
-      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
-
-      // ourselves :-)
-      exclude 'gradle/validation/validate-source-patterns.gradle'
-    }
+configure(project(':solr:server')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude '**/configsets/**'
   }
+}
 
-  check.dependsOn validateSourcePatterns
+configure(project(':solr:solr-ref-guide')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'modules/indexing-guide/examples/stemdict.txt' // requires tabs
+    sourceFiles.exclude 'node_modules/**' // slightly hackish, this downloads all of the node deps
+  }
 }
 
 class ValidateSourcePatternsTask extends DefaultTask {
@@ -147,6 +139,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
       (~$/\bTOOD:/$) : 'TOOD instead TODO',
       (~$/\t/$) : 'tabs instead spaces',
+      (~$/[\u202A-\u202E\u2066-\u2069]/$) : 'misuse of RTL/LTR (https://trojansource.codes)',
       (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
       (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
       (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
@@ -159,18 +152,14 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
     ]
 
-    // Python and others merrily use var declarations, this is a problem _only_ in Java at least for 8x where we're forbidding var declarations
     def invalidJavaOnlyPatterns = [
       (~$/\n\s*var\s+.*=.*<>.*/$) : 'Diamond operators should not be used with var',
-      (~$/\n\s*var\s+/$) : 'var is not allowed in until we stop development on the 8x code line'
     ]
 
-    def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
       logger.error('{}: {}', name, f);
       violations.add(name);
-      found++;
     }
 
     def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
@@ -186,8 +175,8 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
     def isLicense = { matcher, ratDocument ->
-      licenseMatcher.reset();
-      return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
+      licenseMatcher.reset()
+      return lineSplitter.split(matcher.group(1)).any { licenseMatcher.match(ratDocument, it) }
     }
 
     def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
@@ -209,7 +198,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
 
     def checkMockitoAssume = { f, text ->
       if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
-        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
+        reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }
 
@@ -221,7 +210,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       logger.debug('Scanning source file: {}', f);
 
       def text = f.getText('UTF-8');
-      invalidPatterns.each{ pattern,name ->
+      invalidPatterns.each { pattern, name ->
         if (pattern.matcher(text).find()) {
           reportViolation(f, name);
         }
@@ -237,9 +226,15 @@ class ValidateSourcePatternsTask extends DefaultTask {
       if (f.name.endsWith('.java')) {
         if (text.contains('org.slf4j.LoggerFactory')) {
           if (!validLoggerPattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
           }
           if (!validLoggerNamePattern.matcher(text).find()) {
+            if (text.contains("// nowarn_valid_logger")) {
+              return
+            }
             reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
           }
         }
@@ -258,8 +253,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (project.path.startsWith(':solr:')
-            && f.name.equals("SolrTestCase.java") == false
+        if (f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
             reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
@@ -277,9 +271,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
     progress.completed()
 
-    if (found) {
-      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-        found, violations.join(', ')));
-    }
+    def checkProp = "validation.sourcePatterns.failOnError"
+    project.failOrWarn(checkProp, "Found source pattern violations", violations)
   }
 }

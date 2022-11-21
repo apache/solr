@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,13 +44,14 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     // ensure we clean up after ourselves, this will fire before superclass...
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.tests.maxBufferedDocs");
     systemClearPropertySolrTestsMergePolicyFactory();
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // delete all, then add initial doc
@@ -115,24 +115,28 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
   }
 
   static void assertNRT(int maxDoc) throws IOException {
-    h.getCore().withSearcher(searcher -> {
-      DirectoryReader ir = searcher.getRawReader();
-      assertEquals(maxDoc, ir.maxDoc());
-      assertTrue("expected NRT reader, got: " + ir, ir.toString().contains(":nrt"));
-      return null;
-    });
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              DirectoryReader ir = searcher.getRawReader();
+              assertEquals(maxDoc, ir.maxDoc());
+              assertTrue("expected NRT reader, got: " + ir, ir.toString().contains(":nrt"));
+              return null;
+            });
   }
 
   private Set<Object> getCoreCacheKeys() {
     try {
-      return h.getCore().withSearcher(searcher -> {
-        Set<Object> set = Collections.newSetFromMap(new IdentityHashMap<>());
-        DirectoryReader ir = searcher.getRawReader();
-        for (LeafReaderContext context : ir.leaves()) {
-          set.add(context.reader().getCoreCacheHelper().getKey());
-        }
-        return set;
-      });
+      return h.getCore()
+          .withSearcher(
+              searcher -> {
+                Set<Object> set = Collections.newSetFromMap(new IdentityHashMap<>());
+                DirectoryReader ir = searcher.getRawReader();
+                for (LeafReaderContext context : ir.leaves()) {
+                  set.add(context.reader().getCoreCacheHelper().getKey());
+                }
+                return set;
+              });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

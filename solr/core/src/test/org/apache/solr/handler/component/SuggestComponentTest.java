@@ -18,29 +18,24 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class SuggestComponentTest extends SolrTestCaseJ4 {
 
   private static final String rh = "/suggest";
 
-  private static CoreContainer cc;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-suggestercomponent.xml","schema.xml");
+    initCore("solrconfig-suggestercomponent.xml", "schema.xml");
   }
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
+
     // id, cat, price, weight
     assertU(adoc("id", "0", "cat", "This is a title", "price", "5", "weight", "10"));
     assertU(adoc("id", "1", "cat", "This is another title", "price", "10", "weight", "10"));
@@ -56,7 +51,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertU((commit()));
     waitForWarming();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
@@ -64,76 +59,108 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     assertU((commit()));
     waitForWarming();
     // rebuild suggesters with empty index
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_BUILD_ALL, "true"),
-        "//str[@name='command'][.='buildAll']"
-        );
+    assertQ(
+        req("qt", rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        "//str[@name='command'][.='buildAll']");
   }
-  
+
   @Test
-  public void testDocumentBased() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict", 
-        SuggesterParams.SUGGEST_BUILD, "true",
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
+  public void testDocumentBased() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_doc_dict",
+            SuggesterParams.SUGGEST_BUILD,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict", 
-        SuggesterParams.SUGGEST_BUILD, "true",
-        SuggesterParams.SUGGEST_Q, "Rad",
-        SuggesterParams.SUGGEST_COUNT, "5"),
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='40']");
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_doc_dict",
+            SuggesterParams.SUGGEST_BUILD,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "Rad",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='Rad fox']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='35']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='Red fox']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='30']"
-        );
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='Rad']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='30']");
   }
-  
+
   @Test
-  public void testExpressionBased() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_expr_dict", 
-        SuggesterParams.SUGGEST_BUILD, "true",
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
+  public void testExpressionBased() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_doc_expr_dict",
+            SuggesterParams.SUGGEST_BUILD,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
-        );
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']");
   }
-  
+
   @Test
-  public void testFileBased() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_file_based", 
-        SuggesterParams.SUGGEST_BUILD, "true",
-        SuggesterParams.SUGGEST_Q, "chn",
-        SuggesterParams.SUGGEST_COUNT, "2"),
+  public void testFileBased() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_file_based",
+            SuggesterParams.SUGGEST_BUILD,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "chn",
+            SuggesterParams.SUGGEST_COUNT,
+            "2"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='chance']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='1']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='change']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='1']"
-        );
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_file_based']/lst[@name='chn']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='1']");
   }
+
   @Test
-  public void testMultiSuggester() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_dict",
-        SuggesterParams.SUGGEST_DICT, "suggest_fuzzy_doc_expr_dict",
-        SuggesterParams.SUGGEST_BUILD, "true",
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
+  public void testMultiSuggester() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_doc_dict",
+            SuggesterParams.SUGGEST_DICT,
+            "suggest_fuzzy_doc_expr_dict",
+            SuggesterParams.SUGGEST_BUILD,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='45']",
@@ -143,368 +170,655 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example inputdata']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[1]/long[@name='weight'][.='120']",
         "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='example data']",
-        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']"
-        );
+        "//lst[@name='suggest']/lst[@name='suggest_fuzzy_doc_expr_dict']/lst[@name='exampel']/arr[@name='suggestions']/lst[2]/long[@name='weight'][.='110']");
   }
-  
+
   @Test
-  public void testBuildAllSuggester() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_BUILD_ALL, "true",
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//str[@name='command'][.='buildAll']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_BUILD_ALL, "true"),
-        "//str[@name='command'][.='buildAll']"
-        );
+  public void testBuildAllSuggester() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_BUILD_ALL,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//str[@name='command'][.='buildAll']");
+
+    assertQ(
+        req("qt", rh, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        "//str[@name='command'][.='buildAll']");
   }
-  
+
   @Test
-  public void testReloadAllSuggester() throws Exception {
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_RELOAD_ALL, "true",
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//str[@name='command'][.='reloadAll']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
-        "//str[@name='command'][.='reloadAll']"
-        );
+  public void testReloadAllSuggester() {
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_RELOAD_ALL,
+            "true",
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//str[@name='command'][.='reloadAll']");
+
+    assertQ(
+        req("qt", rh, SuggesterParams.SUGGEST_RELOAD_ALL, "true"),
+        "//str[@name='command'][.='reloadAll']");
   }
-  
+
   @Test
-  public void testBadSuggesterName() throws Exception {
+  public void testBadSuggesterName() {
     String fakeSuggesterName = "does-not-exist";
-    assertQEx("No suggester named " + fakeSuggesterName +" was configured",
-        req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, fakeSuggesterName,
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        SolrException.ErrorCode.BAD_REQUEST
-        );
-    
-    assertQEx("'" + SuggesterParams.SUGGEST_DICT + 
-        "' parameter not specified and no default suggester configured",
-        req("qt", rh, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        SolrException.ErrorCode.BAD_REQUEST
-        );
+    assertQEx(
+        "No suggester named " + fakeSuggesterName + " was configured",
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            fakeSuggesterName,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx(
+        "'"
+            + SuggesterParams.SUGGEST_DICT
+            + "' parameter not specified and no default suggester configured",
+        req("qt", rh, SuggesterParams.SUGGEST_Q, "exampel", SuggesterParams.SUGGEST_COUNT, "5"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
-  
 
   @Test
   public void testDefaultBuildOnStartupNotStoredDict() throws Exception {
-    
+
     final String suggester = "suggest_doc_default_startup_no_store";
-    
+
     // validate that this suggester is not storing the lookup
-    assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='storeDir']", false));
-    
+    assertEquals(
+        suggester,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 7)
+            .get("str", n -> "name".equals(n.attr("name")))
+            .txt());
+
+    assertNull(
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 7)
+            .get("str", n -> "storeDir".equals(n.attr("name")))
+            .txt());
+
     // validate that this suggester only builds manually and has not buildOnStartup parameter
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnCommit']", true));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[8]/str[@name='buildOnStartup']", false));
-    
+
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 7)
+            .get("str", n -> "buildOnCommit".equals(n.attr("name")))
+            .txt());
+
+    assertNull(
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 7)
+            .get("str", n -> "buildOnStartup".equals(n.attr("name")))
+            .txt());
+
     reloadCore(random().nextBoolean());
-    
+
     // Validate that the suggester was built on new/reload core
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
     // add one more doc, should be visible after core reload
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
-    
+
     waitForWarming();
-    
+
     // buildOnCommit=false, this doc should not be in the suggester yet
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
     reloadCore(random().nextBoolean());
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='3']"
-        );
-    
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='3']");
   }
-  
+
   @Test
   public void testDefaultBuildOnStartupStoredDict() throws Exception {
-    
+
     final String suggester = "suggest_doc_default_startup";
-    
+
     // validate that this suggester is storing the lookup
-    assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='name']", false));
-    assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='storeDir']", false));
-    
+
+    assertEquals(
+        suggester,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 6)
+            .get("str", n -> "name".equals(n.attr("name")))
+            .txt());
+
+    assertEquals(
+        suggester,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 6)
+            .get("str", n -> "storeDir".equals(n.attr("name")))
+            .txt());
+
     // validate that this suggester only builds manually and has not buildOnStartup parameter
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnCommit']", true));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[7]/str[@name='buildOnStartup']", false));
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='0']"
-        );
-    
+
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 6)
+            .get("str", n -> "buildOnCommit".equals(n.attr("name")))
+            .txt());
+
+    assertNull(
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 6)
+            .get("str", n -> "buildOnStartup".equals(n.attr("name")))
+            .txt());
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='0']");
+
     // build the suggester manually
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_BUILD, "true"),
-        "//str[@name='command'][.='build']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_BUILD,
+            "true"),
+        "//str[@name='command'][.='build']");
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
     reloadCore(random().nextBoolean());
-    
+
     // Validate that the suggester was loaded on new/reload core
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
-    // add one more doc, this should not be seen after a core reload (not until the suggester is manually rebuilt)
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
+    // add one more doc, this should not be seen after a core reload (not until the suggester is
+    // manually rebuilt)
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
-    
+
     waitForWarming();
     // buildOnCommit=false, this doc should not be in the suggester yet
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
     reloadCore(random().nextBoolean());
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='2']"
-        );
-    
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='2']");
+
     // build the suggester manually
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_BUILD, "true"),
-        "//str[@name='command'][.='build']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "example",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='example']/int[@name='numFound'][.='3']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_BUILD,
+            "true"),
+        "//str[@name='command'][.='build']");
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "example",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='example']/int[@name='numFound'][.='3']");
   }
-  
+
   @Test
   public void testLoadOnStartup() throws Exception {
-    
-    final String suggester = "suggest_fuzzy_doc_manal_build";
-    
+
+    final String suggester = "suggest_fuzzy_doc_manual_build";
+
     // validate that this suggester is storing the lookup
-    assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='name']", false));
-    assertEquals(suggester, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='storeDir']", false));
-    
+
+    assertEquals(
+        suggester,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 5)
+            .get("str", n -> "name".equals(n.attr("name")))
+            .txt());
+
+    assertEquals(
+        suggester,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 5)
+            .get("str", n -> "storeDir".equals(n.attr("name")))
+            .txt());
+
     // validate that this suggester only builds manually
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnCommit']", true));
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[6]/str[@name='buildOnStartup']", true));
-    
+
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 5)
+            .get("str", n -> "buildOnCommit".equals(n.attr("name")))
+            .txt());
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 5)
+            .get("str", n -> "buildOnStartup".equals(n.attr("name")))
+            .txt());
+
     // build the suggester manually
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_BUILD, "true"),
-        "//str[@name='command'][.='build']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_BUILD,
+            "true"),
+        "//str[@name='command'][.='build']");
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
     reloadCore(false);
-    
+
     // Validate that the suggester was loaded on core reload
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
     reloadCore(true);
-    
+
     // Validate that the suggester was loaded on new core
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggester,
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggester + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggester,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggester
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
   }
-  
+
   public void testBuildOnStartupWithCoreReload() throws Exception {
     doTestBuildOnStartup(false);
   }
-  
+
   public void testBuildOnStartupWithNewCores() throws Exception {
     doTestBuildOnStartup(true);
   }
-  
+
   private void doTestBuildOnStartup(boolean createNewCores) throws Exception {
-    
+
     final String suggesterFuzzy = "suggest_fuzzy_doc_dict";
-    
+
     // the test relies on useColdSearcher=false
-    assertFalse("Precondition not met for test. useColdSearcher must be false", 
+    assertFalse(
+        "Precondition not met for test. useColdSearcher must be false",
         h.getCore().getSolrConfig().useColdSearcher);
-    
+
     // validate that this suggester is not storing the lookup and buildOnStartup is not set
-    assertEquals(suggesterFuzzy, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='storeDir']", false));
-    
+    assertEquals(
+        suggesterFuzzy,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 2)
+            .get("str", n -> "name".equals(n.attr("name")))
+            .txt());
+
+    assertNull(
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 2)
+            .get("str", n -> "storeDir".equals(n.attr("name")))
+            .txt());
+
     // assert that buildOnStartup=false
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnStartup']", false));
-    assertEquals("true", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[3]/str[@name='buildOnCommit']", false));
-    
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 2)
+            .get("str", n -> "buildOnStartup".equals(n.attr("name")))
+            .txt());
+    assertEquals(
+        "true",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 2)
+            .get("str", n -> "buildOnCommit".equals(n.attr("name")))
+            .txt());
+
     // verify that this suggester is built (there was a commit in setUp)
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
-    // reload the core and wait for for the listeners to finish
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggesterFuzzy,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggesterFuzzy
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
+    // reload the core and wait for the listeners to finish
     reloadCore(createNewCores);
     if (System.getProperty(SYSPROP_NIGHTLY) != null) {
       // wait some time here in nightly to make sure there are no race conditions in suggester build
       Thread.sleep(1000);
     }
-    
+
     // The suggester should be empty
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='0']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggesterFuzzy,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggesterFuzzy
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='0']");
+
     // build the suggester manually
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
-        SuggesterParams.SUGGEST_BUILD, "true"),
-        "//str[@name='command'][.='build']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggesterFuzzy,
+            SuggesterParams.SUGGEST_BUILD,
+            "true"),
+        "//str[@name='command'][.='build']");
+
     // validate the suggester is built again
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggesterFuzzy, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggesterFuzzy + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggesterFuzzy,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggesterFuzzy
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
     final String suggestStartup = "suggest_fuzzy_doc_dict_build_startup";
-    
-    // repeat the test with "suggest_fuzzy_doc_dict_build_startup", it is exactly the same but with buildOnStartup=true
-    assertEquals(suggestStartup, 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='name']", false));
-    assertNull(h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='storeDir']", false));
-    assertEquals("true", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnStartup']", false));
-    assertEquals("false", 
-        h.getCore().getSolrConfig().getVal("//searchComponent[@name='suggest']/lst[5]/str[@name='buildOnCommit']", false));
-    
+
+    // repeat the test with "suggest_fuzzy_doc_dict_build_startup", it is exactly the same but with
+    // buildOnStartup=true
+    assertEquals(
+        suggestStartup,
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 4)
+            .get("str", n -> "name".equals(n.attr("name")))
+            .txt());
+    assertNull(
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 4)
+            .get("str", n -> "storeDir".equals(n.attr("name")))
+            .txt());
+    assertEquals(
+        "true",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 4)
+            .get("str", n -> "buildOnStartup".equals(n.attr("name")))
+            .txt());
+    assertEquals(
+        "false",
+        h.getCore()
+            .getSolrConfig()
+            .get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst", 4)
+            .get("str", n -> "buildOnCommit".equals(n.attr("name")))
+            .txt());
+
     // reload the core
     reloadCore(createNewCores);
     // verify that this suggester is built (should build on startup)
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggestStartup, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
-    // add one more doc, this should not be seen without rebuilding manually or reloading the core (buildOnCommit=false)
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggestStartup,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggestStartup
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
+    // add one more doc, this should not be seen without rebuilding manually or reloading the core
+    // (buildOnCommit=false)
     assertU(adoc("id", "10", "cat", "example data extra ", "price", "40", "weight", "35"));
     assertU((commit()));
-    
+
     waitForWarming();
 
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggestStartup, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='2']"
-        );
-    
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggestStartup,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggestStartup
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='2']");
+
     // build the suggester manually
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggestStartup, 
-        SuggesterParams.SUGGEST_BUILD, "true"),
-        "//str[@name='command'][.='build']"
-        );
-    
-    assertQ(req("qt", rh, 
-        SuggesterParams.SUGGEST_DICT, suggestStartup, 
-        SuggesterParams.SUGGEST_Q, "exampel",
-        SuggesterParams.SUGGEST_COUNT, "5"),
-        "//lst[@name='suggest']/lst[@name='" + suggestStartup + "']/lst[@name='exampel']/int[@name='numFound'][.='3']"
-        );
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggestStartup,
+            SuggesterParams.SUGGEST_BUILD,
+            "true"),
+        "//str[@name='command'][.='build']");
+
+    assertQ(
+        req(
+            "qt",
+            rh,
+            SuggesterParams.SUGGEST_DICT,
+            suggestStartup,
+            SuggesterParams.SUGGEST_Q,
+            "exampel",
+            SuggesterParams.SUGGEST_COUNT,
+            "5"),
+        "//lst[@name='suggest']/lst[@name='"
+            + suggestStartup
+            + "']/lst[@name='exampel']/int[@name='numFound'][.='3']");
   }
-  
+
   private void reloadCore(boolean createNewCore) throws Exception {
     if (createNewCore) {
-      CoreContainer cores = h.getCoreContainer();
       SolrCore core = h.getCore();
       String dataDir1 = core.getDataDir();
-      CoreDescriptor cd = core.getCoreDescriptor();
       h.close();
       createCore();
       SolrCore createdCore = h.getCore();
@@ -515,11 +829,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       // On regular reloading, wait until the new searcher is registered
       waitForWarming();
     }
-    
-    assertQ(req("qt", "/select",
-        "q", "*:*"), 
-        "//*[@numFound='11']"
-        );
-  }
 
+    assertQ(req("qt", "/select", "q", "*:*"), "//*[@numFound='11']");
+  }
 }

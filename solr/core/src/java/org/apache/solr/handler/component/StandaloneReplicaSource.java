@@ -17,27 +17,26 @@
 
 package org.apache.solr.handler.component;
 
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.AllowListUrlChecker;
 
-/**
- * A replica source for solr stand alone mode
- */
+/** A replica source for solr stand alone mode */
 class StandaloneReplicaSource implements ReplicaSource {
-  private List<String>[] replicas;
+  private final List<String>[] replicas;
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   public StandaloneReplicaSource(Builder builder) {
     List<String> list = StrUtils.splitSmart(builder.shardsParam, ",", true);
-    replicas = new List[list.size()];
+    replicas = (List<String>[]) Array.newInstance(List.class, list.size());
     for (int i = 0; i < list.size(); i++) {
       replicas[i] = StrUtils.splitSmart(list.get(i), "|", true);
       // todo do we really not need to transform in non-cloud mode?!
       // builder.replicaListTransformer.transform(replicas[i]);
-      CloudReplicaSource.checkUrlsAllowList(builder.urlChecker, null, builder.shardsParam, replicas[i]);
+      CloudReplicaSource.checkUrlsAllowList(
+          builder.urlChecker, null, builder.shardsParam, replicas[i]);
     }
   }
 

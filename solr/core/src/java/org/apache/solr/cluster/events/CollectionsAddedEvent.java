@@ -18,9 +18,7 @@ package org.apache.solr.cluster.events;
 
 import java.util.Iterator;
 
-/**
- * Event generated when some collections have been added.
- */
+/** Event generated when some collections have been added. */
 public interface CollectionsAddedEvent extends ClusterEvent {
 
   @Override
@@ -29,5 +27,4 @@ public interface CollectionsAddedEvent extends ClusterEvent {
   }
 
   Iterator<String> getCollectionNames();
-
 }

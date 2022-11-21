@@ -16,18 +16,19 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
+import java.util.Objects;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
-
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 // used by distributed search to merge results.
 public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
@@ -38,43 +39,49 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** Stores the sort criteria being used. */
   protected SortField[] fields;
 
-  /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
+  /**
+   * The order of these fieldNames should correspond to the order of sort field values retrieved
+   * from the shard
+   */
   protected List<String> fieldNames = new ArrayList<>();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
+  private static Comparator<ShardDoc>[] newArray(int sz) {
+    return (Comparator<ShardDoc>[]) Array.newInstance(Comparator.class, sz);
+  }
+
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);
     final int n = fields.length;
-    comparators = new Comparator[n];
+    comparators = newArray(n);
     this.fields = new SortField[n];
     for (int i = 0; i < n; ++i) {
 
       // keep track of the named fields
       SortField.Type type = fields[i].getType();
-      if (type!=SortField.Type.SCORE && type!=SortField.Type.DOC) {
+      if (type != SortField.Type.SCORE && type != SortField.Type.DOC) {
         fieldNames.add(fields[i].getField());
       }
 
       String fieldname = fields[i].getField();
       comparators[i] = getCachedComparator(fields[i], searcher);
 
-     if (fields[i].getType() == SortField.Type.STRING) {
-        this.fields[i] = new SortField(fieldname, SortField.Type.STRING,
-            fields[i].getReverse());
+      if (fields[i].getType() == SortField.Type.STRING) {
+        this.fields[i] = new SortField(fieldname, SortField.Type.STRING, fields[i].getReverse());
       } else {
-        this.fields[i] = new SortField(fieldname, fields[i].getType(),
-            fields[i].getReverse());
+        this.fields[i] = new SortField(fieldname, fields[i].getType(), fields[i].getReverse());
       }
 
-      //System.out.println("%%%%%%%%%%%%%%%%%% got "+fields[i].getType() +"   for "+ fieldname +"  fields[i].getReverse(): "+fields[i].getReverse());
+      // System.out.println("%%%%%%%%%%%%%%%%%% got "+fields[i].getType() +"   for "+ fieldname +"
+      // fields[i].getReverse(): "+fields[i].getReverse());
     }
   }
 
   @Override
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
     // If these docs are from the same shard, then the relative order
-    // is how they appeared in the response from that shard.    
-    if (docA.shard == docB.shard) {
+    // is how they appeared in the response from that shard.
+    if (Objects.equals(docA.shard, docB.shard)) {
       // if docA has a smaller position, it should be "larger" so it
       // comes before docB.
       // This will handle sorting by docid within the same shard
@@ -83,13 +90,14 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       return !(docA.orderInShard < docB.orderInShard);
     }
 
-
     // run comparators
     final int n = comparators.length;
     int c = 0;
     for (int i = 0; i < n && c == 0; i++) {
-      c = (fields[i].getReverse()) ? comparators[i].compare(docB, docA)
-          : comparators[i].compare(docA, docB);
+      c =
+          (fields[i].getReverse())
+              ? comparators[i].compare(docB, docA)
+              : comparators[i].compare(docA, docB);
     }
 
     // solve tiebreaks by comparing shards (similar to using docid)
@@ -107,10 +115,8 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       return (o1, o2) -> {
         final float f1 = o1.score;
         final float f2 = o2.score;
-        if (f1 < f2)
-          return -1;
-        if (f1 > f2)
-          return 1;
+        if (f1 < f2) return -1;
+        if (f1 > f2) return 1;
         return 0;
       };
     } else if (type == SortField.Type.REWRITEABLE) {
@@ -132,7 +138,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       this.sortField = sortField;
       this.fieldName = sortField.getField();
       int fieldNum = 0;
-      for (int i=0; i<fieldNames.size(); i++) {
+      for (int i = 0; i < fieldNames.size(); i++) {
         if (fieldNames.get(i).equals(fieldName)) {
           fieldNum = i;
           break;
@@ -142,16 +148,15 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
     }
 
     Object sortVal(ShardDoc shardDoc) {
-      assert(shardDoc.sortFieldValues.getName(fieldNum).equals(fieldName));
-      @SuppressWarnings({"rawtypes"})
-      List lst = (List)shardDoc.sortFieldValues.getVal(fieldNum);
+      assert (shardDoc.sortFieldValues.getName(fieldNum).equals(fieldName));
+      List<Object> lst = shardDoc.sortFieldValues.getVal(fieldNum);
       return lst.get(shardDoc.orderInShard);
     }
   }
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
     @SuppressWarnings({"rawtypes"})
-    final FieldComparator fieldComparator = sortField.getComparator(0, 0);
+    final FieldComparator fieldComparator = sortField.getComparator(0, true);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
       // we need to reverse the field compare ordering so that the

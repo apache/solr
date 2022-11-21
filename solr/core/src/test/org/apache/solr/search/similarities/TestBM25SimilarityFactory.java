@@ -20,22 +20,20 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link BM25SimilarityFactory}
- */
+/** Tests {@link BM25SimilarityFactory} */
 public class TestBM25SimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-bm25.xml");
+    initCore("solrconfig-basic.xml", "schema-bm25.xml");
   }
-  
+
   /** bm25 with default parameters */
-  public void test() throws Exception {
+  public void test() {
     assertEquals(BM25Similarity.class, getSimilarity("text").getClass());
   }
-  
+
   /** bm25 with parameters */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(BM25Similarity.class, sim.getClass());
     BM25Similarity bm25 = (BM25Similarity) sim;

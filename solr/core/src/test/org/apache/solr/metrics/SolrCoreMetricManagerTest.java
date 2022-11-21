@@ -16,16 +16,15 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
@@ -65,14 +64,15 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     String scope = SolrMetricTestUtils.getRandomScope(random);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
-    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
       coreMetricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
       assertNotNull(category);
       assertRegistered(scope, metrics, coreMetricManager);
     } catch (final IllegalArgumentException e) {
-      assertTrue("expected at least one null but got: scope="+scope+", category="+category,
+      assertTrue(
+          "expected at least one null but got: scope=" + scope + ", category=" + category,
           (scope == null || category == null));
       assertRegistered(scope, new HashMap<>(), coreMetricManager);
     }
@@ -88,11 +88,12 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
     for (int i = 0; i < iterations; ++i) {
-      Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
+      Map<String, Counter> metrics =
+          SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
       if (metrics.isEmpty()) {
         continue;
       }
-      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       assertRegistered(scope, registered, coreMetricManager);
@@ -116,34 +117,47 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     if (shouldDefineConfigurable) attrs.put("configurable", configurable);
 
     boolean shouldDefinePlugin = random.nextBoolean();
-    PluginInfo pluginInfo = shouldDefinePlugin ? new PluginInfo(TestUtil.randomUnicodeString(random), attrs) : null;
+    PluginInfo pluginInfo =
+        shouldDefinePlugin ? new PluginInfo(TestUtil.randomUnicodeString(random), attrs) : null;
 
     try {
-      metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
-          pluginInfo, coreMetricManager.getTag());
+      metricManager.loadReporter(
+          coreMetricManager.getRegistryName(),
+          coreMetricManager.getCore(),
+          pluginInfo,
+          coreMetricManager.getTag());
       assertNotNull(pluginInfo);
-      Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-      assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
-      assertNotNull("reporter " + reporterName + " not present among " + reporters, reporters.get(taggedName));
-      assertTrue("wrong reporter class: " + reporters.get(taggedName), reporters.get(taggedName) instanceof MockMetricReporter);
+      Map<String, SolrMetricReporter> reporters =
+          metricManager.getReporters(coreMetricManager.getRegistryName());
+      assertTrue(
+          "reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
+      assertNotNull(
+          "reporter " + reporterName + " not present among " + reporters,
+          reporters.get(taggedName));
+      assertTrue(
+          "wrong reporter class: " + reporters.get(taggedName),
+          reporters.get(taggedName) instanceof MockMetricReporter);
     } catch (IllegalArgumentException e) {
       assertTrue(pluginInfo == null || attrs.get("configurable") == null);
       assertNull(metricManager.getReporters(coreMetricManager.getRegistryName()).get(taggedName));
     }
   }
 
-  private void assertRegistered(String scope, Map<String, Counter> newMetrics, SolrCoreMetricManager coreMetricManager) {
+  private void assertRegistered(
+      String scope, Map<String, Counter> newMetrics, SolrCoreMetricManager coreMetricManager) {
     if (scope == null || newMetrics == null) {
       return;
     }
     String filter = "." + scope + ".";
     MetricRegistry registry = metricManager.registry(coreMetricManager.getRegistryName());
-    assertEquals(newMetrics.size(), registry.getMetrics().
-        keySet().stream().filter(s -> s.contains(filter)).count());
+    assertEquals(
+        newMetrics.size(),
+        registry.getMetrics().keySet().stream().filter(s -> s.contains(filter)).count());
 
-    Map<String, Metric> registeredMetrics = registry.getMetrics().
-        entrySet().stream().filter(e -> e.getKey() != null && e.getKey().contains(filter)).
-        collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+    Map<String, Metric> registeredMetrics =
+        registry.getMetrics().entrySet().stream()
+            .filter(e -> e.getKey() != null && e.getKey().contains(filter))
+            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     for (Map.Entry<String, Metric> entry : registeredMetrics.entrySet()) {
       String name = entry.getKey();
       Metric expectedMetric = entry.getValue();
@@ -156,7 +170,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonCloudRegistryName() throws Exception {
+  public void testNonCloudRegistryName() {
     String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
     assertNotNull(registryName);

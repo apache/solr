@@ -17,7 +17,6 @@
 package org.apache.solr.search.grouping.endresulttransformer;
 
 import java.util.Map;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -31,13 +30,14 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 /**
- * Implementation of {@link EndResultTransformer} that transforms the grouped result into the main result list in the
- * response.
+ * Implementation of {@link EndResultTransformer} that transforms the grouped result into the main
+ * result list in the response.
  */
 public class MainEndResultTransformer implements EndResultTransformer {
 
   @Override
-  public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
+  public void transform(
+      Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     String[] entries = groupingSpec.getFields();
     if (ArrayUtils.isEmpty(entries)) {

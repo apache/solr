@@ -17,14 +17,9 @@ gradlew dockerBuild
 The docker build task accepts the following inputs, all accepted via both Environment Variables and Gradle Properties.
 
 Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
-   Default: "openjdk:11-jre-slim"
+   Default: "eclipse-temurin:17-jre"
    EnvVar: SOLR_DOCKER_BASE_IMAGE
    Gradle Property: -Psolr.docker.baseImage
-
-Github URL or Mirror: (The URL of github or a mirror of github releases. This is of use when building the docker image behind a firewall that does not have access to external Github.)
-   Default: "github.com"
-   EnvVar: SOLR_DOCKER_GITHUB_URL
-   Gradle Property: -Psolr.docker.githubUrl
 
 Tagging and Pushing
 -------
@@ -79,6 +74,14 @@ Exclude specific tests:
    EnvVar: SOLR_DOCKER_TESTS_EXCLUDE
    Gradle Property: -Psolr.docker.tests.exclude
 
+The docker tests can also be run concurrently, if explicitly specified.
+The parallelization is set by the number of gradle workers you have defined, this cannot be specified separately.
+It is recommended to use at most 3 gradle workers when running the Docker tests concurrently.
+
+Run tests in parallel:
+   EnvVar: SOLR_DOCKER_TESTS_CONCURRENT=true
+   Gradle Property: -Psolr.docker.tests.concurrent=true
+
 -------
 The Official Solr Image
 -------
@@ -90,7 +93,7 @@ All users should build custom images using the instructions above.
 NOTE: All gradle commands for the Official Dockerfile below require the Solr artifacts to be signed with a GPG Key.
 For necessary inputs and properties, please refer to:
 
-gradlew helpGpgSigning
+gradlew helpPublishing
 
 You can use the following command to build an official Solr Dockerfile.
 The Dockerfile will be created at: solr/docker/build/Dockerfile.official

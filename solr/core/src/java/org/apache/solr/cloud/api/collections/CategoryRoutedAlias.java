@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,42 +37,34 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-
 public class CategoryRoutedAlias extends RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION_INFIX = "__CRA__";
 
   // This constant is terribly annoying but a great many things fall apart if we allow an alias with
-  // no collections to be created. So this kludge seems better than reworking every request path that
-  // expects a collection but also works with an alias to handle or error out on empty alias. The
-  // collection with this constant as a suffix is automatically removed after the alias begins to
-  // receive data.
+  // no collections to be created. So this kludge seems better than reworking every request path
+  // that expects a collection but also works with an alias to handle or error out on empty alias.
+  // The collection with this constant as a suffix is automatically removed after the alias begins
+  // to receive data.
   public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA_TEMP";
 
   @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
 
-  /**
-   * Parameters required for creating a category routed alias
-   */
+  /** Parameters required for creating a category routed alias */
   @SuppressWarnings("WeakerAccess")
-  public static final Set<String> REQUIRED_ROUTER_PARAMS = Set.of(
-      CommonParams.NAME,
-      ROUTER_TYPE_NAME,
-      ROUTER_FIELD,
-      ROUTER_MAX_CARDINALITY
-  );
+  public static final Set<String> REQUIRED_ROUTER_PARAMS =
+      Set.of(CommonParams.NAME, ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_MAX_CARDINALITY);
 
   public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
   /**
-   * Optional parameters for creating a category routed alias excluding parameters for collection creation.
+   * Optional parameters for creating a category routed alias excluding parameters for collection
+   * creation.
    */
   @SuppressWarnings("WeakerAccess")
-  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Set.of(
-      ROUTER_MAX_CARDINALITY,
-      ROUTER_MUST_MATCH);
+  public static final Set<String> OPTIONAL_ROUTER_PARAMS =
+      Set.of(ROUTER_MAX_CARDINALITY, ROUTER_MUST_MATCH);
 
   private Aliases aliases;
   private final String aliasName;
@@ -89,7 +82,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
 
   @Override
   public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
-    final Aliases aliases = zkStateReader.getAliases(); // note: might be different from last request
+    final Aliases aliases =
+        zkStateReader.getAliases(); // note: might be different from last request
     if (this.aliases != aliases) {
       if (this.aliases != null) {
         if (log.isDebugEnabled()) {
@@ -121,12 +115,13 @@ public class CategoryRoutedAlias extends RoutedAlias {
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
     if (this.aliases == null) {
-      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader, false);
+      updateParsedCollectionAliases(
+          cmd.getReq().getCoreContainer().getZkController().zkStateReader, false);
     }
 
     Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());
-    // possible future enhancement: allow specification of an "unknown" category name to where we can send
-    // docs that are uncategorized.
+    // possible future enhancement: allow specification of an "unknown" category name to where we
+    // can send docs that are uncategorized.
     if (fieldValue == null) {
       throw new SolrException(BAD_REQUEST, "Route value is null");
     }
@@ -144,25 +139,30 @@ public class CategoryRoutedAlias extends RoutedAlias {
     int infix = candidateCollectionName.indexOf(COLLECTION_INFIX);
     int valueStart = infix + COLLECTION_INFIX.length();
     if (candidateCollectionName.substring(valueStart).contains(COLLECTION_INFIX)) {
-      throw new SolrException(BAD_REQUEST, "No portion of the route value may resolve to the 7 character sequence " +
-          "__CRA__");
+      throw new SolrException(
+          BAD_REQUEST,
+          "No portion of the route value may resolve to the 7 character sequence " + "__CRA__");
     }
 
     if (mustMatch != null && !mustMatch.matcher(dataValue).matches()) {
-      throw new SolrException(BAD_REQUEST, "Route value " + dataValue
-          + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
+      throw new SolrException(
+          BAD_REQUEST,
+          "Route value " + dataValue + " does not match " + ROUTER_MUST_MATCH + ": " + mustMatch);
     }
 
-    if (cols.stream()
-        .filter(x -> !x.contains(UNINITIALIZED)).count() >= maxCardinality) {
-      throw new SolrException(BAD_REQUEST, "Max cardinality " + maxCardinality
-          + " reached for Category Routed Alias: " + getAliasName());
+    if (cols.stream().filter(x -> !x.contains(UNINITIALIZED)).count() >= maxCardinality) {
+      throw new SolrException(
+          BAD_REQUEST,
+          "Max cardinality "
+              + maxCardinality
+              + " reached for Category Routed Alias: "
+              + getAliasName());
     }
   }
 
   /**
-   * Calculate a safe collection name from a data value. Any non-word character is
-   * replace with an underscore
+   * Calculate a safe collection name from a data value. Any non-word character is replace with an
+   * underscore
    *
    * @param dataValue a value from the route field for a particular document
    * @return the suffix value for it's corresponding collection name.
@@ -175,13 +175,13 @@ public class CategoryRoutedAlias extends RoutedAlias {
     return aliasName + COLLECTION_INFIX + safeKeyValue(value);
   }
 
-
   private Integer parseMaxCardinality(String maxCardinality) {
     try {
       return Integer.valueOf(maxCardinality);
     } catch (NumberFormatException e) {
-      throw new SolrException(BAD_REQUEST, ROUTER_MAX_CARDINALITY + " must be a valid Integer"
-          + ", instead got: " + maxCardinality);
+      throw new SolrException(
+          BAD_REQUEST,
+          ROUTER_MAX_CARDINALITY + " must be a valid Integer" + ", instead got: " + maxCardinality);
     }
   }
 
@@ -189,8 +189,12 @@ public class CategoryRoutedAlias extends RoutedAlias {
     try {
       return Pattern.compile(mustMatch);
     } catch (PatternSyntaxException e) {
-      throw new SolrException(BAD_REQUEST, ROUTER_MUST_MATCH + " must be a valid regular"
-          + " expression, instead got: " + mustMatch);
+      throw new SolrException(
+          BAD_REQUEST,
+          ROUTER_MUST_MATCH
+              + " must be a valid regular"
+              + " expression, instead got: "
+              + mustMatch);
     }
   }
 
@@ -225,7 +229,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
     Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
     String targetColName = buildCollectionNameFromValue(String.valueOf(value));
-    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
     updateParsedCollectionAliases(zkStateReader, true);
     List<String> collectionList = getCollectionList(this.aliases);
     if (collectionList.contains(targetColName)) {
@@ -237,7 +241,8 @@ public class CategoryRoutedAlias extends RoutedAlias {
 
   @Override
   protected String getHeadCollectionIfOrdered(AddUpdateCommand cmd) {
-    return buildCollectionNameFromValue(String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField())));
+    return buildCollectionNameFromValue(
+        String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField())));
   }
 
   @Override
@@ -245,19 +250,17 @@ public class CategoryRoutedAlias extends RoutedAlias {
     List<String> collectionList = getCollectionList(aliases);
     if (!collectionList.contains(targetCol)) {
       ArrayList<Action> actionList = new ArrayList<>();
-      actionList.add(new Action(this,ActionType.ENSURE_EXISTS, targetCol));
+      actionList.add(new Action(this, ActionType.ENSURE_EXISTS, targetCol));
       for (String s : collectionList) {
-        // can't remove the uninitialized on the first pass otherwise there is a risk of momentarily having
-        // an empty alias if thread scheduling plays tricks on us.
+        // can't remove the uninitialized on the first pass otherwise there is a risk of momentarily
+        // having an empty alias if thread scheduling plays tricks on us.
         if (s.contains(UNINITIALIZED) && collectionList.size() > 1) {
-          actionList.add(new Action(this,ActionType.ENSURE_REMOVED, s));
+          actionList.add(new Action(this, ActionType.ENSURE_REMOVED, s));
         }
       }
-      return  actionList;
+      return actionList;
     } else {
       return Collections.emptyList();
     }
   }
-
-
 }

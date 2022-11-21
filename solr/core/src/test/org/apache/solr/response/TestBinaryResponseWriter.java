@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.BytesRef;
@@ -45,12 +44,10 @@ import org.junit.BeforeClass;
 /**
  * Test for BinaryResponseWriter
  *
- *
  * @since solr 1.4
  */
 public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
 
-  
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
@@ -60,26 +57,30 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
   public void testBytesRefWriting() {
     compareStringFormat("ThisIsUTF8String");
     compareStringFormat("Thailand (ประเทศไทย)");
-    compareStringFormat("LIVE: सबरीमाला मंदिर के पास पहुंची दो महिलाएं, जमकर हो रहा विरोध-प्रदर्शन");
+    compareStringFormat(
+        "LIVE: सबरीमाला मंदिर के पास पहुंची दो महिलाएं, जमकर हो रहा विरोध-प्रदर्शन");
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testJavabinCodecWithCharSeq() throws IOException {
     SolrDocument document = new SolrDocument();
     document.put("id", "1");
     String text = "नए लुक में धमाल मचाने आ रहे हैं MS Dhoni, कुछ यूं दिखाया हेलीकॉप्टर शॉट";
-    document.put("desc", new StoredField("desc", new ByteArrayUtf8CharSequence(text) {
-    }, TextField.TYPE_STORED));
+    document.put(
+        "desc",
+        new StoredField("desc", new ByteArrayUtf8CharSequence(text) {}, TextField.TYPE_STORED));
 
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("doc1", document);
     SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
     new JavaBinCodec(new BinaryResponseWriter.Resolver(null, null)).marshal(nl, baos);
     ByteBuffer byteBuffer = baos.getByteBuffer();
-    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
-    assertEquals(text, nl._get("doc1/desc", null));
-
-
+    NamedList<?> result =
+        (NamedList<?>)
+            new JavaBinCodec()
+                .unmarshal(
+                    new ByteArrayInputStream(
+                        byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit()));
+    assertEquals(text, result._get("doc1/desc", null));
   }
 
   private void compareStringFormat(String input) {
@@ -93,27 +94,28 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * Tests known types implementation by asserting correct encoding/decoding of UUIDField
-   */
+  /** Tests known types implementation by asserting correct encoding/decoding of UUIDField */
   public void testUUID() throws Exception {
     String s = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     assertU(adoc("id", "101", "uuid", s));
     assertU(commit());
     LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");
     SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
-    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
+    BinaryQueryResponseWriter writer =
+        (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    @SuppressWarnings({"rawtypes"})
-    NamedList res;
+    NamedList<?> res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
-    } 
+      res = (NamedList<?>) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    }
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {
       SolrDocument document = (SolrDocument) doc;
-      assertEquals("Returned object must be a string", "java.lang.String", document.getFieldValue("uuid").getClass().getName());
+      assertEquals(
+          "Returned object must be a string",
+          "java.lang.String",
+          document.getFieldValue("uuid").getClass().getName());
       assertEquals("Wrong UUID string returned", s, document.getFieldValue("uuid"));
     }
 
@@ -136,15 +138,17 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
   }
 
   public void testResolverSolrDocumentPartialFields() throws Exception {
-    LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*",
-                                                "fl", "id,xxx,ddd_s"); 
+    LocalSolrQueryRequest req =
+        lrf.makeRequest(
+            "q", "*:*",
+            "fl", "id,xxx,ddd_s");
     SolrDocument in = new SolrDocument();
     in.addField("id", 345);
     in.addField("aaa_s", "aaa");
     in.addField("bbb_s", "bbb");
     in.addField("ccc_s", "ccc");
     in.addField("ddd_s", "ddd");
-    in.addField("eee_s", "eee");    
+    in.addField("eee_s", "eee");
 
     Resolver r = new Resolver(req, new SolrReturnFields(req));
     Object o = r.resolve(in, new JavaBinCodec());
@@ -154,15 +158,11 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
 
     SolrDocument out = new SolrDocument();
     for (Map.Entry<String, Object> e : in) {
-      if(r.isWritable(e.getKey())) out.put(e.getKey(),e.getValue());
-
+      if (r.isWritable(e.getKey())) out.put(e.getKey(), e.getValue());
     }
     assertTrue("id not found", out.getFieldNames().contains("id"));
     assertTrue("ddd_s not found", out.getFieldNames().contains("ddd_s"));
-    assertEquals("Wrong number of fields found", 
-                 2, out.getFieldNames().size());
+    assertEquals("Wrong number of fields found", 2, out.getFieldNames().size());
     req.close();
-
   }
-
 }

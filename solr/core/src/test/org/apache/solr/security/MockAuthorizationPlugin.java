@@ -16,12 +16,10 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,19 +47,14 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin {
       }
       if (uname == null) uname = context.getParams().get("uname");
       log.info("User request: {}", uname);
-      if (uname == null || denyUsers.contains(uname))
-        return new AuthorizationResponse(403);
-      else
-        return new AuthorizationResponse(200);
+      if (uname == null || denyUsers.contains(uname)) return new AuthorizationResponse(403);
+      else return new AuthorizationResponse(200);
     }
   }
 
   @Override
-  public void init(Map<String, Object> initInfo) {
-  }
+  public void init(Map<String, Object> initInfo) {}
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() {}
 }

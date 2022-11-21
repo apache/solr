@@ -24,10 +24,12 @@ interface LongComp {
 
   static class LongAsc implements LongComp {
 
+    @Override
     public long resetValue() {
       return Long.MAX_VALUE;
     }
 
+    @Override
     public int compare(long a, long b) {
       return Long.compare(b, a);
     }
@@ -35,10 +37,12 @@ interface LongComp {
 
   static class LongDesc implements LongComp {
 
+    @Override
     public long resetValue() {
       return Long.MIN_VALUE;
     }
 
+    @Override
     public int compare(long a, long b) {
       return Long.compare(a, b);
     }

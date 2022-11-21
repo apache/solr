@@ -16,7 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import javax.xml.parsers.ParserConfigurationException;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
+
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,8 +31,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
-
-import com.google.common.annotations.VisibleForTesting;
+import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -48,9 +50,6 @@ import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
 public class ZkCLI implements CLIO {
 
@@ -91,56 +90,79 @@ public class ZkCLI implements CLIO {
   /**
    * Allows you to perform a variety of zookeeper related tasks, such as:
    *
-   * Bootstrap the current configs for all collections in solr.xml.
+   * <p>Bootstrap the current configs for all collections in solr.xml.
    *
-   * Upload a named config set from a given directory.
+   * <p>Upload a named config set from a given directory.
    *
-   * Link a named config set explicity to a collection.
+   * <p>Link a named config set explicity to a collection.
    *
-   * Clear ZooKeeper info.
+   * <p>Clear ZooKeeper info.
    *
-   * If you also pass a solrPort, it will be used to start an embedded zk useful
-   * for single machine, multi node tests.
+   * <p>If you also pass a solrPort, it will be used to start an embedded zk useful for single
+   * machine, multi node tests.
    */
-  public static void main(String[] args) throws InterruptedException,
-      TimeoutException, IOException, ParserConfigurationException,
-      SAXException, KeeperException {
+  public static void main(String[] args)
+      throws InterruptedException, TimeoutException, IOException, ParserConfigurationException,
+          SAXException, KeeperException {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
-    options.addOption(Option.builder(CMD)
-        .hasArg(true)
-        .desc(
-            "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
-                + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
-                + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR
-                + ", " + UPDATEACLS + ", " + LS).build());
+    options.addOption(
+        Option.builder(CMD)
+            .hasArg(true)
+            .desc(
+                "cmd to run: "
+                    + BOOTSTRAP
+                    + ", "
+                    + UPCONFIG
+                    + ", "
+                    + DOWNCONFIG
+                    + ", "
+                    + LINKCONFIG
+                    + ", "
+                    + MAKEPATH
+                    + ", "
+                    + PUT
+                    + ", "
+                    + PUT_FILE
+                    + ","
+                    + GET
+                    + ","
+                    + GET_FILE
+                    + ", "
+                    + LIST
+                    + ", "
+                    + CLEAR
+                    + ", "
+                    + UPDATEACLS
+                    + ", "
+                    + LS)
+            .build());
 
-    Option zkHostOption = new Option("z", ZKHOST, true,
-        "ZooKeeper host address");
+    Option zkHostOption = new Option("z", ZKHOST, true, "ZooKeeper host address");
     options.addOption(zkHostOption);
-    Option solrHomeOption = new Option("s", SOLRHOME, true,
-        "for " + BOOTSTRAP + ", " + RUNZK + ": solrhome location");
+    Option solrHomeOption =
+        new Option("s", SOLRHOME, true, "for " + BOOTSTRAP + ", " + RUNZK + ": solrhome location");
     options.addOption(solrHomeOption);
 
-    options.addOption("d", CONFDIR, true,
-        "for " + UPCONFIG + ": a directory of configuration files");
-    options.addOption("n", CONFNAME, true,
-        "for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set");
+    options.addOption(
+        "d", CONFDIR, true, "for " + UPCONFIG + ": a directory of configuration files");
+    options.addOption(
+        "n", CONFNAME, true, "for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set");
 
+    options.addOption("c", COLLECTION, true, "for " + LINKCONFIG + ": name of the collection");
 
-    options.addOption("c", COLLECTION, true,
-        "for " + LINKCONFIG + ": name of the collection");
-
-    options.addOption(EXCLUDE_REGEX_SHORT, EXCLUDE_REGEX, true,
+    options.addOption(
+        EXCLUDE_REGEX_SHORT,
+        EXCLUDE_REGEX,
+        true,
         "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
 
-    options
-        .addOption(
-            "r",
-            RUNZK,
-            true,
-            "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)");
+    options.addOption(
+        "r",
+        RUNZK,
+        true,
+        "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)");
 
     options.addOption("h", HELP, false, "bring up this help page");
     options.addOption(NAME, true, "name of the cluster property to set");
@@ -150,25 +172,60 @@ public class ZkCLI implements CLIO {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
 
-      if (line.hasOption(HELP) || !line.hasOption(ZKHOST)
-          || !line.hasOption(CMD)) {
+      if (line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD)) {
         // automatically generate the help statement
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);
         stdout.println("Examples:");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + UPCONFIG
+                + " -"
+                + CONFDIR
+                + " /opt/solr/collection1/conf"
+                + " -"
+                + CONFNAME
+                + " myconf");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + DOWNCONFIG
+                + " -"
+                + CONFDIR
+                + " /opt/solr/collection1/conf"
+                + " -"
+                + CONFNAME
+                + " myconf");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + LINKCONFIG
+                + " -"
+                + COLLECTION
+                + " collection1"
+                + " -"
+                + CONFNAME
+                + " myconf");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT_FILE + " /solr.xml /User/myuser/solr/solr.xml");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + PUT_FILE
+                + " /solr.xml /User/myuser/solr/solr.xml");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LS + " /solr/live_nodes");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLUSTERPROP + " -" + NAME + " urlScheme -" + VALUE_LONG + " https" );
+        stdout.println(
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + CLUSTERPROP
+                + " -"
+                + NAME
+                + " urlScheme -"
+                + VALUE_LONG
+                + " https");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPDATEACLS + " /solr");
         return;
       }
@@ -188,28 +245,30 @@ public class ZkCLI implements CLIO {
 
       SolrZkServer zkServer = null;
       if (solrPort != null) {
-        zkServer = new SolrZkServer("true", null, new File(solrHome, "/zoo_data"),
-            solrHome, Integer.parseInt(solrPort));
+        zkServer =
+            new SolrZkServer(
+                "true",
+                null,
+                new File(solrHome, "/zoo_data"),
+                solrHome,
+                Integer.parseInt(solrPort));
         zkServer.parseConfig();
         zkServer.start();
       }
       SolrZkClient zkClient = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
-            () -> {
-            });
+        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000, () -> {});
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
-            stdout.println("-" + SOLRHOME
-                + " is required for " + BOOTSTRAP);
+            stdout.println("-" + SOLRHOME + " is required for " + BOOTSTRAP);
             System.exit(1);
           }
 
           CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
           cc.setCoreConfigService(new ZkConfigSetService(zkClient));
 
-          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
@@ -221,33 +280,36 @@ public class ZkCLI implements CLIO {
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(UPCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
-            stdout.println("-" + CONFDIR + " and -" + CONFNAME
-                + " are required for " + UPCONFIG);
+            stdout.println("-" + CONFDIR + " and -" + CONFNAME + " are required for " + UPCONFIG);
             System.exit(1);
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
           final String excludeExpr = line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT);
 
-          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
           final Pattern excludePattern = Pattern.compile(excludeExpr);
-          ZkMaintenanceUtils.uploadToZK(zkClient, Paths.get(confDir), ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, excludePattern);
+          ZkMaintenanceUtils.uploadToZK(
+              zkClient,
+              Paths.get(confDir),
+              ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
+              excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
-            stdout.println("-" + CONFDIR + " and -" + CONFNAME
-                + " are required for " + DOWNCONFIG);
+            stdout.println("-" + CONFDIR + " and -" + CONFNAME + " are required for " + DOWNCONFIG);
             System.exit(1);
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
-          ZkMaintenanceUtils.downloadFromZK(zkClient, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, Paths.get(confDir));
+          ZkMaintenanceUtils.downloadFromZK(
+              zkClient, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, Paths.get(confDir));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
-            stdout.println("-" + COLLECTION + " and -" + CONFNAME
-                + " are required for " + LINKCONFIG);
+            stdout.println(
+                "-" + COLLECTION + " and -" + CONFNAME + " are required for " + LINKCONFIG);
             System.exit(1);
           }
           String collection = line.getOptionValue(COLLECTION);
@@ -258,8 +320,7 @@ public class ZkCLI implements CLIO {
           zkClient.printLayoutToStream(stdout);
         } else if (line.getOptionValue(CMD).equals(LS)) {
 
-          @SuppressWarnings({"rawtypes"})
-          List argList = line.getArgList();
+          List<String> argList = line.getArgList();
           if (argList.size() != 1) {
             stdout.println("-" + LS + " requires one arg - the path to list");
             System.exit(1);
@@ -271,39 +332,44 @@ public class ZkCLI implements CLIO {
           stdout.println(sb.toString());
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
             System.exit(1);
           }
           zkClient.clean(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
           zkClient.makePath(arglist.get(0).toString(), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
-            stdout.println("-" + PUT + " requires two args - the path to create and the data string");
+            stdout.println(
+                "-" + PUT + " requires two args - the path to create and the data string");
             System.exit(1);
           }
           String path = arglist.get(0).toString();
           if (zkClient.exists(path, true)) {
-            zkClient.setData(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
+            zkClient.setData(
+                path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
           } else {
-            zkClient.create(path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+            zkClient.create(
+                path,
+                arglist.get(1).toString().getBytes(StandardCharsets.UTF_8),
+                CreateMode.PERSISTENT,
+                true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
-            stdout.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
+            stdout.println(
+                "-"
+                    + PUT_FILE
+                    + " requires two args - the path to create in ZK and the path to the local file");
             System.exit(1);
           }
 
@@ -320,49 +386,49 @@ public class ZkCLI implements CLIO {
           }
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
-            stdout.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
+            stdout.println(
+                "-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
-          @SuppressWarnings({"rawtypes"})
-          List arglist = line.getArgList();
+          List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");
             System.exit(1);
           }
           zkClient.updateACLs(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
-          if(!line.hasOption(NAME)) {
+          if (!line.hasOption(NAME)) {
             stdout.println("-" + NAME + " is required for " + CLUSTERPROP);
           }
           String propertyName = line.getOptionValue(NAME);
-          //If -val option is missing, we will use the null value. This is required to maintain
-          //compatibility with Collections API.
+          // If -val option is missing, we will use the null value. This is required to maintain
+          // compatibility with Collections API.
           String propertyValue = line.getOptionValue(VALUE_LONG);
           ClusterProperties props = new ClusterProperties(zkClient);
           try {
             props.setClusterProperty(propertyName, propertyValue);
           } catch (IOException ex) {
-            stdout.println("Unable to set the cluster property due to following error : " + ex.getLocalizedMessage());
+            stdout.println(
+                "Unable to set the cluster property due to following error : "
+                    + ex.getLocalizedMessage());
             System.exit(1);
           }
         } else {
           // If not cmd matches
-          stdout.println("Unknown command "+ line.getOptionValue(CMD) + ". Use -h to get help.");
+          stdout.println("Unknown command " + line.getOptionValue(CMD) + ". Use -h to get help.");
           System.exit(1);
         }
       } finally {
@@ -376,6 +442,5 @@ public class ZkCLI implements CLIO {
     } catch (ParseException exp) {
       stdout.println("Unexpected exception:" + exp.getMessage());
     }
-
   }
 }

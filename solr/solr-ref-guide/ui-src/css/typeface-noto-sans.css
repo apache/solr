@@ -1,0 +1,19 @@
+/* Solr New File */
+/* Load Noto Sans for body and text */
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local("Noto Sans"),
+    local("Noto Sans-Regular"),
+    url(../font/NotoSans-Regular.ttf) format("truetype");
+}
+
+@font-face {
+  font-weight: bold;
+  font-family: "Noto Sans";
+  src:
+    local("NotoSans-Bold"),
+    url(../font/NotoSans-Bold.ttf) format("truetype");
+}

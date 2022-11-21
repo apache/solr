@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -64,7 +63,7 @@ final class NumericFacets {
 
     long[] bits; // bits identifying a value
     int[] counts;
-    int[] docIDs; //Will be null if HashTable is created with needsDocId=false
+    int[] docIDs; // Will be null if HashTable is created with needsDocId=false
     int mask;
     int size;
     int threshold;
@@ -104,7 +103,7 @@ final class NumericFacets {
         break;
       }
     }
-    
+
     void add(long value, int count) {
       if (size >= threshold) {
         rehash();
@@ -130,14 +129,14 @@ final class NumericFacets {
       final int newCapacity = bits.length * 2;
       bits = new long[newCapacity];
       counts = new int[newCapacity];
-      if (oldDocIDs!= null) {
+      if (oldDocIDs != null) {
         docIDs = new int[newCapacity];
       }
       mask = newCapacity - 1;
       threshold = (int) (LOAD_FACTOR * newCapacity);
       size = 0;
 
-      if (oldDocIDs!= null) {
+      if (oldDocIDs != null) {
         for (int i = 0; i < oldBits.length; ++i) {
           if (oldCounts[i] > 0) {
             add(oldDocIDs[i], oldBits[i], oldCounts[i]);
@@ -151,7 +150,6 @@ final class NumericFacets {
         }
       }
     }
-
   }
 
   private static class Entry {
@@ -160,16 +158,36 @@ final class NumericFacets {
     long bits;
   }
 
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
+  public static NamedList<Integer> getCounts(
+      SolrIndexSearcher searcher,
+      DocSet docs,
+      String fieldName,
+      int offset,
+      int limit,
+      int mincount,
+      boolean missing,
+      String sort)
+      throws IOException {
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     if (sf.multiValued()) {
-      // TODO: evaluate using getCountsMultiValued for singleValued numerics with SingletonSortedNumericDocValues
-      return getCountsMultiValued(searcher, docs, fieldName, offset, limit, mincount, missing, sort);
+      // TODO: evaluate using getCountsMultiValued for singleValued numerics with
+      // SingletonSortedNumericDocValues
+      return getCountsMultiValued(
+          searcher, docs, fieldName, offset, limit, mincount, missing, sort);
     }
     return getCountsSingleValue(searcher, docs, fieldName, offset, limit, mincount, missing, sort);
   }
-  
-  private static NamedList<Integer> getCountsSingleValue(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
+
+  private static NamedList<Integer> getCountsSingleValue(
+      SolrIndexSearcher searcher,
+      DocSet docs,
+      String fieldName,
+      int offset,
+      int limit,
+      int mincount,
+      boolean missing,
+      String sort)
+      throws IOException {
     boolean zeros = mincount <= 0;
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
@@ -178,7 +196,10 @@ final class NumericFacets {
     if (numericType == null) {
       throw new IllegalStateException();
     }
-    zeros = zeros && !ft.isPointField() && sf.indexed(); // We don't return zeros when using PointFields or when index=false
+    zeros =
+        zeros
+            && !ft.isPointField()
+            && sf.indexed(); // We don't return zeros when using PointFields or when index=false
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
     // 1. accumulate
@@ -203,25 +224,27 @@ final class NumericFacets {
             break;
           case FLOAT:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-                long bits = super.longValue();
-                if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                return bits;
-              }
-            };
+            longs =
+                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                  @Override
+                  public long longValue() throws IOException {
+                    long bits = super.longValue();
+                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
+                    return bits;
+                  }
+                };
             break;
           case DOUBLE:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-                long bits = super.longValue();
-                if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                return bits;
-              }
-            };
+            longs =
+                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                  @Override
+                  public long longValue() throws IOException {
+                    long bits = super.longValue();
+                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
+                    return bits;
+                  }
+                };
             break;
           default:
             throw new AssertionError("Unexpected type: " + numericType);
@@ -246,24 +269,27 @@ final class NumericFacets {
     // 2. select top-k facet values
     final int pqSize = limit < 0 ? hashTable.size : Math.min(offset + limit, hashTable.size);
     final PriorityQueue<Entry> pq;
-    if (FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
-      pq = new PriorityQueue<Entry>(pqSize) {
-        @Override
-        protected boolean lessThan(Entry a, Entry b) {
-          if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
-            return true;
-          } else {
-            return false;
-          }
-        }
-      };
+    if (FacetParams.FACET_SORT_COUNT.equals(sort)
+        || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
+      pq =
+          new PriorityQueue<>(pqSize) {
+            @Override
+            protected boolean lessThan(Entry a, Entry b) {
+              if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
+                return true;
+              } else {
+                return false;
+              }
+            }
+          };
     } else {
-      pq = new PriorityQueue<Entry>(pqSize) {
-        @Override
-        protected boolean lessThan(Entry a, Entry b) {
-          return a.bits > b.bits;
-        }
-      };
+      pq =
+          new PriorityQueue<>(pqSize) {
+            @Override
+            protected boolean lessThan(Entry a, Entry b) {
+              return a.bits > b.bits;
+            }
+          };
     }
     Entry e = null;
     for (int i = 0; i < hashTable.bits.length; ++i) {
@@ -283,13 +309,15 @@ final class NumericFacets {
 
     // This stuff is complicated because if facet.mincount=0, the counts needs
     // to be merged with terms from the terms dict
-    if (!zeros || FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
+    if (!zeros
+        || FacetParams.FACET_SORT_COUNT.equals(sort)
+        || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
       // Only keep items we're interested in
       final Deque<Entry> counts = new ArrayDeque<>();
       while (pq.size() > offset) {
         counts.addFirst(pq.pop());
       }
-      
+
       // Entries from the PQ first, then using the terms dictionary
       for (Entry entry : counts) {
         final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
@@ -299,7 +327,12 @@ final class NumericFacets {
 
       if (zeros && (limit < 0 || result.size() < limit)) { // need to merge with the term dict
         if (!sf.indexed() && !sf.hasDocValues()) {
-          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is neither indexed nor docValues");
+          throw new IllegalStateException(
+              "Cannot use "
+                  + FacetParams.FACET_MINCOUNT
+                  + "=0 on field "
+                  + sf.getName()
+                  + " which is neither indexed nor docValues");
         }
         // Add zeros until there are limit results
         final Set<String> alreadySeen = new HashSet<>();
@@ -335,7 +368,8 @@ final class NumericFacets {
               throw new AssertionError();
           }
           final CharsRefBuilder spare = new CharsRefBuilder();
-          for (int skipped = hashTable.size; skipped < offset && term != null && StringHelper.startsWith(term, prefix); ) {
+          for (int skipped = hashTable.size;
+              skipped < offset && term != null && StringHelper.startsWith(term, prefix); ) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
             if (!alreadySeen.contains(termStr)) {
@@ -343,7 +377,11 @@ final class NumericFacets {
             }
             term = termsEnum.next();
           }
-          for ( ; term != null && StringHelper.startsWith(term, prefix) && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
+          for (;
+              term != null
+                  && StringHelper.startsWith(term, prefix)
+                  && (limit < 0 || result.size() < limit);
+              term = termsEnum.next()) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
             if (!alreadySeen.contains(termStr)) {
@@ -356,7 +394,12 @@ final class NumericFacets {
       // sort=index, mincount=0 and we have less than limit items
       // => Merge the PQ and the terms dictionary on the fly
       if (!sf.indexed()) {
-        throw new IllegalStateException("Cannot use " + FacetParams.FACET_SORT + "=" + FacetParams.FACET_SORT_INDEX + " on a field which is not indexed");
+        throw new IllegalStateException(
+            "Cannot use "
+                + FacetParams.FACET_SORT
+                + "="
+                + FacetParams.FACET_SORT_INDEX
+                + " on a field which is not indexed");
       }
       final Map<String, Integer> counts = new HashMap<>();
       while (pq.size() > 0) {
@@ -391,7 +434,11 @@ final class NumericFacets {
         for (int i = 0; i < offset && term != null && StringHelper.startsWith(term, prefix); ++i) {
           term = termsEnum.next();
         }
-        for ( ; term != null && StringHelper.startsWith(term, prefix) && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
+        for (;
+            term != null
+                && StringHelper.startsWith(term, prefix)
+                && (limit < 0 || result.size() < limit);
+            term = termsEnum.next()) {
           ft.indexedToReadable(term, spare);
           final String termStr = spare.toString();
           Integer count = counts.get(termStr);
@@ -406,7 +453,16 @@ final class NumericFacets {
     return finalize(result, missingCount, missing);
   }
 
-  private static NamedList<Integer> getCountsMultiValued(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
+  private static NamedList<Integer> getCountsMultiValued(
+      SolrIndexSearcher searcher,
+      DocSet docs,
+      String fieldName,
+      int offset,
+      int limit,
+      int mincount,
+      boolean missing,
+      String sort)
+      throws IOException {
     // If facet.mincount=0 with PointFields the only option is to get the values from DocValues
     // not currently supported. See SOLR-11174
     mincount = Math.max(mincount, 1);
@@ -439,12 +495,13 @@ final class NumericFacets {
         hashTable.add(l, 1);
         for (int i = 1, count = longs.docValueCount(); i < count; i++) {
           long lnew = longs.nextValue();
-          if (lnew > l) { // Skip the value if it's equal to the last one, we don't want to double-count it
+          // Skip the value if it's equal to the last one, we don't want to double-count it
+          if (lnew > l) {
             hashTable.add(lnew, 1);
           }
           l = lnew;
-         }
-        
+        }
+
       } else {
         ++missingCount;
       }
@@ -458,25 +515,28 @@ final class NumericFacets {
     // 2. select top-k facet values
     final int pqSize = limit < 0 ? hashTable.size : Math.min(offset + limit, hashTable.size);
     final PriorityQueue<Entry> pq;
-    if (FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
-      pq = new PriorityQueue<Entry>(pqSize) {
-        @Override
-        protected boolean lessThan(Entry a, Entry b) {
-          if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
-            return true;
-          } else {
-            return false;
-          }
-        }
-      };
+    if (FacetParams.FACET_SORT_COUNT.equals(sort)
+        || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
+      pq =
+          new PriorityQueue<>(pqSize) {
+            @Override
+            protected boolean lessThan(Entry a, Entry b) {
+              if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
+                return true;
+              } else {
+                return false;
+              }
+            }
+          };
     } else {
       // sort=index
-      pq = new PriorityQueue<Entry>(pqSize) {
-        @Override
-        protected boolean lessThan(Entry a, Entry b) {
-          return a.bits > b.bits;
-        }
-      };
+      pq =
+          new PriorityQueue<>(pqSize) {
+            @Override
+            protected boolean lessThan(Entry a, Entry b) {
+              return a.bits > b.bits;
+            }
+          };
     }
     Entry e = null;
     for (int i = 0; i < hashTable.bits.length; ++i) {
@@ -496,18 +556,19 @@ final class NumericFacets {
     while (pq.size() > offset) {
       counts.addFirst(pq.pop());
     }
-    
+
     for (Entry entry : counts) {
       result.add(bitsToStringValue(ft, entry.bits), entry.count); // TODO: convert to correct value
     }
-    
-    // Once facet.mincount=0 is supported we'll need to add logic similar to the SingleValue case, but obtaining values
-    // with count 0 from DocValues
+
+    // Once facet.mincount=0 is supported we'll need to add logic similar to the SingleValue case,
+    // but obtaining values with count 0 from DocValues
 
     return finalize(result, missingCount, missing);
   }
 
-  private static NamedList<Integer> finalize(NamedList<Integer> result, int missingCount, boolean missing) {
+  private static NamedList<Integer> finalize(
+      NamedList<Integer> result, int missingCount, boolean missing) {
     if (missing) {
       result.add(null, missingCount);
     }
@@ -520,7 +581,7 @@ final class NumericFacets {
       case INTEGER:
         return String.valueOf(bits);
       case FLOAT:
-        return String.valueOf(NumericUtils.sortableIntToFloat((int)bits));
+        return String.valueOf(NumericUtils.sortableIntToFloat((int) bits));
       case DOUBLE:
         return String.valueOf(NumericUtils.sortableLongToDouble(bits));
       case DATE:
@@ -529,5 +590,4 @@ final class NumericFacets {
         throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
     }
   }
-
 }

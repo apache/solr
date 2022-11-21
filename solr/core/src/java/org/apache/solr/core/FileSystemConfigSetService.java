@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -44,8 +43,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 /**
  * Solr Standalone File System ConfigSetService impl.
  *
- * <p>
- * Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
+ * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
  * the ConfigSet instead from the core's instance directory.
  */
@@ -69,7 +67,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     Path instanceDir = locateInstanceDir(cd);
-    SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+    SolrResourceLoader solrResourceLoader =
+        new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
     return solrResourceLoader;
   }
 
@@ -80,8 +79,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path configDir = configSetBase.resolve(configName);
-    return Files.exists(configDir);
+    Path configSetDirectory = configSetBase.resolve(configName);
+    return Files.isDirectory(configSetDirectory);
   }
 
   @Override
@@ -91,7 +90,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void deleteFilesFromConfig(String configName, List<String> filesToDelete) throws IOException {
+  public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
+      throws IOException {
     Path configDir = configSetBase.resolve(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
@@ -106,6 +106,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
   }
 
+  @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
     Path source = configSetBase.resolve(fromConfig);
     Path dest = configSetBase.resolve(toConfig);
@@ -139,7 +140,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadFileToConfig(String configName, String fileName, byte[] data, boolean overwriteOnExists) throws IOException {
+  public void uploadFileToConfig(
+      String configName, String fileName, byte[] data, boolean overwriteOnExists)
+      throws IOException {
     Path filePath = configSetBase.resolve(configName).resolve(fileName);
     if (!Files.exists(filePath) || overwriteOnExists) {
       Files.write(filePath, data);
@@ -251,13 +254,15 @@ public class FileSystemConfigSetService extends ConfigSetService {
     if (configSet == null) return cd.getInstanceDir();
     Path configSetDirectory = configSetBase.resolve(configSet);
     if (!Files.isDirectory(configSetDirectory))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Could not load configuration from directory " + configSetDirectory);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load configuration from directory " + configSetDirectory);
     return configSetDirectory;
   }
 
   @Override
-  protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+  protected Long getCurrentSchemaModificationVersion(
+      String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
     Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
     try {
       return Files.getLastModifiedTime(schemaFile).toMillis();

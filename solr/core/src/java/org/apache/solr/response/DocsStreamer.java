@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
@@ -53,12 +52,9 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrReturnFields;
 
-/**
- * This streams SolrDocuments from a DocList and applies transformer
- */
+/** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
-  @SuppressWarnings({"rawtypes"})
-  public static final Set<Class> KNOWN_TYPES = new HashSet<>();
+  public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
@@ -77,7 +73,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
     docFetcher = rctx.getSearcher().getDocFetcher();
-    solrReturnFields = (SolrReturnFields)rctx.getReturnFields();
+    solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
     if (transformer != null) transformer.setContext(rctx);
   }
@@ -86,10 +82,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     return idx;
   }
 
+  @Override
   public boolean hasNext() {
     return docIterator.hasNext();
   }
 
+  @Override
   public SolrDocument next() {
     int id = docIterator.nextDoc();
     idx++;
@@ -104,15 +102,15 @@ public class DocsStreamer implements Iterator<SolrDocument> {
           transformer.transform(sdoc, id);
         }
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Error applying transformer", e);
       }
     }
     return sdoc;
-
   }
 
   /**
-   * This method is less efficient then the 3 arg version because it may convert some fields that 
+   * This method is less efficient then the 3 arg version because it may convert some fields that
    * are not needed
    *
    * @deprecated use the 3 arg version for better performance
@@ -120,47 +118,47 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    */
   @Deprecated
   public static SolrDocument convertLuceneDocToSolrDoc(Document doc, final IndexSchema schema) {
-    return convertLuceneDocToSolrDoc(doc,schema, new SolrReturnFields());
+    return convertLuceneDocToSolrDoc(doc, schema, new SolrReturnFields());
   }
-  
+
   /**
    * Converts the specified <code>Document</code> into a <code>SolrDocument</code>.
-   * <p>
-   * The use of {@link ReturnFields} can be important even when it was already used to retrieve the 
-   * {@link Document} from {@link SolrDocumentFetcher} because the Document may have been cached with 
-   * more fields then are desired.
-   * </p>
-   * 
+   *
+   * <p>The use of {@link ReturnFields} can be important even when it was already used to retrieve
+   * the {@link Document} from {@link SolrDocumentFetcher} because the Document may have been cached
+   * with more fields then are desired.
+   *
    * @param doc <code>Document</code> to be converted, must not be null
-   * @param schema <code>IndexSchema</code> containing the field/fieldType details for the index
-   *               the <code>Document</code> came from, must not be null.
-   * @param fields <code>ReturnFields</code> instance that can be use to limit the set of fields 
-   *               that will be converted, must not be null
+   * @param schema <code>IndexSchema</code> containing the field/fieldType details for the index the
+   *     <code>Document</code> came from, must not be null.
+   * @param fields <code>ReturnFields</code> instance that can be use to limit the set of fields
+   *     that will be converted, must not be null
    */
-  public static SolrDocument convertLuceneDocToSolrDoc(Document doc,
-                                                       final IndexSchema schema,
-                                                       final ReturnFields fields) {
-    // TODO move to SolrDocumentFetcher ?  Refactor to also call docFetcher.decorateDocValueFields(...) ?
+  public static SolrDocument convertLuceneDocToSolrDoc(
+      Document doc, final IndexSchema schema, final ReturnFields fields) {
+    // TODO move to SolrDocumentFetcher ?  Refactor to also call
+    // docFetcher.decorateDocValueFields(...) ?
     assert null != doc;
     assert null != schema;
     assert null != fields;
-    
+
     // can't just use fields.wantsField(String)
     // because that doesn't include extra fields needed by transformers
     final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
 
     BinaryResponseWriter.MaskCharSeqSolrDocument masked = null;
-    final SolrDocument out = ResultContext.READASBYTES.get() == null ?
-        new SolrDocument() :
-        (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
+    final SolrDocument out =
+        ResultContext.READASBYTES.get() == null
+            ? new SolrDocument()
+            : (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
 
-    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded
-    // when it's smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
-    // since Document.getFields(String) does a full (internal) iteration over the full IndexableField[]
-    // see SOLR-11891
+    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded when it's
+    // smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
+    // since Document.getFields(String) does a full (internal) iteration over the full
+    // IndexableField[]. see SOLR-11891
     for (IndexableField f : doc.getFields()) {
       final String fname = f.name();
-      if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname) ) {
+      if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname)) {
         // Make sure multivalued fields are represented as lists
         Object existing = masked == null ? out.get(fname) : masked.getRaw(fname);
         if (existing == null) {
@@ -179,16 +177,16 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     }
     return out;
   }
-  
+
   @Override
-  public void remove() { //do nothing
+  public void remove() { // do nothing
   }
 
   public static Object getValue(SchemaField sf, IndexableField f) {
     FieldType ft = null;
     if (sf != null) ft = sf.getType();
 
-    if (ft == null) {  // handle fields not in the schema
+    if (ft == null) { // handle fields not in the schema
       BytesRef bytesRef = f.binaryValue();
       if (bytesRef != null) {
         if (bytesRef.offset == 0 && bytesRef.length == bytesRef.bytes.length) {
@@ -207,7 +205,6 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       }
     }
   }
-
 
   static {
     KNOWN_TYPES.add(BoolField.class);
@@ -228,5 +225,4 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
   }
-
 }

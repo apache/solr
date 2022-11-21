@@ -16,6 +16,14 @@
  */
 package org.apache.solr.cluster.placement;
 
+import static org.apache.solr.cluster.placement.Builders.ClusterBuilder;
+import static org.apache.solr.cluster.placement.Builders.CollectionBuilder;
+import static org.apache.solr.cluster.placement.Builders.newClusterBuilder;
+import static org.apache.solr.cluster.placement.Builders.newCollectionBuilder;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -25,15 +33,7 @@ import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.apache.solr.cluster.placement.Builders.*;
-
-/**
- *
- */
+/** */
 public class BuildersTest extends SolrTestCaseJ4 {
 
   @Test
@@ -42,15 +42,16 @@ public class BuildersTest extends SolrTestCaseJ4 {
     int NUM_SHARDS = 2;
     int NUM_NRT_REPLICAS = 2;
     String collectionName = "test";
-    ClusterBuilder clusterBuilder = newClusterBuilder()
-        .initializeLiveNodes(NUM_NODES);
-    CollectionBuilder collectionBuilder = newCollectionBuilder(collectionName)
-        .initializeShardsReplicas(NUM_SHARDS,
-            NUM_NRT_REPLICAS,
-            NUM_NRT_REPLICAS + 1,
-            NUM_NRT_REPLICAS + 2,
-            clusterBuilder.getLiveNodeBuilders(),
-            List.of(10, 20));
+    ClusterBuilder clusterBuilder = newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    CollectionBuilder collectionBuilder =
+        newCollectionBuilder(collectionName)
+            .initializeShardsReplicas(
+                NUM_SHARDS,
+                NUM_NRT_REPLICAS,
+                NUM_NRT_REPLICAS + 1,
+                NUM_NRT_REPLICAS + 2,
+                clusterBuilder.getLiveNodeBuilders(),
+                List.of(10, 20));
     clusterBuilder.addCollection(collectionBuilder);
     Cluster cluster = clusterBuilder.build();
     assertEquals("number of nodes", NUM_NODES, cluster.getLiveNodes().size());
@@ -61,18 +62,21 @@ public class BuildersTest extends SolrTestCaseJ4 {
       Shard shard = collection.getShard(shardName);
       assertNotNull("shard leader", shard.getLeader());
       int[] counts = new int[3];
-      shard.iterator().forEachRemaining(r -> {
-        switch (r.getType()) {
-          case NRT:
-            counts[0]++;
-            break;
-          case TLOG:
-            counts[1]++;
-            break;
-          case PULL:
-            counts[2]++;
-        }
-      });
+      shard
+          .iterator()
+          .forEachRemaining(
+              r -> {
+                switch (r.getType()) {
+                  case NRT:
+                    counts[0]++;
+                    break;
+                  case TLOG:
+                    counts[1]++;
+                    break;
+                  case PULL:
+                    counts[2]++;
+                }
+              });
       assertEquals("numNrt", NUM_NRT_REPLICAS, counts[0]);
       assertEquals("numTlog", NUM_NRT_REPLICAS + 1, counts[1]);
       assertEquals("numPull", NUM_NRT_REPLICAS + 2, counts[2]);
@@ -94,7 +98,8 @@ public class BuildersTest extends SolrTestCaseJ4 {
       diskOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("totalDisk", diskOpt.isPresent());
     }
-    Optional<CollectionMetrics> collectionMetricsOpt = attributeValues.getCollectionMetrics(collectionName);
+    Optional<CollectionMetrics> collectionMetricsOpt =
+        attributeValues.getCollectionMetrics(collectionName);
     assertTrue("collectionMetrics present", collectionMetricsOpt.isPresent());
     CollectionMetrics collectionMetrics = collectionMetricsOpt.get();
     for (String shardName : collection.getShardNames()) {
@@ -112,18 +117,23 @@ public class BuildersTest extends SolrTestCaseJ4 {
         assertEquals("size", 20, ((Number) sizeOpt.get()).intValue());
       }
       Shard shard = collection.getShard(shardName);
-      shard.iterator().forEachRemaining(r -> {
-        Optional<ReplicaMetrics> metricsOpt = shardMetrics.getReplicaMetrics(r.getReplicaName());
-        assertTrue("replica metrics", metricsOpt.isPresent());
-        ReplicaMetrics metrics = metricsOpt.get();
-        Optional<Double> replicaSizeOpt = metrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
-        assertTrue("missing size", replicaSizeOpt.isPresent());
-        if (shardName.endsWith("1")) {
-          assertEquals("size", 10, ((Number) replicaSizeOpt.get()).intValue());
-        } else {
-          assertEquals("size", 20, ((Number) replicaSizeOpt.get()).intValue());
-        }
-      });
+      shard
+          .iterator()
+          .forEachRemaining(
+              r -> {
+                Optional<ReplicaMetrics> metricsOpt =
+                    shardMetrics.getReplicaMetrics(r.getReplicaName());
+                assertTrue("replica metrics", metricsOpt.isPresent());
+                ReplicaMetrics metrics = metricsOpt.get();
+                Optional<Double> replicaSizeOpt =
+                    metrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
+                assertTrue("missing size", replicaSizeOpt.isPresent());
+                if (shardName.endsWith("1")) {
+                  assertEquals("size", 10, ((Number) replicaSizeOpt.get()).intValue());
+                } else {
+                  assertEquals("size", 20, ((Number) replicaSizeOpt.get()).intValue());
+                }
+              });
     }
   }
 }

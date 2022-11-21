@@ -16,26 +16,26 @@
  */
 package org.apache.solr.legacy;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.tests.analysis.CannedTokenStream;
+import org.apache.lucene.tests.analysis.Token;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute;
 
 /** test tokenstream reuse by DefaultIndexingChain */
 public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {
-  
+
   public void testNumericReuse() throws IOException {
     LegacyIntField legacyIntField = new LegacyIntField("foo", 5, Field.Store.NO);
-    
+
     // passing null
     TokenStream ts = legacyIntField.tokenStream(null, null);
     assertTrue(ts instanceof LegacyNumericTokenStream);
-    assertEquals(LegacyNumericUtils.PRECISION_STEP_DEFAULT_32, ((LegacyNumericTokenStream)ts).getPrecisionStep());
+    assertEquals(
+        LegacyNumericUtils.PRECISION_STEP_DEFAULT_32,
+        ((LegacyNumericTokenStream) ts).getPrecisionStep());
     assertNumericContents(5, ts);
 
     // now reuse previous stream
@@ -43,23 +43,22 @@ public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {
     TokenStream ts2 = legacyIntField.tokenStream(null, ts);
     assertSame(ts, ts2);
     assertNumericContents(20, ts);
-    
+
     // pass a bogus stream and ensure it's still ok
     legacyIntField = new LegacyIntField("foo", 2343, Field.Store.NO);
     TokenStream bogus = new CannedTokenStream(new Token("bogus", 0, 5));
     ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);
     assertNumericContents(2343, ts);
-    
+
     // pass another bogus stream (numeric, but different precision step!)
     legacyIntField = new LegacyIntField("foo", 42, Field.Store.NO);
-    assert 3 != LegacyNumericUtils.PRECISION_STEP_DEFAULT;
     bogus = new LegacyNumericTokenStream(3);
     ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);
     assertNumericContents(42, ts);
   }
-   
+
   private void assertNumericContents(int value, TokenStream ts) throws IOException {
     assertTrue(ts instanceof LegacyNumericTokenStream);
     LegacyNumericTermAttribute numericAtt = ts.getAttribute(LegacyNumericTermAttribute.class);

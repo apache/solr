@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-import java.lang.invoke.MethodHandles;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -27,7 +27,7 @@ public class ClassicIndexSchemaFactory extends IndexSchemaFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     // no arguments expected
     if (args.size() > 0) {
       String msg = "Unexpected arg(s): " + args;

@@ -37,20 +37,6 @@ configure(rootProject) {
   }
 }
 
-/**
- * Utility function to read a file, apply changes to its content and write it back.
- */
-def modifyFile = { File path, Function<String, String> modify ->
-  Function<String, String> normalizeEols = { text -> text.replace("\r\n", "\n") }
-  modify = normalizeEols.andThen(modify).andThen(normalizeEols)
-
-  String original = path.getText("UTF-8")
-  String modified = modify.apply(original)
-  if (!original.equals(modified)) {
-    path.write(modified, "UTF-8")
-  }
-}
-
 def commonCleanups = { FileTree generatedFiles ->
   // This is a minor typo in a comment that nonetheless people have hand-corrected in the past.
   generatedFiles.matching({ include "CharStream.java" }).each {file ->
@@ -80,10 +66,14 @@ def commonCleanups = { FileTree generatedFiles ->
       // Add CharStream imports.
       text = text.replaceAll(
           /package (.+)/,
-          '''
-          package $1
-          import org.apache.lucene.queryparser.charstream.CharStream; 
-          '''.trim())
+'''package $1
+import javax.annotation.processing.Generated;
+import org.apache.lucene.queryparser.charstream.CharStream;'''.trim())
+      text = text.replace(
+              "/** Token Manager. */",
+'''/** Token Manager. */
+@Generated("JavaCC")'''
+      )
       // Eliminates redundant cast message.
       text = text.replace(
           "int hiByte = (int)(curChar >> 8);",
@@ -129,16 +119,32 @@ configure(project(":solr:core")) {
 
 // We always regenerate, no need to declare outputs.
 class JavaCCTask extends DefaultTask {
-  @Input
+  @InputFile
   File javaccFile
 
   /**
    * Apply closures to all generated files before they're copied back
    * to mainline code.
    */
-  @Optional
-  @Input
+  // A subtle bug here is that this makes it not an input... should be a list of replacements instead?
+  @Internal
   List<Closure<FileTree>> afterGenerate = new ArrayList<>()
+
+  @OutputFiles
+  List<File> getGeneratedSources() {
+    // Return the list of generated files.
+    def baseDir = javaccFile.parentFile
+    def baseName = javaccFile.name.replace(".jj", "")
+
+    return [
+        project.file("${baseDir}/${baseName}.java"),
+        project.file("${baseDir}/${baseName}Constants.java"),
+        project.file("${baseDir}/${baseName}TokenManager.java"),
+        project.file("${baseDir}/ParseException.java"),
+        project.file("${baseDir}/Token.java"),
+        project.file("${baseDir}/TokenMgrError.java")
+    ]
+  }
 
   JavaCCTask() {
     dependsOn(project.rootProject.configurations.javacc)
@@ -157,7 +163,7 @@ class JavaCCTask extends DefaultTask {
     project.delete project.fileTree(tempDir, { include: "**/*.java" })
 
     def targetDir = javaccFile.parentFile
-    logger.lifecycle("Regenerating JavaCC:\n  from: ${javaccFile}\n    to: ${targetDir}")
+    logger.lifecycle("Recompiling JavaCC: ${project.rootDir.relativePath(javaccFile)}")
 
     def output = new ByteArrayOutputStream()
     def result = project.javaexec {

@@ -29,22 +29,27 @@ configure(project(':solr:documentation')) {
   check.dependsOn checkBrokenLinks
 }
 
+@CacheableTask
 class CheckBrokenLinksTask extends DefaultTask {
 
   // wraps input directory location in DirectoryProperty so as to lazily evaluate 'docroot' property
   // (see gradle/documentation/documentation.gradle)
   @InputDirectory
+  @PathSensitive(PathSensitivity.RELATIVE)
   final DirectoryProperty docsDir = project.objects.directoryProperty()
     .fileProvider(project.providers.provider { project.docroot })
 
   @InputFile
+  @PathSensitive(PathSensitivity.RELATIVE)
   File script = project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py")
+
+  @OutputFile
+  Provider<RegularFile> outputFile = project.layout.buildDirectory.file('check-broken-links-output.txt')
 
   @TaskAction
   def check() {
-    def outputFile = project.file("${getTemporaryDir()}/check-broken-links-output.txt")
     def result
-    outputFile.withOutputStream { output ->
+    outputFile.get().asFile.withOutputStream { output ->
       result = project.exec {
         executable project.externalTool("python3")
         ignoreExitValue = true
@@ -59,7 +64,7 @@ class CheckBrokenLinksTask extends DefaultTask {
     }
 
     if (result.getExitValue() != 0) {
-      throw new GradleException("Broken links check failed. Command output at: ${outputFile}")
+      throw new GradleException("Broken links check failed. Command output at: ${outputFile.get()}")
     }
   }
 }

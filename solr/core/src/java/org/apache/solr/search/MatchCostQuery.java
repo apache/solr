@@ -57,8 +57,7 @@ public class MatchCostQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-            Objects.equals(delegate, ((MatchCostQuery) other).delegate);
+    return sameClassAs(other) && Objects.equals(delegate, ((MatchCostQuery) other).delegate);
   }
 
   @Override
@@ -69,14 +68,15 @@ public class MatchCostQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query rewrite = delegate.rewrite(reader);
-    if (delegate == rewrite) {
+    if (delegate.equals(rewrite)) {
       return this; // unchanged
     }
     return new MatchCostQuery(rewrite, matchCost);
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
       final Weight weight = delegate.createWeight(searcher, scoreMode, boost);
 
@@ -153,6 +153,5 @@ public class MatchCostQuery extends Query {
         return weight.bulkScorer(context);
       }
     };
-
   }
 }

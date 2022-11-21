@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
-
 import org.apache.solr.common.util.ExecutorUtil;
 
 public class OrderedExecutor implements Executor {
@@ -41,16 +40,15 @@ public class OrderedExecutor implements Executor {
   }
 
   /**
-   * Execute the given command in the future.
-   * If another command with same {@code lockId} is waiting in the queue or running,
-   * this method will block until that command finish.
-   * Therefore different commands with same {@code hash} will be executed in order of calling this method.
+   * Execute the given command in the future. If another command with same {@code lockId} is waiting
+   * in the queue or running, this method will block until that command finish. Therefore different
+   * commands with same {@code hash} will be executed in order of calling this method.
    *
-   * If multiple caller are waiting for a command to finish, there are no guarantee that the earliest call will win.
+   * <p>If multiple caller are waiting for a command to finish, there are no guarantee that the
+   * earliest call will win.
    *
    * @param lockId of the {@code command}, if null then a random hash will be generated
    * @param command the runnable task
-   *
    * @throws RejectedExecutionException if this task cannot be accepted for execution
    */
   public void execute(Integer lockId, Runnable command) {
@@ -62,15 +60,16 @@ public class OrderedExecutor implements Executor {
     }
 
     try {
-      if (delegate.isShutdown()) throw new RejectedExecutionException();
+      if (ExecutorUtil.isShutdown(delegate)) throw new RejectedExecutionException();
 
-      delegate.execute(() -> {
-        try {
-          command.run();
-        } finally {
-          sparseStripedLock.remove(lockId);
-        }
-      });
+      delegate.execute(
+          () -> {
+            try {
+              command.run();
+            } finally {
+              sparseStripedLock.remove(lockId);
+            }
+          });
     } catch (RejectedExecutionException e) {
       sparseStripedLock.remove(lockId);
       throw e;
@@ -81,7 +80,9 @@ public class OrderedExecutor implements Executor {
     ExecutorUtil.shutdownAndAwaitTermination(delegate);
   }
 
-  /** A set of locks by a key {@code T}, kind of like Google Striped but the keys are sparse/lazy. */
+  /**
+   * A set of locks by a key {@code T}, kind of like Google Striped but the keys are sparse/lazy.
+   */
   private static class SparseStripedLock<T> {
     private ConcurrentHashMap<T, CountDownLatch> map = new ConcurrentHashMap<>();
     private final Semaphore sizeSemaphore;
@@ -102,7 +103,14 @@ public class OrderedExecutor implements Executor {
         // myLock was successfully inserted
       }
       // won the lock
-      sizeSemaphore.acquire();
+      try {
+        sizeSemaphore.acquire();
+      } catch (InterruptedException e) {
+        if (t != null) {
+          map.remove(t).countDown();
+        }
+        throw e;
+      }
     }
 
     public void remove(T t) {

@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Diagnostics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public interface Callable {
-    public void call(Object... data);  // data depends on the context
+    public void call(Object... data); // data depends on the context
   }
 
   public static void call(Callable callable, Object... data) {
@@ -49,6 +49,4 @@ public class Diagnostics {
     }
     log.error("{}", sb);
   }
-
-
 }

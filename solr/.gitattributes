@@ -16,7 +16,6 @@
 # Handles all files not treated particularly below
 *          text=auto
 
-
 # -nix specific
 bin/solr        text eol=lf
 bin/init.d/solr text eol=lf
@@ -28,6 +27,9 @@ bin/post        text eol=lf
 *.bat      text eol=crlf
 *.cmd      text eol=crlf
 *.ps1      text eol=crlf
+
+# Java files, because they are reformatted by spotless
+*.java     text eol=lf
 
 # Graphics - no eol normalization
 *.png      binary
@@ -42,4 +44,4 @@ bin/post        text eol=lf
 
 # Other files to ignore from eol normalization
 licenses/*      -text
-solr-ref-guide/src/fonts/Inconsolata/OFL.txt  -text
+solr-ref-guide/ui-src/font/Inconsolata/OFL.txt  -text

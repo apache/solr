@@ -38,7 +38,8 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
   public void testFailsIfNoClassSpecifiedForWrappedPolicy() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
     args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "foo");
-    expectThrows(IllegalArgumentException.class,
+    expectThrows(
+        IllegalArgumentException.class,
         () -> new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy());
   }
 
@@ -52,27 +53,35 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     args.add("test.class", TieredMergePolicyFactory.class.getName());
     args.add("test.maxMergeAtOnce", testMaxMergeAtOnce);
     args.add("test.maxMergedSegmentMB", testMaxMergedSegmentMB);
-    MergePolicyFactory mpf = new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null) {
-      @Override
-      protected MergePolicy getDefaultWrappedMergePolicy() {
-        throw new IllegalStateException("Should not have reached here!");
-      }
-    };
+    MergePolicyFactory mpf =
+        new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null) {
+          @Override
+          protected MergePolicy getDefaultWrappedMergePolicy() {
+            throw new IllegalStateException("Should not have reached here!");
+          }
+        };
     final MergePolicy mp = mpf.getMergePolicy();
     assertSame(mp.getClass(), TieredMergePolicy.class);
-    final TieredMergePolicy tmp = (TieredMergePolicy)mp;
+    final TieredMergePolicy tmp = (TieredMergePolicy) mp;
     assertEquals("maxMergeAtOnce", testMaxMergeAtOnce, tmp.getMaxMergeAtOnce());
     assertEquals("maxMergedSegmentMB", testMaxMergedSegmentMB, tmp.getMaxMergedSegmentMB(), 0.0d);
   }
 
   public void testUpgradeIndexMergePolicyFactory() {
     final int N = 10;
-    final Double wrappingNoCFSRatio = random().nextBoolean() ? null : random().nextInt(N+1)/((double)N); // must be: 0.0 <= value <= 1.0
-    final Double wrappedNoCFSRatio  = random().nextBoolean() ? null : random().nextInt(N+1)/((double)N); // must be: 0.0 <= value <= 1.0
+    final Double wrappingNoCFSRatio =
+        random().nextBoolean()
+            ? null
+            : random().nextInt(N + 1) / ((double) N); // must be: 0.0 <= value <= 1.0
+    final Double wrappedNoCFSRatio =
+        random().nextBoolean()
+            ? null
+            : random().nextInt(N + 1) / ((double) N); // must be: 0.0 <= value <= 1.0
     implTestUpgradeIndexMergePolicyFactory(wrappingNoCFSRatio, wrappedNoCFSRatio);
   }
 
-  private void implTestUpgradeIndexMergePolicyFactory(Double wrappingNoCFSRatio, Double wrappedNoCFSRatio) {
+  private void implTestUpgradeIndexMergePolicyFactory(
+      Double wrappingNoCFSRatio, Double wrappedNoCFSRatio) {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
     if (wrappingNoCFSRatio != null) {
       args.add("noCFSRatio", wrappingNoCFSRatio); // noCFSRatio for the wrapping merge policy
@@ -86,33 +95,42 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     MergePolicyFactory mpf;
     try {
       mpf = new UpgradeIndexMergePolicyFactory(resourceLoader, args, null);
-      assertFalse("Should only reach here if wrapping and wrapped args don't overlap!",
+      assertFalse(
+          "Should only reach here if wrapping and wrapped args don't overlap!",
           (wrappingNoCFSRatio != null && wrappedNoCFSRatio != null));
 
-      for (int ii=1; ii<=2; ++ii) { // it should be okay to call getMergePolicy() more than once
+      for (int ii = 1; ii <= 2; ++ii) { // it should be okay to call getMergePolicy() more than once
         final MergePolicy mp = mpf.getMergePolicy();
         if (wrappingNoCFSRatio != null) {
-          assertEquals("#"+ii+" wrappingNoCFSRatio", wrappingNoCFSRatio.doubleValue(), mp.getNoCFSRatio(), 0.0d);
+          assertEquals(
+              "#" + ii + " wrappingNoCFSRatio", wrappingNoCFSRatio, mp.getNoCFSRatio(), 0.0d);
         }
         if (wrappedNoCFSRatio != null) {
-          assertEquals("#"+ii+" wrappedNoCFSRatio", wrappedNoCFSRatio.doubleValue(), mp.getNoCFSRatio(), 0.0d);
+          assertEquals(
+              "#" + ii + " wrappedNoCFSRatio", wrappedNoCFSRatio, mp.getNoCFSRatio(), 0.0d);
         }
         assertSame(mp.getClass(), UpgradeIndexMergePolicy.class);
       }
 
     } catch (IllegalArgumentException iae) {
-      assertEquals("Wrapping and wrapped merge policy args overlap! [noCFSRatio]", iae.getMessage());
-      assertTrue("Should only reach here if wrapping and wrapped args do overlap!",
+      assertEquals(
+          "Wrapping and wrapped merge policy args overlap! [noCFSRatio]", iae.getMessage());
+      assertTrue(
+          "Should only reach here if wrapping and wrapped args do overlap!",
           (wrappingNoCFSRatio != null && wrappedNoCFSRatio != null));
     }
   }
 
   private static class DefaultingWrapperMergePolicyFactory extends WrapperMergePolicyFactory {
 
-    DefaultingWrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs wrapperArgs, IndexSchema schema) {
+    DefaultingWrapperMergePolicyFactory(
+        SolrResourceLoader resourceLoader, MergePolicyFactoryArgs wrapperArgs, IndexSchema schema) {
       super(resourceLoader, wrapperArgs, schema);
       if (!args.keys().isEmpty()) {
-        throw new IllegalArgumentException("All arguments should have been claimed by the wrapped policy but some ("+args+") remain.");
+        throw new IllegalArgumentException(
+            "All arguments should have been claimed by the wrapped policy but some ("
+                + args
+                + ") remain.");
       }
     }
 
@@ -125,7 +143,5 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     protected MergePolicy getMergePolicyInstance(MergePolicy wrappedMP) {
       return getWrappedMergePolicy();
     }
-
   }
-
 }

@@ -20,13 +20,12 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Simple cache for reusable service clients used by some implementations of
- * {@link org.apache.solr.metrics.SolrMetricReporter}.
+ * Simple cache for reusable service clients used by some implementations of {@link
+ * org.apache.solr.metrics.SolrMetricReporter}.
  */
 public class ReporterClientCache<T> implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -35,12 +34,14 @@ public class ReporterClientCache<T> implements Closeable {
 
   /**
    * Provide an instance of service client.
+   *
    * @param <T> formal type
    */
   public interface ClientProvider<T> {
     /**
-     * Get an instance of a service client. It's not specified that each time this
-     * method is invoked a new client instance should be returned.
+     * Get an instance of a service client. It's not specified that each time this method is invoked
+     * a new client instance should be returned.
+     *
      * @return client instance
      * @throws Exception when client creation encountered an error.
      */
@@ -49,6 +50,7 @@ public class ReporterClientCache<T> implements Closeable {
 
   /**
    * Get existing or register a new client.
+   *
    * @param id client id
    * @param clientProvider provider of new client instances
    */
@@ -66,14 +68,13 @@ public class ReporterClientCache<T> implements Closeable {
     return item;
   }
 
-  /**
-   * Empty this cache, and close all clients that are {@link Closeable}.
-   */
+  /** Empty this cache, and close all clients that are {@link Closeable}. */
+  @Override
   public void close() {
     for (T client : cache.values()) {
       if (client instanceof Closeable) {
         try {
-          ((Closeable)client).close();
+          ((Closeable) client).close();
         } catch (Exception e) {
           log.warn("Error closing client {}, ignoring...", client, e);
         }

@@ -28,18 +28,12 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <!-- see TestConfig.testAutomaticDeprecationSupport -->
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
-
   <!-- see TestConfig.testLib() -->
   <lib dir="../../lib-dirs/a" />
   <lib dir="../../lib-dirs/b" regex="b." />
   <lib dir="../../lib-dirs/c" regex="c1" />
   <lib path="../../lib-dirs/d/d1/" />
-  
+
   <!-- see TestConfig.testJavaProperty -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>

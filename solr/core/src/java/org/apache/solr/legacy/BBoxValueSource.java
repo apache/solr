@@ -17,7 +17,6 @@
 package org.apache.solr.legacy;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
@@ -28,11 +27,12 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A ValueSource in which the indexed Rectangle is returned from
- * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
+ * A ValueSource in which the indexed Rectangle is returned from {@link
+ * org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
  *
  * @lucene.internal
  */
+@Deprecated
 class BBoxValueSource extends ShapeValuesSource {
 
   private final BBoxStrategy strategy;
@@ -49,19 +49,26 @@ class BBoxValueSource extends ShapeValuesSource {
   @Override
   public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
 
-    final DoubleValues minX = DoubleValuesSource.fromDoubleField(strategy.field_minX).getValues(readerContext, null);
-    final DoubleValues minY = DoubleValuesSource.fromDoubleField(strategy.field_minY).getValues(readerContext, null);
-    final DoubleValues maxX = DoubleValuesSource.fromDoubleField(strategy.field_maxX).getValues(readerContext, null);
-    final DoubleValues maxY = DoubleValuesSource.fromDoubleField(strategy.field_maxY).getValues(readerContext, null);
+    final DoubleValues minX =
+        DoubleValuesSource.fromDoubleField(strategy.field_minX).getValues(readerContext, null);
+    final DoubleValues minY =
+        DoubleValuesSource.fromDoubleField(strategy.field_minY).getValues(readerContext, null);
+    final DoubleValues maxX =
+        DoubleValuesSource.fromDoubleField(strategy.field_maxX).getValues(readerContext, null);
+    final DoubleValues maxY =
+        DoubleValuesSource.fromDoubleField(strategy.field_maxY).getValues(readerContext, null);
 
-    //reused
-    final Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
+    // reused
+    final Rectangle rect = strategy.getSpatialContext().makeRectangle(0, 0, 0, 0);
 
     return new ShapeValues() {
 
       @Override
       public boolean advanceExact(int doc) throws IOException {
-        return minX.advanceExact(doc) && maxX.advanceExact(doc) && minY.advanceExact(doc) && maxY.advanceExact(doc);
+        return minX.advanceExact(doc)
+            && maxX.advanceExact(doc)
+            && minY.advanceExact(doc)
+            && maxY.advanceExact(doc);
       }
 
       @Override
@@ -69,26 +76,23 @@ class BBoxValueSource extends ShapeValuesSource {
         rect.reset(minX.doubleValue(), maxX.doubleValue(), minY.doubleValue(), maxY.doubleValue());
         return rect;
       }
-
     };
   }
 
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
-    return DocValues.isCacheable(ctx,
-        strategy.field_maxX, strategy.field_maxY, strategy.field_minX, strategy.field_minY);
+    return DocValues.isCacheable(
+        ctx, strategy.field_maxX, strategy.field_maxY, strategy.field_minX, strategy.field_minY);
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof BBoxValueSource)) return false;
 
     BBoxValueSource that = (BBoxValueSource) o;
 
-    if (!strategy.equals(that.strategy)) return false;
-
-    return true;
+    return strategy.equals(that.strategy);
   }
 
   @Override

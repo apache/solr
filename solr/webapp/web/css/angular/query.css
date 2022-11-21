@@ -156,6 +156,17 @@ limitations under the License.
   display: block;
 }
 
+#content #query #add_advanced {
+  background-image: url( ../../img/ico/chevron-small-expand.png );
+  background-position: 100% 50%;
+  cursor: pointer;
+  padding-right: 21px;
+}
+
+#content #query #add_advanced.open {
+    background-image: url( ../../img/ico/chevron-small.png );
+}
+
 #content #query #result
 {
   float: right;
@@ -164,4 +175,13 @@ limitations under the License.
 
 #content #query #result #response
 {
+}
+
+#content #query #form label a.help
+{
+    background-image: url( ../../img/ico/question-white.png );
+    background-position: 0 50%;
+    color: #4D4D4D;
+    padding-left: 21px;
+    margin-left: 5px;
 }

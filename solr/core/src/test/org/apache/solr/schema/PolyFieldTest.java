@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,25 +28,21 @@ import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
-/**
- * Test a whole slew of things related to PolyFields
- */
+/** Test a whole slew of things related to PolyFields */
 public class PolyFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   @Test
-  public void testSchemaBasics() throws Exception {
+  public void testSchemaBasics() {
     IndexSchema schema = h.getCore().getLatestSchema();
-
 
     SchemaField home = schema.getField("home");
     assertNotNull(home);
     assertTrue(home.isPolyField());
-    
+
     String subFieldType = "double";
     SchemaField[] dynFields = schema.getDynamicFieldPrototypes();
     boolean seen = false;
@@ -67,13 +63,13 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     home = schema.getField("home");
     assertNotNull(home);
 
-    home = schema.getField("homed");//sub field suffix
+    home = schema.getField("homed"); // subfield suffix
     assertNotNull(home);
     assertTrue(home.isPolyField());
   }
 
   @Test
-  public void testPointFieldType() throws Exception {
+  public void testPointFieldType() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     SchemaField home = schema.getField("home");
@@ -83,37 +79,41 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertTrue(tmp instanceof PointType);
     PointType pt = (PointType) tmp;
     assertEquals(pt.getDimension(), 2);
-    double[] xy = new double[]{35.0, -79.34};
+    double[] xy = new double[] {35.0, -79.34};
     String point = xy[0] + "," + xy[1];
     List<IndexableField> fields = home.createFields(point);
     assertNotNull(pt.getSubType());
-    int expectdNumFields = 3;//If DV=false, we expect one field per dimension plus a stored field
+    int expectedNumFields = 3; // If DV=false, we expect one field per dimension plus a stored field
     if (pt.subField(home, 0, schema).hasDocValues()) {
-      expectdNumFields+=2; // If docValues=true, then we expect two more fields
+      expectedNumFields += 2; // If docValues=true, then we expect two more fields
     }
-    assertEquals("Unexpected fields created: " + Arrays.toString(fields.toArray()), expectdNumFields, fields.size());
-    //first two/four fields contain the values, last one is just stored and contains the original
-    for (int i = 0; i < expectdNumFields; i++) {
-      boolean hasValue = fields.get(i).binaryValue() != null
-          || fields.get(i).stringValue() != null
-          || fields.get(i).numericValue() != null;
+    assertEquals(
+        "Unexpected fields created: " + Arrays.toString(fields.toArray()),
+        expectedNumFields,
+        fields.size());
+    // first two/four fields contain the values, last one is just stored and contains the original
+    for (int i = 0; i < expectedNumFields; i++) {
+      boolean hasValue =
+          fields.get(i).binaryValue() != null
+              || fields.get(i).stringValue() != null
+              || fields.get(i).numericValue() != null;
       assertTrue("Doesn't have a value: " + fields.get(i), hasValue);
     }
     /*assertTrue("first field " + fields[0].tokenStreamValue() +  " is not 35.0", pt.getSubType().toExternal(fields[0]).equals(String.valueOf(xy[0])));
     assertTrue("second field is not -79.34", pt.getSubType().toExternal(fields[1]).equals(String.valueOf(xy[1])));
     assertTrue("third field is not '35.0,-79.34'", pt.getSubType().toExternal(fields[2]).equals(point));*/
 
-
     home = schema.getField("home_ns");
     assertNotNull(home);
     fields = home.createFields(point);
-    assertEquals(expectdNumFields - 1, fields.size(), 2);//one less field than with "home", since we aren't storing
+    // one less field than with "home", since we aren't storing
+    assertEquals(expectedNumFields - 1, fields.size(), 2);
 
     home = schema.getField("home_ns");
     assertNotNull(home);
     try {
       fields = home.createFields("35.0,foo");
-      assertTrue(false);
+      fail();
     } catch (Exception e) {
       //
     }
@@ -127,49 +127,48 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearching() throws Exception {
+  public void testSearching() {
     for (int i = 0; i < 50; i++) {
-      assertU(adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
+      assertU(
+          adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
     }
     assertU(commit());
 
     assertQ(req("fl", "*,score", "q", "*:*"), "//*[@numFound='50']");
-    assertQ(req("fl", "*,score", "q", "home:1,100"),
-            "//*[@numFound='1']",
-            "//str[@name='home'][.='1,100']");
-    assertQ(req("fl", "*,score", "q", "homed:1000,10000"),
-            "//*[@numFound='1']",
-            "//str[@name='homed'][.='1000,10000']");
-    assertQ(req("fl", "*,score", "q",
-            "{!func}sqedist(home, vector(0, 0))"),
-            "\"//*[@numFound='50']\"");
-    assertQ(req("fl", "*,score", "q",
-            "{!func}dist(2, home, vector(0, 0))"),
-            "\"//*[@numFound='50']\"");
+    assertQ(
+        req("fl", "*,score", "q", "home:1,100"),
+        "//*[@numFound='1']",
+        "//str[@name='home'][.='1,100']");
+    assertQ(
+        req("fl", "*,score", "q", "homed:1000,10000"),
+        "//*[@numFound='1']",
+        "//str[@name='homed'][.='1000,10000']");
+    assertQ(
+        req("fl", "*,score", "q", "{!func}sqedist(home, vector(0, 0))"), "\"//*[@numFound='50']\"");
+    assertQ(
+        req("fl", "*,score", "q", "{!func}dist(2, home, vector(0, 0))"), "\"//*[@numFound='50']\"");
 
-    assertQ(req("fl", "*,score", "q",
-            "home:[10,10000 TO 30,30000]"),
-            "\"//*[@numFound='3']\"");
-    assertQ(req("fl", "*,score", "q",
-            "homed:[1,1000 TO 2000,35000]"),
-            "\"//*[@numFound='2']\"");
-    //bad
+    assertQ(req("fl", "*,score", "q", "home:[10,10000 TO 30,30000]"), "\"//*[@numFound='3']\"");
+    assertQ(req("fl", "*,score", "q", "homed:[1,1000 TO 2000,35000]"), "\"//*[@numFound='2']\"");
+    // bad
 
     ignoreException("dimension");
-    assertQEx("Query should throw an exception due to incorrect dimensions", req("fl", "*,score", "q",
-            "homed:[1 TO 2000]"), SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "Query should throw an exception due to incorrect dimensions",
+        req("fl", "*,score", "q", "homed:[1 TO 2000]"),
+        SolrException.ErrorCode.BAD_REQUEST);
     resetExceptionIgnores();
     clearIndex();
   }
 
   @Test
-  public void testSearchDetails() throws Exception {
+  public void testSearchDetails() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    double[] xy = new double[]{35.0, -79.34};
+    double[] xy = new double[] {35.0, -79.34};
     String point = xy[0] + "," + xy[1];
-    //How about some queries?
-    //don't need a parser for this path currently.  This may change
+    // How about some queries?
+    // don't need a parser for this path currently.  This may change
     assertU(adoc("id", "0", "home_ns", point));
     assertU(commit());
     SchemaField home = schema.getField("home_ns");
@@ -178,10 +177,9 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     Query q = pt.getFieldQuery(null, home, point);
     assertNotNull(q);
     assertTrue(q instanceof BooleanQuery);
-    //should have two clauses, one for 35.0 and the other for -79.34
+    // should have two clauses, one for 35.0 and the other for -79.34
     BooleanQuery bq = (BooleanQuery) q;
     assertEquals(2, bq.clauses().size());
     clearIndex();
   }
-
 }
