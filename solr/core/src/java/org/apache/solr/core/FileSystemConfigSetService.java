@@ -43,7 +43,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 /**
  * Solr Standalone File System ConfigSetService impl.
  *
- * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
+ * <p>Loads ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
  * the ConfigSet instead from the core's instance directory.
  */

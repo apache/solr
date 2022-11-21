@@ -18,15 +18,6 @@ package org.apache.solr.core;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -41,7 +32,17 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Service class used by the CoreContainer to load ConfigSets for use in SolrCore creation. */
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+/** ConfigSet Service used by the CoreContainer to load ConfigSets for use in SolrCore creation. */
 public abstract class ConfigSetService {
 
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
@@ -50,56 +51,68 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    final NodeConfig nodeConfig = coreContainer.getConfig();
-    final SolrResourceLoader loader = coreContainer.getResourceLoader();
-    final ZkController zkController = coreContainer.getZkController();
-
-    final String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
+    final String configSetServiceClass = coreContainer.getConfig().getConfigSetServiceClass();
 
     if (configSetServiceClass != null) {
       try {
-        Class<? extends ConfigSetService> clazz =
-            loader.findClass(configSetServiceClass, ConfigSetService.class);
-        Constructor<? extends ConfigSetService> constructor =
-            clazz.getConstructor(CoreContainer.class);
+        Class<? extends ConfigSetService> clazz = coreContainer.getResourceLoader().findClass(configSetServiceClass, ConfigSetService.class);
+        Constructor<? extends ConfigSetService> constructor = clazz.getConstructor(CoreContainer.class);
         return constructor.newInstance(coreContainer);
       } catch (Exception e) {
-        throw new RuntimeException(
-            "create configSetService instance failed, configSetServiceClass:"
-                + configSetServiceClass,
-            e);
+        throw new RuntimeException("ConfigSetService creation instance failed, ConfigSetService Class:" + configSetServiceClass, e);
       }
-    } else if (zkController == null) { // standalone
+    } else if (coreContainer.getZkController() == null) {
+      // Standalone mode
       return new FileSystemConfigSetService(coreContainer);
-    } else { // solrCloud
+    } else {
+      // SolrCloud mode
       final ZkConfigSetService zkConfigSetService = new ZkConfigSetService(coreContainer);
-
       // TODO ideally this would be toggle-able.  It's okay to start Solr with no configSet!
       try {
-        bootstrapDefaultConfigSet(zkConfigSetService);
+        bootstrapConfigSet(coreContainer, zkConfigSetService);
       } catch (Exception e) { // because write-only, probably
-        log.debug("_default configset ", e);
-        log.warn("_default configSet couldn't be uploaded:" , e); // swallow stack
+        log.warn("Failed to bootstrap configSet:" , e); // swallow stack
       }
       return zkConfigSetService;
     }
   }
 
-  public static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
-    if (configSetService.checkConfigExists(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME) == false) {
-      String configDirPath = getDefaultConfigDirPath();
+  public static void bootstrapConfigSet(CoreContainer coreContainer, ConfigSetService configSetService) throws IOException {
+    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+
+    // _default conf
+    bootstrapDefaultConf(configSetService);
+
+    // bootstrap_confdir
+    String confDir = System.getProperty("bootstrap_confdir");
+    if (confDir != null) {
+      bootstrapConfDir(configSetService, confDir);
+    }
+
+    // bootstrap_conf
+    boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+    if (boostrapConf == true) {
+      bootstrapConf(coreContainer);
+    }
+  }
+
+
+  private static void bootstrapDefaultConf(ConfigSetService configSetService) throws IOException {
+    if (!configSetService.checkConfigExists(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)) {
+      Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
-            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-            "intended to be the default. Current 'solr.default.confdir' value:",
-            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+                "intended to be the default. Current 'solr.default.confdir' value:",
+                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
+        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
     }
   }
 
-  private void bootstrapConfDir(String confDir) throws IOException {
+
+  private static void bootstrapConfDir(ConfigSetService configSetService, String confDir) throws IOException {
     Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
@@ -109,7 +122,7 @@ public abstract class ConfigSetService {
     String confName =
         System.getProperty(
             ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
-    this.uploadConfig(confName, configPath);
+    configSetService.uploadConfig(confName, configPath);
   }
 
   /**
