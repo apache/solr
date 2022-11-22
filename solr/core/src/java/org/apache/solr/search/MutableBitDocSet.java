@@ -26,8 +26,8 @@ import org.apache.lucene.util.FixedBitSet;
  * @since solr 9.2
  */
 class MutableBitDocSet extends BitDocSet {
-  private MutableBitDocSet(FixedBitSet bits) {
-    super(bits);
+  private MutableBitDocSet(FixedBitSet bits, int size) {
+    super(bits, size);
   }
 
   /**
@@ -37,7 +37,9 @@ class MutableBitDocSet extends BitDocSet {
    * @return copy of bitDocSet that is now mutable
    */
   public static MutableBitDocSet fromBitDocSet(BitDocSet bitDocSet) {
-    return new MutableBitDocSet(bitDocSet.getFixedBitSetClone());
+    // don't call size() since we just want to pass through the size
+    // instead of computing it if it was already computed
+    return new MutableBitDocSet(bitDocSet.getFixedBitSetClone(), bitDocSet.size);
   }
 
   /**
@@ -49,7 +51,10 @@ class MutableBitDocSet extends BitDocSet {
    */
   public static DocSet unwrapIfMutable(DocSet docSet) {
     if (docSet instanceof MutableBitDocSet) {
-      return new BitDocSet(((MutableBitDocSet) docSet).getBits());
+      MutableBitDocSet mutableBitDocSet = (MutableBitDocSet) docSet;
+      // don't call size() since we just want to pass through the size
+      // instead of computing it if it was already computed
+      return new BitDocSet(mutableBitDocSet.getBits(), mutableBitDocSet.size);
     }
     return docSet;
   }
