@@ -17,6 +17,8 @@
 package org.apache.solr.search.facet;
 
 import com.tdunning.math.stats.AVLTreeDigest;
+import com.tdunning.math.stats.MergingDigest;
+import com.tdunning.math.stats.TDigest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -24,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -40,11 +44,43 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.function.FieldNameValueSource;
 
 public class PercentileAgg extends SimpleAggValueSource {
-  List<Double> percentiles;
+  public enum Digest {
+    AVL_TREE,
+    MERGING,
+  }
 
-  public PercentileAgg(ValueSource vs, List<Double> percentiles) {
+  private final List<Double> percentiles;
+  private final Supplier<TDigest> digestSupplier;
+  private final Function<ByteBuffer, TDigest> digestParser;
+
+  private PercentileAgg(
+      ValueSource vs,
+      List<Double> percentiles,
+      Supplier<TDigest> digestSupplier,
+      Function<ByteBuffer, TDigest> digestParser) {
     super("percentile", vs);
     this.percentiles = percentiles;
+    this.digestSupplier = digestSupplier;
+    this.digestParser = digestParser;
+  }
+
+  public static PercentileAgg create(
+      ValueSource vs, List<Double> percentiles, Digest digest, double compression) {
+    Supplier<TDigest> digestSupplier;
+    Function<ByteBuffer, TDigest> digestParser;
+    switch (digest) {
+      case AVL_TREE:
+        digestSupplier = () -> new AVLTreeDigest(compression);
+        digestParser = AVLTreeDigest::fromBytes;
+        break;
+      case MERGING:
+        digestSupplier = () -> new MergingDigest(compression);
+        digestParser = MergingDigest::fromBytes;
+        break;
+      default:
+        throw new IllegalArgumentException("unknown digest");
+    }
+    return new PercentileAgg(vs, percentiles, digestSupplier, digestParser);
   }
 
   @Override
@@ -114,11 +150,11 @@ public class PercentileAgg extends SimpleAggValueSource {
             "expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
       }
 
-      return new PercentileAgg(vs, percentiles);
+      return create(vs, percentiles, Digest.AVL_TREE, 100);
     }
   }
 
-  protected Object getValueFromDigest(AVLTreeDigest digest) {
+  protected Object getValueFromDigest(TDigest digest) {
     if (digest == null) {
       return null;
     }
@@ -136,13 +172,13 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   class Acc extends SlotAcc.FuncSlotAcc {
-    protected AVLTreeDigest[] digests;
+    protected TDigest[] digests;
     protected ByteBuffer buf;
     protected double[] sortvals;
 
     public Acc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);
-      digests = new AVLTreeDigest[numSlots];
+      digests = new TDigest[numSlots];
     }
 
     @Override
@@ -151,9 +187,9 @@ public class PercentileAgg extends SimpleAggValueSource {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 
-      AVLTreeDigest digest = digests[slotNum];
+      TDigest digest = digests[slotNum];
       if (digest == null) {
-        digests[slotNum] = digest = new AVLTreeDigest(100); // TODO: make compression configurable
+        digests[slotNum] = digest = digestSupplier.get();
       }
 
       digest.add(val);
@@ -171,7 +207,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
       for (int i = 0; i < digests.length; i++) {
-        AVLTreeDigest digest = digests[i];
+        TDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
         } else {
@@ -193,7 +229,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     public Object getShardValue(int slot) throws IOException {
-      AVLTreeDigest digest = digests[slot];
+      TDigest digest = digests[slot];
       if (digest == null) return null; // no values for this slot
 
       digest.compress();
@@ -210,7 +246,7 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public void reset() {
-      digests = new AVLTreeDigest[digests.length];
+      digests = new TDigest[digests.length];
       sortvals = null;
     }
 
@@ -221,14 +257,14 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   abstract class BasePercentileDVAcc extends DocValuesAcc {
-    AVLTreeDigest[] digests;
+    TDigest[] digests;
     protected ByteBuffer buf;
     double[] sortvals;
 
     public BasePercentileDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
       super(fcontext, sf);
-      digests = new AVLTreeDigest[numSlots];
+      digests = new TDigest[numSlots];
     }
 
     @Override
@@ -243,7 +279,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
       for (int i = 0; i < digests.length; i++) {
-        AVLTreeDigest digest = digests[i];
+        TDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
         } else {
@@ -265,7 +301,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     public Object getShardValue(int slot) throws IOException {
-      AVLTreeDigest digest = digests[slot];
+      TDigest digest = digests[slot];
       if (digest == null) return null; // no values for this slot
 
       digest.compress();
@@ -282,7 +318,7 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public void reset() {
-      digests = new AVLTreeDigest[digests.length];
+      digests = new TDigest[digests.length];
       sortvals = null;
     }
 
@@ -302,9 +338,9 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
-      AVLTreeDigest digest = digests[slot];
+      TDigest digest = digests[slot];
       if (digest == null) {
-        digests[slot] = digest = new AVLTreeDigest(100);
+        digests[slot] = digest = digestSupplier.get();
       }
       for (int i = 0, count = values.docValueCount(); i < count; i++) {
         double val = getDouble(values.nextValue());
@@ -351,9 +387,9 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
-      AVLTreeDigest digest = digests[slot];
+      TDigest digest = digests[slot];
       if (digest == null) {
-        digests[slot] = digest = new AVLTreeDigest(100);
+        digests[slot] = digest = digestSupplier.get();
       }
       long ord;
       while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
@@ -377,7 +413,7 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   class PercentileUnInvertedFieldAcc extends UnInvertedFieldAcc {
-    protected AVLTreeDigest[] digests;
+    protected TDigest[] digests;
     protected ByteBuffer buf;
     protected double[] sortvals;
     private int currentSlot;
@@ -385,7 +421,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     public PercentileUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
         throws IOException {
       super(fcontext, sf, numSlots);
-      digests = new AVLTreeDigest[numSlots];
+      digests = new TDigest[numSlots];
     }
 
     @Override
@@ -408,7 +444,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
       for (int i = 0; i < digests.length; i++) {
-        AVLTreeDigest digest = digests[i];
+        TDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
         } else {
@@ -430,7 +466,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     public Object getShardValue(int slot) throws IOException {
-      AVLTreeDigest digest = digests[slot];
+      TDigest digest = digests[slot];
       if (digest == null) return null;
 
       digest.compress();
@@ -447,7 +483,7 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public void reset() {
-      digests = new AVLTreeDigest[digests.length];
+      digests = new TDigest[digests.length];
       sortvals = null;
     }
 
@@ -458,9 +494,9 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public void call(int ord) {
-      AVLTreeDigest digest = digests[currentSlot];
+      TDigest digest = digests[currentSlot];
       if (digest == null) {
-        digests[currentSlot] = digest = new AVLTreeDigest(100);
+        digests[currentSlot] = digest = digestSupplier.get();
       }
       try {
         BytesRef term = docToTerm.lookupOrd(ord);
@@ -474,14 +510,14 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   class Merger extends FacetModule.FacetSortableMerger {
-    protected AVLTreeDigest digest;
+    protected TDigest digest;
     protected Double sortVal;
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
       byte[] arr = (byte[]) facetResult;
       if (arr == null) return; // an explicit null can mean no values in the field
-      AVLTreeDigest subDigest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(arr));
+      TDigest subDigest = digestParser.apply(ByteBuffer.wrap(arr));
       if (digest == null) {
         digest = subDigest;
       } else {
