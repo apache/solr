@@ -17,7 +17,6 @@ import static org.apache.solr.core.FileSystemConfigSetService.METADATA_FILE;
 public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     private static Path configSetBase;
     private static FileSystemConfigSetService fileSystemConfigSetService;
-    private final String CONFIGNAME = "testconfig";
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -33,32 +32,33 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     @Test
     public void testUploadConfig() throws IOException {
+        String configName = "testconfig";
 
-        fileSystemConfigSetService.uploadConfig(CONFIGNAME, configset("cloud-minimal"));
+        fileSystemConfigSetService.uploadConfig(configName, configset("cloud-minimal"));
 
         assertEquals(fileSystemConfigSetService.listConfigs().size(), 1);
-        assertTrue(fileSystemConfigSetService.checkConfigExists(CONFIGNAME));
+        assertTrue(fileSystemConfigSetService.checkConfigExists(configName));
 
         byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
-        fileSystemConfigSetService.uploadFileToConfig(CONFIGNAME, "testfile", testdata, true);
+        fileSystemConfigSetService.uploadFileToConfig(configName, "testfile", testdata, true);
 
 
         // metadata is stored in .metadata.json
-        fileSystemConfigSetService.setConfigMetadata(CONFIGNAME, Map.of("key1", "val1"));
-        Map<String, Object> metadata = fileSystemConfigSetService.getConfigMetadata(CONFIGNAME);
+        fileSystemConfigSetService.setConfigMetadata(configName, Map.of("key1", "val1"));
+        Map<String, Object> metadata = fileSystemConfigSetService.getConfigMetadata(configName);
         assertEquals(metadata.toString(), "{key1=val1}");
 
-        List<String> allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(CONFIGNAME);
+        List<String> allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
         assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml, testfile]");
 
-        fileSystemConfigSetService.deleteFilesFromConfig(CONFIGNAME, List.of(METADATA_FILE, "testfile"));
-        metadata = fileSystemConfigSetService.getConfigMetadata(CONFIGNAME);
+        fileSystemConfigSetService.deleteFilesFromConfig(configName, List.of(METADATA_FILE, "testfile"));
+        metadata = fileSystemConfigSetService.getConfigMetadata(configName);
         assertTrue(metadata.isEmpty());
 
-        allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(CONFIGNAME);
+        allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
         assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml]");
 
-        fileSystemConfigSetService.copyConfig(CONFIGNAME, "copytestconfig");
+        fileSystemConfigSetService.copyConfig(configName, "copytestconfig");
         assertEquals(fileSystemConfigSetService.listConfigs().size(), 2);
 
         allConfigFiles = fileSystemConfigSetService.getAllConfigFiles("copytestconfig");
@@ -67,10 +67,12 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     @Test
     public void testDeleteConfig() throws IOException {
-        fileSystemConfigSetService.deleteConfig(CONFIGNAME);
+        String configName = "testconfig";
+
+        fileSystemConfigSetService.deleteConfig(configName);
         fileSystemConfigSetService.deleteConfig("copytestconfig");
 
-        assertFalse(fileSystemConfigSetService.checkConfigExists(CONFIGNAME));
+        assertFalse(fileSystemConfigSetService.checkConfigExists(configName));
         assertFalse(fileSystemConfigSetService.checkConfigExists("copytestconfig"));
     }
 

@@ -336,7 +336,7 @@ public abstract class ConfigSetService {
    * Returns a modification version for the schema file. Null may be returned if not known, and if
    * so it defeats schema caching.
    */
-  protected abstract Long getCurrentSchemaModificationVersion(
+  public abstract Long getCurrentSchemaModificationVersion(
       String configSet, SolrConfig solrConfig, String schemaFile) throws IOException;
 
   /**
