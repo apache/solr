@@ -43,7 +43,11 @@ gradlew --write-locks
 ### `solr/licenses` update
 
 ```
+git rm solr/licenses/lucene-*-9.3.0.jar.sha1
+
 gradlew updateLicenses
+
+git add solr/licenses/lucene-*-9.4.0.jar.sha1
 ```
 
 ## Code
