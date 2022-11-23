@@ -18,6 +18,15 @@ package org.apache.solr.core;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -32,16 +41,6 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 /** ConfigSet Service used by the CoreContainer to load ConfigSets for use in SolrCore creation. */
 public abstract class ConfigSetService {
 
@@ -55,11 +54,18 @@ public abstract class ConfigSetService {
 
     if (configSetServiceClass != null) {
       try {
-        Class<? extends ConfigSetService> clazz = coreContainer.getResourceLoader().findClass(configSetServiceClass, ConfigSetService.class);
-        Constructor<? extends ConfigSetService> constructor = clazz.getConstructor(CoreContainer.class);
+        Class<? extends ConfigSetService> clazz =
+            coreContainer
+                .getResourceLoader()
+                .findClass(configSetServiceClass, ConfigSetService.class);
+        Constructor<? extends ConfigSetService> constructor =
+            clazz.getConstructor(CoreContainer.class);
         return constructor.newInstance(coreContainer);
       } catch (Exception e) {
-        throw new RuntimeException("ConfigSetService creation instance failed, ConfigSetService Class:" + configSetServiceClass, e);
+        throw new RuntimeException(
+            "ConfigSetService creation instance failed, ConfigSetService Class:"
+                + configSetServiceClass,
+            e);
       }
     } else if (coreContainer.getZkController() == null) {
       // Standalone mode
@@ -71,13 +77,14 @@ public abstract class ConfigSetService {
       try {
         bootstrapConfigSet(coreContainer, zkConfigSetService);
       } catch (Exception e) { // because write-only, probably
-        log.warn("Failed to bootstrap configSet:" , e); // swallow stack
+        log.warn("Failed to bootstrap configSet:", e); // swallow stack
       }
       return zkConfigSetService;
     }
   }
 
-  public static void bootstrapConfigSet(CoreContainer coreContainer, ConfigSetService configSetService) throws IOException {
+  public static void bootstrapConfigSet(
+      CoreContainer coreContainer, ConfigSetService configSetService) throws IOException {
     // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
 
     // _default conf
@@ -96,23 +103,22 @@ public abstract class ConfigSetService {
     }
   }
 
-
   private static void bootstrapDefaultConf(ConfigSetService configSetService) throws IOException {
     if (!configSetService.checkConfigExists(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)) {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
-                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-                "intended to be the default. Current 'solr.default.confdir' value:",
-                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+            "intended to be the default. Current 'solr.default.confdir' value:",
+            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
         configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
     }
   }
 
-
-  private static void bootstrapConfDir(ConfigSetService configSetService, String confDir) throws IOException {
+  private static void bootstrapConfDir(ConfigSetService configSetService, String confDir)
+      throws IOException {
     Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(

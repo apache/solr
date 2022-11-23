@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -37,8 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * Standalone File System ConfigSetService impl.
@@ -113,19 +113,23 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   private void deleteDir(Path dir) throws IOException {
     try {
-      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-          Files.delete(path);
-          return FileVisitResult.CONTINUE;
-        }
+      Files.walkFileTree(
+          dir,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
+                throws IOException {
+              Files.delete(path);
+              return FileVisitResult.CONTINUE;
+            }
 
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException ioException) throws IOException {
-          Files.delete(dir);
-          return FileVisitResult.CONTINUE;
-        }
-      });
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException ioException)
+                throws IOException {
+              Files.delete(dir);
+              return FileVisitResult.CONTINUE;
+            }
+          });
     } catch (NoSuchFileException e) {
       // do nothing
     }
@@ -181,19 +185,24 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   private void copyRecursively(Path source, Path target) throws IOException {
     try {
-      Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-          Files.createDirectories(target.resolve(source.relativize(dir).toString()));
-          return FileVisitResult.CONTINUE;
-        }
+      Files.walkFileTree(
+          source,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+              Files.createDirectories(target.resolve(source.relativize(dir).toString()));
+              return FileVisitResult.CONTINUE;
+            }
 
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          Files.copy(file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
-          return FileVisitResult.CONTINUE;
-        }
-      });
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              Files.copy(
+                  file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+              return FileVisitResult.CONTINUE;
+            }
+          });
     } catch (NoSuchFileException e) {
       // do nothing
     }
@@ -202,7 +211,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public List<String> listConfigs() throws IOException {
     try (Stream<Path> configs = Files.list(configSetBase)) {
-      return configs.map(Path::getFileName)
+      return configs
+          .map(Path::getFileName)
           .map(Path::toString)
           .sorted()
           .collect(Collectors.toList());
@@ -225,24 +235,28 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public List<String> getAllConfigFiles(String configName) throws IOException {
     Path configDir = getConfigDir(configName);
     List<String> filePaths = new ArrayList<>();
-    Files.walkFileTree(configDir, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        // don't include hidden (.) files
-        if (!Files.isHidden(file)) {
-          filePaths.add(configDir.relativize(file).toString());
-          return FileVisitResult.CONTINUE;
-        }
-        return FileVisitResult.CONTINUE;
-      }
-      @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
-        if (!dir.getFileName().toString().equals(configName)) {
-          filePaths.add(configDir.relativize(dir).toString() + "/");
-        }
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    Files.walkFileTree(
+        configDir,
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            // don't include hidden (.) files
+            if (!Files.isHidden(file)) {
+              filePaths.add(configDir.relativize(file).toString());
+              return FileVisitResult.CONTINUE;
+            }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
+            if (!dir.getFileName().toString().equals(configName)) {
+              filePaths.add(configDir.relativize(dir).toString() + "/");
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
     Collections.sort(filePaths);
     return filePaths;
   }
@@ -259,7 +273,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+  public Long getCurrentSchemaModificationVersion(
+      String configSet, SolrConfig solrConfig, String schemaFileName) {
     Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
     try {
       return Files.getLastModifiedTime(schemaFile).toMillis();

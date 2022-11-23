@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,8 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
@@ -46,7 +45,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
   public static void startZkServer() throws Exception {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
-    zkClient  = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000);
+    zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000);
   }
 
   @AfterClass
@@ -65,10 +64,11 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
   @ParametersFactory
   @SuppressWarnings("rawtypes")
   public static Iterable<Supplier[]> parameters() {
-    return Arrays.asList(new Supplier[][]{
-        {() -> new ZkConfigSetService(zkClient)},
-        {() -> new FileSystemConfigSetService(createTempDir("configsets"))}
-    });
+    return Arrays.asList(
+        new Supplier[][] {
+          {() -> new ZkConfigSetService(zkClient)},
+          {() -> new FileSystemConfigSetService(createTempDir("configsets"))}
+        });
   }
 
   @Test
@@ -113,7 +113,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
 
     configSetService.copyConfig(configName, "testconfig.AUTOCREATED");
     List<String> copiedConfigFiles = configSetService.getAllConfigFiles("testconfig.AUTOCREATED");
-    assertEquals(configFiles.toString(),(copiedConfigFiles.toString()));
+    assertEquals(configFiles.toString(), (copiedConfigFiles.toString()));
 
     assertEquals(2, configSetService.listConfigs().size());
 
