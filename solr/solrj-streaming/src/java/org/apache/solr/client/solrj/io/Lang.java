@@ -287,6 +287,7 @@ import org.apache.solr.client.solrj.io.stream.ModelStream;
 import org.apache.solr.client.solrj.io.stream.NoOpStream;
 import org.apache.solr.client.solrj.io.stream.NullStream;
 import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
+import org.apache.solr.client.solrj.io.stream.PagingStream;
 import org.apache.solr.client.solrj.io.stream.ParallelListStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
 import org.apache.solr.client.solrj.io.stream.PlotStream;
@@ -394,6 +395,7 @@ public class Lang {
         .withFunctionName("zplot", ZplotStream.class)
         .withFunctionName("hashRollup", HashRollupStream.class)
         .withFunctionName("noop", NoOpStream.class)
+        .withFunctionName("noop", PagingStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)
