@@ -1896,7 +1896,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       boolean includeNGroups) {
     Map<String, Object> result = new LinkedHashMap<>();
 
-    long matches = 0;
+    int matches = 0;
     for (Grp grp : sortedGroups) {
       matches += grp.docs.size();
     }
