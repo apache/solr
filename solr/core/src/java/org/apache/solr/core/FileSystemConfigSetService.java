@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
- * Solr Standalone File System ConfigSetService impl.
+ * Standalone File System ConfigSetService impl.
  *
  * <p>Loads ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
@@ -58,7 +58,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
   }
 
-  /** This is for testing purpose */
+  /** Testing purpose */
   public FileSystemConfigSetService(Path configSetBase) {
     super(null, false);
     this.configSetBase = configSetBase;
@@ -79,20 +79,18 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path configSetDirectory = configSetBase.resolve(configName);
-    return Files.isDirectory(configSetDirectory);
+    return Files.isDirectory(getConfigDir(configName));
   }
 
   @Override
   public void deleteConfig(String configName) throws IOException {
-    Path configDir = configSetBase.resolve(configName);
-    deleteDir(configDir);
+    deleteDir(getConfigDir(configName));
   }
 
   @Override
   public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
       throws IOException {
-    Path configDir = configSetBase.resolve(configName);
+    Path configDir = getConfigDir(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
       Path file = configDir.resolve(fileName);
@@ -108,8 +106,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
-    Path source = configSetBase.resolve(fromConfig);
-    Path dest = configSetBase.resolve(toConfig);
+    Path source = getConfigDir(fromConfig);
+    Path dest = getConfigDir(toConfig);
     copyRecursively(source, dest);
   }
 
@@ -135,7 +133,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public void uploadConfig(String configName, Path source) throws IOException {
-    Path dest = configSetBase.resolve(configName);
+    Path dest = getConfigDir(configName);
     copyRecursively(source, dest);
   }
 
@@ -143,7 +141,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = configSetBase.resolve(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(fileName);
     if (!Files.exists(filePath) || overwriteOnExists) {
       Files.write(filePath, data);
     }
@@ -152,7 +150,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     // store metadata in .metadata.json file
-    Path metadataPath = configSetBase.resolve(configName).resolve(METADATA_FILE);
+    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
     Files.isHidden(metadataPath);
   }
@@ -160,7 +158,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
     // get metadata from .metadata.json file
-    Path metadataPath = configSetBase.resolve(configName).resolve(METADATA_FILE);
+    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
     byte[] data = null;
     try {
       data = Files.readAllBytes(metadataPath);
@@ -177,7 +175,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public void downloadConfig(String configName, Path dest) throws IOException {
-    Path source = configSetBase.resolve(configName);
+    Path source = getConfigDir(configName);
     copyRecursively(source, dest);
   }
 
@@ -186,13 +184,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
       Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-          Files.createDirectories(target.resolve(source.relativize(dir)));
+          Files.createDirectories(target.resolve(source.relativize(dir).toString()));
           return FileVisitResult.CONTINUE;
         }
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          Files.copy(file, target.resolve(source.relativize(file)), REPLACE_EXISTING);
+          Files.copy(file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
           return FileVisitResult.CONTINUE;
         }
       });
@@ -213,7 +211,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
-    Path filePath = configSetBase.resolve(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(fileName);
     byte[] data = null;
     try {
       data = Files.readAllBytes(filePath);
@@ -225,7 +223,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public List<String> getAllConfigFiles(String configName) throws IOException {
-    Path configDir = configSetBase.resolve(configName);
+    Path configDir = getConfigDir(configName);
     List<String> filePaths = new ArrayList<>();
     Files.walkFileTree(configDir, new SimpleFileVisitor<Path>() {
       @Override
@@ -238,7 +236,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
         return FileVisitResult.CONTINUE;
       }
       @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException ioException) throws IOException {
+      public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
         if (!dir.getFileName().toString().equals(configName)) {
           filePaths.add(configDir.relativize(dir).toString() + "/");
         }
@@ -252,7 +250,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   protected Path locateInstanceDir(CoreDescriptor cd) {
     String configSet = cd.getConfigSet();
     if (configSet == null) return cd.getInstanceDir();
-    Path configSetDirectory = configSetBase.resolve(configSet);
+    Path configSetDirectory = getConfigDir(configSet);
     if (!Files.isDirectory(configSetDirectory))
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -261,8 +259,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected Long getCurrentSchemaModificationVersion(
-      String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
+  protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
     Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
     try {
       return Files.getLastModifiedTime(schemaFile).toMillis();
@@ -274,7 +271,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     }
   }
 
-  public Path getConfigDir(String configName) {
-    return configSetBase.resolve(configName);
+  private Path getConfigDir(String configName) {
+    return configSetBase.toAbsolutePath().resolve(configName);
   }
 }
