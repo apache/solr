@@ -395,7 +395,7 @@ public class Lang {
         .withFunctionName("zplot", ZplotStream.class)
         .withFunctionName("hashRollup", HashRollupStream.class)
         .withFunctionName("noop", NoOpStream.class)
-        .withFunctionName("noop", PagingStream.class)
+        .withFunctionName("page", PagingStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)
