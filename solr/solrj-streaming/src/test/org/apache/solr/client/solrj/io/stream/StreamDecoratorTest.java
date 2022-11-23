@@ -581,6 +581,103 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testPagingStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withFunctionName("search", CloudSolrStream.class)
+            .withFunctionName("unique", UniqueStream.class)
+            .withFunctionName("page", PagingStream.class);
+    try {
+      // Basic test
+      expression =
+          StreamExpressionParser.parse(
+              "page("
+                  + "start=0,rows=3"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+                  + "sort=\"a_f asc, a_i asc\")");
+      stream = new RankStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 0, 2, 1);
+
+      // Basic test desc
+      expression =
+          StreamExpressionParser.parse(
+              "page("
+                  + "start=5,rows=2"
+                  + "unique("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+                  + "over=\"a_f\"),"
+                  + "sort=\"a_f desc\")");
+      stream = new RankStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(3, tuples.size());
+      assertOrder(tuples, 4, 3);
+
+      // full factory
+      stream =
+          factory.constructStream(
+              "page("
+                  + "start=3,rows=4,"
+                  + "unique("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+                  + "over=\"a_f\"),"
+                  + "sort=\"a_f asc\")");
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 0, 1, 3, 4);
+
+      // full factory, switch order
+      stream =
+          factory.constructStream(
+              "page("
+                  + "start=1,rows=4,"
+                  + "unique("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
+                  + "over=\"a_f\"),"
+                  + "sort=\"a_f asc\")");
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 2, 1, 3, 4);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+  
+  @Test
   public void testReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1921,6 +2018,61 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testParallelPagingStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "5", "a_s", "hello1", "a_i", "5", "a_f", "1")
+        .add(id, "6", "a_s", "hello1", "a_i", "6", "a_f", "1")
+        .add(id, "7", "a_s", "hello1", "a_i", "7", "a_f", "1")
+        .add(id, "8", "a_s", "hello1", "a_i", "8", "a_f", "1")
+        .add(id, "9", "a_s", "hello1", "a_i", "9", "a_f", "1")
+        .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory =
+        new StreamFactory()
+            .withCollectionZkHost(COLLECTIONORALIAS, zkHost)
+            .withFunctionName("search", CloudSolrStream.class)
+            .withFunctionName("unique", UniqueStream.class)
+            .withFunctionName("page", PagingStream.class)
+            .withFunctionName("group", ReducerStream.class)
+            .withFunctionName("parallel", ParallelStream.class);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      ParallelStream pstream =
+          (ParallelStream)
+              streamFactory.constructStream(
+                  "parallel("
+                      + COLLECTIONORALIAS
+                      + ", "
+                      + "page("
+                      + "search("
+                      + COLLECTIONORALIAS
+                      + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), "
+                      + "start=\"0\", "
+                      + "rows=\"11\", "
+                      + "sort=\"a_i desc\"), workers=\"2\", zkHost=\""
+                      + zkHost
+                      + "\", sort=\"a_i desc\")");
+      pstream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(pstream);
+
+      assertEquals(10, tuples.size());
+      assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+  
   @Test
   public void testParallelMergeStream() throws Exception {
 
