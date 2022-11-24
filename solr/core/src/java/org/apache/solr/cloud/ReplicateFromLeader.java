@@ -80,10 +80,10 @@ public class ReplicateFromLeader {
       if (System.getProperty("jetty.testMode") != null) {
         pollIntervalStr = "00:00:01";
       }
-      if (uinfo.autoCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime / 2);
-      } else if (uinfo.autoSoftCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime / 2);
+      if (uinfo.autoSoftCommmitMaxTime != -1) {
+        pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime);
+      } else if (uinfo.autoCommmitMaxTime != -1) {
+        pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime);
       }
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
