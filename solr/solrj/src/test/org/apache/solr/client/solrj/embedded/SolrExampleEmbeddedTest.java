@@ -24,7 +24,6 @@ import org.junit.BeforeClass;
  *
  * @since solr 1.3
  */
-
 public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
