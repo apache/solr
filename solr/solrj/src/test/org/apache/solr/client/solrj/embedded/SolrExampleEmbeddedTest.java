@@ -25,9 +25,6 @@ import org.junit.BeforeClass;
  * @since solr 1.3
  */
 
-// Eric: I believe this tests duplicates SolrExampleXMLHttp2Test because this
-// test just delegates to the createNewSolrClient() of Solr SolrJettyTestBase
-// so we can delete this one!!!  THoughts?
 public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
