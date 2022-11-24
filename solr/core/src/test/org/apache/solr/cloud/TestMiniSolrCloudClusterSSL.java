@@ -434,6 +434,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     if (random().nextBoolean()) {
       return (new HttpSolrClient.Builder(url)).build();
     } // else...
-    return getHttp1SolrClient(url);
+    return getHttpSolrClient(url);
   }
 }

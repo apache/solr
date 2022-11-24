@@ -534,7 +534,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    return getHttp2SolrClient(getServerUrl(port));
+    return getHttpSolrClient(getServerUrl(port));
   }
 
   protected String getServerUrl(int port) {

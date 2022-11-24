@@ -104,7 +104,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("stream.url", makeDeleteAllUrl());
-    try (SolrClient solrClient = getHttp2SolrClient(getServerUrl())) {
+    try (SolrClient solrClient = getHttpSolrClient(getServerUrl())) {
       SolrException se = expectThrows(SolrException.class, () -> solrClient.query(query));
       assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
     }

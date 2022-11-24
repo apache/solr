@@ -128,7 +128,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   protected String getServerUrl() {
-    return jetty.getBaseUrl().toString() + "/" + "collection1";
+    return jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }
 
   @After
@@ -153,13 +153,12 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Create a new solr client. If createJetty was called, an http implementation will be created,
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */
   public SolrClient createNewSolrClient() {
-    final SolrClient client = getHttp2SolrClient(getServerUrl());
-    return client;
+    return getHttpSolrClient(getServerUrl());
   }
 
   // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig

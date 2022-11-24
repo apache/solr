@@ -58,7 +58,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
     CLIENTS.add(cluster.getSolrClient());
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      final SolrClient c = getHttp1SolrClient(jetty.getBaseUrl().toString());
+      final SolrClient c = getHttpSolrClient(jetty.getBaseUrl().toString());
       NODE_CLIENTS.add(c);
       CLIENTS.add(c);
     }
