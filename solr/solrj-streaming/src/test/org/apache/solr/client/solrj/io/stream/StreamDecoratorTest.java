@@ -609,47 +609,47 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       expression =
           StreamExpressionParser.parse(
               "page("
-                  + "start=0,rows=3"
+                  + "start=0,rows=5,"
                   + "search("
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
-                  + "sort=\"a_f asc, a_i asc\")");
-      stream = new RankStream(expression, factory);
+                  + "sort=\"a_f asc, a_i asc\")"); // Output::0, 2, 1, 3, 4
+      stream = new PagingStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assertEquals(4, tuples.size());
-      assertOrder(tuples, 0, 2, 1);
+      assertEquals(5, tuples.size());
+      assertOrder(tuples, 0, 2, 1, 3, 4);
 
       // Basic test desc
       expression =
           StreamExpressionParser.parse(
               "page("
-                  + "start=5,rows=2"
+                  + "start=0,rows=4,"
                   + "unique("
                   + "search("
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f desc\")");
-      stream = new RankStream(expression, factory);
+                  + "sort=\"a_f desc\")");  // Output::4,3,1,2
+      stream = new PagingStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
-      assertEquals(3, tuples.size());
-      assertOrder(tuples, 4, 3);
+      assertEquals(4, tuples.size());
+      assertOrder(tuples, 4, 3, 1, 2);
 
       // full factory
       stream =
           factory.constructStream(
               "page("
-                  + "start=3,rows=4,"
+                  + "start=0,rows=4,"
                   + "unique("
                   + "search("
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f asc\")");
+                  + "sort=\"a_f asc\")"); //Output::0,1,3,4
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -660,13 +660,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       stream =
           factory.constructStream(
               "page("
-                  + "start=1,rows=4,"
+                  + "start=0,rows=4,"
                   + "unique("
                   + "search("
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f asc\")");
+                  + "sort=\"a_f asc\")");// Output::2,1,3,4
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -2059,8 +2059,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                       + COLLECTIONORALIAS
                       + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), "
                       + "start=\"0\", "
-                      + "rows=\"11\", "
-                      + "sort=\"a_i desc\"), workers=\"2\", zkHost=\""
+                      + "rows=\"10\", "
+                      + "sort=\"a_i desc\"), workers=\"1\", zkHost=\""
                       + zkHost
                       + "\", sort=\"a_i desc\")");
       pstream.setStreamContext(streamContext);
