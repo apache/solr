@@ -427,7 +427,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
 
-      // client.setParser(new XMLResponseParser());
       try {
         client.deleteByQuery("*:*");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -510,8 +509,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
             .build()) {
 
       // XML response and writer
-      // client.setParser(new XMLResponseParser());
-      // client.setRequestWriter(new RequestWriter());
       try {
         client.request(req);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
