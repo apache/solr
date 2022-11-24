@@ -141,7 +141,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         ReplicationTestHelper.createNewSolrClient(
             buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
 
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
+    // We wait 30 seconds for replication to happen generally
+    System.setProperty("solr.indexfetcher.sotimeout", "10000");
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -784,6 +785,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // get docs from follower and assert that they are still the same as before
       followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
       assertEquals(nDocs, numFound(followerQueryRsp));
+
+      // After restarting the leader make sure that there hasn't been another successful index replication
+      int timesReplicated = Integer.parseInt(getFollowerDetails("timesIndexReplicated"));
+      previousTimesFailed = Integer.parseInt(getFollowerDetails("timesFailed"));
+      // Sometimes replication will fail because leader's core is still loading; make sure there
+      // was one success
+      assertEquals(1, timesReplicated - previousTimesFailed);
     } finally {
       resetFactory();
     }

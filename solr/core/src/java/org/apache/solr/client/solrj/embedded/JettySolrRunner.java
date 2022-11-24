@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,10 +57,8 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -698,12 +695,6 @@ public class JettySolrRunner {
         timeout.waitFor("Timeout waiting for reserved executor to stop.", rte::isStopped);
       }
 
-      // we want to shutdown outside of jetty cutting us off
-      SolrDispatchFilter sdf = getSolrDispatchFilter();
-      if (sdf != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(getJettyShutDownThreadPool());
-      }
-
       do {
         try {
           server.join();
@@ -723,10 +714,6 @@ public class JettySolrRunner {
         MDC.clear();
       }
     }
-  }
-
-  private ExecutorService getJettyShutDownThreadPool() {
-    return ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
   }
 
   public void outputMetrics(File outputDirectory, String fileName) throws IOException {
