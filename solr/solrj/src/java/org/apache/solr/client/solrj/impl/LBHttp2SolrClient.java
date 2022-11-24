@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,18 +89,51 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.httpClient = httpClient;
   }
 
+  public LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls, Builder builder) {
+    super(baseSolrUrls);
+    this.httpClient = httpClient;
+    if (builder.responseParser != null) {
+      this.parser = builder.responseParser;
+    }
+    if (builder.requestWriter != null) {
+      this.httpClient.setRequestWriter(builder.requestWriter);
+    }
+  }
+
   @Override
   protected SolrClient getClient(String baseUrl) {
     return httpClient;
   }
 
-  @Override
+  /**
+   * Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   */
+  @Deprecated
   public void setParser(ResponseParser parser) {
     super.setParser(parser);
     this.httpClient.setParser(parser);
   }
 
   @Override
+  public ResponseParser getParser() {
+    return httpClient.getParser();
+  }
+
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter writer) {
     super.setRequestWriter(writer);
     this.httpClient.setRequestWriter(writer);
@@ -257,5 +291,33 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 }
               }
             });
+  }
+
+  public static class Builder {
+    private final Http2SolrClient http2Client;
+    private final String[] baseSolrUrls;
+    private ResponseParser responseParser;
+    private RequestWriter requestWriter;
+
+    public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
+      this.http2Client = http2Client;
+      this.baseSolrUrls = baseSolrUrls;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public LBHttp2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public LBHttp2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    public LBHttp2SolrClient build() {
+      return new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls), this);
+    }
   }
 }
