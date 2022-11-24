@@ -631,7 +631,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f desc\")");  // Output::4,3,1,2
+                  + "sort=\"a_f desc\")"); // Output::4,3,1,2
       stream = new PagingStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -649,7 +649,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f asc\")"); //Output::0,1,3,4
+                  + "sort=\"a_f asc\")"); // Output::0,1,3,4
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -666,7 +666,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + COLLECTIONORALIAS
                   + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
                   + "over=\"a_f\"),"
-                  + "sort=\"a_f asc\")");// Output::2,1,3,4
+                  + "sort=\"a_f asc\")"); // Output::2,1,3,4
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -676,7 +676,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
-  
+
   @Test
   public void testReducerStream() throws Exception {
 
@@ -2072,7 +2072,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
-  
+
   @Test
   public void testParallelMergeStream() throws Exception {
 
