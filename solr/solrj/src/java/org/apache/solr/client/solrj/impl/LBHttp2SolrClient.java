@@ -114,6 +114,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * @deprecated use {@link LBHttp2SolrClient.Builder#withResponseParser(ResponseParser)} instead
    */
   @Deprecated
+  @Override
   public void setParser(ResponseParser parser) {
     super.setParser(parser);
     this.httpClient.setParser(parser);
@@ -134,9 +135,15 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * @deprecated use {@link LBHttp2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
    */
   @Deprecated
+  @Override
   public void setRequestWriter(RequestWriter writer) {
     super.setRequestWriter(writer);
     this.httpClient.setRequestWriter(writer);
+  }
+
+  @Override
+  public RequestWriter getRequestWriter() {
+    return httpClient.getRequestWriter();
   }
 
   @Override
