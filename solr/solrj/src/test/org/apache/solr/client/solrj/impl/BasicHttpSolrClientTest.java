@@ -786,38 +786,38 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testQueryString() throws Exception {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
-    try (HttpSolrClient client = getHttpSolrClient(clientUrl)) {
+    HttpSolrClient.Builder builder = new HttpSolrClient.Builder(clientUrl);
+    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
-      client.setQueryParams(setOf("serverOnly"));
       UpdateRequest req = new UpdateRequest();
       setReqParamsOf(req, "serverOnly", "notServer");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
       verifyServletState(client, req);
-
+    }
+    try (HttpSolrClient client = builder.withQueryParams(setOf()).build()) {
       // test without server query params
       DebugServlet.clear();
-      client.setQueryParams(setOf());
       UpdateRequest req2 = new UpdateRequest();
       req2.setQueryParams(setOf("requestOnly"));
       setReqParamsOf(req2, "requestOnly", "notRequest");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req2));
       verifyServletState(client, req2);
-
+    }
+    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly", "both")).build()) {
       // test with both request and server query params
       DebugServlet.clear();
       UpdateRequest req3 = new UpdateRequest();
-      client.setQueryParams(setOf("serverOnly", "both"));
       req3.setQueryParams(setOf("requestOnly", "both"));
       setReqParamsOf(req3, "serverOnly", "requestOnly", "both", "neither");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req3));
       verifyServletState(client, req3);
-
+    }
+    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly", "both")).build()) {
       // test with both request and server query params with single stream
       DebugServlet.clear();
       UpdateRequest req4 = new UpdateRequest();
       req4.add(new SolrInputDocument());
-      client.setQueryParams(setOf("serverOnly", "both"));
       req4.setQueryParams(setOf("requestOnly", "both"));
       setReqParamsOf(req4, "serverOnly", "requestOnly", "both", "neither");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req4));
