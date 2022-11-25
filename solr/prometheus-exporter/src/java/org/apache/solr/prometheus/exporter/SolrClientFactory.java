@@ -57,9 +57,9 @@ public class SolrClientFactory {
                 new Http2SolrClient.Builder()
                     .idleTimeout(settings.getHttpReadTimeout())
                     .connectionTimeout(settings.getHttpConnectionTimeout()))
-                .withResponseParser(new NoOpResponseParser("json"))
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-    
+
     client.connect();
 
     return client;

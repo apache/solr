@@ -317,7 +317,6 @@ public abstract class CloudSolrClient extends SolrClient {
    * @param processor Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   *
    * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
    */
   @Deprecated
