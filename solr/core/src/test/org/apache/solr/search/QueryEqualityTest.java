@@ -1295,19 +1295,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryMLTContent() throws Exception {
-    assertU(adoc("id", "1", "lowerfilt", "sample data", "upperfilt", "SAMPLE DATA"));
+    assertU(adoc("id", "1", "lowerfilt", "sample data", "standardfilt", "sample data"));
     assertU(commit());
     try {
       assertQueryEquals(
           "mlt_content",
-          "{!mlt_content qf=lowerfilt}sample data",
-          "{!mlt_content qf=lowerfilt v='sample data'}",
-          "{!qf=lowerfilt}sample data");
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0 v='sample data'}",
+          "{!qf=lowerfilt mindf=0 mintf=0}sample data");
       SolrQueryRequest req = req(new String[] {"df", "text"});
       try {
         QueryUtils.checkUnequal(
-            QParser.getParser("{!mlt_content qf=lowerfilt}sample data", req).getQuery(),
-            QParser.getParser("{!mlt_content qf=lowerfilt qf=upperfilt}sample data", req)
+            QParser.getParser("{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data", req)
+                .getQuery(),
+            QParser.getParser(
+                    "{!mlt_content qf=lowerfilt qf=standardfilt mindf=0 mintf=0}sample data", req)
                 .getQuery());
       } finally {
         req.close();
