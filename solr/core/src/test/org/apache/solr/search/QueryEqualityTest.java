@@ -1294,6 +1294,20 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryMLTContent() throws Exception {
+    assertU(adoc("id", "1", "lowerfilt", "sample data"));
+    assertU(commit());
+    try {
+      assertQueryEquals(
+          "mlt",
+          "{!mlt_content qf=lowerfilt}sample data",
+          "{!mlt_content qf=lowerfilt v='sample data'}");
+    } finally {
+      delQ("*:*");
+      assertU(commit());
+    }
+  }
+
   public void testQueryKNN() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "0");
