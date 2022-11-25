@@ -71,6 +71,9 @@ Improvements
 * SOLR-11028: A v2 equivalent of the `/admin/collections?action= REPLACE` command is now available at
   `POST /api/cluster/nodes/nodeName/replace`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
+  `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via )
+
 Optimizations
 ---------------------
 

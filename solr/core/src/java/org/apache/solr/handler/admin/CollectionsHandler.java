@@ -210,6 +210,7 @@ import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
@@ -1820,7 +1821,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               "shard",
               FOLLOW_ALIASES);
         }),
-    DELETENODE_OP(DELETENODE, (req, rsp, h) -> copy(req.getParams().required(), null, "node")),
+    DELETENODE_OP(
+        DELETENODE,
+        (req, rsp, h) -> {
+          final SolrParams params = req.getParams();
+          final RequiredSolrParams requiredParams = params.required();
+          final DeleteNodeAPI.DeleteNodeRequestBody requestBody =
+              new DeleteNodeAPI.DeleteNodeRequestBody(params.get(ASYNC));
+          final DeleteNodeAPI deleteNodeAPI = new DeleteNodeAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse deleteNodeResponse =
+              deleteNodeAPI.deleteNode(requiredParams.get("node"), requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
+          return null;
+        }),
     MOCK_COLL_TASK_OP(
         MOCK_COLL_TASK,
         (req, rsp, h) -> {
@@ -2073,7 +2086,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(AddReplicaPropertyAPI.class, ReplaceNodeAPI.class);
+    return List.of(AddReplicaPropertyAPI.class, DeleteNodeAPI.class, ReplaceNodeAPI.class);
   }
 
   @Override
