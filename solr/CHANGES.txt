@@ -41,6 +41,9 @@ Improvements
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud.
+  (Mikhail Khludnev)
+
 Optimizations
 ---------------------
 
@@ -69,6 +72,8 @@ Bug Fixes
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
 * SOLR-16528: Jaegertracer module must include okhttp3 dependency (janhoy)
+
+* SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
 Build
 ---------------------

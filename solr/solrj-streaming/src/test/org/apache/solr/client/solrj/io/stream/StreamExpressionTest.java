@@ -808,7 +808,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
-              + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
+              + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
           new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
@@ -821,7 +821,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
-              + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
+              + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());
