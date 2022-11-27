@@ -222,7 +222,7 @@ public class SolrCLI implements CLIO {
     }
 
     /** Runs a SolrCloud tool with CloudSolrClient initialized */
-    protected abstract void runCloudTool(CloudHttp2SolrClient cloudSolrClient, CommandLine cli)
+    protected abstract void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception;
   }
 
@@ -620,7 +620,7 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static Http2SolrClient getHttpSolrClient(String baseUrl) {
+  public static SolrClient getHttpSolrClient(String baseUrl) {
     return new Http2SolrClient.Builder(baseUrl).maxConnectionsPerHost(32).build();
   }
 
@@ -990,7 +990,7 @@ public class SolrCLI implements CLIO {
       return status;
     }
 
-    public Map<String, Object> reportStatus(NamedList<Object> info, Http2SolrClient solrClient)
+    public Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
         throws Exception {
       Map<String, Object> status = new LinkedHashMap<>();
 
@@ -1019,7 +1019,7 @@ public class SolrCLI implements CLIO {
      * cluster.
      */
     @SuppressWarnings("unchecked")
-    protected Map<String, String> getCloudStatus(Http2SolrClient solrClient, String zkHost)
+    protected Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
         throws Exception {
       Map<String, String> cloudStatus = new LinkedHashMap<>();
       cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
@@ -1273,7 +1273,7 @@ public class SolrCLI implements CLIO {
     }
 
     @Override
-    protected void runCloudTool(CloudHttp2SolrClient cloudSolrClient, CommandLine cli)
+    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String collection = cli.getOptionValue("collection");
@@ -2595,7 +2595,7 @@ public class SolrCLI implements CLIO {
       echo("Deleted collection '" + collectionName + "' using CollectionAdminRequest");
     }
 
-    protected void deleteCore(CommandLine cli, Http2SolrClient solrClient) throws Exception {
+    protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
       String coreName = cli.getOptionValue(NAME);
 
       echo("\nDeleting core '" + coreName);

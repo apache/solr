@@ -30,8 +30,8 @@ import org.apache.commons.cli.Option;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
@@ -370,7 +370,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    try (Http2SolrClient solrClient = getHttpSolrClient(solrUrl)) {
+    try (SolrClient solrClient = getHttpSolrClient(solrUrl)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
