@@ -42,7 +42,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -91,7 +90,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-//@Nightly
+// @Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -260,7 +259,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return res;
   }
 
-  private NamedList<Object> reloadCore(JettySolrRunner s, String core) throws Exception {
+  private void reloadCore(JettySolrRunner jettySolrRunner, String core) throws Exception {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
@@ -268,10 +267,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt", "/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (SolrClient adminClient = adminClient(s)) {
+    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
-      return res;
     }
   }
 
@@ -1779,22 +1777,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   /**
-   * Polls the SolrCore stats using the specified client until the "startTime" time for collection
-   * is after the specified "min". Will loop for at most "timeout" milliseconds before throwing an
-   * assertion failure.
+   * Polls the SolrCore stats using the specified jettySolrRunner until the "startTime" time for
+   * collection is after the specified "min". Will loop for at most "timeout" milliseconds before
+   * throwing an assertion failure.
    *
-   * @param client The SolrClient to poll
+   * @param jettySolrRunner The JettySolrRunner to poll
    * @param min the startTime value must exceed this value before the method will return, if null
    *     this method will return the first startTime value encountered.
    * @return the startTime value of collection
    */
   @SuppressWarnings("unchecked")
-  private Date watchCoreStartAt(JettySolrRunner client, final Date min)
+  private Date watchCoreStartAt(JettySolrRunner jettySolrRunner, final Date min)
       throws InterruptedException, IOException, SolrServerException {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (SolrClient adminClient = adminClient(client)) {
+    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < TIMEOUT) {
         QueryRequest req = new QueryRequest(p);
