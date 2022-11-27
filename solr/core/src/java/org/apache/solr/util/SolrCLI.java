@@ -1273,8 +1273,7 @@ public class SolrCLI implements CLIO {
     }
 
     @Override
-    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli)
-        throws Exception {
+    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
       String collection = cli.getOptionValue("collection");
       if (collection == null)
