@@ -79,7 +79,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    String streamUrl = jettySolrRunner.getBaseUrl().toString() + "/collection1/select?q=*:*&fl=id&wt=csv";
+    String streamUrl =
+        jettySolrRunner.getBaseUrl().toString() + "/collection1/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
         jettySolrRunner.getBaseUrl().toString()
