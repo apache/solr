@@ -1490,6 +1490,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   protected String getBaseUrl(HttpSolrClient client) {
+    // take a complete Solr url that ends with /collection1 and truncates it to the root url
+    // that is used for admin api calls.
     return client
         .getBaseURL()
         .substring(0, client.getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
