@@ -442,8 +442,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // unsupported feature (tree is looking for a feature that does not exist)
       if ((regressionTreeNode.featureIndex < 0)
               || (regressionTreeNode.featureIndex >= featureVector.length)) {
-        returnValueBuilder.append(
-                "'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+        returnValueBuilder
+                .append("'")
+                .append(regressionTreeNode.feature)
+                .append("' does not exist in FV, Return Zero");
         return returnValueBuilder.toString();
       }
 
@@ -455,38 +457,38 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
               (Float.isNaN(featureVector[regressionTreeNode.featureIndex]) &&
                       Objects.equals(regressionTreeNode.missing, "left"))) {
         if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
-          returnValueBuilder.append(
-                  "'"
-                          + regressionTreeNode.feature
-                          + "': NaN, Go Left | ");
+          returnValueBuilder
+                  .append("'")
+                  .append(regressionTreeNode.feature)
+                  .append("': NaN, Go Left | ");
         }
         else {
-          returnValueBuilder.append(
-                  "'"
-                          + regressionTreeNode.feature
-                          + "':"
-                          + featureVector[regressionTreeNode.featureIndex]
-                          + " <= "
-                          + regressionTreeNode.threshold
-                          + ", Go Left | ");
+          returnValueBuilder
+                  .append("'")
+                  .append(regressionTreeNode.feature)
+                  .append("':")
+                  .append(featureVector[regressionTreeNode.featureIndex])
+                  .append(" <= ")
+                  .append(regressionTreeNode.threshold)
+                  .append(", Go Left | ");
         }
         regressionTreeNode = regressionTreeNode.left;
       } else {
         if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
-          returnValueBuilder.append(
-                  "'"
-                          + regressionTreeNode.feature
-                          + "': NaN, Go Right | ");
+          returnValueBuilder
+                  .append("'")
+                  .append(regressionTreeNode.feature)
+                  .append("': NaN, Go Right | ");
         }
         else {
-          returnValueBuilder.append(
-                  "'"
-                          + regressionTreeNode.feature
-                          + "':"
-                          + featureVector[regressionTreeNode.featureIndex]
-                          + " > "
-                          + regressionTreeNode.threshold
-                          + ", Go Right | ");
+          returnValueBuilder
+                  .append("'")
+                  .append(regressionTreeNode.feature)
+                  .append("':")
+                  .append(featureVector[regressionTreeNode.featureIndex])
+                  .append(" > ")
+                  .append(regressionTreeNode.threshold)
+                  .append(", Go Right | ");
         }
         regressionTreeNode = regressionTreeNode.right;
       }
