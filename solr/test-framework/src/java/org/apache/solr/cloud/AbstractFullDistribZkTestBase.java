@@ -2838,7 +2838,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void setupRestTestHarnesses() {
     for (final JettySolrRunner jetty : jettys) {
       RestTestHarness harness =
-          new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/collection1");
+          new RestTestHarness(
+              () -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME);
       restTestHarnesses.add(harness);
     }
   }

@@ -259,7 +259,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private SolrClient adminClient(JettySolrRunner client) {
-    String adminUrl = client.getBaseUrl().toString().replace("/collection1", "");
+    String adminUrl =
+        client.getBaseUrl().toString().replace("/" + DEFAULT_TEST_COLLECTION_NAME, "");
     return getHttpSolrClient(adminUrl);
   }
 
@@ -1335,7 +1336,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     Object version = getIndexVersion(leaderClient).get("indexversion");
 
-    reloadCore(leaderJetty, "collection1");
+    reloadCore(leaderJetty, DEFAULT_TEST_COLLECTION_NAME);
 
     assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
 
