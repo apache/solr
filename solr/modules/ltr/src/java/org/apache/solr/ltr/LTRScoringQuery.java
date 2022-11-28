@@ -368,23 +368,16 @@ public class LTRScoringQuery extends Query implements Accountable {
   public static class FeatureInfo {
     private final String name;
     private float value;
-
-    private Float nullableValue;
     private boolean used;
 
-    FeatureInfo(String n, float v, Float nv, boolean u) {
+    FeatureInfo(String n, float v, boolean u) {
       name = n;
       value = v;
-      nullableValue = nv;
       used = u;
     }
 
     public void setValue(float value) {
       this.value = value;
-    }
-
-    public void setNullableValue(Float value) {
-      this.nullableValue = value;
     }
 
     public String getName() {
@@ -395,9 +388,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       return value;
     }
 
-    public Float getNullableValue() {
-      return nullableValue;
-    }
 
     public boolean isUsed() {
       return used;
@@ -456,7 +446,10 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        featuresInfo[featId] = new FeatureInfo(featName, value, null, false);
+        if (!isNullSameAsZero) {
+          value = Float.NaN;
+        }
+        featuresInfo[featId] = new FeatureInfo(featName, value, false);
       }
     }
 
@@ -501,21 +494,20 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
 
     private float makeNormalizedFeaturesAndScoreWithNulls() {
-      Float[] modelFeatureValuesNormalizedWithNulls = new Float[modelFeatureWeights.length];
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
         FeatureInfo fInfo = featuresInfo[featureId];
         // not checking for finfo == null as that would be a bug we should catch
         if (fInfo.isUsed()) {
-          modelFeatureValuesNormalizedWithNulls[pos] = fInfo.getNullableValue();
+          modelFeatureValuesNormalized[pos] = fInfo.getValue();
         } else {
-          modelFeatureValuesNormalizedWithNulls[pos] = Float.NaN;
+          modelFeatureValuesNormalized[pos] = Float.NaN;
         }
         pos++;
       }
-      ltrScoringModel.normalizeFeaturesInPlaceWithNulls(modelFeatureValuesNormalizedWithNulls);
-      return ltrScoringModel.scoreNullableFeatures(modelFeatureValuesNormalizedWithNulls);
+      ltrScoringModel.normalizeFeaturesInPlaceWithNulls(modelFeatureValuesNormalized);
+      return ltrScoringModel.scoreNullableFeatures(modelFeatureValuesNormalized);
     }
 
     @Override
@@ -548,10 +540,12 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (int i = 0; i < extractedFeatureWeights.length; ++i) {
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
+        if (!isNullSameAsZero) {
+          value = Float.NaN;
+        }
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
-        featuresInfo[featId].setNullableValue(Float.NaN);
         featuresInfo[featId].setUsed(false);
       }
     }
@@ -670,7 +664,6 @@ public class LTRScoringQuery extends Query implements Accountable {
               Feature.FeatureWeight scFW = (Feature.FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getIndex();
               featuresInfo[featureId].setValue(subScorer.score());
-              featuresInfo[featureId].setNullableValue(subScorer.score());
               featuresInfo[featureId].setUsed(true);
             }
           }
@@ -761,7 +754,6 @@ public class LTRScoringQuery extends Query implements Accountable {
                 Feature.FeatureWeight scFW = (Feature.FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setValue(scorer.score());
-                featuresInfo[featureId].setNullableValue(scorer.score());
                 featuresInfo[featureId].setUsed(true);
               }
             }

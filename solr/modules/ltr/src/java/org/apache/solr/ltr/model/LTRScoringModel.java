@@ -254,7 +254,7 @@ public abstract class LTRScoringModel implements Accountable {
    */
   public abstract float score(float[] modelFeatureValuesNormalized);
 
-  public float scoreNullableFeatures(Float[] modelFeatureValuesNormalized) {
+  public float scoreNullableFeatures(float[] modelFeatureValuesNormalized) {
     return 0;
   }
 
@@ -291,8 +291,8 @@ public abstract class LTRScoringModel implements Accountable {
     }
   }
 
-  public void normalizeFeaturesInPlaceWithNulls(Float[] modelFeatureValues) {
-    Float[] modelFeatureValuesNormalized = modelFeatureValues;
+  public void normalizeFeaturesInPlaceWithNulls(float[] modelFeatureValues) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
     if (modelFeatureValues.length != norms.size()) {
       throw new FeatureException("Must have normalizer for every feature");
     }

@@ -141,7 +141,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(
-        req, createFeatureLogger(localparams.get(FV_FORMAT), isNullSameAsZero));
+        req, createFeatureLogger(localparams.get(FV_FORMAT)));
 
     return new FeatureTransformer(
         name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, isNullSameAsZero);
@@ -154,7 +154,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String formatStr, boolean isNullSameAsZero) {
+  private FeatureLogger createFeatureLogger(String formatStr) {
     final FeatureLogger.FeatureFormat format;
     if (formatStr != null) {
       format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
@@ -164,7 +164,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator, isNullSameAsZero);
+    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {

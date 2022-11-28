@@ -23,21 +23,16 @@ public class CSVFeatureLogger extends FeatureLogger {
   private final char keyValueSep;
   private final char featureSep;
 
-  private final boolean isNullSameAsZero;
-
   public CSVFeatureLogger(String fvCacheName, FeatureFormat f) {
     super(fvCacheName, f);
     this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
-    this.isNullSameAsZero = true;
   }
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep,
-                          boolean isNullSameAsZero) {
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
     super(fvCacheName, f);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;
-    this.isNullSameAsZero = isNullSameAsZero;
   }
 
   @Override
@@ -49,18 +44,10 @@ public class CSVFeatureLogger extends FeatureLogger {
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
       if (featInfo.isUsed() || isDense) {
-        if (!isNullSameAsZero) {
-          sb.append(featInfo.getName())
-                  .append(keyValueSep)
-                  .append(featInfo.getNullableValue())
-                  .append(featureSep);
-        }
-        else {
           sb.append(featInfo.getName())
                   .append(keyValueSep)
                   .append(featInfo.getValue())
                   .append(featureSep);
-        }
       }
     }
 

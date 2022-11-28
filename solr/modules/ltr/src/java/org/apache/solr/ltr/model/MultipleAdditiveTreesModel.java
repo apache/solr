@@ -225,7 +225,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return weight.floatValue() * scoreNode(featureVector, root);
     }
 
-    public float scoreWithMissingBranch(Float[] featureVector) {
+    public float scoreWithMissingBranch(float[] featureVector) {
       return weight.floatValue() * scoreNodeWithMissingBranch(featureVector, root);
     }
 
@@ -233,7 +233,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return explainNode(featureVector, root);
     }
 
-    public String explainWithMissingBranch(Float[] featureVector) {
+    public String explainWithMissingBranch(float[] featureVector) {
       return explainNodeWithMissingBranch(featureVector, root);
     }
 
@@ -302,7 +302,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
-  public float scoreNullableFeatures(Float[] modelFeatureValuesNormalized) {
+  public float scoreNullableFeatures(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.scoreWithMissingBranch(modelFeatureValuesNormalized);
@@ -329,7 +329,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
-  private static float scoreNodeWithMissingBranch(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static float scoreNodeWithMissingBranch(float[] featureVector, RegressionTreeNode regressionTreeNode) {
     while (true) {
       if (regressionTreeNode.isLeaf()) {
         return regressionTreeNode.value;
@@ -431,7 +431,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
-  private static String explainNodeWithMissingBranch(Float[] featureVector, RegressionTreeNode regressionTreeNode) {
+  private static String explainNodeWithMissingBranch(float[] featureVector, RegressionTreeNode regressionTreeNode) {
     final StringBuilder returnValueBuilder = new StringBuilder();
     while (true) {
       if (regressionTreeNode.isLeaf()) {
@@ -517,38 +517,26 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     final List<Explanation> details = new ArrayList<>();
 
-    if (!isNullSameAsZero) {
-      final Float[] fv = new Float[featureExplanations.size()];
-      int index = 0;
-      for (final Explanation featureExplain : featureExplanations) {
-        fv[index] = (Float) featureExplain.getValue();
-        index++;
-      }
+    final float[] fv = new float[featureExplanations.size()];
+    int index = 0;
+    for (final Explanation featureExplain : featureExplanations) {
+      fv[index] = featureExplain.getValue().floatValue();
+      index++;
+    }
 
-      index = 0;
+    index = 0;
 
-      for (final RegressionTree t : trees) {
+    for (final RegressionTree t : trees) {
+      if (!isNullSameAsZero) {
         final float score = t.scoreWithMissingBranch(fv);
         final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explainWithMissingBranch(fv));
         details.add(p);
-        index++;
-      }
-    } else {
-      final float[] fv = new float[featureExplanations.size()];
-      int index = 0;
-      for (final Explanation featureExplain : featureExplanations) {
-        fv[index] = featureExplain.getValue().floatValue();
-        index++;
-      }
-
-      index = 0;
-
-      for (final RegressionTree t : trees) {
+      } else {
         final float score = t.score(fv);
         final Explanation p = Explanation.match(score, "tree " + index + " | " + t.explain(fv));
         details.add(p);
-        index++;
       }
+      index++;
     }
 
     return Explanation.match(
