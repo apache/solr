@@ -2146,8 +2146,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len
    * </code>).
    *
-   * <p>This method is cache aware and may retrieve filters from the cache or make an * insertion
-   * into the cache as a result of this call.
+   * <p>This method is cache aware and may retrieve filters from the cache or make an insertion into
+   * the cache as a result of this call.
    *
    * <p>FUTURE: The returned DocList may be retrieved from a cache.
    *
