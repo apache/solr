@@ -24,18 +24,20 @@ description = 'Solr webapp'
 
 configurations {
   war {}
-  serverLib {}
-  solrJettyClientLib {}
-  solrCore {}
+  serverLib
+  libExt
+  solrJettyClientLib
+  solrCore
 }
 
 dependencies {
   permitUnusedDeclared project(":solr:core")
-  serverLib project(path: ":solr:server", configuration: "libExt")
+  libExt project(path: ":solr:server", configuration: "libExt")
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")
   solrJettyClientLib project(path: ":solr:core", configuration: "jettyClientImplementation")
-  implementation(configurations.solrCore - configurations.serverLib + configurations.solrJettyClientLib)
+  // Make sure we keep the duplicate solrJettyClientLibs, but we want to remove all of the logging and metrics jars already in libExt
+  implementation(configurations.solrCore - configurations.serverLib + configurations.solrJettyClientLib - configurations.libExt)
 }
 
 war {

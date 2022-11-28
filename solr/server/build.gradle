@@ -76,7 +76,11 @@ dependencies {
   libExt('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt 'io.dropwizard.metrics:metrics-jetty10'
+  libExt('io.dropwizard.metrics:metrics-jetty10', {
+    exclude group: "org.eclipse.jetty", module: "*"
+    exclude group: "org.eclipse.jetty.http2", module: "*"
+    exclude group: "org.eclipse.jetty.toolchain", module: "*"
+  })
   libExt 'io.dropwizard.metrics:metrics-jvm'
   libExt 'io.dropwizard.metrics:metrics-jmx'
 
@@ -109,11 +113,11 @@ task assemblePackaging(type: Sync) {
     include "README.md"
   })
 
-  from(configurations.libExt - configurations.serverLib, {
+  from(configurations.libExt, {
     into "lib/ext"
   })
 
-  from(configurations.serverLib, {
+  from(configurations.serverLib - configurations.libExt, {
     into "lib/"
   })
 
