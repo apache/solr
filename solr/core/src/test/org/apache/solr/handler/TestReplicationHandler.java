@@ -42,6 +42,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -90,7 +91,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-// @Nightly
+@LuceneTestCase.Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -176,23 +177,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
-    jetty.start();
-    return jetty;
+    return ReplicationTestHelper.createAndStartJetty(instance);
   }
 
-  static int index(SolrClient s, Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    for (int i = 0; i < fields.length; i += 2) {
-      doc.addField((String) (fields[i]), fields[i + 1]);
-    }
-    return s.add(doc).getStatus();
+  static int index(SolrClient client, Object... fields) throws Exception {
+    return ReplicationTestHelper.index(client, fields);
   }
 
   NamedList<Object> query(String query, SolrClient s) throws SolrServerException, IOException {
