@@ -347,9 +347,10 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']");
   }
 
-  /*
-   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer.combine} for more details.
-   * */
+  /**
+   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer#combine(float,
+   * boolean, float)}} for more details.
+   */
   @Test
   public void knnQueryAsRerank_shouldAddSimilarityFunctionScore() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";

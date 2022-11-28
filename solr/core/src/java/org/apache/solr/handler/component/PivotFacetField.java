@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -182,7 +181,7 @@ public class PivotFacetField {
     List<NamedList<Object>> convertedPivotList = null;
 
     if (valueCollection.size() > 0) {
-      convertedPivotList = new LinkedList<>();
+      convertedPivotList = new ArrayList<>();
       for (PivotFacetValue pivot : valueCollection)
         convertedPivotList.add(pivot.convertToNamedList());
     }
@@ -393,6 +392,7 @@ public class PivotFacetField {
     }
   }
 
+  @Override
   public String toString() {
     return String.format(Locale.ROOT, "P:%s F:%s V:%s", parentValue, field, valueCollection);
   }

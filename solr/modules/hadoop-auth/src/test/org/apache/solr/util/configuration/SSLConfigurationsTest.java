@@ -56,6 +56,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
           SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
           CREDENTIAL_PROVIDER_PATH);
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

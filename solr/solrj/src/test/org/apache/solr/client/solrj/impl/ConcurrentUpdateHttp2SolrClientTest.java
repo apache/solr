@@ -259,6 +259,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
         this.errors = errors;
       }
 
+      @Override
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }

@@ -195,6 +195,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     return null;
   }
 
+  @Override
   protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
     String backupName = "configonlybackup";
     CloudSolrClient solrClient = cluster.getSolrClient();

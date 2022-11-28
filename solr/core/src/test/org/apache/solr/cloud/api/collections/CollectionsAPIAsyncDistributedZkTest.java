@@ -59,6 +59,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     configureCluster(2).addConfig("conf1", configset("cloud-minimal")).configure();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     shutdownCluster();

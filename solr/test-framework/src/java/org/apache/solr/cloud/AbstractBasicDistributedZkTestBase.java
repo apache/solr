@@ -97,13 +97,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
-  String t1 = "a_t";
-  String i1 = "a_i1";
-  String tlong = "other_tl1";
   String tsort = "t_sortable";
-
-  String oddField = "oddField_s";
-  String missingField = "ignore_exception__missing_but_valid_field_t";
 
   private Map<String, List<SolrClient>> otherCollectionClients = new HashMap<>();
 
@@ -133,6 +127,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           }
         }
 
+        @Override
         public void waitForSearcher(
             String collection, int cnt, int timeoutms, boolean failOnTimeout)
             throws InterruptedException {
@@ -1182,6 +1177,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return res;
   }
 
+  @Override
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
@@ -1566,7 +1562,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             }
             client.request(createCmd);
           } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error creating core", e);
             // fail
           }
           return null;
@@ -1673,7 +1669,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
               .process(cloudClient)
               .getStatus());
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("error creating collection", e);
       // fails
     }
     final List<SolrClient> collectionClients = new ArrayList<>();
@@ -1692,7 +1688,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                       .process(cloudClient)
                       .isSuccess());
             } catch (Exception e) {
-              e.printStackTrace();
+              log.error("error adding replica", e);
               // fails
             }
             return null;
@@ -1709,6 +1705,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     }
   }
 
+  @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...

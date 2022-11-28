@@ -29,10 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -430,56 +428,17 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     List<SolrInputDocument> docs = new ArrayList<>();
 
-    SolrInputDocument document1 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "X");
+    SolrInputDocument document1 = new SolrInputDocument("id", id(), "parent_s", "X");
+    List<SolrInputDocument> ch1 =
+        Arrays.asList(
+            new SolrInputDocument("id", id(), "child_s", "y"),
+            new SolrInputDocument("id", id(), "child_s", "z"));
+    Collections.shuffle(ch1, random());
+    document1.addChildDocuments(ch1);
 
-            ArrayList<SolrInputDocument> ch1 =
-                new ArrayList<>(
-                    Arrays.asList(
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "y");
-                          }
-                        },
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "z");
-                          }
-                        }));
-
-            Collections.shuffle(ch1, random());
-            addChildDocuments(ch1);
-          }
-        };
-
-    SolrInputDocument document2 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "A");
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "b");
-                  }
-                });
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "c");
-                  }
-                });
-          }
-        };
+    SolrInputDocument document2 = new SolrInputDocument("id", id(), "parent_s", "A");
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "b"));
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "c"));
 
     docs.add(document1);
     docs.add(document2);
@@ -757,13 +716,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f2", "v2");
 
     int childsNum = atLeast(10);
-    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for (int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
       child.addField("key", (i + 5) * atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
-      children.put(childKey, child);
     }
 
     ByteArrayOutputStream os = new ByteArrayOutputStream();

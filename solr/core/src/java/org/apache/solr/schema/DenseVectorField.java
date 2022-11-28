@@ -162,6 +162,7 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     ArrayList<IndexableField> fields = new ArrayList<>();
     float[] parsedVector;

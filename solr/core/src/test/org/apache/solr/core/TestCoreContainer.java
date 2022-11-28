@@ -572,6 +572,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     @Override
     public void deleteFilesFromConfig(String configName, List<String> filesToDelete) {}
 
+    @Override
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override

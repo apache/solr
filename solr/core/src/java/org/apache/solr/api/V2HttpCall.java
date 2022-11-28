@@ -27,11 +27,11 @@ import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -91,6 +91,7 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
+  @Override
   @SuppressForbidden(
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
@@ -313,7 +314,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   public static class CompositeApi extends Api {
-    private LinkedList<Api> apis = new LinkedList<>();
+    private final List<Api> apis = new ArrayList<>();
 
     public CompositeApi(Api api) {
       super(ApiBag.EMPTY_SPEC);

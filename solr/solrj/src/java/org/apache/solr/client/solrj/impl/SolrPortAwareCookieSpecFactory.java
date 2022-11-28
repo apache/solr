@@ -83,6 +83,7 @@ public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, Cookie
    */
   public static class PortAwareDomainHandler extends NetscapeDomainHandler {
 
+    @Override
     public void validate(final Cookie cookie, final CookieOrigin origin)
         throws MalformedCookieException {
       if (origin != null && origin.getHost() != null && cookie != null) {

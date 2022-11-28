@@ -60,6 +60,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -67,6 +68,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     cluster.getSolrClient().setDefaultCollection(collection);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

@@ -66,10 +66,14 @@ def commonCleanups = { FileTree generatedFiles ->
       // Add CharStream imports.
       text = text.replaceAll(
           /package (.+)/,
-          '''
-          package $1
-          import org.apache.lucene.queryparser.charstream.CharStream; 
-          '''.trim())
+'''package $1
+import javax.annotation.processing.Generated;
+import org.apache.lucene.queryparser.charstream.CharStream;'''.trim())
+      text = text.replace(
+              "/** Token Manager. */",
+'''/** Token Manager. */
+@Generated("JavaCC")'''
+      )
       // Eliminates redundant cast message.
       text = text.replace(
           "int hiByte = (int)(curChar >> 8);",

@@ -163,8 +163,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
     long fuzz = ((long) Integer.MAX_VALUE >> 3) + 1L;
-    long delta0 = s1_0.getRange().max - s1_0.getRange().min;
-    long delta1 = s1_1.getRange().max - s1_1.getRange().min;
+    long delta0 = (long) s1_0.getRange().max - s1_0.getRange().min;
+    long delta1 = (long) s1_1.getRange().max - s1_1.getRange().min;
     long expected0 = (Integer.MAX_VALUE >> 1) + fuzz;
     long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
     assertEquals("wrong range in s1_0", expected0, delta0);

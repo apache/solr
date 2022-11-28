@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.Set;
@@ -111,7 +111,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.client.setFollowRedirects(false);
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
-    this.runners = new LinkedList<>();
+    this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
@@ -181,7 +181,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !ExecutorUtil.isShutdown(scheduler)) {
               // If there is something else to process, keep last runner alive by staying in the
               // loop.
             } else {
@@ -614,7 +614,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           if (log.isDebugEnabled()) blockLoops.incrementAndGet();
 
-          if (scheduler.isShutdown()) break;
+          if (ExecutorUtil.isShutdown(scheduler)) break;
 
           loopCount++;
 
@@ -685,7 +685,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
-      if (scheduler.isTerminated()) {
+      if (ExecutorUtil.isTerminated(scheduler)) {
         log.warn(
             "The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}",
             scheduler,

@@ -437,6 +437,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       counter.getAndAdd(delta);
     }
 
+    @Override
     public void run() {
       final String origThreadName = Thread.currentThread().getName();
       try {
