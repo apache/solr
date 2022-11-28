@@ -304,7 +304,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   public void multipleAdditiveTreesTestMissingTreeFeature() throws Exception {
     final ModelException expectedException =
         new ModelException(
-                "MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
+            "MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
 
     ModelException ex =
         expectThrows(
