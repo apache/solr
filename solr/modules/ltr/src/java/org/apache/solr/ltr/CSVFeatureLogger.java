@@ -45,9 +45,9 @@ public class CSVFeatureLogger extends FeatureLogger {
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
       if (featInfo.isUsed() || isDense) {
         sb.append(featInfo.getName())
-                .append(keyValueSep)
-                .append(featInfo.getValue())
-                .append(featureSep);
+            .append(keyValueSep)
+            .append(featInfo.getValue())
+            .append(featureSep);
       }
     }
 

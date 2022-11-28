@@ -326,8 +326,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                     isNullSameAsZero,
                     matchingRerankingModel,
                     (!transformerExternalFeatureInfo.isEmpty()
-                            ? transformerExternalFeatureInfo
-                            : rerankingQueries[i].getExternalFeatureInfo()),
+                        ? transformerExternalFeatureInfo
+                        : rerankingQueries[i].getExternalFeatureInfo()),
                     true /* extractAllFeatures */,
                     threadManager);
           }
