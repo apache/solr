@@ -287,7 +287,6 @@ public abstract class LTRScoringModel implements Accountable {
     }
     for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
       modelFeatureValuesNormalized[idx] = norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
-
     }
   }
 

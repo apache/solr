@@ -141,28 +141,28 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("fl", "*,score");
 
     final String tree1 =
-            "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
+        "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
     final String tree2 =
-            "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
+        "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
     final String trees = "[" + tree1 + "," + tree2 + "]";
 
     query.add("wt", "json");
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/7=='\n"
-                + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
-                + trees
-                + ") model applied to features, sum of:\n"
-                + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
-                + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+                  + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
+                  + trees
+                  + ") model applied to features, sum of:\n"
+                  + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
+                  + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/9=='\n"
-                + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
-                + trees
-                + ") model applied to features, sum of:\n"
-                + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
-                + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+                  + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
+                  + trees
+                  + ") model applied to features, sum of:\n"
+                  + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
+                  + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
   }
 
   @Test

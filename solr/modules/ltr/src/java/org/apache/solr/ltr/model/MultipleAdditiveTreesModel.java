@@ -266,12 +266,12 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   public MultipleAdditiveTreesModel(
-          String name,
-          List<Feature> features,
-          List<Normalizer> norms,
-          String featureStoreName,
-          List<Feature> allFeatures,
-          Map<String, Object> params) {
+      String name,
+      List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName,
+      List<Feature> allFeatures,
+      Map<String, Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
 
     fname2index = new HashMap<String, Integer>();
@@ -317,7 +317,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       }
       // unsupported feature (tree is looking for a feature that does not exist)
       if ((regressionTreeNode.featureIndex < 0)
-              || (regressionTreeNode.featureIndex >= featureVector.length)) {
+          || (regressionTreeNode.featureIndex >= featureVector.length)) {
         return 0f;
       }
 
@@ -362,10 +362,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       if (topStackNode.isLeaf()) {
         if (topStackNode.left != null || topStackNode.right != null) {
           throw new ModelException(
-                  "MultipleAdditiveTreesModel tree node is leaf with left="
-                          + topStackNode.left
-                          + " and right="
-                          + topStackNode.right);
+              "MultipleAdditiveTreesModel tree node is leaf with left="
+                  + topStackNode.left
+                  + " and right="
+                  + topStackNode.right);
         }
         continue;
       }
@@ -506,7 +506,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   // -10.0 = tree 1 | val: -10.0
   @Override
   public Explanation explain(
-          LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
+      LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
     boolean isNullSameAsZero = true;
     for (Explanation explain : featureExplanations) {
       if (Float.isNaN((Float) explain.getValue())) {
@@ -540,7 +540,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     return Explanation.match(
-            finalScore, toString() + " model applied to features, sum of:", details);
+        finalScore, toString() + " model applied to features, sum of:", details);
   }
 
   @Override

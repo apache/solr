@@ -244,7 +244,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
       setupRerankingQueriesForLogging(
-              isNullSameAsZero, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+          isNullSameAsZero, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
     }
 
@@ -295,11 +295,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (docsWereNotReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
-                    isNullSameAsZero,
-                    loggingModel,
-                    transformerExternalFeatureInfo,
-                    true /* extractAllFeatures */,
-                    threadManager);
+                isNullSameAsZero,
+                loggingModel,
+                transformerExternalFeatureInfo,
+                true /* extractAllFeatures */,
+                threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
       } else {
         rerankingQueries = new LTRScoringQuery[rerankingQueriesFromContext.length];
@@ -323,13 +323,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           for (int i = 0; i < rerankingQueries.length; i++) {
             rerankingQueries[i] =
                 new LTRScoringQuery(
-                        isNullSameAsZero,
-                        matchingRerankingModel,
-                        (!transformerExternalFeatureInfo.isEmpty()
-                                ? transformerExternalFeatureInfo
-                                : rerankingQueries[i].getExternalFeatureInfo()),
-                        true /* extractAllFeatures */,
-                        threadManager);
+                    isNullSameAsZero,
+                    matchingRerankingModel,
+                    (!transformerExternalFeatureInfo.isEmpty()
+                            ? transformerExternalFeatureInfo
+                            : rerankingQueries[i].getExternalFeatureInfo()),
+                    true /* extractAllFeatures */,
+                    threadManager);
           }
         }
       }

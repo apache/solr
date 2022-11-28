@@ -388,7 +388,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       return value;
     }
 
-
     public boolean isUsed() {
       return used;
     }
@@ -404,7 +403,6 @@ public class LTRScoringQuery extends Query implements Accountable {
     // features used for logging.
     private final Feature.FeatureWeight[] modelFeatureWeights;
     private final float[] modelFeatureValuesNormalized;
-
     private final Feature.FeatureWeight[] extractedFeatureWeights;
 
     // List of all the feature names, values - used for both scoring and logging

@@ -56,7 +56,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   private void doTestMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches()
-          throws Exception {
+      throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -71,7 +71,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     // No match scores since user_query not passed in to external feature info
     // and feature depended on it.
     query.add(
-            "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=dsjkafljjk}");
+  "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=dsjkafljjk}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
@@ -175,15 +175,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoParams() throws Exception {
     final ModelException expectedException =
-            new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
+        new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_params.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_params.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -191,15 +191,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestEmptyParams() throws Exception {
     final ModelException expectedException =
-            new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
+        new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_trees.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_trees.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -207,15 +207,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoWeight() throws Exception {
     final ModelException expectedException =
-            new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
+        new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_weight.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_weight.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -223,15 +223,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestTreesParamDoesNotContainTree() throws Exception {
     final ModelException expectedException =
-            new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
+        new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_tree.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_tree.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -239,15 +239,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoFeaturesSpecified() throws Exception {
     final ModelException expectedException =
-            new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
+        new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_features.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_features.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -255,15 +255,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoRight() throws Exception {
     final ModelException expectedException =
-            new ModelException("MultipleAdditiveTreesModel tree node is missing right");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing right");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_right.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_right.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -271,15 +271,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoLeft() throws Exception {
     final ModelException expectedException =
-            new ModelException("MultipleAdditiveTreesModel tree node is missing left");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing left");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_left.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_left.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -287,15 +287,15 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestNoThreshold() throws Exception {
     final ModelException expectedException =
-            new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
     Exception ex =
-            expectThrows(
-                    Exception.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_threshold.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                Exception.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_threshold.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
   }
@@ -303,49 +303,49 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestMissingTreeFeature() throws Exception {
     final ModelException expectedException =
-            new ModelException(
-                    "MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
+        new ModelException(
+                "MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
 
     ModelException ex =
-            expectThrows(
-                    ModelException.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_no_feature.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                ModelException.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_no_feature.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestMissingFeatureStore() {
     final ModelException expectedException =
-            new ModelException("Missing or empty feature store: not_existent_store");
+        new ModelException("Missing or empty feature store: not_existent_store");
 
     ModelException ex =
-            expectThrows(
-                    ModelException.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_notExistentStore.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                ModelException.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_notExistentStore.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestUnknownFeature() {
     final ModelException expectedException =
-            new ModelException("Feature: notExist1 not found in store: _DEFAULT_");
+        new ModelException("Feature: notExist1 not found in store: _DEFAULT_");
 
     ModelException ex =
-            expectThrows(
-                    ModelException.class,
-                    () -> {
-                      createModelFromFiles(
-                              "multipleadditivetreesmodel_unknownFeature.json",
-                              "multipleadditivetreesmodel_features.json");
-                    });
+        expectThrows(
+                ModelException.class,
+                () -> {
+                  createModelFromFiles(
+                          "multipleadditivetreesmodel_unknownFeature.json",
+                          "multipleadditivetreesmodel_features.json");
+                });
     assertEquals(expectedException.toString(), ex.toString());
   }
 
