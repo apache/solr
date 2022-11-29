@@ -166,7 +166,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = ((HttpSolrClient) clients.get(0)).getBaseURL();
+    final String clientUrl = jettys.get(0).getBaseUrl() + "/collection1";
     SolrClient client = getHttpSolrClient(clientUrl);
     ((HttpSolrClient) client).setParser(new BinaryResponseParser());
     SolrQuery solrQuery =

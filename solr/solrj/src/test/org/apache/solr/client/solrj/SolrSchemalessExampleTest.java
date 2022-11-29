@@ -75,15 +75,16 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
+    HttpClient httpClient = getHttpClient();
+    HttpPost post =
+        new HttpPost(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -97,7 +98,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testFieldMutating() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -110,8 +111,9 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             + "{\"p%q\" : \"name\"}"
             + "{\"p.q\" : \"name\"}"
             + "{\"a&b\" : \"name\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
+    HttpClient httpClient = getHttpClient();
+    HttpPost post =
+        new HttpPost(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
