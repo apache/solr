@@ -74,6 +74,12 @@ Improvements
 
 * SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. (Mikhail Khludnev)
 
+* SOLR-16158: Certain Jetty "server" jars (jetty-util, jetty-io, etc.) are no longer duplicated between server/lib and WEB-INF/lib. All shared jars now live in server/lib/ext.
+  By default, Jetty does not allow these jars to be shared by the Jetty server and the web-app (Solr).
+  In order to accomplish this, explicit exclusions have been added to server/contexts/solr-jetty-context.xml that allow these "server" jars to be shared.
+  Solr Core also no longer contains the JettySolrRunner (now living in the testing framework), removing the need for Jetty Server dependencies in solr-core.
+  (Houston Putman)
+
 Optimizations
 ---------------------
 
