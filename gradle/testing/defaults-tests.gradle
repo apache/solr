@@ -48,7 +48,7 @@ allprojects {
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
           // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
-           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=120m") },
+           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
            description: "Arguments passed to each forked JVM."],
           // Other settings.
           [propName: 'tests.neverUpToDate', value: true,

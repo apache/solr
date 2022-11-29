@@ -55,8 +55,8 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     int which = r.nextInt(clients.size());
     HttpSolrClient client = (HttpSolrClient) clients.get(which);
     String previousBaseURL = client.getBaseURL();
-    // Strip /collection1 step from baseURL - requests fail otherwise
-    client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
+    // Set client to Solr root url - requests fail otherwise
+    client.setBaseURL(jettys.get(which).getBaseUrl().toString());
     NamedList<?> namedListResponse = client.request(request);
     client.setBaseURL(previousBaseURL); // Restore baseURL
     NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
