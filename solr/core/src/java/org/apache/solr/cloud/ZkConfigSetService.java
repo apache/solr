@@ -141,7 +141,7 @@ public class ZkConfigSetService extends ConfigSetService {
   public boolean checkConfigExists(String configName) throws IOException {
     try {
       Boolean existsSolrConfigXml =
-           zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
+          zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
       if (existsSolrConfigXml == null) return false;
       return existsSolrConfigXml;
     } catch (KeeperException | InterruptedException e) {
