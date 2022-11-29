@@ -536,6 +536,7 @@ public class SearchHandler extends RequestHandlerBase
 
             // Was there an exception?
             if (srsp.getException() != null) {
+              log.warn("Shard request failed : {}", srsp);
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
                 shardHandler1.cancelAll();
