@@ -47,9 +47,6 @@ public class TestRestoreCore extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf" + File.separator;
-
   private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
@@ -86,7 +83,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
         new ReplicationTestHelper.SolrInstance(
             createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + configFile, "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());

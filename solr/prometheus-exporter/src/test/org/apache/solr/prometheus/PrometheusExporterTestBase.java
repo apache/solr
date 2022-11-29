@@ -26,9 +26,10 @@ import org.junit.BeforeClass;
 
 public class PrometheusExporterTestBase extends SolrCloudTestCase {
 
-  public static final String COLLECTION = "collection1";
-  public static final String CONF_NAME = COLLECTION + "_config";
-  public static final String CONF_DIR = getFile("solr/" + COLLECTION + "/conf").getAbsolutePath();
+  public static final String CONF_NAME = DEFAULT_TEST_COLLECTION_NAME + "_config";
+  public static final String CONF_DIR =
+      DEFAULT_TEST_CONF_DIR; // getFile("solr/" + DEFAULT_TEST_COLLECTION_NAME +
+  // "/conf").getAbsolutePath();
   public static final int NUM_SHARDS = 2;
   public static final int NUM_REPLICAS = 2;
   public static final int NUM_NODES = NUM_SHARDS * NUM_REPLICAS;
@@ -62,11 +63,12 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
     System.setProperty("metricsEnabled", "true");
     configureCluster(NUM_NODES).addConfig(CONF_NAME, getFile(CONF_DIR).toPath()).configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
+    CollectionAdminRequest.createCollection(
+            DEFAULT_TEST_COLLECTION_NAME, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, cluster.getZkStateReader(), true, true, TIMEOUT);
+        DEFAULT_TEST_COLLECTION_NAME, cluster.getZkStateReader(), true, true, TIMEOUT);
 
     Helpers.indexAllDocs(cluster.getSolrClient());
   }

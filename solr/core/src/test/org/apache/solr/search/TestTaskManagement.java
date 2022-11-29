@@ -53,8 +53,6 @@ import org.slf4j.LoggerFactory;
 public class TestTaskManagement extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String COLLECTION_NAME = "collection1";
-
   private ExecutorService queryExecutor;
   private ExecutorService cancelExecutor;
 
@@ -68,11 +66,11 @@ public class TestTaskManagement extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf", 2, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
-    cluster.getSolrClient().setDefaultCollection(COLLECTION_NAME);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2);
+    cluster.getSolrClient().setDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
 
     queryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("TestTaskManagement-Query");
     cancelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("TestTaskManagement-Cancel");
@@ -99,7 +97,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
     cancelExecutor.shutdown();
 
     queryExecutor.awaitTermination(5, TimeUnit.SECONDS);
-    CollectionAdminRequest.deleteCollection(COLLECTION_NAME).process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .process(cluster.getSolrClient());
 
     super.tearDown();
   }

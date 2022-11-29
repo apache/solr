@@ -17,6 +17,8 @@
 
 package org.apache.solr.prometheus.utils;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
@@ -25,7 +27,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 
 public class Helpers {
@@ -41,9 +42,9 @@ public class Helpers {
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
       req.addFile(xml, "application/xml");
-      client.request(req, PrometheusExporterTestBase.COLLECTION);
+      client.request(req, DEFAULT_TEST_COLLECTION_NAME);
     }
-    client.commit(PrometheusExporterTestBase.COLLECTION);
+    client.commit(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   // Parses a prometheus line into key and value, e.g.

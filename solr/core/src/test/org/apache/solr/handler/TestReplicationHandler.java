@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.handler.ReplicationTestHelper.CONF_DIR;
 import static org.apache.solr.handler.ReplicationTestHelper.SolrInstance;
 import static org.apache.solr.handler.ReplicationTestHelper.assertVersions;
 import static org.apache.solr.handler.ReplicationTestHelper.createNewSolrClient;
@@ -41,7 +40,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -87,18 +85,18 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@LuceneTestCase.Nightly
+// @LuceneTestCase.Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long TIMEOUT = 30000;
 
-  JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
-  SolrClient leaderClient, followerClient, repeaterClient;
-  SolrInstance leader = null, follower = null, repeater = null;
+  private JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
+  private SolrClient leaderClient, followerClient, repeaterClient;
+  private SolrInstance leader = null, follower = null, repeater = null;
 
-  static String context = "/solr";
+  private static String context = "/solr";
 
   // number of docs to index... decremented for each test case to tell if we accidentally reuse
   // index from previous test method
@@ -281,6 +279,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     // Set the allow-list to allow the leader URL.
     // Expect the same test to pass now.
+    System.out.println("ERIC" + leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
     System.setProperty(
         TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
     try {
@@ -295,7 +294,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     follower.setTestPort(leaderJetty.getLocalPort());
-    follower.copyConfigFile(CONF_DIR + "solrconfig-follower.xml", "solrconfig.xml");
+    follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-follower.xml", "solrconfig.xml");
     followerJetty = createAndStartJetty(follower);
 
     followerClient.close();
@@ -562,7 +561,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.commit();
 
     // change the schema on leader
-    leader.copyConfigFile(CONF_DIR + "schema-replication2.xml", "schema.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "schema-replication2.xml", "schema.xml");
 
     leaderJetty.stop();
 
@@ -668,7 +667,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
       clearIndexWithReplication();
       // change solrconfig having 'replicateAfter startup' option on leader
-      leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
+      leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
 
       leaderJetty.stop();
       leaderJetty.start();
@@ -806,7 +805,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // change solrconfig on follower
     // this has no entry for pollinginterval
     follower.setTestPort(leaderJetty.getLocalPort());
-    follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
+    follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
     followerJetty.stop();
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
@@ -955,15 +954,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     try {
 
       follower.setTestPort(leaderJetty.getLocalPort());
-      follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
-      follower.copyConfigFile(CONF_DIR + followerSchema, "schema.xml");
+      follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
+      follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + followerSchema, "schema.xml");
       followerJetty.stop();
       followerJetty = createAndStartJetty(follower);
       followerClient.close();
       followerClient =
           createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
-      leader.copyConfigFile(CONF_DIR + "solrconfig-leader3.xml", "solrconfig.xml");
+      leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader3.xml", "solrconfig.xml");
       leaderJetty.stop();
       leaderJetty = createAndStartJetty(leader);
       leaderClient.close();
@@ -986,7 +985,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
           followerSchema =
               followerSchema.equals(FOLLOWER_SCHEMA_1) ? FOLLOWER_SCHEMA_2 : FOLLOWER_SCHEMA_1;
-          leader.copyConfigFile(CONF_DIR + followerSchema, "schema.xml");
+          leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + followerSchema, "schema.xml");
         }
 
         int docs = random().nextInt(maxDocs) + 1;
@@ -1109,7 +1108,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void doTestRepeater() throws Exception {
     // no polling
     follower.setTestPort(leaderJetty.getLocalPort());
-    follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
+    follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
     followerJetty.stop();
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
@@ -1121,7 +1120,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           new SolrInstance(
               createTempDir("solr-instance").toFile(), "repeater", leaderJetty.getLocalPort());
       repeater.setUp();
-      repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml", "solrconfig.xml");
+      repeater.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-repeater.xml", "solrconfig.xml");
       repeaterJetty = createAndStartJetty(repeater);
       if (repeaterClient != null) {
         repeaterClient.close();
@@ -1189,7 +1188,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.commit();
 
     // change solrconfig having 'replicateAfter startup' option on leader
-    leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
 
     leaderJetty.stop();
 
@@ -1240,7 +1239,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       leaderClient.commit();
 
       // change solrconfig having 'replicateAfter startup' option on leader
-      leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
+      leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
 
       leaderJetty.stop();
 
@@ -1297,7 +1296,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // change solrconfig having 'replicateAfter startup' option on leader
-    leader.copyConfigFile(CONF_DIR + "solrconfig-leader3.xml", "solrconfig.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader3.xml", "solrconfig.xml");
 
     leaderJetty.stop();
 
@@ -1387,13 +1386,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(0, "*:*", leaderClient); // sanity check w/retry
 
     // change solrconfig on leader
-    leader.copyConfigFile(CONF_DIR + "solrconfig-leader1.xml", "solrconfig.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-leader1.xml", "solrconfig.xml");
 
     // change schema on leader
-    leader.copyConfigFile(CONF_DIR + "schema-replication2.xml", "schema.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + "schema-replication2.xml", "schema.xml");
 
     // keep a copy of the new schema
-    leader.copyConfigFile(CONF_DIR + "schema-replication2.xml", "schema-replication2.xml");
+    leader.copyConfigFile(
+        DEFAULT_TEST_CONF_DIR + "schema-replication2.xml", "schema-replication2.xml");
 
     leaderJetty.stop();
 
@@ -1451,7 +1451,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty.stop();
 
     // Start leader with the new solrconfig
-    leader.copyConfigFile(CONF_DIR + "solrconfig-leader-throttled.xml", "solrconfig.xml");
+    leader.copyConfigFile(
+        DEFAULT_TEST_CONF_DIR + "solrconfig-leader-throttled.xml", "solrconfig.xml");
     useFactory(null);
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
@@ -1488,7 +1489,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     // start follower
     follower.setTestPort(leaderJetty.getLocalPort());
-    follower.copyConfigFile(CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
+    follower.copyConfigFile(DEFAULT_TEST_CONF_DIR + "solrconfig-follower1.xml", "solrconfig.xml");
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =

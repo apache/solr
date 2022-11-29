@@ -60,9 +60,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
-  private static final String CONF_DIR =
-      "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
-
   private static String context = "/solr";
 
   boolean addNumberToKeepInRequest = true;
@@ -108,7 +105,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         new ReplicationTestHelper.SolrInstance(
             createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
-    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader.copyConfigFile(DEFAULT_TEST_CONF_DIR + configFile, "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());

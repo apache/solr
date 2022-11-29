@@ -188,6 +188,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
+  public static final String DEFAULT_TEST_CONF_DIR =
+      "solr"
+          + File.separator
+          + DEFAULT_TEST_COLLECTION_NAME
+          + File.separator
+          + "conf"
+          + File.separator;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY =

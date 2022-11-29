@@ -58,8 +58,7 @@ public class TestRerankBase extends RestTestBase {
   public static final String MODEL_FILE_NAME = "_schema_model-store.json";
   public static final String PARENT_ENDPOINT = "/schema/*";
 
-  protected static final String COLLECTION = "collection1";
-  protected static final String CONF_DIR = COLLECTION + "/conf";
+  protected static final String CONF_DIR = DEFAULT_TEST_COLLECTION_NAME + "/conf";
 
   protected static Path fstorefile = null;
   protected static Path mstorefile = null;

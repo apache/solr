@@ -87,7 +87,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     query.setFields("*,score");
     query.setParam("rows", "8");
 
-    QueryResponse queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    QueryResponse queryResponse =
+        solrCluster.getSolrClient().query(DEFAULT_TEST_COLLECTION_NAME, query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
@@ -270,7 +271,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     // Test feature vectors returned (without re-ranking)
     query.setFields("*,score,features:[fv store=test]");
-    queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    queryResponse = solrCluster.getSolrClient().query(DEFAULT_TEST_COLLECTION_NAME, query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
@@ -302,7 +303,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     // Test feature vectors returned (with re-ranking)
     query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
-    queryResponse = solrCluster.getSolrClient().query(COLLECTION, query);
+    queryResponse = solrCluster.getSolrClient().query(DEFAULT_TEST_COLLECTION_NAME, query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
     assertEquals(result0_features, queryResponse.getResults().get(0).get("features").toString());
@@ -329,10 +330,10 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     Path configDir = tmpSolrHome.resolve("collection1/conf");
     solrCluster.uploadConfigSet(configDir, "conf1");
 
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
+    solrCluster.getSolrClient().setDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
 
-    createCollection(COLLECTION, "conf1", numShards, numReplicas);
-    indexDocuments(COLLECTION);
+    createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", numShards, numReplicas);
+    indexDocuments(DEFAULT_TEST_COLLECTION_NAME);
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()) {
         String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
@@ -459,7 +460,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
         featureNames,
         featureStore,
         jsonModelParams);
-    reloadCollection(COLLECTION);
+    reloadCollection(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   private void reloadCollection(String collection) throws Exception {

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CONF_DIR;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,9 +51,6 @@ import org.slf4j.LoggerFactory;
 public final class ReplicationTestHelper {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String CONF_DIR =
-      "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     FileUtils.copyFile(
@@ -250,7 +249,7 @@ public final class ReplicationTestHelper {
     }
 
     public String getSchemaFile() {
-      return CONF_DIR + "schema-replication1.xml";
+      return DEFAULT_TEST_CONF_DIR + "schema-replication1.xml";
     }
 
     public String getConfDir() {
@@ -262,7 +261,7 @@ public final class ReplicationTestHelper {
     }
 
     public String getSolrConfigFile() {
-      return CONF_DIR + "solrconfig-" + name + ".xml";
+      return DEFAULT_TEST_CONF_DIR + "solrconfig-" + name + ".xml";
     }
 
     /** If it needs to change */
@@ -290,7 +289,7 @@ public final class ReplicationTestHelper {
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
       copyConfigFile(
-          CONF_DIR + "solrconfig.snippet.randomindexconfig.xml",
+          DEFAULT_TEST_CONF_DIR + "solrconfig.snippet.randomindexconfig.xml",
           "solrconfig.snippet.randomindexconfig.xml");
     }
 

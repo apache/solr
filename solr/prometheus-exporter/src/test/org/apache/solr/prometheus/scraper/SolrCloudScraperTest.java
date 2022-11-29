@@ -77,7 +77,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   }
 
   private DocCollection getCollectionState() {
-    return getClusterState().getCollection(PrometheusExporterTestBase.COLLECTION);
+    return getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   @Override
@@ -109,10 +109,10 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
         solrCloudScraper.pingAllCollections(configuration.getPingConfiguration().get(0));
 
     assertEquals(1, collectionMetrics.size());
-    assertTrue(collectionMetrics.containsKey(PrometheusExporterTestBase.COLLECTION));
+    assertTrue(collectionMetrics.containsKey(DEFAULT_TEST_COLLECTION_NAME));
 
     List<Collector.MetricFamilySamples> collectionSamples =
-        collectionMetrics.get(PrometheusExporterTestBase.COLLECTION).asList();
+        collectionMetrics.get(DEFAULT_TEST_COLLECTION_NAME).asList();
     assertEquals(1, collectionSamples.size());
     Collector.MetricFamilySamples collection1Metrics = collectionSamples.get(0);
     assertEquals("solr_ping", collection1Metrics.name);
