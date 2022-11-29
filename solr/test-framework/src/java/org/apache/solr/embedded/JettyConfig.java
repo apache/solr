@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.embedded;
+package org.apache.solr.embedded;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.servlet.Filter;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 public class JettyConfig {
