@@ -66,12 +66,8 @@ public final class ReplicationTestHelper {
   }
 
   public static SolrClient createNewSolrClient(String baseUrl) {
-    try {
-      // set up the client...
-      return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    // set up the client wiht longer timeouts...
+    return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
   }
 
   public static int index(SolrClient s, Object... fields) throws Exception {
