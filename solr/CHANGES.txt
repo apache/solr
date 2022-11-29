@@ -51,6 +51,7 @@ Improvements
 
 * SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
   ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+  DELETEREPLICAPROP is now `DELETE /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop`
 
 * SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
 
@@ -115,6 +116,8 @@ Build
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
 * SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+
+* SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
 Other Changes
 ---------------------
