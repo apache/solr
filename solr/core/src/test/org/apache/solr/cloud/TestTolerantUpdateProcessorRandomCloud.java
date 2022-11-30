@@ -80,7 +80,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
     final String configName = "solrCloudCollectionConfig";
     final File configDir =
-        new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+        new File(TEST_HOME() + File.separator + DEFAULT_TEST_COLLECTION_NAME + File.separator + "conf");
 
     final int numShards = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
     final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);

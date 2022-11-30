@@ -216,7 +216,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   private void waitTillRecovered() throws Exception {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.waitForState(
-        "collection1",
+        DEFAULT_TEST_COLLECTION_NAME,
         90,
         TimeUnit.SECONDS,
         (n, c) -> {

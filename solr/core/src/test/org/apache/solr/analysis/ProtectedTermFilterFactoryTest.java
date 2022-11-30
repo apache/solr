@@ -42,7 +42,8 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
     args.put("protected", "protected-1.txt,protected-2.txt");
     args.put("wrappedFilters", "lowercase");
 
-    ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    ResourceLoader loader =
+        new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
     ProtectedTermFilterFactory factory = new ProtectedTermFilterFactory(args);
     factory.inform(loader);
 

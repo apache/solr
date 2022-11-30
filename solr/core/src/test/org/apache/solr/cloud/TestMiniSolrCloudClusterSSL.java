@@ -254,7 +254,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       final MiniSolrCloudCluster cluster, final SSLTestConfig sslConfig) throws Exception {
 
     cluster.uploadConfigSet(
-        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), CONF_NAME);
+        TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf"), CONF_NAME);
 
     checkCreateCollection(cluster, "first_collection");
 

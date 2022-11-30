@@ -92,7 +92,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, numNodes)
         .process(solrClient);
     indexDocs(solrClient, collectionName, NUM_DOCS, 0, generator);
-    indexDocs(control, "collection1", NUM_DOCS, 0, generator);
+    indexDocs(control, DEFAULT_TEST_COLLECTION_NAME, NUM_DOCS, 0, generator);
   }
 
   @After
@@ -111,7 +111,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                 "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
     QueryResponse controlRsp =
         control.query(
-            "collection1",
+                DEFAULT_TEST_COLLECTION_NAME,
             params(
                 "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
 
@@ -119,7 +119,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
     // test after updates
     indexDocs(solrClient, collectionName, NUM_DOCS, NUM_DOCS, generator);
-    indexDocs(control, "collection1", NUM_DOCS, NUM_DOCS, generator);
+    indexDocs(control, DEFAULT_TEST_COLLECTION_NAME, NUM_DOCS, NUM_DOCS, generator);
 
     cloudRsp =
         solrClient.query(
@@ -127,7 +127,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
             params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
     controlRsp =
         control.query(
-            "collection1",
+                DEFAULT_TEST_COLLECTION_NAME,
             params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
     assertResponses(controlRsp, cloudRsp, assertSameScores());
 

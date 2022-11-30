@@ -38,7 +38,8 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
             .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
             .build();
 
-    try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {
+    try (final EmbeddedSolrServer server =
+        new EmbeddedSolrServer(config, DEFAULT_TEST_COLLECTION_NAME)) {
       final SystemInfoRequest info = new SystemInfoRequest();
       final NamedList<?> response = server.request(info);
       assertTrue(response.size() > 0);

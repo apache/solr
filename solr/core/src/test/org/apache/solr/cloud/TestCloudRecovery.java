@@ -49,7 +49,6 @@ import org.junit.Test;
 
 public class TestCloudRecovery extends SolrCloudTestCase {
 
-  private static final String COLLECTION = "collection1";
   private static boolean onlyLeaderIndexes;
 
   private int nrtReplicas;
@@ -73,9 +72,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     nrtReplicas = 2; // onlyLeaderIndexes?0:2;
     tlogReplicas = 0; // onlyLeaderIndexes?2:0; TODO: SOLR-12313 tlog replicas break tests because
     // TestInjection#waitForInSyncWithLeader is broken
-    CollectionAdminRequest.createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "config", 2, nrtReplicas, tlogReplicas, 0)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
 
     // SOLR-12314 : assert that these values are from the solr.xml file and not
     // UpdateShardHandlerConfig#DEFAULT
@@ -101,14 +100,14 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    cloudClient.add(COLLECTION, sdoc("id", "1"));
-    cloudClient.add(COLLECTION, sdoc("id", "2"));
-    cloudClient.add(COLLECTION, sdoc("id", "3"));
-    cloudClient.add(COLLECTION, sdoc("id", "4"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "1"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "2"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "3"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "4"));
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
-    QueryResponse resp = cloudClient.query(COLLECTION, params);
+    QueryResponse resp = cloudClient.query(DEFAULT_TEST_COLLECTION_NAME, params);
     assertEquals(0, resp.getResults().getNumFound());
 
     ChaosMonkey.stop(cluster.getJettySolrRunners());
@@ -126,9 +125,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertTrue(
         "Timeout waiting for all live and active",
         ClusterStateUtil.waitForAllActiveAndLiveReplicas(
-            ZkStateReader.from(cloudClient), COLLECTION, 120000));
+            ZkStateReader.from(cloudClient), DEFAULT_TEST_COLLECTION_NAME, 120000));
 
-    resp = cloudClient.query(COLLECTION, params);
+    resp = cloudClient.query(DEFAULT_TEST_COLLECTION_NAME, params);
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
     if (onlyLeaderIndexes) {
@@ -173,15 +172,15 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    cloudClient.add(COLLECTION, sdoc("id", "1000"));
-    cloudClient.add(COLLECTION, sdoc("id", "1001"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "1000"));
+    cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", "1001"));
     for (int i = 0; i < 10; i++) {
-      cloudClient.add(COLLECTION, sdoc("id", String.valueOf(i)));
+      cloudClient.add(DEFAULT_TEST_COLLECTION_NAME, sdoc("id", String.valueOf(i)));
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
-    QueryResponse resp = cloudClient.query(COLLECTION, params);
+    QueryResponse resp = cloudClient.query(DEFAULT_TEST_COLLECTION_NAME, params);
     assertEquals(0, resp.getResults().getNumFound());
 
     int logHeaderSize = Integer.MAX_VALUE;
@@ -230,11 +229,11 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertTrue(
         "Timeout waiting for all live and active",
         ClusterStateUtil.waitForAllActiveAndLiveReplicas(
-            ZkStateReader.from(cloudClient), COLLECTION, 120000));
-    cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
+            ZkStateReader.from(cloudClient), DEFAULT_TEST_COLLECTION_NAME, 120000));
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
 
-    ZkStateReader.from(cloudClient).forceUpdateCollection(COLLECTION);
-    resp = cloudClient.query(COLLECTION, params);
+    ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_TEST_COLLECTION_NAME);
+    resp = cloudClient.query(DEFAULT_TEST_COLLECTION_NAME, params);
     // Make sure cluster still healthy
     // TODO: AwaitsFix - this will fail under test beasting
     // assertTrue(resp.toString(), resp.getResults().getNumFound() >= 2);

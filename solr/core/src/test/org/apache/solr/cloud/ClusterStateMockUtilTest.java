@@ -37,7 +37,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
-      DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
+      DocCollection collection1 = clusterState.getCollectionOrNull(DEFAULT_TEST_COLLECTION_NAME);
       assertNotNull(collection1);
       assertEquals(DocRouter.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
@@ -63,7 +63,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
-      DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
+      DocCollection collection1 = clusterState.getCollectionOrNull(DEFAULT_TEST_COLLECTION_NAME);
       assertNotNull(collection1);
       assertEquals(DocRouter.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());

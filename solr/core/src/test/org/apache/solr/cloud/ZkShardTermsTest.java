@@ -53,25 +53,24 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   @Test
   public void testParticipationOfReplicas()
       throws IOException, SolrServerException, InterruptedException {
-    String collection = "collection1";
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
+        new ZkShardTerms(DEFAULT_TEST_COLLECTION_NAME, "shard2", cluster.getZkClient())) {
       zkShardTerms.registerTerm("replica1");
       zkShardTerms.registerTerm("replica2");
       zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
     }
 
     // When new collection is created, the old term nodes will be removed
-    CollectionAdminRequest.createCollection(collection, 2, 2)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+        new ZkShardTerms(DEFAULT_TEST_COLLECTION_NAME, "shard1", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());
       assertArrayEquals(new Long[] {0L, 0L}, zkShardTerms.getTerms().values().toArray(new Long[2]));
     }
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
+        new ZkShardTerms(DEFAULT_TEST_COLLECTION_NAME, "shard2", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());
       assertArrayEquals(new Long[] {0L, 0L}, zkShardTerms.getTerms().values().toArray(new Long[2]));
     }

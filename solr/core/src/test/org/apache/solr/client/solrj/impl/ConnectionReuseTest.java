@@ -55,8 +55,6 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   private AtomicInteger id = new AtomicInteger();
   private HttpClientContext context = HttpClientContext.create();
 
-  private static final String COLLECTION = "collection1";
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     TestInjection.failUpdateRequests = "true:100";
@@ -65,13 +63,13 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 1)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster
         .getZkStateReader()
         .waitForState(
-            COLLECTION,
+            DEFAULT_TEST_COLLECTION_NAME,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
@@ -81,9 +79,10 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently, only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return getConcurrentUpdateSolrClient(
+            url.toString() + "/" + DEFAULT_TEST_COLLECTION_NAME, httpClient, 6, 1);
       case 1:
-        return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
+        return getHttpSolrClient(url.toString() + "/" + DEFAULT_TEST_COLLECTION_NAME, httpClient);
       case 2:
         CloudSolrClient client =
             getCloudSolrClient(
@@ -92,7 +91,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
                 httpClient,
                 30000,
                 60000);
-        client.setDefaultCollection(COLLECTION);
+        client.setDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
         return client;
     }
     throw new RuntimeException("impossible");

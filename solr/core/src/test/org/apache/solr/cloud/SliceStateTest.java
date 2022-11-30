@@ -49,13 +49,13 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     props.put(ZkStateReader.CORE_NAME_PROP, "core1");
     props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
 
-    Replica replica = new Replica("node1", props, "collection1", "shard1");
+    Replica replica = new Replica("node1", props, DEFAULT_TEST_COLLECTION_NAME, "shard1");
     sliceToProps.put("node1", replica);
     Slice slice = new Slice("shard1", sliceToProps, null, "collection1");
     assertSame("Default state not set to active", Slice.State.ACTIVE, slice.getState());
     slices.put("shard1", slice);
     collectionStates.put(
-        "collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
+            DEFAULT_TEST_COLLECTION_NAME, new DocCollection(DEFAULT_TEST_COLLECTION_NAME, slices, props, DocRouter.DEFAULT));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
@@ -64,6 +64,6 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     assertSame(
         "Default state not set to active",
         Slice.State.ACTIVE,
-        loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
+        loadedClusterState.getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlice("shard1").getState());
   }
 }

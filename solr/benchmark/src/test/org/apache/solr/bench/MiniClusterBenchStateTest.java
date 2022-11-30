@@ -26,7 +26,6 @@ import static org.apache.solr.bench.generators.SourceDSL.longs;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -42,12 +41,9 @@ import org.openjdk.jmh.infra.IterationParams;
 import org.openjdk.jmh.runner.IterationType;
 import org.openjdk.jmh.runner.WorkloadParams;
 import org.openjdk.jmh.runner.options.TimeValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ThreadLeakLingering(linger = 10)
 public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testMiniClusterState() throws Exception {
@@ -86,10 +82,9 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
 
     int nodeCount = 3;
     miniBenchState.startMiniCluster(nodeCount);
-    String collection = "collection1";
     int numShards = 1;
     int numReplicas = 1;
-    miniBenchState.createCollection(collection, numShards, numReplicas);
+    miniBenchState.createCollection(DEFAULT_TEST_COLLECTION_NAME, numShards, numReplicas);
 
     Docs docs =
         docs()
@@ -113,16 +108,17 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
     int numDocs = 50;
     Iterator<SolrInputDocument> docIt = docs.preGenerate(numDocs);
 
-    miniBenchState.index(collection, docs, numDocs);
+    miniBenchState.index(DEFAULT_TEST_COLLECTION_NAME, docs, numDocs);
 
-    miniBenchState.forceMerge(collection, 15);
+    miniBenchState.forceMerge(DEFAULT_TEST_COLLECTION_NAME, 15);
 
     ModifiableSolrParams params = MiniClusterState.params("q", "*:*");
 
     QueryRequest queryRequest = new QueryRequest(params);
     queryRequest.setBasePath(miniBenchState.nodes.get(0));
 
-    QueryResponse result = queryRequest.process(miniBenchState.client, collection);
+    QueryResponse result =
+        queryRequest.process(miniBenchState.client, DEFAULT_TEST_COLLECTION_NAME);
 
     BaseBenchState.log("match all query result=" + result);
 

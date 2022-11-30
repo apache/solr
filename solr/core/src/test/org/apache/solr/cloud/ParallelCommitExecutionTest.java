@@ -61,7 +61,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
     expectCount = numNodes;
 
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(TEST_HOME(), DEFAULT_TEST_COLLECTION_NAME, "conf");
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 

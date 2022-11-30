@@ -42,16 +42,15 @@ import org.slf4j.LoggerFactory;
 public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String COLLECTION = "collection1";
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(4)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLLECTION, 1, 4).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 4);
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 4)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 4);
   }
 
   @Test
@@ -73,21 +72,24 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
       if (random().nextBoolean() && i > 5 && !clearedCounter) {
         log.info("Clear collection counter");
         // clear counter
-        cluster.getZkClient().delete("/collections/" + COLLECTION + "/counter", -1, true);
+        cluster
+            .getZkClient()
+            .delete("/collections/" + DEFAULT_TEST_COLLECTION_NAME + "/counter", -1, true);
         clearedCounter = true;
       }
       if (deleteReplica) {
-        cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
-        DocCollection dc = getCollectionState(COLLECTION);
+        cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, numLiveReplicas);
+        DocCollection dc = getCollectionState(DEFAULT_TEST_COLLECTION_NAME);
         Replica replica =
             getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
-        CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName())
+        CollectionAdminRequest.deleteReplica(
+                DEFAULT_TEST_COLLECTION_NAME, "shard1", replica.getName())
             .process(cluster.getSolrClient());
         coreNames.remove(replica.getCoreName());
         numLiveReplicas--;
       } else {
         CollectionAdminResponse response =
-            CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
+            CollectionAdminRequest.addReplicaToShard(DEFAULT_TEST_COLLECTION_NAME, "shard1")
                 .process(cluster.getSolrClient());
         assertTrue(response.isSuccess());
         String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
@@ -96,10 +98,10 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
             coreNames.contains(coreName));
         coreNames.add(coreName);
         numLiveReplicas++;
-        cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
+        cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, numLiveReplicas);
 
         Replica newReplica =
-            getCollectionState(COLLECTION).getReplicas().stream()
+            getCollectionState(DEFAULT_TEST_COLLECTION_NAME).getReplicas().stream()
                 .filter(r -> r.getCoreName().equals(coreName))
                 .findAny()
                 .get();
@@ -115,7 +117,11 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
       byte[] data =
           cluster
               .getZkClient()
-              .getData("/collections/" + COLLECTION + "/counter", null, new Stat(), true);
+              .getData(
+                  "/collections/" + DEFAULT_TEST_COLLECTION_NAME + "/counter",
+                  null,
+                  new Stat(),
+                  true);
       int count = NumberUtils.bytesToInt(data);
       if (count < 0) throw new AssertionError("Found negative collection counter " + count);
       return count;

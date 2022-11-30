@@ -338,7 +338,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
   private void waitTillNodesActive() throws Exception {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.waitForState(
-        "collection1",
+            DEFAULT_TEST_COLLECTION_NAME,
         3,
         TimeUnit.MINUTES,
         (n, c) -> {

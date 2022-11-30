@@ -160,7 +160,8 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   @Test
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
-    ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    ResourceLoader loader =
+        new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
     Map<String, String> args = new HashMap<>();
     args.put("luceneMatchVersion", Version.LATEST.toString());
     args.put("generateWordParts", "1");

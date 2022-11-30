@@ -78,8 +78,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     assertEquals(2, notOverseerNodes.size());
 
-    String collection = "collection1";
-    CollectionAdminRequest.createCollection(collection, 2, 1)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 1)
         .setCreateNodeSet(
             notOverseerNodes.stream()
                 .map(JettySolrRunner::getNodeName)
@@ -122,7 +121,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     waitForState(
         "Expected single liveNode",
-        collection,
+            DEFAULT_TEST_COLLECTION_NAME,
         (liveNodes, collectionState) -> liveNodes.size() == 1);
 
     CollectionAdminResponse resp =
@@ -133,7 +132,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     cluster.waitForAllNodes(30);
 
-    waitForState("Expected 2x1 for collection: " + collection, collection, clusterShape(2, 2));
+    waitForState("Expected 2x1 for collection: " + DEFAULT_TEST_COLLECTION_NAME, DEFAULT_TEST_COLLECTION_NAME, clusterShape(2, 2));
     CollectionAdminResponse resp2 =
         CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
 
@@ -146,7 +145,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       assertEquals(getNumLeaderOperations(resp), getNumLeaderOperations(resp2));
     }
-    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection(DEFAULT_TEST_COLLECTION_NAME).process(cluster.getSolrClient());
   }
 
   @Test

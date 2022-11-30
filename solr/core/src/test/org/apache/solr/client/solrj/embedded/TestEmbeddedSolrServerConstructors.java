@@ -30,7 +30,8 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"try"})
   public void testPathConstructor() throws IOException {
-    try (EmbeddedSolrServer server = new EmbeddedSolrServer(TEST_PATH(), "collection1")) {}
+    try (EmbeddedSolrServer server =
+        new EmbeddedSolrServer(TEST_PATH(), DEFAULT_TEST_COLLECTION_NAME)) {}
   }
 
   @Test

@@ -59,7 +59,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testSimpleSliceLeaderElection() throws Exception {
-    String collection = "collection1";
+    String collection = DEFAULT_TEST_COLLECTION_NAME;
     createCollection(collection);
 
     cluster.waitForActiveCollection(collection, 10, TimeUnit.SECONDS, 2, 6);

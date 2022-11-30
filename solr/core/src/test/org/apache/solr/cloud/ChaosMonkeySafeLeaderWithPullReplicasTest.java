@@ -249,7 +249,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
       zkServer.run(false);
     }
 
-    try (CloudSolrClient client = createCloudClient("collection1")) {
+    try (CloudSolrClient client = createCloudClient(DEFAULT_TEST_COLLECTION_NAME)) {
       createCollection(null, "testcollection", 1, 1, client, null, "conf1");
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);

@@ -179,63 +179,67 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   @Test
   public void testMostInSyncReplicasCanWinElection() throws Exception {
-    final String collectionName = "collection1";
-    CollectionAdminRequest.createCollection(collectionName, 1, 3)
+    // final String collectionName = "collection1";
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 3)
         .setCreateNodeSet("")
         .process(cluster.getSolrClient());
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(DEFAULT_TEST_COLLECTION_NAME, "shard1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 1, 1);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);
 
-    waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
-    Replica leader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+    waitForState(
+        "Timeout waiting for shard leader", DEFAULT_TEST_COLLECTION_NAME, clusterShape(1, 1));
+    Replica leader =
+        getCollectionState(DEFAULT_TEST_COLLECTION_NAME).getSlice("shard1").getLeader();
 
     // this replica will ahead of election queue
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(DEFAULT_TEST_COLLECTION_NAME, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 1, 2);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 2);
 
-    waitForState("Timeout waiting for 1x2 collection", collectionName, clusterShape(1, 2));
+    waitForState(
+        "Timeout waiting for 1x2 collection", DEFAULT_TEST_COLLECTION_NAME, clusterShape(1, 2));
     Replica replica1 =
-        getCollectionState(collectionName)
+        getCollectionState(DEFAULT_TEST_COLLECTION_NAME)
             .getSlice("shard1")
             .getReplicas(
                 replica ->
                     replica.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName()))
             .get(0);
 
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(DEFAULT_TEST_COLLECTION_NAME, "shard1")
         .setNode(cluster.getJettySolrRunner(2).getNodeName())
         .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 1, 3);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 3);
 
-    waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
+    waitForState(
+        "Timeout waiting for 1x3 collection", DEFAULT_TEST_COLLECTION_NAME, clusterShape(1, 3));
     Replica replica2 =
-        getCollectionState(collectionName)
+        getCollectionState(DEFAULT_TEST_COLLECTION_NAME)
             .getSlice("shard1")
             .getReplicas(
                 replica ->
                     replica.getNodeName().equals(cluster.getJettySolrRunner(2).getNodeName()))
             .get(0);
 
-    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
-    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
-    cluster.getSolrClient().commit(collectionName);
+    cluster.getSolrClient().add(DEFAULT_TEST_COLLECTION_NAME, new SolrInputDocument("id", "1"));
+    cluster.getSolrClient().add(DEFAULT_TEST_COLLECTION_NAME, new SolrInputDocument("id", "2"));
+    cluster.getSolrClient().commit(DEFAULT_TEST_COLLECTION_NAME);
 
     // replica in node1 won't be able to do recovery
     proxies.get(cluster.getJettySolrRunner(0)).close();
     // leader won't be able to send request to replica in node1
     proxies.get(cluster.getJettySolrRunner(1)).close();
 
-    addDoc(collectionName, 3, cluster.getJettySolrRunner(0));
+    addDoc(DEFAULT_TEST_COLLECTION_NAME, 3, cluster.getJettySolrRunner(0));
 
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+        new ZkShardTerms(DEFAULT_TEST_COLLECTION_NAME, "shard1", cluster.getZkClient())) {
       assertEquals(3, zkShardTerms.getTerms().size());
       assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
       assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica2.getName()));
@@ -243,10 +247,10 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     }
 
     proxies.get(cluster.getJettySolrRunner(2)).close();
-    addDoc(collectionName, 4, cluster.getJettySolrRunner(0));
+    addDoc(DEFAULT_TEST_COLLECTION_NAME, 4, cluster.getJettySolrRunner(0));
 
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+        new ZkShardTerms(DEFAULT_TEST_COLLECTION_NAME, "shard1", cluster.getZkClient())) {
       assertEquals(3, zkShardTerms.getTerms().size());
       assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
       assertTrue(zkShardTerms.getHighestTerm() > zkShardTerms.getTerm(replica2.getName()));
@@ -267,7 +271,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       // term
       waitForState(
           "Timeout waiting for new leader",
-          collectionName,
+          DEFAULT_TEST_COLLECTION_NAME,
           (liveNodes, collectionState) -> {
             Replica newLeader = collectionState.getSlice("shard1").getLeader();
             if (newLeader == null) {
@@ -279,16 +283,21 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<String> children =
           zkClient()
               .getChildren(
-                  "/collections/" + collectionName + "/leader_elect/shard1/election", null, true);
-      log.info("{} election nodes:{}", collectionName, children);
+                  "/collections/" + DEFAULT_TEST_COLLECTION_NAME + "/leader_elect/shard1/election",
+                  null,
+                  true);
+      log.info("{} election nodes:{}", DEFAULT_TEST_COLLECTION_NAME, children);
       throw e;
     }
     cluster.getJettySolrRunner(0).start();
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
 
-    waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
-    assertDocsExistInAllReplicas(Arrays.asList(leader, replica1), collectionName, 1, 3);
-    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    waitForState(
+        "Timeout waiting for 1x3 collection", DEFAULT_TEST_COLLECTION_NAME, clusterShape(1, 3));
+    assertDocsExistInAllReplicas(
+        Arrays.asList(leader, replica1), DEFAULT_TEST_COLLECTION_NAME, 1, 3);
+    CollectionAdminRequest.deleteCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .process(cluster.getSolrClient());
   }
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner)

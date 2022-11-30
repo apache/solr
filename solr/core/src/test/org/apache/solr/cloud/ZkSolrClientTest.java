@@ -120,7 +120,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try (SolrZkClient zkClient =
         new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT); ) {
 
-      String shardsPath = "/collections/collection1/shards";
+      String shardsPath = "/collections/" + DEFAULT_TEST_COLLECTION_NAME + "/shards";
       zkClient.makePath(shardsPath, false, true);
 
       int zkServerPort = server.getPort();

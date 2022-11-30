@@ -127,7 +127,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     ZkCLI.main(args);
 
-    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE + "/collection1", true));
+    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE + "/" + DEFAULT_TEST_COLLECTION_NAME, true));
   }
 
   @Test
@@ -290,7 +290,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "-cmd",
           "linkconfig",
           "-collection",
-          "collection1",
+                DEFAULT_TEST_COLLECTION_NAME,
           "-confname",
           confsetname
         };
@@ -298,7 +298,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     ZkNodeProps collectionProps =
         ZkNodeProps.load(
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/" + DEFAULT_TEST_COLLECTION_NAME, null, null, true));
     assertTrue(collectionProps.containsKey("configName"));
     assertEquals(confsetname, collectionProps.getStr("configName"));
 

@@ -303,7 +303,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
 
       SplitShard splitShardRequest =
-          CollectionAdminRequest.splitShard("collection1").setShardName(SHARD1);
+          CollectionAdminRequest.splitShard(DEFAULT_TEST_COLLECTION_NAME).setShardName(SHARD1);
       splitShardRequest.processAsync("2000", client);
 
       RequestStatusState state = getRequestState("2000", client);
@@ -321,7 +321,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      params.set("collection", "collection1");
+      params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
       QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 

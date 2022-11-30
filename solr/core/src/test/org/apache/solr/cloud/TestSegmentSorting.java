@@ -51,7 +51,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       System.setProperty("solr.tests.id.docValues", "true");
     }
     configureCluster(NUM_SERVERS)
-        .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
+        .addConfig(configName, Paths.get(TEST_HOME(), DEFAULT_TEST_COLLECTION_NAME, "conf"))
         .configure();
   }
 
