@@ -88,6 +88,9 @@ Bug Fixes
 
 * SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
