@@ -190,6 +190,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCore implements SolrInfoBean, Closeable {
 
   public static final String version = "1.0";
+  public static final String DISABLE_ZK_CONFIG_WATCH = "disable.zk.config.watch";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog =
@@ -3364,6 +3365,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
+    if (Boolean.getBoolean(DISABLE_ZK_CONFIG_WATCH)) return;
     if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
     final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
     if (zkSolrResourceLoader != null)
