@@ -33,6 +33,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -58,7 +59,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   }
 
   public String getAdminURL() {
-    return getBaseURL().replace("/collection1", "");
+    return getBaseURL().replace("/" + SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, "");
   }
 
   /**

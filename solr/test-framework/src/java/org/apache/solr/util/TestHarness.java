@@ -251,7 +251,7 @@ public class TestHarness extends BaseTestHarness {
               CoreDescriptor.CORE_SCHEMA,
               schema,
               CoreDescriptor.CORE_COLLECTION,
-              System.getProperty("collection", "collection1"),
+              System.getProperty("collection", SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME),
               CoreDescriptor.CORE_SHARD,
               System.getProperty("shard", "shard1")));
     }

@@ -214,7 +214,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected void writeCoreProperties(Path coreDirectory, String coreName) throws IOException {
     Properties props = new Properties();
     props.setProperty("name", coreName);
-    props.setProperty("configSet", "collection1");
+    props.setProperty("configSet", DEFAULT_TEST_COLLECTION_NAME);
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
 
@@ -889,7 +889,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h =
         new TestHarness(
-            "collection1", initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
+                DEFAULT_TEST_COLLECTION_NAME, initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
@@ -2225,15 +2225,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
+    return getFile("solr/" + DEFAULT_TEST_COLLECTION_NAME).getParent();
   }
 
   public static Path TEST_PATH() {
-    return getFile("solr/collection1").getParentFile().toPath();
+    return getFile("solr/" + DEFAULT_TEST_COLLECTION_NAME).getParentFile().toPath();
   }
 
   public static Path TEST_COLL1_CONF() {
-    return TEST_PATH().resolve("collection1").resolve("conf");
+    return TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf");
   }
 
   public static Path configset(String name) {
@@ -2325,7 +2325,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (propertiesContent != null) {
       Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
-    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf");
     Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema.xml"));
     Files.copy(top.resolve(solrconfigXmlName), subHome.resolve("solrconfig.xml"));
     Files.copy(
@@ -2358,7 +2358,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         dstRoot.toPath().resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf");
     Files.copy(top.resolve("currency.xml"), subHome.resolve("currency.xml"));
     Files.copy(
         top.resolve("mapping-ISOLatin1Accent.txt"), subHome.resolve("mapping-ISOLatin1Accent.txt"));
