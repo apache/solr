@@ -77,6 +77,7 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
     Path configDir = createTempDir("testconfig");
+    Files.createFile(configDir.resolve("solrconfig.xml"));
     Files.write(configDir.resolve("file1"), testdata);
     Files.createFile(configDir.resolve("file2"));
     Files.createDirectory(configDir.resolve("subdir"));
@@ -97,8 +98,6 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
 
     Map<String, Object> metadata = configSetService.getConfigMetadata(configName);
     assertTrue(metadata.isEmpty());
-    metadata = configSetService.getConfigMetadata("dummyConfig");
-    assertTrue(metadata.isEmpty());
 
     configSetService.setConfigMetadata(configName, Collections.singletonMap("trusted", true));
     metadata = configSetService.getConfigMetadata(configName);
@@ -109,7 +108,10 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);
-    assertTrue(configFiles.size() == 5);
+    assertEquals(configFiles.toString(), "[file1, file2, solrconfig.xml, subdir/, subdir/file3, subdir/file4]");
+
+    List<String> configs = configSetService.listConfigs();
+    assertEquals(configs.toString(), "[testconfig]");
 
     configSetService.copyConfig(configName, "testconfig.AUTOCREATED");
     List<String> copiedConfigFiles = configSetService.getAllConfigFiles("testconfig.AUTOCREATED");

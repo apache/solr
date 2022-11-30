@@ -29,7 +29,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,17 +40,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Standalone File System ConfigSetService impl.
+ * FileSystem ConfigSetService impl.
  *
- * <p>Loads ConfigSet defined by the core's configSet property, looking for a directory named for
+ * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
  * the ConfigSet instead from the core's instance directory.
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final Path configSetBase;
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
+  private final Path configSetBase;
 
   public FileSystemConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
@@ -59,7 +58,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   /** Testing purpose */
-  public FileSystemConfigSetService(Path configSetBase) {
+  protected FileSystemConfigSetService(Path configSetBase) {
     super(null, false);
     this.configSetBase = configSetBase;
   }
@@ -79,7 +78,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    return Files.isDirectory(getConfigDir(configName));
+    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
+    return Files.exists(solrConfigXmlFile);
   }
 
   @Override
@@ -156,7 +156,6 @@ public class FileSystemConfigSetService extends ConfigSetService {
     // store metadata in .metadata.json file
     Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
-    Files.isHidden(metadataPath);
   }
 
   @Override
@@ -167,10 +166,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     try {
       data = Files.readAllBytes(metadataPath);
     } catch (NoSuchFileException e) {
-      return new HashMap<>();
-    }
-    if (data == null) {
-      return new HashMap<>();
+      return Collections.emptyMap();
     }
     @SuppressWarnings("unchecked")
     Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
@@ -251,8 +247,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
           @Override
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
-            if (!dir.getFileName().toString().equals(configName)) {
-              filePaths.add(configDir.relativize(dir).toString() + "/");
+            String relativePath = configDir.relativize(dir).toString();
+            if (!relativePath.isEmpty()) {
+              filePaths.add(relativePath + "/");
             }
             return FileVisitResult.CONTINUE;
           }
@@ -287,6 +284,6 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   private Path getConfigDir(String configName) {
-    return configSetBase.toAbsolutePath().resolve(configName);
+    return configSetBase.resolve(configName);
   }
 }

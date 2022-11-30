@@ -20,9 +20,13 @@ import static org.apache.solr.core.FileSystemConfigSetService.METADATA_FILE;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
@@ -78,6 +82,17 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     allConfigFiles = fileSystemConfigSetService.getAllConfigFiles("copytestconfig");
     assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml]");
+
+    Path downloadConfig= createTempDir("downloadConfig");
+    fileSystemConfigSetService.downloadConfig(configName, downloadConfig);
+
+    List<String> configs = getFileList(downloadConfig);
+    assertEquals(configs.toString(), "[schema.xml, solrconfig.xml]");
+
+    Exception ex = assertThrows(RuntimeException.class, () -> {
+      fileSystemConfigSetService.downloadConfig("/", downloadConfig);
+    });
+    assertTrue(ex.getMessage().contains("access denied"));
   }
 
   @Test
@@ -90,4 +105,15 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     assertFalse(fileSystemConfigSetService.checkConfigExists(configName));
     assertFalse(fileSystemConfigSetService.checkConfigExists("copytestconfig"));
   }
+
+  private static List<String> getFileList(Path confDir) throws IOException {
+    try (Stream<Path> configs = Files.list(confDir)) {
+      return configs
+              .map(Path::getFileName)
+              .map(Path::toString)
+              .sorted()
+              .collect(Collectors.toList());
+    }
+  }
+
 }
