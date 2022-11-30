@@ -41,7 +41,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** ConfigSet Service used by the CoreContainer to load ConfigSets for use in SolrCore creation. */
+/** Service class used by the CoreContainer to load ConfigSets for use in SolrCore creation. */
 public abstract class ConfigSetService {
 
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
@@ -50,61 +50,66 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    final String configSetServiceClass = coreContainer.getConfig().getConfigSetServiceClass();
+    ConfigSetService configSetService = instantiate(coreContainer);
+    // bootstrap conf in SolrCloud mode
+    if (coreContainer.getZkController() != null) {
+      configSetService.bootstrapConfigSet(coreContainer);
+    }
+    return configSetService;
+  }
+
+  private static ConfigSetService instantiate(CoreContainer coreContainer) {
+    final NodeConfig nodeConfig = coreContainer.getConfig();
+    final SolrResourceLoader loader = coreContainer.getResourceLoader();
+    final ZkController zkController = coreContainer.getZkController();
+
+    final String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
 
     if (configSetServiceClass != null) {
       try {
         Class<? extends ConfigSetService> clazz =
-            coreContainer
-                .getResourceLoader()
-                .findClass(configSetServiceClass, ConfigSetService.class);
+            loader.findClass(configSetServiceClass, ConfigSetService.class);
         Constructor<? extends ConfigSetService> constructor =
             clazz.getConstructor(CoreContainer.class);
         return constructor.newInstance(coreContainer);
       } catch (Exception e) {
         throw new RuntimeException(
-            "ConfigSetService creation instance failed, ConfigSetService Class:"
+            "create configSetService instance failed, configSetServiceClass:"
                 + configSetServiceClass,
             e);
       }
-    } else if (coreContainer.getZkController() == null) {
-      // Standalone mode
+    } else if (zkController == null) {
       return new FileSystemConfigSetService(coreContainer);
     } else {
-      // SolrCloud mode
-      final ZkConfigSetService zkConfigSetService = new ZkConfigSetService(coreContainer);
-      // TODO ideally this would be toggle-able.  It's okay to start Solr with no configSet!
-      try {
-        bootstrapConfigSet(coreContainer, zkConfigSetService);
-      } catch (Exception e) { // because write-only, probably
-        log.warn("Failed to bootstrap configSet:", e); // swallow stack
-      }
-      return zkConfigSetService;
+      return new ZkConfigSetService(coreContainer);
     }
   }
 
-  public static void bootstrapConfigSet(
-      CoreContainer coreContainer, ConfigSetService configSetService) throws IOException {
+  private void bootstrapConfigSet(CoreContainer coreContainer) {
     // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    try {
+      // _default conf
+      bootstrapDefaultConf();
 
-    // _default conf
-    bootstrapDefaultConf(configSetService);
+      // bootstrap_confdir
+      String confDir = System.getProperty("bootstrap_confdir");
+      if (confDir != null) {
+        bootstrapConfDir(confDir);
+      }
 
-    // bootstrap_confdir
-    String confDir = System.getProperty("bootstrap_confdir");
-    if (confDir != null) {
-      bootstrapConfDir(configSetService, confDir);
-    }
-
-    // bootstrap_conf
-    boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
-    if (boostrapConf == true) {
-      bootstrapConf(coreContainer);
+      // bootstrap_conf
+      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+      if (boostrapConf == true) {
+        bootstrapConf(coreContainer);
+      }
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
     }
   }
 
-  private static void bootstrapDefaultConf(ConfigSetService configSetService) throws IOException {
-    if (!configSetService.checkConfigExists(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME)) {
+  private void bootstrapDefaultConf() throws IOException {
+    if (this.checkConfigExists("_default") == false) {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
@@ -112,13 +117,12 @@ public abstract class ConfigSetService {
             "intended to be the default. Current 'solr.default.confdir' value:",
             System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
+        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
     }
   }
 
-  private static void bootstrapConfDir(ConfigSetService configSetService, String confDir)
-      throws IOException {
+  private void bootstrapConfDir(String confDir) throws IOException {
     Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException(
@@ -128,7 +132,7 @@ public abstract class ConfigSetService {
     String confName =
         System.getProperty(
             ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
-    configSetService.uploadConfig(confName, configPath);
+    this.uploadConfig(confName, configPath);
   }
 
   /**
@@ -342,7 +346,7 @@ public abstract class ConfigSetService {
    * Returns a modification version for the schema file. Null may be returned if not known, and if
    * so it defeats schema caching.
    */
-  public abstract Long getCurrentSchemaModificationVersion(
+  protected abstract Long getCurrentSchemaModificationVersion(
       String configSet, SolrConfig solrConfig, String schemaFile) throws IOException;
 
   /**
