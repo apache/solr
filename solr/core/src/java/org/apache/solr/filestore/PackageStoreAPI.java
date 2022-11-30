@@ -413,6 +413,7 @@ public class PackageStoreAPI {
       return sha512.hashCode();
     }
 
+    @Override
     public boolean equals(Object that) {
       if (that instanceof MetaData) {
         MetaData metaData = (MetaData) that;
