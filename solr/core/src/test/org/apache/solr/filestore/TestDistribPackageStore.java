@@ -105,6 +105,15 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           "/package/mypkg/v1.0/runtimelibs.jar",
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
+      NavigableObject rsp =
+          postFile(
+              cluster.getSolrClient(),
+              getFileContent("runtimecode/runtimelibs.jar.bin"),
+              "/package/mypkg/v1.0/runtimelibs.jar",
+              "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
+
+      assertTrue(rsp._getStr("message", "").contains("File with same metadata exists "));
+
       assertResponseValues(
           10,
           cluster.getSolrClient(),
@@ -323,7 +332,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         false);
   }
 
-  public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
+  public static NavigableObject postFile(
+      SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/cluster/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -338,6 +348,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
             .build()
             .process(client);
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
+    return rsp;
   }
 
   /**
