@@ -55,6 +55,7 @@ Improvements
   Solr Core also no longer contains the JettySolrRunner (now living in the testing framework), removing the need for Jetty Server dependencies in solr-core.
   (Houston Putman)
 
+* SOLR-16565: posting the same file to the package store should not throw an error (noble)
 Optimizations
 ---------------------
 
