@@ -108,7 +108,9 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);
-    assertEquals(configFiles.toString(), "[file1, file2, solrconfig.xml, subdir/, subdir/file3, subdir/file4]");
+    assertEquals(
+        configFiles.toString(),
+        "[file1, file2, solrconfig.xml, subdir/, subdir/file3, subdir/file4]");
 
     List<String> configs = configSetService.listConfigs();
     assertEquals(configs.toString(), "[testconfig]");
