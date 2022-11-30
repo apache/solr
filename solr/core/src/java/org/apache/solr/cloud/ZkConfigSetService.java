@@ -113,7 +113,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public Long getCurrentSchemaModificationVersion(
+  protected Long getCurrentSchemaModificationVersion(
       String configSet, SolrConfig solrConfig, String schemaFile) throws IOException {
     String zkPath = CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
@@ -233,20 +233,15 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
-    byte[] data = null;
     try {
-      data = zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true);
-    } catch (KeeperException.NoNodeException e) {
-      return new HashMap<>();
+      @SuppressWarnings("unchecked")
+      Map<String, Object> data =
+              (Map<String, Object>)
+                      Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
+      return data;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
     }
-    if (data == null) {
-      return new HashMap<>();
-    }
-    @SuppressWarnings("unchecked")
-    Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
-    return metadata;
   }
 
   @Override
