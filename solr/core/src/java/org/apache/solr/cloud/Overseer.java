@@ -152,7 +152,8 @@ public class Overseer implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE =
       Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
-  public static final int STATE_UPDATE_MAX_QUEUE = 20000;
+  public static final int STATE_UPDATE_MAX_QUEUE =
+      Integer.getInteger("solr.OverseerStateUpdateMaxQueueSize", 20000);
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
@@ -271,8 +272,8 @@ public class Overseer implements SolrCloseable {
               byte[] data = fallbackQueue.peek();
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) {
-                  log.debug(
+                if (log.isInfoEnabled()) {
+                  log.info(
                       "processMessage: fallbackQueueSize: {}, message = {}",
                       fallbackQueue.getZkStats().getQueueLength(),
                       message);
@@ -336,8 +337,8 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) {
-                  log.debug(
+                if (log.isInfoEnabled()) {
+                  log.info(
                       "processMessage: queueSize: {}, message = {}",
                       stateUpdateQueue.getZkStats().getQueueLength(),
                       message);
