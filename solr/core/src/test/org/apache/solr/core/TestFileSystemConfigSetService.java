@@ -95,7 +95,6 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
               fileSystemConfigSetService.uploadConfig("../dummy", createTempDir("tmp"));
             });
     assertTrue(ex.getMessage().startsWith("configName=../dummy is not found under configSetBase"));
-
   }
 
   @Test
