@@ -90,11 +90,12 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
 
     Exception ex =
         assertThrows(
-            RuntimeException.class,
+            IOException.class,
             () -> {
-              fileSystemConfigSetService.downloadConfig("/", downloadConfig);
+              fileSystemConfigSetService.uploadConfig("../dummy", createTempDir("tmp"));
             });
-    assertTrue(ex.getMessage().contains("access denied"));
+    assertTrue(ex.getMessage().startsWith("configName=../dummy is not found under configSetBase"));
+
   }
 
   @Test
