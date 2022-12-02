@@ -889,7 +889,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h =
         new TestHarness(
-                DEFAULT_TEST_COLLECTION_NAME, initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
+            DEFAULT_TEST_COLLECTION_NAME,
+            initAndGetDataDir().getAbsolutePath(),
+            "solrconfig.xml",
+            "schema.xml");
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }

@@ -121,7 +121,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     waitForState(
         "Expected single liveNode",
-            DEFAULT_TEST_COLLECTION_NAME,
+        DEFAULT_TEST_COLLECTION_NAME,
         (liveNodes, collectionState) -> liveNodes.size() == 1);
 
     CollectionAdminResponse resp =
@@ -132,7 +132,10 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     cluster.waitForAllNodes(30);
 
-    waitForState("Expected 2x1 for collection: " + DEFAULT_TEST_COLLECTION_NAME, DEFAULT_TEST_COLLECTION_NAME, clusterShape(2, 2));
+    waitForState(
+        "Expected 2x1 for collection: " + DEFAULT_TEST_COLLECTION_NAME,
+        DEFAULT_TEST_COLLECTION_NAME,
+        clusterShape(2, 2));
     CollectionAdminResponse resp2 =
         CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
 
@@ -145,7 +148,8 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       assertEquals(getNumLeaderOperations(resp), getNumLeaderOperations(resp2));
     }
-    CollectionAdminRequest.deleteCollection(DEFAULT_TEST_COLLECTION_NAME).process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .process(cluster.getSolrClient());
   }
 
   @Test

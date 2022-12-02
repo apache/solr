@@ -111,7 +111,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                 "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
     QueryResponse controlRsp =
         control.query(
-                DEFAULT_TEST_COLLECTION_NAME,
+            DEFAULT_TEST_COLLECTION_NAME,
             params(
                 "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
 
@@ -127,7 +127,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
             params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
     controlRsp =
         control.query(
-                DEFAULT_TEST_COLLECTION_NAME,
+            DEFAULT_TEST_COLLECTION_NAME,
             params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
     assertResponses(controlRsp, cloudRsp, assertSameScores());
 

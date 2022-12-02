@@ -72,9 +72,11 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     nrtReplicas = 2; // onlyLeaderIndexes?0:2;
     tlogReplicas = 0; // onlyLeaderIndexes?2:0; TODO: SOLR-12313 tlog replicas break tests because
     // TestInjection#waitForInSyncWithLeader is broken
-    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "config", 2, nrtReplicas, tlogReplicas, 0)
+    CollectionAdminRequest.createCollection(
+            DEFAULT_TEST_COLLECTION_NAME, "config", 2, nrtReplicas, tlogReplicas, 0)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
+    cluster.waitForActiveCollection(
+        DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
 
     // SOLR-12314 : assert that these values are from the solr.xml file and not
     // UpdateShardHandlerConfig#DEFAULT
@@ -230,7 +232,8 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         "Timeout waiting for all live and active",
         ClusterStateUtil.waitForAllActiveAndLiveReplicas(
             ZkStateReader.from(cloudClient), DEFAULT_TEST_COLLECTION_NAME, 120000));
-    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
+    cluster.waitForActiveCollection(
+        DEFAULT_TEST_COLLECTION_NAME, 2, 2 * (nrtReplicas + tlogReplicas));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_TEST_COLLECTION_NAME);
     resp = cloudClient.query(DEFAULT_TEST_COLLECTION_NAME, params);

@@ -154,7 +154,8 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testBOMMarkers() throws Exception {
     final String fileWithBom = "stopwithbom.txt";
-    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
+    SolrResourceLoader loader =
+        new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
 
     // preliminary sanity check
     InputStream bomStream = loader.openResource(fileWithBom);
@@ -189,7 +190,8 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
-    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME))) {
+    try (SolrResourceLoader loader =
+        new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME))) {
       // ensure we get our exception
       SolrException thrown =
           expectThrows(SolrException.class, () -> loader.getLines(wrongEncoding));
@@ -272,7 +274,8 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   public void testCacheWrongType() throws Exception {
     clearCache();
 
-    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
+    SolrResourceLoader loader =
+        new SolrResourceLoader(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME));
     Class<?>[] params = {Map.class};
     Map<String, String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";

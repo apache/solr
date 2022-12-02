@@ -41,7 +41,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "config", 1, 2)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-            DEFAULT_TEST_COLLECTION_NAME, cluster.getZkStateReader(), false, true, 30);
+        DEFAULT_TEST_COLLECTION_NAME, cluster.getZkStateReader(), false, true, 30);
   }
 
   @Test
@@ -51,7 +51,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     try (SolrClient client1 = getHttpSolrClient(node1.getBaseUrl().toString())) {
 
       node2.stop();
-      waitForState("", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
+      waitForState(
+          "", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
@@ -98,7 +99,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       //
       node2.stop();
-      waitForState("", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
+      waitForState(
+          "", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
 
       new UpdateRequest().add("id", "1", "num", "20").commit(client1, DEFAULT_TEST_COLLECTION_NAME);
       v =
@@ -122,7 +124,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       }
 
       node2.stop();
-      waitForState("", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
+      waitForState(
+          "", DEFAULT_TEST_COLLECTION_NAME, (liveNodes, collectionState) -> liveNodes.size() == 1);
 
       new UpdateRequest().add("id", "1", "num", "30").commit(client1, DEFAULT_TEST_COLLECTION_NAME);
       v =
@@ -157,7 +160,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     node1.stop();
     waitForState(
         "",
-            DEFAULT_TEST_COLLECTION_NAME,
+        DEFAULT_TEST_COLLECTION_NAME,
         (liveNodes, collectionState) -> {
           Replica leader = collectionState.getLeader("shard1");
           return leader != null && leader.getNodeName().equals(node2.getNodeName());

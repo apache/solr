@@ -35,7 +35,8 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
-    solrCluster.uploadConfigSet(TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf"), "conf1");
+    solrCluster.uploadConfigSet(
+        TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf"), "conf1");
   }
 
   @Override
@@ -59,7 +60,13 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
       };
       for (String q : queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/select?" + q);
+          URL url =
+              new URL(
+                  jettySolrRunner.getBaseUrl().toString()
+                      + "/"
+                      + DEFAULT_TEST_COLLECTION_NAME
+                      + "/select?"
+                      + q);
           url.openStream(); // Shouldn't throw any errors
         } catch (Exception ex) {
           throw new RuntimeException("Query '" + q + "' failed, ", ex);

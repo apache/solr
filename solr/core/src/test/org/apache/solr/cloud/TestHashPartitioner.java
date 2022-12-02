@@ -296,7 +296,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     }
 
     return new DocCollection(
-            DEFAULT_TEST_COLLECTION_NAME,
+        DEFAULT_TEST_COLLECTION_NAME,
         slices,
         Collections.singletonMap(
             ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
