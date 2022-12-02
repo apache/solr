@@ -2289,10 +2289,17 @@ public class ZkStateReader implements SolrCloseable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
-      log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      if (log.isDebugEnabled()) {
+        log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      }
+      Stat stat = zkClient.getZooKeeper().exists(ALIASES, null);
+      if (stat == null || stat.getVersion() <= aliases.getZNodeVersion()) {
+        return false;
+      } else {
+        stat = new Stat();
+      }
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getZooKeeper().sync(ALIASES, null, null);
-      Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
     }
