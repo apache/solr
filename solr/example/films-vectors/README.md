@@ -6,10 +6,6 @@ The `film_vector` is an embedding vector created to represent the movie with 10 
 
 The following steps shows you how to start Solr, setup the collection with the Dense Vector field, and then load data. Then we also show some basic queries with the KNN feature, followed by other more advanced queries combining scores.
 
-The below steps walk you through learning how to start up Solr, setup the films vectors collection yourself, and then load data.
-
- **TODO**: You can also run `bin/solr start -example films-vectors` or `bin/solr start -c -example films-vectors` for SolrCloud version which does all the below steps for you.
-
  Steps:
    * Start Solr:
      ```
