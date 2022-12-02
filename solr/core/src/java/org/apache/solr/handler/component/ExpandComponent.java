@@ -432,7 +432,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       newFilters.add(groupQuery);
     }
 
-    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
+    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(newFilters);
     if (pfilter.postFilter != null) {
       pfilter.postFilter.setLastDelegate(groupExpandCollector);
       collector = pfilter.postFilter;
