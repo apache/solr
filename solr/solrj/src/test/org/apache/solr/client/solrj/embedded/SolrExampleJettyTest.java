@@ -34,6 +34,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -72,15 +73,17 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(getUri(client));
+    HttpClient httpClient = getHttpClient();
+    HttpPost post =
+        new HttpPost(
+            getRandomizedUpdateUri(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -104,11 +107,10 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     assertEquals("name2", m.get("name"));
   }
 
-  private String getUri(HttpSolrClient client) {
-    String baseURL = client.getBaseURL();
+  private String getRandomizedUpdateUri(String baseUrl) {
     return random().nextBoolean()
-        ? baseURL.replace("/collection1", "/____v2/cores/collection1/update")
-        : baseURL + "/update/json/docs";
+        ? baseUrl.replace("/collection1", "/____v2/cores/collection1/update")
+        : baseUrl + "/update/json/docs";
   }
 
   @Test

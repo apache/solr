@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.embedded;
+package org.apache.solr.embedded;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricFilter;
@@ -57,6 +57,7 @@ import org.apache.commons.io.output.NullPrintStream;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;

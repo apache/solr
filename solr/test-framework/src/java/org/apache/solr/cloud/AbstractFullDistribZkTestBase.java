@@ -49,8 +49,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -89,6 +87,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -2082,7 +2082,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(clientIndex));
+      final String baseUrl = getBaseUrl(jettys.get(clientIndex));
       try (SolrClient adminClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(adminClient.request(request));
       }
@@ -2207,10 +2207,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  protected String getBaseUrl(HttpSolrClient client) {
-    return client
-        .getBaseURL()
-        .substring(0, client.getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+  protected String getBaseUrl(JettySolrRunner jetty) {
+    return jetty.getBaseUrl().toString();
   }
 
   public static SolrInputDocument getDoc(Object... fields) throws Exception {
@@ -2341,7 +2339,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  public static void waitForNon403or404or503(HttpSolrClient collectionClient) throws Exception {
+  public static void waitForNon403or404or503(SolrClient collectionClient, String baseUrl)
+      throws Exception {
     SolrException exp = null;
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
@@ -2363,11 +2362,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Thread.sleep(50);
     }
 
-    fail(
-        "Could not find the new collection - "
-            + exp.code()
-            + " : "
-            + collectionClient.getBaseURL());
+    fail("Could not find the new collection - " + exp.code() + " : " + baseUrl);
   }
 
   protected void createCollection(
@@ -2841,8 +2836,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void setupRestTestHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
+    for (final JettySolrRunner jetty : jettys) {
+      RestTestHarness harness =
+          new RestTestHarness(
+              () -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME);
       restTestHarnesses.add(harness);
     }
   }

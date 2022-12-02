@@ -1297,19 +1297,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
           return null;
         }),
-    // XXX should this command support followAliases?
     DELETEREPLICAPROP_OP(
         DELETEREPLICAPROP,
         (req, rsp, h) -> {
-          Map<String, Object> map =
-              copy(
-                  req.getParams().required(),
-                  null,
-                  COLLECTION_PROP,
-                  PROPERTY_PROP,
-                  SHARD_ID_PROP,
-                  REPLICA_PROP);
-          return copy(req.getParams(), map, PROPERTY_PROP);
+          final var api = new DeleteReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final var deleteReplicaPropResponse =
+              DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, req.getParams());
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
+          return null;
         }),
     // XXX should this command support followAliases?
     BALANCESHARDUNIQUE_OP(
@@ -2073,7 +2068,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(AddReplicaPropertyAPI.class, ReplaceNodeAPI.class);
+    return List.of(
+        AddReplicaPropertyAPI.class, DeleteReplicaPropertyAPI.class, ReplaceNodeAPI.class);
   }
 
   @Override
@@ -2088,7 +2084,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));

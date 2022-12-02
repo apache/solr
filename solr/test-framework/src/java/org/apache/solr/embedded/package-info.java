@@ -14,18 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request.beans;
 
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
-
-public class DeleteReplicaPropertyPayload implements ReflectMapWriter {
-  @JsonProperty(required = true)
-  public String shard;
-
-  @JsonProperty(required = true)
-  public String replica;
-
-  @JsonProperty(required = true)
-  public String property;
-}
+/** Classes for running embedded Solr Jetty Servers in tests. */
+package org.apache.solr.embedded;
