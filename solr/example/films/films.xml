@@ -1953,7 +1953,6 @@
   </doc>
   <doc>
     <field name="id">/en/essential_keys_to_better_bowling_2006</field>
-    <directed_by/>
     <field name="genre">Documentary film</field>
     <field name="genre">Sports</field>
     <field name="name">Essential Keys To Better Bowling</field>
@@ -6921,7 +6920,6 @@
   </doc>
   <doc>
     <field name="id">/en/the_best_of_the_bloodiest_brawls_vol_1</field>
-    <directed_by/>
     <field name="initial_release_date">2006-03-14</field>
     <field name="name">The Best of The Bloodiest Brawls, Vol. 1</field>
     <field name="genre">Sports</field>
@@ -8012,7 +8010,6 @@
   </doc>
   <doc>
     <field name="id">/en/bloodsport_ecws_most_violent_matches</field>
-    <directed_by/>
     <field name="initial_release_date">2006-02-07</field>
     <field name="name">Bloodsport - ECW's Most Violent Matches</field>
     <field name="genre">Documentary film</field>
@@ -8752,7 +8749,6 @@
   </doc>
   <doc>
     <field name="id">/en/bowling_fun_and_fundamentals_for_boys_and_girls</field>
-    <directed_by/>
     <field name="name">Bowling Fun And Fundamentals For Boys And Girls</field>
     <field name="genre">Documentary film</field>
     <field name="genre">Sports</field>
@@ -11039,7 +11035,6 @@
     <field name="id">/en/chennaiyil_oru_mazhai_kaalam</field>
     <field name="name">Chennaiyil Oru Mazhai Kaalam</field>
     <field name="directed_by">Prabhu Deva</field>
-    <genre/>
     <field name="film_vector">0.014355268329381943</field>
     <field name="film_vector">-0.039638131856918335</field>
     <field name="film_vector">-0.003897471586242318</field>
@@ -11299,7 +11294,6 @@
   <doc>
     <field name="id">/en/chips_2008</field>
     <field name="name">CHiPs</field>
-    <directed_by/>
     <field name="genre">Musical</field>
     <field name="genre">Children's/Family</field>
     <field name="film_vector">-0.052642617374658585</field>
@@ -17354,7 +17348,6 @@
   </doc>
   <doc>
     <field name="id">/en/everything_2005</field>
-    <directed_by/>
     <field name="initial_release_date">2005-11-22</field>
     <field name="genre">Music video</field>
     <field name="name">Everything</field>
