@@ -39,8 +39,6 @@ import org.junit.AfterClass;
 
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
-  protected static final String DEFAULT_CORE_NAME = "collection1";
-
   public static EmbeddedSolrServer client = null;
 
   @After
@@ -61,7 +59,7 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   /** Create a new solr client. Subclasses should override for other options. */
   public EmbeddedSolrServer createNewSolrClient() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
+    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }
 
   public void upload(final String collection, final ContentStream... contents) {
@@ -112,8 +110,8 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   public static void initCore() throws Exception {
     final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-    final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
-    final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
+    final String config = home + "/" + DEFAULT_TEST_CORENAME + "/conf/solrconfig.xml";
+    final String schema = home + "/" + DEFAULT_TEST_CORENAME + "/conf/schema.xml";
     initCore(config, schema, home);
   }
 }
