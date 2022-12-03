@@ -28,10 +28,12 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -159,6 +161,11 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    */
   public SolrClient createNewSolrClient() {
     return getHttpSolrClient(getServerUrl());
+  }
+
+  public HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
   }
 
   // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig

@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -45,12 +46,14 @@ import org.junit.Test;
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
 
+  private static JettySolrRunner jettySolrRunner;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     // this one has handleSelect=true which a test here needs
     File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    jettySolrRunner = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
@@ -69,21 +72,30 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testMakeDeleteAllUrl() throws Exception {
-    getUrlForString(makeDeleteAllUrl());
+    assertTrue(searchFindsIt());
+    attemptHttpGet(makeDeleteAllUrl());
     assertFalse(searchFindsIt());
   }
 
   @Test
   public void testStreamUrl() throws Exception {
-    String streamUrl = getServerUrl() + "/select?q=*:*&fl=id&wt=csv";
+    String streamUrl =
+        jettySolrRunner.getBaseUrl().toString()
+            + "/"
+            + DEFAULT_TEST_COLLECTION_NAME
+            + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-        getServerUrl() + "/debug/dump?wt=xml&stream.url=" + URLEncoder.encode(streamUrl, "UTF-8");
-    String content = getUrlForString(getUrl);
+        jettySolrRunner.getBaseUrl().toString()
+            + "/"
+            + DEFAULT_TEST_COLLECTION_NAME
+            + "/debug/dump?wt=xml&stream.url="
+            + URLEncoder.encode(streamUrl, "UTF-8");
+    String content = attemptHttpGet(getUrl);
     assertTrue(content.contains("1234"));
   }
 
-  private String getUrlForString(String getUrl) throws IOException {
+  private String attemptHttpGet(String getUrl) throws IOException {
     Object obj = new URL(getUrl).getContent();
     if (obj instanceof InputStream) {
       InputStream inputStream = (InputStream) obj;
@@ -110,10 +122,12 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     }
   }
 
-  /** Compose an url that if you get it, it will delete all the data. */
+  /** Compose an HTTP GET url that will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return getServerUrl()
+    return jettySolrRunner.getBaseUrl().toString()
+        + "/"
+        + DEFAULT_TEST_COLLECTION_NAME
         + "/update?commit=true&stream.body="
         + URLEncoder.encode(deleteQuery, "UTF-8");
   }

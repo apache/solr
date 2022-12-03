@@ -73,7 +73,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
       // two docs, one with uniqueKey, another without it
       String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
       HttpClient httpClient = getHttpClient(getServerUrl());
-      HttpPost post = new HttpPost(getJsonUpdateUrl(getServerUrl()));
+      HttpPost post = new HttpPost(getRandomizedUpdateUri(getServerUrl()));
       post.setHeader("Content-Type", "application/json");
       post.setEntity(
           new InputStreamEntity(
@@ -99,10 +99,10 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     }
   }
 
-  private String getJsonUpdateUrl(String baseURL) {
+  private String getRandomizedUpdateUri(String baseUrl) {
     return random().nextBoolean()
-        ? baseURL.replace("/collection1", "/____v2/cores/collection1/update")
-        : baseURL + "/update/json/docs";
+        ? baseUrl.replace("/collection1", "/____v2/cores/collection1/update")
+        : baseUrl + "/update/json/docs";
   }
 
   @Test

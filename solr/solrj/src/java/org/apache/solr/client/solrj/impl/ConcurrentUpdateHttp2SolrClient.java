@@ -187,7 +187,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !ExecutorUtil.isShutdown(scheduler)) {
               // If there is something else to process, keep last runner alive by staying in the
               // loop.
             } else {
@@ -486,7 +486,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         int loopCount = 0;
         while (!runners.isEmpty()) {
 
-          if (scheduler.isShutdown()) break;
+          if (ExecutorUtil.isShutdown(scheduler)) break;
 
           loopCount++;
 
@@ -556,7 +556,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     long lastStallTime = -1;
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
-      if (scheduler.isTerminated()) {
+      if (ExecutorUtil.isTerminated(scheduler)) {
         log.warn(
             "The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}",
             scheduler,
