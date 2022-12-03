@@ -101,7 +101,7 @@ Build
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
-* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+* SOLR-16442: Upgrade to Lucene 9.4.2 (Christine Poerschke)
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
