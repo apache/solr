@@ -133,7 +133,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
     DocCollection defCol =
-        cloudClient.getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME);
+        cloudClient
+            .getClusterState()
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME);
     Replica replica = defCol.getReplicas().get(0);
     String nodeName = replica.getNodeName();
 
@@ -355,7 +357,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME);
     ClusterState state = zkStateReader.getClusterState();
-    DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME);
+    DocCollection collection =
+        state.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME);
 
     // should be cleaned up
     Slice shard10 = collection.getSlice(SHARD1_0);
@@ -774,9 +777,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   private void incompleteOrOverlappingCustomRangeTest() throws Exception {
     ClusterState clusterState = cloudClient.getClusterState();
     final DocRouter router =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getRouter();
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getRouter();
     Slice shard1 =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1);
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getSlice(SHARD1);
     DocRouter.Range shard1Range =
         shard1.getRange() != null ? shard1.getRange() : router.fullRange();
 
@@ -786,7 +793,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     // test with only one range
     subRanges.add(ranges.get(0));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
+      splitShard(
+          AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
       fail("Shard splitting with just one custom hash range should not succeed");
     } catch (BaseHttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -797,7 +805,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     subRanges.add(ranges.get(3)); // order shouldn't matter
     subRanges.add(ranges.get(0));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
+      splitShard(
+          AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
       fail("Shard splitting with missing hashes in between given ranges should not succeed");
     } catch (BaseHttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -810,7 +819,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     subRanges.add(ranges.get(2));
     subRanges.add(new DocRouter.Range(ranges.get(3).min - 15, ranges.get(3).max));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
+      splitShard(
+          AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
       fail("Shard splitting with overlapping ranges should not succeed");
     } catch (BaseHttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -821,9 +831,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   private void splitByUniqueKeyTest() throws Exception {
     ClusterState clusterState = cloudClient.getClusterState();
     final DocRouter router =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getRouter();
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getRouter();
     Slice shard1 =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1);
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getSlice(SHARD1);
     DocRouter.Range shard1Range =
         shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     List<DocRouter.Range> subRanges = new ArrayList<>();
@@ -894,7 +908,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       for (int i = 0; i < 3; i++) {
         try {
-          splitShard(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME, SHARD1, subRanges, null, false);
+          splitShard(
+              AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME,
+              SHARD1,
+              subRanges,
+              null,
+              false);
           log.info("Layout after split: \n");
           printLayout();
           break;
@@ -1200,7 +1219,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     ClusterState clusterState = cloudClient.getClusterState();
     Slice slice =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getSlice(shard);
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getSlice(shard);
     long[] numFound = new long[slice.getReplicasMap().size()];
     int c = 0;
     for (Replica replica : slice.getReplicas()) {

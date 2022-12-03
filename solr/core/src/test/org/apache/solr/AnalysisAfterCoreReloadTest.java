@@ -37,7 +37,6 @@ import org.junit.BeforeClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     String tmpSolrHome = createTempDir().toFile().getAbsolutePath();

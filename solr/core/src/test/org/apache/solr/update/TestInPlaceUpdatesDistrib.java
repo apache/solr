@@ -1267,7 +1267,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       ClusterState state = cloudClient.getClusterState();
 
       int numActiveReplicas = 0;
-      for (Replica rep : state.getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1).getReplicas())
+      for (Replica rep :
+          state.getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1).getReplicas())
         if (rep.getState().equals(Replica.State.ACTIVE)) numActiveReplicas++;
 
       assertEquals(
@@ -1363,7 +1364,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
       try (ZkShardTerms zkShardTerms =
           new ZkShardTerms(
-                  DEFAULT_TEST_COLLECTION_NAME, SHARD1, ZkStateReader.from(cloudClient).getZkClient())) {
+              DEFAULT_TEST_COLLECTION_NAME,
+              SHARD1,
+              ZkStateReader.from(cloudClient).getZkClient())) {
         for (int i = 0; i < 100; i++) {
           Thread.sleep(10);
           ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_TEST_COLLECTION_NAME);
@@ -1484,7 +1487,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   private String getBaseUrl(String id) {
-    DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
+    DocCollection collection =
+        cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     return slice.getLeader().getCoreUrl();
   }
@@ -1666,7 +1670,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       ClusterState state = cloudClient.getClusterState();
 
       int numActiveReplicas = 0;
-      for (Replica rep : state.getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1).getReplicas())
+      for (Replica rep :
+          state.getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1).getReplicas())
         if (rep.getState().equals(Replica.State.ACTIVE)) numActiveReplicas++;
 
       assertEquals(

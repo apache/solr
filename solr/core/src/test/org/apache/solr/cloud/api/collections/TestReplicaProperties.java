@@ -76,7 +76,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       assertTrue(
           "control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(
-          DEFAULT_TEST_COLLECTION_NAME + " was not found in list", collections.contains(DEFAULT_TEST_COLLECTION_NAME));
+          DEFAULT_TEST_COLLECTION_NAME + " was not found in list",
+          collections.contains(DEFAULT_TEST_COLLECTION_NAME));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
     }
   }

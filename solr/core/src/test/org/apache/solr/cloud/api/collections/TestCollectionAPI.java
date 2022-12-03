@@ -448,7 +448,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertTrue(
           "control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(
-          DEFAULT_TEST_COLLECTION_NAME + " was not found in list", collections.contains(DEFAULT_TEST_COLLECTION_NAME));
+          DEFAULT_TEST_COLLECTION_NAME + " was not found in list",
+          collections.contains(DEFAULT_TEST_COLLECTION_NAME));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
       assertTrue(
           COLLECTION_NAME1 + " was not found in list", collections.contains(COLLECTION_NAME1));
@@ -580,7 +581,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(collections.get(DEFAULT_TEST_COLLECTION_NAME));
       assertEquals(1, collections.size());
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
+      Map<String, Object> collection =
+          (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
       assertEquals("conf1", collection.get("configName"));
       @SuppressWarnings({"unchecked"})
       Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
@@ -625,7 +627,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
       assertNotNull(collections.get(DEFAULT_TEST_COLLECTION_NAME));
-      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
+      Map<String, Object> collection =
+          (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
@@ -668,7 +671,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusRolesTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-      Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
+      Replica replica =
+          ZkStateReader.from(client).getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());

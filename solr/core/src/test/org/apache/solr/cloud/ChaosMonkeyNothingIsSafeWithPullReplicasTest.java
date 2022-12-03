@@ -157,7 +157,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     // Using this low timeout will also help us catch index stalling.
     clientSoTimeout = 8000;
 
-    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
+    DocCollection docCollection =
+        cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
@@ -303,7 +304,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       }
 
       waitForReplicationFromReplicas(
-              DEFAULT_TEST_COLLECTION_NAME,
+          DEFAULT_TEST_COLLECTION_NAME,
           zkStateReader,
           new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
       //      waitForAllWarmingSearchers();
@@ -350,7 +351,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       testSuccessful = true;
     } finally {
       if (!testSuccessful) {
-        logReplicaTypesReplicationInfo(DEFAULT_TEST_COLLECTION_NAME, ZkStateReader.from(cloudClient));
+        logReplicaTypesReplicationInfo(
+            DEFAULT_TEST_COLLECTION_NAME, ZkStateReader.from(cloudClient));
         printLayout();
       }
     }

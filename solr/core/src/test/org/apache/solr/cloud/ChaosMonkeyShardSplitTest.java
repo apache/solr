@@ -67,9 +67,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
     ClusterState clusterState = cloudClient.getClusterState();
     final DocRouter router =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getRouter();
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getRouter();
     Slice shard1 =
-        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME).getSlice(SHARD1);
+        clusterState
+            .getCollection(AbstractDistribZkTestBase.DEFAULT_TEST_COLLECTION_NAME)
+            .getSlice(SHARD1);
     DocRouter.Range shard1Range =
         shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);

@@ -764,7 +764,11 @@ public class ZkTestServer {
       final String srcName,
       String destName)
       throws Exception {
-    Path file = solrhome.resolve(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME).resolve("conf").resolve(srcName);
+    Path file =
+        solrhome
+            .resolve(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME)
+            .resolve("conf")
+            .resolve(srcName);
     if (!Files.exists(file)) {
       if (log.isInfoEnabled()) {
         log.info("skipping {} because it doesn't exist", file.toAbsolutePath());
