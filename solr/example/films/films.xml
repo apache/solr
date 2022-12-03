@@ -800,7 +800,7 @@
   </doc>
   <doc>
     <field name="id">/en/500_years_later</field>
-    <field name="directed_by">Owen &#x27;Alik Shahadah</field>
+    <field name="directed_by">Owen 'Alik Shahadah</field>
     <field name="initial_release_date">2005-10-11</field>
     <field name="genre">Indie film</field>
     <field name="genre">Documentary film</field>
@@ -1161,7 +1161,7 @@
     <field name="genre">Costume Adventure</field>
     <field name="genre">Comedy</field>
     <field name="genre">Drama</field>
-    <field name="name">A Knight&#x27;s Tale</field>
+    <field name="name">A Knight's Tale</field>
     <field name="film_vector">0.07609057426452637</field>
     <field name="film_vector">-0.018783437088131905</field>
     <field name="film_vector">0.008469068445265293</field>
@@ -1285,7 +1285,7 @@
     <field name="genre">Teen film</field>
     <field name="genre">Comedy</field>
     <field name="genre">Drama</field>
-    <field name="name">A Midsummer Night&#x27;s Rave</field>
+    <field name="name">A Midsummer Night's Rave</field>
     <field name="film_vector">0.028935706242918968</field>
     <field name="film_vector">-0.0910683199763298</field>
     <field name="film_vector">0.0026645588222891092</field>
@@ -2136,7 +2136,7 @@
     <field name="genre">Family</field>
     <field name="genre">Action/Adventure</field>
     <field name="genre">Spy film</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Kevin Allen</field>
@@ -2289,7 +2289,7 @@
     <field name="initial_release_date">2006-12-10</field>
     <field name="genre">Family</field>
     <field name="genre">Animal Picture</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Robert Vince</field>
@@ -2608,7 +2608,7 @@
     <field name="genre">World cinema</field>
     <field name="genre">Drama</field>
     <field name="directed_by">Rolf de Heer</field>
-    <field name="name">Alexandra&#x27;s Project</field>
+    <field name="name">Alexandra's Project</field>
     <field name="film_vector">0.015944045037031174</field>
     <field name="film_vector">-0.004278142936527729</field>
     <field name="film_vector">-0.003921349532902241</field>
@@ -2906,7 +2906,7 @@
     <field name="genre">Political drama</field>
     <field name="genre">Thriller</field>
     <field name="directed_by">Steven Zaillian</field>
-    <field name="name">All the King&#x27;s Men</field>
+    <field name="name">All the King's Men</field>
     <field name="film_vector">0.004065403249114752</field>
     <field name="film_vector">0.008905461058020592</field>
     <field name="film_vector">0.01579810120165348</field>
@@ -3175,7 +3175,7 @@
     <field name="genre">Romance Film</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Joe Roth</field>
-    <field name="name">America&#x27;s Sweethearts</field>
+    <field name="name">America's Sweethearts</field>
     <field name="film_vector">0.008612011559307575</field>
     <field name="film_vector">0.05840862914919853</field>
     <field name="film_vector">0.0049528093077242374</field>
@@ -3557,7 +3557,7 @@
     <field name="genre">Biographical film</field>
     <field name="genre">Indie film</field>
     <field name="genre">Drama</field>
-    <field name="directed_by">Tommy O&#x27;Haver</field>
+    <field name="directed_by">Tommy O'Haver</field>
     <field name="name">An American Crime</field>
     <field name="film_vector">0.00023284772760234773</field>
     <field name="film_vector">0.06734582036733627</field>
@@ -3598,8 +3598,8 @@
     <field name="genre">Music</field>
     <field name="genre">Family</field>
     <field name="genre">Adventure Film</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="directed_by">Larry Latham</field>
     <field name="name">An American Tail: The Mystery of the Night Monster</field>
@@ -3675,7 +3675,7 @@
     <field name="genre">Animation</field>
     <field name="genre">Coming of age</field>
     <field name="genre">Animated Musical</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Ian Harrowell</field>
     <field name="directed_by">Douglas McCarthy</field>
@@ -4071,7 +4071,7 @@
     <field name="genre">Fantasy</field>
     <field name="genre">Sports</field>
     <field name="genre">Family</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Heavenly Comedy</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Robert King</field>
@@ -4468,7 +4468,7 @@
     <field name="genre">Comedy</field>
     <field name="genre">Drama</field>
     <field name="directed_by">Trish Doolan</field>
-    <field name="name">April&#x27;s Shower</field>
+    <field name="name">April's Shower</field>
     <field name="film_vector">0.02294076234102249</field>
     <field name="film_vector">-0.0397678017616272</field>
     <field name="film_vector">-0.020937809720635414</field>
@@ -5368,7 +5368,7 @@
     <field name="genre">Documentary film</field>
     <field name="genre">Indie film</field>
     <field name="directed_by">Adam Yauch</field>
-    <field name="name">Awesome; I Fuckin&#x27; Shot That!</field>
+    <field name="name">Awesome; I Fuckin' Shot That!</field>
     <field name="film_vector">-0.007288065273314714</field>
     <field name="film_vector">-0.032065000385046005</field>
     <field name="film_vector">-0.009940560907125473</field>
@@ -5705,7 +5705,7 @@
     <field name="genre">War film</field>
     <field name="genre">Biographical film</field>
     <field name="directed_by">Jon Alpert</field>
-    <field name="directed_by">Matthew O&#x27;Neill</field>
+    <field name="directed_by">Matthew O'Neill</field>
     <field name="name">Baghdad ER</field>
     <field name="film_vector">0.02704862877726555</field>
     <field name="film_vector">-0.005940170027315617</field>
@@ -5855,7 +5855,7 @@
     <field name="genre">Family</field>
     <field name="genre">Adventure Film</field>
     <field name="genre">Coming of age</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="directed_by">Brian Pimental</field>
     <field name="name">Bambi II</field>
@@ -6495,7 +6495,7 @@
     <field name="id">/en/beer_league</field>
     <field name="directed_by">Frank Sebastiano</field>
     <field name="initial_release_date">2006-09-15</field>
-    <field name="name">Artie Lange&#x27;s Beer League</field>
+    <field name="name">Artie Lange's Beer League</field>
     <field name="genre">Sports</field>
     <field name="genre">Indie film</field>
     <field name="genre">Comedy</field>
@@ -6696,7 +6696,7 @@
   <doc>
     <field name="id">/en/bekhals_tears</field>
     <field name="directed_by">Lauand Omar</field>
-    <field name="name">Bekhal&#x27;s Tears</field>
+    <field name="name">Bekhal's Tears</field>
     <field name="genre">Drama</field>
     <field name="film_vector">0.05063273757696152</field>
     <field name="film_vector">-0.028470542281866074</field>
@@ -6799,7 +6799,7 @@
     <field name="id">/en/bendito_infierno</field>
     <field name="directed_by">Agustín Díaz Yanes</field>
     <field name="initial_release_date">2001-11-28</field>
-    <field name="name">Don&#x27;t Tempt Me</field>
+    <field name="name">Don't Tempt Me</field>
     <field name="genre">Religious Film</field>
     <field name="genre">Fantasy</field>
     <field name="genre">Comedy</field>
@@ -7229,7 +7229,7 @@
     <field name="id">/en/big_girls_dont_cry_2002</field>
     <field name="directed_by">Maria von Heland</field>
     <field name="initial_release_date">2002-10-24</field>
-    <field name="name">Big Girls Don&#x27;t Cry</field>
+    <field name="name">Big Girls Don't Cry</field>
     <field name="genre">World cinema</field>
     <field name="genre">Melodrama</field>
     <field name="genre">Teen film</field>
@@ -7266,7 +7266,7 @@
     <field name="id">/en/big_mommas_house</field>
     <field name="directed_by">Raja Gosnell</field>
     <field name="initial_release_date">2000-05-31</field>
-    <field name="name">Big Momma&#x27;s House</field>
+    <field name="name">Big Momma's House</field>
     <field name="genre">Action Film</field>
     <field name="genre">Crime Fiction</field>
     <field name="genre">Comedy</field>
@@ -7285,7 +7285,7 @@
     <field name="id">/en/big_mommas_house_2</field>
     <field name="directed_by">John Whitesell</field>
     <field name="initial_release_date">2006-01-26</field>
-    <field name="name">Big Momma&#x27;s House 2</field>
+    <field name="name">Big Momma's House 2</field>
     <field name="genre">Crime Fiction</field>
     <field name="genre">Slapstick</field>
     <field name="genre">Action Film</field>
@@ -7461,8 +7461,8 @@
     <field name="genre">Family</field>
     <field name="genre">Computer Animation</field>
     <field name="genre">Science Fiction</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Adventure</field>
     <field name="film_vector">0.011821947060525417</field>
     <field name="film_vector">0.028168655931949615</field>
@@ -7487,8 +7487,8 @@
     <field name="genre">Adventure Film</field>
     <field name="genre">Computer Animation</field>
     <field name="genre">Science Fiction</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Adventure</field>
     <field name="film_vector">0.04854694381356239</field>
     <field name="film_vector">0.003056037239730358</field>
@@ -8014,7 +8014,7 @@
     <field name="id">/en/bloodsport_ecws_most_violent_matches</field>
     <directed_by/>
     <field name="initial_release_date">2006-02-07</field>
-    <field name="name">Bloodsport - ECW&#x27;s Most Violent Matches</field>
+    <field name="name">Bloodsport - ECW's Most Violent Matches</field>
     <field name="genre">Documentary film</field>
     <field name="genre">Sports</field>
     <field name="film_vector">0.013195239007472992</field>
@@ -8620,7 +8620,7 @@
     <field name="directed_by">Zana Briski</field>
     <field name="directed_by">Ross Kauffman</field>
     <field name="initial_release_date">2004-01-17</field>
-    <field name="name">Born into Brothels: Calcutta&#x27;s Red Light Kids</field>
+    <field name="name">Born into Brothels: Calcutta's Red Light Kids</field>
     <field name="genre">Documentary film</field>
     <field name="film_vector">0.01603614166378975</field>
     <field name="film_vector">0.06748615205287933</field>
@@ -8678,7 +8678,7 @@
     <field name="id">/en/bossn_up</field>
     <field name="directed_by">Dylan C. Brown</field>
     <field name="initial_release_date">2005-06-01</field>
-    <field name="name">Boss&#x27;n Up</field>
+    <field name="name">Boss'n Up</field>
     <field name="genre">Musical</field>
     <field name="genre">Indie film</field>
     <field name="genre">Crime Fiction</field>
@@ -8861,7 +8861,7 @@
     <field name="id">/en/breakin_all_the_rules</field>
     <field name="directed_by">Daniel Taplitz</field>
     <field name="initial_release_date">2004-05-14</field>
-    <field name="name">Breakin&#x27; All the Rules</field>
+    <field name="name">Breakin' All the Rules</field>
     <field name="genre">Romance Film</field>
     <field name="genre">Romantic comedy</field>
     <field name="genre">Comedy of Errors</field>
@@ -8970,7 +8970,7 @@
     <field name="id">/en/bridget_joness_diary_2001</field>
     <field name="directed_by">Sharon Maguire</field>
     <field name="initial_release_date">2001-04-04</field>
-    <field name="name">Bridget Jones&#x27;s Diary</field>
+    <field name="name">Bridget Jones's Diary</field>
     <field name="genre">Romantic comedy</field>
     <field name="genre">Film adaptation</field>
     <field name="genre">Romance Film</field>
@@ -10096,8 +10096,8 @@
     <field name="genre">Musical</field>
     <field name="genre">Computer Animation</field>
     <field name="genre">Animation</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Musical comedy</field>
     <field name="genre">Comedy</field>
     <field name="genre">Family</field>
@@ -10269,7 +10269,7 @@
     <field name="genre">Crime Fiction</field>
     <field name="genre">Family</field>
     <field name="genre">Caper story</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Crime Comedy</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Comedy</field>
@@ -10310,7 +10310,7 @@
     <field name="genre">Adventure Film</field>
     <field name="genre">Family</field>
     <field name="genre">Action Film</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Adventure</field>
     <field name="genre">Fantasy Comedy</field>
     <field name="genre">Comedy</field>
@@ -10718,8 +10718,8 @@
     <field name="genre">Remake</field>
     <field name="genre">Adventure Film</field>
     <field name="genre">Family</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Comedy</field>
     <field name="film_vector">0.03591280058026314</field>
     <field name="film_vector">-0.008112381212413311</field>
@@ -10735,7 +10735,7 @@
   <doc>
     <field name="id">/en/charlies_angels</field>
     <field name="initial_release_date">2000-10-22</field>
-    <field name="name">Charlie&#x27;s Angels</field>
+    <field name="name">Charlie's Angels</field>
     <field name="directed_by">Joseph McGinty Nichol</field>
     <field name="genre">Action Film</field>
     <field name="genre">Crime Fiction</field>
@@ -10756,7 +10756,7 @@
   <doc>
     <field name="id">/en/charlies_angels_full_throttle</field>
     <field name="initial_release_date">2003-06-18</field>
-    <field name="name">Charlie&#x27;s Angels: Full Throttle</field>
+    <field name="name">Charlie's Angels: Full Throttle</field>
     <field name="directed_by">Joseph McGinty Nichol</field>
     <field name="genre">Martial Arts Film</field>
     <field name="genre">Action Film</field>
@@ -10801,7 +10801,7 @@
   <doc>
     <field name="id">/en/charlottes_web</field>
     <field name="initial_release_date">2006-12-07</field>
-    <field name="name">Charlotte&#x27;s Web</field>
+    <field name="name">Charlotte's Web</field>
     <field name="directed_by">Gary Winick</field>
     <field name="genre">Animation</field>
     <field name="genre">Family</field>
@@ -11301,7 +11301,7 @@
     <field name="name">CHiPs</field>
     <directed_by/>
     <field name="genre">Musical</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="film_vector">-0.052642617374658585</field>
     <field name="film_vector">0.01527517382055521</field>
     <field name="film_vector">-0.02702157199382782</field>
@@ -11358,7 +11358,7 @@
     <field name="directed_by">Bob Doucette</field>
     <field name="genre">Adventure Film</field>
     <field name="genre">Family</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Animation</field>
     <field name="film_vector">0.03722238540649414</field>
@@ -11463,7 +11463,7 @@
   <doc>
     <field name="id">/en/christinas_house</field>
     <field name="initial_release_date">2000-02-24</field>
-    <field name="name">Christina&#x27;s House</field>
+    <field name="name">Christina's House</field>
     <field name="directed_by">Gavin Wilding</field>
     <field name="genre">Thriller</field>
     <field name="genre">Mystery</field>
@@ -11629,7 +11629,7 @@
     <field name="genre">Fantasy</field>
     <field name="genre">Romance Film</field>
     <field name="genre">Animation</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="film_vector">0.06215359643101692</field>
     <field name="film_vector">-0.017738232389092445</field>
     <field name="film_vector">0.021471574902534485</field>
@@ -13019,7 +13019,7 @@
     <field name="genre">Adventure Film</field>
     <field name="genre">Family</field>
     <field name="genre">Comedy</field>
-    <field name="directed_by">Matthew O&#x27;Callaghan</field>
+    <field name="directed_by">Matthew O'Callaghan</field>
     <field name="name">Curious George</field>
     <field name="film_vector">0.025676831603050232</field>
     <field name="film_vector">-0.014652357436716557</field>
@@ -13481,7 +13481,7 @@
     <field name="genre">Short Film</field>
     <field name="genre">Fan film</field>
     <field name="directed_by">John E. Hudgens</field>
-    <field name="name">Darth Vader&#x27;s Psychic Hotline</field>
+    <field name="name">Darth Vader's Psychic Hotline</field>
     <field name="film_vector">0.06745615601539612</field>
     <field name="film_vector">0.011641361750662327</field>
     <field name="film_vector">0.027391066774725914</field>
@@ -13500,7 +13500,7 @@
     <field name="genre">Political cinema</field>
     <field name="genre">Biographical film</field>
     <field name="directed_by">Hubert Sauper</field>
-    <field name="name">Darwin&#x27;s Nightmare</field>
+    <field name="name">Darwin's Nightmare</field>
     <field name="film_vector">0.035014498978853226</field>
     <field name="film_vector">0.024714438244700432</field>
     <field name="film_vector">-0.008402195759117603</field>
@@ -13577,7 +13577,7 @@
     <field name="genre">Stand-up comedy</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Joel Gallen</field>
-    <field name="name">Dave Attell&#x27;s Insomniac Tour</field>
+    <field name="name">Dave Attell's Insomniac Tour</field>
     <field name="film_vector">-0.018376534804701805</field>
     <field name="film_vector">0.02034657448530197</field>
     <field name="film_vector">-0.012187198735773563</field>
@@ -13599,7 +13599,7 @@
     <field name="genre">Stand-up comedy</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Michel Gondry</field>
-    <field name="name">Dave Chappelle&#x27;s Block Party</field>
+    <field name="name">Dave Chappelle's Block Party</field>
     <field name="film_vector">0.01968725398182869</field>
     <field name="film_vector">-0.03331653028726578</field>
     <field name="film_vector">0.004401731304824352</field>
@@ -13857,7 +13857,7 @@
     <field name="genre">Thriller</field>
     <field name="genre">Drama</field>
     <field name="directed_by">Shane Meadows</field>
-    <field name="name">Dead Man&#x27;s Shoes</field>
+    <field name="name">Dead Man's Shoes</field>
     <field name="film_vector">-0.0021695757750421762</field>
     <field name="film_vector">-0.03216599300503731</field>
     <field name="film_vector">-0.005223553627729416</field>
@@ -13915,7 +13915,7 @@
     <field name="initial_release_date">2004-02-11</field>
     <field name="genre">Documentary film</field>
     <field name="genre">War film</field>
-    <field name="genre">Children&#x27;s Issues</field>
+    <field name="genre">Children's Issues</field>
     <field name="genre">Culture &amp;amp; Society</field>
     <field name="genre">Biographical film</field>
     <field name="directed_by">James Miller</field>
@@ -14244,7 +14244,7 @@
     <field name="genre">Music</field>
     <field name="genre">Documentary film</field>
     <field name="directed_by">Julia Knowles</field>
-    <field name="name">Destiny&#x27;s Child: Live In Atlana</field>
+    <field name="name">Destiny's Child: Live In Atlana</field>
     <field name="film_vector">0.006862192880362272</field>
     <field name="film_vector">0.03266957774758339</field>
     <field name="film_vector">-0.03464263305068016</field>
@@ -14341,7 +14341,7 @@
   <doc>
     <field name="id">/en/devils_playground_2003</field>
     <field name="initial_release_date">2003-02-04</field>
-    <field name="name">Devil&#x27;s Playground</field>
+    <field name="name">Devil's Playground</field>
     <field name="directed_by">Lucy Walker</field>
     <field name="genre">Documentary film</field>
     <field name="film_vector">0.011853309348225594</field>
@@ -14358,7 +14358,7 @@
   <doc>
     <field name="id">/en/the_devils_pond</field>
     <field name="initial_release_date">2003-10-21</field>
-    <field name="name">Devil&#x27;s Pond</field>
+    <field name="name">Devil's Pond</field>
     <field name="directed_by">Joel Viertel</field>
     <field name="genre">Thriller</field>
     <field name="genre">Suspense</field>
@@ -14559,7 +14559,7 @@
   <doc>
     <field name="id">/en/dieu_est_grand_je_suis_toute_petite</field>
     <field name="initial_release_date">2001-09-26</field>
-    <field name="name">God Is Great and I&#x27;m Not</field>
+    <field name="name">God Is Great and I'm Not</field>
     <field name="directed_by">Pascale Bailly</field>
     <field name="genre">Romantic comedy</field>
     <field name="genre">World cinema</field>
@@ -15228,7 +15228,7 @@
   <doc>
     <field name="id">/en/dons_plum</field>
     <field name="initial_release_date">2001-02-10</field>
-    <field name="name">Don&#x27;s Plum</field>
+    <field name="name">Don's Plum</field>
     <field name="directed_by">R.D. Robb</field>
     <field name="genre">Black-and-white</field>
     <field name="genre">Ensemble Film</field>
@@ -15248,7 +15248,7 @@
   <doc>
     <field name="id">/en/dont_come_knocking</field>
     <field name="initial_release_date">2005-05-19</field>
-    <field name="name">Don&#x27;t Come Knocking</field>
+    <field name="name">Don't Come Knocking</field>
     <field name="directed_by">Wim Wenders</field>
     <field name="genre">Western</field>
     <field name="genre">Indie film</field>
@@ -15270,7 +15270,7 @@
   <doc>
     <field name="id">/en/dont_move</field>
     <field name="initial_release_date">2004-03-12</field>
-    <field name="name">Don&#x27;t Move</field>
+    <field name="name">Don't Move</field>
     <field name="directed_by">Sergio Castellitto</field>
     <field name="genre">Romance Film</field>
     <field name="genre">Drama</field>
@@ -15288,7 +15288,7 @@
   <doc>
     <field name="id">/en/dont_say_a_word_2001</field>
     <field name="initial_release_date">2001-09-24</field>
-    <field name="name">Don&#x27;t Say a Word</field>
+    <field name="name">Don't Say a Word</field>
     <field name="directed_by">Gary Fleder</field>
     <field name="genre">Thriller</field>
     <field name="genre">Psychological thriller</field>
@@ -15410,7 +15410,7 @@
     <field name="genre">Family</field>
     <field name="genre">Biographical film</field>
     <field name="genre">Family Drama</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Sports</field>
     <field name="film_vector">-0.04949349910020828</field>
     <field name="film_vector">0.028503935784101486</field>
@@ -15616,7 +15616,7 @@
   <doc>
     <field name="id">/en/dracula_pages_from_a_virgins_diary</field>
     <field name="initial_release_date">2002-02-28</field>
-    <field name="name">Dracula: Pages from a Virgin&#x27;s Diary</field>
+    <field name="name">Dracula: Pages from a Virgin's Diary</field>
     <field name="directed_by">Guy Maddin</field>
     <field name="genre">Silent film</field>
     <field name="genre">Indie film</field>
@@ -15938,7 +15938,7 @@
   <doc>
     <field name="id">/en/dude_wheres_my_car</field>
     <field name="initial_release_date">2000-12-10</field>
-    <field name="name">Dude, Where&#x27;s My Car?</field>
+    <field name="name">Dude, Where's My Car?</field>
     <field name="directed_by">Danny Leiner</field>
     <field name="genre">Mystery</field>
     <field name="genre">Comedy</field>
@@ -15956,7 +15956,7 @@
   </doc>
   <doc>
     <field name="id">/en/dude_wheres_the_party</field>
-    <field name="name">Dude, Where&#x27;s the Party?</field>
+    <field name="name">Dude, Where's the Party?</field>
     <field name="directed_by">Benny Mathews</field>
     <field name="genre">Indie film</field>
     <field name="genre">Comedy of manners</field>
@@ -16234,7 +16234,7 @@
   <doc>
     <field name="id">/en/eddies_million_dollar_cook_off</field>
     <field name="initial_release_date">2003-07-18</field>
-    <field name="name">Eddie&#x27;s Million Dollar Cook-Off</field>
+    <field name="name">Eddie's Million Dollar Cook-Off</field>
     <field name="directed_by">Paul Hoen</field>
     <field name="genre">Teen film</field>
     <field name="film_vector">0.009522057138383389</field>
@@ -16585,7 +16585,7 @@
     <field name="genre">Experimental film</field>
     <field name="genre">Road movie</field>
     <field name="genre">Drama</field>
-    <field name="name">Daft Punk&#x27;s Electroma</field>
+    <field name="name">Daft Punk's Electroma</field>
     <field name="film_vector">0.022507771849632263</field>
     <field name="film_vector">-0.06573710590600967</field>
     <field name="film_vector">-0.017726382240653038</field>
@@ -16711,7 +16711,7 @@
     <field name="genre">Haunted House Film</field>
     <field name="genre">Horror comedy</field>
     <field name="genre">Comedy</field>
-    <field name="name">Elvira&#x27;s Haunted Hills</field>
+    <field name="name">Elvira's Haunted Hills</field>
     <field name="film_vector">0.05292726308107376</field>
     <field name="film_vector">-0.01513720490038395</field>
     <field name="film_vector">0.01793811284005642</field>
@@ -16809,7 +16809,7 @@
     <field name="directed_by">Nelson Shin</field>
     <field name="initial_release_date">2005-08-12</field>
     <field name="genre">Animation</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">East Asian cinema</field>
     <field name="genre">World cinema</field>
     <field name="name">Empress Chung</field>
@@ -17298,7 +17298,7 @@
     <field name="genre">World cinema</field>
     <field name="genre">Comedy</field>
     <field name="genre">Drama</field>
-    <field name="name">Everybody&#x27;s Famous!</field>
+    <field name="name">Everybody's Famous!</field>
     <field name="film_vector">0.02518170326948166</field>
     <field name="film_vector">0.01402503065764904</field>
     <field name="film_vector">0.008842937648296356</field>
@@ -17315,7 +17315,7 @@
     <field name="directed_by">Fritz Lehner</field>
     <field name="initial_release_date">2002-01-25</field>
     <field name="genre">Drama</field>
-    <field name="name">Everyman&#x27;s Feast</field>
+    <field name="name">Everyman's Feast</field>
     <field name="film_vector">0.00957414135336876</field>
     <field name="film_vector">0.009927904233336449</field>
     <field name="film_vector">-0.019360920414328575</field>
@@ -17338,9 +17338,9 @@
     <field name="genre">Animation</field>
     <field name="genre">Adventure Film</field>
     <field name="genre">Sports</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
-    <field name="name">Everyone&#x27;s Hero</field>
+    <field name="name">Everyone's Hero</field>
     <field name="film_vector">-0.015297233127057552</field>
     <field name="film_vector">-0.0015204370720312</field>
     <field name="film_vector">-0.021153001114726067</field>
@@ -18567,7 +18567,7 @@
   <doc>
     <field name="id">/en/finders_fee</field>
     <field name="initial_release_date">2001-06-16</field>
-    <field name="name">Finder&#x27;s Fee</field>
+    <field name="name">Finder's Fee</field>
     <field name="directed_by">Jeff Probst</field>
     <field name="genre">Thriller</field>
     <field name="genre">Psychological thriller</field>
@@ -18853,7 +18853,7 @@
     <field name="genre">Animation</field>
     <field name="genre">Family</field>
     <field name="genre">Adventure Film</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Comedy</field>
     <field name="film_vector">0.02211792767047882</field>
@@ -19108,7 +19108,7 @@
   <doc>
     <field name="id">/en/franklins_magic_christmas</field>
     <field name="initial_release_date">2001-11-06</field>
-    <field name="name">Franklin&#x27;s Magic Christmas</field>
+    <field name="name">Franklin's Magic Christmas</field>
     <field name="directed_by">John van Bruggen</field>
     <field name="genre">Family</field>
     <field name="genre">Animation</field>
@@ -19229,7 +19229,7 @@
   <doc>
     <field name="id">/en/french_bean</field>
     <field name="initial_release_date">2007-03-22</field>
-    <field name="name">Mr. Bean&#x27;s Holiday</field>
+    <field name="name">Mr. Bean's Holiday</field>
     <field name="directed_by">Steve Bendelack</field>
     <field name="genre">Family</field>
     <field name="genre">Comedy</field>
@@ -19988,7 +19988,7 @@
     <field name="directed_by">Tim Hill</field>
     <field name="genre">Family</field>
     <field name="genre">Animal Picture</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family-Oriented Adventure</field>
     <field name="genre">Comedy</field>
     <field name="film_vector">0.04184884577989578</field>
@@ -20125,7 +20125,7 @@
     <field name="id">/en/get_over_it</field>
     <field name="initial_release_date">2001-03-09</field>
     <field name="name">Get Over It</field>
-    <field name="directed_by">Tommy O&#x27;Haver</field>
+    <field name="directed_by">Tommy O'Haver</field>
     <field name="genre">Musical</field>
     <field name="genre">Romantic comedy</field>
     <field name="genre">Teen film</field>
@@ -20152,7 +20152,7 @@
   <doc>
     <field name="id">/en/get_rich_or_die_tryin</field>
     <field name="initial_release_date">2005-11-09</field>
-    <field name="name">Get Rich or Die Tryin&#x27;</field>
+    <field name="name">Get Rich or Die Tryin'</field>
     <field name="directed_by">Jim Sheridan</field>
     <field name="genre">Coming of age</field>
     <field name="genre">Crime Fiction</field>
@@ -20482,7 +20482,7 @@
   <doc>
     <field name="id">/m/06ry42</field>
     <field name="initial_release_date">2004-10-28</field>
-    <field name="name">The International Playboys&#x27; First Movie: Ghouls Gone Wild!</field>
+    <field name="name">The International Playboys' First Movie: Ghouls Gone Wild!</field>
     <field name="genre">Short Film</field>
     <field name="genre">Musical</field>
     <field name="directed_by">Ted Geoghegan</field>
@@ -21246,7 +21246,7 @@
     <field name="name">Gotta Kick It Up!</field>
     <field name="genre">Teen film</field>
     <field name="genre">Television film</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family</field>
     <field name="directed_by">Ramón Menéndez</field>
     <field name="film_vector">-0.0056592742912471294</field>
@@ -21263,7 +21263,7 @@
   <doc>
     <field name="id">/en/goyas_ghosts</field>
     <field name="initial_release_date">2006-11-08</field>
-    <field name="name">Goya&#x27;s Ghosts</field>
+    <field name="name">Goya's Ghosts</field>
     <field name="genre">Biographical film</field>
     <field name="genre">War film</field>
     <field name="genre">Drama</field>
@@ -21329,7 +21329,7 @@
   <doc>
     <field name="id">/en/grandmas_boy</field>
     <field name="initial_release_date">2006-01-06</field>
-    <field name="name">Grandma&#x27;s Boy</field>
+    <field name="name">Grandma's Boy</field>
     <field name="genre">Stoner film</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">Nicholaus Goossen</field>
@@ -21753,7 +21753,7 @@
   <doc>
     <field name="id">/en/h_g_wells_the_war_of_the_worlds</field>
     <field name="initial_release_date">2005-06-14</field>
-    <field name="name">H. G. Wells&#x27; The War of the Worlds</field>
+    <field name="name">H. G. Wells' The War of the Worlds</field>
     <field name="genre">Indie film</field>
     <field name="genre">Steampunk</field>
     <field name="genre">Science Fiction</field>
@@ -21773,7 +21773,7 @@
   <doc>
     <field name="id">/en/h_g_wells_war_of_the_worlds</field>
     <field name="initial_release_date">2005-06-28</field>
-    <field name="name">H. G. Wells&#x27; War of the Worlds</field>
+    <field name="name">H. G. Wells' War of the Worlds</field>
     <field name="genre">Indie film</field>
     <field name="genre">Science Fiction</field>
     <field name="genre">Thriller</field>
@@ -21954,10 +21954,10 @@
   <doc>
     <field name="id">/en/halloweentown_ii_kalabars_revenge</field>
     <field name="initial_release_date">2001-10-12</field>
-    <field name="name">Halloweentown II: Kalabar&#x27;s Revenge</field>
+    <field name="name">Halloweentown II: Kalabar's Revenge</field>
     <field name="genre">Fantasy</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Family</field>
     <field name="directed_by">Mary Lambert</field>
     <field name="film_vector">0.06953053921461105</field>
@@ -21976,7 +21976,7 @@
     <field name="initial_release_date">2006-10-20</field>
     <field name="name">Return to Halloweentown</field>
     <field name="genre">Family</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Comedy</field>
     <field name="genre">Comedy</field>
     <field name="directed_by">David Jackson</field>
@@ -22114,7 +22114,7 @@
   <doc>
     <field name="id">/en/happily_never_after</field>
     <field name="initial_release_date">2006-12-16</field>
-    <field name="name">Happily N&#x27;Ever After</field>
+    <field name="name">Happily N'Ever After</field>
     <field name="genre">Fantasy</field>
     <field name="genre">Animation</field>
     <field name="genre">Family</field>
@@ -22378,8 +22378,8 @@
     <field name="genre">Science Fiction</field>
     <field name="genre">Supernatural</field>
     <field name="genre">Mystery</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Adventure</field>
     <field name="genre">Fiction</field>
     <field name="directed_by">Mike Newell</field>
@@ -22404,8 +22404,8 @@
     <field name="genre">Action Film</field>
     <field name="genre">Family</field>
     <field name="genre">Romance Film</field>
-    <field name="genre">Children&#x27;s Fantasy</field>
-    <field name="genre">Children&#x27;s/Family</field>
+    <field name="genre">Children's Fantasy</field>
+    <field name="genre">Children's/Family</field>
     <field name="genre">Fantasy Adventure</field>
     <field name="genre">Fiction</field>
     <field name="directed_by">David Yates</field>
