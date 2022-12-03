@@ -148,7 +148,7 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
 
     Thread.sleep(5000);
 
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), false, true);
+    waitForRecoveriesToFinish(DEFAULT_TEST_COLLECTION_NAME, ZkStateReader.from(cloudClient), false, true);
 
     for (StoppableIndexingThread thread : threads) {
       thread.join();

@@ -103,7 +103,7 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase
 
     Thread.sleep(2000);
 
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), false, true);
+    waitForRecoveriesToFinish(DEFAULT_TEST_COLLECTION_NAME, ZkStateReader.from(cloudClient), false, true);
 
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();

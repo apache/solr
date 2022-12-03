@@ -117,7 +117,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   private void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
     assertEquals(
-        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+        4, cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.

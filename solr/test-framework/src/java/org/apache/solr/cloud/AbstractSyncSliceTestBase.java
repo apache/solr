@@ -96,7 +96,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.SYNCSHARD.toString());
-    params.set("collection", "collection1");
+    params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
     params.set("shard", "shard1");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -210,7 +210,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
     zkStateReader.waitForState(
-        "collection1",
+        DEFAULT_TEST_COLLECTION_NAME,
         3,
         TimeUnit.MINUTES,
         (n, c) -> {

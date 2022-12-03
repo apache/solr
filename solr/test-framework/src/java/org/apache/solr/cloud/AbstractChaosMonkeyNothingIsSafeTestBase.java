@@ -146,13 +146,13 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
     clientSoTimeout = 5000;
 
     boolean testSuccessful = false;
-    try (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
+    try (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_TEST_COLLECTION_NAME)) {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
       ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, "shard" + j, 10000);
       } // make sure we again have leaders for each shard
 
       waitForRecoveriesToFinish(false);
@@ -242,7 +242,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
 
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 30000);
+        zkStateReader.getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, "shard" + j, 30000);
       }
 
       commit();

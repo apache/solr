@@ -448,7 +448,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertTrue(
           "control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(
-          DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));
+          DEFAULT_TEST_COLLECTION_NAME + " was not found in list", collections.contains(DEFAULT_TEST_COLLECTION_NAME));
       assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
       assertTrue(
           COLLECTION_NAME1 + " was not found in list", collections.contains(COLLECTION_NAME1));
@@ -557,7 +557,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
-    try (CloudSolrClient client = createCloudClient(DEFAULT_COLLECTION)) {
+    try (CloudSolrClient client = createCloudClient(DEFAULT_TEST_COLLECTION_NAME)) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "a!123"); // goes to shard2. see ShardRoutingTest for details
       client.add(doc);
@@ -565,7 +565,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      params.set("collection", DEFAULT_COLLECTION);
+      params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
       params.set(ShardParams._ROUTE_, "a!");
       QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
@@ -577,10 +577,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       @SuppressWarnings({"unchecked"})
       NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
-      assertNotNull(collections.get(DEFAULT_COLLECTION));
+      assertNotNull(collections.get(DEFAULT_TEST_COLLECTION_NAME));
       assertEquals(1, collections.size());
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
+      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
       assertEquals("conf1", collection.get("configName"));
       @SuppressWarnings({"unchecked"})
       Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
@@ -598,7 +598,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
-      params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
+      params.set("collections", DEFAULT_TEST_COLLECTION_NAME + "," + COLLECTION_NAME);
       QueryRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
@@ -607,7 +607,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       // request a collection that's part of an alias
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      params.set("collection", DEFAULT_COLLECTION);
+      params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
       request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
@@ -619,13 +619,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull("Aliases should not be null", aliases);
       assertEquals(
           "Alias: myalias not found in cluster status",
-          DEFAULT_COLLECTION + "," + COLLECTION_NAME,
+          DEFAULT_TEST_COLLECTION_NAME + "," + COLLECTION_NAME,
           aliases.get("myalias"));
 
       NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
-      assertNotNull(collections.get(DEFAULT_COLLECTION));
-      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
+      assertNotNull(collections.get(DEFAULT_TEST_COLLECTION_NAME));
+      Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_TEST_COLLECTION_NAME);
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
@@ -644,7 +644,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull("Cluster state should not be null", cluster);
       collections = (NamedList<Object>) cluster.get("collections");
       assertNotNull("Collections should not be null in cluster state", collections);
-      assertNotNull(collections.get(DEFAULT_COLLECTION));
+      assertNotNull(collections.get(DEFAULT_TEST_COLLECTION_NAME));
       assertNotNull(collections.get(COLLECTION_NAME));
 
       // status request on something neither an alias nor a collection itself
@@ -668,7 +668,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusRolesTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-      Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
+      Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
@@ -680,7 +680,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
-      params.set("collection", DEFAULT_COLLECTION);
+      params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
       request = new QueryRequest(params);
       request.setPath("/admin/collections");
 

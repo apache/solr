@@ -27,7 +27,7 @@ import org.junit.Test;
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
   // enable this to be configurable (more work needs to be done)
-  String collection = DEFAULT_COLLECTION;
+  String collection = DEFAULT_TEST_COLLECTION_NAME;
 
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
@@ -65,7 +65,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     j.start();
     assertEquals(
         0,
-        CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
+        CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
             .setCreateNodeSet("")
             .process(cloudClient)
             .getStatus());
@@ -79,7 +79,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     SolrClient client = createNewSolrClient(j.getLocalPort());
     clients.add(client);
 
-    waitForActiveReplicaCount(cloudClient, DEFAULT_COLLECTION, 1);
+    waitForActiveReplicaCount(cloudClient, DEFAULT_TEST_COLLECTION_NAME, 1);
 
     updateMappingsFromZk(this.jettys, this.clients);
 

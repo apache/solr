@@ -129,7 +129,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
       // TODO: bring this to its own method?
       // try indexing to a leader that has no replicas up
       ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, SHARD2);
+      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, SHARD2);
 
       String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       chaosMonkey.stopShardExcept(SHARD2, nodeName);
@@ -295,7 +295,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
-    ZkStateReader.from(cloudClient).getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 60000);
+    ZkStateReader.from(cloudClient).getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, SHARD1, 60000);
 
     try {
       index_specific(
@@ -325,7 +325,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     query("q", "*:*", "sort", "n_tl1 desc");
 
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    cloudClient.setDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
 
     long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 

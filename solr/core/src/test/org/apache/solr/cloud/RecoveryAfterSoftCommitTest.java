@@ -79,7 +79,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void test() throws Exception {
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, true);
+    waitForRecoveriesToFinish(DEFAULT_TEST_COLLECTION_NAME, true);
     // flush twice
     int i = 0;
     for (; i < MAX_BUFFERED_DOCS + 1; i++) {
@@ -94,7 +94,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
         new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true, true);
     cloudClient.request(request);
 
-    Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);
+    Replica notLeader = ensureAllReplicasAreActive(DEFAULT_TEST_COLLECTION_NAME, "shard1", 1, 2, 30).get(0);
     // ok, now introduce a network partition between the leader and the replica
     SocketProxy proxy = getProxyForReplica(notLeader);
 
@@ -120,6 +120,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
     proxy.reopen();
 
-    List<Replica> notLeaders = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30);
+    List<Replica> notLeaders = ensureAllReplicasAreActive(DEFAULT_TEST_COLLECTION_NAME, "shard1", 1, 2, 30);
   }
 }

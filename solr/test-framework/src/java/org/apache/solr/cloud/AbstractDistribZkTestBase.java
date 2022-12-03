@@ -52,7 +52,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   private static final String ENABLE_UPDATE_LOG = "enable.update.log";
   private static final String ZK_HOST = "zkHost";
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
-  protected static final String DEFAULT_COLLECTION = "collection1";
   protected volatile ZkTestServer zkServer;
   private final AtomicInteger homeCount = new AtomicInteger();
 
@@ -246,7 +245,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       throws Exception {
     log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
+    zkStateReader.forceUpdateCollection(DEFAULT_TEST_COLLECTION_NAME);
 
     for (; ; ) {
       ClusterState clusterState = zkStateReader.getClusterState();
