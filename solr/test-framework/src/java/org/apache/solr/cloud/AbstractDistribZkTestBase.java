@@ -249,7 +249,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     for (; ; ) {
       ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
+      DocCollection coll = clusterState.getCollection(DEFAULT_TEST_COLLECTION_NAME);
       Slice slice = coll.getSlice(shardName);
       if (slice.getLeader() != null
           && !slice.getLeader().equals(oldLeader)
@@ -277,7 +277,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     }
 
     zkStateReader.waitForState(
-        "collection1",
+        DEFAULT_TEST_COLLECTION_NAME,
         timeOut.timeLeft(SECONDS),
         TimeUnit.SECONDS,
         (docCollection) -> {

@@ -93,8 +93,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String DEFAULT_COLLECTION = "collection1";
-
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   String tsort = "t_sortable";
@@ -186,7 +184,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     // make sure we have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
+      zkStateReader.getLeaderRetry(DEFAULT_TEST_COLLECTION_NAME, "shard" + j, 10000);
     } // make sure we again have leaders for each shard
 
     waitForRecoveriesToFinish(false);
@@ -707,10 +705,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     params.set("commitWithin", 10);
     add(cloudClient, params, List.of(getDoc("id", 300), getDoc("id", 301)));
 
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+    newSearcherHook.waitForSearcher(DEFAULT_TEST_COLLECTION_NAME, 2, 20000, false);
 
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
-    DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
+    DocCollection dColl = clusterState.getCollection(DEFAULT_TEST_COLLECTION_NAME);
 
     assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, dColl);
 
@@ -720,7 +718,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     deleteByIdReq.setCommitWithin(10);
     deleteByIdReq.process(cloudClient);
 
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+    newSearcherHook.waitForSearcher(DEFAULT_TEST_COLLECTION_NAME, 2, 20000, false);
 
     assertSliceCounts("deleteById commitWithin did not work", before + 1, dColl);
 
@@ -730,7 +728,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     deleteByQueryReq.setCommitWithin(10);
     deleteByQueryReq.process(cloudClient);
 
-    newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
+    newSearcherHook.waitForSearcher(DEFAULT_TEST_COLLECTION_NAME, 2, 20000, false);
 
     assertSliceCounts("deleteByQuery commitWithin did not work", before, dColl);
 
@@ -873,7 +871,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     try {
       ZkStateReader.from(getCommonCloudSolrClient())
           .waitForState(
-              DEFAULT_COLLECTION,
+              DEFAULT_TEST_COLLECTION_NAME,
               waitMillis,
               TimeUnit.MILLISECONDS,
               (n, c) -> {
@@ -1122,7 +1120,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .getBaseURL()
             .substring(
                 0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+                ((HttpSolrClient) client).getBaseURL().length()
+                    - DEFAULT_TEST_COLLECTION_NAME.length()
+                    - 1);
     return url2;
   }
 
@@ -1165,7 +1165,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
               .substring(
                   0,
                   ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().length()
-                      - DEFAULT_COLLECTION.length()
+                      - DEFAULT_TEST_COLLECTION_NAME.length()
                       - 1);
 
       try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
@@ -1452,7 +1452,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .getBaseURL()
             .substring(
                 0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+                ((HttpSolrClient) client).getBaseURL().length()
+                    - DEFAULT_TEST_COLLECTION_NAME.length()
+                    - 1);
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1471,7 +1473,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .getBaseURL()
             .substring(
                 0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+                ((HttpSolrClient) client).getBaseURL().length()
+                    - DEFAULT_TEST_COLLECTION_NAME.length()
+                    - 1);
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1737,7 +1741,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     if (r.nextBoolean()) return super.queryServer(params);
 
-    if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
+    if (r.nextBoolean()) params.set("collection", DEFAULT_TEST_COLLECTION_NAME);
 
     QueryResponse rsp = getCommonCloudSolrClient().query(params);
     return rsp;
