@@ -112,7 +112,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
     Properties props = new Properties();
     props.setProperty("name", DEFAULT_TEST_CORENAME);
-    props.setProperty("configSet", "collection1");
+    props.setProperty("configSet", DEFAULT_TEST_COLLECTION_NAME);
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
 
@@ -158,7 +158,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public SolrClient createNewSolrClient() {
     try {
       // setup the client...
-      final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
+      final String url = jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME;
       final SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
       return client;
     } catch (final Exception ex) {
@@ -196,13 +196,13 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
       Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
-      Path collection1Dir = tempSolrHome.resolve("collection1");
+      Path collection1Dir = tempSolrHome.resolve(DEFAULT_TEST_COLLECTION_NAME);
 
       DirectoryUtil.copyDirectoryContents(
           sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
 
       Properties props = new Properties();
-      props.setProperty("name", "collection1");
+      props.setProperty("name", DEFAULT_TEST_COLLECTION_NAME);
       try (Writer writer =
           new OutputStreamWriter(
               Files.newOutputStream(collection1Dir.resolve("core.properties")),

@@ -438,7 +438,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   //
   public static class SolrInstance {
     private static Logger log = SolrTestCaseHS.log;
-    private String collection = "collection1";
+    private String collection = DEFAULT_TEST_COLLECTION_NAME;
     private int port = 0;
     private String solrconfigFile;
     private String schemaFile;
@@ -495,7 +495,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
               Files.newOutputStream(collDir.toPath().resolve("core.properties")),
               StandardCharsets.UTF_8)) {
         Properties coreProps = new Properties();
-        coreProps.put("name", "collection1");
+        coreProps.put("name", DEFAULT_TEST_COLLECTION_NAME);
         coreProps.put("config", solrconfigFile);
         coreProps.put("schema", schemaFile);
         coreProps.store(w, "");
@@ -549,7 +549,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     private static void copyConfFile(File dstRoot, String destCollection, String file)
         throws Exception {
       Path subHome = dstRoot.toPath().resolve(destCollection).resolve("conf");
-      Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+      Path top = SolrTestCaseJ4.TEST_PATH().resolve(DEFAULT_TEST_COLLECTION_NAME).resolve("conf");
       Files.copy(top.resolve(file), subHome.resolve(file));
     }
 

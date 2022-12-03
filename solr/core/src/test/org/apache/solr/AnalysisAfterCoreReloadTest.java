@@ -37,7 +37,6 @@ import org.junit.BeforeClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
-  static final String collection = "collection1";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -83,7 +82,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
     // overwrite stopwords file with stopword list ["stopwordc"] and reload the core
     overwriteStopwords("stopwordc\n");
-    h.getCoreContainer().reload(collection);
+    h.getCoreContainer().reload(DEFAULT_TEST_COLLECTION_NAME);
 
     up.process(getSolrCore());
 
@@ -112,7 +111,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
 
   private void overwriteStopwords(String stopwords) throws IOException {
-    try (SolrCore core = h.getCoreContainer().getCore(collection)) {
+    try (SolrCore core = h.getCoreContainer().getCore(DEFAULT_TEST_COLLECTION_NAME)) {
       Path configPath = core.getResourceLoader().getConfigPath();
       Files.move(configPath.resolve("stopwords.txt"), configPath.resolve("stopwords.txt.bak"));
       Files.write(configPath.resolve("stopwords.txt"), stopwords.getBytes(StandardCharsets.UTF_8));
@@ -122,7 +121,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     Path configPath;
-    try (SolrCore core = h.getCoreContainer().getCore(collection)) {
+    try (SolrCore core = h.getCoreContainer().getCore(DEFAULT_TEST_COLLECTION_NAME)) {
       configPath = core.getResourceLoader().getConfigPath();
     }
     super.tearDown();
@@ -133,6 +132,6 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
 
   protected SolrClient getSolrCore() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), collection);
+    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_COLLECTION_NAME);
   }
 }
