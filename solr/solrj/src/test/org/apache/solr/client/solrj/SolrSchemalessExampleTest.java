@@ -50,11 +50,11 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     // dir, so we copy the example/example-schemaless/solr/ directory to a new temp dir where writes
     // are allowed.
     FileUtils.copyFileToDirectory(new File(ExternalPaths.SERVER_HOME, "solr.xml"), tempSolrHome);
-    File collection1Dir = new File(tempSolrHome, "collection1");
+    File collection1Dir = new File(tempSolrHome, DEFAULT_TEST_COLLECTION_NAME);
     FileUtils.forceMkdir(collection1Dir);
     FileUtils.copyDirectoryToDirectory(new File(ExternalPaths.DEFAULT_CONFIGSET), collection1Dir);
     Properties props = new Properties();
-    props.setProperty("name", "collection1");
+    props.setProperty("name", DEFAULT_TEST_COLLECTION_NAME);
     OutputStreamWriter writer = null;
     try {
       writer =

@@ -1299,7 +1299,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void setupJettySolrHome(File jettyHome) throws IOException {
     seedSolrHome(jettyHome);
 
-    Files.createDirectories(jettyHome.toPath().resolve("cores").resolve("collection1"));
+    Files.createDirectories(jettyHome.toPath().resolve("cores").resolve(DEFAULT_TEST_CORENAME));
   }
 
   protected ModifiableSolrParams createParams(Object... q) {
