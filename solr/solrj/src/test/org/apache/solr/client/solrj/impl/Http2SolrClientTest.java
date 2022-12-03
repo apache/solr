@@ -359,7 +359,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
 
       // XML/POST
-      // client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       try {
         client.query(q, SolrRequest.METHOD.POST);
@@ -378,7 +377,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
       assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
 
-      // client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       try {
         client.query(q, SolrRequest.METHOD.PUT);
