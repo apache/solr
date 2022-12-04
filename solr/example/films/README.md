@@ -179,21 +179,17 @@ This data consists of the following fields:
    * It's possible to combine the vector similarity scores with other scores, by using Sub-query, 
      Function Queries and Parameter Dereferencing Solr features:
 
-     - Search for "harry potter" movies, ranking the results by the similarity to the target vector instead of by the lexical query score. Beside the `q` parameter, we define a "sub-query" named `q_vector`, that will calculate the similarity score between all the movies (since we set `topK=10000`). Then we use the sub-query parameter name as input for the `sort`, specifying that we want to rank descending according to the vector similarity score (`sort=$q_vector desc`):
+     - Search for "harry potter" movies, ranking the results by the similarity to the target vector instead of the lexical query score. Beside the `q` parameter, we define a "sub-query" named `q_vector`, that will calculate the similarity score between all the movies (since we set `topK=10000`). Then we use the sub-query parameter name as input for the `sort`, specifying that we want to rank descending according to the vector similarity score (`sort=$q_vector desc`):
 
        http://localhost:8983/solr/films/query?q=name:"harry%20potter"&q_vector={!knn%20f=film_vector%20topK=10000}[0.0133,0.0010,0.0107,-0.0081,0.0360,1.0028,0.6504,1.3453,-1.3509,-0.9636]&sort=$q_vector%20desc
 
-     - Search for movies with "the" in the name, keeping the original lexical query ranking, but keeping only movies with similarity to the target vector of 0.8 or higher. Like previously, we define the sub-query `q_vector`, but this time we use it as input for the `frange` filter, specifying that we want documents with at least 0.8 of vector similarity score:
+     - Search for movies with "the" in the name, keeping the original lexical query ranking, but returning only movies with similarity to the target vector of 0.8 or higher. Like previously, we define the sub-query `q_vector`, but this time we use it as input for the `frange` filter, specifying that we want documents with at least 0.8 of vector similarity score:
 
        http://localhost:8983/solr/films/query?q=name:the&q_vector={!knn%20f=film_vector%20topK=10000}[0.0133,0.0010,0.0107,-0.0081,0.0360,1.0028,0.6504,1.3453,-1.3509,-0.9636]&fq={!frange%20l=0.8}$q_vector
 
      - Search for "batman" movies, ranking the results by combining 70% of the original lexical query score and 30% of the similarity to the target vector. Besides the `q` main query and the `q_vector` sub-query, we also specify the `q_lexical` query, which will hold the lexical score of the main `q` query. Then we specify a parameter variable called `score_combined`, which scales the lexical and similarity scores, applies the 0.7 and 0.3 weights, then sum the result. We set the `sort` parameter to order according the combined score, and also set the `fl` parameter so that we can view the intermediary and the combined score values in the response:
 
        http://localhost:8983/solr/films/query?q=name:batman&q_lexical={!edismax%20v=$q}&q_vector={!knn%20f=film_vector%20topK=10000}[0.0133,0.0010,0.0107,-0.0081,0.0360,1.0028,0.6504,1.3453,-1.3509,-0.9636]&score_combined=sum(mul(scale($q_lexical,0,1),0.7),mul(scale($q_vector,0,1),0.3))&sort=$score_combined%20desc&fl=name,score,$q_lexical,$q_vector,$score_combined
-
-     - Query for movies with "love" in the name, ranking the results by combining 10% of the original lexical query score, and 30% for the similarity of each of the 3 vectors of the watched movies (_Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_). In this example instead of using a single sub-query with the combined target vector, we use each one of the 3 vectors of the watched movies separately, creating 3 KNN sub-queries (`similarity_beemovie`, `similarity_nemo`, `similarity_harrypotter`). We then define the combined score and the other parameters (`sort`, `fl`) similarly like the previous example:
-
-       http://localhost:8983/solr/films/query?q=name:love&q_lexical={!edismax%20v=$q}&similarity_beemovie={!knn%20f=film_vector%20topK=10000}[0.0209,-0.0407,0.0250,-0.0424,0.0406,0.9472,0.8459,1.4537,-1.2848,-0.9490]&similarity_nemo={!knn%20f=film_vector%20topK=10000}[0.0181,0.0282,0.0014,-0.0231,0.0817,0.9472,0.8459,1.4537,-1.2848,-0.9490]&similarity_harrypotter={!knn%20f=film_vector%20topK=10000}[0.0009,0.0155,0.0058,0.0413,-0.0144,1.1141,0.2593,1.1286,-1.4831,-0.9927]&score_combined=sum(mul(scale($q_lexical,0,1),0.1),mul(scale($similarity_beemovie,0,1),0.3),mul(scale($similarity_nemo,0,1),0.3),mul(scale($similarity_harrypotter,0,1),0.3))&sort=$score_combined%20desc&fl=name,score,$q_lexical,$similarity_beemovie,$similarity_nemo,$similarity_harrypotter,$score_combined
 
 
 FAQ:
