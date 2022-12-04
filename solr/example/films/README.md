@@ -10,6 +10,7 @@ This data consists of the following fields:
  * `directed_by` - The person(s) who directed the making of the film
  * `initial_release_date` - The earliest official initial film screening date in any country
  * `genre` - The genre(s) that the movie belongs to
+ * `film_vector` - The 10 dimensional vector representing the film, according to a toy example embedding model
 
  The `name` and `initial_release_date` are created via the Schema API, and the `genre` and `direct_by` fields
  are created by the use of an Update Request Processor Chain called `add-unknown-fields-to-the-schema`.
@@ -34,17 +35,32 @@ This data consists of the following fields:
 
       ```
       curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
-        "add-field" : {
-          "name":"name",
-          "type":"text_general",
-          "multiValued":false,
-          "stored":true
+        "add-field-type" : {
+          "name":"knn_vector_10",
+          "class":"solr.DenseVectorField",
+          "vectorDimension":10,
+          "similarityFunction":"cosine",
+          "knnAlgorithm":"hnsw"
         },
-        "add-field" : {
-          "name":"initial_release_date",
-          "type":"pdate",
-          "stored":true
-        }
+        "add-field" : [
+          {
+            "name":"name",
+            "type":"text_general",
+            "multiValued":false,
+            "stored":true
+          },
+          {
+            "name":"initial_release_date",
+            "type":"pdate",
+            "stored":true
+          },
+          {
+            "name":"film_vector",
+            "type":"knn_vector_10",
+            "indexed":true,
+            "stored":true
+          }
+        ]
       }'
       ```
 
@@ -57,7 +73,7 @@ This data consists of the following fields:
          bin/post \
                   -c films \
                   example/films/films.csv \
-                  -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+                  -params "f.genre.split=true&f.directed_by.split=true&f.film_vector.split=true&f.genre.separator=|&f.directed_by.separator=|&f.film_vector.separator=|"
      ```
 
 
