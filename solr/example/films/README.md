@@ -147,7 +147,7 @@ This data consists of the following fields:
 
      - Before making the queries, we define an example target vector, simulating a person that 
        watched 3 movies: _Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_. 
-       We get the 3 vectors of each movie, ten calculate the resulting average vector, which will 
+       We get the 3 vectors of each movie, then calculate the resulting average vector, which will 
        be used as input vector for all the following example queries.
 
      ```
