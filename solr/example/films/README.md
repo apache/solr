@@ -164,7 +164,7 @@ This data consists of the following fields:
 
        http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[0.0133,0.0010,0.0107,-0.0081,0.0360,1.0028,0.6504,1.3453,-1.3509,-0.9636]&fq=-id:("%2Fen%2Ffinding_nemo"%20"%2Fen%2Fbee_movie"%20"%2Fen%2Fharry_potter_and_the_chamber_of_secrets_2002")
 
-     - Search for movies with "cinderella" in the name among the top 50 movies most similar to the target vector (KNN with Filter Query):
+     - Search for movies with "cinderella" in the name among the top 50 movies most similar to the target vector (KNN as Filter Query):
 
        http://localhost:8983/solr/films/query?q=name:cinderella&fq={!knn%20f=film_vector%20topK=50}[0.0133,0.0010,0.0107,-0.0081,0.0360,1.0028,0.6504,1.3453,-1.3509,-0.9636]
 
