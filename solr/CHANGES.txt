@@ -113,6 +113,7 @@ Bug Fixes
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
+* SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
 
