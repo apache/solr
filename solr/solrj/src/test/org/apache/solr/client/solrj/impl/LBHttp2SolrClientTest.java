@@ -36,7 +36,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
   public void testLBHttp2SolrClientSetQueryParams() throws IOException {
     String url = "http://127.0.0.1:8080";
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient(http2Client, url)) {
+        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(http2Client, url).build()) {
       Set<String> queryParams = new HashSet<>(2);
       queryParams.add("param1=this");
       testClient.setQueryParams(new HashSet<>(queryParams));

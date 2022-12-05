@@ -84,12 +84,16 @@ import org.slf4j.MDC;
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient httpClient;
 
+  /**
+   * @deprecated Use {@link LBHttp2SolrClient.Builder} instead
+   */
+  @Deprecated
   public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
     this.httpClient = httpClient;
   }
 
-  public LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls) {
+  private LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls) {
     super(baseSolrUrls);
     this.httpClient = httpClient;
   }

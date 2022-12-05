@@ -96,7 +96,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
 
-    this.lbClient = new LBHttp2SolrClient(myClient);
+    this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
 
   @Override
