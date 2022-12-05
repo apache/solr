@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -287,9 +287,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   protected Path getConfigDir(String configName) throws IOException {
-    String configSetDirPath = configSetBase.toFile().getCanonicalPath() + File.separator;
-    String path = Paths.get(configSetBase.toString(), configName).toFile().getCanonicalPath();
-    if (!path.startsWith(configSetDirPath)) {
+    String path =
+        Paths.get(configSetBase.toString(), FilenameUtils.getName(configName))
+            .toFile()
+            .getCanonicalPath();
+    if (!path.endsWith(configName)) {
       throw new IOException("configName=" + configName + " is not found under configSetBase dir");
     }
     return configSetBase.resolve(configName);
