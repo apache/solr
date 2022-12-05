@@ -35,13 +35,10 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
-    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
-
-    httpSolrClientBuilder
+    return new HttpSolrClient.Builder(getServerUrl())
+        .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(new BinaryRequestWriter())
-        .withResponseParser(new BinaryResponseParser());
-
-    return httpSolrClientBuilder.build();
+        .withResponseParser(new BinaryResponseParser())
+        .build();
   }
 }

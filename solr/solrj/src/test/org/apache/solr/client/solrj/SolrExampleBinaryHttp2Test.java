@@ -37,15 +37,11 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    String url = jetty.getBaseUrl().toString() + "/collection1";
-    Http2SolrClient client =
-        new Http2SolrClient.Builder(url)
-            .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
-            .withRequestWriter(new BinaryRequestWriter())
-            // where the magic happens
-            .withResponseParser(new BinaryResponseParser())
-            .build();
-
-    return client;
+    return new Http2SolrClient.Builder(getServerUrl())
+        .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+        .withRequestWriter(new BinaryRequestWriter())
+        // where the magic happens
+        .withResponseParser(new BinaryResponseParser())
+        .build();
   }
 }
