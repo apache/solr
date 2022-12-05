@@ -2872,6 +2872,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** This method creates a HttpClient from a URL. */
+  @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
     return new HttpSolrClient.Builder(url).build().getHttpClient();
   }
