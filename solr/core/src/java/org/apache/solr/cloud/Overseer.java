@@ -272,8 +272,8 @@ public class Overseer implements SolrCloseable {
               byte[] data = fallbackQueue.peek();
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isInfoEnabled()) {
-                  log.info(
+                if (log.isDebugEnabled()) {
+                  log.debug(
                       "processMessage: fallbackQueueSize: {}, message = {}",
                       fallbackQueue.getZkStats().getQueueLength(),
                       message);
@@ -337,8 +337,8 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isInfoEnabled()) {
-                  log.info(
+                if (log.isDebugEnabled()) {
+                  log.debug(
                       "processMessage: queueSize: {}, message = {}",
                       stateUpdateQueue.getZkStats().getQueueLength(),
                       message);
