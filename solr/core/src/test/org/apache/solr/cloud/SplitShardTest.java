@@ -336,8 +336,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       int docCount = model.size();
 
       CollectionAdminRequest.SplitShard splitShard =
-          CollectionAdminRequest.splitShard(collectionName)
-              .setShardName("shard1");
+          CollectionAdminRequest.splitShard(collectionName).setShardName("shard1");
       // Set the preferred leaders param either with a request param, or with a system property.
       if (random().nextBoolean()) {
         splitShard.shouldSetPreferredLeaders(setPreferredLeaders);
@@ -346,8 +345,11 @@ public class SplitShardTest extends SolrCloudTestCase {
       }
       try {
         splitShard.process(client);
-        waitForState("Timed out waiting for sub shards to be active.",
-            collectionName, activeClusterShape(2, 3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
+        waitForState(
+            "Timed out waiting for sub shards to be active.",
+            collectionName,
+            // 2 repFactor for the new split shards, 1 repFactor for old replicas
+            activeClusterShape(2, 3 * repFactor));
       } finally {
         System.clearProperty(AUTO_PREFERRED_LEADERS);
       }

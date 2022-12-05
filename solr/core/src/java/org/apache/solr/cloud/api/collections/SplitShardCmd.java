@@ -195,7 +195,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     boolean setPreferredLeaders =
-        message.getBool(CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS));
+        message.getBool(
+            CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS,
+            Boolean.getBoolean(AUTO_PREFERRED_LEADERS));
 
     // 1. Verify that there is enough disk space to create sub-shards.
     RTimerTree t;
