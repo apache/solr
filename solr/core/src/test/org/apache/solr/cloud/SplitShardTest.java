@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.handler.admin.CollectionsHandler.AUTO_PREFERRED_LEADERS;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.lang.invoke.MethodHandles;
@@ -270,7 +271,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   private void splitWithConcurrentUpdates(
-      String collectionName, int repFactor, int nThreads, boolean preferredLeaders)
+      String collectionName, int repFactor, int nThreads, boolean setPreferredLeaders)
       throws Exception {
     final CloudSolrClient client = createCollection(collectionName, repFactor);
 
@@ -336,15 +337,20 @@ public class SplitShardTest extends SolrCloudTestCase {
 
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(collectionName)
-              .setShardName("shard1")
-              .shouldSetPreferredLeaders(preferredLeaders);
-      splitShard.process(client);
-      waitForState(
-          "Timed out waiting for sub shards to be active.",
-          collectionName,
-          activeClusterShape(
-              2,
-              3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
+              .setShardName("shard1");
+      // Set the preferred leaders param either with a request param, or with a system property.
+      if (random().nextBoolean()) {
+        splitShard.shouldSetPreferredLeaders(setPreferredLeaders);
+      } else {
+        System.setProperty(AUTO_PREFERRED_LEADERS, Boolean.toString(setPreferredLeaders));
+      }
+      try {
+        splitShard.process(client);
+        waitForState("Timed out waiting for sub shards to be active.",
+            collectionName, activeClusterShape(2, 3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
+      } finally {
+        System.clearProperty(AUTO_PREFERRED_LEADERS);
+      }
 
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
@@ -389,7 +395,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       log.info("{} docs added, {} docs deleted", numDocsAdded.get(), numDocsDeleted.get());
     }
 
-    if (preferredLeaders) {
+    if (setPreferredLeaders) {
       DocCollection collection =
           cluster.getSolrClient().getClusterState().getCollection(collectionName);
       for (Slice slice : collection.getSlices()) {

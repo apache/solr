@@ -243,6 +243,14 @@ import org.slf4j.LoggerFactory;
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * Boolean system property to automatically set the preferred leaders
+   * at collection creation and during shard split. Default false.
+   * Otherwise, the caller needs to set it for each
+   * {@link CollectionAdminRequest#splitShard(String) SplitShard} request.
+   */
+  public static final String AUTO_PREFERRED_LEADERS = "solr.autoPreferredLeaders";
+
   protected final CoreContainer coreContainer;
   private final Optional<DistributedCollectionConfigSetCommandRunner>
       distributedCollectionConfigSetCommandRunner;
@@ -1963,7 +1971,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     private static class SplitShardHelper {
       static final CollectionOpCombiner OP_COMBINER =
           (op, req, h) -> {
-            if (!req.getParams().getBool(SPLIT_SET_PREFERRED_LEADERS, false)) {
+            if (!req.getParams().getBool(SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS))) {
               return Collections.singletonList(op);
             }
             // The split.setPreferredLeader prop is true.

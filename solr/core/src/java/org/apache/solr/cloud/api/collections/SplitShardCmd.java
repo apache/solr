@@ -27,6 +27,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.handler.admin.CollectionsHandler.AUTO_PREFERRED_LEADERS;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -194,7 +195,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     boolean setPreferredLeaders =
-        message.getBool(CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS, false);
+        message.getBool(CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS));
 
     // 1. Verify that there is enough disk space to create sub-shards.
     RTimerTree t;
