@@ -89,15 +89,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.httpClient = httpClient;
   }
 
-  public LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls, Builder builder) {
+  public LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls) {
     super(baseSolrUrls);
     this.httpClient = httpClient;
-    if (builder.responseParser != null) {
-      this.parser = builder.responseParser;
-    }
-    if (builder.requestWriter != null) {
-      this.httpClient.setRequestWriter(builder.requestWriter);
-    }
   }
 
   @Override
@@ -111,7 +105,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * @param parser Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   * @deprecated Pass in a configured {@link Http2SolrClient} instead
    */
   @Deprecated
   @Override
@@ -132,7 +126,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    *
    * <p>Note: This setter method is <b>not thread-safe</b>.
    *
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   * @deprecated Pass in a configured {@link Http2SolrClient} instead
    */
   @Deprecated
   @Override
@@ -303,28 +297,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
   public static class Builder {
     private final Http2SolrClient http2Client;
     private final String[] baseSolrUrls;
-    private ResponseParser responseParser;
-    private RequestWriter requestWriter;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2Client = http2Client;
       this.baseSolrUrls = baseSolrUrls;
     }
 
-    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-    public LBHttp2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-    public LBHttp2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
-      this.requestWriter = requestWriter;
-      return this;
-    }
-
     public LBHttp2SolrClient build() {
-      return new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls), this);
+      return new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
     }
   }
 }

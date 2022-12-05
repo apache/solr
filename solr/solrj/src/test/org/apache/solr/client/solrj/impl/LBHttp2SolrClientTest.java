@@ -20,51 +20,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.Test;
 
 /** Test the LBHttp2SolrClient. */
 public class LBHttp2SolrClientTest extends SolrTestCase {
-
-  /**
-   * Test method for {@link LBHttp2SolrClient.Builder#withResponseParser(ResponseParser)}.
-   *
-   * <p>Validate that the parser passed in is used in the base <code>LBHttp2SolrClient</code>
-   * instance.
-   */
-  @Test
-  public void testLBHttp2SolrClientSetResponseParser() throws IOException {
-    String url = "http://127.0.0.1:8080";
-
-    ResponseParser parser = new NoOpResponseParser("json");
-    try (Http2SolrClient http2Client =
-            new Http2SolrClient.Builder(url).withResponseParser(parser).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(http2Client, url).build()) {
-
-      assertEquals("Wrong parser found in lb client.", parser, testClient.getParser());
-      assertEquals("Wrong parser found in base client.", parser, http2Client.getParser());
-    }
-  }
-
-  /**
-   * Test method for {@link LBHttp2SolrClient.Builder#withRequestWriter(RequestWriter)}.
-   *
-   * <p>Validate that the requestWriter passed in is used in the base <code>LBHttp2SolrClient</code>
-   * instance.
-   */
-  @Test
-  public void testLBHttp2SolrClientSetRequestWriter() throws IOException {
-    String url = "http://127.0.0.1:8080";
-    RequestWriter writer = new RequestWriter();
-    try (Http2SolrClient http2Client =
-            new Http2SolrClient.Builder(url).withRequestWriter(writer).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(http2Client, url).build()) {
-
-      assertEquals("Wrong writer found in lb client.", writer, testClient.getRequestWriter());
-      assertEquals("Wrong writer found in base client.", writer, http2Client.getRequestWriter());
-    }
-  }
 
   /**
    * Test method for {@link LBHttp2SolrClient#setQueryParams(Set)} and {@link
