@@ -26,6 +26,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -286,9 +287,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   protected Path getConfigDir(String configName) throws IOException {
-    String configSetDir = configSetBase.toFile().getCanonicalPath() + File.separator;
-    File file = new File(configSetBase.toString(), configName);
-    if (!file.getCanonicalPath().startsWith(configSetDir)) {
+    String configSetDirPath = configSetBase.toFile().getCanonicalPath() + File.separator;
+    String path = Paths.get(configSetBase.toString(), configName).toFile().getCanonicalPath();
+    if (!path.startsWith(configSetDirPath)) {
       throw new IOException("configName=" + configName + " is not found under configSetBase dir");
     }
     return configSetBase.resolve(configName);
