@@ -20,9 +20,9 @@ package org.apache.solr.common.cloud;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
 public class TestNodesSysPropsCacher extends SolrCloudTestCase {

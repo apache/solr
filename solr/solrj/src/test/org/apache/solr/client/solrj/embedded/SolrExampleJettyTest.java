@@ -21,6 +21,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +48,8 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO? perhaps use: http://docs.codehaus.org/display/JETTY/ServletTester rather then open a real
@@ -53,6 +57,7 @@ import org.junit.Test;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -68,15 +73,17 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(getUri(client));
+    HttpClient httpClient = getHttpClient();
+    HttpPost post =
+        new HttpPost(
+            getRandomizedUpdateUri(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME));
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -100,11 +107,10 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     assertEquals("name2", m.get("name"));
   }
 
-  private String getUri(HttpSolrClient client) {
-    String baseURL = client.getBaseURL();
+  private String getRandomizedUpdateUri(String baseUrl) {
     return random().nextBoolean()
-        ? baseURL.replace("/collection1", "/____v2/cores/collection1/update")
-        : baseURL + "/update/json/docs";
+        ? baseUrl.replace("/collection1", "/____v2/cores/collection1/update")
+        : baseUrl + "/update/json/docs";
   }
 
   @Test
@@ -158,7 +164,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
             try {
               IOUtils.skip(body, 1024 * 1000);
             } catch (IOException e) {
-              e.printStackTrace();
+              log.error("error skipping body", e);
             }
             return rsp.getResponse();
           }

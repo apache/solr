@@ -59,6 +59,7 @@ public class SQLHandler extends RequestHandlerBase
 
   private boolean isCloud = false;
 
+  @Override
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();
 
@@ -76,6 +77,7 @@ public class SQLHandler extends RequestHandlerBase
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
     params = adjustParams(params);
@@ -133,6 +135,7 @@ public class SQLHandler extends RequestHandlerBase
     }
   }
 
+  @Override
   public String getDescription() {
     return "SQLHandler";
   }

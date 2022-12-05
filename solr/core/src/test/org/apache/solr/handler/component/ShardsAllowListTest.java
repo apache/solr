@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
@@ -308,7 +308,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       q.set("shards", shardsParamValue);
     }
     if (otherParams != null) {
-      assert otherParams.length % 2 == 0;
+      assertEquals(0, otherParams.length % 2);
       for (int i = 0; i < otherParams.length; i += 2) {
         q.set(otherParams[i], otherParams[i + 1]);
       }

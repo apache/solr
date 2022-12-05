@@ -40,6 +40,7 @@ public class MultiValueTermOrdinalCollector extends SimpleCollector {
     this.topLevelDocValuesBitSet = topLevelDocValuesBitSet;
   }
 
+  @Override
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE_NO_SCORES;
   }

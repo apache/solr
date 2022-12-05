@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Maps;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -117,6 +119,11 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
             if (v2RequestBody == null) return Collections.emptyList();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+          }
+
+          @Override
+          public Collection<ContentStream> getContentStreams() {
+            return List.of(new ContentStreamBase.StringStream(v2RequestBody));
           }
 
           @Override
@@ -206,9 +213,8 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
 
   protected AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
     final AnnotatedApi api = getAnnotatedApiFor(method, path);
-    assertTrue(
-        "Expected to find API mapping for [" + method + " " + path + "] but none found!",
-        api != null);
+    assertNotNull(
+        "Expected to find API mapping for [" + method + " " + path + "] but none found!", api);
     return api;
   }
 

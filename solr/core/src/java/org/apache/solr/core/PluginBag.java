@@ -398,6 +398,7 @@ public class PluginBag<T> implements AutoCloseable {
       return Optional.ofNullable(inst);
     }
 
+    @Override
     public T get() {
       return inst;
     }
@@ -435,6 +436,7 @@ public class PluginBag<T> implements AutoCloseable {
       return pluginInfo;
     }
 
+    @Override
     public String toString() {
       return String.valueOf(inst);
     }

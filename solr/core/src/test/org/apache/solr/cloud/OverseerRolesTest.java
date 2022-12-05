@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -187,8 +187,13 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     }
     logOverseerState();
     // Remove the OVERSEER role, in case it was already assigned by another test in this suite
-    for (String node :
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())) {
+    List<String> nodes =
+        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
+    // We want to remove from the last (in election order) to the first.
+    // This way the current overseer will have its role removed last,
+    // so there will not be any elections.
+    Collections.reverse(nodes);
+    for (String node : nodes) {
       CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
     }
     String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
@@ -202,10 +207,6 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     CollectionAdminRequest.addRole(overseer1, "overseer").process(cluster.getSolrClient());
     waitForNewOverseer(15, overseer1, false);
     JettySolrRunner leaderJetty = getOverseerJetty();
-
-    List<String> nodes =
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
-    nodes.remove(overseer1); // remove the designated overseer
 
     logOverseerState();
     // kill the current overseer, and check that the next node in the election queue assumes

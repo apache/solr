@@ -175,6 +175,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         super(baseSolrUrl);
       }
 
+      @Override
       public ErrorLoggingConcurrentUpdateSolrClient build() {
         return new ErrorLoggingConcurrentUpdateSolrClient(this);
       }

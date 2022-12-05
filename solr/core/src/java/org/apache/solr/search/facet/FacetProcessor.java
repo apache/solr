@@ -18,12 +18,11 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntFunction;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -39,6 +38,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
@@ -196,29 +196,11 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       return;
     }
 
-    Map<?, ?> tagMap = (Map<?, ?>) fcontext.req.getContext().get("tags");
-    if (tagMap == null) {
-      // no filters were tagged
+    Set<Query> excludeSet = QueryUtils.getTaggedQueries(fcontext.req, excludeTags);
+
+    if (excludeSet.isEmpty()) {
       return;
     }
-
-    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
-    for (String excludeTag : excludeTags) {
-      Object olst = tagMap.get(excludeTag);
-      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
-      if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
-        try {
-          excludeSet.put(qp.getQuery(), Boolean.TRUE);
-        } catch (SyntaxError syntaxError) {
-          // This should not happen since we should only be retrieving a previously parsed query
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-        }
-      }
-    }
-    if (excludeSet.size() == 0) return;
 
     List<Query> qlist = new ArrayList<>();
 
@@ -226,14 +208,14 @@ public abstract class FacetProcessor<T extends FacetRequest> {
     ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
 
     // add the base query
-    if (!excludeSet.containsKey(rb.getQuery())) {
+    if (!excludeSet.contains(rb.getQuery())) {
       qlist.add(rb.getQuery());
     }
 
     // add the filters
     if (rb.getFilters() != null) {
       for (Query q : rb.getFilters()) {
-        if (!excludeSet.containsKey(q)) {
+        if (!excludeSet.contains(q)) {
           qlist.add(q);
         }
       }
@@ -310,7 +292,7 @@ public abstract class FacetProcessor<T extends FacetRequest> {
   protected void processStats(
       SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount)
       throws IOException {
-    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
+    if ((docCount == 0 && !freq.processEmpty) || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }

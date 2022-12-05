@@ -23,10 +23,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -64,10 +62,6 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
     configureCluster(nodeCount).addConfig(configName, configDir).configure();
-
-    Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put("config", "solrconfig-doctransformers.xml");
-    collectionProperties.put("schema", "schema-docValuesJoin.xml");
 
     int shards = 2;
     int replicas = 2;

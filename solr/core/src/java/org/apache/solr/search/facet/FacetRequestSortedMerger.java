@@ -271,8 +271,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     for (FacetBucket bucket : bucketList) {
       if (numBucketsToCheck-- <= 0) break;
       // if this bucket is missing,
-      assert thisMissing == false
-          || thisMissing == true && mcontext.getShardFlag(bucket.bucketNumber) == false;
+      assert !thisMissing || !mcontext.getShardFlag(bucket.bucketNumber);
       boolean saw = !thisMissing && mcontext.getShardFlag(bucket.bucketNumber);
       if (!saw && !returnedAllBuckets) {
         // we didn't see the bucket for this shard, and it's possible that the shard has it

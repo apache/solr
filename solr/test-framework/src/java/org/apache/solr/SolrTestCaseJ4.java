@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -91,8 +92,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -132,6 +131,8 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -203,9 +204,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static volatile ExecutorService testExecutor;
 
-  protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
+  protected void writeCoreProperties(Path coreDirectory, String coreName) throws IOException {
     Properties props = new Properties();
-    props.setProperty("name", corename);
+    props.setProperty("name", coreName);
     props.setProperty("configSet", "collection1");
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
@@ -1826,7 +1827,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public boolean equals(Object o) {
       if (!(o instanceof Doc)) return false;
       Doc other = (Doc) o;
-      return this == other || id != null && id.equals(other.id);
+      return this == other || Objects.equals(id, other.id);
     }
 
     @Override

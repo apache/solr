@@ -599,6 +599,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   private static class OptionComarator<T extends Option> implements Comparator<T> {
 
+    @Override
     public int compare(T o1, T o2) {
       String s1 = o1.hasLongOpt() ? o1.getLongOpt() : o1.getOpt();
       String s2 = o2.hasLongOpt() ? o2.getLongOpt() : o2.getOpt();

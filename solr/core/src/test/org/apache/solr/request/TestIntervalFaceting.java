@@ -559,7 +559,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     Number[] values = new Number[2];
     FieldType ft = h.getCore().getLatestSchema().getField(fieldName).getType();
     if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
+      assertTrue(ft instanceof StrField);
       values[0] = randomInt(max);
       values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
@@ -1050,7 +1050,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void assertIntervalKey(
       String fieldName, String intervalStr, String expectedKey, String... params)
       throws SyntaxError {
-    assert (params.length & 1) == 0 : "Params must have an even number of elements";
+    assertEquals("Params must have an even number of elements", 0, (params.length & 1));
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     for (int i = 0; i < params.length - 1; ) {
@@ -1612,7 +1612,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private void assertIntervalQuery(
       String field, String query, int resultCount, String... intervals) {
-    assert (intervals.length & 1) == 0;
+    assertEquals(0, (intervals.length & 1));
     int idx = 0;
     String[] params = new String[intervals.length + 6];
     params[idx++] = "q";

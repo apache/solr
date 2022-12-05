@@ -85,7 +85,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private CloudSolrClient solrClient;
 
   private int lastDocId = 0;
-  private int numDocsDeletedOrFailed = 0;
+  private long numDocsDeletedOrFailed = 0;
 
   @Before
   public void doBefore() throws Exception {
@@ -720,9 +720,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colsT1 =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
     assertEquals(3, colsT1.size());
-    assertTrue(
+    assertFalse(
         "Preemptive creation appears to not be asynchronous anymore",
-        !colsT1.contains("myalias" + TRA + "2017-10-26"));
+        colsT1.contains("myalias" + TRA + "2017-10-26"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
@@ -748,10 +748,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     List<String> cols;
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertTrue(
+    assertFalse(
         "Preemptive creation happened twice and created a collection "
             + "further in the future than the configured time slice!",
-        !cols.contains("myalias" + TRA + "2017-10-27"));
+        cols.contains("myalias" + TRA + "2017-10-27"));
 
     validateCollectionCountAndAvailability(
         alias, 4, "Only 4 cols expected (preemptive create happened" + "twice among threads");
@@ -807,7 +807,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       try {
         solrClient.query(col, params("q", "*:*", "rows", "10"));
       } catch (SolrException e) {
-        e.printStackTrace();
+        log.error("Unable to query ", e);
         fail("Unable to query " + col);
       }
     }
@@ -852,19 +852,19 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
-    final int expectNumFound =
+    final long expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     assertArrayEquals(
         "expected reverse sorted",
         cols.stream().sorted(Collections.reverseOrder()).toArray(),
         cols.toArray());
 
-    int totalNumFound = 0;
+    long totalNumFound = 0;
     Instant colEndInstant = null; // exclusive end
     for (String col : cols) { // ASSUMPTION: reverse sorted order
       final Instant colStartInstant = TimeRoutedAlias.parseInstantFromCollectionName(alias, col);

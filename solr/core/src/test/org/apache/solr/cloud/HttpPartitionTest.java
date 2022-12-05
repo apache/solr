@@ -38,7 +38,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -56,6 +55,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
@@ -364,14 +364,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
     JettySolrRunner leaderJetty =
         getJettyOnPort(getReplicaPort(getShardLeader(testCollectionName, "shard1", 1000)));
 
@@ -425,14 +426,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 1 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 1);
+        1,
+        notLeaders.size());
 
     Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertNotNull(
@@ -599,8 +601,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void assertDocExists(SolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
-    assertTrue(
-        "Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match == null);
+    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
   }
 
   private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
@@ -609,6 +610,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return solr.request(qr);
   }
 
+  @Override
   protected int getReplicaPort(Replica replica) {
     String replicaNode = replica.getNodeName();
     String tmp = replicaNode.substring(replicaNode.indexOf(':') + 1);

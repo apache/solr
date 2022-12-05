@@ -52,16 +52,16 @@ public class CSVStrategyTest extends SolrTestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true, strategy.getIgnoreEmptyLines());
+    assertTrue(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertTrue(strategy.getIgnoreEmptyLines());
     // explicit csv settings
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true, strategy.getIgnoreEmptyLines());
+    assertTrue(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertTrue(strategy.getIgnoreEmptyLines());
   }
 
   public void testSetExcelStrategy() {
@@ -69,8 +69,8 @@ public class CSVStrategyTest extends SolrTestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(false, strategy.getIgnoreLeadingWhitespaces());
-    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(false, strategy.getIgnoreEmptyLines());
+    assertFalse(strategy.getIgnoreLeadingWhitespaces());
+    assertFalse(strategy.getUnicodeEscapeInterpretation());
+    assertFalse(strategy.getIgnoreEmptyLines());
   }
 }

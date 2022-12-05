@@ -70,7 +70,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -417,7 +417,7 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
+    if (Objects.equals(version, Version.LATEST) && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
               + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
@@ -1119,7 +1119,7 @@ public class SolrConfig implements MapSerializable {
       return null;
     }
     Object o = p.get().get(pkg);
-    if (o == null || PackageLoader.LATEST.equals(o)) return null;
+    if (o == null || SolrPackageLoader.LATEST.equals(o)) return null;
     return o.toString();
   }
 

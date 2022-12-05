@@ -63,14 +63,14 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
-    String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
-    String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
+    String source = message.getStr(CollectionParams.SOURCE_NODE);
+    String target = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     if (source == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "sourceNode is a required param");
     }
-    String async = message.getStr("async");
+    String async = message.getStr(ASYNC);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
     ClusterState clusterState = zkStateReader.getClusterState();

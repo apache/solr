@@ -65,10 +65,9 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof PrincipalWithUserRoles)) return false;
 
     PrincipalWithUserRoles that = (PrincipalWithUserRoles) o;
-
     if (!username.equals(that.username)) return false;
     return roles.equals(that.roles);
   }

@@ -25,9 +25,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -608,7 +608,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         {
-          List<Query> sidePathSynonymQueries = new LinkedList<>();
+          List<Query> sidePathSynonymQueries = new ArrayList<>();
           sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
           return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
         }
@@ -730,7 +730,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           RawQuery rawq = (RawQuery) subq;
 
           // only look up fmap and type info on a field change
-          if (sfield != rawq.sfield) {
+          if (!Objects.equals(sfield, rawq.sfield)) {
             sfield = rawq.sfield;
             fieldValues = fmap.get(sfield);
             // If this field isn't indexed, or if it is indexed and we want to use TermsQuery, then

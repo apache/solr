@@ -163,14 +163,14 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     return ret;
   }
 
-  private int doListGen(Query q, List<Query> filt) throws Exception {
+  private long doListGen(Query q, List<Query> filt) throws Exception {
     SolrQueryRequest req = lrf.makeRequest();
 
     SolrIndexSearcher searcher = req.getSearcher();
 
     final RTimer timer = new RTimer();
 
-    int ret = 0;
+    long ret = 0;
     for (int i = 0; i < ITERATIONS; i++) {
       DocList l =
           searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE);

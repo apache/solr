@@ -35,8 +35,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -45,6 +43,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
@@ -67,7 +67,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   static {
     try {
       DEFAULT_SSL_CONTEXT = SSLContext.getDefault();
-      assert null != DEFAULT_SSL_CONTEXT;
+      assertNotNull(DEFAULT_SSL_CONTEXT);
     } catch (Exception e) {
       throw new RuntimeException(
           "Unable to initialize 'Default' SSLContext Algorithm, JVM is borked", e);
@@ -401,7 +401,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
     final SSLConnectionSocketFactory sslFactory =
         clientConfig.buildClientSSLConnectionSocketFactory();
-    assert null != sslFactory;
+    assertNotNull(sslFactory);
 
     final Registry<ConnectionSocketFactory> socketFactoryReg =
         RegistryBuilder.<ConnectionSocketFactory>create()

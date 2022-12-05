@@ -20,10 +20,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -258,7 +258,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     CloudJettyRunner leader = shardToLeaderJetty.get(bucket1);
     CloudJettyRunner replica = null;
     for (CloudJettyRunner r : runners) {
-      if (r != leader) replica = r;
+      if (!r.equals(leader)) replica = r;
     }
 
     long nStart = getNumRequests();

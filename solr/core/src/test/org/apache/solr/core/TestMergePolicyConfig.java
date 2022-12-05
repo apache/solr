@@ -69,7 +69,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public void testDefaultMergePolicyConfig() throws Exception {
     initCore("solrconfig-mergepolicy-defaults.xml", "schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(false, iwc.getUseCompoundFile());
+    assertFalse(iwc.getUseCompoundFile());
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
     assertEquals(TieredMergePolicy.DEFAULT_NO_CFS_RATIO, tieredMP.getNoCFSRatio(), 0.0D);
