@@ -496,9 +496,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       req.add(new SolrInputDocument());
       req.setParam("a", "\u1234");
 
-      // Have not been able to move this to the Builder pattern, the below check for application/xml
-      // always returns as application/javabin when .setRequestWriter() is commented out.
-      client.setRequestWriter(new RequestWriter());
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
 
       assertEquals("post", DebugServlet.lastMethod);

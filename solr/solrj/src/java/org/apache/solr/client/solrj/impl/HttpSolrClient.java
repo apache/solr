@@ -176,6 +176,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       httpClient = HttpClientUtil.createClient(params);
     }
 
+    if (builder.requestWriter != null) {
+      this.requestWriter = builder.requestWriter;
+    }
+
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
     this.connectionTimeout = builder.connectionTimeoutMillis;
