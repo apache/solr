@@ -132,8 +132,8 @@ public class Http2SolrClient extends SolrClient {
   private int idleTimeout;
   private int requestTimeout;
 
-  private ResponseParser parser = new BinaryResponseParser();
-  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  protected ResponseParser parser = new BinaryResponseParser();
+  protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
