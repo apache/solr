@@ -1707,28 +1707,19 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    try {
-      // setup the server...
-      SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+
+    return client;
   }
 
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    try {
-      // setup the server...
-      SolrClient client =
-          getHttpSolrClient(
-              baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client =
+        getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
+
+    return client;
   }
 
   @Override

@@ -132,8 +132,8 @@ public class Http2SolrClient extends SolrClient {
   private int idleTimeout;
   private int requestTimeout;
 
-  private ResponseParser parser = new BinaryResponseParser();
-  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  protected ResponseParser parser = new BinaryResponseParser();
+  protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
@@ -174,11 +174,18 @@ public class Http2SolrClient extends SolrClient {
     } else {
       basicAuthAuthorizationStr = null;
     }
+    if (builder.requestWriter != null) {
+      requestWriter = builder.requestWriter;
+    }
+    if (builder.responseParser != null) {
+      parser = builder.responseParser;
+    }
     if (builder.requestTimeout == null) {
       requestTimeout = -1;
     } else {
       requestTimeout = builder.requestTimeout;
     }
+    httpClient.setFollowRedirects(builder.followRedirects);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -891,6 +898,16 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -899,6 +916,16 @@ public class Http2SolrClient extends SolrClient {
     return requestWriter;
   }
 
+  /**
+   * Configure whether the client should follow redirects or not.
+   *
+   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
+   * Solr installation, something is configured wrong somewhere.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withFollowRedirects(boolean)}
+   *     Redirects(boolean)} instead
+   */
+  @Deprecated
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
@@ -959,8 +986,11 @@ public class Http2SolrClient extends SolrClient {
     private String basicAuthUser;
     private String basicAuthPassword;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
+    private boolean followRedirects = false;
     protected String baseSolrUrl;
     private ExecutorService executor;
+    protected RequestWriter requestWriter;
+    protected ResponseParser responseParser;
 
     public Builder() {}
 
@@ -1007,6 +1037,23 @@ public class Http2SolrClient extends SolrClient {
     /** Reuse {@code httpClient} connections pool */
     public Builder withHttpClient(Http2SolrClient httpClient) {
       this.http2SolrClient = httpClient;
+      return this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+
+    public Builder withFollowRedirects(boolean followRedirects) {
+      this.followRedirects = followRedirects;
       return this;
     }
 
@@ -1104,8 +1151,17 @@ public class Http2SolrClient extends SolrClient {
     return parser;
   }
 
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  /**
+   * Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link Http2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   */
+  @Deprecated
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {

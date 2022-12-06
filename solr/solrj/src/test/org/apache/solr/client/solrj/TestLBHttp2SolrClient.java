@@ -161,7 +161,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   private LBHttp2SolrClient getLBHttp2SolrClient(Http2SolrClient httpClient, String... s) {
-    return new LBHttp2SolrClient(httpClient, s);
+    return new LBHttp2SolrClient.Builder(httpClient, s).build();
   }
 
   public void testTwoServers() throws Exception {

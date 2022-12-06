@@ -2165,46 +2165,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createNewSolrClient(DEFAULT_COLLECTION, port);
   }
 
-  protected SolrClient createNewSolrClient(
-      int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return createNewSolrClient(
-        DEFAULT_COLLECTION, port, connectionTimeoutMillis, socketTimeoutMillis);
-  }
-
   protected SolrClient createNewSolrClient(String coreName, int port) {
-    try {
-      // setup the server...
-      String baseUrl = buildUrl(port);
-      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  protected SolrClient createNewSolrClient(
-      String coreName, int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    try {
-      // setup the server...
-      String baseUrl = buildUrl(port);
-      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      SolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    String baseUrl = buildUrl(port);
+    String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
+    return getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    try {
-      // setup the server...
-      SolrClient client =
-          getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, 60000);
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return getHttpSolrClient(baseUrl + "/" + collection);
   }
 
   protected String getBaseUrl(JettySolrRunner jetty) {
