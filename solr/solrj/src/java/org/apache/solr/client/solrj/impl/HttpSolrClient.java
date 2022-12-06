@@ -165,11 +165,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
 
     if (builder.httpClient != null) {
+      this.internalClient = false;
       this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
-      this.internalClient = false;
+
     } else {
       this.internalClient = true;
+      this.followRedirects = builder.followRedirects;
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
       params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, builder.compression);
