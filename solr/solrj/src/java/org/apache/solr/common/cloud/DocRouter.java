@@ -39,7 +39,7 @@ import org.noggit.JSONWriter;
  */
 public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
-  public static final DocRouter DEFAULT = new CompositeIdRouter();
+  public static final DocRouter DEFAULT;
 
   public static DocRouter getDocRouter(String routerName) {
     DocRouter router = routerMap.get(routerName);
@@ -79,11 +79,11 @@ public abstract class DocRouter {
     // to "plain" if it doesn't have any properties.
     routerMap.put(null, plain); // back compat with 4.0
     routerMap.put(PlainIdRouter.NAME, plain);
-    routerMap.put(
-        CompositeIdRouter.NAME,
-        DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
+    routerMap.put(CompositeIdRouter.NAME, new CompositeIdRouter());
     routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
     // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
+
+    DEFAULT = routerMap.get(DEFAULT_NAME);
   }
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.

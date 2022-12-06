@@ -67,7 +67,6 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
@@ -1067,7 +1066,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           return nodes;
         }
 
-        String routeKey = SolrIndexSplitter.getRouteKey(id);
+        String routeKey = compositeIdRouter.getRouteKeyNoSuffix(id);
         if (routeKey != null) {
           RoutingRule rule = routingRules.get(routeKey + "!");
           if (rule != null) {
