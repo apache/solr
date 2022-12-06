@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.EchoParamsTest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
