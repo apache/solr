@@ -57,12 +57,16 @@ Improvements
   (Houston Putman)
 
 * SOLR-16565: posting the same file to the package store should not throw an error (noble)
+
 Optimizations
 ---------------------
 
 * SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
 
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
+* SOLR-15732: queries to missing collection are slow (noble)
+
 
 Bug Fixes
 ---------------------
