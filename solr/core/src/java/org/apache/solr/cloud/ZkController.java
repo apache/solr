@@ -2737,8 +2737,9 @@ public class ZkController implements Closeable {
   }
 
   public boolean hasConfDirectoryListeners(final String confDir) {
-    assert Thread.holdsLock(confDirectoryListeners) : "confDirListeners lock not held by thread";
-    return confDirectoryListeners.containsKey(confDir) && !confDirectoryListeners.isEmpty();
+    synchronized (confDirectoryListeners) {
+      return confDirectoryListeners.containsKey(confDir) && !confDirectoryListeners.isEmpty();
+    }
   }
 
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();
