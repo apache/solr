@@ -17,24 +17,36 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.EchoParamsTest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SolrCoreConfigTest extends AbstractFullDistribZkTestBase {
+import java.util.List;
+
+
+public class SolrCoreConfigTest extends SolrCloudTestCase {
   @Override
-  public void distribSetUp() throws Exception {
+  public void setUp() throws Exception {
     System.setProperty(SolrCore.DISABLE_ZK_CONFIG_WATCH, "true");
-    super.distribSetUp();
+    super.setUp();
   }
 
   @Override
-  public void distribTearDown() throws Exception {
+  public void tearDown() throws Exception {
     try {
-      super.distribTearDown();
+      super.tearDown();
     } finally {
       System.clearProperty(SolrCore.DISABLE_ZK_CONFIG_WATCH);
     }
+  }
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(1)
+            .addConfig("conf", configset("cloud-minimal"))
+            .configure();
   }
 
   @Test
@@ -46,6 +58,7 @@ public class SolrCoreConfigTest extends AbstractFullDistribZkTestBase {
   }
 
   private CoreContainer getContainer() {
+    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
     for (JettySolrRunner jetty : jettys) {
       return jetty.getCoreContainer();
     }
