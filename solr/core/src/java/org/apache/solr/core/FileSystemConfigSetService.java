@@ -25,7 +25,6 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -287,11 +285,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   protected Path getConfigDir(String configName) throws IOException {
-    String path =
-        Paths.get(configSetBase.toString(), FilenameUtils.getName(configName))
-            .toFile()
-            .getCanonicalPath();
-    if (!path.endsWith(configName)) {
+    String configSetBasePath = configSetBase.toString();
+    String path = Path.of(configSetBasePath, configName).toFile().getCanonicalPath();
+    if (!path.startsWith(configSetBasePath)) {
       throw new IOException("configName=" + configName + " is not found under configSetBase dir");
     }
     return configSetBase.resolve(configName);
