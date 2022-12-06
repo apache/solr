@@ -550,13 +550,15 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertTrue(e.getMessage().contains("redirect"));
     }
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+    try (HttpSolrClient client =
+        new HttpSolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
       // No exception expected
       client.query(q);
     }
 
     // And with explicit false:
-    try (HttpSolrClient client = new HttpSolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
+    try (HttpSolrClient client =
+        new HttpSolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
       SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
     }
