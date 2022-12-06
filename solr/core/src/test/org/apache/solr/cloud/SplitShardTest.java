@@ -317,54 +317,44 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   public void testShardSplitWithNodeset() throws Exception {
     String COLL = "shard_split_nodeset";
-    MiniSolrCloudCluster cluster =
-        configureCluster(2)
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("conf2"))
-            .configure();
 
-    try {
-      CollectionAdminRequest.createCollection(COLL, "conf", 2, 2).process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(COLL, 2, 4);
+    CollectionAdminRequest.createCollection(COLL, "conf", 2, 2).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLL, 2, 4);
 
-      JettySolrRunner jetty = cluster.startJettySolrRunner();
+    JettySolrRunner jetty = cluster.startJettySolrRunner();
 
-      CollectionAdminRequest.SplitShard splitShard =
-          CollectionAdminRequest.splitShard(COLL)
-              .setCreateNodeSet(jetty.getNodeName())
-              .setShardName("shard1");
-      NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
-      assertNotNull(response.get("success"));
+    CollectionAdminRequest.SplitShard splitShard =
+        CollectionAdminRequest.splitShard(COLL)
+            .setCreateNodeSet(jetty.getNodeName())
+            .setShardName("shard1");
+    NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
+    assertNotNull(response.get("success"));
 
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              10,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) ->
-                  testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            COLL,
+            10,
+            TimeUnit.SECONDS,
+            (liveNodes, collectionState) ->
+                testColl(jetty, collectionState, List.of("shard1_0", "shard1_1")));
 
-      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
-      splitShard =
-          CollectionAdminRequest.splitShard(COLL)
-              .setCreateNodeSet(randomJetty.getNodeName())
-              .setShardName("shard2");
-      response = splitShard.process(cluster.getSolrClient()).getResponse();
-      assertNotNull(response.get("success"));
+    JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+    splitShard =
+        CollectionAdminRequest.splitShard(COLL)
+            .setCreateNodeSet(randomJetty.getNodeName())
+            .setShardName("shard2");
+    response = splitShard.process(cluster.getSolrClient()).getResponse();
+    assertNotNull(response.get("success"));
 
-      cluster
-          .getZkStateReader()
-          .waitForState(
-              COLL,
-              10,
-              TimeUnit.SECONDS,
-              (liveNodes, collectionState) ->
-                  testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
-
-    } finally {
-      cluster.shutdown();
-    }
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            COLL,
+            10,
+            TimeUnit.SECONDS,
+            (liveNodes, collectionState) ->
+                testColl(randomJetty, collectionState, List.of("shard2_0", "shard2_1")));
   }
 
   private boolean testColl(
