@@ -92,6 +92,9 @@ Optimizations
 
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
 
+* SOLR-15732: queries to missing collection are slow (noble)
+
+
 Bug Fixes
 ---------------------
 
@@ -120,6 +123,7 @@ Bug Fixes
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
+* SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
 Build
 ---------------------
@@ -129,7 +133,7 @@ Build
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
-* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+* SOLR-16442: Upgrade to Lucene 9.4.2 (Christine Poerschke)
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
