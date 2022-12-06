@@ -74,12 +74,23 @@ Improvements
 
 * SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. (Mikhail Khludnev)
 
+* SOLR-16158: Certain Jetty "server" jars (jetty-util, jetty-io, etc.) are no longer duplicated between server/lib and WEB-INF/lib. All shared jars now live in server/lib/ext.
+  By default, Jetty does not allow these jars to be shared by the Jetty server and the web-app (Solr).
+  In order to accomplish this, explicit exclusions have been added to server/contexts/solr-jetty-context.xml that allow these "server" jars to be shared.
+  Solr Core also no longer contains the JettySolrRunner (now living in the testing framework), removing the need for Jetty Server dependencies in solr-core.
+  (Houston Putman)
+
+* SOLR-16565: posting the same file to the package store should not throw an error (noble)
+
 Optimizations
 ---------------------
 
 * SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
 
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
+* SOLR-15732: queries to missing collection are slow (noble)
+
 
 Bug Fixes
 ---------------------
@@ -107,6 +118,10 @@ Bug Fixes
 
 * SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -115,7 +130,7 @@ Build
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
-* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+* SOLR-16442: Upgrade to Lucene 9.4.2 (Christine Poerschke)
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
@@ -246,8 +261,6 @@ Bug Fixes
 * SOLR-15830: Concurrent core reloads mess up commits when using Schema API (Bence Szabo via Andras Salamon)
 
 * SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
-
-* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
 * SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
 
