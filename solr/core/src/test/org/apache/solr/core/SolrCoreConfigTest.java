@@ -17,13 +17,11 @@
 
 package org.apache.solr.core;
 
+import java.util.List;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.List;
-
 
 public class SolrCoreConfigTest extends SolrCloudTestCase {
   @Override
@@ -43,9 +41,7 @@ public class SolrCoreConfigTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-            .addConfig("conf", configset("cloud-minimal"))
-            .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
