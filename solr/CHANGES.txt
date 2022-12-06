@@ -82,6 +82,9 @@ Improvements
 
 * SOLR-16565: posting the same file to the package store should not throw an error (noble)
 
+* SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
+  Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
+
 Optimizations
 ---------------------
 
