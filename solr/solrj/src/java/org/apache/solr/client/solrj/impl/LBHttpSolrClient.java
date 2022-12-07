@@ -119,6 +119,12 @@ public class LBHttpSolrClient extends LBSolrClient {
         if (soTimeout != null) {
           httpSolrClientBuilder.withSocketTimeout(soTimeout);
         }
+        if (requestWriter != null) {
+          httpSolrClientBuilder.withRequestWriter(requestWriter);
+        }
+        if (queryParams != null) {
+          httpSolrClientBuilder.withQueryParams(queryParams);
+        }
         client = httpSolrClientBuilder.build();
       }
     } else {
@@ -130,14 +136,15 @@ public class LBHttpSolrClient extends LBSolrClient {
       if (soTimeout != null) {
         clientBuilder.withSocketTimeout(soTimeout);
       }
+      if (requestWriter != null) {
+        clientBuilder.withRequestWriter(requestWriter);
+      }
+      if (queryParams != null) {
+        clientBuilder.withQueryParams(queryParams);
+      }
       client = clientBuilder.build();
     }
-    if (requestWriter != null) {
-      client.setRequestWriter(requestWriter);
-    }
-    if (queryParams != null) {
-      client.setQueryParams(queryParams);
-    }
+
     return client;
   }
 

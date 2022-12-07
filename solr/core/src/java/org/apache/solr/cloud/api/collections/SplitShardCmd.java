@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -785,6 +786,20 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         } else {
           ccc.offerStateUpdate(m);
         }
+        // Wait for the sub-shards to change to the RECOVERY state before creating the replica
+        // cores. Otherwise, there is a race condition and some recovery updates may be lost.
+        zkStateReader.waitForState(
+            collectionName,
+            60,
+            TimeUnit.SECONDS,
+            (collectionState) -> {
+              for (String subSlice : subSlices) {
+                if (!collectionState.getSlice(subSlice).getState().equals(Slice.State.RECOVERY)) {
+                  return false;
+                }
+              }
+              return true;
+            });
       }
 
       t = timings.sub("createCoresForReplicas");
