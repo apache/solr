@@ -78,7 +78,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  protected int interval = CHECK_INTERVAL;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -463,7 +463,9 @@ public abstract class LBSolrClient extends SolrClient {
    * this to set that interval
    *
    * @param interval time in milliseconds
+   * @deprecated use {@link LBHttpSolrClient.Builder#setAliveCheckInterval(int)} instead
    */
+  @Deprecated
   public void setAliveCheckInterval(int interval) {
     if (interval <= 0) {
       throw new IllegalArgumentException(
