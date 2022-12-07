@@ -149,7 +149,19 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
+    this.pollQueueTime = builder.pollQueueTime;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+
+    // nocommit Eric asks, in the setter we had the below defensive logic, but in the
+    // builder approach we just throw an exception.  The exception makes sense to
+    // me as less magic, but maybe we are making life harder?
+    // make sure the stall time is larger than the polling time
+    // to give a chance for the queue to change
+    // int minimalStallTime = pollQueueTime * 2;
+    // if (minimalStallTime > this.stallTime) {
+    //  this.stallTime = minimalStallTime;
+    // }
+
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException(
           "Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
@@ -691,7 +703,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   /**
    * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
+   * @deprecated use {@link ConcurrentUpdateHttp2SolrClient.Builder#setPollQueueTime(int)} instead
    */
+  @Deprecated
   public void setPollQueueTime(int pollQueueTime) {
     this.pollQueueTime = pollQueueTime;
     // make sure the stall time is larger than the polling time
@@ -711,6 +725,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected ExecutorService executorService;
     protected boolean streamDeletes;
     protected boolean closeHttp2Client;
+    private int pollQueueTime;
 
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
@@ -792,6 +807,14 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;
+      return this;
+    }
+
+    /**
+     * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
+     */
+    public Builder setPollQueueTime(int pollQueueTime) {
+      this.pollQueueTime = pollQueueTime;
       return this;
     }
 
