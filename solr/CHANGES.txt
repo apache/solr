@@ -158,6 +158,8 @@ Other Changes
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
 
+SOLR-16575: splitshard should honour createNodeSet (noble)
+
 ==================  9.1.0 ==================
 
 New Features
