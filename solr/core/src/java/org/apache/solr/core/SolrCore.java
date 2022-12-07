@@ -188,7 +188,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCore implements SolrInfoBean, Closeable {
 
   public static final String version = "1.0";
-  public static final String DISABLE_ZK_CONFIG_WATCH = "disable.zk.config.watch";
+  public static final String DISABLE_ZK_CONFIG_WATCH = "configSet.core.watch.disable";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog =
