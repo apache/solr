@@ -18,6 +18,8 @@ Other Changes
 
 * SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
 
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
 ==================  9.1.0 ==================
 
 New Features
