@@ -162,6 +162,8 @@ Other Changes
 
 * SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
 
+* SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
+
 ==================  9.1.0 ==================
 
 New Features
