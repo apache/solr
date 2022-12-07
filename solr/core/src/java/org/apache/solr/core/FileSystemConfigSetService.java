@@ -285,11 +285,10 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   protected Path getConfigDir(String configName) throws IOException {
-    String configSetBasePath = configSetBase.toString();
-    String path = Path.of(configSetBasePath, configName).toFile().getCanonicalPath();
-    if (!path.startsWith(configSetBasePath)) {
+    Path path = configSetBase.resolve(configName).normalize();
+    if (!path.startsWith(configSetBase)) {
       throw new IOException("configName=" + configName + " is not found under configSetBase dir");
     }
-    return configSetBase.resolve(configName);
+    return path;
   }
 }
