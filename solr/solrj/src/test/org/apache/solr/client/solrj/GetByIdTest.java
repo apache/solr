@@ -22,11 +22,17 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.SolrClientTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
+
+  @Rule
+  public SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule(getSolrClient());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -149,5 +155,10 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertEquals("2", rsp.get(1).get("id"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term2_s"));
+  }
+
+  @Test
+  public void testRule() throws Exception {
+    solrClientTestRule.printString();
   }
 }
