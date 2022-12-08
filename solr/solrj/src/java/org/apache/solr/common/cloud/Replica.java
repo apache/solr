@@ -17,10 +17,12 @@
 package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
+import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -29,6 +31,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -366,7 +369,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   @Override
   public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    _allPropsWriter().writeMap(ew);
+    ew.put(name, _allPropsWriter());
   }
 
   private static final Map<String, State> STATES = new HashMap<>();
@@ -383,15 +386,16 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   private MapWriter _allPropsWriter() {
-    BiPredicate<CharSequence, Object> p =
-        ((BiPredicate<CharSequence, Object>) (k, o) -> !propMap.containsKey(k.toString()))
-            .and(NON_NULL_VAL);
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>()).and(NON_NULL_VAL);
     return writer -> {
       // XXX this is why this class should be immutable - it's a mess !!!
 
       // propMap takes precedence because it's mutable and we can't control its
       // contents, so a third party may override some declared fields
-      propMap.forEach(writer.getBiConsumer());
+      for (Map.Entry<String, Object> e : propMap.entrySet()) {
+        writer.put(e.getKey(), e.getValue(), p);
+      }
+
       writer
           .put(ReplicaStateProps.CORE_NAME, core, p)
           .put(ReplicaStateProps.SHARD_ID, shard, p)
@@ -400,6 +404,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
           .put(ReplicaStateProps.TYPE, type.toString(), p)
           .put(ReplicaStateProps.STATE, state.toString(), p);
     };
+  }
+
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    Map<String, Object> map = new LinkedHashMap<>();
+    // this serializes also our declared properties
+    _allPropsWriter().toMap(map);
+    jsonWriter.write(map);
   }
 
   @Override

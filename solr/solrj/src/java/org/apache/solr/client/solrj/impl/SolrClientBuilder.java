@@ -16,9 +16,11 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.request.RequestWriter;
 
 /**
  * @deprecated Please look into using Solr's new Http2 clients
@@ -28,8 +30,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
+  protected RequestWriter requestWriter;
+  protected boolean useMultiPartPost;
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
+  protected boolean followRedirects = false;
+  protected Set<String> queryParams;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
@@ -43,6 +49,34 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
   public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
+    return getThis();
+  }
+
+  /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+  public B withRequestWriter(RequestWriter requestWriter) {
+    this.requestWriter = requestWriter;
+    return getThis();
+  }
+
+  /** Enables or disables splitting POST requests into pieces. */
+  public B allowMultiPartPost(Boolean useMultiPartPost) {
+    this.useMultiPartPost = useMultiPartPost;
+    return getThis();
+  }
+
+  /**
+   * Provides a set of keys which the created client will send as a part of the query string.
+   *
+   * @param queryParams set of param keys to only send via the query string Note that the param will
+   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   */
+  public B withQueryParams(Set<String> queryParams) {
+    this.queryParams = queryParams;
+    return getThis();
+  }
+
+  public B withFollowRedirects(boolean followRedirects) {
+    this.followRedirects = followRedirects;
     return getThis();
   }
 

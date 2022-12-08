@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -161,20 +160,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           throw new RuntimeException(e.getMessage());
         }
       }
-
-      executor.shutdown();
-      try {
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e.getMessage());
-      }
-
-      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
     } finally {
-      if (!executor.isShutdown()) {
-        executor.shutdown();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
     }
   }
 
@@ -222,20 +210,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           throw new RuntimeException(e.getMessage());
         }
       }
-
-      executor.shutdown();
-      try {
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e.getMessage());
-      }
-
-      assertEquals("Number of failed queries is not correct", 5, failureCount.get());
     } finally {
-      if (!executor.isShutdown()) {
-        executor.shutdown();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      assertEquals("Number of failed queries is not correct", 5, failureCount.get());
     }
   }
 

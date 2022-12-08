@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -304,6 +305,11 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @Override
   public String toString() {
     return name + ':' + toJSONString(propMap);
+  }
+
+  @Override
+  public void write(JSONWriter jsonWriter) {
+    jsonWriter.write(propMap);
   }
 
   /** JSON properties related to a slice's state. */

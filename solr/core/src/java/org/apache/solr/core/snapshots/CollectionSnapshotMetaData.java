@@ -16,23 +16,23 @@
  */
 package org.apache.solr.core.snapshots;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.JSONWriter;
 
 /** This class defines the meta-data about a collection level snapshot */
-public class CollectionSnapshotMetaData implements MapWriter {
-  public static class CoreSnapshotMetaData implements MapWriter {
+public class CollectionSnapshotMetaData implements JSONWriter.Writable {
+  public static class CoreSnapshotMetaData implements JSONWriter.Writable {
     private final String coreName;
     private final String indexDirPath;
     private final long generationNumber;
@@ -90,13 +90,15 @@ public class CollectionSnapshotMetaData implements MapWriter {
     }
 
     @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(CoreAdminParams.CORE, getCoreName());
-      ew.put(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
-      ew.put(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
-      ew.put(SolrSnapshotManager.SHARD_ID, getShardId());
-      ew.put(SolrSnapshotManager.LEADER, isLeader());
-      ew.put(SolrSnapshotManager.FILE_LIST, getFiles());
+    public void write(JSONWriter arg0) {
+      LinkedHashMap<String, Object> info = new LinkedHashMap<>();
+      info.put(CoreAdminParams.CORE, getCoreName());
+      info.put(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
+      info.put(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
+      info.put(SolrSnapshotManager.SHARD_ID, getShardId());
+      info.put(SolrSnapshotManager.LEADER, isLeader());
+      info.put(SolrSnapshotManager.FILE_LIST, getFiles());
+      arg0.write(info);
     }
 
     public NamedList<Object> toNamedList() {
@@ -227,11 +229,13 @@ public class CollectionSnapshotMetaData implements MapWriter {
   }
 
   @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(CoreAdminParams.NAME, this.name);
-    ew.put(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
-    ew.put(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
-    ew.put(SolrSnapshotManager.SNAPSHOT_REPLICAS, this.replicaSnapshots);
+  public void write(JSONWriter arg0) {
+    LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+    result.put(CoreAdminParams.NAME, this.name);
+    result.put(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
+    result.put(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
+    result.put(SolrSnapshotManager.SNAPSHOT_REPLICAS, this.replicaSnapshots);
+    arg0.write(result);
   }
 
   public NamedList<Object> toNamedList() {
