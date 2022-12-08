@@ -73,6 +73,7 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -164,6 +165,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
 
     if (builder.httpClient != null) {
+      this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
       this.internalClient = false;
     } else {
@@ -174,10 +176,16 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       httpClient = HttpClientUtil.createClient(params);
     }
 
+    if (builder.requestWriter != null) {
+      this.requestWriter = builder.requestWriter;
+    }
+
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
+    this.useMultiPartPost = builder.useMultiPartPost;
+    this.queryParams = builder.queryParams;
   }
 
   public Set<String> getQueryParams() {
@@ -189,8 +197,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *
    * @param queryParams set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
+   *     multiple threads simultaneously. To avoid this, use {@link Builder#withQueryParams(Set)}.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
+   * @deprecated use {@link Builder#withQueryParams(Set)} instead
    */
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
   }
@@ -812,7 +824,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *
    * In this case the client is more flexible and can be used to send requests to any cores. The
    * cost of this is that the core must be specified on each request.
+   *
+   * <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
+   * multiple threads simultaneously.
+   *
+   * @deprecated use {@link Builder} instead
    */
+  @Deprecated
   public void setBaseURL(String baseUrl) {
     this.baseUrl = baseUrl;
   }
@@ -824,12 +842,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * Note: This setter method is <b>not thread-safe</b>.
    *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link Builder#withResponseParser(ResponseParser)} instead
    */
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  @Deprecated
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   /** Return the HttpClient this instance uses. */
@@ -841,12 +861,25 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * Configure whether the client should follow redirects or not.
    *
    * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is misconfigured somewhere.
+   * Solr installation, something is configured wrong somewhere.
+   *
+   * @deprecated use {@link Builder#withFollowRedirects(boolean)} Redirects(boolean)} instead
    */
+  @Deprecated
   public void setFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -863,7 +896,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return useMultiPartPost;
   }
 
-  /** Set the multipart connection properties */
+  /**
+   * Set the multipart connection properties
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Builder#allowMultiPartPost(Boolean)} instead
+   */
+  @Deprecated
   public void setUseMultiPartPost(boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
   }
@@ -940,7 +980,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      * In this case the client is more flexible and can be used to send requests to any cores. This
      * flexibility though requires that the core be specified on all requests.
      *
-     * <p>By default, compression is not enabled on created HttpSolrClient objects.
+     * <p>By default, compression is not enabled on created HttpSolrClient objects. By default,
+     * redirects are not followed in created HttpSolrClient objects. By default, {@link
+     * BinaryRequestWriter} is used for composing requests. By default, {@link BinaryResponseParser}
+     * is used for parsing responses.
+     *
+     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created
+     *     clients.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;

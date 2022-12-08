@@ -1569,6 +1569,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Float splitFuzz;
 
     private Properties properties;
+    protected String createNodeSet;
 
     private SplitShard(String collection) {
       super(CollectionAction.SPLITSHARD);
@@ -1577,6 +1578,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public SplitShard setRanges(String ranges) {
       this.ranges = ranges;
+      return this;
+    }
+
+    public SplitShard setCreateNodeSet(String nodeset) {
+      this.createNodeSet = nodeset;
       return this;
     }
 
@@ -1670,6 +1676,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
       if (properties != null) {
         addProperties(params, properties);
+      }
+      if (createNodeSet != null) {
+        params.set(CREATE_NODE_SET_PARAM, createNodeSet);
       }
       return params;
     }

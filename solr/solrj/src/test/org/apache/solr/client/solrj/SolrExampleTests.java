@@ -599,25 +599,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     Random random = random();
     int numIterations = atLeast(3);
 
-    SolrClient client = getSolrClient();
+    try (SolrClient client = getSolrClient()) {
 
-    // save the old parser, so we can set it back.
-    ResponseParser oldParser = null;
-    if (client instanceof HttpSolrClient) {
-      HttpSolrClient httpSolrClient = (HttpSolrClient) client;
-      oldParser = httpSolrClient.getParser();
-    }
-
-    try {
       for (int iteration = 0; iteration < numIterations; iteration++) {
-        // choose format
-        if (client instanceof HttpSolrClient) {
-          if (random.nextBoolean()) {
-            ((HttpSolrClient) client).setParser(new BinaryResponseParser());
-          } else {
-            ((HttpSolrClient) client).setParser(new XMLResponseParser());
-          }
-        }
 
         int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
 
@@ -647,11 +631,6 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           String actual = (String) rsp.getResults().get(i).getFieldValue("unicode_s");
           assertEquals(expected, actual);
         }
-      }
-    } finally {
-      if (oldParser != null) {
-        // set the old parser back
-        ((HttpSolrClient) client).setParser(oldParser);
       }
     }
   }

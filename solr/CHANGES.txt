@@ -82,6 +82,9 @@ Improvements
 
 * SOLR-16565: posting the same file to the package store should not throw an error (noble)
 
+* SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
+  Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
+
 Optimizations
 ---------------------
 
@@ -154,6 +157,10 @@ Other Changes
 * SOLR-16541: Eliminate the 'numShards' system property (noble)
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
+
+* SOLR-16575: splitshard should honour createNodeSet (noble)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
 
 ==================  9.1.0 ==================
 
