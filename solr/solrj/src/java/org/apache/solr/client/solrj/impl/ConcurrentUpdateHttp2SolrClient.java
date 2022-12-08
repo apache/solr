@@ -152,15 +152,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.pollQueueTime = builder.pollQueueTime;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
-    // nocommit Eric asks, in the setter we had the below defensive logic, but in the
-    // builder approach we just throw an exception.  The exception makes sense to
-    // me as less magic, but maybe we are making life harder?
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
-    // int minimalStallTime = pollQueueTime * 2;
-    // if (minimalStallTime > this.stallTime) {
-    //  this.stallTime = minimalStallTime;
-    // }
+    int minimalStallTime = pollQueueTime * 2;
+    if (minimalStallTime > this.stallTime) {
+      this.stallTime = minimalStallTime;
+    }
 
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException(
