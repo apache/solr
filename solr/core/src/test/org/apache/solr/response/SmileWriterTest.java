@@ -210,7 +210,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
   }
   // common-case ascii
   static String str(Random r, int sz) {
-    StringBuffer sb = new StringBuffer(sz);
+    StringBuilder sb = new StringBuilder(sz);
     for (int i = 0; i < sz; i++) {
       sb.append('\n' + r.nextInt(128 - '\n'));
     }

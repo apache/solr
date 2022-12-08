@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable.CORE_IDX;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -377,7 +379,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // refresh the locally cached cluster state
         // we know we have the latest because otherwise deleteshard would have failed
         clusterState = zkStateReader.getClusterState();
-        collection = clusterState.getCollection(collectionName);
       }
 
       // 4. create the child sub-shards in CONSTRUCTION state
@@ -559,14 +560,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       log.debug("Successfully applied buffered updates on : {}", subShardNames);
 
-      // 9. determine node placement for additional replicas
-      Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<>(nodes.size());
-      nodeList.addAll(nodes);
-
-      // Remove the node that hosts the parent shard for replica creation.
-      nodeList.remove(nodeName);
-
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
       // we have already created one subReplica for each subShard on the parent node.
@@ -585,7 +578,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               .assignNrtReplicas(numNrt.get())
               .assignTlogReplicas(numTlog.get())
               .assignPullReplicas(numPull.get())
-              .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
+              .onNodes(
+                  Assign.getLiveOrLiveAndCreateNodeSetList(
+                      clusterState.getLiveNodes(),
+                      message,
+                      RANDOM,
+                      ccc.getSolrCloudManager().getDistribStateManager()))
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       List<ReplicaPosition> replicaPositions =
@@ -788,6 +786,20 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         } else {
           ccc.offerStateUpdate(m);
         }
+        // Wait for the sub-shards to change to the RECOVERY state before creating the replica
+        // cores. Otherwise, there is a race condition and some recovery updates may be lost.
+        zkStateReader.waitForState(
+            collectionName,
+            60,
+            TimeUnit.SECONDS,
+            (collectionState) -> {
+              for (String subSlice : subSlices) {
+                if (!collectionState.getSlice(subSlice).getState().equals(Slice.State.RECOVERY)) {
+                  return false;
+                }
+              }
+              return true;
+            });
       }
 
       t = timings.sub("createCoresForReplicas");
@@ -1252,7 +1264,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
       try {
         List<String> names = cloudManager.getDistribStateManager().listData(path);
-        for (String name : cloudManager.getDistribStateManager().listData(path)) {
+        for (String name : names) {
           if (name.endsWith("-splitting")) {
             try {
               cloudManager.getDistribStateManager().removeData(path + "/" + name, -1);

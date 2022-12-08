@@ -28,7 +28,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.IdUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -69,10 +69,11 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
         .configure();
 
     // If Collection API is distributed let's not wait for Overseer.
-    if (isCollectionApiDistributed =
+    isCollectionApiDistributed =
         new CollectionAdminRequest.RequestApiDistributedProcessing()
             .process(cluster.getSolrClient())
-            .getIsCollectionApiDistributed()) {
+            .getIsCollectionApiDistributed();
+    if (isCollectionApiDistributed) {
       return;
     }
 

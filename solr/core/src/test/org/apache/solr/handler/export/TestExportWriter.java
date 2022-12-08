@@ -1048,11 +1048,11 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           String field = "number_" + type + mv + indexed;
           SchemaField sf = h.getCore().getLatestSchema().getField(field + "_t");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
 
           sf = h.getCore().getLatestSchema().getField(field + "_p");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
           assertTrue(sf.getType().isPointField());
 
           trieFields.add(field + "_t");
@@ -1354,7 +1354,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     Map rsp = (Map) Utils.fromJSONString(response);
     List doclist = (List) (((Map) rsp.get("response")).get("docs"));
 
-    assert docs.size() == numDocs;
+    assertEquals(docs.size(), numDocs);
 
     for (int i = 0; i < docs.size() - 1; i++) { // docs..
       assertEquals(
@@ -1409,7 +1409,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     }
   }
 
-  private class SortFields {
+  private static class SortFields {
     String fieldName;
     String sortOrder;
     String[] orders = {"asc", "desc"};

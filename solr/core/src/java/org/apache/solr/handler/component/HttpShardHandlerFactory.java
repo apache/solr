@@ -288,7 +288,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .maxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -297,7 +297,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    clientBuilderPlugin.setup(defaultClient);
+    if (clientBuilderPlugin != null) {
+      clientBuilderPlugin.setup(defaultClient);
+    }
   }
 
   protected <T> T getParameter(

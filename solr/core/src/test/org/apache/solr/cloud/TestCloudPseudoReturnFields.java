@@ -28,7 +28,6 @@ import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -39,6 +38,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.TestPseudoReturnFields;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -176,10 +176,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
             Boolean.TRUE,
             frsp.getField().get("multiValued"));
       } catch (SolrServerException e) {
-        assertEquals(
-            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?",
-            null,
-            e);
+        assertNull(
+            "Couldn't fetch field for '" + name + "' ... schema changed out from under us?", e);
       }
     }
 
@@ -982,7 +980,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

@@ -16,27 +16,11 @@
  */
 package org.apache.solr.util;
 
-import java.util.Locale;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
 import org.semver4j.SemverException;
 
 public class TestSolrVersion extends SolrTestCase {
   private static final SolrVersion SOLR_9_0_1 = SolrVersion.valueOf("9.0.1");
-
-  @SuppressWarnings("AssertionFailureIgnored")
-  @BeforeClass
-  public static void beforeClass() {
-    // Checks that semver4j works with configured locale */
-    try {
-      assertTrue(SOLR_9_0_1.satisfies("~9.0"));
-    } catch (AssertionError e) {
-      SolrTestCaseJ4.assumeNoException(
-          "See SOLR-16467 - semver4j doesn't work with " + Locale.getDefault().toLanguageTag(),
-          new Exception(e));
-    }
-  }
 
   public void testToString() {
     assertEquals("9.0.0", SolrVersion.forIntegers(9, 0, 0).toString());

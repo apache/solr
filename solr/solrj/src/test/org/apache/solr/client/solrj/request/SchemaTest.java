@@ -851,7 +851,7 @@ public class SchemaTest extends RestTestBase {
     createStoredStringField(destFieldName1, getSolrClient());
     createStoredStringField(destFieldName2, getSolrClient());
 
-    Integer maxChars = 200;
+    int maxChars = 200;
     SchemaRequest.AddCopyField addCopyFieldRequest =
         new SchemaRequest.AddCopyField(
             srcFieldName, Arrays.asList(destFieldName1, destFieldName2), maxChars);
@@ -869,7 +869,7 @@ public class SchemaTest extends RestTestBase {
         int currentMaxChars = (Integer) currentCopyField.get("maxChars");
         MatcherAssert.assertThat(
             currentDestFieldName, anyOf(is(equalTo(destFieldName1)), is(equalTo(destFieldName2))));
-        assertTrue(maxChars == currentMaxChars);
+        assertEquals(maxChars, currentMaxChars);
       }
     }
   }

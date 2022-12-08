@@ -23,12 +23,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -116,7 +116,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     }
 
     // they shouldn't be equal after reload
-    assertTrue(!leaderCoreId.equals(reloadedLeaderCoreId));
+    assertNotEquals(leaderCoreId, reloadedLeaderCoreId);
 
     listeners = zkController.getCurrentOnReconnectListeners();
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);

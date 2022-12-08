@@ -42,7 +42,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -68,6 +67,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -398,8 +398,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    int increaseFromExpectedUrls = 0;
-    int increaseFromUnexpectedUrls = 0;
+    long increaseFromExpectedUrls = 0;
+    long increaseFromUnexpectedUrls = 0;
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -936,7 +936,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
-    assert cluster.getJettySolrRunners().size() >= 2;
+    assertTrue(cluster.getJettySolrRunners().size() >= 2);
 
     final JettySolrRunner old_leader_node = cluster.getJettySolrRunners().get(0);
     final JettySolrRunner new_leader_node = cluster.getJettySolrRunners().get(1);

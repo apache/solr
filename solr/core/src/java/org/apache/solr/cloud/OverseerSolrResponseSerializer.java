@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -35,12 +34,8 @@ public class OverseerSolrResponseSerializer {
    *       org.apache.solr.common.util.JavaBinCodec#writeVal}
    * </ul>
    */
-  @SuppressWarnings("deprecation")
   public static byte[] serialize(OverseerSolrResponse responseObject) {
     Objects.requireNonNull(responseObject);
-    if (useUnsafeSerialization()) {
-      return SolrResponse.serializable(responseObject);
-    }
     try {
       return Utils.toJavabin(responseObject.getResponse()).readAllBytes();
     } catch (IOException | RuntimeException e) {
@@ -49,19 +44,6 @@ public class OverseerSolrResponseSerializer {
     }
   }
 
-  static boolean useUnsafeSerialization() {
-    String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
-    return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse));
-  }
-
-  static boolean useUnsafeDeserialization() {
-    String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
-    return useUnsafeOverseerResponse != null
-        && ("true".equals(useUnsafeOverseerResponse)
-            || "deserialization".equals(useUnsafeOverseerResponse));
-  }
-
-  @SuppressWarnings("deprecation")
   public static OverseerSolrResponse deserialize(byte[] responseBytes) {
     Objects.requireNonNull(responseBytes);
     try {
@@ -69,9 +51,6 @@ public class OverseerSolrResponseSerializer {
       NamedList<Object> response = (NamedList<Object>) Utils.fromJavabin(responseBytes);
       return new OverseerSolrResponse(response);
     } catch (IOException | RuntimeException e) {
-      if (useUnsafeDeserialization()) {
-        return (OverseerSolrResponse) SolrResponse.deserialize(responseBytes);
-      }
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Exception deserializing response from Javabin", e);
     }

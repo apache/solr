@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.BACK
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATESNAPSHOT;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.DELETESNAPSHOT;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.LISTSNAPSHOTS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.MERGEINDEXES;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.OVERSEEROP;
@@ -83,6 +82,7 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("ImmutableEnumChecker")
 public enum CoreAdminOperation implements CoreAdminOp {
   CREATE_OP(
       CREATE,
@@ -268,7 +268,6 @@ public enum CoreAdminOperation implements CoreAdminOp {
                   "zkController is null in CoreAdminHandler.handleRequestInternal:REJOINLEADERELECTION. No action taken.");
         }
       }),
-  INVOKE_OP(INVOKE, new InvokeOp()),
   BACKUPCORE_OP(BACKUPCORE, new BackupCoreOp()),
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),

@@ -28,6 +28,7 @@ includeBuild("dev-tools/solr-missing-doclet")
 
 include "solr:solrj"
 include "solr:solrj-zookeeper"
+include "solr:solrj-streaming"
 include "solr:core"
 include "solr:server"
 include "solr:modules:analysis-extras"

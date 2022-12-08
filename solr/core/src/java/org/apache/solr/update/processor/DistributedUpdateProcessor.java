@@ -54,8 +54,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -196,7 +196,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         UpdateParams.OPTIMIZE,
         UpdateParams.MAX_OPTIMIZE_SEGMENTS,
         UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
-        ShardParams._ROUTE_);
+        ShardParams._ROUTE_,
+        CommonParams.FAIL_ON_VERSION_CONFLICTS);
 
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -1273,15 +1274,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   public static final class DistributedUpdatesAsyncException extends SolrException {
-    public final List<Error> errors;
+    public final List<SolrError> errors;
 
-    public DistributedUpdatesAsyncException(List<Error> errors) {
+    public DistributedUpdatesAsyncException(List<SolrError> errors) {
       super(buildCode(errors), buildMsg(errors), null);
       this.errors = errors;
 
       // create a merged copy of the metadata from all wrapped exceptions
       NamedList<String> metadata = new NamedList<>();
-      for (Error error : errors) {
+      for (SolrError error : errors) {
         if (error.e instanceof SolrException) {
           SolrException e = (SolrException) error.e;
           NamedList<String> eMeta = e.getMetadata();
@@ -1296,13 +1297,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static int buildCode(List<Error> errors) {
+    private static int buildCode(List<SolrError> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
       int minCode = Integer.MAX_VALUE;
       int maxCode = Integer.MIN_VALUE;
-      for (Error error : errors) {
+      for (SolrError error : errors) {
         log.trace("REMOTE ERROR: {}", error);
         minCode = Math.min(error.statusCode, minCode);
         maxCode = Math.max(error.statusCode, maxCode);
@@ -1319,7 +1320,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static String buildMsg(List<Error> errors) {
+    private static String buildMsg(List<SolrError> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
@@ -1328,7 +1329,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         StringBuilder buf =
             new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
-        for (Error error : errors) {
+        for (SolrError error : errors) {
           buf.append("\n");
           buf.append(error.e.getMessage());
         }
@@ -1379,6 +1380,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.achievedRf = Math.min(this.achievedRf, rf);
     }
 
+    @Override
     public String toString() {
       StringBuilder sb =
           new StringBuilder("RollupRequestReplicationTracker")
@@ -1424,6 +1426,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder("LeaderRequestReplicationTracker");
       sb.append(", achievedRf=").append(getAchievedRf()).append(" for shard ").append(myShardId);

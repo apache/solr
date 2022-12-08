@@ -150,9 +150,10 @@ public class TestModelManager extends TestRerankBase {
     assertJPut(ManagedModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(ManagedModelStore.REST_END_POINT);
 
-    assert (qryResult.contains("\"name\":\"testmodel3\"")
-        && qryResult.contains("\"name\":\"testmodel4\"")
-        && qryResult.contains("\"name\":\"testmodel5\""));
+    assertTrue(
+        qryResult.contains("\"name\":\"testmodel3\"")
+            && qryResult.contains("\"name\":\"testmodel4\"")
+            && qryResult.contains("\"name\":\"testmodel5\""));
 
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='testmodel3'");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[1]/name=='testmodel4'");

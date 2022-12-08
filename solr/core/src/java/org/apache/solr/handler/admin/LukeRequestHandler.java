@@ -30,9 +30,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -123,7 +123,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       if ("all".equalsIgnoreCase(v)) return ALL;
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown Show Style: " + v);
     }
-  };
+  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -342,10 +342,9 @@ public class LukeRequestHandler extends RequestHandlerBase {
                     .array(),
                 StandardCharsets.ISO_8859_1));
       }
-      if (!ftype.isPointField()) {
+      if (ftype != null && !ftype.isPointField()) {
         Term t =
-            new Term(
-                field.name(), ftype != null ? ftype.storedToIndexed(field) : field.stringValue());
+            new Term(field.name(), Objects.requireNonNullElse(ftype.storedToIndexed(field), ""));
         f.add(
             "docFreq",
             t.text() == null ? 0 : reader.docFreq(t)); // this can be 0 for non-indexed fields
@@ -598,7 +597,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     if (f.getDefaultValue() != null) {
       field.add("default", f.getDefaultValue());
     }
-    if (f == uniqueField) {
+    if (f.equals(uniqueField)) {
       field.add("uniqueKey", true);
     }
     if (ft.getIndexAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
@@ -811,7 +810,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     /** This is a destructive call... the queue is empty at the end */
     public NamedList<Integer> toNamedList(IndexSchema schema) {
       // reverse the list..
-      List<TermInfo> aslist = new LinkedList<>();
+      List<TermInfo> aslist = new ArrayList<>();
       while (size() > 0) {
         aslist.add(0, pop());
       }
