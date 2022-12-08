@@ -231,6 +231,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * This is the time to wait to refetch the state after getting the same state version from ZK
    *
    * <p>secs
+   *
    * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
    */
   @Deprecated
