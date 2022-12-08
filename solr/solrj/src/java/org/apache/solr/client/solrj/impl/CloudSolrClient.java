@@ -233,6 +233,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * <p>secs
    * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
    */
+  @Deprecated
   public void setRetryExpiryTime(int secs) {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
