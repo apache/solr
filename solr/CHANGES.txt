@@ -158,6 +158,10 @@ Other Changes
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
 
+* SOLR-16575: splitshard should honour createNodeSet (noble)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
 ==================  9.1.0 ==================
 
 New Features
