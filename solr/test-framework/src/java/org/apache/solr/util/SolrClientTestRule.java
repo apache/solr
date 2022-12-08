@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,15 @@ import org.slf4j.LoggerFactory;
 public class SolrClientTestRule extends ExternalResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final Path path;
+  private final String defaultCoreName;
 
   protected SolrClient solrClient;
+
+  public SolrClientTestRule(Path path, String defaultCoreName) {
+    this.path = path;
+    this.defaultCoreName = defaultCoreName;
+  }
 
   @Override
   protected void before() throws Throwable {
@@ -35,12 +43,10 @@ public class SolrClientTestRule extends ExternalResource {
   }
 
   public SolrClient getSolrClient() {
-    return solrClient;
+    return new EmbeddedSolrServer(getSolrHome(), defaultCoreName);
   }
 
-
-
   public Path getSolrHome() {
-    throw new UnsupportedOperationException();
+    return path;
   }
 }

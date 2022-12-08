@@ -59,7 +59,9 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   @Override
   public synchronized EmbeddedSolrServer getSolrClient() {
     return new EmbeddedSolrServer(
-        h.getCoreContainer(), EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME, getRequestWriterSupplier());
+        h.getCoreContainer(),
+        EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME,
+        getRequestWriterSupplier());
   }
 
   private static void assertQR(

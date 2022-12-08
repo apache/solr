@@ -40,13 +40,12 @@ import org.junit.Rule;
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   @Rule
-  public static SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule(SolrJettyTestBase.legacyExampleCollection1SolrHome());
-
+  public static SolrClientTestRule solrClientTestRule =
+      new EmbeddedSolrServerTestRule(SolrJettyTestBase.legacyExampleCollection1SolrHome());
 
   public SolrClient getSolrClient() {
     return solrClientTestRule.getSolrClient();
   }
-
 
   public void upload(final String collection, final ContentStream... contents) {
     final Path base = solrClientTestRule.getSolrHome().resolve(collection);
@@ -93,5 +92,4 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
     return result;
   }
-
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.nio.file.Paths;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 
@@ -29,9 +30,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   }
 
   public EmbeddedSolrServerTestRule(String solrHome) {
-    //super(solrHome); To Do
+    super(Paths.get(solrHome), DEFAULT_CORE_NAME);
   }
-
 
   public static void initCore() throws Exception {
     final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
