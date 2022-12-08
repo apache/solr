@@ -137,6 +137,8 @@ Build
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
+* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
@@ -157,6 +159,14 @@ Other Changes
 * SOLR-16541: Eliminate the 'numShards' system property (noble)
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
+
+* SOLR-16575: splitshard should honour createNodeSet (noble)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
+* SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
+
+* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
 
 ==================  9.1.0 ==================
 

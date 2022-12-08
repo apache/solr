@@ -858,7 +858,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected String baseSolrUrl;
     protected int queueSize = 10;
     protected int threadCount;
-    protected int pollQueueTime;
+    protected int pollQueueTime = 250;
     protected ExecutorService executorService;
     protected boolean streamDeletes;
 
