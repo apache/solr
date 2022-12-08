@@ -18,9 +18,9 @@ package org.apache.solr.util;
 
 import org.apache.solr.client.solrj.SolrClient;
 
-public class EmbeddedSolrServerTestRule extends SolrClientTestRule{
+public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
-  public EmbeddedSolrServerTestRule(SolrClient solrClient) {
-    super(solrClient);
+  public EmbeddedSolrServerTestRule(String solrHome) {
+    //super(solrHome); To Do
   }
 }

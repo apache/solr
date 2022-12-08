@@ -30,42 +30,34 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.SolrClientTestRule;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Rule;
 
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
+  @Rule
+  public static SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule(SolrJettyTestBase.legacyExampleCollection1SolrHome());
+
   protected static final String DEFAULT_CORE_NAME = "collection1";
 
-  public static EmbeddedSolrServer client = null;
 
-  @After
-  public synchronized void afterClass() throws Exception {
-    if (client != null) client.close();
-    client = null;
+
+
+  public SolrClient getSolrClient() {
+    return solrClientTestRule.getSolrClient();
   }
 
-  @AfterClass
-  public static void afterEmbeddedSolrServerTestBase() throws Exception {}
-
-  public synchronized EmbeddedSolrServer getSolrClient() {
-    if (client == null) {
-      client = createNewSolrClient();
-    }
-    return client;
-  }
-
-  /** Create a new solr client. Subclasses should override for other options. */
-  public EmbeddedSolrServer createNewSolrClient() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
-  }
 
   public void upload(final String collection, final ContentStream... contents) {
-    final Path base = Paths.get(getSolrClient().getCoreContainer().getSolrHome(), collection);
+    final Path base = solrClientTestRule.getSolrHome().resolve(collection);
     writeTo(base, contents);
   }
 
@@ -87,7 +79,7 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
   }
 
   public Collection<ContentStream> download(final String collection, final String... names) {
-    final Path base = Paths.get(getSolrClient().getCoreContainer().getSolrHome(), collection);
+    final Path base = solrClientTestRule.getSolrHome().resolve(collection);
     final List<ContentStream> result = new ArrayList<>();
 
     if (Files.exists(base)) {

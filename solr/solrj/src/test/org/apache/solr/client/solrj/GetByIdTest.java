@@ -31,13 +31,9 @@ import org.junit.Test;
 
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
-  @Rule
-  public SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule(getSolrClient());
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore();
-  }
+
+
 
   @Before
   @Override
@@ -157,8 +153,4 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term2_s"));
   }
 
-  @Test
-  public void testRule() throws Exception {
-    solrClientTestRule.printString();
-  }
 }
