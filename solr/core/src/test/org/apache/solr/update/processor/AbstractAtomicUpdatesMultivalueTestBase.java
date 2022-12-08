@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,7 +59,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   @Override
   public synchronized EmbeddedSolrServer getSolrClient() {
     return new EmbeddedSolrServer(
-        h.getCoreContainer(), DEFAULT_CORE_NAME, getRequestWriterSupplier());
+        h.getCoreContainer(), EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME, getRequestWriterSupplier());
   }
 
   private static void assertQR(

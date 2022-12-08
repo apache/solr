@@ -29,6 +29,10 @@ public class SolrClientTestRule extends ExternalResource {
 
   protected SolrClient solrClient;
 
+  @Override
+  protected void before() throws Throwable {
+    super.before();
+  }
 
   public SolrClient getSolrClient() {
     return solrClient;

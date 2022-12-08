@@ -26,29 +26,21 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Rule;
 
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   @Rule
   public static SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule(SolrJettyTestBase.legacyExampleCollection1SolrHome());
-
-  protected static final String DEFAULT_CORE_NAME = "collection1";
-
-
 
 
   public SolrClient getSolrClient() {
@@ -102,10 +94,4 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     return result;
   }
 
-  public static void initCore() throws Exception {
-    final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-    final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
-    final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
-    initCore(config, schema, home);
-  }
 }

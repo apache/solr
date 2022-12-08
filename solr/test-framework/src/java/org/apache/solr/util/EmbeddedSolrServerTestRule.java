@@ -16,11 +16,27 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
+  public static final String DEFAULT_CORE_NAME = "collection1";
+
+  @Override
+  protected void before() throws Throwable {
+    initCore();
+  }
+
   public EmbeddedSolrServerTestRule(String solrHome) {
     //super(solrHome); To Do
+  }
+
+
+  public static void initCore() throws Exception {
+    final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
+    final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
+    SolrTestCaseJ4.initCore(config, schema, home);
   }
 }
