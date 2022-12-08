@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    name: Run Solr Script Tests
+    name: Run Solr Script Tests - krisden
 
     runs-on: ubuntu-latest
 
