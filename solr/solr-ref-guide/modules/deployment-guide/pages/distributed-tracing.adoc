@@ -48,16 +48,11 @@ A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 ----
 
 If `<tracerConfig>` is absent, `TracerConfigurator` will try to pick up the `Tracer` instance that was registered in `io.opentracing.util.GlobalTracer`.
-By doing this, some backends like DataDog are supported out of the box since
-https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagent to register a `Tracer` in
-`io.opentracing.util.GlobalTracer`.
-
+By doing this, some backends like DataDog are supported out of the box since https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagent to register a `Tracer` in `io.opentracing.util.GlobalTracer`.
 
 == Open Telemetry Module
 
-This module brings support for the industry standard https://opentelemetry.io[OpenTelemetry] tracing,
-and exposes a tracer configurator that can be enabled in the
-`<tracerConfig>` tag of `solr.xml` as follows:
+This module brings support for the industry standard https://opentelemetry.io[OpenTelemetry] (or short "OTEL") tracing, and exposes a tracer configurator that can be enabled in the `<tracerConfig>` tag of `solr.xml` as follows:
 
 [source,xml]
 ----
@@ -124,7 +119,7 @@ Then Jaeger tracer is configured in `solr.xml` like this:
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
 ----
 
-_There are no configuration elements in the XML; instead, this 3rd party system is configured using System Properties or Environment Variables.
+_There are no configuration elements in the XML_; instead, this 3rd party system is configured using System Properties or Environment Variables.
 The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
 
 For example, to use the probabilistic sampler, you could set this environment variable:
