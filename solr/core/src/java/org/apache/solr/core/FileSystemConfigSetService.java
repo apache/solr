@@ -285,6 +285,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   protected Path getConfigDir(String configName) throws IOException {
+    // startsWith works simply; we must normalize()
     Path path = configSetBase.resolve(configName).normalize();
     if (!path.startsWith(configSetBase)) {
       throw new IOException("configName=" + configName + " is not found under configSetBase dir");
