@@ -28,7 +28,6 @@ import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.logging.log4j2.Log4j2Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * A Class to monitor Logging events and hold N events in memory
@@ -150,7 +149,7 @@ public abstract class LogWatcher<E> {
     String slf4jImpl;
 
     try {
-      slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
+      slf4jImpl = LoggerFactory.getILoggerFactory().getClass().getName();
       log.debug("SLF4J impl is {}", slf4jImpl);
       if (fname == null) {
         if ("org.apache.logging.slf4j.Log4jLoggerFactory".equals(slf4jImpl)) {

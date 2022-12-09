@@ -309,8 +309,7 @@ public class Grouping {
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
 
-    SolrIndexSearcher.ProcessedFilter pf =
-        searcher.getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
+    SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
     final Query filterQuery = pf.filter;
     maxDoc = searcher.maxDoc();
 

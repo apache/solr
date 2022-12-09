@@ -28,11 +28,11 @@ import java.io.IOException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -48,6 +48,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
 
   private static final String context = "/solr";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

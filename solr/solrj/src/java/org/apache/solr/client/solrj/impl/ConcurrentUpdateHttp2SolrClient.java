@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -146,7 +146,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.shutdownClient = builder.closeHttp2Client;
     this.threadCount = builder.threadCount;
     this.queue = new CustomBlockingQueue<>(builder.queueSize, threadCount, END_UPDATE);
-    this.runners = new LinkedList<>();
+    this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
@@ -187,7 +187,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !ExecutorUtil.isShutdown(scheduler)) {
               // If there is something else to process, keep last runner alive by staying in the
               // loop.
             } else {
@@ -486,7 +486,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         int loopCount = 0;
         while (!runners.isEmpty()) {
 
-          if (scheduler.isShutdown()) break;
+          if (ExecutorUtil.isShutdown(scheduler)) break;
 
           loopCount++;
 
@@ -556,7 +556,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     long lastStallTime = -1;
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
-      if (scheduler.isTerminated()) {
+      if (ExecutorUtil.isTerminated(scheduler)) {
         log.warn(
             "The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}",
             scheduler,

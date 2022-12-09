@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -45,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.ZkContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -394,7 +394,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                   }
                   Thread.sleep(500);
                 } catch (NullPointerException | SolrException e) {
-                  e.printStackTrace();
+                  log.error("error deleting replica", e);
                   Thread.sleep(500);
                 }
               }
@@ -402,7 +402,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                 fail("Timeout for waiting replica get deleted");
               }
             } catch (Exception e) {
-              e.printStackTrace();
+              log.error("Failed to delete replica", e);
               fail("Failed to delete replica");
             } finally {
               // avoiding deadlock

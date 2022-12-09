@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -473,7 +474,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     assert (list.isEmpty() || null != latestCommit) : "Code flaw: How is latestCommit not set yet?";
     assert (null == latestCommit || !latestCommit.isDeleted())
         : "Code flaw: How did the latestCommit get set but deleted?";
-    assert (list.isEmpty() || latestCommit == list.get(list.size() - 1).delegate)
+    assert (list.isEmpty() || Objects.equals(latestCommit, list.get(list.size() - 1).delegate))
         : "Code flaw, updateLatestCommit() should have already been called";
 
     final Map<Long, IndexCommit> map = new ConcurrentHashMap<>();

@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -259,6 +259,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
         this.errors = errors;
       }
 
+      @Override
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }

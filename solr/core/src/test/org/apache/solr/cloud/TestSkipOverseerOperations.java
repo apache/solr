@@ -25,11 +25,11 @@ import java.util.SortedSet;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +51,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     shutdownCluster();

@@ -154,6 +154,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final Random rand = new Random(5150);
     Thread docSenderThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -182,6 +183,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread reloaderThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(300) + 1);
@@ -204,6 +206,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread deleteThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -232,6 +235,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread committerThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(200) + 1);

@@ -301,7 +301,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    if (this.threadPool != null && !this.threadPool.isShutdown()) {
+    if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
       this.threadPool = null;
     }
@@ -317,7 +317,9 @@ public abstract class CloudSolrClient extends SolrClient {
    * @param processor Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
    */
+  @Deprecated
   public void setParser(ResponseParser processor) {
     getLbClient().setParser(processor);
   }
@@ -326,6 +328,14 @@ public abstract class CloudSolrClient extends SolrClient {
     return getLbClient().getRequestWriter();
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     getLbClient().setRequestWriter(requestWriter);
   }

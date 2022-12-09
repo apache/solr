@@ -351,7 +351,7 @@ public class FunctionQParser extends QParser {
     ValueSource valueSource;
 
     int ch = sp.peek();
-    if (ch >= '0' && ch <= '9' || ch == '.' || ch == '+' || ch == '-') {
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
         valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());

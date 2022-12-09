@@ -491,7 +491,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
      * @return the original user input, decorated to indicate the identified phrases
      */
     public String summarize(final List<Phrase> results) {
-      final StringBuffer out = new StringBuffer(rawInput);
+      final StringBuilder out = new StringBuilder(rawInput);
 
       // sort by *reverse* position so we can go back to front
       final List<Phrase> reversed =
@@ -859,6 +859,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     private final Map<String, Long> phrase_df = new TreeMap<>();
     private final Map<String, Double> fieldScores = new TreeMap<>();
 
+    @Override
     public String toString() {
       return "'"
           + subSequence

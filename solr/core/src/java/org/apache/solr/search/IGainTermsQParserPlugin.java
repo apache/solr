@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -229,10 +230,9 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) return false;
-      if (obj.getClass() != getClass()) return false;
+      if (!(obj instanceof TermWithScore)) return false;
       TermWithScore other = (TermWithScore) obj;
-      return other.term.equals(this.term);
+      return Objects.equals(this.term, other.term);
     }
 
     @Override

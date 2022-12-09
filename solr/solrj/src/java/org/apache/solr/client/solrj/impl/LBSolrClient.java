@@ -512,7 +512,9 @@ public abstract class LBSolrClient extends SolrClient {
    * @param parser Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated Pass in a configured {@link SolrClient} instead
    */
+  @Deprecated
   public void setParser(ResponseParser parser) {
     this.parser = parser;
   }
@@ -521,7 +523,9 @@ public abstract class LBSolrClient extends SolrClient {
    * Changes the {@link RequestWriter} that will be used for the internal SolrServer objects.
    *
    * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
+   * @deprecated Pass in a configured {@link SolrClient} instead
    */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -629,7 +633,8 @@ public abstract class LBSolrClient extends SolrClient {
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (int attempts = 0; attempts < maxTries; attempts++) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
@@ -657,12 +662,13 @@ public abstract class LBSolrClient extends SolrClient {
 
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
       if (wrapper.standard == false
-          || justFailed != null && justFailed.containsKey(wrapper.getBaseUrl())) continue;
+          || (justFailed != null && justFailed.containsKey(wrapper.getBaseUrl()))) continue;
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
