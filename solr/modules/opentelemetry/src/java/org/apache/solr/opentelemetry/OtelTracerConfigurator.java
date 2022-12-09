@@ -29,8 +29,8 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     // Need to disable the exporters for metrics and logs
     String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
     String logsExporter = getEnvOrSysprop("OTEL_LOGS_EXPORTER");
-    if (metricsExporter != null && !Objects.equals(metricsExporter, "none")
-        || logsExporter != null && !Objects.equals(logsExporter, "none")) {
+    if ((metricsExporter != null && !Objects.equals(metricsExporter, "none"))
+        || (logsExporter != null && !Objects.equals(logsExporter, "none"))) {
       log.warn(
           "The opentelemetry module does not support METRICS or LOGS. Ignoring faulty environment setting");
     }
