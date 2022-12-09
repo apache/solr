@@ -46,7 +46,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
           "OTEL tracer configuration: {}",
           String.join(
               "; ",
-              getCurrentOtelConfig().entrySet().stream()
+              getCurrentOtelConfig(System.getenv()).entrySet().stream()
                   .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
                   .collect(Collectors.toSet())));
     }
@@ -66,9 +66,16 @@ public class OtelTracerConfigurator extends TracerConfigurator {
         AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk());
   }
 
-  private Map<String, String> getCurrentOtelConfig() {
+  /**
+   * Finds all configuration based on environment with prefix OTEL_ or sysprops with prefix otel.
+   *
+   * @param environment inject current environment to ease with testing
+   * @return a unified map of config, using the ENV_VAR as keys, even if the config was pulled from
+   *     a sysprop
+   */
+  Map<String, String> getCurrentOtelConfig(Map<String, String> environment) {
     HashMap<String, String> currentConfig = new HashMap<>();
-    System.getenv().entrySet().stream()
+    environment.entrySet().stream()
         .filter(e -> e.getKey().startsWith("OTEL_"))
         .forEach(entry -> currentConfig.put(entry.getKey(), entry.getValue()));
     System.getProperties().entrySet().stream()
