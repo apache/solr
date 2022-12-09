@@ -112,8 +112,6 @@ public class BackupCoreAPI extends JerseyResource {
       backupCoreResponse.indexFileCount = Integer.parseInt(rsp.get("indexFileCount").toString());
       backupCoreResponse.snapshotName = rsp.get("snapshotName").toString();
       backupCoreResponse.status = rsp.get("status").toString();
-      // backupCoreResponse.backupResponse.putAll(snapShooter.createSnapshot().toMap(new
-      // HashMap<>()));
     }
     return backupCoreResponse;
   }
@@ -171,6 +169,8 @@ public class BackupCoreAPI extends JerseyResource {
           Integer.parseInt(rsp.get("uploadedIndexFileCount").toString());
       backupCoreResponse.uploadedIndexFileMB =
           Double.parseDouble(rsp.get("uploadedIndexFileMB").toString());
+      if(rsp.get("shard") != null)
+        backupCoreResponse.shard = rsp.get("shard").toString();
     }
     return backupCoreResponse;
   }
@@ -220,8 +220,8 @@ public class BackupCoreAPI extends JerseyResource {
     public double uploadedIndexFileMB;
 
     @Schema(description = "Shard Id.")
-    @JsonProperty("shardId")
-    public String shardId;
+    @JsonProperty("shard")
+    public String shard;
 
     @Schema(description = "")
     @JsonProperty("endTime")
