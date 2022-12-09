@@ -496,10 +496,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       Path solrInstallDir = cores.getConfig().getSolrInstallDir();
       assertTrue(
           "solrInstallDir was " + solrInstallDir,
-          solrInstallDir != null
-              && installDirPath
-                  .toString()
-                  .equals(cores.getConfig().getSolrInstallDir().toString()));
+          solrInstallDir != null && installDirPath.toString().equals(solrInstallDir.toString()));
       // Proves that <solr-install-dir>/lib/jar1.jar is found, and the resource inside available
       assertNotNull(cores.getResourceLoader().openResource("solrInstallDirLibResource"));
     } finally {

@@ -24,7 +24,6 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -71,8 +70,8 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
           @Override
           public void assertJQ(SolrClient client, SolrParams args, String... tests)
               throws Exception {
-            ((HttpSolrClient) client).setParser(SmileResponseParser.inst);
             QueryRequest query = new QueryRequest(args);
+            query.setResponseParser(new SmileResponseParser());
             String path = args.get("qt");
             if (path != null) {
               query.setPath(path);
@@ -91,7 +90,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   // adding this to core adds the dependency on a few extra jars to our distribution.
   // So this is not added there
   public static class SmileResponseParser extends BinaryResponseParser {
-    public static final SmileResponseParser inst = new SmileResponseParser();
 
     @Override
     public String getWriterType() {

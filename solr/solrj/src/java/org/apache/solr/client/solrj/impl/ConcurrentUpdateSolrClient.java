@@ -107,8 +107,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis)
             .withSocketTimeout(builder.socketTimeoutMillis)
+            .withFollowRedirects(false)
             .build();
-    this.client.setFollowRedirects(false);
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
     this.runners = new ArrayDeque<>();
@@ -120,6 +120,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       throw new RuntimeException(
           "Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
     }
+    this.setPollQueueTime(builder.pollQueueTime);
 
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -828,6 +829,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  @Deprecated
   public void setParser(ResponseParser responseParser) {
     client.setParser(responseParser);
   }
@@ -835,6 +837,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
    */
+  @Deprecated
   public void setPollQueueTime(int pollQueueTime) {
     this.pollQueueTime = pollQueueTime;
     // make sure the stall time is larger than the polling time
@@ -845,6 +848,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     client.setRequestWriter(requestWriter);
   }
@@ -854,6 +858,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected String baseSolrUrl;
     protected int queueSize = 10;
     protected int threadCount;
+    protected int pollQueueTime = 250;
     protected ExecutorService executorService;
     protected boolean streamDeletes;
 
@@ -926,6 +931,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       }
 
       this.threadCount = threadCount;
+      return this;
+    }
+
+    public Builder withPollQueueTime(int pollQueueTime) {
+      this.pollQueueTime = pollQueueTime;
       return this;
     }
 
