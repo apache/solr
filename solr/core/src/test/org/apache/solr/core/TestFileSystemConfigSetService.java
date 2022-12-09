@@ -49,7 +49,7 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadConfig() throws IOException {
+  public void testUploadAndDeleteConfig() throws IOException {
     String configName = "testconfig";
 
     fileSystemConfigSetService.uploadConfig(configName, configset("cloud-minimal"));
@@ -95,11 +95,6 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
               fileSystemConfigSetService.uploadConfig("../dummy", createTempDir("tmp"));
             });
     assertTrue(ex.getMessage().startsWith("configName=../dummy is not found under configSetBase"));
-  }
-
-  @Test
-  public void testDeleteConfig() throws IOException {
-    String configName = "testconfig";
 
     fileSystemConfigSetService.deleteConfig(configName);
     fileSystemConfigSetService.deleteConfig("copytestconfig");
