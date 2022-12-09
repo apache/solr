@@ -15,7 +15,7 @@ This data consists of the following fields:
  The `name` and `initial_release_date` are created via the Schema API, and the `genre` and `direct_by` fields
  are created by the use of an Update Request Processor Chain called `add-unknown-fields-to-the-schema`.
 
- The `film_vector` is an embedding vector created to represent the movie with 10 dimensions. The vector is created by combining the first 5 dimensions of a pre-trained BERT sentence model applied on the name of the movies plus the name of the genres, followed by an item2vec 5-dimensions model of itemset co-ocurrence of genres in the movies, totalling 10 dimensions. Even though it is expected that similar movies will be close to each other, this model is just a "toy example", so it's not guaranteed to be a good representation for the movies. 
+ The `film_vector` is an embedding vector created to represent the movie with 10 dimensions. The vector is created from a BERT pre-trained model, followed by a dimension reduction technique to reduce the embeddings from 768 to 10 dimensions. Even though it is expected that similar movies will be close to each other, this model is just a "toy example", so it's not guaranteed to be a good representation for the movies. The Python scripts utilized to create the model and calculate the films vectors are in the [vectors directory](./vectors).
 
  The below steps walk you through learning how to start up Solr, setup the films collection yourself, and then load data.  We'll then create ParamSets to organize our query parameters. Finally, we also show some example of KNN queries exploring the Dense Vectors feature.
 
