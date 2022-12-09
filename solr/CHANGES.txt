@@ -145,6 +145,8 @@ Other Changes
 
 * SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
 
+* SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
+
 ==================  9.1.0 ==================
 
 New Features
