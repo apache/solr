@@ -38,9 +38,8 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
 
-    System.getenv().entrySet().stream()
-        .filter(e -> e.getKey().startsWith("OTEL_"))
-        .forEach(entry -> log.info("Environment {}={}", entry.getKey(), entry.getValue()));
+    // TODO: Gather all OTEL_* env and otel.* sysprop and print a log line showing the current
+    // tracing config
 
     // Need to disable the exporters for metrics and logs
     String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
