@@ -31,8 +31,7 @@ dependencies {
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
   implementation 'io.opentelemetry:opentelemetry-semconv'
   implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
-  implementation 'io.opentelemetry:opentelemetry-exporter-jaeger'
-  implementation 'io.opentelemetry:opentelemetry-exporter-zipkin'
+  // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // gRPC transport via netty - since we already ship netty this is more lightweight than netty-shaded
   runtimeOnly 'io.grpc:grpc-netty'
