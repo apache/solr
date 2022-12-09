@@ -29,8 +29,14 @@ import org.apache.solr.core.TracerConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * OpenTracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP
+ * format. This impl re-uses the existing OpenTracing instrumentation through a shim.
+ */
 public class OtelTracerConfigurator extends TracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  // Copy of environment. Can be overridden by tests
+  Map<String, String> currentEnv = System.getenv();
 
   @Override
   public Tracer getTracer() {
@@ -46,7 +52,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
           "OTEL tracer configuration: {}",
           String.join(
               "; ",
-              getCurrentOtelConfig(System.getenv()).entrySet().stream()
+              getCurrentOtelConfig().entrySet().stream()
                   .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
                   .collect(Collectors.toSet())));
     }
@@ -69,13 +75,12 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   /**
    * Finds all configuration based on environment with prefix OTEL_ or sysprops with prefix otel.
    *
-   * @param environment inject current environment to ease with testing
    * @return a unified map of config, using the ENV_VAR as keys, even if the config was pulled from
-   *     a sysprop
+   *     a system property.
    */
-  Map<String, String> getCurrentOtelConfig(Map<String, String> environment) {
+  Map<String, String> getCurrentOtelConfig() {
     HashMap<String, String> currentConfig = new HashMap<>();
-    environment.entrySet().stream()
+    currentEnv.entrySet().stream()
         .filter(e -> e.getKey().startsWith("OTEL_"))
         .forEach(entry -> currentConfig.put(entry.getKey(), entry.getValue()));
     System.getProperties().entrySet().stream()
@@ -90,16 +95,17 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     return currentConfig;
   }
 
-  private String getEnvOrSysprop(String envName) {
-    String value = System.getenv(envName);
-    return value != null ? value : System.getProperty(envNameToSyspropName(envName));
+  String getEnvOrSysprop(String envName) {
+    String envValue = currentEnv.get(envName);
+    String propValue = System.getProperty(envNameToSyspropName(envName));
+    return propValue != null ? propValue : envValue;
   }
 
-  private String envNameToSyspropName(String envName) {
+  static String envNameToSyspropName(String envName) {
     return envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 
-  private void setDefaultIfNotConfigured(String envName, String defaultValue) {
+  void setDefaultIfNotConfigured(String envName, String defaultValue) {
     String incomingValue = getEnvOrSysprop(envName);
     if (incomingValue == null) {
       System.setProperty(envNameToSyspropName(envName), defaultValue);
