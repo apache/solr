@@ -40,8 +40,6 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
   @Override
   public Tracer getTracer() {
-    log.info("Configuring OpenTelemetry tracer...");
-
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
@@ -49,7 +47,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "OTEL tracer configuration: {}",
+          "OpenTelemetry tracer enabled with configuration: {}",
           String.join(
               "; ",
               getCurrentOtelConfig().entrySet().stream()
@@ -95,16 +93,36 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     return currentConfig;
   }
 
+  /**
+   * Returns system property if found, else returns environment variable, or null if none found.
+   *
+   * @param envName the environment to look for
+   * @return the resolved value
+   */
   String getEnvOrSysprop(String envName) {
     String envValue = currentEnv.get(envName);
     String propValue = System.getProperty(envNameToSyspropName(envName));
     return propValue != null ? propValue : envValue;
   }
 
+  /**
+   * In OTEL Java SDK there is a convention that the java property name for OTEL_FOO_BAR is
+   * otel.foo.bar
+   *
+   * @param envName the environmnet name to convert
+   * @return the corresponding sysprop name
+   */
   static String envNameToSyspropName(String envName) {
     return envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 
+  /**
+   * First checks if the property is defined in environment or properties. If not, we set it as a
+   * property.
+   *
+   * @param envName environment variable name, should start with OTEL_
+   * @param defaultValue the value to set if not already configured
+   */
   void setDefaultIfNotConfigured(String envName, String defaultValue) {
     String incomingValue = getEnvOrSysprop(envName);
     if (incomingValue == null) {
