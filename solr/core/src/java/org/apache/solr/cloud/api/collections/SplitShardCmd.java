@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable.CORE_IDX;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -576,7 +578,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               .assignNrtReplicas(numNrt.get())
               .assignTlogReplicas(numTlog.get())
               .assignPullReplicas(numPull.get())
-              .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
+              .onNodes(
+                  Assign.getLiveOrLiveAndCreateNodeSetList(
+                      clusterState.getLiveNodes(),
+                      message,
+                      RANDOM,
+                      ccc.getSolrCloudManager().getDistribStateManager()))
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       List<ReplicaPosition> replicaPositions =
@@ -779,6 +786,20 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         } else {
           ccc.offerStateUpdate(m);
         }
+        // Wait for the sub-shards to change to the RECOVERY state before creating the replica
+        // cores. Otherwise, there is a race condition and some recovery updates may be lost.
+        zkStateReader.waitForState(
+            collectionName,
+            60,
+            TimeUnit.SECONDS,
+            (collectionState) -> {
+              for (String subSlice : subSlices) {
+                if (!collectionState.getSlice(subSlice).getState().equals(Slice.State.RECOVERY)) {
+                  return false;
+                }
+              }
+              return true;
+            });
       }
 
       t = timings.sub("createCoresForReplicas");

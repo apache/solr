@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -222,9 +221,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl =
-        ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
     try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
       return baseServer.request(request);
