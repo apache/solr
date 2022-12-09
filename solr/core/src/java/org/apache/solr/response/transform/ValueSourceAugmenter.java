@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.ResultContext;
@@ -70,6 +71,15 @@ public class ValueSourceAugmenter extends DocTransformer {
   List<LeafReaderContext> readerContexts;
 
   @Override
+  public void transform(SolrDocument doc, int docid, float score) throws IOException {
+    if (context != null && context.wantsScores()) {
+      fcontext.put("scorer", new ScoreAndDoc(docid, score));
+    }
+
+    transform(doc, docid);
+  }
+
+  @Override
   public void transform(SolrDocument doc, int docid) {
     // This is only good for random-access functions
 
@@ -98,6 +108,32 @@ public class ValueSourceAugmenter extends DocTransformer {
   protected void setValue(SolrDocument doc, Object val) {
     if (val != null) {
       doc.setField(name, val);
+    }
+  }
+
+  /**
+   * Fake scorer for a single document
+   *
+   * <p>TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values
+   * here from the comparator
+   */
+  protected static class ScoreAndDoc extends Scorable {
+    final int docid;
+    final float score;
+
+    ScoreAndDoc(int docid, float score) {
+      this.docid = docid;
+      this.score = score;
+    }
+
+    @Override
+    public int docID() {
+      return docid;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
     }
   }
 }
