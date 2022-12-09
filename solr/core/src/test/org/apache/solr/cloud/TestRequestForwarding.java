@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import java.net.URL;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
 @SuppressSSL

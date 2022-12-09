@@ -208,11 +208,21 @@ limitations under the License.
         <label for="hl_fl" title="Fields to highlight on.">hl.fl</label>
         <input type="text" ng-model="val['hl.fl']" name="hl.fl" id="hl_fl" value="" title="Fields to highlight on.">
 
-        <label for="hl_simple_pre">hl.simple.pre</label>
-        <input type="text" ng-model="val['hl.simple.pre']" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
+        <div class="fieldset" ng-show="val['hl.method']=='original'">
+          <label for="hl_simple_pre">hl.simple.pre</label>
+          <input type="text" ng-model="val['hl.simple.pre']" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
 
-        <label for="hl_simple_post">hl.simple.post</label>
-        <input type="text" ng-model="val['hl.simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
+          <label for="hl_simple_post">hl.simple.post</label>
+          <input type="text" ng-model="val['hl.simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
+        </div>
+
+        <div class="fieldset" ng-show="val['hl.method']=='unified' || val['hl.method']=='fastVector'">
+          <label for="hl_tag_pre">hl.tag.pre</label>
+          <input type="text" ng-model="val['hl.tag.pre']" name="hl.tag.pre" id="hl_tag_pre" value="<em>">
+
+          <label for="hl_tag_post">hl.tag.post</label>
+          <input type="text" ng-model="val['hl.tag.post']"  name="hl.tag.post" id="hl_tag_post" value="</em>">
+        </div>
 
         <label for="hl_requireFieldMatch" class="checkbox">
           <input type="checkbox" ng-model="val['hl.requireFieldMatch']" name="hl.requireFieldMatch" id="hl_requireFieldMatch" value="true">
@@ -229,6 +239,184 @@ limitations under the License.
           hl.highlightMultiTerm
         </label>
 
+        <label for="hl_q">hl.q</label>
+        <input type="text" ng-model="val['hl.q']" name="hl.q" id="hl_q" value="">
+
+        <label for="hl_qparser">hl.qparser</label>
+        <input type="text" ng-model="val['hl.qparser']" name="hl.qparser" id="hl_qparser" value="">
+
+        <label for="hl_snippets">hl.snippets</label>
+        <input type="text" ng-model="val['hl.snippets']" name="hl.snippets" id="hl_snippets" value="">
+
+        <label for="hl_fragsize">hl.fragsize</label>
+        <input type="text" ng-model="val['hl.fragsize']" name="hl.fragsize" id="hl_fragsize" value="">
+
+        <label for="hl_encoder">hl.encoder</label>
+        <input type="text" ng-model="val['hl.encoder']" name="hl.encoder" id="hl_encoder" value="">
+
+        <label for="hl_maxAnalyzedChars">hl.maxAnalyzedChars</label>
+        <input type="text" ng-model="val['hl.maxAnalyzedChars']" name="hl.maxAnalyzedChars" id="hl_maxAnalyzedChars" value="">
+
+        <label for="hl_method" title="Choose hl.method">
+          hl.method
+          <select ng-model="val['hl.method']" name="hl_method" id="hl_method">
+            <option ng-selected="selected" value=''>------</option>
+            <option value="unified">unified</option>
+            <option value="original">original</option>
+            <option value="fastVector">fastVector</option>
+          </select>
+        </label>
+
+        <p class="clearfix"><a ng-show="val['hl']" ng-click="showAdvanced=!showAdvanced">
+          <span id="add_advanced" ng-class="{open: showAdvanced}">Show advanced</span></a></p>
+        <div ng-show="showAdvanced">
+          <div class="fieldset" ng-show="val['hl.method']=='unified'">
+            <label for="hl_offsetSource" title="Choose hl.offsetSource">
+              hl.offsetSource
+              <select ng-model="val['hl.offsetSource']" name="hl.offsetSource" id="hl_offsetSource">
+                <option ng-selected="selected" value=''>------</option>
+                <option value="ANALYSIS">ANALYSIS</option>
+                <option value="POSTINGS">POSTINGS</option>
+                <option value="POSTINGS_WITH_TERM_VECTORS">POSTINGS_WITH_TERM_VECTORS</option>
+                <option value="TERM_VECTORS">TERM_VECTORS</option>
+              </select>
+            </label>
+
+            <label for="hl_fragAlignRatio">hl.fragAlignRatio</label>
+            <input type="text" ng-model="val['hl.fragAlignRatio']" name="hl.fragAlignRatio" id="hl_fragAlignRatio">
+
+            <label for="hl_fragsizeIsMinimum" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.fragsizeIsMinimum']" name="hl.fragsizeIsMinimum" id="hl_fragsizeIsMinimum" value="true">
+              hl.fragsizeIsMinimum
+            </label>
+
+            <label for="hl_tag_ellipsis">hl.tag.ellipsis</label>
+            <input type="text" ng-model="val['hl.tag.ellipsis']" name="hl.tag.ellipsis" id="hl_tag_ellipsis">
+
+            <label for="hl_defaultSummary" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.defaultSummary']" name="hl.defaultSummary" id="hl_defaultSummary">
+              hl.defaultSummary
+            </label>
+
+            <label for="hl_score_k1">hl.score.k1</label>
+            <input type="text" ng-model="val['hl.score.k1']" name="hl.score.k1" id="hl_score_k1">
+
+            <label for="hl_score_b">hl.score.b</label>
+            <input type="text" ng-model="val['hl.score.b']" name="hl.score.b" id="hl_score_b">
+
+            <label for="hl_score_pivot">hl.score.pivot</label>
+            <input type="text" ng-model="val['hl.score.pivot']" name="hl.score.pivot" id="hl_score_pivot">
+
+            <label for="hl_bs_language">hl.bs.language</label>
+            <input type="text" ng-model="val['hl.bs.language']" name="hl.bs.language" id="hl_bs_language">
+
+            <label for="hl_bs_country">hl.bs.country</label>
+            <input type="text" ng-model="val['hl.bs.country']" name="hl.bs.country" id="hl_bs_country">
+
+            <label for="hl_bs_variant">hl.bs.variant</label>
+            <input type="text" ng-model="val['hl.bs.variant']" name="hl.bs.variant" id="hl_bs_variant">
+
+            <label for="hl_bs_type">
+              hl.bs.type
+              <select ng-model="val['hl.bs.type']" name="hl.bs.type" id="hl_bs_type">
+                <option ng-selected="selected" value=''>------</option>
+                <option value="SENTENCE">SENTENCE</option>
+                <option value="SEPARATOR">SEPARATOR</option>
+                <option value="WORD">WORD</option>
+                <option value="CHARACTER">CHARACTER</option>
+                <option value="LINE">LINE</option>
+                <option value="WHOLE">WHOLE</option>
+              </select>
+            </label>
+
+            <label for="hl_bs_separator">hl.bs.separator</label>
+            <input type="text" ng-model="val['hl.bs.separator']" name="hl.bs.separator" id="hl_bs_separator">
+
+            <label for="hl_weightMatches" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.weightMatches']" name="hl.weightMatches" id="hl_weightMatches" value=true>
+              hl.weightMatches
+            </label>
+          </div>
+
+          <div class="fieldset" ng-show="val['hl.method']=='original'">
+            <label for="hl_mergeContiguous" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.mergeContiguous']" name="hl.mergeContiguous" id="hl_mergeContiguous">
+              hl.mergeContiguous
+            </label>
+
+            <label for="hl_maxMultiValuedToExamine">hl.maxMultiValuedToExamine</label>
+            <input type="text" ng-model="val['hl.maxMultiValuedToExamine']" name="hl.maxMultiValuedToExamine" id="hl_maxMultiValuedToExamine">
+
+            <label for="hl_maxMultiValuedToMatch">hl.maxMultiValuedToMatch</label>
+            <input type="text" ng-model="val['hl.maxMultiValuedToMatch']" name="hl.maxMultiValuedToMatch" id="hl_maxMultiValuedToMatch">
+
+            <label for="hl_formatter">
+              hl.formatter
+              <select ng-model="val['hl.formatter']" name="hl.formatter" id="hl_formatter">
+                <option ng-selected="selected" value="">------</option>
+                <option value="simple">simple</option>
+              </select>
+            </label>
+
+            <label for="hl_fragmenter">
+              hl.fragmenter
+              <select ng-model="val['hl.fragmenter']" name="hl.fragmenter" id="hl_fragmenter">
+                <option ng-selected="selected" value="">------</option>
+                <option value="gap">gap</option>
+                <option value="regex">regex</option>
+              </select>
+            </label>
+
+            <label for="hl_regex_slop">hl.regex.slop</label>
+            <input type="text" ng-model="val['hl.regex.slop']" name="hl.regex.slop" id="hl_regex_slop">
+
+            <label for="hl_regex_pattern">hl.regex.pattern</label>
+            <input type="text" ng-model="val['hl.regex.pattern']" name="hl.regex.pattern" id="hl_regex_pattern">
+
+            <label for="hl_regex_maxAnalyzedChars">hl.regex.maxAnalyzedChars</label>
+            <input type="text" ng-model="val['hl.regex.maxAnalyzedChars']" name="hl.regex.maxAnalyzedChars" id="hl_regex_maxAnalyzedChars">
+
+            <label for="hl_preserveMulti" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.preserveMulti']" name="hl.preserveMulti" id="hl_preserveMulti">
+              hl.preserveMulti
+            </label>
+
+            <label for="hl_payloads" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.payloads']" name="hl.payloads" id="hl_payloads" value=true>
+              hl.payloads
+            </label>
+          </div>
+
+          <div class="fieldset" ng-show="val['hl.method']=='original' || val['hl.method']=='fastVector'">
+            <label for="hl_alternateField">hl.alternateField</label>
+            <input type="text" ng-model="val['hl.alternateField']" name="hl.alternateField" id="hl_alternateField">
+
+            <label for="hl_maxAlternateFieldLength">hl.maxAlternateFieldLength</label>
+            <input type="text" ng-model="val['hl.maxAlternateFieldLength']" name="hl.maxAlternateFieldLength" id="hl_maxAlternateFieldLength">
+
+            <label for="hl_highlightAlternate" class="checkbox">
+              <input type="checkbox" ng-model="val['hl.highlightAlternate']" name="hl.highlightAlternate" id="hl_highlightAlternate" value=true>
+              hl.highlightAlternate
+            </label>
+          </div>
+
+          <div class="fieldset" ng-show="val['hl.method']=='fastVector'">
+            <label for="hl_fragListBuilder">hl.fragListBuilder</label>
+            <input type="text" ng-model="val['hl.fragListBuilder']" name="hl.fragListBuilder" id="hl_fragListBuilder">
+
+            <label for="hl_fragmentsBuilder">hl.fragmentsBuilder</label>
+            <input type="text" ng-model="val['hl.fragmentsBuilder']" name="hl.fragmentsBuilder" id="hl_fragmentsBuilder">
+
+            <label for="hl_boundaryScanner">hl.boundaryScanner</label>
+            <input type="text" ng-model="val['hl.boundaryScanner']" name="hl.boundaryScanner" id="hl_boundaryScanner">
+
+            <label for="hl_phraseLimit">hl.phraseLimit</label>
+            <input type="text" ng-model="val['hl.phraseLimit']" name="hl.phraseLimit" id="hl_phraseLimit">
+
+            <label for="hl_multiValuedSeparatorChar">hl.multiValuedSeparatorChar</label>
+            <input type="text" ng-model="val['hl.multiValuedSeparatorChar']" name="hl.multiValuedSeparatorChar" id="hl_multiValuedSeparatorChar">
+          </div>
+        </div>
         </div>
       </fieldset>
 

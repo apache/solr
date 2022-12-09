@@ -87,7 +87,7 @@ public class ExecutorUtil {
     try {
       return pool.isShutdown();
     } catch (IllegalStateException e) {
-      // JSR-239 ManagedExecutorService cannot query the lifecycle, so just return false
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
       return false;
     }
   }
@@ -96,7 +96,7 @@ public class ExecutorUtil {
     try {
       return pool.isTerminated();
     } catch (IllegalStateException e) {
-      // JSR-239 ManagedExecutorService cannot query the lifecycle, so just return false
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
       return false;
     }
   }

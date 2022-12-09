@@ -1102,9 +1102,6 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof LongAccumulator) {
       daos.writeLong(((LongAccumulator) val).longValue());
       return true;
-    } else if (val instanceof MapWriter.StringValue) {
-      writeStr(val.toString());
-      return true;
     }
     return false;
   }

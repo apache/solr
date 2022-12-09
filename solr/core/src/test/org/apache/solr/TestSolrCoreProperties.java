@@ -25,10 +25,10 @@ import java.nio.file.Files;
 import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 
 /**
