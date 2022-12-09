@@ -31,7 +31,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
   @Override
   public Tracer getTracer() {
-    log.info("Configuring tracer {}...", getClass().getName());
+    log.info("Configuring OpenTelemetry tracer...");
 
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
