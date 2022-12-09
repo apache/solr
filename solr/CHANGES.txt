@@ -162,8 +162,6 @@ Other Changes
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
 
-* SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
-
 * SOLR-16575: splitshard should honour createNodeSet (noble)
 
 * SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
