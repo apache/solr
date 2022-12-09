@@ -20,8 +20,11 @@ import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentracing.Tracer;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.core.TracerConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +41,15 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
 
-    // TODO: Gather all OTEL_* env and otel.* sysprop and print a log line showing the current
-    // tracing config
+    if (log.isInfoEnabled()) {
+      log.info(
+          "OTEL tracer configuration: {}",
+          String.join(
+              "; ",
+              getCurrentOtelConfig().entrySet().stream()
+                  .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
+                  .collect(Collectors.toSet())));
+    }
 
     // Need to disable the exporters for metrics and logs
     String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
@@ -54,6 +64,23 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
     return OpenTracingShim.createTracerShim(
         AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk());
+  }
+
+  private Map<String, String> getCurrentOtelConfig() {
+    HashMap<String, String> currentConfig = new HashMap<>();
+    System.getenv().entrySet().stream()
+        .filter(e -> e.getKey().startsWith("OTEL_"))
+        .forEach(entry -> currentConfig.put(entry.getKey(), entry.getValue()));
+    System.getProperties().entrySet().stream()
+        .filter(e -> e.getKey().toString().startsWith("otel."))
+        .forEach(
+            entry -> {
+              String key = entry.getKey().toString();
+              String envKey = key.toUpperCase().replace('.', '_');
+              String value = entry.getValue().toString();
+              currentConfig.put(envKey, value);
+            });
+    return currentConfig;
   }
 
   private String getEnvOrSysprop(String envName) {
