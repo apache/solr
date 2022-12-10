@@ -350,21 +350,25 @@ For detailed descriptions of Response Writers, see xref:response-writers.adoc[].
 
 If you do not define the `wt` parameter in your queries, JSON will be returned as the format of the response.
 
-== logParamsList Parameter
+== logParamsList, logExcludedParamsList Parameters
 
 By default, Solr logs all parameters of requests.
-Set this parameter to restrict which parameters of a request are logged.
+These parameters help restrict which parameters of a request are logged.
 This may help control logging to only those parameters considered important to your organization.
 
 For example, you could define this like:
 
 `logParamsList=q,fq`
 
-And only the 'q' and 'fq' parameters will be logged.
+And only the 'q' and 'fq' parameters will be logged. However, to define a subset of parameters not to be logged:
+
+`logExcludedParamsList=fl,rows`
+
+And then the 'fl' and 'rows' parameters will not be logged.
 
 If no parameters should be logged, you can send `logParamsList` as empty (i.e., `logParamsList=`).
 
-TIP: This parameter not only applies to query requests, but to any kind of request to Solr.
+TIP: These parameters not only apply to query requests, but to any kind of request to Solr.
 
 == echoParams Parameter
 

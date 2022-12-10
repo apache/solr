@@ -2902,35 +2902,43 @@ public class SolrCore implements SolrInfoBean, Closeable {
     toLog.add(PATH, req.getContext().get(PATH));
 
     final SolrParams params = req.getParams();
-    final String lpList = params.get(CommonParams.LOG_PARAMS_LIST);
-    if (lpList == null) {
-      toLog.add("params", "{" + req.getParamString() + "}");
-    } else if (lpList.length() > 0) {
+    final String logParamsList = params.get(CommonParams.LOG_PARAMS_LIST);
+    final String logExcludedParamsList = params.get(CommonParams.LOG_EXCLUDED_PARAMS_LIST);
 
-      // Filter params by those in LOG_PARAMS_LIST so that we can then call toString
-      HashSet<String> lpSet = new HashSet<>(Arrays.asList(lpList.split(",")));
-      SolrParams filteredParams =
-          new SolrParams() {
-            private static final long serialVersionUID = -643991638344314066L;
+    // Filter params by those in LOG_PARAMS_LIST (only if not empty) and in LOG_EXCLUDED_PARAMS_LIST
+    // so that we can then call toString
+    HashSet<String> shortSet =
+        logParamsList == null
+            ? new HashSet<>()
+            : new HashSet<>(Arrays.asList(logParamsList.split(",")));
+    HashSet<String> excludedSet =
+        logExcludedParamsList == null
+            ? new HashSet<>()
+            : new HashSet<>(Arrays.asList(logExcludedParamsList.split(",")));
+    SolrParams filteredParams =
+        new SolrParams() {
+          private static final long serialVersionUID = -643991638344314066L;
 
-            @Override
-            public Iterator<String> getParameterNamesIterator() {
-              return Iterators.filter(params.getParameterNamesIterator(), lpSet::contains);
-            }
+          @Override
+          public Iterator<String> getParameterNamesIterator() {
+            return Iterators.filter(
+                params.getParameterNamesIterator(),
+                p -> (shortSet.isEmpty() || shortSet.contains(p)) && !excludedSet.contains(p));
+          }
 
-            @Override
-            public String get(String param) { // assume param is in lpSet
-              return params.get(param);
-            } // assume in lpSet
+          @Override
+          public String get(String param) { // assume param is in shortSet and not in excludedSet
+            return params.get(param);
+          } // assume in shortSet and not in excludedSet
 
-            @Override
-            public String[] getParams(String param) { // assume param is in lpSet
-              return params.getParams(param);
-            } // assume in lpSet
-          };
+          @Override
+          public String[] getParams(
+              String param) { // assume param is in shortSet and not in excludedSet
+            return params.getParams(param);
+          } // assume in shortSet and not in excludedSet
+        };
 
-      toLog.add("params", "{" + filteredParams + "}");
-    }
+    toLog.add("params", "{" + filteredParams + "}");
   }
 
   /** Put status, QTime, and possibly request handler and params, in the response header */

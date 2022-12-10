@@ -85,6 +85,8 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-15981: Add logExcludedParamsList parameter to support specifying parameters not to log. (Haythem Khiri)
+
 Optimizations
 ---------------------
 
