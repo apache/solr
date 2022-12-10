@@ -28,10 +28,14 @@ dependencies {
   implementation platform('io.opentelemetry:opentelemetry-bom-alpha')
 
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
+  // TODO: permitUnusedDeclared does not work for the io.opentelemetry dependencies for some reason
+  permitUnusedDeclared 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
   implementation 'io.opentelemetry:opentelemetry-semconv'
+  permitUnusedDeclared 'io.opentelemetry:opentelemetry-semconv'
   implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+  permitUnusedDeclared 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // gRPC transport via netty - since we already ship netty this is more lightweight than netty-shaded
