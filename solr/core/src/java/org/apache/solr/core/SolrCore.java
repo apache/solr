@@ -2879,7 +2879,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         Object path = rsp.getToLog().get("path");
         if (path instanceof String) {
           requestLog.info(MarkerFactory.getMarker((String) path), rsp.getToLogAsString());
-        } else{
+        } else {
           requestLog.info(rsp.getToLogAsString());
         }
       }
