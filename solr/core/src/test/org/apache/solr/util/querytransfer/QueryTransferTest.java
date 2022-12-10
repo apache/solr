@@ -8,6 +8,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -22,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class QueryTransferTest extends LuceneTestCase {
+public class QueryTransferTest extends SolrTestCase {
     @Test
     public void testTermQuery() throws IOException, SyntaxError {
         final TermQuery termQuery = randomTermQuery();
