@@ -22,10 +22,6 @@
 #  - https://www.sbert.net/examples/training/distillation/README.html
 #  - https://github.com/UKPLab/sentence-transformers/tree/master/examples/training/distillation/dimensionality_reduction.py
 
-The code is derived from the SBERT documentation and corresponding example code:
- - https://www.sbert.net/examples/training/distillation/README.html
- - https://github.com/UKPLab/sentence-transformers/tree/master/examples/training/distillation/dimensionality_reduction.py
-"""
 from sklearn.decomposition import PCA
 from sentence_transformers import SentenceTransformer, LoggingHandler, util, evaluation, models, InputExample
 import logging
@@ -37,7 +33,7 @@ import random
 import numpy as np
 import torch
 
-from films import *
+import films
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO, handlers=[LoggingHandler()])
@@ -85,8 +81,8 @@ stsb_evaluator(model)
 ######## Reduce the embedding dimensions ########
 
 # We load the films dataset and creates a list of unique sentences utilizing the movie title and the genres
-films = load_films_dataset()
-films_sentences = list(set(get_films_sentences(films)))
+films_dataset = films.load_films_dataset()
+films_sentences = list(set(films.get_films_sentences(films_dataset)))
 random.shuffle(films_sentences)
 
 # To determine the PCA matrix, we need some example sentence embeddings.
@@ -111,4 +107,4 @@ stsb_evaluator(model)
 
 
 ######## Store the reduced model on disc
-model.save(FILEPATH_FILMS_MODEL)
+model.save(films.FILEPATH_FILMS_MODEL)
