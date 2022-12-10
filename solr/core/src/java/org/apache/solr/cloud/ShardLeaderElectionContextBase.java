@@ -145,7 +145,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   "Creating leader registration node {} after winning as {}",
                   leaderPath,
                   leaderSeqPath);
-              List<Op> ops = new ArrayList<>(2);
+              List<Op> ops = new ArrayList<>(3);
 
               // We use a multi operation to get the parent nodes version, which will
               // be used to make sure we only remove our own leader registration node.
