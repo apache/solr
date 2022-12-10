@@ -125,6 +125,8 @@ Bug Fixes
 
 * SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
+* SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -136,6 +138,10 @@ Build
 * SOLR-16442: Upgrade to Lucene 9.4.2 (Christine Poerschke)
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
+
+* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+
+* SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -157,6 +163,16 @@ Other Changes
 * SOLR-16541: Eliminate the 'numShards' system property (noble)
 
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
+
+* SOLR-16575: splitshard should honour createNodeSet (noble)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
+* SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
+
+* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+
+* SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
 ==================  9.1.0 ==================
 

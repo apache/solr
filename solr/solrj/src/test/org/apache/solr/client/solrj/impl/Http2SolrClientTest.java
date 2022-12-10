@@ -575,27 +575,27 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testRedirectSwapping() throws Exception {
     final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
-    try (Http2SolrClient client = getHttp2SolrClient(clientUrl)) {
-      SolrQuery q = new SolrQuery("*:*");
-      // default = false
-      try {
-        client.query(q);
-        fail("Should have thrown an exception.");
-      } catch (SolrServerException e) {
-        assertTrue(e.getMessage().contains("redirect"));
-      }
+    SolrQuery q = new SolrQuery("*:*");
 
-      client.setFollowRedirects(true);
+    // default for follow redirects is false
+    try (Http2SolrClient client = new Http2SolrClient.Builder(clientUrl).build()) {
+
+      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+      assertTrue(e.getMessage().contains("redirect"));
+    }
+
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+      // shouldn't throw an exception
       client.query(q);
+    }
 
-      // And back again:
-      client.setFollowRedirects(false);
-      try {
-        client.query(q);
-        fail("Should have thrown an exception.");
-      } catch (SolrServerException e) {
-        assertTrue(e.getMessage().contains("redirect"));
-      }
+    // set explicit false for following redirects
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
+
+      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+      assertTrue(e.getMessage().contains("redirect"));
     }
   }
 
