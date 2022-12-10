@@ -81,7 +81,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
             "id",
             "44",
             "name",
-            "Harrison Ford",
+            "Harrison Ford a:little bit:fraud",
             "subword",
             "Star Wars",
             "subword",

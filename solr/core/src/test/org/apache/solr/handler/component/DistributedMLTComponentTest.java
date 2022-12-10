@@ -91,7 +91,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "9",
         "lowerfilt",
-        "The quick red fox jumped over the lazy big and large brown dogs.",
+        "The quick red fox smart:bear jumped over the lazy big and large brown dogs.",
         "lowerfilt1",
         "x");
     index(id, "10", "lowerfilt", "blue", "lowerfilt1", "x");
@@ -100,84 +100,84 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "13",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "14",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "15",
         "lowerfilt",
-        "The fat red fox jumped over the lazy brown dogs.",
+        "The fat red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "16",
         "lowerfilt",
-        "The slim red fox jumped over the lazy brown dogs.",
+        "The slim red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "17",
         "lowerfilt",
-        "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon",
+        "The quote red fox smart:bear jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon",
         "lowerfilt1",
         "y");
     index(
         id,
         "18",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "19",
         "lowerfilt",
-        "The hose red fox jumped over the lazy brown dogs.",
+        "The hose red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "20",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "21",
         "lowerfilt",
-        "The court red fox jumped over the lazy brown dogs.",
+        "The court red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "22",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "23",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
         id,
         "24",
         "lowerfilt",
-        "The file red fox jumped over the lazy brown dogs.",
+        "The file red fox smart:bear jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(id, "25", "lowerfilt", "rod fix", "lowerfilt1", "y");

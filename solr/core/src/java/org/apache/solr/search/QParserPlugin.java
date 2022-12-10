@@ -32,6 +32,7 @@ import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.search.neural.KnnQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.querytransfer.QueryTransferQParserPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
   /** internal use - name of the default parser */
@@ -89,6 +90,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
     map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
+    map.put(QueryTransferQParserPlugin.NAME, new QueryTransferQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

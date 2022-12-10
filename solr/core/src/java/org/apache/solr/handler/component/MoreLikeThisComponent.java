@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,6 +48,8 @@ import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.util.querytransfer.QueryTransfer;
+import org.apache.solr.util.querytransfer.QueryTransferQParserPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +104,7 @@ public class MoreLikeThisComponent extends SearchComponent {
 
           NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb.getResults().docList);
 
-          NamedList<String> temp = new NamedList<>();
+          NamedList<byte[]> temp = new NamedList<>();
           Iterator<Entry<String, BooleanQuery>> idToQueryIt = bQuery.iterator();
 
           while (idToQueryIt.hasNext()) {
@@ -109,7 +112,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             String s = idToQuery.getValue().toString();
 
             log.debug("MLT Query:{}", s);
-            temp.add(idToQuery.getKey(), idToQuery.getValue().toString());
+            temp.add(idToQuery.getKey(), QueryTransfer.transfer(idToQuery.getValue()));
           }
 
           rb.rsp.add("moreLikeThis", temp);
@@ -148,8 +151,11 @@ public class MoreLikeThisComponent extends SearchComponent {
           for (Entry<String, ?> entry : moreLikeThisReponse) {
             if (log.isDebugEnabled()) {
               log.debug("id: '{}' Query: '{}'", entry.getKey(), entry.getValue());
-            }
-            ShardRequest s = buildShardQuery(rb, (String) entry.getValue(), entry.getKey());
+            }// a little bit surprised since text formats yields bytes as base64 string
+            final String serializedQuery = entry.getValue() instanceof byte[]
+                    ? Base64.getEncoder().encodeToString((byte[]) entry.getValue()) : (String) entry.getValue();
+            ShardRequest s = buildShardQuery(rb,
+                    "{!"+QueryTransferQParserPlugin.NAME+"}"+serializedQuery, entry.getKey());
             rb.addRequest(this, s);
           }
         }
@@ -339,22 +345,6 @@ public class MoreLikeThisComponent extends SearchComponent {
     // MLT Query is submitted as normal query to shards.
     s.params.set(CommonParams.Q, q);
 
-    return s;
-  }
-
-  ShardRequest buildMLTQuery(ResponseBuilder rb, String q) {
-    ShardRequest s = new ShardRequest();
-    s.params = new ModifiableSolrParams();
-
-    s.params.set(CommonParams.START, 0);
-
-    String id = rb.req.getSchema().getUniqueKeyField().getName();
-
-    s.params.set(CommonParams.FL, "score," + id);
-    // MLT Query is submitted as normal query to shards.
-    s.params.set(CommonParams.Q, q);
-
-    s.shards = ShardRequest.ALL_SHARDS;
     return s;
   }
 
