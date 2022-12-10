@@ -151,11 +151,16 @@ public class MoreLikeThisComponent extends SearchComponent {
           for (Entry<String, ?> entry : moreLikeThisReponse) {
             if (log.isDebugEnabled()) {
               log.debug("id: '{}' Query: '{}'", entry.getKey(), entry.getValue());
-            }// a little bit surprised since text formats yields bytes as base64 string
-            final String serializedQuery = entry.getValue() instanceof byte[]
-                    ? Base64.getEncoder().encodeToString((byte[]) entry.getValue()) : (String) entry.getValue();
-            ShardRequest s = buildShardQuery(rb,
-                    "{!"+QueryTransferQParserPlugin.NAME+"}"+serializedQuery, entry.getKey());
+            } // a little bit surprised since text formats yields bytes as base64 string
+            final String serializedQuery =
+                entry.getValue() instanceof byte[]
+                    ? Base64.getEncoder().encodeToString((byte[]) entry.getValue())
+                    : (String) entry.getValue();
+            ShardRequest s =
+                buildShardQuery(
+                    rb,
+                    "{!" + QueryTransferQParserPlugin.NAME + "}" + serializedQuery,
+                    entry.getKey());
             rb.addRequest(this, s);
           }
         }
