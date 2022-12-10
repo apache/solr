@@ -51,7 +51,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
           String.join(
               "; ",
               getCurrentOtelConfig().entrySet().stream()
-                  .map(e -> String.format("%s=%s", e.getKey(), e.getValue()))
+                  .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
                   .collect(Collectors.toSet())));
     }
 
@@ -86,7 +86,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
         .forEach(
             entry -> {
               String key = entry.getKey().toString();
-              String envKey = key.toUpperCase().replace('.', '_');
+              String envKey = key.toUpperCase(Locale.ROOT).replace('.', '_');
               String value = entry.getValue().toString();
               currentConfig.put(envKey, value);
             });
