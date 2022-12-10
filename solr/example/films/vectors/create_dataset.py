@@ -27,21 +27,21 @@ import torch
 import films
 
 #### Load the 10-dimensions model
-model = SentenceTransformer(films.FILEPATH_FILMS_MODEL)
+model = SentenceTransformer(films.PATH_FILMS_MODEL)
 
 #### Load the original films dataset
-films = films.load_films_dataset()
+films_dataset = films.load_films_dataset()
 
 #### Use the embedding model to calculate vectors for all movies
-vectors = films.calculate_films_vectors(model, films)
+films_vectors = films.calculate_films_vectors(model, films_dataset)
 
 #### Visual evaluation of some specific movies
 
 def most_similar_movie(target_idx, top_k=5):
-    film = films[target_idx]
-    query_embedding = vectors[target_idx]
+    film = films_dataset[target_idx]
+    film_vector = films_vectors[target_idx]
     
-    cos_scores = util.cos_sim(query_embedding, vectors)[0]
+    cos_scores = util.cos_sim(film_vector, films_vectors)[0]
     top_results = torch.topk(cos_scores, k=top_k)
     
     print("\n======================\n")
@@ -49,7 +49,7 @@ def most_similar_movie(target_idx, top_k=5):
     print("\nTop 5 most similar films in corpus:")
 
     for score, idx in zip(top_results[0], top_results[1]):
-        movie_str = films.get_film_sentence(films[idx]).replace("\n", " - ")
+        movie_str = films.get_film_sentence(films_dataset[idx]).replace("\n", " - ")
         print(f"  - [{idx}] {movie_str} (Score: {score:.4f})")
         
 most_similar_movie(200)
@@ -58,14 +58,11 @@ most_similar_movie(500)
 most_similar_movie(911)
 
 
-#### Export the new films dataset by creating a new field with the embedding vector
+#### Create the new films dataset by creating a new field with the embedding vector
+for idx in range(len(films_dataset)):
+    films_dataset[idx]["film_vector"] = list(films_vectors[idx].astype("float64"))
 
-films_vectors = [
-    film | {
-        "film_vector" : list(vectors[idx].astype("float64"))
-    }
-    for idx, film in enumerate(films)
-]
-
-with open(films.FILEPATH_FILMS_VECTORS_DATASET, "w") as outfile:
-    json.dump(films_vectors, outfile, indent=2)
+#### Export the new films dataset for all formats
+films.export_films_json(films_dataset)
+films.export_films_xml(films_dataset)
+films.export_films_csv(films_dataset)

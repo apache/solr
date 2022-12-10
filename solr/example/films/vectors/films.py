@@ -16,30 +16,77 @@
 # limitations under the License.
 
 import json
+import csv
+from lxml import etree
 from sentence_transformers import SentenceTransformer
 
-FILEPATH_FILMS_DATASET         = "./data/films.json"
-FILEPATH_FILMS_MODEL           = "./models/films-model-size_10"
-FILEPATH_FILMS_VECTORS_DATASET = "./data/films-vectors.json"
+PATH_FILMS_DATASET      = "./data/films.json"
+PATH_FILMS_MODEL        = "./models/films-model-size_10"
+PATH_FILMS_VECTORS_JSON = "./data/films-vectors.json"
+PATH_FILMS_VECTORS_XML  = "./data/films-vectors.xml"
+PATH_FILMS_VECTORS_CSV  = "./data/films-vectors.csv"
 
 def load_films_dataset():
-    with open(FILEPATH_FILMS_DATASET, "r") as infile:
-        films = json.load(infile)
-    return films
+    with open(PATH_FILMS_DATASET, "r") as infile:
+        films_dataset = json.load(infile)
+    return films_dataset
 
 def get_film_sentence(film):
     return f"{film['name']}\n\n{', '.join(film['genre'])}"
 
-def get_films_sentences(films):
-    return [get_film_sentence(film) for film in films]
+def get_films_sentences(films_dataset):
+    return [get_film_sentence(film) for film in films_dataset]
 
 def load_films_embedding_model():
-    return SentenceTransformer(FILEPATH_FILMS_MODEL)
+    return SentenceTransformer(PATH_FILMS_MODEL)
 
 def calculate_film_vector(model, film):
     film_sentence = get_film_sentence(film)
     return model.encode(film_sentence)
 
-def calculate_films_vectors(model, films):
-    films_sentences = get_films_sentences(films)
+def calculate_films_vectors(model, films_dataset):
+    films_sentences = get_films_sentences(films_dataset)
     return model.encode(films_sentences)
+
+def export_films_json(films_dataset):
+    with open(PATH_FILMS_VECTORS_JSON, "w") as outfile:
+        json.dump(films_dataset, outfile, indent=2)
+
+
+def export_films_xml(films_dataset):
+
+    films_xml = etree.Element("add")
+    for film in films_dataset:
+
+        film_xml = etree.Element("doc")
+
+        for field_name, field_value in film.items():
+
+            field_value = film[field_name]
+            if not isinstance(field_value, list):
+                field_value = [field_value]
+            
+            for value in field_value:
+                child = etree.Element("field", attrib={"name": field_name})
+                child.text = str(value)
+                film_xml.append(child)
+
+        films_xml.append(film_xml)
+
+    etree.ElementTree(films_xml).write(
+        PATH_FILMS_VECTORS_XML,
+        pretty_print=True,
+        xml_declaration=True,
+        encoding="utf-8"
+    )
+
+
+def export_films_csv(films_dataset):
+    with open(PATH_FILMS_VECTORS_CSV, "w") as outfile:
+        csvw = csv.DictWriter(outfile, ["name","directed_by","genre","type","id","initial_release_date","film_vector"])
+        csvw.writeheader()
+        for film in films_dataset:
+            film["directed_by"] = "|".join(film["directed_by"])
+            film["genre"] = "|".join(film["genre"])
+            film["film_vector"] = "|".join(map(str, film["film_vector"]))
+            csvw.writerow(film)

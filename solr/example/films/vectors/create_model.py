@@ -107,4 +107,4 @@ stsb_evaluator(model)
 
 
 ######## Store the reduced model on disc
-model.save(films.FILEPATH_FILMS_MODEL)
+model.save(films.PATH_FILMS_MODEL)
