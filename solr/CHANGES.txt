@@ -174,7 +174,7 @@ Other Changes
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
-* SOLR-14988:
+* SOLR-14988: Rename #getCores of CoreContainer and SolrCores to #getLoadedCores (Haythem Khiri)
 
 ==================  9.1.0 ==================
 
