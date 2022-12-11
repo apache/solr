@@ -44,7 +44,7 @@ public class QueryTransferQParserPlugin extends QParserPlugin {
         try {
           return QueryTransfer.receive(decode);
         } catch (IOException e) {
-          log.error("Unable to parse: " + qstr, e);
+          log.error(qstr, e);
           throw new SyntaxError(e);
         }
       }
