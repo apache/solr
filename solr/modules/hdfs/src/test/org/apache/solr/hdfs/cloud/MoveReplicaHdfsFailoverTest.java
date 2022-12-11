@@ -152,7 +152,7 @@ public class MoveReplicaHdfsFailoverTest extends SolrCloudTestCase {
         newReplica.getStr("dataDir").equals(dataDir)
             || newReplica.getStr("dataDir").equals(dataDir + '/'));
 
-    assertEquals(0, cluster.getJettySolrRunner(1).getCoreContainer().getCores().size());
+    assertEquals(0, cluster.getJettySolrRunner(1).getCoreContainer().getLoadedCores().size());
 
     cluster.getSolrClient().commit(coll);
     assertEquals(

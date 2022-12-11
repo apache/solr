@@ -767,7 +767,7 @@ public class JettySolrRunner {
 
   public void dumpCoresInfo(PrintStream pw) throws IOException {
     if (getCoreContainer() != null) {
-      List<SolrCore> cores = getCoreContainer().getCores();
+      List<SolrCore> cores = getCoreContainer().getLoadedCores();
       for (SolrCore core : cores) {
         NamedList<Object> coreStatus =
             CoreAdminOperation.getCoreStatus(getCoreContainer(), core.getName(), false);

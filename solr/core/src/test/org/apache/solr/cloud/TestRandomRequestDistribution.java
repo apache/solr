@@ -89,7 +89,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     for (JettySolrRunner runner : jettys) {
       CoreContainer container = runner.getCoreContainer();
       SolrMetricManager metricManager = container.getMetricManager();
-      for (SolrCore core : container.getCores()) {
+      for (SolrCore core : container.getLoadedCores()) {
         if ("a1x2".equals(core.getCoreDescriptor().getCollectionName())) {
           String registry = core.getCoreMetricManager().getRegistryName();
           Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
@@ -224,7 +224,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       SolrCore leaderCore = null;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer container = jetty.getCoreContainer();
-        for (SolrCore core : container.getCores()) {
+        for (SolrCore core : container.getLoadedCores()) {
           if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
             leaderCore = core;
             break;

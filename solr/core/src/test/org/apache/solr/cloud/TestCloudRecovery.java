@@ -187,7 +187,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     int logHeaderSize = Integer.MAX_VALUE;
     Map<String, byte[]> contentFiles = new HashMap<>();
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
+      for (SolrCore solrCore : solrRunner.getCoreContainer().getLoadedCores()) {
         File tlogFolder = new File(solrCore.getUlogDir(), UpdateLog.TLOG_NAME);
         String[] tLogFiles = tlogFolder.list();
         Arrays.sort(tLogFiles);

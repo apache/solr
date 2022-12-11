@@ -195,7 +195,7 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
   protected SolrCore getFirstCore(String collection, JettySolrRunner jetty) {
     SolrCore solrCore = null;
-    for (SolrCore core : jetty.getCoreContainer().getCores()) {
+    for (SolrCore core : jetty.getCoreContainer().getLoadedCores()) {
       if (core.getName().startsWith(collection)) {
         solrCore = core;
       }

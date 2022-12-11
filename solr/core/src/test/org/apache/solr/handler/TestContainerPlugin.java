@@ -132,7 +132,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CoreContainer cc = jetty.getCoreContainer();
       cc.getContainerPluginsRegistry().setPhaser(phaser);
-      cc.getCores()
+      cc.getLoadedCores()
           .forEach(
               c -> {
                 c.getPackageListeners().addListener(listener);

@@ -1660,7 +1660,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (List<CloudJettyRunner> jettyList : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jettyList) {
         CoreContainer cores = jetty.jetty.getCoreContainer();
-        for (SolrCore core : cores.getCores()) {
+        for (SolrCore core : cores.getLoadedCores()) {
           ((DirectUpdateHandler2) core.getUpdateHandler())
               .getSoftCommitTracker()
               .setTimeUpperBound(time);
@@ -2688,7 +2688,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (!jetty.isRunning()) {
         continue;
       }
-      for (SolrCore core : jetty.getCoreContainer().getCores()) {
+      for (SolrCore core : jetty.getCoreContainer().getLoadedCores()) {
         waitForWarming(core);
       }
     }

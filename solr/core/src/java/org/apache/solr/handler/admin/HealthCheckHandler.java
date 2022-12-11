@@ -150,7 +150,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
       Collection<CloudDescriptor> coreDescriptors =
-          coreContainer.getCores().stream()
+          coreContainer.getLoadedCores().stream()
               .map(c -> c.getCoreDescriptor().getCloudDescriptor())
               .collect(Collectors.toList());
       long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
@@ -188,7 +188,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
             String.format(Locale.ROOT, "Invalid value of maxGenerationLag:%s", maxGenerationLag));
         rsp.add(STATUS, FAILURE);
       } else {
-        for (SolrCore core : coreContainer.getCores()) {
+        for (SolrCore core : coreContainer.getLoadedCores()) {
           ReplicationHandler replicationHandler =
               (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
           if (replicationHandler.isFollower()) {

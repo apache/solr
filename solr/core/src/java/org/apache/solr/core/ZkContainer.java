@@ -140,7 +140,7 @@ public class ZkContainer {
 
         Supplier<List<CoreDescriptor>> descriptorsSupplier =
             () ->
-                cc.getCores().stream()
+                cc.getLoadedCores().stream()
                     .map(SolrCore::getCoreDescriptor)
                     .collect(Collectors.toList());
 

@@ -106,7 +106,7 @@ public class SolrPackageLoader implements Closeable {
         }
       }
     }
-    for (SolrCore core : coreContainer.getCores()) {
+    for (SolrCore core : coreContainer.getLoadedCores()) {
       core.getPackageListeners().packagesUpdated(updated);
     }
     myCopy = packageAPI.pkgs;
@@ -146,7 +146,7 @@ public class SolrPackageLoader implements Closeable {
     SolrPackage p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<SolrPackage> l = Collections.singletonList(p);
-      for (SolrCore core : coreContainer.getCores()) {
+      for (SolrCore core : coreContainer.getLoadedCores()) {
         core.getPackageListeners().packagesUpdated(l);
       }
     }

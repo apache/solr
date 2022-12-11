@@ -519,7 +519,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
   private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {
     CoreContainer cores = jetty.getCoreContainer();
-    Collection<SolrCore> theCores = cores.getCores();
+    Collection<SolrCore> theCores = cores.getLoadedCores();
     for (SolrCore core : theCores) {
       // look for core props file
       Path instancedir = core.getInstancePath();

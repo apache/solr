@@ -80,7 +80,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         boolean allContainersEmpty = true;
         for (JettySolrRunner jetty : jettys) {
 
-          Collection<SolrCore> cores = jetty.getCoreContainer().getCores();
+          Collection<SolrCore> cores = jetty.getCoreContainer().getLoadedCores();
           for (SolrCore core : cores) {
             CoreDescriptor cd = core.getCoreDescriptor();
             if (cd != null) {

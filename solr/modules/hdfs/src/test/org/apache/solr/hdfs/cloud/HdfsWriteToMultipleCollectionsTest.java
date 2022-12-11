@@ -141,7 +141,7 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     // assert that we are using the block directory and that write and read caching are being used
     for (JettySolrRunner jetty : jettys) {
       CoreContainer cores = jetty.getCoreContainer();
-      Collection<SolrCore> solrCores = cores.getCores();
+      Collection<SolrCore> solrCores = cores.getLoadedCores();
       for (SolrCore core : solrCores) {
         if (core.getCoreDescriptor()
             .getCloudDescriptor()

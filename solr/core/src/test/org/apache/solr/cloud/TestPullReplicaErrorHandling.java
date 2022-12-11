@@ -252,7 +252,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
     Slice s = docCollection.getSlices().iterator().next();
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
-    SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
+    SolrCore core = jetty.getCoreContainer().getLoadedCores().iterator().next();
 
     for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
       cluster.expireZkSession(jetty);

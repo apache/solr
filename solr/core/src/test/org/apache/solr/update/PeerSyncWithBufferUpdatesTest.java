@@ -82,7 +82,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     }
 
     // it restarted and must do PeerSync
-    SolrCore jetty1Core = jettys.get(1).getCoreContainer().getCores().iterator().next();
+    SolrCore jetty1Core = jettys.get(1).getCoreContainer().getLoadedCores().iterator().next();
     jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
     for (int i = 16; i <= 20; i++) {
       add(client0, seenLeader, sdoc("id", String.valueOf(i), "_version_", ++v));

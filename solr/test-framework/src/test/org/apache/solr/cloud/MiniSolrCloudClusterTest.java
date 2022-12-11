@@ -142,7 +142,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           CollectionAdminRequest.createCollection("test", 1, 1)
               .process(cluster.getSolrClient())
               .isSuccess());
-      final SolrCore core = jetty.getCoreContainer().getCores().get(0);
+      final SolrCore core = jetty.getCoreContainer().getLoadedCores().get(0);
       assertTrue(
           core.getInstancePath() + " vs " + workDir, core.getInstancePath().startsWith(workDir));
       assertEquals(core.getInstancePath(), core.getResourceLoader().getInstancePath());

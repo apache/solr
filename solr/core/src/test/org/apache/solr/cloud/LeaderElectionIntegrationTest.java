@@ -73,7 +73,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
           "shard1",
           jetty
               .getCoreContainer()
-              .getCores()
+              .getLoadedCores()
               .iterator()
               .next()
               .getCoreDescriptor()

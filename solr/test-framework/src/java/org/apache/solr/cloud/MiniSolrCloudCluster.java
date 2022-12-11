@@ -663,7 +663,7 @@ public class MiniSolrCloudCluster {
       boolean allContainersEmpty = true;
       for (JettySolrRunner jetty : jettys) {
         CoreContainer cc = jetty.getCoreContainer();
-        if (cc != null && cc.getCores().size() != 0) {
+        if (cc != null && cc.getLoadedCores().size() != 0) {
           allContainersEmpty = false;
         }
       }

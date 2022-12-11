@@ -1051,7 +1051,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private void checkForSingleIndex(JettySolrRunner jetty, boolean afterReload) {
     CoreContainer cores = jetty.getCoreContainer();
-    Collection<SolrCore> theCores = cores.getCores();
+    Collection<SolrCore> theCores = cores.getLoadedCores();
     for (SolrCore core : theCores) {
       String ddir = core.getDataDir();
       CachingDirectoryFactory dirFactory = getCachingDirectoryFactory(core);

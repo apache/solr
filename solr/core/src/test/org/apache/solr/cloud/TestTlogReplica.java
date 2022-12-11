@@ -1112,7 +1112,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
+      for (SolrCore solrCore : solrRunner.getCoreContainer().getLoadedCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
@@ -1149,7 +1149,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
-      for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
+      for (SolrCore solrCore : solrRunner.getCoreContainer().getLoadedCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());

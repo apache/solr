@@ -175,7 +175,7 @@ class SolrCores {
    *     <p>Note: This is one of the places where SolrCloud is incompatible with Transient Cores.
    *     This call is used in cancelRecoveries, transient cores don't participate.
    */
-  List<SolrCore> getCores() {
+  List<SolrCore> getLoadedCores() {
 
     synchronized (modifyLock) {
       return new ArrayList<>(cores.values());
@@ -235,7 +235,7 @@ class SolrCores {
 
   /**
    * Gets the number of currently loaded permanent (non transient) cores. Faster equivalent for
-   * {@link #getCores()}.size().
+   * {@link #getLoadedCores()}.size().
    */
   int getNumLoadedPermanentCores() {
     synchronized (modifyLock) {

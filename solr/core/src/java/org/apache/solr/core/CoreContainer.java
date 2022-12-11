@@ -1336,11 +1336,9 @@ public class CoreContainer {
 
   public void cancelCoreRecoveries() {
 
-    List<SolrCore> cores = solrCores.getCores();
-
     // we must cancel without holding the cores sync
     // make sure we wait for any recoveries to stop
-    for (SolrCore core : cores) {
+    for (SolrCore core : getLoadedCores()) {
       try {
         core.getSolrCoreState().cancelRecovery();
       } catch (Exception e) {
@@ -1361,7 +1359,7 @@ public class CoreContainer {
    * <p>We do not need to unpause ever because the node is being shut down.
    */
   private void pauseUpdatesAndAwaitInflightRequests() {
-    getCores().parallelStream()
+    getLoadedCores().parallelStream()
         .forEach(
             solrCore -> {
               SolrCoreState solrCoreState = solrCore.getSolrCoreState();
@@ -1777,8 +1775,8 @@ public class CoreContainer {
    * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
    *     can be sorted).
    */
-  public List<SolrCore> getCores() {
-    return solrCores.getCores();
+  public List<SolrCore> getLoadedCores() {
+    return solrCores.getLoadedCores();
   }
 
   /**
