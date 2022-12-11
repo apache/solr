@@ -236,6 +236,8 @@ public interface CommonParams {
   /** which parameters to log (if not supplied all parameters will be logged) * */
   String LOG_PARAMS_LIST = "logParamsList";
 
+  String LOG_EXCLUDED_PARAMS_LIST = "logExcludedParamsList"; // which parameters not to log
+
   String EXCLUDE = "ex";
   String TAG = "tag";
   String TERMS = "terms";
