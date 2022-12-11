@@ -149,7 +149,7 @@ The log file under which you can find all these queries is called `solr_slow_req
 == Logging Select Request Parameters
 
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`. It is also possible not to log specific parameters by adding the parameter `logExcludedParamsList`.
-See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-logExcludedParamsList-parameters[logParamsList, logExcludedParamsList Parameters] for more information.
+See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-logexcludedparamslist-parameters[logParamsList, logExcludedParamsList Parameters] for more information.
 
 == Request Logging
 
