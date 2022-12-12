@@ -45,15 +45,14 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
 
-    if (log.isInfoEnabled()) {
-      log.info(
-          "OpenTelemetry tracer enabled with configuration: {}",
-          String.join(
-              "; ",
-              getCurrentOtelConfig().entrySet().stream()
-                  .map(e -> e.getKey() + "=" + e.getValue())
-                  .collect(Collectors.toSet())));
-    }
+    final String currentConfig =
+        String.join(
+            "; ",
+            getCurrentOtelConfig().entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.toSet()));
+
+    log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
 
     // Need to disable the exporters for metrics and logs
     String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
