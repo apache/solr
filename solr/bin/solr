@@ -860,6 +860,7 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
+        # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
         STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
         if [[ "${STAT:-Z}" != "Z" ]]; then
           slept=$((loops * 2))
@@ -880,6 +881,7 @@ function stop_solr() {
     exit 0
   fi
 
+  # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
   STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
   if [[ "${STAT:-Z}" != "Z" ]]; then
     if [ -n "${JSTACK:-}" ]; then
@@ -896,6 +898,7 @@ function stop_solr() {
     sleep 10
   fi
 
+  # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
   STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
   if [ "${STAT:-}" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
