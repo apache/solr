@@ -36,7 +36,6 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
 
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
-  // TODO: permitUnusedDeclared does not work for the io.opentelemetry dependencies for some reason
   permitUnusedDeclared 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
