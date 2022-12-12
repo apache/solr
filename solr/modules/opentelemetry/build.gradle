@@ -19,13 +19,21 @@ apply plugin: 'java-library'
 
 description = 'Open Telemetry (OTEL) tracer'
 
+// This is a hacky way to use permitTestUnusedDeclared with bom declared dependencies.
+// See https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
+configurations {
+  constraintsOnly
+  permitUnusedDeclared.extendsFrom constraintsOnly
+  implementation.extendsFrom constraintsOnly
+}
+
 dependencies {
   implementation project(':solr:core')
 
+  constraintsOnly(platform('io.opentelemetry:opentelemetry-bom-alpha'))
+
   implementation 'io.opentracing:opentracing-api'
   implementation 'org.slf4j:slf4j-api'
-
-  implementation platform('io.opentelemetry:opentelemetry-bom-alpha')
 
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   // TODO: permitUnusedDeclared does not work for the io.opentelemetry dependencies for some reason
@@ -53,4 +61,5 @@ dependencies {
   // Both this and jaegertracer-configurator pull in com.squareup.okhttp3:okhttp HTTP client and kotlin stdlib.
 
   testImplementation project(':solr:test-framework')
+  testImplementation 'junit:junit'
 }
