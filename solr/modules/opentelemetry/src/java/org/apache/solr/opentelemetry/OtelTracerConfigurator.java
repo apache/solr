@@ -51,7 +51,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
           String.join(
               "; ",
               getCurrentOtelConfig().entrySet().stream()
-                  .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+                  .map(e -> e.getKey() + "=" + e.getValue())
                   .collect(Collectors.toSet())));
     }
 
