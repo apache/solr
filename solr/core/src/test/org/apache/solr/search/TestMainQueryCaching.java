@@ -232,7 +232,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   @Test
   public void testMatchAllDocsPlain() throws Exception {
     // plain request with "score" sort should skip sort even if `rows` requested
-    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "start", random().nextBoolean() ? "0" : "1"));
+    String offset = random().nextBoolean() ? "0" : "1";
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "start", offset));
     assertMetricCounts(response, true, 0, 0, 1);
   }
 
