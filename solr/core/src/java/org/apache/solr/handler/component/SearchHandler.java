@@ -326,8 +326,8 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    if (log.isInfoEnabled()) {
-      log.info("Start Search Query: {}", req.getParamString());
+    if (log.isDebugEnabled()) {
+      log.debug("Start Search Query: {}", req.getParamString());
     }
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
