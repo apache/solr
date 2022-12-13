@@ -854,8 +854,13 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
+        echo "This is what is running"
+        ps auxww
         STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
+        echo "$STAT"
         if [[ "${STAT:-Z}" != "Z" ]]; then
+          echo "This is what is running"
+          ps auxww
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
             sleep 2
