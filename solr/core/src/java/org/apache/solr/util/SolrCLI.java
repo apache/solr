@@ -86,7 +86,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -104,6 +103,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -590,29 +590,13 @@ public class SolrCLI implements CLIO {
     return wasCommError;
   }
 
-  /**
-   * Tries a simple HEAD request and throws SolrException in case of Authorization error
-   *
-   * @param url the url to do a HEAD request to
-   * @param httpClient the http client to use (make sure it has authentication options set)
-   * @return the HTTP response code
-   * @throws SolrException if auth/autz problems
-   * @throws IOException if connection failure
-   */
-  private static int attemptHttpHead(String url, HttpClient httpClient)
-      throws SolrException, IOException {
-    HttpResponse response =
-        httpClient.execute(new HttpHead(url), HttpClientUtil.createNewHttpClientRequestContext());
-    int code = response.getStatusLine().getStatusCode();
+  private static void checkCodeForAuthError(int code) {
     if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
       throw new SolrException(
           SolrException.ErrorCode.getErrorCode(code),
-          "Solr requires authentication for "
-              + url
-              + ". Please supply valid credentials. HTTP code="
+          "Solr requires authentication for request. Please supply valid credentials. HTTP code="
               + code);
     }
-    return code;
   }
 
   private static boolean exceptionIsAuthRelated(Exception exc) {
@@ -620,7 +604,7 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static SolrClient getHttpSolrClient(String baseUrl) {
+  public static SolrClient getSolrClient(String baseUrl) {
     return new Http2SolrClient.Builder(baseUrl).maxConnectionsPerHost(32).build();
   }
 
@@ -976,7 +960,7 @@ public class SolrCLI implements CLIO {
 
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-      try (var solrClient = getHttpSolrClient(solrUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
             solrClient.request(
                 new GenericSolrRequest(
@@ -1078,7 +1062,7 @@ public class SolrCLI implements CLIO {
           paramsMap.add(paramSplit[0], paramSplit[1]);
         }
         String path = uri.getPath();
-        try (var solrClient = getHttpSolrClient(baseUrl)) {
+        try (var solrClient = getSolrClient(baseUrl)) {
           NamedList<Object> response =
               solrClient.request(
                   new GenericSolrRequest(
@@ -1291,15 +1275,11 @@ public class SolrCLI implements CLIO {
         throw new IllegalArgumentException("Collection " + collection + " not found!");
 
       Collection<Slice> slices = docCollection.getSlices();
-      // Test http code using a HEAD request first, fail fast if authentication failure
-      String urlForColl =
-          zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000);
-      // TODO:B make a replacement method for attemptHttpHead
-      // attemptHttpHead(urlForColl, cloudSolrClient.getHttpClient());
 
       SolrQuery q = new SolrQuery("*:*");
       q.setRows(0);
       QueryResponse qr = cloudSolrClient.query(collection, q);
+      checkCodeForAuthError(qr.getStatus());
       String collErr = null;
       long docCount = -1;
       try {
@@ -1343,7 +1323,7 @@ public class SolrCLI implements CLIO {
             q.setRows(0);
             q.set(DISTRIB, "false");
             int lastSlash = coreUrl.substring(0, coreUrl.length() - 1).lastIndexOf('/');
-            try (var solrClient = getHttpSolrClient(coreUrl.substring(0, lastSlash))) {
+            try (var solrClient = getSolrClient(coreUrl.substring(0, lastSlash))) {
               qr = solrClient.query(coreUrl.substring(lastSlash + 1, coreUrl.length() - 1), q);
               numDocs = qr.getResults().getNumFound();
 
@@ -1498,7 +1478,7 @@ public class SolrCLI implements CLIO {
 
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-    try (var solrClient = getHttpSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
@@ -1526,7 +1506,7 @@ public class SolrCLI implements CLIO {
 
   public static boolean safeCheckCollectionExists(String baseUrl, String collection) {
     boolean exists = false;
-    try (var solrClient = getHttpSolrClient(baseUrl); ) {
+    try (var solrClient = getSolrClient(baseUrl); ) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -1539,7 +1519,7 @@ public class SolrCLI implements CLIO {
 
   public static boolean safeCheckCoreExists(String baseUrl, String coreName) {
     boolean exists = false;
-    try (var solrClient = getHttpSolrClient(baseUrl)) {
+    try (var solrClient = getSolrClient(baseUrl)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {
@@ -1679,7 +1659,7 @@ public class SolrCLI implements CLIO {
           "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getHttpSolrClient(baseUrl)) {
+      try (var solrClient = getSolrClient(baseUrl)) {
         response =
             solrClient.request(
                 CollectionAdminRequest.createCollection(
@@ -1785,7 +1765,7 @@ public class SolrCLI implements CLIO {
       String coreName = cli.getOptionValue(NAME);
 
       String coreRootDirectory = null; // usually same as solr home, but not always
-      try (var solrClient = getHttpSolrClient(solrUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         Map<String, Object> systemInfo =
             solrClient
                 .request(
@@ -1848,7 +1828,7 @@ public class SolrCLI implements CLIO {
 
       echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
 
-      try (var solrClient = getHttpSolrClient(solrUrl); ) {
+      try (var solrClient = getSolrClient(solrUrl); ) {
         Map<String, Object> json =
             CoreAdminRequest.createCore(coreName, coreName, solrClient)
                 .getCoreStatus(coreName)
@@ -1896,7 +1876,7 @@ public class SolrCLI implements CLIO {
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
       ToolBase tool = null;
-      try (var solrClient = getHttpSolrClient(solrUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
             solrClient.request(
                 new GenericSolrRequest(
@@ -2475,7 +2455,7 @@ public class SolrCLI implements CLIO {
       String solrUrl = cli.getOptionValue("solrUrl", DEFAULT_SOLR_URL);
       if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-      try (var solrClient = getHttpSolrClient(solrUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         Map<String, Object> systemInfo =
             solrClient
                 .request(
@@ -2563,7 +2543,7 @@ public class SolrCLI implements CLIO {
           "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getHttpSolrClient(baseUrl)) {
+      try (var solrClient = getSolrClient(baseUrl)) {
         response = solrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
       } catch (SolrServerException sse) {
         throw new Exception(
@@ -3943,10 +3923,13 @@ public class SolrCLI implements CLIO {
           System.nanoTime()
               + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
       try {
-        attemptHttpHead(url, getHttpClient());
+        SolrClient solrClient = getSolrClient(url);
+        NamedList<Object> response = solrClient.request(new HealthCheckRequest());
+        Integer statusCode = (Integer) ((NamedList) response.get("responseHeader")).get("status");
+        checkCodeForAuthError(statusCode);
       } catch (SolrException se) {
-        throw se; // Auth error
-      } catch (IOException e) {
+        throw se;
+      } catch (IOException | SolrServerException e) {
         log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
         return 0;
       }

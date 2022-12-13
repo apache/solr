@@ -18,7 +18,7 @@ package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.util.SolrCLI.getHttpSolrClient;
+import static org.apache.solr.util.SolrCLI.getSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -370,7 +370,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    try (SolrClient solrClient = getHttpSolrClient(solrUrl)) {
+    try (SolrClient solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
