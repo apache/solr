@@ -29,8 +29,8 @@ teardown() {
 }
 
 @test "SOLR11740 check f" {
-  #solr start
+  solr start
   solr start -p 7574
-  run solr stop -all
+  run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
 }
