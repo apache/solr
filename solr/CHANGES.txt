@@ -177,6 +177,12 @@ Other Changes
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
+==================  9.1.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16585: Fix NPE in MatchAllDocs pagination (Michael Gibney)
+
 ==================  9.1.0 ==================
 
 New Features
