@@ -238,9 +238,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
-            // don't include hidden (.) files
-            if (!Files.isHidden(file)) {
-              filePaths.add(configDir.relativize(file).toString());
+            String filePath = configDir.relativize(file).toString();
+            filePath = filePath.replace('\\', '/'); // normalize slashes
+            // don't include .metadata.json hidden file
+            if (!filePath.startsWith(METADATA_FILE)) {
+              filePaths.add(filePath);
               return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
