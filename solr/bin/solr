@@ -878,6 +878,8 @@ function stop_solr() {
   fi
 
   STAT=`(ps -o stat='' -p $SOLR_PID || :) | tr -d ' '`
+  echo "$STAT"
+  ps auxww
   if [[ "${STAT:-Z}" != "Z" ]]; then
     if [ -n "${JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
