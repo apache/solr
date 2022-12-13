@@ -43,5 +43,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: logs
-        path: solr/packaging/build/test-output/failure-snapshots/
+        path: solr/packaging/build/test-output
 
