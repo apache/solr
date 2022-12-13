@@ -249,22 +249,20 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       String offset = Integer.toString(r.nextInt(i));
       // keep the window small (again, to avoid queryResultCache intercepting requests)
       String rows = Integer.toString(r.nextInt(2));
-      String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "start", offset, "rows", rows));
+      String response =
+          JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "start", offset, "rows", rows));
       assertMetricCounts(response, counters);
     }
   }
 
-  private static void assertMetricCounts(
-      String response,
-      int[] expectCounters) {
+  private static void assertMetricCounts(String response, int[] expectCounters) {
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     SolrCore core = h.getCore();
     assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsInsertCount(core));
     assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
     assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
-    assertEquals(
-        "Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
+    assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
     long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
     if (queryCacheInsertCount == expectCounters[0]) {
       // should be a hit, so all insert/sort-count metrics remain unchanged.
@@ -274,6 +272,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     }
     assertEquals("Bad skip sort count", expectCounters[1], coreToSortCount(core, "skip"));
   }
+
   @Test
   public void testMatchAllDocsFlScore() throws Exception {
     // explicitly requesting scores should unconditionally disable all cache consultation and sort
@@ -413,7 +412,10 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
         "Bad matchAllDocs insert count",
         (matchAllDocs ? 1 : 0),
         coreToMatchAllDocsInsertCount(core));
-    assertEquals("Bad filterCache insert count", expectFilterCacheInsertCount, coreToInserts(core, "filterCache"));
+    assertEquals(
+        "Bad filterCache insert count",
+        expectFilterCacheInsertCount,
+        coreToInserts(core, "filterCache"));
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals(
