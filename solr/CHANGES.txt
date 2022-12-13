@@ -85,6 +85,9 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
+
 Optimizations
 ---------------------
 
@@ -125,6 +128,8 @@ Bug Fixes
 
 * SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
+* SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -138,6 +143,8 @@ Build
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
 * SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+
+* SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -167,6 +174,8 @@ Other Changes
 * SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
 
 * SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+
+* SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
 ==================  9.1.0 ==================
 

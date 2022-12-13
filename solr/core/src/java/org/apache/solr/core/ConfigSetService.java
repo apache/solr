@@ -395,8 +395,8 @@ public abstract class ConfigSetService {
   public abstract void uploadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Upload a file to config If file does not exist, it will be uploaded If createNew param is set
-   * to true then file be overwritten
+   * Upload a file to config If file does not exist, it will be uploaded If overwriteOnExists is set
+   * to true then file will be overwritten
    *
    * @param configName the name to give the config
    * @param fileName the name of the file
