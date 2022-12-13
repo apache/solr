@@ -206,7 +206,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   public void close() throws IOException {
     this.isClosed = true;
     if (tpe != null) {
-      if (!tpe.isShutdown()) {
+      if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }

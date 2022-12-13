@@ -77,6 +77,7 @@ import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -95,6 +96,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -130,8 +132,8 @@ public class Http2SolrClient extends SolrClient {
   private int idleTimeout;
   private int requestTimeout;
 
-  private ResponseParser parser = new BinaryResponseParser();
-  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
+  protected ResponseParser parser = new BinaryResponseParser();
+  protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
@@ -142,6 +144,7 @@ public class Http2SolrClient extends SolrClient {
   private boolean shutdownExecutor;
 
   private final String basicAuthAuthorizationStr;
+  private AuthenticationStoreHolder authenticationStore;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null) {
@@ -171,11 +174,18 @@ public class Http2SolrClient extends SolrClient {
     } else {
       basicAuthAuthorizationStr = null;
     }
+    if (builder.requestWriter != null) {
+      requestWriter = builder.requestWriter;
+    }
+    if (builder.responseParser != null) {
+      parser = builder.responseParser;
+    }
     if (builder.requestTimeout == null) {
       requestTimeout = -1;
     } else {
       requestTimeout = builder.requestTimeout;
     }
+    httpClient.setFollowRedirects(builder.followRedirects);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -224,16 +234,27 @@ public class Http2SolrClient extends SolrClient {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      transport = new HttpClientTransportOverHTTP(2);
-      httpClient =
-          sslEnabled ? new HttpClient(transport, sslContextFactory) : new HttpClient(transport);
+
+      ClientConnector clientConnector = new ClientConnector();
+      clientConnector.setReuseAddress(true);
+      clientConnector.setSslContextFactory(sslContextFactory);
+      clientConnector.setSelectors(2);
+      transport = new HttpClientTransportOverHTTP(clientConnector);
+
+      httpClient = new HttpClient(transport);
+
       if (builder.maxConnectionsPerHost != null)
         httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
-      HTTP2Client http2client = new HTTP2Client();
+      ClientConnector clientConnector = new ClientConnector();
+      clientConnector.setReuseAddress(true);
+      clientConnector.setSslContextFactory(sslContextFactory);
+      clientConnector.setSelectors(2);
+
+      HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
-      httpClient = new HttpClient(transport, sslContextFactory);
+      httpClient = new HttpClient(transport);
       httpClient.setMaxConnectionsPerDestination(4);
     }
 
@@ -244,9 +265,13 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
-
     httpClient.setIdleTimeout(idleTimeout);
+
+    this.authenticationStore = new AuthenticationStoreHolder();
+    httpClient.setAuthenticationStore(this.authenticationStore);
+
     if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+
     try {
       httpClient.start();
     } catch (Exception e) {
@@ -263,7 +288,6 @@ public class Http2SolrClient extends SolrClient {
     asyncTracker.waitForComplete();
     try {
       if (closeClient) {
-        httpClient.setStopTimeout(1000);
         httpClient.stop();
         httpClient.destroy();
       }
@@ -276,6 +300,10 @@ public class Http2SolrClient extends SolrClient {
     }
 
     assert ObjectReleaseTracker.release(this);
+  }
+
+  public void setAuthenticationStore(AuthenticationStore authenticationStore) {
+    this.authenticationStore.updateAuthenticationStore(authenticationStore);
   }
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
@@ -693,13 +721,13 @@ public class Http2SolrClient extends SolrClient {
         for (ContentStream contentStream : streams) {
           String contentType = contentStream.getContentType();
           if (contentType == null) {
-            contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+            contentType = "multipart/form-data"; // default
           }
           String name = contentStream.getName();
           if (name == null) {
             name = "";
           }
-          HttpFields fields = new HttpFields();
+          HttpFields.Mutable fields = HttpFields.build(1);
           fields.add(HttpHeader.CONTENT_TYPE, contentType);
           content.addFilePart(
               name,
@@ -870,6 +898,16 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
@@ -878,6 +916,16 @@ public class Http2SolrClient extends SolrClient {
     return requestWriter;
   }
 
+  /**
+   * Configure whether the client should follow redirects or not.
+   *
+   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
+   * Solr installation, something is configured wrong somewhere.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withFollowRedirects(boolean)}
+   *     Redirects(boolean)} instead
+   */
+  @Deprecated
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
@@ -938,8 +986,11 @@ public class Http2SolrClient extends SolrClient {
     private String basicAuthUser;
     private String basicAuthPassword;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
+    private boolean followRedirects = false;
     protected String baseSolrUrl;
     private ExecutorService executor;
+    protected RequestWriter requestWriter;
+    protected ResponseParser responseParser;
 
     public Builder() {}
 
@@ -986,6 +1037,23 @@ public class Http2SolrClient extends SolrClient {
     /** Reuse {@code httpClient} connections pool */
     public Builder withHttpClient(Http2SolrClient httpClient) {
       this.http2SolrClient = httpClient;
+      return this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+
+    public Builder withFollowRedirects(boolean followRedirects) {
+      this.followRedirects = followRedirects;
       return this;
     }
 
@@ -1083,8 +1151,17 @@ public class Http2SolrClient extends SolrClient {
     return parser;
   }
 
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  /**
+   * Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link Http2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   */
+  @Deprecated
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
