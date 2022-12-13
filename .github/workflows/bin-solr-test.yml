@@ -37,7 +37,7 @@ jobs:
     - name: Initialize gradle settings
       run: ./gradlew localSettings
     - name: Test the bin/solr script
-      run: ./gradlew integrationTests --tests test_start_solr.bats
+      run: ./gradlew integrationTests
     - name: Archive logs
       if: ${{ failure() }}
       uses: actions/upload-artifact@v3
