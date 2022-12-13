@@ -1855,6 +1855,9 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
         NEXT_PID=`cat "$PIDF"`
         port=`jetty_port "$NEXT_PID"`
         if [ "$port" != "" ]; then
+          echo "line 1858"
+          ps auxww
+          echo stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
           none_stopped=false
         fi
@@ -1936,6 +1939,9 @@ else
     SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
+    echo "line 1939"
+    ps auxww
+    echo stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
   else
     if [ "$SCRIPT_CMD" == "stop" ]; then
