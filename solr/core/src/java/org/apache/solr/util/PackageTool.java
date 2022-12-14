@@ -32,7 +32,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -90,7 +90,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0 ? "help" : cli.getArgs()[0];
 
-      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
           try {

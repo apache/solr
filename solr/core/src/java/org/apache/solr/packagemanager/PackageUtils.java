@@ -23,10 +23,10 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -38,13 +38,14 @@ import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.filestore.DistribPackageStore;
@@ -122,6 +123,16 @@ public class PackageUtils {
     }
   }
 
+  /** Download JSON from a Solr url and deserialize into klass. */
+  public static <T> T getJson(SolrClient client, String path, Class<T> klass) {
+    try {
+      return getMapper()
+          .readValue(getJsonStringFromUrl(client, path, new LinkedHashMap<>()), klass);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Search through the list of jar files for a given file. Returns string of the file contents or
    * null if file wasn't found. This is suitable for looking for manifest or property files within
@@ -155,16 +166,39 @@ public class PackageUtils {
     }
   }
 
+  /** Returns JSON string from a given Solr URL */
+  public static String getJsonStringFromUrl(
+      SolrClient client, String path, Map<String, String[]> params) {
+    try {
+      NamedList<Object> response =
+          client.request(
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, path, new ModifiableSolrParams(params)));
+      int statusCode = (Integer) ((NamedList) response.get("responseHeader")).get("status");
+      if (statusCode != 0) {
+        throw new SolrException(
+            ErrorCode.NOT_FOUND, "Error (code=" + statusCode + ") fetching from path: " + path);
+      }
+      return response.jsonStr();
+    } catch (UnsupportedOperationException | IOException | SolrServerException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after
    * fetching.
    */
   public static Manifest fetchManifest(
-      HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512)
-      throws MalformedURLException, IOException {
-    String manifestJson =
-        PackageUtils.getJsonStringFromUrl(
-            solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+      SolrClient solrClient, String manifestFilePath, String expectedSHA512)
+      throws IOException, SolrServerException {
+    NamedList<Object> response =
+        solrClient.request(
+            new GenericSolrRequest(
+                SolrRequest.METHOD.GET,
+                "/api/node/files" + manifestFilePath,
+                new ModifiableSolrParams()));
+    String manifestJson = response.jsonStr();
     String calculatedSHA512 =
         BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {

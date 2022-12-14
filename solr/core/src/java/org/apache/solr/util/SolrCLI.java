@@ -575,7 +575,6 @@ public class SolrCLI implements CLIO {
     return classes;
   }
 
-  // TODO:B add proper exception handling for the exceptions coming from jetty client
   /**
    * Determine if a request to Solr failed due to a communication error, which is generally
    * retry-able.
@@ -604,8 +603,8 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static SolrClient getSolrClient(String baseUrl) {
-    return new Http2SolrClient.Builder(baseUrl).maxConnectionsPerHost(32).build();
+  public static SolrClient getSolrClient(String solrUrl) {
+    return new Http2SolrClient.Builder(solrUrl).maxConnectionsPerHost(32).build();
   }
 
   public static CloseableHttpClient getHttpClient() {
@@ -625,6 +624,20 @@ public class SolrCLI implements CLIO {
         // safe to ignore, we're just shutting things down
       }
     }
+  }
+
+  public static String getSolrUrlFromUri(URI uri) {
+    return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
+  }
+
+  public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {
+    ModifiableSolrParams paramsMap = new ModifiableSolrParams();
+    String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
+    for (String param : params) {
+      String[] paramSplit = param.split("=");
+      paramsMap.add(paramSplit[0], paramSplit[1]);
+    }
+    return paramsMap;
   }
 
   public static final String JSON_CONTENT_TYPE = "application/json";
@@ -650,7 +663,6 @@ public class SolrCLI implements CLIO {
     return json;
   }
 
-  // TODO:B add a similar retry mechanism to what is seen here
   /** Utility function for sending HTTP GET request to Solr with built-in retry support. */
   public static Map<String, Object> getJson(
       HttpClient httpClient, String getUrl, int attempts, boolean isFirstAttempt) throws Exception {
@@ -1053,16 +1065,10 @@ public class SolrCLI implements CLIO {
       String getUrl = cli.getOptionValue("get");
       if (getUrl != null) {
         URI uri = new URI(getUrl);
-        String baseUrl =
-            uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
-        ModifiableSolrParams paramsMap = new ModifiableSolrParams();
-        String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
-        for (String param : params) {
-          String[] paramSplit = param.split("=");
-          paramsMap.add(paramSplit[0], paramSplit[1]);
-        }
+        String solrUrl = getSolrUrlFromUri(uri);
+        ModifiableSolrParams paramsMap = getSolrParamsFromUri(uri);
         String path = uri.getPath();
-        try (var solrClient = getSolrClient(baseUrl)) {
+        try (var solrClient = getSolrClient(solrUrl)) {
           NamedList<Object> response =
               solrClient.request(
                   new GenericSolrRequest(
@@ -1504,9 +1510,9 @@ public class SolrCLI implements CLIO {
     return zkHost;
   }
 
-  public static boolean safeCheckCollectionExists(String baseUrl, String collection) {
+  public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(baseUrl); ) {
+    try (var solrClient = getSolrClient(solrUrl); ) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -1517,9 +1523,9 @@ public class SolrCLI implements CLIO {
     return exists;
   }
 
-  public static boolean safeCheckCoreExists(String baseUrl, String coreName) {
+  public static boolean safeCheckCoreExists(String solrUrl, String coreName) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(baseUrl)) {
+    try (var solrClient = getSolrClient(solrUrl)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {
@@ -1598,10 +1604,10 @@ public class SolrCLI implements CLIO {
             "No live nodes found! Cannot create a collection until "
                 + "there is at least 1 live node in the cluster.");
 
-      String baseUrl = cli.getOptionValue("solrUrl");
-      if (baseUrl == null) {
+      String solrUrl = cli.getOptionValue("solrUrl");
+      if (solrUrl == null) {
         String firstLiveNode = liveNodes.iterator().next();
-        baseUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
       }
 
       String collectionName = cli.getOptionValue(NAME);
@@ -1647,7 +1653,7 @@ public class SolrCLI implements CLIO {
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
-      if (safeCheckCollectionExists(baseUrl, collectionName)) {
+      if (safeCheckCollectionExists(solrUrl, collectionName)) {
         throw new IllegalStateException(
             "\nCollection '"
                 + collectionName
@@ -1659,7 +1665,7 @@ public class SolrCLI implements CLIO {
           "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getSolrClient(baseUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         response =
             solrClient.request(
                 CollectionAdminRequest.createCollection(
@@ -2493,7 +2499,7 @@ public class SolrCLI implements CLIO {
 
       String firstLiveNode = liveNodes.iterator().next();
       ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-      String baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
+      String solrUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
       String collectionName = cli.getOptionValue(NAME);
       if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
         throw new IllegalArgumentException("Collection " + collectionName + " not found!");
@@ -2543,7 +2549,7 @@ public class SolrCLI implements CLIO {
           "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getSolrClient(baseUrl)) {
+      try (var solrClient = getSolrClient(solrUrl)) {
         response = solrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
       } catch (SolrServerException sse) {
         throw new Exception(

@@ -17,9 +17,13 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.util.SolrCLI.getSolrClient;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;

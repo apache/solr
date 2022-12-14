@@ -17,6 +17,7 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
@@ -32,26 +33,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -64,9 +68,9 @@ public class RepositoryManager {
 
   private final PackageManager packageManager;
 
-  final HttpSolrClient solrClient;
+  final SolrClient solrClient;
 
-  public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
+  public RepositoryManager(SolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
     this.solrClient = solrClient;
   }
@@ -136,17 +140,19 @@ public class RepositoryManager {
 
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
-    String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
-    Map<String, Object> systemInfo =
-        SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
+    NamedList<Object> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH, new ModifiableSolrParams()));
     String solrHome = (String) systemInfo.get("solr_home");
+
+    Map<String, String[]> paramsMap = new LinkedHashMap<>();
+    paramsMap.put("sync", new String[] {"true"});
 
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromUrl(
-        solrClient.getHttpClient(),
-        solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
+    PackageUtils.getJsonStringFromUrl(solrClient, "/api/node/files" + path, paramsMap);
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)
