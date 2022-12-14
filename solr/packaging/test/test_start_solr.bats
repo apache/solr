@@ -30,7 +30,7 @@ teardown() {
 
 @test "SOLR11740 check f" {
   #solr start
-  solr start -V -v -p 7574 -a '-DDEBUG=true -Djava.security.debug=access,policy'
+  solr start -V -v -p 7574 -a '-DDEBUG=true -Djava.security.debug=access,policy -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
   run bash -c 'solr stop -V -p 7574 2>&1'
   #run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
