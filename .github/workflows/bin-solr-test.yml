@@ -36,6 +36,10 @@ jobs:
           ${{ runner.os }}-gradle-
     - name: Initialize gradle settings
       run: ./gradlew localSettings
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Test the bin/solr script
       run: ./gradlew integrationTests --tests test_start_solr.bats
     - name: Archive logs
