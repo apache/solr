@@ -113,6 +113,7 @@ task assemblePackaging(type: Sync) {
     include "resources/**"
     include "scripts/**"
     include "solr/**"
+    include "work/**"
     include "README.md"
   })
 
