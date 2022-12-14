@@ -29,10 +29,12 @@ jobs:
           ${{ runner.os }}-gradle-
     - name: Initialize gradle settings
       run: ./gradlew localSettings
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    - name: Tailscale
+      uses: tailscale/github-action@main
       with:
-        limit-access-to-actor: true
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+        args: "--ssh"
+        version: 1.32.1
     - name: Test the bin/solr script
       run: ./gradlew integrationTests --tests test_start_solr.bats
     - name: Archive logs
