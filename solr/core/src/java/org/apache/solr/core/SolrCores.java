@@ -668,14 +668,16 @@ class SolrCores {
   }
 
   /**
+   * Holds the <b>read-lock</b> while retrieving the cache holding the transient cores.
+   *
    * @return the cache holding the transient cores; never null.
    */
   public TransientSolrCoreCache getTransientCacheHandler() {
-    READ_WRITE_LOCK.writeLock().lock();
+    READ_WRITE_LOCK.readLock().lock();
     try {
       return getInternalTransientCacheHandler();
     } finally {
-      READ_WRITE_LOCK.writeLock().unlock();
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
