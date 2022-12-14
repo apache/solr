@@ -238,11 +238,14 @@ public class FileSystemConfigSetService extends ConfigSetService {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
-            String filePath = configDir.relativize(file).toString();
-            filePath = filePath.replace('\\', '/'); // normalize slashes
+            Path filePath = configDir.relativize(file);
+            String filePathStr = filePath.toString();
+            filePathStr =
+                filePathStr.replace(
+                    filePath.getFileSystem().getSeparator(), "/"); // normalize slashes
             // don't include .metadata.json hidden file
-            if (!filePath.startsWith(METADATA_FILE)) {
-              filePaths.add(filePath);
+            if (!filePathStr.equals(METADATA_FILE)) {
+              filePaths.add(filePathStr);
               return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
