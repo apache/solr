@@ -365,9 +365,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
   private static final Map<String, State> STATES = new HashMap<>();
 
   static {
-    for (State s : State.values()) {
-      STATES.put(s.shortName, s);
-    }
+    STATES.put(Replica.State.ACTIVE.shortName, Replica.State.ACTIVE);
+    STATES.put(Replica.State.DOWN.shortName, Replica.State.DOWN);
+    STATES.put(Replica.State.RECOVERING.shortName, Replica.State.RECOVERING);
+    STATES.put(Replica.State.RECOVERY_FAILED.shortName, Replica.State.RECOVERY_FAILED);
   }
 
   public static State getState(String shortName) {
