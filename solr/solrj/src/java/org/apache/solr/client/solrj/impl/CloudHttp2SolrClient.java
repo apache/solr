@@ -251,8 +251,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     /**
      * This is the time to wait to refetch the state after getting the same state version from ZK
-     *
-     * <p>secs
      */
     public Builder setRetryExpiryTime(int secs) {
       this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
