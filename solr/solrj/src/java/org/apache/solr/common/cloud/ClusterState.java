@@ -260,7 +260,7 @@ public class ClusterState implements JSONWriter.Writable {
         log.debug("a collection {} has per-replica state", name);
       }
     } else {
-      //prior to this call, PRS provider is set. We should unset it before
+      // prior to this call, PRS provider is set. We should unset it before
       // deserializing the replicas and slices
       DocCollection.clearReplicaStateProvider();
     }
