@@ -629,7 +629,8 @@ public class DistributedClusterStateUpdater {
       // old ZK location.
       // TODO in Solr 10 remove that factory method
       DocCollection.initReplicaStateProvider(
-          new PerReplicaStatesFetcher.LazyPrsSupplier(zkStateReader.getZkClient(), collectionStatePath));
+          new PerReplicaStatesFetcher.LazyPrsSupplier(
+              zkStateReader.getZkClient(), collectionStatePath));
       ClusterState clusterState;
       try {
         clusterState =

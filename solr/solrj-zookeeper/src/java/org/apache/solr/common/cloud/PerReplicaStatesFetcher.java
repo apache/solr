@@ -55,27 +55,27 @@ public class PerReplicaStatesFetcher {
     }
   }
 
-    public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
-      private final SolrZkClient zkClient;
-      private final String collectionPath;
+  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
+    private final SolrZkClient zkClient;
+    private final String collectionPath;
 
-      public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
-        this.collectionPath = collectionPath;
-        this.zkClient = zkClient;
-      }
-
-      @Override
-      public PerReplicaStates get() {
-        if (prs == null) {
-          prs = fetch(collectionPath, zkClient, null);
-          if (log.isDebugEnabled()) {
-            log.debug(
-                "per-replica-state ver: {} fetched for initializing {} ",
-                prs.cversion,
-                collectionPath);
-          }
-        }
-        return super.get();
-      }
+    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
+      this.collectionPath = collectionPath;
+      this.zkClient = zkClient;
     }
+
+    @Override
+    public PerReplicaStates get() {
+      if (prs == null) {
+        prs = fetch(collectionPath, zkClient, null);
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "per-replica-state ver: {} fetched for initializing {} ",
+              prs.cversion,
+              collectionPath);
+        }
+      }
+      return super.get();
+    }
+  }
 }
