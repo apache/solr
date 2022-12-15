@@ -1685,22 +1685,9 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
+    LazyPrsSupplier prsSupplier = new LazyPrsSupplier(zkClient, collectionPath);
     while (true) {
-      ClusterState.initReplicaStateProvider(
-          () -> {
-            try {
-              PerReplicaStates replicaStates =
-                  PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
-              log.debug(
-                  "per-replica-state ver: {} fetched for initializing {} ",
-                  replicaStates.cversion,
-                  collectionPath);
-              return replicaStates;
-            } catch (Exception e) {
-              // TODO
-              throw new RuntimeException(e);
-            }
-          });
+      DocCollection.initReplicaStateProvider(prsSupplier);
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
@@ -1726,7 +1713,7 @@ public class ZkStateReader implements SolrCloseable {
         }
         return null;
       } finally {
-        ClusterState.clearReplicaStateProvider();
+        DocCollection.clearReplicaStateProvider();
       }
     }
   }
@@ -2474,5 +2461,29 @@ public class ZkStateReader implements SolrCloseable {
 
   public DocCollection getCollection(String collection) {
     return clusterState == null ? null : clusterState.getCollectionOrNull(collection);
+  }
+
+  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
+    private final SolrZkClient zkClient;
+    private final String collectionPath;
+
+    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
+      this.collectionPath = collectionPath;
+      this.zkClient = zkClient;
+    }
+
+    @Override
+    public PerReplicaStates get() {
+      if (prs == null) {
+        prs = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "per-replica-state ver: {} fetched for initializing {} ",
+              prs.cversion,
+              collectionPath);
+        }
+      }
+      return super.get();
+    }
   }
 }
