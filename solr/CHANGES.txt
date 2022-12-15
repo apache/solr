@@ -85,6 +85,9 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
+
 Optimizations
 ---------------------
 
@@ -140,6 +143,8 @@ Build
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
 * SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+
+* SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
 Other Changes
 ---------------------
