@@ -35,8 +35,6 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected boolean useMultiPartPost;
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
-  protected long retryExpiryTime =
-      TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   protected boolean followRedirects = false;
   protected Set<String> queryParams;
 
