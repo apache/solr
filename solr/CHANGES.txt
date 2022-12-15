@@ -85,6 +85,8 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-10461: Introduce Builder setter for aliveCheckInterval on load balanced SolrClients.  Deprecated direct setter setAliveCheckInterval on SolrClients. (Eric Pugh, David Smiley)
+
 Optimizations
 ---------------------
 
