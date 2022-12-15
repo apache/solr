@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.misc.document.LazyDocument;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
@@ -85,7 +84,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   @Test
   public void test() throws Exception {
     // add just one document (docid 0)
-    String bigFieldValue = TestUtil.randomUnicodeString(random());
+    String bigFieldValue = randomXmlUsableUnicodeString();
     assertU(adoc(ID_FLD, "101", LAZY_FIELD, "lzy", BIG_FIELD, bigFieldValue));
     assertU(commit());
 
