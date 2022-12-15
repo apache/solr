@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
