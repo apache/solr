@@ -92,7 +92,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
-    this.interval = builder.interval;
+    this.aliveCheckInterval = builder.aliveCheckInterval;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -182,7 +182,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   public static class Builder extends SolrClientBuilder<Builder> {
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
-    private int interval;
+    private int aliveCheckInterval;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -265,14 +265,14 @@ public class LBHttpSolrClient extends LBSolrClient {
      * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
      * this to set that interval
      *
-     * @param interval time in milliseconds
+     * @param aliveCheckInterval time in milliseconds
      */
-    public Builder setAliveCheckInterval(int interval) {
-      if (interval <= 0) {
+    public Builder setAliveCheckInterval(int aliveCheckInterval) {
+      if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
-            "Alive check interval must be " + "positive, specified value = " + interval);
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
-      this.interval = interval;
+      this.aliveCheckInterval = aliveCheckInterval;
       return this;
     }
 
