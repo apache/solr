@@ -102,6 +102,8 @@ Bug Fixes
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
 
+* SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
