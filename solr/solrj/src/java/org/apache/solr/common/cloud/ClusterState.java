@@ -259,6 +259,10 @@ public class ClusterState implements JSONWriter.Writable {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
+    } else {
+      //prior to this call, PRS provider is set. We should unset it before
+      // deserializing the replicas and slices
+      DocCollection.clearReplicaStateProvider();
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
