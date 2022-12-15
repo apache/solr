@@ -30,21 +30,23 @@ import org.junit.Test;
 /** Test for TermComponent's response in Solrj */
 public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
+/*
   @BeforeClass
   public static void beforeClass() throws Exception {
     EmbeddedSolrServerTestRule.initCore();
   }
+*/
 
-  @Before
+/*  @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
     assertU(commit());
     assertU(optimize());
-  }
+  }*/
 
-  @Test
+  /*@Test
   public void testTermsResponse() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
@@ -70,5 +72,5 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     Term term = terms.get(0);
     assertEquals(term.getTerm(), "samsung");
     assertEquals(term.getFrequency(), 1);
-  }
+  }*/
 }

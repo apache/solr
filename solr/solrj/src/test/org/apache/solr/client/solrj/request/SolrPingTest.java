@@ -29,6 +29,7 @@ import org.junit.Test;
 /** Test SolrPing in Solrj */
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
+/*
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
@@ -49,8 +50,9 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     getSolrClient().add(doc);
     getSolrClient().commit(true, true);
   }
+*/
 
-  @Test
+/*  @Test
   public void testEnabledSolrPing() throws Exception {
     SolrPing ping = new SolrPing();
     SolrPingResponse rsp = null;
@@ -75,5 +77,5 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
     assertNotNull(rsp);
-  }
+  }*/
 }

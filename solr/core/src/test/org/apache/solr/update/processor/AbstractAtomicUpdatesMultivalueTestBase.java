@@ -16,6 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.SolrTestCaseJ4.assertQ;
+import static org.apache.solr.SolrTestCaseJ4.initCore;
+import static org.apache.solr.SolrTestCaseJ4.req;
+import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 
@@ -56,13 +60,14 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   abstract RequestWriterSupplier getRequestWriterSupplier();
 
-  @Override
+/*
   public synchronized EmbeddedSolrServer getSolrClient() {
     return new EmbeddedSolrServer(
-        h.getCoreContainer(),
+        solrClientTestRule.getTestHarness().getCoreContainer(),
         EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME,
         getRequestWriterSupplier());
   }
+*/
 
   private static void assertQR(
       final String fieldName, final String queryValue, final int numFound) {

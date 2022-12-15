@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 
 /**
@@ -25,8 +24,8 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
-  @BeforeClass
+/*   @BeforeClass
   public static void beforeTest() throws Exception {
     EmbeddedSolrServerTestRule.initCore();
-  }
+  }*/
 }

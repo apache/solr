@@ -16,25 +16,21 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SolrClientTestRule extends ExternalResource {
+public abstract class SolrClientTestRule extends ExternalResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final Path path;
-  private final String defaultCoreName;
 
-  protected SolrClient solrClient;
 
-  public SolrClientTestRule(Path path, String defaultCoreName) {
-    this.path = path;
-    this.defaultCoreName = defaultCoreName;
+  protected SolrClientTestRule() {
   }
 
   @Override
@@ -42,11 +38,11 @@ public class SolrClientTestRule extends ExternalResource {
     super.before();
   }
 
-  public SolrClient getSolrClient() {
-    return new EmbeddedSolrServer(getSolrHome(), defaultCoreName);
-  }
+  public abstract SolrClient getSolrClient();
 
-  public Path getSolrHome() {
-    return path;
-  }
+  public abstract void clearIndex() throws SolrServerException, IOException;
+
+
+  public abstract Path getSolrHome();
+
 }

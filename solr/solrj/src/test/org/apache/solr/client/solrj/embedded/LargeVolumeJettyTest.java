@@ -17,12 +17,11 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
-  @BeforeClass
+/* @BeforeClass
   public static void beforeTest() throws Exception {
     EmbeddedSolrServerTestRule.initCore();
-  }
+  }*/
 }

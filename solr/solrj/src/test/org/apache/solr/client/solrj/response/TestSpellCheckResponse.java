@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
@@ -36,16 +37,17 @@ import org.junit.Test;
  */
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
-  @BeforeClass
+/*  @BeforeClass
   public static void beforeClass() throws Exception {
     EmbeddedSolrServerTestRule.initCore();
-  }
+  }*/
 
   static String field = "name";
 
+  SolrClient client = solrClientTestRule.getSolrClient();
+
   @Test
   public void testSpellCheckResponse() throws Exception {
-    getSolrClient();
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
@@ -65,7 +67,6 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testSpellCheckResponse_Extended() throws Exception {
-    getSolrClient();
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
@@ -105,7 +106,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testSpellCheckCollationResponse() throws Exception {
-    getSolrClient();
+
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
