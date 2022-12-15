@@ -1685,7 +1685,7 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
-    LazyPrsSupplier prsSupplier = new LazyPrsSupplier(zkClient, collectionPath);
+    PerReplicaStatesFetcher.LazyPrsSupplier prsSupplier = new PerReplicaStatesFetcher.LazyPrsSupplier(zkClient, collectionPath);
     while (true) {
       DocCollection.initReplicaStateProvider(prsSupplier);
       try {
@@ -2461,29 +2461,5 @@ public class ZkStateReader implements SolrCloseable {
 
   public DocCollection getCollection(String collection) {
     return clusterState == null ? null : clusterState.getCollectionOrNull(collection);
-  }
-
-  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
-    private final SolrZkClient zkClient;
-    private final String collectionPath;
-
-    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
-      this.collectionPath = collectionPath;
-      this.zkClient = zkClient;
-    }
-
-    @Override
-    public PerReplicaStates get() {
-      if (prs == null) {
-        prs = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "per-replica-state ver: {} fetched for initializing {} ",
-              prs.cversion,
-              collectionPath);
-        }
-      }
-      return super.get();
-    }
   }
 }
