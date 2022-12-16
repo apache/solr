@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
@@ -24,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -84,7 +86,9 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   @Test
   public void test() throws Exception {
     // add just one document (docid 0)
-    String bigFieldValue = randomXmlUsableUnicodeString();
+    StringWriter w = new StringWriter();
+    XML.escapeCharData(randomXmlUsableUnicodeString(), w);
+    String bigFieldValue = w.toString();
     assertU(adoc(ID_FLD, "101", LAZY_FIELD, "lzy", BIG_FIELD, bigFieldValue));
     assertU(commit());
 
