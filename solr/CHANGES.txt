@@ -188,6 +188,8 @@ Bug Fixes
 ---------------------
 * SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
 
+==================  9.1.0 ==================
+
 New Features
 ---------------------
 * SOLR-16246: Introduced pre-filtering in KnnQParser (Elia Porciani via Alessandro Benedetti).
