@@ -23,6 +23,7 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -39,8 +40,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -95,23 +98,43 @@ public class PackageUtils {
     if (sig != null) {
       params.add("sig", sig);
     }
-    V2Response rsp =
-        new V2Request.Builder(resource)
-            .withMethod(SolrRequest.METHOD.PUT)
-            .withPayload(buffer)
-            .forceV2(true)
-            .withMimeType("application/octet-stream")
-            .withParams(params)
-            .build()
-            .process(client);
-    if (!name.equals(rsp.getResponse().get(CommonParams.FILE))) {
-      throw new SolrException(
-          ErrorCode.BAD_REQUEST,
-          "Mismatch in file uploaded. Uploaded: "
-              + rsp.getResponse().get(CommonParams.FILE)
-              + ", Original: "
-              + name);
-    }
+    GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.PUT, resource, params) {
+      @Override
+      public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+        return new RequestWriter.ContentWriter() {
+          public final ByteBuffer payload = buffer;
+
+          @Override
+          public void write(OutputStream os) throws IOException {
+            if (payload == null) return;
+            os.write(payload.array());
+          }
+
+          @Override
+          public String getContentType() {
+            return "application/octet-stream";
+          }
+        };
+      }
+    };
+    client.request(request);
+//    V2Response rsp =
+//        new V2Request.Builder(resource)
+//            .withMethod(SolrRequest.METHOD.PUT)
+//            .withPayload(buffer)
+//            .forceV2(true)
+//            .withMimeType("application/octet-stream")
+//            .withParams(params)
+//            .build()
+//            .process(client);
+//    if (!name.equals(rsp.getResponse().get(CommonParams.FILE))) {
+//      throw new SolrException(
+//          ErrorCode.BAD_REQUEST,
+//          "Mismatch in file uploaded. Uploaded: "
+//              + rsp.getResponse().get(CommonParams.FILE)
+//              + ", Original: "
+//              + name);
+//    }
   }
 
   /** Download JSON from the url and deserialize into klass. */
