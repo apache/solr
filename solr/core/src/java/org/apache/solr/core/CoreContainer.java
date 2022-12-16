@@ -174,7 +174,7 @@ public class CoreContainer {
     ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
   }
 
-  final SolrCores solrCores = new SolrCores(this);
+  final SolrCores solrCores;
 
   public static class CoreLoadFailure {
 
@@ -390,6 +390,7 @@ public class CoreContainer {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
+    this.solrCores = newSolrCores(config);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
@@ -421,6 +422,15 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
+  }
+
+  private SolrCores newSolrCores(NodeConfig config) {
+    final PluginInfo info = config.getSolrCoresConfig();
+    if (info == null) {
+      return new SolrCores(this);
+    } else {
+      return loader.newInstance(info.className, SolrCores.class, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
+    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -636,6 +646,7 @@ public class CoreContainer {
    */
   protected CoreContainer(Object testConstructor) {
     solrHome = null;
+    solrCores = null;
     nodeKeyPair = null;
     loader = null;
     coresLocator = null;
@@ -757,8 +768,6 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
-
-    solrCores.load(loader);
 
     StartupLoggingUtils.checkRequestLogging();
 
@@ -1772,11 +1781,16 @@ public class CoreContainer {
   }
 
   /**
-   * Gets the permanent (non-transient) cores that are currently loaded.
+   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}.  Caller doesn't need to
+   * close.
+   *
+   * NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
+   * Prefer {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close it.
    *
    * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted).
+   *     can be sorted).  Don't need to close them.
    */
+  @Deprecated
   public List<SolrCore> getCores() {
     return solrCores.getCores();
   }
@@ -2284,17 +2298,6 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
-  /**
-   * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this
-   * on a loaded core, the unloaded descriptor will be returned.
-   *
-   * @param cname - name of the unloaded core descriptor to load. NOTE:
-   * @return a coreDescriptor. May return null
-   */
-  public CoreDescriptor getUnloadedCoreDescriptor(String cname) {
-    return solrCores.getUnloadedCoreDescriptor(cname);
-  }
-
   /** The primary path of a Solr server's config, cores, and misc things. Absolute. */
   // TODO return Path
   public String getSolrHome() {
@@ -2377,11 +2380,6 @@ public class CoreContainer {
       throw new IllegalStateException(
           "Aliases don't exist in a non-cloud context, check isZookeeperAware() before calling this method.");
     }
-  }
-
-  // Occasionally we need to access the transient cache handler in places other than coreContainer.
-  public TransientSolrCoreCache getTransientCache() {
-    return solrCores.getTransientCacheHandler();
   }
 
   /**

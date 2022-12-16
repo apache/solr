@@ -340,7 +340,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
     } else {
       if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
         // It would be a real mistake to load the cores just to get the status
-        CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
+        CoreDescriptor desc = cores.getCoreDescriptor(cname);
         if (desc != null) {
           info.add(NAME, desc.getName());
           info.add("instanceDir", desc.getInstanceDir());

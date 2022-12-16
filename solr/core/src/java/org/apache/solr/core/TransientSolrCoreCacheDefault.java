@@ -36,10 +36,13 @@ import org.slf4j.LoggerFactory;
  * transient cores descriptors, including the cores in the cache as well as all the others.
  */
 public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
+  // TODO move into TransientSolrCores; remove TransientSolrCoreCache base/abstraction.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
+  public static final String TRANSIENT_CACHE_SIZE = "transientCacheSize";
 
-  protected final CoreContainer coreContainer;
+  private final TransientSolrCores solrCores;
 
   /**
    * "Lazily loaded" cores cache with limited size. When the max size is reached, the least accessed
@@ -53,12 +56,9 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   protected final Map<String, CoreDescriptor> transientDescriptors;
 
-  /**
-   * @param coreContainer The enclosing {@link CoreContainer}.
-   */
-  public TransientSolrCoreCacheDefault(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
-    int cacheMaxSize = getConfiguredCacheMaxSize(coreContainer);
+  public TransientSolrCoreCacheDefault(TransientSolrCores solrCores) {
+    this.solrCores = solrCores;
+    int cacheMaxSize = getConfiguredCacheMaxSize(solrCores.initArgs);
 
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
@@ -89,7 +89,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   }
 
   private void onEvict(SolrCore core) {
-    final SolrCores solrCores = coreContainer.solrCores;
     assert Thread.holdsLock(solrCores.getModifyLock());
     // note: the cache's maximum size isn't strictly enforced; it can grow some if we un-evict
     if (solrCores.hasPendingCoreOps(core.getName())) {
@@ -119,20 +118,15 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
   }
 
-  private int getConfiguredCacheMaxSize(CoreContainer container) {
-    int configuredCacheMaxSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
-    NodeConfig cfg = container.getNodeConfig();
-    if (cfg.getTransientCachePluginInfo() == null) {
-      // Still handle just having transientCacheSize defined in the body of solr.xml
-      // not in a transient handler clause.
-      configuredCacheMaxSize = cfg.getTransientCacheSize();
-    } else {
-      NamedList<?> args = cfg.getTransientCachePluginInfo().initArgs;
-      Object obj = args.get("transientCacheSize");
-      if (obj != null) {
-        configuredCacheMaxSize = (int) obj;
-      }
+  private int getConfiguredCacheMaxSize(NamedList<?> initArgs) {
+    int configuredCacheMaxSize = DEFAULT_TRANSIENT_CACHE_SIZE;
+
+    NamedList<?> args = initArgs;
+    Object obj = args.get(TRANSIENT_CACHE_SIZE);
+    if (obj != null) {
+      configuredCacheMaxSize = (int) obj;
     }
+
     if (configuredCacheMaxSize < 0) { // Trap old flag
       configuredCacheMaxSize = Integer.MAX_VALUE;
     }
@@ -140,17 +134,9 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   }
 
   @Override
-  public Collection<SolrCore> prepareForShutdown() {
-    // Return a copy of the values.
-    List<SolrCore> ret = new ArrayList<>(transientCores.asMap().values());
+  public void close() {
     transientCores.invalidateAll();
     transientCores.cleanUp();
-    return ret;
-  }
-
-  @Override
-  public CoreContainer getContainer() {
-    return coreContainer;
   }
 
   @Override
