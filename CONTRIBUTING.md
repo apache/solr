@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to the Apache Solr project. Solr continues to improve via the many contributions of developers around the world and new contributions are welcomed and encouraged.
 
-Your suggestions, comments and comments on Doris can be made directly through the [Apache Solr JIRA](https://issues.apache.org/jira/projects/SOLR/issues).
+Your suggestions and comments can be made directly through the [Apache Solr JIRA](https://issues.apache.org/jira/projects/SOLR/issues).
 
 There are many ways to participate in and contribute to Solr, such as: code implementation, test implementation, documentation improvements.
 
