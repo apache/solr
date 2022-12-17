@@ -107,7 +107,8 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("manage path", "testManagementPath", cfg.getManagementPath());
     assertEquals("shardLib", "testSharedLib", cfg.getSharedLibDirectory());
     assertTrue("schema cache", cfg.hasSchemaCache());
-    assertEquals("trans cache size", 66, cfg.getSolrCoresConfig().initArgs.get("transientCacheSize"));
+    assertEquals(
+        "trans cache size", 66, cfg.getSolrCoresConfig().initArgs.get("transientCacheSize"));
     assertEquals("zk client timeout", 77, ccfg.getZkClientTimeout());
     assertEquals("zk host", "testZkHost", ccfg.getZkHost());
     assertEquals("zk ACL provider", "DefaultZkACLProvider", ccfg.getZkACLProviderClass());

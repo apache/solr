@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * A {@link SolrCores} that supports {@link CoreDescriptor#isTransient()}.
- */
+/** A {@link SolrCores} that supports {@link CoreDescriptor#isTransient()}. */
 public class TransientSolrCores extends SolrCores {
 
   public final NamedList<?> initArgs;
@@ -43,6 +41,7 @@ public class TransientSolrCores extends SolrCores {
     transientSolrCoreCache.close();
   }
 
+  @Override
   public void addCoreDescriptor(CoreDescriptor p) {
     if (p.isTransient()) {
       synchronized (modifyLock) {
@@ -53,6 +52,7 @@ public class TransientSolrCores extends SolrCores {
     }
   }
 
+  @Override
   protected void removeCoreDescriptor(CoreDescriptor p) {
     if (p.isTransient()) {
       synchronized (modifyLock) {
@@ -63,6 +63,7 @@ public class TransientSolrCores extends SolrCores {
     }
   }
 
+  @Override
   // Returns the old core if there was a core of the same name.
   // WARNING! This should be the _only_ place you put anything into the list of transient cores!
   public SolrCore putCore(CoreDescriptor cd, SolrCore core) {
@@ -79,7 +80,8 @@ public class TransientSolrCores extends SolrCores {
   @Override
   public List<String> getLoadedCoreNames() {
     synchronized (modifyLock) {
-      return distinctSetsUnion(super.getLoadedCoreNames(), getTransientCacheHandler().getLoadedCoreNames());
+      return distinctSetsUnion(
+          super.getLoadedCoreNames(), getTransientCacheHandler().getLoadedCoreNames());
     }
   }
 
@@ -127,8 +129,8 @@ public class TransientSolrCores extends SolrCores {
   @Override
   public int getNumUnloadedCores() {
     synchronized (modifyLock) {
-      return super.getNumUnloadedCores() +
-          getTransientCacheHandler().getAllCoreNames().size()
+      return super.getNumUnloadedCores()
+          + getTransientCacheHandler().getAllCoreNames().size()
           - getTransientCacheHandler().getLoadedCoreNames().size();
     }
   }

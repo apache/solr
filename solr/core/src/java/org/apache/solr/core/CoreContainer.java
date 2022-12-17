@@ -429,7 +429,12 @@ public class CoreContainer {
     if (info == null) {
       return new SolrCores(this);
     } else {
-      return loader.newInstance(info.className, SolrCores.class, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
+      return loader.newInstance(
+          info.className,
+          SolrCores.class,
+          null,
+          new Class<?>[] {CoreContainer.class},
+          new Object[] {this});
     }
   }
 
@@ -1781,14 +1786,14 @@ public class CoreContainer {
   }
 
   /**
-   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}.  Caller doesn't need to
+   * Gets all loaded cores, consistent with {@link #getLoadedCoreNames()}. Caller doesn't need to
    * close.
    *
-   * NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
+   * <p>NOTE: rather dangerous API because each core is not reserved (could in theory be closed).
    * Prefer {@link #getLoadedCoreNames()} and then call {@link #getCore(String)} then close it.
    *
    * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted).  Don't need to close them.
+   *     can be sorted). Don't need to close them.
    */
   @Deprecated
   public List<SolrCore> getCores() {
