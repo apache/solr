@@ -180,6 +180,8 @@ Other Changes
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
+* SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
+
 ==================  9.1.1 ==================
 
 Bug Fixes

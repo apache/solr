@@ -3009,7 +3009,26 @@ public class SolrCLI implements CLIO {
       } else if ("films".equals(exampleName) && !alreadyExists) {
         SolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
 
-        echo("Adding name and initial_release_data fields to films schema \"_default\"");
+        echo("Adding dense vector field type to films schema \"_default\"");
+        try {
+          SolrCLI.postJsonToSolr(
+              solrClient,
+              "/" + collectionName + "/schema",
+              "{\n"
+                  + "        \"add-field-type\" : {\n"
+                  + "          \"name\":\"knn_vector_10\",\n"
+                  + "          \"class\":\"solr.DenseVectorField\",\n"
+                  + "          \"vectorDimension\":10,\n"
+                  + "          \"similarityFunction\":cosine\n"
+                  + "          \"knnAlgorithm\":hnsw\n"
+                  + "        }\n"
+                  + "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        echo(
+            "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
         try {
           SolrCLI.postJsonToSolr(
               solrClient,
@@ -3024,6 +3043,12 @@ public class SolrCLI implements CLIO {
                   + "        \"add-field\" : {\n"
                   + "          \"name\":\"initial_release_date\",\n"
                   + "          \"type\":\"pdate\",\n"
+                  + "          \"stored\":true\n"
+                  + "        },\n"
+                  + "        \"add-field\" : {\n"
+                  + "          \"name\":\"film_vector\",\n"
+                  + "          \"type\":\"knn_vector_10\",\n"
+                  + "          \"indexed\":true\n"
                   + "          \"stored\":true\n"
                   + "        }\n"
                   + "      }");
