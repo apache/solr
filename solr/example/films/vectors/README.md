@@ -1,10 +1,27 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
 We present in this directory the Python scripts that were used to create the `film_vector` field for the films dataset.
 
  - [films.py](./films.py): define some general purpose functions to read, save and process the films dataset.
  - [create_model.py](./create_model.py): creates an embedding model to represent the films.
  - [create_dataset.py](./create_dataset.py): uses the embedding model to calculate the vectors of the films and create the new dataset with the extra `film_vector` field.
 
-To replicate the example you have to run the `create_model.py` script first, followed by `create_dataset.py`. We will describe and discuss each of these scripts below. 
+To replicate the example you have to run the `create_model.py` script first, followed by `create_dataset.py`. We will describe and discuss each of these scripts below.
 
 ## Creating the Model (`create_model.py`)
 
