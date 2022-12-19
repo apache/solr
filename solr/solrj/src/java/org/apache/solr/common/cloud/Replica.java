@@ -139,7 +139,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String shard, collection;
   private PerReplicaStates.State replicaState;
 
-  private DocCollection.PrsSupplier statesProvider;
+  private DocCollection.PrsSupplier prsSupplier;
 
   // mutable
   private State state;
@@ -214,7 +214,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   private void readPrs() {
-    statesProvider = DocCollection.getReplicaStatesProvider();
+    prsSupplier = DocCollection.getReplicaStatesProvider();
   }
 
   private final void validate() {
@@ -310,6 +310,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
+    if (prsSupplier != null) {
+      PerReplicaStates.State st = prsSupplier.get().get(name);
+      return st == null ? false : st.isLeader;
+    }
     return getBool(ReplicaStateProps.LEADER, false);
   }
 
@@ -349,7 +353,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public PerReplicaStates.State getReplicaState() {
-    return statesProvider == null ? replicaState : statesProvider.get().get(name);
+    return prsSupplier == null ? replicaState : prsSupplier.get().get(name);
   }
 
   @Override
