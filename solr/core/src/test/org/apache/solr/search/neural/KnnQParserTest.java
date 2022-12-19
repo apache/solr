@@ -340,19 +340,19 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
-            req(
-                    CommonParams.Q,
-                    "{!knn f=vector topK=10}" + vectorToSearch,
-                    "fq",
-                    "{!frange l=0.99}$q",
-                    "fl",
-                    "*,score"),
-            "//result[@numFound='5']",
-            "//result/doc[1]/str[@name='id'][.='1']",
-            "//result/doc[2]/str[@name='id'][.='4']",
-            "//result/doc[3]/str[@name='id'][.='2']",
-            "//result/doc[4]/str[@name='id'][.='10']",
-            "//result/doc[5]/str[@name='id'][.='3']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=10}" + vectorToSearch,
+            "fq",
+            "{!frange l=0.99}$q",
+            "fl",
+            "*,score"),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='10']",
+        "//result/doc[5]/str[@name='id'][.='3']");
   }
 
   @Test
@@ -360,18 +360,18 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
-            req(
-                    CommonParams.Q,
-                    "{!knn f=vector topK=4}" + vectorToSearch,
-                    "fq",
-                    "id:(3 4 9 2)",
-                    "fq",
-                    "{!frange l=0.99}$q",
-                    "fl",
-                    "id"),
-            "//result[@numFound='2']",
-            "//result/doc[1]/str[@name='id'][.='4']",
-            "//result/doc[2]/str[@name='id'][.='2']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fq",
+            "id:(3 4 9 2)",
+            "fq",
+            "{!frange l=0.99}$q",
+            "fl",
+            "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='2']");
   }
 
   @Test

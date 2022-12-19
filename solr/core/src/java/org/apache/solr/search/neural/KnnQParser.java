@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.neural;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -32,9 +34,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SyntaxError;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class KnnQParser extends QParser {
 
@@ -98,7 +97,7 @@ public class KnnQParser extends QParser {
         } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-        
+
         if (preFilters.size() == 0) {
           return null;
         } else if (preFilters.size() == 1) {
@@ -116,14 +115,17 @@ public class KnnQParser extends QParser {
   }
 
   private List<Query> acceptPreFiltersOnly(List<Query> filters) {
-    return filters.stream().filter(q -> {
-      if (q instanceof ExtendedQuery) {
-        ExtendedQuery eq = (ExtendedQuery) q;
-        return eq.getCost() == 0;
-      } else {
-        return true;
-      }
-    }).collect(Collectors.toList());
+    return filters.stream()
+        .filter(
+            q -> {
+              if (q instanceof ExtendedQuery) {
+                ExtendedQuery eq = (ExtendedQuery) q;
+                return eq.getCost() == 0;
+              } else {
+                return true;
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   /**
@@ -133,6 +135,7 @@ public class KnnQParser extends QParser {
    * @return a float array
    */
   private static float[] parseVector(String value, int dimension) {
+
     if (!value.startsWith("[") || !value.endsWith("]")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
