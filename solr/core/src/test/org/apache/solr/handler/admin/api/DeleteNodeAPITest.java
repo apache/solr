@@ -16,69 +16,42 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Map;
-import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link DeleteNodeAPI} */
 public class DeleteNodeAPITest extends SolrTestCaseJ4 {
-
-  private CoreContainer mockCoreContainer;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
-  private DeleteNodeAPI deleteNodeAPI;
-  private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
-  private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
     assumeWorkingMockito();
   }
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
-    mockCoreContainer = mock(CoreContainer.class);
-    mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
-    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
-        .thenReturn(new OverseerSolrResponse(new NamedList<>()));
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    queryResponse = new SolrQueryResponse();
-    deleteNodeAPI = new DeleteNodeAPI(mockCoreContainer, mockQueryRequest, queryResponse);
-    messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
-
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+  @Test
+  public void testV1InvocationThrowsErrorsIfRequiredParametersMissing() {
+    final var api = mock(DeleteNodeAPI.class);
+    final SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              DeleteNodeAPI.invokeUsingV1Inputs(api, new ModifiableSolrParams());
+            });
+    assertEquals("Missing required parameter: node", e.getMessage());
   }
 
   @Test
-  public void testValidOverseerMessageIsCreated() throws Exception {
+  public void testValidOverseerMessageIsCreated() {
     DeleteNodeAPI.DeleteNodeRequestBody requestBody =
         new DeleteNodeAPI.DeleteNodeRequestBody("async");
-    deleteNodeAPI.deleteNode("nodeNameToDelete", requestBody);
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
-
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final ZkNodeProps createdMessage =
+        DeleteNodeAPI.createRemoteMessage("nodeNameToDelete", requestBody);
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
     assertEquals(3, createdMessageProps.size());
     assertEquals("nodeNameToDelete", createdMessageProps.get("node"));
@@ -88,10 +61,7 @@ public class DeleteNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestBodyCanBeOmitted() throws Exception {
-    deleteNodeAPI.deleteNode("nodeNameToDelete", null);
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
-
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final ZkNodeProps createdMessage = DeleteNodeAPI.createRemoteMessage("nodeNameToDelete", null);
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
     assertEquals(2, createdMessageProps.size());
     assertEquals("nodeNameToDelete", createdMessageProps.get("node"));

@@ -36,6 +36,8 @@ import javax.ws.rs.Produces;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -87,7 +89,15 @@ public class DeleteNodeAPI extends AdminAPIBase {
     return response;
   }
 
-  public ZkNodeProps createRemoteMessage(String nodeName, DeleteNodeRequestBody requestBody) {
+  public static SolrJerseyResponse invokeUsingV1Inputs(DeleteNodeAPI apiInstance, SolrParams params)
+      throws Exception {
+    final RequiredSolrParams requiredParams = params.required();
+    final DeleteNodeRequestBody requestBody = new DeleteNodeRequestBody(params.get(ASYNC));
+    return apiInstance.deleteNode(requiredParams.get("node"), requestBody);
+  }
+
+  public static ZkNodeProps createRemoteMessage(
+      String nodeName, DeleteNodeRequestBody requestBody) {
     Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put("node", nodeName);
     if (requestBody != null) {

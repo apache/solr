@@ -1824,13 +1824,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETENODE_OP(
         DELETENODE,
         (req, rsp, h) -> {
-          final SolrParams params = req.getParams();
-          final RequiredSolrParams requiredParams = params.required();
-          final DeleteNodeAPI.DeleteNodeRequestBody requestBody =
-              new DeleteNodeAPI.DeleteNodeRequestBody(params.get(ASYNC));
           final DeleteNodeAPI deleteNodeAPI = new DeleteNodeAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteNodeResponse =
-              deleteNodeAPI.deleteNode(requiredParams.get("node"), requestBody);
+              DeleteNodeAPI.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
           return null;
         }),
