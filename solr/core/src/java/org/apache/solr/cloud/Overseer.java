@@ -199,9 +199,15 @@ public class Overseer implements SolrCloseable {
 
     private SolrMetricsContext clusterStateUpdaterMetricContext;
 
+    private final int minimumStateSizeForCompression;
+
     private boolean isClosed = false;
 
-    public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
+    public ClusterStateUpdater(
+        final ZkStateReader reader,
+        final String myId,
+        Stats zkStats,
+        int minimumStateSizeForCompression) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
       this.stateUpdateQueue = getStateUpdateQueue(zkStats);
@@ -211,6 +217,7 @@ public class Overseer implements SolrCloseable {
       this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
+      this.minimumStateSizeForCompression = minimumStateSizeForCompression;
 
       clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
       clusterStateUpdaterMetricContext.gauge(
@@ -263,7 +270,7 @@ public class Overseer implements SolrCloseable {
             try {
               reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
-              zkStateWriter = new ZkStateWriter(reader, stats);
+              zkStateWriter = new ZkStateWriter(reader, stats, minimumStateSizeForCompression);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -730,7 +737,9 @@ public class Overseer implements SolrCloseable {
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     updaterThread =
         new OverseerThread(
-            tg, new ClusterStateUpdater(reader, id, stats), "OverseerStateUpdate-" + id);
+            tg,
+            new ClusterStateUpdater(reader, id, stats, config.getMinimumStateSizeForCompression()),
+            "OverseerStateUpdate-" + id);
     updaterThread.setDaemon(true);
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
