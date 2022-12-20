@@ -29,7 +29,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.ExtendedQuery;
+import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
@@ -114,13 +114,21 @@ public class KnnQParser extends QParser {
     return null;
   }
 
+  /**
+   * This methods filters out all the post-filters from the filters in input, keeping only the
+   * pre-filters. According to the documentation a filter query is a post-filter if: it implements
+   * {@link PostFilter} and ExtendedQuery.getCost() returns no less than 100
+   *
+   * @param filters filter queries in the knn query request
+   * @return the list of pre-filters
+   */
   private List<Query> acceptPreFiltersOnly(List<Query> filters) {
     return filters.stream()
         .filter(
             q -> {
-              if (q instanceof ExtendedQuery) {
-                ExtendedQuery eq = (ExtendedQuery) q;
-                return eq.getCost() == 0;
+              if (q instanceof PostFilter) {
+                PostFilter filter = (PostFilter) q;
+                return filter.getCost() < 100;
               } else {
                 return true;
               }
