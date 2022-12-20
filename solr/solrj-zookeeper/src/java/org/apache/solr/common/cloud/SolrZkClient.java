@@ -31,12 +31,14 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.zip.DataFormatException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -432,6 +434,14 @@ public class SolrZkClient implements Closeable {
       result = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
     } else {
       result = keeper.getData(path, wrapWatcher(watcher), stat);
+    }
+    if (CompressionUtil.isCompressedBytes(result)) {
+      log.debug("Zookeeper data at path {} is compressed", path);
+      try {
+        result = CompressionUtil.decompressBytes(result);
+      } catch (DataFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
     metrics.reads.increment();
     if (result != null) {

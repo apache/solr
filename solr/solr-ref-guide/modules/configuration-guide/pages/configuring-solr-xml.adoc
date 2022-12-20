@@ -53,7 +53,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
-
+    <int name="minimumStateSizeForCompression">${minimumStateSizeForCompression:-1}</int>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -421,6 +421,15 @@ Optional parameters that can be specified if you are using xref:deployment-guide
 |===
 +
 If `true`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
+
+`minimumStateSizeForCompression`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: -1
+|===
++
+Optional parameter to enable compression of the state.json over the wire and stored in Zookeeper. The value provided is the minimum size in bytes to compress state.json, i.e. any state.json above that size in bytes will be compressed. The default is -1, meaning state.json is always uncompressed.
 
 === The <logging> Element
 

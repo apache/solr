@@ -54,6 +54,8 @@ public class CloudConfig {
 
   private final boolean useDistributedCollectionConfigSetExecution;
 
+  private final int minimumStateSizeForCompression;
+
   CloudConfig(
       String zkHost,
       int zkClientTimeout,
@@ -71,7 +73,8 @@ public class CloudConfig {
       String pkiHandlerPrivateKeyPath,
       String pkiHandlerPublicKeyPath,
       boolean useDistributedClusterStateUpdates,
-      boolean useDistributedCollectionConfigSetExecution) {
+      boolean useDistributedCollectionConfigSetExecution,
+      int minimumStateSizeForCompression) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -89,6 +92,7 @@ public class CloudConfig {
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
     this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
     this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
+    this.minimumStateSizeForCompression = minimumStateSizeForCompression;
 
     if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
       throw new SolrException(
@@ -173,6 +177,10 @@ public class CloudConfig {
     return useDistributedCollectionConfigSetExecution;
   }
 
+  public int getMinimumStateSizeForCompression() {
+    return minimumStateSizeForCompression;
+  }
+
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
@@ -180,6 +188,8 @@ public class CloudConfig {
     private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45; // 45 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
+    private static final int DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION =
+        -1; // By default compression for state is disabled
 
     private String zkHost;
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
@@ -199,6 +209,7 @@ public class CloudConfig {
     private String pkiHandlerPublicKeyPath;
     private boolean useDistributedClusterStateUpdates = false;
     private boolean useDistributedCollectionConfigSetExecution = false;
+    private int minimumStateSizeForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -286,6 +297,12 @@ public class CloudConfig {
       return this;
     }
 
+    public CloudConfigBuilder setMinimumStateSizeForCompression(
+        int minimumStateSizeForCompression) {
+      this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+      return this;
+    }
+
     public CloudConfig build() {
       return new CloudConfig(
           zkHost,
@@ -304,7 +321,8 @@ public class CloudConfig {
           pkiHandlerPrivateKeyPath,
           pkiHandlerPublicKeyPath,
           useDistributedClusterStateUpdates,
-          useDistributedCollectionConfigSetExecution);
+          useDistributedCollectionConfigSetExecution,
+          minimumStateSizeForCompression);
     }
   }
 }
