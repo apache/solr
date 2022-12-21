@@ -11,6 +11,8 @@ Bug Fixes
 
 * SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
 
+* SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
+
 ==================  9.1.0 ==================
 
 New Features
