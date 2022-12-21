@@ -62,8 +62,6 @@ public class LTRScoringQuery extends Query implements Accountable {
   private final boolean extractAllFeatures;
   private final LTRThreadModule ltrThreadMgr;
 
-  private final boolean isNullSameAsZero;
-
   // limits the number of threads per query, so that multiple requests can be serviced
   // simultaneously
   private final Semaphore querySemaphore;
@@ -90,16 +88,22 @@ public class LTRScoringQuery extends Query implements Accountable {
     this(isNullSameAsZero, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
 
-  public LTRScoringQuery(boolean isNullSameAsZero, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(isNullSameAsZero, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+  public LTRScoringQuery(
+      boolean isNullSameAsZero, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
+    this(
+        isNullSameAsZero,
+        ltrScoringModel,
+        Collections.<String, String[]>emptyMap(),
+        extractAllFeatures,
+        null);
   }
 
   public LTRScoringQuery(
-          LTRScoringModel ltrScoringModel,
-          Map<String, String[]> externalFeatureInfo,
-          boolean extractAllFeatures,
-          LTRThreadModule ltrThreadMgr) {
-    this.isNullSameAsZero = true;
+      LTRScoringModel ltrScoringModel,
+      Map<String, String[]> externalFeatureInfo,
+      boolean extractAllFeatures,
+      LTRThreadModule ltrThreadMgr) {
+    Feature.setIsNullSameAsZero(true);
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
@@ -117,7 +121,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       Map<String, String[]> externalFeatureInfo,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    this.isNullSameAsZero = isNullSameAsZero;
+    Feature.setIsNullSameAsZero(isNullSameAsZero);
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
@@ -444,9 +448,6 @@ public class LTRScoringQuery extends Query implements Accountable {
         String featName = extractedFeatureWeights[i].getName();
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        if (!isNullSameAsZero) {
-          value = Float.NaN;
-        }
         featuresInfo[featId] = new FeatureInfo(featName, value, false);
       }
     }
@@ -491,34 +492,12 @@ public class LTRScoringQuery extends Query implements Accountable {
       return ltrScoringModel.score(modelFeatureValuesNormalized);
     }
 
-    private float makeNormalizedFeaturesAndScoreWithNulls() {
-      int pos = 0;
-      for (final Feature.FeatureWeight feature : modelFeatureWeights) {
-        final int featureId = feature.getIndex();
-        FeatureInfo fInfo = featuresInfo[featureId];
-        // not checking for finfo == null as that would be a bug we should catch
-        if (fInfo.isUsed()) {
-          modelFeatureValuesNormalized[pos] = fInfo.getValue();
-        } else {
-          modelFeatureValuesNormalized[pos] = Float.NaN;
-        }
-        pos++;
-      }
-      ltrScoringModel.normalizeFeaturesInPlaceWithNulls(modelFeatureValuesNormalized);
-      return ltrScoringModel.scoreNullableFeatures(modelFeatureValuesNormalized);
-    }
-
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
 
       final Explanation[] explanations = new Explanation[this.featuresInfo.length];
       for (final Feature.FeatureWeight feature : extractedFeatureWeights) {
-        if (!isNullSameAsZero) {
-          explanations[feature.getIndex()] = feature.explainWithMissingBranch(context, doc);
-        }
-        else {
-          explanations[feature.getIndex()] = feature.explain(context, doc);
-        }
+        explanations[feature.getIndex()] = feature.explain(context, doc);
       }
       final List<Explanation> featureExplanations = new ArrayList<>();
       for (int idx = 0; idx < modelFeatureWeights.length; ++idx) {
@@ -538,9 +517,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       for (int i = 0; i < extractedFeatureWeights.length; ++i) {
         int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
-        if (!isNullSameAsZero) {
-          value = Float.NaN;
-        }
         // need to set default value everytime as the default value is used in 'dense'
         // mode even if used=false
         featuresInfo[featId].setValue(value);
@@ -665,12 +641,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               featuresInfo[featureId].setUsed(true);
             }
           }
-          if (!isNullSameAsZero) {
-            return makeNormalizedFeaturesAndScoreWithNulls();
-          }
-          else {
-            return makeNormalizedFeaturesAndScore();
-          }
+          return makeNormalizedFeaturesAndScore();
         }
 
         @Override
@@ -756,12 +727,7 @@ public class LTRScoringQuery extends Query implements Accountable {
               }
             }
           }
-          if (!isNullSameAsZero) {
-            return makeNormalizedFeaturesAndScoreWithNulls();
-          }
-          else {
-            return makeNormalizedFeaturesAndScore();
-          }
+          return makeNormalizedFeaturesAndScore();
         }
 
         @Override

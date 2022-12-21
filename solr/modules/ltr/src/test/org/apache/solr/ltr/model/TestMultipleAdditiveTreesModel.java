@@ -87,8 +87,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
 
-  private void doTestMultipleAdditiveTreesNullSameAsZero()
-          throws Exception {
+  private void doTestMultipleAdditiveTreesNullSameAsZero() throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -96,7 +95,8 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("fl", "*,score");
 
     query.add(
-            "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=dsjkafljjk}");
+        "rq",
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=dsjkafljjk}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
@@ -145,7 +145,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("fl", "*,score,[fv]");
     query.add("rows", "3");
 
-    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=w3}");
+    query.add(
+        "rq",
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -153,23 +155,24 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replaceAll("\n", " ");
 
-    assertThat(qryResult, containsString("\"debug\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));
 
-    assertThat(qryResult, containsString("\"explain\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"explain\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("explain"));
 
-    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+    MatcherAssert.assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    MatcherAssert.assertThat(
+        qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
-    assertThat(qryResult, containsString("-100.0 = tree 0"));
-    assertThat(qryResult, containsString("50.0 = tree 0"));
-    assertThat(qryResult, containsString("-20.0 = tree 1"));
-    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("-100.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("50.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("-20.0 = tree 1"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
 
-    assertThat(qryResult, containsString(" Go Right "));
-    assertThat(qryResult, containsString(" Go Left "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Right "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Left "));
   }
 
   @Test
@@ -358,8 +361,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     doTestMultipleAdditiveTreesExplainWithNulls();
   }
 
-  private void doTestMultipleAdditiveTreesWithNulls()
-          throws Exception {
+  private void doTestMultipleAdditiveTreesWithNulls() throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -367,7 +369,8 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("fl", "*,score");
 
     query.add(
-            "rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
+        "rq",
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==30.0");
@@ -381,7 +384,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("fl", "*,score,[fv]");
     query.add("rows", "3");
 
-    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
+    query.add(
+        "rq",
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -389,22 +394,23 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replaceAll("\n", " ");
 
-    assertThat(qryResult, containsString("\"debug\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));
 
-    assertThat(qryResult, containsString("\"explain\":{"));
+    MatcherAssert.assertThat(qryResult, containsString("\"explain\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("explain"));
 
-    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+    MatcherAssert.assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    MatcherAssert.assertThat(
+        qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
-    assertThat(qryResult, containsString("50.0 = tree 0"));
-    assertThat(qryResult, containsString("-20.0 = tree 1"));
-    assertThat(qryResult, containsString("'matchedTitle': NaN"));
-    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    assertThat(qryResult, containsString("'userDevice': NaN"));
+    MatcherAssert.assertThat(qryResult, containsString("50.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("-20.0 = tree 1"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle': NaN"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("'userDevice': NaN"));
 
-    assertThat(qryResult, containsString(" Go Right "));
-    assertThat(qryResult, containsString(" Go Left "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Right "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Left "));
   }
 }

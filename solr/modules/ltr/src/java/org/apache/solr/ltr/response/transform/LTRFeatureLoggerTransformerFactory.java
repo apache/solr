@@ -144,7 +144,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         req, createFeatureLogger(localparams.get(FV_FORMAT)));
 
     return new FeatureTransformer(
-        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */, isNullSameAsZero);
+        name,
+        localparams,
+        req,
+        (fvStoreName != null) /* hasExplicitFeatureStore */,
+        isNullSameAsZero);
   }
 
   /**

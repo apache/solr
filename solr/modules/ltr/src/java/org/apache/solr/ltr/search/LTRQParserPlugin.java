@@ -162,7 +162,8 @@ public class LTRQParserPlugin extends QParserPlugin
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
       boolean isNullSameAsZero = true;
-      String[] isNullSameAsZeroExternalParameter = localParams.getParams(LTRQParserPlugin.IS_NULL_SAME_AS_ZERO);
+      String[] isNullSameAsZeroExternalParameter =
+          localParams.getParams(LTRQParserPlugin.IS_NULL_SAME_AS_ZERO);
       if (isNullSameAsZeroExternalParameter != null) {
         isNullSameAsZero = Boolean.parseBoolean(isNullSameAsZeroExternalParameter[0]);
       }
@@ -196,19 +197,19 @@ public class LTRQParserPlugin extends QParserPlugin
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                            isNullSameAsZero,
-                            ltrScoringModel,
-                            externalFeatureInfo,
-                            featuresRequestedFromSameStore,
-                            threadManager);
-          } else {
-            rerankingQuery =
-                new LTRScoringQuery(
                         isNullSameAsZero,
                         ltrScoringModel,
                         externalFeatureInfo,
                         featuresRequestedFromSameStore,
                         threadManager);
+          } else {
+            rerankingQuery =
+                new LTRScoringQuery(
+                    isNullSameAsZero,
+                    ltrScoringModel,
+                    externalFeatureInfo,
+                    featuresRequestedFromSameStore,
+                    threadManager);
             rerankingQueries[i] = null;
           }
 
