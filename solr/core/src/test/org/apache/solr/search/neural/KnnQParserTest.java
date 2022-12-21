@@ -366,7 +366,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq",
             "id:(3 4 9 2)",
             "fq",
-            "{!frange l=0.99}$q",
+            "{!frange cache=false l=0.99}$q",
             "fl",
             "id"),
         "//result[@numFound='2']",

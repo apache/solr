@@ -82,10 +82,10 @@ public class KnnQParser extends QParser {
     float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), parsedVectorToSearch, topK, buildPreFilter());
+        schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
   }
 
-  private Query buildPreFilter() throws SolrException {
+  private Query getFilterQuery() throws SolrException {
     boolean isSubQuery = recurseCount != 0;
     if (!isFilter() && !isSubQuery) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
@@ -93,7 +93,7 @@ public class KnnQParser extends QParser {
         List<Query> preFilters;
 
         try {
-          preFilters = acceptPreFiltersOnly(QueryUtils.parseFilterQueries(req, true));
+          preFilters = excludePostFilters(QueryUtils.parseFilterQueries(req, true));
         } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -122,7 +122,7 @@ public class KnnQParser extends QParser {
    * @param filters filter queries in the knn query request
    * @return the list of pre-filters
    */
-  private List<Query> acceptPreFiltersOnly(List<Query> filters) {
+  private List<Query> excludePostFilters(List<Query> filters) {
     return filters.stream()
         .filter(
             q -> {
