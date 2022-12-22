@@ -78,7 +78,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  protected int aliveCheckInterval = CHECK_INTERVAL;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -462,14 +462,16 @@ public abstract class LBSolrClient extends SolrClient {
    * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
    * this to set that interval
    *
-   * @param interval time in milliseconds
+   * @param aliveCheckInterval time in milliseconds
+   * @deprecated use {@link LBHttpSolrClient.Builder#setAliveCheckInterval(int)} instead
    */
-  public void setAliveCheckInterval(int interval) {
-    if (interval <= 0) {
+  @Deprecated
+  public void setAliveCheckInterval(int aliveCheckInterval) {
+    if (aliveCheckInterval <= 0) {
       throw new IllegalArgumentException(
-          "Alive check interval must be " + "positive, specified value = " + interval);
+          "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
     }
-    this.interval = interval;
+    this.aliveCheckInterval = aliveCheckInterval;
   }
 
   private void startAliveCheckExecutor() {
@@ -483,8 +485,8 @@ public abstract class LBSolrClient extends SolrClient {
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.interval,
-              this.interval,
+              this.aliveCheckInterval,
+              this.aliveCheckInterval,
               TimeUnit.MILLISECONDS);
         }
       }
