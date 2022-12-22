@@ -272,6 +272,17 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param seconds ttl value in seconds
+     */
+    public Builder setCollectionCacheTTL(int seconds) {
+      assert seconds > 0;
+      this.timeToLive = seconds;
+      return this;
+    }
+
+    /**
      * Tells {@link Builder} that created clients should send updates only to shard leaders.
      *
      * <p>WARNING: This method currently has no effect. See SOLR-6312 for more information.

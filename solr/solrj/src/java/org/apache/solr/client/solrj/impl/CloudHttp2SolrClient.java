@@ -263,9 +263,10 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * @param seconds ttl value in seconds
      */
-    public void setCollectionCacheTTL(int seconds) {
+    public Builder setCollectionCacheTTL(int seconds) {
       assert seconds > 0;
       this.timeToLive = seconds;
+      return this
     }
 
     public Builder withHttpClient(Http2SolrClient httpClient) {

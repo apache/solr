@@ -965,9 +965,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
             .sendDirectUpdatesToAnyShardReplica()
+                // don't let collection cache entries get expired, even on a slow machine...
+                .setCollectionCacheTTL(Integer.MAX_VALUE)
             .build()) {
-      // don't let collection cache entries get expired, even on a slow machine...
-      stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
+
       stale_client.setDefaultCollection(COL);
 
       // do a query to populate stale_client's cache...
