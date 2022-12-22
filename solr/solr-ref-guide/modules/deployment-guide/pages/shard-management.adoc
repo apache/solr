@@ -262,6 +262,18 @@ One simple way to populate `id_prefix` is a copyField in the schema:
   </fieldtype>
 ----
 
+`split.setPreferredLeaders`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the SPLITSHARD command sets the preferred leader property on one replica of each sub-shard,
+automatically when splitting a shard. The preferred leaders are distributed evenly among the nodes.
+It is also possible to change the default value of this parameter to `true` by setting the system property
+`solr.autoPreferredLeaders` to `true`.
+
 Current implementation details and limitations:
 
 * Prefix size is calculated using number of documents with the prefix.
