@@ -96,6 +96,9 @@ Improvements
 * SOLR-10461: Introduce Builder setter for aliveCheckInterval on load balanced SolrClients.  Deprecated 
   direct setter setAliveCheckInterval on SolrClients. (Eric Pugh, David Smiley)
 
+* SOLR-10462: Introduce Builder setter for pollQueueTime on ConcurrentUpdateHttp2SolrClient.  Deprecated 
+  direct setter setPollQueueTime on ConcurrentUpdateHttp2SolrClient. (Eric Pugh)
+  
 Optimizations
 ---------------------
 
