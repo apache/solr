@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -64,6 +65,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.clientIsInternal = false;
       this.myClient = builder.httpClient;
     }
+    this.retryExpiryTime = builder.retryExpiryTime;
     if (builder.requestWriter != null) {
       this.myClient.requestWriter = builder.requestWriter;
     }
@@ -143,6 +145,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected Http2SolrClient.Builder internalClientBuilder;
     private RequestWriter requestWriter;
     private ResponseParser responseParser;
+    private long retryExpiryTime =
+        TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -242,6 +246,14 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
+      return this;
+    }
+
+    /**
+     * This is the time to wait to refetch the state after getting the same state version from ZK
+     */
+    public Builder setRetryExpiryTime(int secs) {
+      this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
       return this;
     }
 

@@ -61,6 +61,14 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
+
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
+* SOLR-10463: Introduce Builder setter for retryExpiryTime on cloud SolrClients.  Deprecated 
+  direct setter setRetryExpiryTime on cloud SolrClients. (Eric Pugh)
+
 Optimizations
 ---------------------
 
