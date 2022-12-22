@@ -97,7 +97,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-
+    this.collectionStateCache.timeToLive = builder.timeToLive * 1000L;
     this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
 
@@ -147,6 +147,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTime =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+    private int timeToLive;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -255,6 +256,16 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     public Builder setRetryExpiryTime(int secs) {
       this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
       return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param seconds ttl value in seconds
+     */
+    public void setCollectionCacheTTL(int seconds) {
+      assert seconds > 0;
+      this.timeToLive = seconds;
     }
 
     public Builder withHttpClient(Http2SolrClient httpClient) {
