@@ -85,6 +85,11 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
+
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
 Optimizations
 ---------------------
 
@@ -126,6 +131,7 @@ Bug Fixes
 * SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
+
 
 Build
 ---------------------
@@ -173,6 +179,14 @@ Other Changes
 * SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
+
+* SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
+
+==================  9.1.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
 
 ==================  9.1.0 ==================
 
