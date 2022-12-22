@@ -126,7 +126,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   }
 
-  private volatile List<Object> locks = objectList(3);
+  protected volatile List<Object> locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
@@ -1222,9 +1222,20 @@ public abstract class CloudSolrClient extends SolrClient {
   /**
    * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
    * locks
+   *
+   * @deprecated use {@link CloudHttp2SolrClient.Builder#setParallelCacheRefreshes(int)} instead
    */
+  @Deprecated
   public void setParallelCacheRefreshes(int n) {
     locks = objectList(n);
+  }
+
+  /**
+   * If caches are expired they are refreshed after acquiring a lock. This method sets the number of
+   * locks. It is used by the Builder only.
+   */
+  void setParallelCacheRefreshesLocks(int parallelCacheRefreshesLocks) {
+    locks = objectList(parallelCacheRefreshesLocks);
   }
 
   protected static ArrayList<Object> objectList(int n) {

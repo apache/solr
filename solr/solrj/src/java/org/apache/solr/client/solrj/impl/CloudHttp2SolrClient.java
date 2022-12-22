@@ -97,6 +97,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
+    this.setParallelCacheRefreshesLocks(builder.parallelCacheRefreshesLocks);
 
     this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
@@ -134,6 +135,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
   /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */
   public static class Builder {
+    public int parallelCacheRefreshesLocks = 3;
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
@@ -246,6 +248,17 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
+      return this;
+    }
+
+    /**
+     * Tells {@link CloudHttp2SolrClient.Builder} if caches are expired then they are refreshed
+     * after acquiring a lock. Use this to set the number of locks.
+     *
+     * <p>Defaults to 3.
+     */
+    public Builder setParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
+      this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
       return this;
     }
 
