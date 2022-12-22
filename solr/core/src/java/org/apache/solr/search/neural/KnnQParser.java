@@ -16,11 +16,9 @@
  */
 package org.apache.solr.search.neural;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -29,10 +27,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
@@ -90,50 +88,17 @@ public class KnnQParser extends QParser {
     if (!isFilter() && !isSubQuery) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
       if (filterQueries != null && filterQueries.length != 0) {
-        List<Query> preFilters;
-
         try {
-          preFilters = excludePostFilters(QueryUtils.parseFilterQueries(req, true));
-        } catch (SyntaxError e) {
+          List<Query> filters = QueryUtils.parseFilterQueries(req, true);
+          SolrIndexSearcher.ProcessedFilter processedFilter =
+              req.getSearcher().getProcessedFilter(filters);
+          return processedFilter.filter;
+        } catch (SyntaxError | IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-
-        if (preFilters.size() == 0) {
-          return null;
-        } else if (preFilters.size() == 1) {
-          return preFilters.get(0);
-        } else {
-          BooleanQuery.Builder builder = new BooleanQuery.Builder();
-          for (Query query : preFilters) {
-            builder.add(query, BooleanClause.Occur.FILTER);
-          }
-          return builder.build();
         }
       }
     }
     return null;
-  }
-
-  /**
-   * This methods filters out all the post-filters from the filters in input, keeping only the
-   * pre-filters. According to the documentation a filter query is a post-filter if: it implements
-   * {@link PostFilter} and ExtendedQuery.getCost() returns no less than 100
-   *
-   * @param filters filter queries in the knn query request
-   * @return the list of pre-filters
-   */
-  private List<Query> excludePostFilters(List<Query> filters) {
-    return filters.stream()
-        .filter(
-            q -> {
-              if (q instanceof PostFilter) {
-                PostFilter filter = (PostFilter) q;
-                return filter.getCost() < 100;
-              } else {
-                return true;
-              }
-            })
-        .collect(Collectors.toList());
   }
 
   /**

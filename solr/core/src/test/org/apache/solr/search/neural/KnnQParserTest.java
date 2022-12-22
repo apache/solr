@@ -344,7 +344,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             CommonParams.Q,
             "{!knn f=vector topK=10}" + vectorToSearch,
             "fq",
-            "{!frange l=0.99}$q",
+            "{!frange cache=false l=0.99}$q",
             "fl",
             "*,score"),
         "//result[@numFound='5']",
