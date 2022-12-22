@@ -288,6 +288,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @param seconds ttl value in seconds
    * @deprecated use {@link CloudSolrClient.Builder#setCollectionCacheTTL(int)} instead
    */
+  @Deprecated
   public void setCollectionCacheTTl(int seconds) {
     assert seconds > 0;
     this.collectionStateCache.timeToLive = seconds * 1000L;
