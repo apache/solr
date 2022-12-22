@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 @Deprecated(since = "9.0")
 public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
-  protected int timeToLive;
+  protected int timeToLive = 60;
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
   protected RequestWriter requestWriter;

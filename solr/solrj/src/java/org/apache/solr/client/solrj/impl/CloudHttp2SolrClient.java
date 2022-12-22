@@ -147,7 +147,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTime =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
-    private int timeToLive;
+    private int timeToLive = 60;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
