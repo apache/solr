@@ -53,7 +53,7 @@ public class KnnQParser extends QParser {
   }
 
   @Override
-  public Query parse() {
+  public Query parse() throws SyntaxError {
     String denseVectorField = localParams.get(QueryParsing.F);
     String vectorToSearch = localParams.get(QueryParsing.V);
     int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
@@ -83,7 +83,7 @@ public class KnnQParser extends QParser {
         schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
   }
 
-  private Query getFilterQuery() throws SolrException {
+  private Query getFilterQuery() throws SolrException, SyntaxError {
     boolean isSubQuery = recurseCount != 0;
     if (!isFilter() && !isSubQuery) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
@@ -93,7 +93,7 @@ public class KnnQParser extends QParser {
           SolrIndexSearcher.ProcessedFilter processedFilter =
               req.getSearcher().getProcessedFilter(filters);
           return processedFilter.filter;
-        } catch (SyntaxError | IOException e) {
+        } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
