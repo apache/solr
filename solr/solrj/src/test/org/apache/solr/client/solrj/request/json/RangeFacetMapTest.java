@@ -31,7 +31,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
         expectThrows(
             IllegalArgumentException.class,
             () -> {
-              new RangeFacetMap(null, 1, 2, 3);
+              new RangeFacetMap(null, 1, 2, 3, false);
             });
     MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
@@ -42,7 +42,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
         expectThrows(
             IllegalArgumentException.class,
             () -> {
-              new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3);
+              new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3, false);
             });
     MatcherAssert.assertThat(
         thrown.getMessage(), containsString("'end' must be greater than parameter 'start'"));
@@ -54,14 +54,14 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
         expectThrows(
             IllegalArgumentException.class,
             () -> {
-              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1);
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1, false);
             });
     MatcherAssert.assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
   @Test
   public void testStoresRequiredValuesWithCorrectKeys() {
-    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3);
+    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3, false);
     assertEquals("ANY_FIELD_NAME", rangeFacet.get("field"));
     assertEquals(1L, rangeFacet.get("start"));
     assertEquals(2L, rangeFacet.get("end"));
@@ -70,7 +70,8 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStoresHardEndWithCorrectKey() {
-    final RangeFacetMap rangeFacet = new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setHardEnd(true);
+    final RangeFacetMap rangeFacet =
+        new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3, false).setHardEnd(true);
     assertEquals(true, rangeFacet.get("hardend"));
   }
 
@@ -80,7 +81,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
         expectThrows(
             IllegalArgumentException.class,
             () -> {
-              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3).setOtherBuckets(null);
+              new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3, false).setOtherBuckets(null);
             });
     MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
@@ -88,7 +89,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
   @Test
   public void testStoresOtherBucketsValueWithCorrectKey() {
     final RangeFacetMap rangeFacet =
-        new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3)
+        new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3, false)
             .setOtherBuckets(RangeFacetMap.OtherBuckets.BETWEEN);
     assertEquals("between", rangeFacet.get("other"));
   }

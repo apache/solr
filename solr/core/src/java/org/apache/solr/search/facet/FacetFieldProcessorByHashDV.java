@@ -186,6 +186,12 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     protected Comparable parseAndAddGap(Comparable value, String gap) throws ParseException {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    protected long toSortableDocValue(Comparable calcValue) {
+      return 0; // TODO
+    }
   }
 
   FacetRangeProcessor.Calc calc;

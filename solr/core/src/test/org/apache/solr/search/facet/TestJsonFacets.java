@@ -2812,7 +2812,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "facets=={ 'count':6, "
             + "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0"
             + ", mini:-5, maxi:3, mins:'a', maxs:'b'"
-            + ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.5,3.0], maxss:'b'"
+            + ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,2.5,3.0], maxss:'b'"
             + "}");
 
     // test sorting by multi-valued

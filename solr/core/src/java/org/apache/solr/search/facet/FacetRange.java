@@ -32,6 +32,7 @@ public class FacetRange extends FacetRequestSorted {
   boolean hardend = false;
   EnumSet<FacetRangeInclude> include;
   EnumSet<FacetRangeOther> others;
+  boolean dv;
 
   {
     // defaults
@@ -59,6 +60,9 @@ public class FacetRange extends FacetRequestSorted {
       descr.put("start", start);
       descr.put("end", end);
       descr.put("gap", gap);
+    }
+    if (dv) {
+      descr.put("dv", true);
     }
     return descr;
   }

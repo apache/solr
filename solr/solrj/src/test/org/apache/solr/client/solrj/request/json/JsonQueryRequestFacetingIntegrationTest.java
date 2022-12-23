@@ -210,7 +210,7 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testSingleRangeFacet() throws Exception {
-    final RangeFacetMap pricesFacet = new RangeFacetMap("price", 0, 100, 20);
+    final RangeFacetMap pricesFacet = new RangeFacetMap("price", 0, 100, 20, false);
     final JsonQueryRequest request =
         new JsonQueryRequest().setQuery("*:*").withFacet("prices", pricesFacet);
 
@@ -253,8 +253,10 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testMultiRangeFacet() throws Exception {
-    final RangeFacetMap pricesFacet = new RangeFacetMap("price", 0, 100, 20);
-    final RangeFacetMap shippingWeightFacet = new RangeFacetMap("weight", 0, 200, 50);
+    final RangeFacetMap pricesFacet =
+        new RangeFacetMap("price", 0, 100, 20, false)
+            .withStatSubFacet("unique_cats", "unique(cat)");
+    final RangeFacetMap shippingWeightFacet = new RangeFacetMap("weight", 0, 200, 50, false);
     final JsonQueryRequest request =
         new JsonQueryRequest()
             .setQuery("*:*")
@@ -274,6 +276,53 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
         new FacetBucket(40.0f, 0),
         new FacetBucket(60.0f, 1),
         new FacetBucket(80.0f, 1));
+    List<BucketJsonFacet> buckets = topLevelFacetData.getBucketBasedFacets("prices").getBuckets();
+    assertEquals(5, buckets.size());
+    assertEquals(4l, buckets.get(0).getStatValue("unique_cats"));
+    assertNull(buckets.get(1).getStatValue("unique_cats"));
+    assertNull(buckets.get(2).getStatValue("unique_cats"));
+    assertEquals(2l, buckets.get(3).getStatValue("unique_cats"));
+    assertEquals(2l, buckets.get(4).getStatValue("unique_cats"));
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "shipping_weights",
+        new FacetBucket(0.0f, 6),
+        new FacetBucket(50.0f, 0),
+        new FacetBucket(100.0f, 0),
+        new FacetBucket(150.0f, 1));
+  }
+
+  @Test
+  public void testMultiRangeFacetDocValues() throws Exception {
+    final RangeFacetMap pricesFacet =
+        new RangeFacetMap("price", 0, 100, 20, true).withStatSubFacet("unique_cats", "unique(cat)");
+    final RangeFacetMap shippingWeightFacet = new RangeFacetMap("weight", 0, 200, 50, true);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet("prices", pricesFacet)
+            .withFacet("shipping_weights", shippingWeightFacet);
+
+    QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
+
+    assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+    assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "prices",
+        new FacetBucket(0.0f, 5),
+        new FacetBucket(20.0f, 0),
+        new FacetBucket(40.0f, 0),
+        new FacetBucket(60.0f, 1),
+        new FacetBucket(80.0f, 1));
+    List<BucketJsonFacet> buckets = topLevelFacetData.getBucketBasedFacets("prices").getBuckets();
+    assertEquals(5, buckets.size());
+    assertEquals(4l, buckets.get(0).getStatValue("unique_cats"));
+    assertNull(buckets.get(1).getStatValue("unique_cats"));
+    assertNull(buckets.get(2).getStatValue("unique_cats"));
+    assertEquals(2l, buckets.get(3).getStatValue("unique_cats"));
+    assertEquals(2l, buckets.get(4).getStatValue("unique_cats"));
     assertHasFacetWithBucketValues(
         topLevelFacetData,
         "shipping_weights",
@@ -569,7 +618,33 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
             .setQuery("*:*")
             .withFacet(
                 "price_range",
-                new RangeFacetMap("price", 0, 100, 20)
+                new RangeFacetMap("price", 0, 100, 20, false)
+                    .setOtherBuckets(RangeFacetMap.OtherBuckets.ALL));
+
+    QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
+    final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
+
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "price_range",
+        new FacetBucket(0.0f, 5),
+        new FacetBucket(20.0f, 0),
+        new FacetBucket(40.0f, 0),
+        new FacetBucket(60.0f, 1),
+        new FacetBucket(80.0f, 1));
+    assertEquals(0, topLevelFacetData.getBucketBasedFacets("price_range").getBefore());
+    assertEquals(9, topLevelFacetData.getBucketBasedFacets("price_range").getAfter());
+    assertEquals(7, topLevelFacetData.getBucketBasedFacets("price_range").getBetween());
+  }
+
+  @Test
+  public void testRangeFacetWithOtherBucketsRequestedDocValues() throws Exception {
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet(
+                "price_range",
+                new RangeFacetMap("price", 0, 100, 20, true)
                     .setOtherBuckets(RangeFacetMap.OtherBuckets.ALL));
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
