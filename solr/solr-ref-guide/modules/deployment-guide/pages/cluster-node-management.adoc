@@ -501,7 +501,7 @@ http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=sourc
 
 [source,bash]
 ----
-curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/commands/replace/" -H 'Content-Type: application/json' -d '
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
     {
       "targetNodeName": "localhost:8983_solr",
       "waitForFinalState": "false",

@@ -29,12 +29,12 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -66,23 +66,19 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
   public void testPoolSize() throws SolrServerException, IOException {
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
-    final HttpSolrClient client1;
-    final String fooUrl;
-    {
-      fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-      CloseableHttpClient httpClient =
-          HttpClientUtil.createClient(
-              new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
-      client1 = getHttpSolrClient(fooUrl, httpClient, DEFAULT_CONNECTION_TIMEOUT);
-    }
-    final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
 
-    {
-      client1.setBaseURL(fooUrl);
-      client1.deleteByQuery("*:*");
-      client1.setBaseURL(barUrl);
-      client1.deleteByQuery("*:*");
-    }
+    final String fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
+    final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
+    CloseableHttpClient httpClient =
+        HttpClientUtil.createClient(
+            new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
+    final HttpSolrClient clientFoo =
+        new HttpSolrClient.Builder(fooUrl).withHttpClient(httpClient).build();
+    final HttpSolrClient clientBar =
+        new HttpSolrClient.Builder(barUrl).withHttpClient(httpClient).build();
+
+    clientFoo.deleteByQuery("*:*");
+    clientBar.deleteByQuery("*:*");
 
     List<String> urls = new ArrayList<>();
     for (int i = 0; i < 17; i++) {
@@ -97,23 +93,23 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     try {
       int i = 0;
       for (String url : urls) {
-        if (!client1.getBaseURL().equals(url)) {
-          client1.setBaseURL(url);
+        if (clientFoo.getBaseURL().equals(url)) {
+          clientFoo.add(new SolrInputDocument("id", "" + (i++)));
+        } else {
+          clientBar.add(new SolrInputDocument("id", "" + (i++)));
         }
-        client1.add(new SolrInputDocument("id", "" + (i++)));
       }
-      client1.setBaseURL(fooUrl);
-      client1.commit();
-      assertEquals(17, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
 
-      client1.setBaseURL(barUrl);
-      client1.commit();
-      assertEquals(31, client1.query(new SolrQuery("*:*")).getResults().getNumFound());
+      clientFoo.commit();
+      clientBar.commit();
+
+      assertEquals(17, clientFoo.query(new SolrQuery("*:*")).getResults().getNumFound());
+      assertEquals(31, clientBar.query(new SolrQuery("*:*")).getResults().getNumFound());
 
       PoolStats stats = pool.getTotalStats();
       assertEquals("oh " + stats, 2, stats.getAvailable());
     } finally {
-      for (HttpSolrClient c : new HttpSolrClient[] {client1}) {
+      for (HttpSolrClient c : new HttpSolrClient[] {clientFoo, clientBar}) {
         HttpClientUtil.close(c.getHttpClient());
         c.close();
       }
