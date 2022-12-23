@@ -36,6 +36,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Optional.of;
+
 /**
  * Per-field CodecFactory implementation, extends Lucene's and returns postings format
  * implementations according to the schema configuration. <br>
@@ -124,19 +126,19 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
               String knnAlgorithm = vectorType.getKnnAlgorithm();
-              if (knnAlgorithm != null) {
-                if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
-                  int maxConn = vectorType.getHnswMaxConn();
-                  int beamWidth = vectorType.getHnswBeamWidth();
-                  return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
-                }
-              } else {
+              if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
+                int maxConn = vectorType.getHnswMaxConn();
+                int beamWidth = vectorType.getHnswBeamWidth();
+                return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
+              }
+              else {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }
             }
-            return super.getKnnVectorsFormatForField(field);
-          }
+
+            throw new SolrException(ErrorCode.SERVER_ERROR, "wrong field type for KNN vectors: " + fieldType);
+            }
         };
   }
 

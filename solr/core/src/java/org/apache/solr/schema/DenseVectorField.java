@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -47,6 +49,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 public class DenseVectorField extends FloatPointField {
   public static final String HNSW_ALGORITHM = "hnsw";
 
+  public static final String KNN_DEFAULT_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
 
@@ -104,7 +107,7 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_SIMILARITY);
     args.remove(KNN_SIMILARITY_FUNCTION);
 
-    this.knnAlgorithm = args.get(KNN_ALGORITHM);
+    this.knnAlgorithm = Optional.ofNullable(args.get(KNN_ALGORITHM)).orElse(KNN_DEFAULT_ALGORITHM);
 
     args.remove(KNN_ALGORITHM);
 
