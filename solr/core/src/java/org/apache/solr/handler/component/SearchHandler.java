@@ -22,12 +22,15 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.STATUS;
 
 import com.codahale.metrics.Counter;
+import com.google.common.collect.Iterators;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +47,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -327,9 +331,26 @@ public class SearchHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      // log a simple message on start
+      log.info("Start Forwarded Search Query");
+      SolrParams filteredParams = removeVerboseParams(req.getParams());
+      rsp.getToLog()
+          .asShallowMap(false)
+          .put("params", "{" + filteredParams + "}"); // replace "params" with the filtered version
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
       SolrPluginUtils.forEachRequestPurpose(
           purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
+    } else {
+      // Then it is the first time this req hitting Solr - not a req distributed by another higher
+      // level req.
+      // We have to log the query here as
+      // 1. It's useful to know the query before the processing start in case if the query stalls
+      // 2. The existing logging in SolrCore does not contain the query as query construction
+      // happens after the log
+      //    entries are added to rsp.toLog
+      if (log.isInfoEnabled()) {
+        log.info("Start External Search Query: {}", req.getParamString());
+      }
     }
 
     List<SearchComponent> components = getComponents();
@@ -605,6 +626,31 @@ public class SearchHandler extends RequestHandlerBase
       shardInfo.add(shardInfoName, nl);
       rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
     }
+  }
+
+  private static final List<String> VERBOSE_LOGGING_PARAMS = Arrays.asList("fq", "json");
+
+  private SolrParams removeVerboseParams(final SolrParams params) {
+    // Filter params by removing kv of VERBOSE_LOGGING_PARAMS, so that we can then call toString
+    SolrParams filteredParams =
+        new SolrParams() {
+          @Override
+          public Iterator<String> getParameterNamesIterator() {
+            return Iterators.filter(
+                params.getParameterNamesIterator(), s -> !VERBOSE_LOGGING_PARAMS.contains(s));
+          }
+
+          @Override
+          public String get(String param) {
+            return params.get(param);
+          }
+
+          @Override
+          public String[] getParams(String param) {
+            return params.getParams(param);
+          }
+        };
+    return filteredParams;
   }
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
