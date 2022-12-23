@@ -69,7 +69,6 @@ public abstract class Feature extends Query implements Accountable {
   private Object defaultValueObject = null;
 
   private final Map<String, Object> params;
-  private static boolean isNullSameAsZero = true;
 
   public static Feature getInstance(
       SolrResourceLoader solrResourceLoader,
@@ -93,14 +92,6 @@ public abstract class Feature extends Query implements Accountable {
   public Feature(String name, Map<String, Object> params) {
     this.name = name;
     this.params = params;
-  }
-
-  public static void setIsNullSameAsZero(boolean isNullSameAsZeroValue) {
-    isNullSameAsZero = isNullSameAsZeroValue;
-  }
-
-  public static boolean getIsNullSameAsZero() {
-    return isNullSameAsZero;
   }
 
   /**
@@ -133,9 +124,6 @@ public abstract class Feature extends Query implements Accountable {
       throws IOException;
 
   public float getDefaultValue() {
-    if (!isNullSameAsZero) {
-      return Float.NaN;
-    }
     return defaultValue;
   }
 

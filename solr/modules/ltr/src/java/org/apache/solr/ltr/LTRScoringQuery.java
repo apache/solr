@@ -77,25 +77,11 @@ public class LTRScoringQuery extends Query implements Accountable {
   private SolrQueryRequest request;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(true, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
+    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
   }
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(true, ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
-  }
-
-  public LTRScoringQuery(boolean isNullSameAsZero, LTRScoringModel ltrScoringModel) {
-    this(isNullSameAsZero, ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
-  }
-
-  public LTRScoringQuery(
-      boolean isNullSameAsZero, LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(
-        isNullSameAsZero,
-        ltrScoringModel,
-        Collections.<String, String[]>emptyMap(),
-        extractAllFeatures,
-        null);
+    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
   }
 
   public LTRScoringQuery(
@@ -103,25 +89,6 @@ public class LTRScoringQuery extends Query implements Accountable {
       Map<String, String[]> externalFeatureInfo,
       boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    Feature.setIsNullSameAsZero(true);
-    this.ltrScoringModel = ltrScoringModel;
-    this.efi = externalFeatureInfo;
-    this.extractAllFeatures = extractAllFeatures;
-    this.ltrThreadMgr = ltrThreadMgr;
-    if (this.ltrThreadMgr != null) {
-      this.querySemaphore = this.ltrThreadMgr.createQuerySemaphore();
-    } else {
-      this.querySemaphore = null;
-    }
-  }
-
-  public LTRScoringQuery(
-      boolean isNullSameAsZero,
-      LTRScoringModel ltrScoringModel,
-      Map<String, String[]> externalFeatureInfo,
-      boolean extractAllFeatures,
-      LTRThreadModule ltrThreadMgr) {
-    Feature.setIsNullSameAsZero(isNullSameAsZero);
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
@@ -560,8 +527,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         super(weight);
         docInfo = new DocInfo();
-        for (final Feature.FeatureWeight.FeatureScorer subSocer : featureScorers) {
-          subSocer.setDocInfo(docInfo);
+        for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
+          subScorer.setDocInfo(docInfo);
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases

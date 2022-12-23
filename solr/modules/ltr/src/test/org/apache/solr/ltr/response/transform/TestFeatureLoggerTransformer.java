@@ -139,7 +139,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel isNullSameAsZero=false reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     String[] expectedFeatureVectors =
         new String[] {
@@ -173,7 +173,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel isNullSameAsZero=false reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     String[] expectedFeatureVectors =
         new String[] {

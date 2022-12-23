@@ -44,6 +44,7 @@ import org.apache.solr.util.SolrPluginUtils;
  *     { "name" : "originalScore"}
  *   ],
  *   "params" : {
+ *   "isNullSameAsZero" : true,
  *     "trees" : [
  *       {
  *         "weight" : "1",
@@ -112,6 +113,8 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
    */
   private List<RegressionTree> trees;
 
+  private boolean isNullSameAsZero;
+
   private RegressionTree createRegressionTree(Map<String, Object> map) {
     final RegressionTree rt = new RegressionTree();
     if (map != null) {
@@ -126,6 +129,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       SolrPluginUtils.invokeSetters(rtn, map.entrySet());
     }
     return rtn;
+  }
+
+  public void setIsNullSameAsZero(boolean nullSameAsZero) {
+    isNullSameAsZero = nullSameAsZero;
   }
 
   public class RegressionTreeNode {
@@ -222,7 +229,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * scoreNode(featureVector, root);
+      if (isNullSameAsZero) {
+        return weight.floatValue() * scoreNode(featureVector, root);
+      } else {
+        return weight.floatValue() * scoreNodeWithNullSupport(featureVector, root);
+      }
     }
 
     public String explain(float[] featureVector) {
@@ -285,6 +296,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    normalizeFeaturesInPlace(modelFeatureValues, isNullSameAsZero);
+  }
+
+  @Override
   public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
@@ -306,13 +322,35 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
         regressionTreeNode = regressionTreeNode.left;
+      } else {
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
+  private static float scoreNodeWithNullSupport(
+      float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        return regressionTreeNode.value;
+      }
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0)
+          || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        return 0f;
+      }
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.left;
       } else if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
         regressionTreeNode = regressionTreeNode.right;
       } else if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
-        if (Objects.equals(regressionTreeNode.missing, "left")) {
-          regressionTreeNode = regressionTreeNode.left;
-        } else {
-          regressionTreeNode = regressionTreeNode.right;
+        switch (regressionTreeNode.missing) {
+          case "left":
+            regressionTreeNode = regressionTreeNode.left;
+            break;
+          default:
+            regressionTreeNode = regressionTreeNode.right;
         }
       }
     }
@@ -424,7 +462,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   @Override
   public Explanation explain(
       LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
-
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {

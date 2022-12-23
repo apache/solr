@@ -83,6 +83,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public abstract class LTRScoringModel implements Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(LTRScoringModel.class);
+  public static final boolean DEFAULT_NULL_SAME_AS_ZERO = true;
 
   protected final String name;
   private final String featureStoreName;
@@ -277,14 +278,25 @@ public abstract class LTRScoringModel implements Accountable {
    * features that will be used for scoring.
    */
   public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    normalizeFeaturesInPlace(modelFeatureValues, DEFAULT_NULL_SAME_AS_ZERO);
+  }
+
+  protected void normalizeFeaturesInPlace(float[] modelFeatureValues, boolean isNullSameAsZero) {
     float[] modelFeatureValuesNormalized = modelFeatureValues;
     if (modelFeatureValues.length != norms.size()) {
       throw new FeatureException("Must have normalizer for every feature");
     }
-    for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
-      if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+    if (isNullSameAsZero) {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
         modelFeatureValuesNormalized[idx] =
             norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      }
+    } else {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+        if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+          modelFeatureValuesNormalized[idx] =
+              norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+        }
       }
     }
   }

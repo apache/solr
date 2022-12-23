@@ -7,6 +7,7 @@
         { "name": "userDevice"}
     ],
     "params":{
+        "isNullSameAsZero": false,
         "trees": [
             {
                 "weight" : "1f",

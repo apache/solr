@@ -73,8 +73,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
-  public static final String IS_NULL_SAME_ZERO = "isNullSameAsZero";
-
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
@@ -133,22 +131,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFvStoreName(
         req, (fvStoreName == null ? defaultStore : fvStoreName));
 
-    boolean isNullSameAsZero = true;
-    String isNullSameAsZeroExternalParameter = localparams.get(IS_NULL_SAME_ZERO);
-    if (isNullSameAsZeroExternalParameter != null) {
-      isNullSameAsZero = Boolean.parseBoolean(isNullSameAsZeroExternalParameter);
-    }
-
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(
         req, createFeatureLogger(localparams.get(FV_FORMAT)));
 
     return new FeatureTransformer(
-        name,
-        localparams,
-        req,
-        (fvStoreName != null) /* hasExplicitFeatureStore */,
-        isNullSameAsZero);
+        name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */);
   }
 
   /**
@@ -196,8 +184,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
-    private boolean isNullSameAsZero;
-
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
      */
@@ -205,13 +191,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         String name,
         SolrParams localparams,
         SolrQueryRequest req,
-        boolean hasExplicitFeatureStore,
-        boolean isNullSameAsZero) {
+        boolean hasExplicitFeatureStore) {
       this.name = name;
       this.localparams = localparams;
       this.req = req;
       this.hasExplicitFeatureStore = hasExplicitFeatureStore;
-      this.isNullSameAsZero = isNullSameAsZero;
     }
 
     @Override
@@ -248,7 +232,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
       setupRerankingQueriesForLogging(
-          isNullSameAsZero, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
     }
 
@@ -292,14 +276,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
     private void setupRerankingQueriesForLogging(
-        boolean isNullSameAsZero,
         String transformerFeatureStore,
         Map<String, String[]> transformerExternalFeatureInfo,
         LoggingModel loggingModel) {
       if (docsWereNotReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
-                isNullSameAsZero,
                 loggingModel,
                 transformerExternalFeatureInfo,
                 true /* extractAllFeatures */,
@@ -327,7 +309,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           for (int i = 0; i < rerankingQueries.length; i++) {
             rerankingQueries[i] =
                 new LTRScoringQuery(
-                    isNullSameAsZero,
                     matchingRerankingModel,
                     (!transformerExternalFeatureInfo.isEmpty()
                         ? transformerExternalFeatureInfo

@@ -80,8 +80,6 @@ public class LTRQParserPlugin extends QParserPlugin
   /** query parser plugin:the param that selects the interleaving algorithm to use */
   public static final String INTERLEAVING_ALGORITHM = "interleavingAlgorithm";
 
-  public static final String IS_NULL_SAME_AS_ZERO = "isNullSameAsZero";
-
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
@@ -161,13 +159,6 @@ public class LTRQParserPlugin extends QParserPlugin
       final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
-      boolean isNullSameAsZero = true;
-      String[] isNullSameAsZeroExternalParameter =
-          localParams.getParams(LTRQParserPlugin.IS_NULL_SAME_AS_ZERO);
-      if (isNullSameAsZeroExternalParameter != null) {
-        isNullSameAsZero = Boolean.parseBoolean(isNullSameAsZeroExternalParameter[0]);
-      }
-
       LTRScoringQuery rerankingQuery = null;
       LTRInterleavingScoringQuery[] rerankingQueries =
           new LTRInterleavingScoringQuery[modelNames.length];
@@ -197,7 +188,6 @@ public class LTRQParserPlugin extends QParserPlugin
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                        isNullSameAsZero,
                         ltrScoringModel,
                         externalFeatureInfo,
                         featuresRequestedFromSameStore,
@@ -205,7 +195,6 @@ public class LTRQParserPlugin extends QParserPlugin
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
-                    isNullSameAsZero,
                     ltrScoringModel,
                     externalFeatureInfo,
                     featuresRequestedFromSameStore,
