@@ -156,6 +156,14 @@ public class TransientSolrCores extends SolrCores {
   }
 
   @Override
+  protected SolrCore getLoadedCoreWithoutIncrement(String name) {
+    synchronized (modifyLock) {
+      final var core = super.getLoadedCoreWithoutIncrement(name);
+      return core != null ? core : getTransientCacheHandler().getCore(name);
+    }
+  }
+
+  @Override
   public boolean isLoaded(String name) {
     synchronized (modifyLock) {
       return super.isLoaded(name) || getTransientCacheHandler().containsCore(name);

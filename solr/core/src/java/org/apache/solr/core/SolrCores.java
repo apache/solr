@@ -43,6 +43,7 @@ public class SolrCores {
 
   // for locking around manipulating any of the core maps.
   protected final Object modifyLock = new Object();
+
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
@@ -87,16 +88,23 @@ public class SolrCores {
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
     // could have moved from the transient list to the pendingCloses list.
-    do {
-      coreList.clear();
+    while (true) {
+
       synchronized (modifyLock) {
-        // make a copy of the cores then clear the map so the core isn't handed out to a request
-        // again
-        coreList.addAll(getCores());
-        cores.clear();
+        // remove all loaded cores; add to our working list.
+        for (String name : getLoadedCoreNames()) {
+          final var core = remove(name);
+          if (core != null) {
+            coreList.add(core);
+          }
+        }
 
         coreList.addAll(pendingCloses);
         pendingCloses.clear();
+      }
+
+      if (coreList.isEmpty()) {
+        break;
       }
 
       ExecutorService coreCloseExecutor =
@@ -104,7 +112,7 @@ public class SolrCores {
               Integer.MAX_VALUE, new SolrNamedThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
-          coreCloseExecutor.submit(
+          coreCloseExecutor.execute(
               () -> {
                 MDCLoggingContext.setCore(core);
                 try {
@@ -117,14 +125,13 @@ public class SolrCores {
                 } finally {
                   MDCLoggingContext.clear();
                 }
-                return core;
               });
         }
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(coreCloseExecutor);
       }
-
-    } while (coreList.size() > 0);
+      coreList.clear();
+    }
   }
 
   // Returns the old core if there was a core of the same name.
@@ -264,7 +271,7 @@ public class SolrCores {
   /* If you don't increment the reference count, someone could close the core before you use it. */
   public SolrCore getCoreFromAnyList(String name, boolean incRefCount, UUID coreId) {
     synchronized (modifyLock) {
-      SolrCore core = getLoadedCore(name);
+      SolrCore core = getLoadedCoreWithoutIncrement(name);
 
       if (core != null && coreId != null && !coreId.equals(core.uniqueId)) return null;
 
@@ -277,7 +284,7 @@ public class SolrCores {
   }
 
   /** (internal) Return a core that is already loaded, if it is. NOT incremented! */
-  protected SolrCore getLoadedCore(String name) {
+  protected SolrCore getLoadedCoreWithoutIncrement(String name) {
     synchronized (modifyLock) {
       return cores.get(name);
     }

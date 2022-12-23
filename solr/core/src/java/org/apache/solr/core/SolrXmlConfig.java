@@ -380,9 +380,10 @@ public class SolrXmlConfig {
                 break;
               case "transientCacheSize": // TODO declare deprecated
                 log.warn("solr.xml transientCacheSize is deprecated");
+                var cacheSize = it.intVal(-1);
                 var attrs = Map.of("class", TransientSolrCores.class.getName());
                 var initArgs = new NamedList<>();
-                initArgs.add(TransientSolrCoreCacheDefault.TRANSIENT_CACHE_SIZE, it.intVal(-1));
+                initArgs.add(TransientSolrCoreCacheDefault.TRANSIENT_CACHE_SIZE, cacheSize);
                 builder.setSolrCoresConfig(new PluginInfo(null, attrs, initArgs, null));
                 break;
               case "allowUrls":
