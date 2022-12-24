@@ -16,13 +16,14 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,29 +31,28 @@ import org.junit.Test;
 /** Test for TermComponent's response in Solrj */
 public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
-/*
   @BeforeClass
   public static void beforeClass() throws Exception {
-    EmbeddedSolrServerTestRule.initCore();
+    solrClientTestRule
+        .build()
+        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .init();
   }
-*/
 
-/*  @Before
+  @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
-    assertU(optimize());
-  }*/
+    solrClientTestRule.clearIndex();
+  }
 
-  /*@Test
+  @Test
   public void testTermsResponse() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    getSolrClient().add(doc);
-    getSolrClient().commit(true, true);
+    solrClientTestRule.getSolrClient().add(doc);
+    solrClientTestRule.getSolrClient().commit(true, true);
 
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/terms");
@@ -64,7 +64,8 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     query.setTermsMinCount(1);
 
     QueryRequest request = new QueryRequest(query);
-    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
+    List<Term> terms =
+        request.process(solrClientTestRule.getSolrClient()).getTermsResponse().getTerms("terms_s");
 
     assertNotNull(terms);
     assertEquals(terms.size(), 1);
@@ -72,5 +73,5 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     Term term = terms.get(0);
     assertEquals(term.getTerm(), "samsung");
     assertEquals(term.getFrequency(), 1);
-  }*/
+  }
 }

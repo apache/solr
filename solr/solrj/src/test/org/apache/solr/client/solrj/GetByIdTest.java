@@ -16,23 +16,38 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.SolrTestCaseJ4.params;
+import static org.apache.solr.SolrTestCaseJ4.sdoc;
+
+import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
-  /*@Before
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    solrClientTestRule
+        .build()
+        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .init();
+  }
+
+  @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    getSolrClient().deleteByQuery("*:*");
-    getSolrClient()
+    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
+    solrClientTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
@@ -53,61 +68,62 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
                     "term2_s",
                     "id separator escape test document 2")));
 
-    getSolrClient().commit(true, true);
+    solrClientTestRule.getSolrClient().commit(true, true);
   }
-*/
-  /*@Test
+
+  @Test
   public void testGetId() throws Exception {
-    SolrDocument rsp = getSolrClient().getById("0");
+    SolrDocument rsp = solrClientTestRule.getSolrClient().getById("0");
     assertNull(rsp);
 
-    rsp = getSolrClient().getById("1");
+    rsp = solrClientTestRule.getSolrClient().getById("1");
     assertEquals("1", rsp.get("id"));
     assertEquals("Microsoft", rsp.get("term_s"));
     assertEquals("MSFT", rsp.get("term2_s"));
 
-    rsp = getSolrClient().getById("2");
+    rsp = solrClientTestRule.getSolrClient().getById("2");
     assertEquals("2", rsp.get("id"));
     assertEquals("Apple", rsp.get("term_s"));
     assertEquals("AAPL", rsp.get("term2_s"));
-  }*/
+  }
 
-  /*@Test
+  @Test
   public void testGetIdWithSeparator() throws Exception {
-    SolrDocument rsp = getSolrClient().getById(",");
+    SolrDocument rsp = solrClientTestRule.getSolrClient().getById(",");
     assertNotNull(rsp);
     assertEquals(",", rsp.get("id"));
     assertEquals("b00m! 1", rsp.get("term_s"));
     assertEquals("id separator escape test document 1", rsp.get("term2_s"));
 
-    rsp = getSolrClient().getById("1,2");
+    rsp = solrClientTestRule.getSolrClient().getById("1,2");
     assertNotNull(rsp);
     assertEquals("1,2", rsp.get("id"));
     assertEquals("b00m! 2", rsp.get("term_s"));
     assertEquals("id separator escape test document 2", rsp.get("term2_s"));
-  }*/
+  }
 
-  /*@Test
+  @Test
   public void testGetIdWithParams() throws Exception {
     final SolrParams ID_FL_ONLY = params(CommonParams.FL, "id");
 
-    SolrDocument rsp = getSolrClient().getById("0", ID_FL_ONLY);
+    SolrDocument rsp = solrClientTestRule.getSolrClient().getById("0", ID_FL_ONLY);
     assertNull(rsp);
 
-    rsp = getSolrClient().getById("1", ID_FL_ONLY);
+    rsp = solrClientTestRule.getSolrClient().getById("1", ID_FL_ONLY);
     assertEquals("1", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
 
-    rsp = getSolrClient().getById("2", ID_FL_ONLY);
+    rsp = solrClientTestRule.getSolrClient().getById("2", ID_FL_ONLY);
     assertEquals("2", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
-  }*/
+  }
 
-  /*@Test
+  @Test
   public void testGetIds() throws Exception {
-    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList("0", "1", "2", "3", "4"));
+    SolrDocumentList rsp =
+        solrClientTestRule.getSolrClient().getById(Arrays.asList("0", "1", "2", "3", "4"));
     assertEquals(3, rsp.getNumFound());
     assertEquals("1", rsp.get(0).get("id"));
     assertEquals("Microsoft", rsp.get(0).get("term_s"));
@@ -121,19 +137,21 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertEquals("Yahoo", rsp.get(2).get("term_s"));
     assertEquals("YHOO", rsp.get(2).get("term2_s"));
   }
-*/
-  /*@Test
+
+  @Test
   public void testGetIdsWithSeparator() throws Exception {
-    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList(",", "1,2"));
+    SolrDocumentList rsp = solrClientTestRule.getSolrClient().getById(Arrays.asList(",", "1,2"));
     assertEquals(2, rsp.getNumFound());
     assertEquals(",", rsp.get(0).get("id"));
     assertEquals("1,2", rsp.get(1).get("id"));
-  }*/
+  }
 
-  /*@Test
+  @Test
   public void testGetIdsWithParams() throws Exception {
     SolrDocumentList rsp =
-        getSolrClient().getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
+        solrClientTestRule
+            .getSolrClient()
+            .getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
     assertEquals(2, rsp.getNumFound());
 
     assertEquals("1", rsp.get(0).get("id"));
@@ -143,5 +161,5 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertEquals("2", rsp.get(1).get("id"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term2_s"));
-  }*/
+  }
 }

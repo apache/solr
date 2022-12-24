@@ -16,12 +16,17 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import java.nio.file.Paths;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.junit.BeforeClass;
 
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
-/*   @BeforeClass
+  @BeforeClass
   public static void beforeTest() throws Exception {
-    EmbeddedSolrServerTestRule.initCore();
-  }*/
+    solrClientTestRule
+        .build()
+        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .init();
+  }
 }

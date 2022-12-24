@@ -16,8 +16,10 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -26,7 +28,6 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,10 +38,13 @@ import org.junit.Test;
  */
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
-/*  @BeforeClass
+  @BeforeClass
   public static void beforeClass() throws Exception {
-    EmbeddedSolrServerTestRule.initCore();
-  }*/
+    solrClientTestRule
+        .build()
+        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .init();
+  }
 
   static String field = "name";
 

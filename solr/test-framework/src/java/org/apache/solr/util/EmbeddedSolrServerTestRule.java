@@ -16,150 +16,258 @@
  */
 package org.apache.solr.util;
 
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import org.apache.solr.client.solrj.SolrClient;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.MetricsConfig;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_CORE_NAME = "collection1";
 
-  public  Path solrHome;
+  private EmbeddedSolrServer client = null;
 
-  public EmbeddedSolrServer client = null;
+  public EmbeddedSolrServerTestRule() {}
 
-  public EmbeddedSolrServerTestRule() {
+  public class Builder {
+    private Path solrHome;
+    private String schemaFile;
+    private String configFile = "solrconfig.xml";
+    private String collectionName = "collection1";
+    private RequestWriterSupplier requestWriterSupplier;
 
-  }
-
-  public void init(Path home) {
-    assert (client == null);
-    solrHome = home;
-    client = new EmbeddedSolrServer(solrHome, DEFAULT_CORE_NAME);
-  }
-
-  /*public void init2(Path home) {
-
-    solrHome = home;
-
-
-    // final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-    final String config = solrHome + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
-    final String schema = solrHome + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
-    System.setProperty("solr.solr.home", solrHome.toString());
-    log.info("####initCore");
-
-    // SolrTestCaseJ4.ignoreException("ignore_exception");
-    // SolrTestCaseJ4.factoryProp = System.getProperty("solr.directoryFactory");
-    // if (SolrTestCaseJ4.factoryProp == null) {
-    //  System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    // }
-
-    // other  methods like starting a jetty instance need these too
-    // System.setProperty("solr.test.sys.prop1", "propone");
-    // System.setProperty("solr.test.sys.prop2", "proptwo");
-
-    String configFile = SolrTestCaseJ4.getSolrConfigFile();
-    if (configFile != null) {
-
-      // Creating core
-      SolrTestCaseJ4.createCore();
+    public Builder setSolrHome(Path solrHome) {
+      this.solrHome = solrHome;
+      return this;
     }
-    log.info("####initCore end");
 
-  h =
-        new TestHarness(
-            DEFAULT_CORE_NAME,
-            initAndGetDataDir().getAbsolutePath(),
-            "solrconfig.xml",
-            getSchemaFile());
+    public Builder setSchemaFile(String schemaFile) {
+      this.schemaFile = schemaFile;
+      return this;
+    }
 
-  client = new EmbeddedSolrServer(solrHome, DEFAULT_CORE_NAME);
+    public Builder setConfigFile(String configFile) {
+      this.configFile = configFile;
+      return this;
+    }
+
+    public Builder setCollectionName(String collectionName) {
+      this.collectionName = collectionName;
+      return this;
+    }
+
+    public Builder setRequestWriterSupplier(RequestWriterSupplier requestWriterSupplier) {
+      this.requestWriterSupplier = requestWriterSupplier;
+      return this;
+    }
+
+    public Path getSolrHome() {
+      return solrHome;
+    }
+
+    public String getSchemaFile() {
+      return schemaFile;
+    }
+
+    public String getConfigFile() {
+      return configFile;
+    }
+
+    public String getCollectionName() {
+      return collectionName;
+    }
+
+    public RequestWriterSupplier getRequestWriterSupplier() {
+      return requestWriterSupplier;
+    }
+
+    public void init() {
+
+      EmbeddedSolrServerTestRule.this.init(this);
+    }
   }
-*/
+
+  private void init(Builder b) {
+    Path solrHome = b.getSolrHome();
+    String schemaFile = b.getSchemaFile();
+    String configFile = b.getConfigFile();
+    String collectionName = b.getCollectionName();
+
+    if (b.getRequestWriterSupplier() != null) {
+      SolrConfig solrConfig;
+
+      try {
+        solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+
+      NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
+
+      TestCoresLocator testCoreLocator =
+          new TestCoresLocator(
+              collectionName,
+              LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
+              solrConfig.getResourceName(),
+              IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig).getResourceName());
+
+      CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
+      container.load();
+      client = new EmbeddedSolrServer(container, collectionName, b.getRequestWriterSupplier());
+    } else if (schemaFile != null) {
+      SolrConfig solrConfig;
+
+      try {
+        solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+
+      NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
+
+      TestCoresLocator testCoreLocator =
+          new TestCoresLocator(
+              collectionName,
+              LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
+              solrConfig.getResourceName(),
+              IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
+
+      CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
+      container.load();
+      client = new EmbeddedSolrServer(container, collectionName);
+
+    } else {
+      client = new EmbeddedSolrServer(solrHome, collectionName);
+    }
+  }
+
+  public Builder build() {
+    return new Builder();
+  }
 
   @Override
   protected void before() throws Throwable {
     super.before();
-
   }
 
   @Override
   protected void after() {
 
     try {
+
       client.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
+    client.getCoreContainer().shutdown();
   }
+
   @Override
-  public SolrClient getSolrClient() {
+  public EmbeddedSolrServer getSolrClient() {
     return client;
   }
 
   @Override
   public void clearIndex() throws SolrServerException, IOException {
-   client.deleteByQuery("*:*");
+    client.deleteByQuery("*:*");
   }
 
   @Override
   public Path getSolrHome() {
-    return solrHome;
+    return Path.of(client.getCoreContainer().getSolrHome());
   }
 
+  // From TestHarness
+  private static class TestCoresLocator extends ReadOnlyCoresLocator {
 
+    final String coreName;
+    final String dataDir;
+    final String solrConfig;
+    final String schema;
 
-
-/*  protected static File initAndGetDataDir() {
-    File dataDir = null;
-    if (null == dataDir) {
-      final int id = dataDirCount.incrementAndGet();
-      dataDir = createTempDir("data-dir-" + id).toFile();
-      assertNotNull(dataDir);
-      if (log.isInfoEnabled()) {
-        log.info("Created dataDir: {}", dataDir.getAbsolutePath());
-      }
+    public TestCoresLocator(String coreName, String dataDir, String solrConfig, String schema) {
+      this.coreName = coreName == null ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
+      this.dataDir = dataDir;
+      this.schema = schema;
+      this.solrConfig = solrConfig;
     }
-    return dataDir;
-  }*/
 
-
-
-  /*  public static void initCore() throws Exception {
-    final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
-    final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
-    final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
-    Assert.assertNotNull(home);
-    // SolrTestCaseJ4.configString = config;
-    // SolrTestCaseJ4.schemaString = schema;
-    // SolrTestCaseJ4.testSolrHome = Paths.get(home);
-    // System.setProperty("solr.solr.home", home);
-    log.info("####initCore");
-
-    SolrTestCaseJ4.ignoreException("ignore_exception");
-    // SolrTestCaseJ4.factoryProp = System.getProperty("solr.directoryFactory");
-    // if (SolrTestCaseJ4.factoryProp == null) {
-    // System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    // }
-
-    // other  methods like starting a jetty instance need these too
-    // System.setProperty("solr.test.sys.prop1", "propone");
-    // System.setProperty("solr.test.sys.prop2", "proptwo");
-
-    String configFile = SolrTestCaseJ4.getSolrConfigFile();
-    if (configFile != null) {
-      SolrTestCaseJ4.createCore();
+    @Override
+    public List<CoreDescriptor> discover(CoreContainer cc) {
+      return ImmutableList.of(
+          new CoreDescriptor(
+              coreName,
+              cc.getCoreRootDirectory().resolve(coreName),
+              cc,
+              CoreDescriptor.CORE_DATADIR,
+              dataDir,
+              CoreDescriptor.CORE_CONFIG,
+              solrConfig,
+              CoreDescriptor.CORE_SCHEMA,
+              schema,
+              CoreDescriptor.CORE_COLLECTION,
+              System.getProperty("collection", "collection1"),
+              CoreDescriptor.CORE_SHARD,
+              System.getProperty("shard", "shard1")));
     }
-    log.info("####initCore end");
-  }*/
+  }
 
+  // From TestHarness
+  private NodeConfig buildTestNodeConfig(Path solrHome) {
+    CloudConfig cloudConfig =
+        (null == System.getProperty("zkHost"))
+            ? null
+            : new CloudConfig.CloudConfigBuilder(
+                    System.getProperty("host"),
+                    Integer.getInteger("hostPort", 8983),
+                    System.getProperty("hostContext", ""))
+                .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+                .setZkHost(System.getProperty("zkHost"))
+                .build();
+    UpdateShardHandlerConfig updateShardHandlerConfig =
+        new UpdateShardHandlerConfig(
+            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            30000,
+            30000,
+            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
+            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+    // universal default metric reporter
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("name", "default");
+    attributes.put("class", SolrJmxReporter.class.getName());
+    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+    MetricsConfig metricsConfig =
+        new MetricsConfig.MetricsConfigBuilder()
+            .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+            .build();
 
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
+        .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
+        .setCloudConfig(cloudConfig)
+        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setMetricsConfig(metricsConfig)
+        .build();
+  }
 }

@@ -16,15 +16,13 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.SolrTestCaseJ4.assertQ;
-import static org.apache.solr.SolrTestCaseJ4.initCore;
-import static org.apache.solr.SolrTestCaseJ4.req;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,22 +33,28 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSolrServerTestBase {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  protected static void initWithRequestWriter(RequestWriterSupplier requestWriterSupplier)
+      throws Exception {
     System.setProperty("enable.update.log", "true");
-    initCore("solrconfig.xml", "schema.xml");
+    SolrTestCaseJ4.newRandomConfig();
+    solrClientTestRule
+        .build()
+        .setSolrHome(Paths.get(SolrTestCaseJ4.TEST_HOME()))
+        .setRequestWriterSupplier(requestWriterSupplier)
+        .init();
   }
 
   @Before
@@ -58,22 +62,17 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     getSolrClient().deleteByQuery("*:*");
   }
 
-  abstract RequestWriterSupplier getRequestWriterSupplier();
-
-/*
   public synchronized EmbeddedSolrServer getSolrClient() {
-    return new EmbeddedSolrServer(
-        solrClientTestRule.getTestHarness().getCoreContainer(),
-        EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME,
-        getRequestWriterSupplier());
+    return solrClientTestRule.getSolrClient();
   }
-*/
 
-  private static void assertQR(
-      final String fieldName, final String queryValue, final int numFound) {
-    assertQ(
-        req("q", fieldName + ":" + queryValue, "indent", "true"),
-        "//result[@numFound = '" + numFound + "']");
+  private void assertQR(final String fieldName, final String queryValue, final int numFound)
+      throws SolrServerException, IOException {
+
+    SolrQuery query = new SolrQuery();
+    query.setParam("q", fieldName + ":" + queryValue);
+    QueryResponse rsp = getSolrClient().query(query);
+    assertEquals(numFound, rsp.getResults().getNumFound());
   }
 
   private void runTestForField(

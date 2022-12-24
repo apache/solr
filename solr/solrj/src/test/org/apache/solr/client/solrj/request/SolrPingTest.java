@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.request;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -29,30 +31,30 @@ import org.junit.Test;
 /** Test SolrPing in Solrj */
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
-/*
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath(), "collection1");
+    FileUtils.copyDirectory(SolrTestCaseJ4.getFile("solrj/solr"), testHome);
+
+    SolrTestCaseJ4.newRandomConfig();
+    // TODO NOCOMMIT
+    solrClientTestRule.build().setSolrHome(testHome.toPath()).setSchemaFile("schema.xml").init();
   }
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
-    assertU(optimize());
+    solrClientTestRule.clearIndex();
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
     getSolrClient().add(doc);
     getSolrClient().commit(true, true);
   }
-*/
 
-/*  @Test
+  @Test
   public void testEnabledSolrPing() throws Exception {
     SolrPing ping = new SolrPing();
     SolrPingResponse rsp = null;
@@ -77,5 +79,9 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
     assertNotNull(rsp);
-  }*/
+  }
+
+  public EmbeddedSolrServer getSolrClient() {
+    return solrClientTestRule.getSolrClient();
+  }
 }

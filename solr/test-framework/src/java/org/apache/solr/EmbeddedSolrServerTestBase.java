@@ -16,8 +16,6 @@
  */
 package org.apache.solr;
 
-import static org.apache.solr.util.EmbeddedSolrServerTestRule.DEFAULT_CORE_NAME;
-
 import com.google.common.io.ByteStreams;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -28,34 +26,19 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
-import org.apache.solr.util.SolrClientTestRule;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
-
   @ClassRule
-  public static EmbeddedSolrServerTestRule solrClientTestRule =
-      new EmbeddedSolrServerTestRule();
-
-  @BeforeClass
-  public static void init() {
-    solrClientTestRule.init(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()) );
-  }
-
+  public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
   public void upload(final String collection, final ContentStream... contents) {
     final Path base = solrClientTestRule.getSolrHome().resolve(collection);
@@ -102,5 +85,4 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
     return result;
   }
-
 }

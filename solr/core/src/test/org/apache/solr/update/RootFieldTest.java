@@ -19,9 +19,12 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
+import java.nio.file.Path;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -46,7 +49,12 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     useRootSchema = random().nextBoolean();
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
-    initCore("solrconfig.xml", schema);
+    SolrTestCaseJ4.newRandomConfig();
+    solrClientTestRule
+        .build()
+        .setSolrHome(Path.of(SolrTestCaseJ4.TEST_HOME()))
+        .setSchemaFile(schema)
+        .init();
   }
 
   @Test
@@ -123,5 +131,9 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
       client.add(docToUpdate);
     }
     client.commit();
+  }
+
+  public EmbeddedSolrServer getSolrClient() {
+    return solrClientTestRule.getSolrClient();
   }
 }
