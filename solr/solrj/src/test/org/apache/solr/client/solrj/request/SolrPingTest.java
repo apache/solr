@@ -37,7 +37,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     FileUtils.copyDirectory(SolrTestCaseJ4.getFile("solrj/solr"), testHome);
 
     SolrTestCaseJ4.newRandomConfig();
-    // TODO NOCOMMIT
+    // TODO NO COMMIT
     solrClientTestRule.build().setSolrHome(testHome.toPath()).setSchemaFile("schema.xml").init();
   }
 
