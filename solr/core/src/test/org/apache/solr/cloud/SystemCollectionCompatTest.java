@@ -76,7 +76,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     solrClient =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
             .build();
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
