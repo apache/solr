@@ -1967,6 +1967,14 @@ if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
+if [ -z "$SOLR_GC_LOGS_DIR" ]; then
+  SOLR_GC_LOGS_DIR="$SOLR_LOGS_DIR"
+fi
+
+if [ -z "$SOLR_GC_LOG_FILE" ]; then
+  SOLR_GC_LOG_FILE="solr_gc.log"
+fi
+
 LOG4J_CONFIG=()
 if [ -n "${LOG4J_PROPS:-}" ]; then
   LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
@@ -2009,7 +2017,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       gc_log_flag="-Xverbosegclog"
     fi
     if [ -z ${JAVA8_GC_LOG_FILE_OPTS+x} ]; then
-      GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+      GC_LOG_OPTS+=("$gc_log_flag:$SOLR_GC_LOGS_DIR/$SOLR_GC_LOG_FILE" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
     else
       GC_LOG_OPTS+=($JAVA8_GC_LOG_FILE_OPTS)
     fi
@@ -2020,7 +2028,7 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       # for simplicity, we only look at the prefix '-Xlog:gc'
       # (if 'all' or multiple tags are used starting with anything other then 'gc' the user is on their own)
       # if a single additional ':' exists in param, then there is already an explicit output specifier
-      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
+      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_GC_LOGS_DIR/$SOLR_GC_LOG_FILE:time,uptime:filecount=9,filesize=20M|")
     done
   fi
 fi
@@ -2269,6 +2277,7 @@ function start_solr() {
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
+  mk_writable_dir "$SOLR_GC_LOGS_DIR" "GC Logs"
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
     mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
   fi
