@@ -299,9 +299,11 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   public static class Builder {
+
+    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     private final Http2SolrClient http2Client;
     private final String[] baseSolrUrls;
-    private int aliveCheckInterval;
+    private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2Client = http2Client;
