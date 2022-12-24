@@ -303,7 +303,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Test Multi-Threaded routed updates for UpdateRequest
     try (CloudSolrClient threadedClient =
-        new RandomizingCloudSolrClientBuilder(
+        new CloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
             .build()) {
@@ -970,7 +970,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // NOTE: creating our own CloudSolrClient with settings for this specific test...
     try (CloudSolrClient stale_client =
-        new RandomizingCloudSolrClientBuilder(
+        new CloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
             .withParallelUpdates(true)

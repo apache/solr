@@ -81,7 +81,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
     try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
         CloudSolrClient cloudClient =
-            new RandomizingCloudSolrClientBuilder(clusterStateProvider)
+            new CloudSolrClientBuilder(clusterStateProvider)
                 .withLBHttpSolrClient(mockLbclient)
                 .build()) {
       livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
