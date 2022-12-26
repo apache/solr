@@ -29,7 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.stream.Stream;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -101,7 +108,7 @@ public class MoreLikeThisComponent extends SearchComponent {
 
           NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb.getResults().docList);
 
-          NamedList<String> temp = new NamedList<>();
+          NamedList<NamedList<String>> temp = new NamedList<>();
           Iterator<Entry<String, BooleanQuery>> idToQueryIt = bQuery.iterator();
 
           while (idToQueryIt.hasNext()) {
@@ -109,7 +116,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             String s = idToQuery.getValue().toString();
 
             log.debug("MLT Query:{}", s);
-            temp.add(idToQuery.getKey(), idToQuery.getValue().toString());
+            temp.add(idToQuery.getKey(), transferQuery(idToQuery.getValue(), rb.req.getSchema()));
           }
 
           rb.rsp.add("moreLikeThis", temp);
@@ -127,6 +134,34 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
   }
 
+  private NamedList<String> transferQuery(BooleanQuery mltQuery, IndexSchema schema) {
+    NamedList<String> locParams = new NamedList<>();
+    NamedList<String> params = new NamedList<>();
+    final BooleanQuery build = flattenMLTBQ(mltQuery);
+    build.visit(new QParamsTranslator(locParams, params, schema));
+    StringBuilder bq = new StringBuilder("{!bool");
+    locParams.forEachEntry((k,v) -> bq.append(" " + k + "=" + v));
+    params.add(CommonParams.Q, bq + "}");
+    return params;
+  }
+
+  private static BooleanQuery flattenMLTBQ(BooleanQuery mltQuery) {
+    BooleanQuery.Builder transformer = new BooleanQuery.Builder();
+    mltQuery.clauses().forEach(clause -> {
+      if (clause.getOccur()== BooleanClause.Occur.MUST && clause.getQuery() instanceof BooleanQuery) {
+        BooleanQuery mustOf = (BooleanQuery) clause.getQuery();
+        final Stream<BooleanClause> clauses = mustOf.clauses().stream();
+        if (clauses.allMatch(subClause -> subClause.getOccur()== BooleanClause.Occur.SHOULD)){
+          mustOf.clauses().forEach(subClause -> transformer.add(subClause.getQuery(), BooleanClause.Occur.SHOULD));
+          return;
+        }
+      }
+      transformer.add(clause.getQuery(), clause.getOccur());
+    });
+    final BooleanQuery build = transformer.build();
+    return build;
+  }
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0
@@ -139,17 +174,18 @@ public class MoreLikeThisComponent extends SearchComponent {
           // This should only happen in case of using shards.tolerant=true. Omit this ShardResponse
           continue;
         }
-        NamedList<?> moreLikeThisReponse =
-            (NamedList<?>) r.getSolrResponse().getResponse().get("moreLikeThis");
+        @SuppressWarnings("unchecked")
+        NamedList<NamedList<String>> moreLikeThisReponse =
+            (NamedList<NamedList<String>>) r.getSolrResponse().getResponse().get("moreLikeThis");
         if (log.isDebugEnabled()) {
           log.debug("ShardRequest.response.shard: {}", r.getShard());
         }
         if (moreLikeThisReponse != null) {
-          for (Entry<String, ?> entry : moreLikeThisReponse) {
+          for (Entry<String, NamedList<String>> entry : moreLikeThisReponse) {
             if (log.isDebugEnabled()) {
               log.debug("id: '{}' Query: '{}'", entry.getKey(), entry.getValue());
             }
-            ShardRequest s = buildShardQuery(rb, (String) entry.getValue(), entry.getKey());
+            ShardRequest s = buildShardQuery(rb, entry.getValue(), entry.getKey());
             rb.addRequest(this, s);
           }
         }
@@ -309,7 +345,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return result;
   }
 
-  ShardRequest buildShardQuery(ResponseBuilder rb, String q, String key) {
+  ShardRequest buildShardQuery(ResponseBuilder rb, NamedList<String> q, String key) {
     ShardRequest s = new ShardRequest();
     s.params = new ModifiableSolrParams(rb.req.getParams());
     s.purpose |= ShardRequest.PURPOSE_GET_MLT_RESULTS;
@@ -337,24 +373,9 @@ public class MoreLikeThisComponent extends SearchComponent {
     s.params.set(CommonParams.FL, "score," + id);
     s.params.set(SORT, "score desc");
     // MLT Query is submitted as normal query to shards.
-    s.params.set(CommonParams.Q, q);
+    s.params.remove(CommonParams.Q);
+    q.forEach((k,v) -> s.params.add(k,v));
 
-    return s;
-  }
-
-  ShardRequest buildMLTQuery(ResponseBuilder rb, String q) {
-    ShardRequest s = new ShardRequest();
-    s.params = new ModifiableSolrParams();
-
-    s.params.set(CommonParams.START, 0);
-
-    String id = rb.req.getSchema().getUniqueKeyField().getName();
-
-    s.params.set(CommonParams.FL, "score," + id);
-    // MLT Query is submitted as normal query to shards.
-    s.params.set(CommonParams.Q, q);
-
-    s.shards = ShardRequest.ALL_SHARDS;
     return s;
   }
 
@@ -448,5 +469,70 @@ public class MoreLikeThisComponent extends SearchComponent {
   @Override
   public Category getCategory() {
     return Category.QUERY;
+  }
+
+  private static class QParamsTranslator extends QueryVisitor {
+
+    private final NamedList<String> locParams;
+    private final NamedList<String> params;
+    private final IndexSchema schema;
+    int cnt;
+
+    public QParamsTranslator(NamedList<String> locParams, NamedList<String> params, IndexSchema schema) {
+      this.locParams = locParams;
+      this.params = params;
+      this.schema = schema;
+      cnt = 0;
+    }
+
+    @Override
+    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+      if (!(parent instanceof BooleanQuery) || ((BooleanQuery)parent).getMinimumNumberShouldMatch()>1)
+      {
+        throw new IllegalArgumentException("Expecting BooleanQuery with no minShouldMatch set, got " + parent);
+      }
+
+      if ((parent instanceof BooleanQuery) && occur== BooleanClause.Occur.MUST) {// BQ.visit() is rather tricky, I don't know why.
+        return this;
+      }
+      return new QueryVisitor() {
+        @Override
+        public void consumeTerms(Query query, Term... terms) {
+          if (terms.length!=1 || terms[0]==null) {
+            throw new IllegalArgumentException("Expecting just a TermQuery, got " + query + ", " + terms);
+          }
+          final Term term = terms[0];
+          final String paramName = "mltq" + cnt;
+          locParams.add(occur.name().toLowerCase(), "$" + paramName);
+          params.add(paramName, termToQuery(term));
+          cnt += 1;
+        }
+
+        @Override
+        public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+          if (occur != BooleanClause.Occur.MUST || !(parent instanceof BoostQuery)) {
+            throw new IllegalArgumentException("Expecting BoostQuery, got " + parent + ", " + occur);
+          }
+          final String paramName = "mltq" + cnt;
+          locParams.add(occur.name().toLowerCase(), "$" + paramName);
+          cnt += 1;
+          return new QueryVisitor() {
+            @Override
+            public void consumeTerms(Query query, Term... terms) {
+              if (terms.length!=1 || terms[0]==null) {
+                throw new IllegalArgumentException("Expecting just a TermQuery, got " + query + ", " + terms);
+              }
+              final Term term = terms[0];
+              params.add(paramName, "{!boost b=" + ((BoostQuery)parent).getBoost() + "}"+ termToQuery(term));
+            }
+          };
+        }
+      };
+    }
+
+    private String termToQuery(Term term) { // shouldn't it be {!term} ??{!raw }?
+      final String s = schema.getField(term.field()).getType().indexedToReadable(term.text());
+      return "{!term f=" + term.field() + "}" + s;
+    }
   }
 }
