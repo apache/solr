@@ -63,7 +63,7 @@ public class SolrCores {
   // core list, we need to essentially queue them up to be handled via pendingCoreOps.
   private final List<SolrCore> pendingCloses = new ArrayList<>();
 
-  protected SolrCores(CoreContainer container) {
+  public SolrCores(CoreContainer container) {
     this.container = container;
   }
 
@@ -73,7 +73,7 @@ public class SolrCores {
     }
   }
 
-  protected void removeCoreDescriptor(CoreDescriptor p) {
+  public void removeCoreDescriptor(CoreDescriptor p) {
     synchronized (modifyLock) {
       residentDescriptors.remove(p.getName());
     }
