@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -512,7 +513,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         public void consumeTerms(Query query, Term... terms) {
           if (terms.length != 1 || terms[0] == null) {
             throw new IllegalArgumentException(
-                "Expecting just a TermQuery, got " + query + ", " + terms);
+                "Expecting just a TermQuery, got " + query + ", " + Arrays.toString(terms));
           }
           params.add(ref(occur), termToQuery(terms[0]));
         }
@@ -529,7 +530,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             public void consumeTerms(Query query, Term... terms) {
               if (terms.length != 1 || terms[0] == null) {
                 throw new IllegalArgumentException(
-                    "Expecting just a TermQuery, got " + query + ", " + terms);
+                    "Expecting just a TermQuery, got " + query + ", " + Arrays.toString(terms));
               }
               final Term term = terms[0];
               params.add(
