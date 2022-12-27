@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -513,11 +514,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             throw new IllegalArgumentException(
                 "Expecting just a TermQuery, got " + query + ", " + terms);
           }
-          final Term term = terms[0];
-          final String paramName = "mltq" + cnt;
-          locParams.add(occur.name().toLowerCase(), "$" + paramName);
-          params.add(paramName, termToQuery(term));
-          cnt += 1;
+          params.add(ref(occur), termToQuery(terms[0]));
         }
 
         @Override
@@ -526,9 +523,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             throw new IllegalArgumentException(
                 "Expecting BoostQuery, got " + parent + ", " + occur);
           }
-          final String paramName = "mltq" + cnt;
-          locParams.add(occur.name().toLowerCase(), "$" + paramName);
-          cnt += 1;
+          final String paramName = ref(occur);
           return new QueryVisitor() {
             @Override
             public void consumeTerms(Query query, Term... terms) {
@@ -544,6 +539,13 @@ public class MoreLikeThisComponent extends SearchComponent {
           };
         }
       };
+    }
+
+    private String ref(BooleanClause.Occur occur) {
+      final String paramName = "mltq" + cnt;
+      locParams.add(occur.name().toLowerCase(Locale.getDefault()), "$" + paramName);
+      cnt += 1;
+      return paramName;
     }
 
     private String termToQuery(Term term) { // shouldn't it be {!term} ??{!raw }?
