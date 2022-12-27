@@ -126,7 +126,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   }
 
-  protected volatile List<Object> locks = objectList(3);
+  private volatile List<Object> locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
