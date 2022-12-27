@@ -44,7 +44,7 @@ import org.apache.solr.util.SolrPluginUtils;
  *     { "name" : "originalScore"}
  *   ],
  *   "params" : {
- *   "isNullSameAsZero" : true,
+ *     "isNullSameAsZero" : true,
  *     "trees" : [
  *       {
  *         "weight" : "1",

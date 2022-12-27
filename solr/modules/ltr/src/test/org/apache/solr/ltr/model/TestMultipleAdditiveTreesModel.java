@@ -96,7 +96,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     query.add(
         "rq",
-        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=dsjkafljjk}");
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=dsjkafljjk}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
@@ -147,7 +147,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     query.add(
         "rq",
-        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=true efi.user_query=w3}");
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -370,7 +370,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     query.add(
         "rq",
-        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==30.0");
@@ -386,7 +386,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     query.add(
         "rq",
-        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel isNullSameAsZero=false efi.user_query=w3}");
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");

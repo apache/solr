@@ -134,7 +134,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse isNullSameAsZero=false]");
+    query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add(
@@ -168,7 +168,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=dense isNullSameAsZero=false]");
+    query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add(
@@ -295,13 +295,13 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=sparse isNullSameAsZero=false]");
+    query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 isNullSameAsZero=false efi.user_query='w5' efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
 
     /*
     Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
@@ -342,13 +342,13 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv format=dense isNullSameAsZero=false]");
+    query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 isNullSameAsZero=false efi.user_query='w5' efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
 
     /*
     Doc1 = "constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
