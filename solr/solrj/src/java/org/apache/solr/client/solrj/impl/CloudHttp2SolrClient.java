@@ -135,7 +135,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
   /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */
   public static class Builder {
-    public int parallelCacheRefreshesLocks = 3;
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
@@ -149,6 +148,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTime =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+    private int parallelCacheRefreshesLocks = 3;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
