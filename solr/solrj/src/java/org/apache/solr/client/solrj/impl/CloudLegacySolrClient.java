@@ -276,7 +276,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      *
      * @param seconds ttl value in seconds
      */
-    public Builder setCollectionCacheTTL(int seconds) {
+    public Builder setCollectionCacheTtl(int seconds) {
       assert seconds > 0;
       this.timeToLive = seconds;
       return this;

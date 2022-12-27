@@ -286,7 +286,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * Sets the cache ttl for DocCollection Objects cached.
    *
    * @param seconds ttl value in seconds
-   * @deprecated use {@link CloudSolrClient.Builder#setCollectionCacheTTL(int)} instead
+   * @deprecated use {@link CloudSolrClient.Builder#setCollectionCacheTtl(int)} instead
    */
   @Deprecated
   public void setCollectionCacheTTl(int seconds) {
