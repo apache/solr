@@ -87,7 +87,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
     this.retryExpiryTime = builder.retryExpiryTime;
-    this.collectionStateCache.timeToLive = builder.timeToLive * 1000L;
+    this.collectionStateCache.timeToLiveMs = builder.timeToLive * 1000L;
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
