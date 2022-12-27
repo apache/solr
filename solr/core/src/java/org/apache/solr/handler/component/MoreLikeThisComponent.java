@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -140,24 +139,33 @@ public class MoreLikeThisComponent extends SearchComponent {
     final BooleanQuery build = flattenMLTBQ(mltQuery);
     build.visit(new QParamsTranslator(locParams, params, schema));
     StringBuilder bq = new StringBuilder("{!bool");
-    locParams.forEachEntry((k,v) -> bq.append(" " + k + "=" + v));
+    locParams.forEachEntry((k, v) -> bq.append(" " + k + "=" + v));
     params.add(CommonParams.Q, bq + "}");
     return params;
   }
 
   private static BooleanQuery flattenMLTBQ(BooleanQuery mltQuery) {
     BooleanQuery.Builder transformer = new BooleanQuery.Builder();
-    mltQuery.clauses().forEach(clause -> {
-      if (clause.getOccur()== BooleanClause.Occur.MUST && clause.getQuery() instanceof BooleanQuery) {
-        BooleanQuery mustOf = (BooleanQuery) clause.getQuery();
-        final Stream<BooleanClause> clauses = mustOf.clauses().stream();
-        if (clauses.allMatch(subClause -> subClause.getOccur()== BooleanClause.Occur.SHOULD)){
-          mustOf.clauses().forEach(subClause -> transformer.add(subClause.getQuery(), BooleanClause.Occur.SHOULD));
-          return;
-        }
-      }
-      transformer.add(clause.getQuery(), clause.getOccur());
-    });
+    mltQuery
+        .clauses()
+        .forEach(
+            clause -> {
+              if (clause.getOccur() == BooleanClause.Occur.MUST
+                  && clause.getQuery() instanceof BooleanQuery) {
+                BooleanQuery mustOf = (BooleanQuery) clause.getQuery();
+                final Stream<BooleanClause> clauses = mustOf.clauses().stream();
+                if (clauses.allMatch(
+                    subClause -> subClause.getOccur() == BooleanClause.Occur.SHOULD)) {
+                  mustOf
+                      .clauses()
+                      .forEach(
+                          subClause ->
+                              transformer.add(subClause.getQuery(), BooleanClause.Occur.SHOULD));
+                  return;
+                }
+              }
+              transformer.add(clause.getQuery(), clause.getOccur());
+            });
     final BooleanQuery build = transformer.build();
     return build;
   }
@@ -374,7 +382,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     s.params.set(SORT, "score desc");
     // MLT Query is submitted as normal query to shards.
     s.params.remove(CommonParams.Q);
-    q.forEach((k,v) -> s.params.add(k,v));
+    q.forEach((k, v) -> s.params.add(k, v));
 
     return s;
   }
@@ -478,7 +486,8 @@ public class MoreLikeThisComponent extends SearchComponent {
     private final IndexSchema schema;
     int cnt;
 
-    public QParamsTranslator(NamedList<String> locParams, NamedList<String> params, IndexSchema schema) {
+    public QParamsTranslator(
+        NamedList<String> locParams, NamedList<String> params, IndexSchema schema) {
       this.locParams = locParams;
       this.params = params;
       this.schema = schema;
@@ -487,19 +496,22 @@ public class MoreLikeThisComponent extends SearchComponent {
 
     @Override
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      if (!(parent instanceof BooleanQuery) || ((BooleanQuery)parent).getMinimumNumberShouldMatch()>1)
-      {
-        throw new IllegalArgumentException("Expecting BooleanQuery with no minShouldMatch set, got " + parent);
+      if (!(parent instanceof BooleanQuery)
+          || ((BooleanQuery) parent).getMinimumNumberShouldMatch() > 1) {
+        throw new IllegalArgumentException(
+            "Expecting BooleanQuery with no minShouldMatch set, got " + parent);
       }
 
-      if ((parent instanceof BooleanQuery) && occur== BooleanClause.Occur.MUST) {// BQ.visit() is rather tricky, I don't know why.
+      if ((parent instanceof BooleanQuery)
+          && occur == BooleanClause.Occur.MUST) { // BQ.visit() is rather tricky, I don't know why.
         return this;
       }
       return new QueryVisitor() {
         @Override
         public void consumeTerms(Query query, Term... terms) {
-          if (terms.length!=1 || terms[0]==null) {
-            throw new IllegalArgumentException("Expecting just a TermQuery, got " + query + ", " + terms);
+          if (terms.length != 1 || terms[0] == null) {
+            throw new IllegalArgumentException(
+                "Expecting just a TermQuery, got " + query + ", " + terms);
           }
           final Term term = terms[0];
           final String paramName = "mltq" + cnt;
@@ -511,7 +523,8 @@ public class MoreLikeThisComponent extends SearchComponent {
         @Override
         public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
           if (occur != BooleanClause.Occur.MUST || !(parent instanceof BoostQuery)) {
-            throw new IllegalArgumentException("Expecting BoostQuery, got " + parent + ", " + occur);
+            throw new IllegalArgumentException(
+                "Expecting BoostQuery, got " + parent + ", " + occur);
           }
           final String paramName = "mltq" + cnt;
           locParams.add(occur.name().toLowerCase(), "$" + paramName);
@@ -519,11 +532,14 @@ public class MoreLikeThisComponent extends SearchComponent {
           return new QueryVisitor() {
             @Override
             public void consumeTerms(Query query, Term... terms) {
-              if (terms.length!=1 || terms[0]==null) {
-                throw new IllegalArgumentException("Expecting just a TermQuery, got " + query + ", " + terms);
+              if (terms.length != 1 || terms[0] == null) {
+                throw new IllegalArgumentException(
+                    "Expecting just a TermQuery, got " + query + ", " + terms);
               }
               final Term term = terms[0];
-              params.add(paramName, "{!boost b=" + ((BoostQuery)parent).getBoost() + "}"+ termToQuery(term));
+              params.add(
+                  paramName,
+                  "{!boost b=" + ((BoostQuery) parent).getBoost() + "}" + termToQuery(term));
             }
           };
         }
