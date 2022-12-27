@@ -252,7 +252,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Tells {@link CloudHttp2SolrClient.Builder} if caches are expired then they are refreshed
+     * When caches are expired then they are refreshed
      * after acquiring a lock. Use this to set the number of locks.
      *
      * <p>Defaults to 3.
