@@ -10,25 +10,29 @@ If you have any questions along the way, you can reach out to the community usin
 
 ## How To Contribute
 
-Information on how to contribute can be found [here](https://github.com/apache/solr/blob/main/dev-docs/how-to-contribute.adoc).
+Information on how to contribute can be found in the [How To Contribute developer documentation](solr/blob/main/dev-docs/how-to-contribute.adoc).
 
 ## Contributing Documentation
 
-One very helpful area for contribution to Solr is via documentation improvements and additions to help make Solr easier to use for others. You can read more about how to modify and update Solr documentation [here](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/README.adoc).
+One very helpful area for contribution to Solr is via documentation improvements and additions to help make Solr easier to use for others. You can read more about how to modify and update Solr documentation in the [Solr Reference Guide README](solr/blob/main/solr/solr-ref-guide/README.adoc).
+
+Additionally, you can contribute to improve the [Solr developer documentation](dev-docs) to make the contribution process easier for future developers.
+
+Finally, changes to the Solr website (solr.apache.org) can be made in the [solr-site repository](https://github.com/apache/solr-site).
 
 ## Working With Solr Source Code
 
-Information on how to work with Solr source code and the build system can be found [here](https://github.com/apache/solr/blob/main/dev-docs/solr-source-code.adoc).
+Information on how to work with Solr source code and the build system can be found in the [Solr Source Code developer documentation](solr/blob/main/dev-docs/solr-source-code.adoc).
 
 ## IDE Support
 
-Information on IDE support can be found [here](https://github.com/apache/solr/blob/main/dev-docs/IDEs.adoc).
+Information on IDE support can be found in the [IDEs developer documentation](solr/blob/main/dev-docs/IDEs.adoc).
 
 ## JVM Support
 
-Information on JVMs can be found [here](https://github.com/apache/solr/blob/main/dev-docs/jvms.adoc).
+Information on JVMs can be found in the [JVMs developer documentation](solr/blob/main/dev-docs/jvms.adoc).
 
 ## FAQs
 
-Review FAQs [here](https://github.com/apache/solr/blob/main/dev-docs/FAQ.adoc)
+Frequently asked questions can be found in the [FAQ developer documentation](solr/blob/main/dev-docs/FAQ.adoc)
 
