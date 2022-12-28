@@ -29,8 +29,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
    * Test method for {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} and {@link
    * LBHttp2SolrClient#addQueryParams(String)}.
    *
-   * <p>Validate that the query param keys passed in are used in the base <code>Http2SolrClient</code>
-   * instance.
+   * <p>Validate that the query param keys passed in are used in the base <code>Http2SolrClient
+   * </code> instance.
    *
    * <p>TODO: Eliminate the addQueryParams aspect of test as it is not compatible with goal of
    * immutable SolrClient
@@ -43,9 +43,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
         LBHttp2SolrClient testClient =
-            new LBHttp2SolrClient.Builder(http2Client, url)
-                .withQueryParams(queryParams)
-                .build()) {
+            new LBHttp2SolrClient.Builder(http2Client, url).withQueryParams(queryParams).build()) {
 
       assertArrayEquals(
           "Wrong queryParams found in lb client.",
