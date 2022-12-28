@@ -23,7 +23,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -316,7 +315,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
     private int aliveCheckInterval = CHECK_INTERVAL;
-    private volatile Set<String> queryParams = Collections.emptySet();
+    private Set<String> queryParams = Set.of();
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
