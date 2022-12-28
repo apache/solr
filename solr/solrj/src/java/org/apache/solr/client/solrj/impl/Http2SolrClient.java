@@ -186,6 +186,7 @@ public class Http2SolrClient extends SolrClient {
       requestTimeout = builder.requestTimeout;
     }
     httpClient.setFollowRedirects(builder.followRedirects);
+    this.queryParams = builder.queryParams;
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -991,6 +992,7 @@ public class Http2SolrClient extends SolrClient {
     private ExecutorService executor;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
+    private volatile Set<String> queryParams = Collections.emptySet();
 
     public Builder() {}
 
@@ -1080,6 +1082,18 @@ public class Http2SolrClient extends SolrClient {
     }
 
     /**
+     * Expert Method
+     *
+     * @param queryParams set of param keys that are only sent via the query string. Note that the param will
+     *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
+     */
+    public Builder setQueryParams(Set<String> queryParams) {
+      this.queryParams = queryParams;
+      return this;
+    }
+
+    /**
      * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
      * by 4
      */
@@ -1122,10 +1136,12 @@ public class Http2SolrClient extends SolrClient {
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys to only send via the query string Note that the param will
+   * @param queryParams set of param keys that are only sent via the query string. Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
+   * @deprecated use {@link Http2SolrClient.Builder#setQueryParams(Set)} instead
    */
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
   }
