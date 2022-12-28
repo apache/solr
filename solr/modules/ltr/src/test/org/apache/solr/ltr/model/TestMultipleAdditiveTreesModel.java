@@ -317,10 +317,10 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         "rq",
         "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==30.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
 
   private void doTestMultipleAdditiveTreesExplainWithNulls() throws Exception {
@@ -352,8 +352,8 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     MatcherAssert.assertThat(qryResult, containsString("50.0 = tree 0"));
     MatcherAssert.assertThat(qryResult, containsString("-20.0 = tree 1"));
-    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle': NaN"));
     MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    MatcherAssert.assertThat(qryResult, containsString("'constantScoreToForceMultipleAdditiveTreesScoreAllDocs':1.0 <= 10.0"));
     MatcherAssert.assertThat(qryResult, containsString("'userDevice': NaN"));
 
     MatcherAssert.assertThat(qryResult, containsString(" Go Right "));
