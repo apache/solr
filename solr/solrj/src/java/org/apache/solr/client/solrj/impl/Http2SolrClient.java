@@ -1084,8 +1084,9 @@ public class Http2SolrClient extends SolrClient {
     /**
      * Expert Method
      *
-     * @param queryParams set of param keys that are only sent via the query string. Note that the param will
-     *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+     * @param queryParams set of param keys that are only sent via the query string. Note that the
+     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+     *     query params.
      * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
      */
     public Builder setQueryParams(Set<String> queryParams) {
@@ -1136,8 +1137,9 @@ public class Http2SolrClient extends SolrClient {
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys that are only sent via the query string. Note that the param will
-   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   * @param queryParams set of param keys that are only sent via the query string. Note that the
+   *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+   *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
    * @deprecated use {@link Http2SolrClient.Builder#setQueryParams(Set)} instead
    */
