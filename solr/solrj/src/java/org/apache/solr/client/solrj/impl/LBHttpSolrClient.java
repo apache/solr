@@ -180,9 +180,11 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */
   public static class Builder extends SolrClientBuilder<Builder> {
+
+    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
-    private int aliveCheckInterval;
+    private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();

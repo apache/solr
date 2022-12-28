@@ -136,8 +136,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
     container.load();
 
-      client = new EmbeddedSolrServer(container, collectionName, requestWriterSupplier);
-
+    client = new EmbeddedSolrServer(container, collectionName, requestWriterSupplier);
   }
 
   public Builder build() {
