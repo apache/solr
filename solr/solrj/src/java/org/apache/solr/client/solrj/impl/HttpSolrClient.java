@@ -148,7 +148,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private volatile Set<String> queryParams = Collections.emptySet();
+  private volatile Set<String> queryParams = Set.of();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
 
