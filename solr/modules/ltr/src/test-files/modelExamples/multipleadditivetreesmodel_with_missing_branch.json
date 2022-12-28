@@ -14,14 +14,12 @@
                 "root": {
                     "feature": "matchedTitle",
                     "threshold": "0.5f",
-                    "missing": "right",
                     "left" : {
                         "value" : "-100"
                     },
                     "right": {
                         "feature" : "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
                         "threshold": "10.0f",
-                        "missing": "right",
                         "left" : {
                             "feature" : "userDevice",
                             "threshold": "0f",

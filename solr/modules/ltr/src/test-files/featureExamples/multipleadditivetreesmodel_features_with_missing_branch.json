@@ -3,8 +3,7 @@
         "name": "matchedTitle",
         "class": "org.apache.solr.ltr.feature.SolrFeature",
         "params": {
-            "q": "{!terms f=title}${user_query}",
-            "defaultValue": "NaN"
+            "q": "{!terms f=title}${user_query}"
         }
     },
     {

@@ -14,11 +14,9 @@
                 "root": {
                     "feature": "matchedTitle",
                     "threshold": "0.5f",
-                    "missing": "left",
                     "left" : {
                         "feature" : "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
                         "threshold": "10.0f",
-                        "missing": "right",
                         "left" : {
                             "feature" : "userDevice",
                             "threshold": "0f",

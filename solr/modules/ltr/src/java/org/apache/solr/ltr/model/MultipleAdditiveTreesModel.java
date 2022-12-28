@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -44,7 +45,6 @@ import org.apache.solr.util.SolrPluginUtils;
  *     { "name" : "originalScore"}
  *   ],
  *   "params" : {
- *     "isNullSameAsZero" : true,
  *     "trees" : [
  *       {
  *         "weight" : "1",
@@ -113,7 +113,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
    */
   private List<RegressionTree> trees;
 
-  private boolean isNullSameAsZero;
+  private boolean isNullSameAsZero = true;
 
   private RegressionTree createRegressionTree(Map<String, Object> map) {
     final RegressionTree rt = new RegressionTree();
@@ -298,6 +298,27 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   @Override
   public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
     normalizeFeaturesInPlace(modelFeatureValues, isNullSameAsZero);
+  }
+
+
+  protected void normalizeFeaturesInPlace(float[] modelFeatureValues, boolean isNullSameAsZero) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
+    if (modelFeatureValues.length != norms.size()) {
+      throw new FeatureException("Must have normalizer for every feature");
+    }
+    if (isNullSameAsZero) {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+        modelFeatureValuesNormalized[idx] =
+                norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      }
+    } else {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+        if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+          modelFeatureValuesNormalized[idx] =
+                  norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+        }
+      }
+    }
   }
 
   @Override
