@@ -83,25 +83,25 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
-  private final Http2SolrClient httpClient;
+  private final Http2SolrClient http2SolrClient;
 
   /**
    * @deprecated Use {@link LBHttp2SolrClient.Builder} instead
    */
   @Deprecated
-  public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
+  public LBHttp2SolrClient(Http2SolrClient http2SolrClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
-    this.httpClient = httpClient;
+    this.http2SolrClient = http2SolrClient;
   }
 
-  private LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls) {
+  private LBHttp2SolrClient(Http2SolrClient http2SolrClient, List<String> baseSolrUrls) {
     super(baseSolrUrls);
-    this.httpClient = httpClient;
+    this.http2SolrClient = http2SolrClient;
   }
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    return httpClient;
+    return http2SolrClient;
   }
 
   /**
@@ -116,12 +116,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   public void setParser(ResponseParser parser) {
     super.setParser(parser);
-    this.httpClient.setParser(parser);
+    this.http2SolrClient.setParser(parser);
   }
 
   @Override
   public ResponseParser getParser() {
-    return httpClient.getParser();
+    return http2SolrClient.getParser();
   }
 
   /**
@@ -137,12 +137,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   public void setRequestWriter(RequestWriter writer) {
     super.setRequestWriter(writer);
-    this.httpClient.setRequestWriter(writer);
+    this.http2SolrClient.setRequestWriter(writer);
   }
 
   @Override
   public RequestWriter getRequestWriter() {
-    return httpClient.getRequestWriter();
+    return http2SolrClient.getRequestWriter();
   }
 
   /**
@@ -152,7 +152,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     super.setQueryParams(queryParams);
-    this.httpClient.setQueryParams(queryParams);
+    this.http2SolrClient.setQueryParams(queryParams);
   }
 
   /**
@@ -165,7 +165,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Deprecated
   public void addQueryParams(String queryOnlyParam) {
     super.addQueryParams(queryOnlyParam);
-    this.httpClient.setQueryParams(getQueryParams());
+    this.http2SolrClient.setQueryParams(getQueryParams());
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
