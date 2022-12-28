@@ -313,13 +313,13 @@ public class LBHttp2SolrClient extends LBSolrClient {
   public static class Builder {
 
     public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
-    private final Http2SolrClient http2Client;
+    private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
     private int aliveCheckInterval = CHECK_INTERVAL;
     private volatile Set<String> queryParams = Collections.emptySet();
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
-      this.http2Client = http2Client;
+      this.http2SolrClient = http2Client;
       this.baseSolrUrls = baseSolrUrls;
     }
 
@@ -353,9 +353,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
-          new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
+          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
       solrClient.queryParams = this.queryParams;
-      this.http2Client.queryParams = this.queryParams;
+      this.http2SolrClient.queryParams = this.queryParams;
       solrClient.aliveCheckInterval = this.aliveCheckInterval;
       return solrClient;
     }
