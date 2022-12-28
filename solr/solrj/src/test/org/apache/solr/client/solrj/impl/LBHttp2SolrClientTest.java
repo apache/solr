@@ -54,7 +54,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       assertArrayEquals(
           "Wrong queryParams found in base client.",
           queryParams.toArray(),
-          http2Client.getQueryParams().toArray());
+          http2Client.getUrlParamNames().toArray());
 
       testClient.addQueryParams("param2");
       queryParams.add("param2");
@@ -65,7 +65,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       assertArrayEquals(
           "Wrong queryParams found in base client.",
           queryParams.toArray(),
-          http2Client.getQueryParams().toArray());
+          http2Client.getUrlParamNames().toArray());
     }
   }
 }

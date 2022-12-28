@@ -84,7 +84,7 @@ public abstract class LBSolrClient extends SolrClient {
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
 
-  protected Set<String> queryParams = new HashSet<>();
+  protected Set<String> urlParamNames = new HashSet<>();
 
   static {
     solrQuery.setRows(0);
@@ -319,19 +319,27 @@ public abstract class LBSolrClient extends SolrClient {
     return new ServerWrapper(baseUrl);
   }
 
+  /**
+   * @deprecated  use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return queryParams;
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
    * Expert Method.
    *
-   * @param queryParams set of param keys to only send via the query string
+   * @param urlParamNames set of param keys to only send via the query string
    * @deprecated use {@link LBHttpSolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public void setQueryParams(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
   }
 
   /**
@@ -342,7 +350,7 @@ public abstract class LBSolrClient extends SolrClient {
    */
   @Deprecated
   public void addQueryParams(String queryOnlyParam) {
-    this.queryParams.add(queryOnlyParam);
+    this.urlParamNames.add(queryOnlyParam);
   }
 
   public static String normalize(String server) {

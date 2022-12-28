@@ -141,8 +141,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated  use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return this.client.getQueryParams();
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return this.client.getUrlParamNames();
   }
 
   /**

@@ -148,7 +148,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private volatile Set<String> queryParams = Set.of();
+  private volatile Set<String> urlParamNames = Set.of();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
 
@@ -187,17 +187,25 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
-    this.queryParams = builder.queryParams;
+    this.urlParamNames = builder.queryParams;
   }
 
+  /**
+   * @deprecated  use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return queryParams;
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys to only send via the query string Note that the param will
+   * @param urlParamNames set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
    *     multiple threads simultaneously. To avoid this, use {@link
@@ -206,8 +214,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * @deprecated use {@link Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public void setQueryParams(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
   }
 
   /**
@@ -436,7 +444,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
-        ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
         String fullQueryUrl = url + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =

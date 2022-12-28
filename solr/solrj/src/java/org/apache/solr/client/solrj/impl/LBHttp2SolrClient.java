@@ -151,7 +151,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     super.setQueryParams(queryParams);
-    this.http2SolrClient.setQueryParams(queryParams);
+    this.http2SolrClient.setUrlParamNames(queryParams);
   }
 
   /**
@@ -164,7 +164,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Deprecated
   public void addQueryParams(String queryOnlyParam) {
     super.addQueryParams(queryOnlyParam);
-    this.http2SolrClient.setQueryParams(getQueryParams());
+    this.http2SolrClient.setUrlParamNames(getQueryParams());
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
@@ -353,8 +353,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.queryParams = this.queryParams;
-      this.http2SolrClient.queryParams = this.queryParams;
+      solrClient.urlParamNames = this.queryParams;
+      this.http2SolrClient.urlParamNames = this.queryParams;
       solrClient.aliveCheckInterval = this.aliveCheckInterval;
       return solrClient;
     }

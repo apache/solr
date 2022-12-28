@@ -128,7 +128,7 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private HttpClient httpClient;
-  protected Set<String> queryParams = Set.of();
+  protected Set<String> urlParamNames = Set.of();
   private int idleTimeout;
   private int requestTimeout;
 
@@ -186,7 +186,7 @@ public class Http2SolrClient extends SolrClient {
       requestTimeout = builder.requestTimeout;
     }
     httpClient.setFollowRedirects(builder.followRedirects);
-    this.queryParams = builder.queryParams;
+    this.urlParamNames = builder.urlParamNames;
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -680,7 +680,7 @@ public class Http2SolrClient extends SolrClient {
                 contentWriter.getContentType(), ByteBuffer.wrap(baos.getbuf(), 0, baos.size())));
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
-        ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
         Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
         return fillContentStream(req, streams, wparams, isMultipart);
@@ -992,7 +992,7 @@ public class Http2SolrClient extends SolrClient {
     private ExecutorService executor;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
-    private Set<String> queryParams = Set.of();
+    private Set<String> urlParamNames = Set.of();
 
     public Builder() {}
 
@@ -1084,13 +1084,13 @@ public class Http2SolrClient extends SolrClient {
     /**
      * Expert Method
      *
-     * @param queryParams set of param keys that are only sent via the query string. Note that the
+     * @param urlParamNames set of param keys that are only sent via the query string. Note that the
      *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
      *     query params.
      * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
      */
-    public Builder withTheseParamNamesInTheUrl(Set<String> queryParams) {
-      this.queryParams = queryParams;
+    public Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+      this.urlParamNames = urlParamNames;
       return this;
     }
 
@@ -1130,22 +1130,30 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated  use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return queryParams;
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys that are only sent via the query string. Note that the
+   * @param urlParamNames set of param keys that are only sent via the query string. Note that the
    *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
    *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
    * @deprecated use {@link Http2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public void setUrlParamNames(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
   }
 
   private ModifiableSolrParams calculateQueryParams(
