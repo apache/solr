@@ -191,7 +191,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   /**
-   * @deprecated  use {@link #getUrlParamNames()}
+   * @deprecated use {@link #getUrlParamNames()}
    */
   @Deprecated
   public Set<String> getQueryParams() {
@@ -205,8 +205,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   /**
    * Expert Method
    *
-   * @param urlParamNames set of param keys to only send via the query string Note that the param will
-   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   * @param urlParamNames set of param keys to only send via the query string Note that the param
+   *     will be sent as a query string if the key is part of this Set or the SolrRequest's query
+   *     params.
    *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
    *     multiple threads simultaneously. To avoid this, use {@link
    *     Builder#withTheseParamNamesInTheUrl(Set)}.

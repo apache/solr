@@ -320,7 +320,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * @deprecated  use {@link #getUrlParamNames()}
+   * @deprecated use {@link #getUrlParamNames()}
    */
   @Deprecated
   public Set<String> getQueryParams() {
