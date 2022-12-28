@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import java.lang.Character
+
 import org.apache.rat.Defaults
 import org.apache.rat.document.impl.FileDocument
 import org.apache.rat.api.MetaData
@@ -173,7 +175,8 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
     def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
-    def ventilatedProsePattern = ~$/(?<!^)(\.)(\s)(.)/$;
+    //def ventilatedProsePattern = ~$/(?sm)(^[A-Z].*\.)/$;
+    def ventilatedProsePattern = ~$/(?s)(^[A-Z].*)/$;
 
     def isLicense = { matcher, ratDocument ->
       licenseMatcher.reset()
@@ -270,9 +273,34 @@ class ValidateSourcePatternsTask extends DefaultTask {
         checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
       }
       if (f.name.endsWith('.adoc')) {
-        def ventilatedProseMatcher = ventilatedProsePattern.matcher(text);
-        while (ventilatedProseMatcher.find()) {
-          reportViolation(f, "We use ventilated prose, i.e one sentence per line in ascii docs. File: " + f.name + ", position: " + ventilatedProseMatcher.start() + '...' + ventilatedProseMatcher.end());
+        //def ventilatedProseMatcher = ventilatedProsePattern.matcher(text);
+        //while (ventilatedProseMatcher.find()) {
+        //  reportViolation(f, "We use ventilated prose, i.e one sentence per line in ascii docs. File: " + f.name + ", position: " + ventilatedProseMatcher.start() + '...' + ventilatedProseMatcher.end());
+        //}
+        int line_counter = 0
+        f.eachLine { String line ->
+          line_counter++
+          line = line.trim()
+
+          //println line.length()
+          if (line.length() > 0 && Character.isUpperCase(line.charAt(0))) {
+            int ln=line.length();
+            for(int i=0;i<ln/2;i++)
+            {
+              line=line.replace("  "," ");
+            }
+            if (line.split(' ').length > 12) {
+              //println "last char is:" + line.charAt(line.length()-1) + "D"
+              if (line.charAt(line.length()-1) == '.' || line.charAt(line.length()-1) == ':' || line.charAt(line.length()-1) == '?') {
+                //println "doesn't ends with ."
+              }
+              else {
+                //reportViolation(f, "We use ventilated prose, i.e one sentence per line in ascii docs. File: " + f.name + ", line: " + line_counter + "... " + line);
+                println f.name
+                println line
+              }
+            }
+          }
         }
       }
     }
