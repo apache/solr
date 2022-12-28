@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -53,7 +55,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     private Path solrHome;
     private String schemaFile = "schema.xml";
     private String configFile = "solrconfig.xml";
-    private String collectionName = "collection1";
+    private String collectionName = DEFAULT_TEST_COLLECTION_NAME;
     private RequestWriterSupplier requestWriterSupplier;
 
     public Builder setSolrHome(Path solrHome) {
