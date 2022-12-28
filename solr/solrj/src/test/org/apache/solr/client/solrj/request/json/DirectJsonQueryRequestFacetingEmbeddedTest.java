@@ -84,7 +84,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
         .setSolrHome(tempSolrHome.toPath())
         .setCollectionName(COLLECTION_NAME)
         .init();
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client =  solrClientTestRule.getSolrClient();
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
@@ -111,7 +111,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -146,7 +146,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -184,7 +184,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -225,7 +225,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -260,7 +260,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -281,7 +281,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -307,7 +307,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -345,7 +345,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -385,7 +385,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -424,7 +424,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -455,7 +455,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "  }",
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -487,7 +487,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -518,7 +518,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -548,7 +548,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -578,7 +578,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
@@ -615,7 +615,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
             "}");
     final DirectJsonQueryRequest request = new DirectJsonQueryRequest(jsonBody);
 
-    QueryResponse response = request.process(solrClientTestRule.getSolrClient(), COLLECTION_NAME);
+    QueryResponse response = request.process(getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_IN_STOCK, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();

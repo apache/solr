@@ -20,7 +20,6 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,8 +36,8 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     FileUtils.copyDirectory(SolrTestCaseJ4.getFile("solrj/solr"), testHome);
 
     SolrTestCaseJ4.newRandomConfig();
-    // TODO NO COMMIT
-    solrClientTestRule.build().setSolrHome(testHome.toPath()).setSchemaFile("schema.xml").init();
+    // TODO NOCOMMIT
+    solrClientTestRule.build().setSolrHome(testHome.toPath()).init();
   }
 
   @Before
@@ -79,9 +78,5 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
     assertNotNull(rsp);
-  }
-
-  public EmbeddedSolrServer getSolrClient() {
-    return solrClientTestRule.getSolrClient();
   }
 }

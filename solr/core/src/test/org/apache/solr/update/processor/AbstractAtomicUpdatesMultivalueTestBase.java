@@ -63,14 +63,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   public synchronized EmbeddedSolrServer getSolrClient() {
-    return solrClientTestRule.getSolrClient();
+    return getSolrClient();
   }
 
   private void assertQR(final String fieldName, final String queryValue, final int numFound)
       throws SolrServerException, IOException {
 
-    SolrQuery query = new SolrQuery();
-    query.setParam("q", fieldName + ":" + queryValue);
+    SolrQuery query = new SolrQuery("q", fieldName + ":" + queryValue);
     QueryResponse rsp = getSolrClient().query(query);
     assertEquals(numFound, rsp.getResults().getNumFound());
   }

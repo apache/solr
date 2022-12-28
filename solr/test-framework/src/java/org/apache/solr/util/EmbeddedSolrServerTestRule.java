@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -52,7 +51,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   public class Builder {
     private Path solrHome;
-    private String schemaFile;
+    private String schemaFile = "schema.xml";
     private String configFile = "solrconfig.xml";
     private String collectionName = "collection1";
     private RequestWriterSupplier requestWriterSupplier;
@@ -119,7 +118,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
       try {
         solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
-      } catch (Exception e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
 
@@ -130,17 +129,17 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
               collectionName,
               LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
               solrConfig.getResourceName(),
-              IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig).getResourceName());
+              IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
 
       CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
       container.load();
       client = new EmbeddedSolrServer(container, collectionName, b.getRequestWriterSupplier());
-    } else if (schemaFile != null) {
+    } else {
       SolrConfig solrConfig;
 
       try {
         solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
-      } catch (Exception e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
 
@@ -156,9 +155,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
       container.load();
       client = new EmbeddedSolrServer(container, collectionName);
-
-    } else {
-      client = new EmbeddedSolrServer(solrHome, collectionName);
     }
   }
 
@@ -185,12 +181,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   @Override
   public EmbeddedSolrServer getSolrClient() {
+    assert (client != null);
     return client;
-  }
-
-  @Override
-  public void clearIndex() throws SolrServerException, IOException {
-    client.deleteByQuery("*:*");
   }
 
   @Override
@@ -236,15 +228,13 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   // From TestHarness
   private NodeConfig buildTestNodeConfig(Path solrHome) {
     CloudConfig cloudConfig =
-        (null == System.getProperty("zkHost"))
-            ? null
-            : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"),
-                    Integer.getInteger("hostPort", 8983),
-                    System.getProperty("hostContext", ""))
-                .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-                .setZkHost(System.getProperty("zkHost"))
-                .build();
+        new CloudConfig.CloudConfigBuilder(
+                System.getProperty("host"),
+                Integer.getInteger("hostPort", 8983),
+                System.getProperty("hostContext", ""))
+            .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+            .setZkHost(System.getProperty("zkHost"))
+            .build();
     UpdateShardHandlerConfig updateShardHandlerConfig =
         new UpdateShardHandlerConfig(
             HttpClientUtil.DEFAULT_MAXCONNECTIONS,

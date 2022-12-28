@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
+    // TODO
     solrClientTestRule
         .build()
         .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))

@@ -41,7 +41,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testMultiThreaded() throws Exception {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     DocThread[] threads = new DocThread[threadCount];
@@ -65,7 +65,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
   }
 
   private void query(int count) throws SolrServerException, IOException {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
@@ -128,9 +128,5 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
         fail(getName() + "---" + e.getMessage());
       }
     }
-  }
-
-  public EmbeddedSolrServer getSolrClient() {
-    return solrClientTestRule.getSolrClient();
   }
 }

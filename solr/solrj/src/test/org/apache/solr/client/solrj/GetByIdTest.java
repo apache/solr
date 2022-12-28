@@ -45,9 +45,8 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
-    solrClientTestRule
-        .getSolrClient()
+    getSolrClient().deleteByQuery("*:*");
+    getSolrClient()
         .add(
             Arrays.asList(
                 sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
@@ -68,20 +67,20 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
                     "term2_s",
                     "id separator escape test document 2")));
 
-    solrClientTestRule.getSolrClient().commit(true, true);
+    getSolrClient().commit(true, true);
   }
 
   @Test
   public void testGetId() throws Exception {
-    SolrDocument rsp = solrClientTestRule.getSolrClient().getById("0");
+    SolrDocument rsp = getSolrClient().getById("0");
     assertNull(rsp);
 
-    rsp = solrClientTestRule.getSolrClient().getById("1");
+    rsp = getSolrClient().getById("1");
     assertEquals("1", rsp.get("id"));
     assertEquals("Microsoft", rsp.get("term_s"));
     assertEquals("MSFT", rsp.get("term2_s"));
 
-    rsp = solrClientTestRule.getSolrClient().getById("2");
+    rsp = getSolrClient().getById("2");
     assertEquals("2", rsp.get("id"));
     assertEquals("Apple", rsp.get("term_s"));
     assertEquals("AAPL", rsp.get("term2_s"));
@@ -89,13 +88,13 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testGetIdWithSeparator() throws Exception {
-    SolrDocument rsp = solrClientTestRule.getSolrClient().getById(",");
+    SolrDocument rsp = getSolrClient().getById(",");
     assertNotNull(rsp);
     assertEquals(",", rsp.get("id"));
     assertEquals("b00m! 1", rsp.get("term_s"));
     assertEquals("id separator escape test document 1", rsp.get("term2_s"));
 
-    rsp = solrClientTestRule.getSolrClient().getById("1,2");
+    rsp = getSolrClient().getById("1,2");
     assertNotNull(rsp);
     assertEquals("1,2", rsp.get("id"));
     assertEquals("b00m! 2", rsp.get("term_s"));
@@ -106,15 +105,15 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   public void testGetIdWithParams() throws Exception {
     final SolrParams ID_FL_ONLY = params(CommonParams.FL, "id");
 
-    SolrDocument rsp = solrClientTestRule.getSolrClient().getById("0", ID_FL_ONLY);
+    SolrDocument rsp = getSolrClient().getById("0", ID_FL_ONLY);
     assertNull(rsp);
 
-    rsp = solrClientTestRule.getSolrClient().getById("1", ID_FL_ONLY);
+    rsp = getSolrClient().getById("1", ID_FL_ONLY);
     assertEquals("1", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
 
-    rsp = solrClientTestRule.getSolrClient().getById("2", ID_FL_ONLY);
+    rsp = getSolrClient().getById("2", ID_FL_ONLY);
     assertEquals("2", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
@@ -122,8 +121,7 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testGetIds() throws Exception {
-    SolrDocumentList rsp =
-        solrClientTestRule.getSolrClient().getById(Arrays.asList("0", "1", "2", "3", "4"));
+    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList("0", "1", "2", "3", "4"));
     assertEquals(3, rsp.getNumFound());
     assertEquals("1", rsp.get(0).get("id"));
     assertEquals("Microsoft", rsp.get(0).get("term_s"));
@@ -140,7 +138,7 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testGetIdsWithSeparator() throws Exception {
-    SolrDocumentList rsp = solrClientTestRule.getSolrClient().getById(Arrays.asList(",", "1,2"));
+    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList(",", "1,2"));
     assertEquals(2, rsp.getNumFound());
     assertEquals(",", rsp.get(0).get("id"));
     assertEquals("1,2", rsp.get(1).get("id"));

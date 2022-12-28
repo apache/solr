@@ -51,8 +51,8 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    solrClientTestRule.getSolrClient().add(doc);
-    solrClientTestRule.getSolrClient().commit(true, true);
+    getSolrClient().add(doc);
+    getSolrClient().commit(true, true);
 
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/terms");
@@ -64,8 +64,7 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     query.setTermsMinCount(1);
 
     QueryRequest request = new QueryRequest(query);
-    List<Term> terms =
-        request.process(solrClientTestRule.getSolrClient()).getTermsResponse().getTerms("terms_s");
+    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 
     assertNotNull(terms);
     assertEquals(terms.size(), 1);

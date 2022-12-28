@@ -48,7 +48,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   static String field = "name";
 
-  SolrClient client = solrClientTestRule.getSolrClient();
+  SolrClient client = getSolrClient();
 
   @Test
   public void testSpellCheckResponse() throws Exception {

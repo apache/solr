@@ -24,7 +24,6 @@ import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -131,9 +130,5 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
       client.add(docToUpdate);
     }
     client.commit();
-  }
-
-  public EmbeddedSolrServer getSolrClient() {
-    return solrClientTestRule.getSolrClient();
   }
 }

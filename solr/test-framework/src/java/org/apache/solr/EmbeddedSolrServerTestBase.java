@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
@@ -39,6 +40,17 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
   @ClassRule
   public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+
+  protected static final String DEFAULT_CORE_NAME = "collection1";
+
+  public static EmbeddedSolrServer client = null;
+
+  public synchronized EmbeddedSolrServer getSolrClient() {
+    if (client == null) {
+      client = solrClientTestRule.getSolrClient();
+    }
+    return client;
+  }
 
   public void upload(final String collection, final ContentStream... contents) {
     final Path base = solrClientTestRule.getSolrHome().resolve(collection);

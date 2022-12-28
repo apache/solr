@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.EmbeddedSolrServerTestBase.solrClientTestRule;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -45,7 +47,10 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
   public abstract SolrClient getSolrClient();
 
-  public abstract void clearIndex() throws SolrServerException, IOException;
+  public void clearIndex() throws SolrServerException, IOException {
+    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
+    solrClientTestRule.getSolrClient().commit();
+  }
 
   public abstract Path getSolrHome();
 }
