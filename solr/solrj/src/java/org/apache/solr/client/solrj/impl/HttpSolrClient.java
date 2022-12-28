@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -1051,6 +1052,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
         return new HttpSolrClient(this);
       } else {
+        queryParams =
+            queryParams == null
+                ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
+                : queryParams;
+        if (!queryParams.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
+          queryParams = new HashSet<>(queryParams);
+          queryParams.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
+          queryParams = Collections.unmodifiableSet(queryParams);
+        }
         return new DelegationTokenHttpSolrClient(this);
       }
     }
