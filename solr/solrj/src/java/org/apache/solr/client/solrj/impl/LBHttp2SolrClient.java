@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -144,13 +145,24 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return httpClient.getRequestWriter();
   }
 
+  /**
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} instead
+   */
   @Override
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     super.setQueryParams(queryParams);
     this.httpClient.setQueryParams(queryParams);
   }
 
+  /**
+   * This method should be removed as being able to add a query parameter isn't compatible with the
+   * idea that query params are an immutable property of a solr client.
+   *
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} instead
+   */
   @Override
+  @Deprecated
   public void addQueryParams(String queryOnlyParam) {
     super.addQueryParams(queryOnlyParam);
     this.httpClient.setQueryParams(getQueryParams());
@@ -304,6 +316,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final Http2SolrClient http2Client;
     private final String[] baseSolrUrls;
     private int aliveCheckInterval = CHECK_INTERVAL;
+    private volatile Set<String> queryParams = Collections.emptySet();
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2Client = http2Client;
@@ -325,9 +338,24 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
+    /**
+     * Expert Method
+     *
+     * @param queryParams set of param keys that are only sent via the query string. Note that the
+     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+     *     query params.
+     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
+     */
+    public LBHttp2SolrClient.Builder withQueryParams(Set<String> queryParams) {
+      this.queryParams = queryParams;
+      return this;
+    }
+
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
+      solrClient.queryParams = this.queryParams;
+      this.http2Client.queryParams = this.queryParams;
       solrClient.aliveCheckInterval = this.aliveCheckInterval;
       return solrClient;
     }
