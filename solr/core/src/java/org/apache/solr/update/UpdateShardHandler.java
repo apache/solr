@@ -138,6 +138,9 @@ public class UpdateShardHandler implements SolrInfoBean {
         HttpClientUtil.createClient(
             clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
+    Set<String> queryParams = new HashSet<>(2);
+    queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
+    queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
@@ -145,12 +148,9 @@ public class UpdateShardHandler implements SolrInfoBean {
           .idleTimeout(cfg.getDistributedSocketTimeout())
           .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
+    updateOnlyClientBuilder.withQueryParams(queryParams);
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
-    Set<String> queryParams = new HashSet<>(2);
-    queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
-    queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-    updateOnlyClient.setQueryParams(queryParams);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
