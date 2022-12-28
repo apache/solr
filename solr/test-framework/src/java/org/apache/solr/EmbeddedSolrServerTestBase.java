@@ -41,7 +41,7 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
   @ClassRule
   public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
-  public synchronized EmbeddedSolrServer getSolrClient() {
+  public  EmbeddedSolrServer getSolrClient() {
     return solrClientTestRule.getSolrClient();
   }
 
