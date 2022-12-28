@@ -662,11 +662,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
     UpdateRequest req = new UpdateRequest();
-    setReqParamsOf(req, "serverOnly", "notServer");
+
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl).withQueryParams(setOf("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
+      setReqParamsOf(req, "serverOnly", "notServer");
 
       try {
         client.request(req);
