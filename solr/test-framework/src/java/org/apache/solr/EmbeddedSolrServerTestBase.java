@@ -41,15 +41,8 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
   @ClassRule
   public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
-  protected static final String DEFAULT_CORE_NAME = "collection1";
-
-  public static EmbeddedSolrServer client = null;
-
   public synchronized EmbeddedSolrServer getSolrClient() {
-    if (client == null) {
-      client = solrClientTestRule.getSolrClient();
-    }
-    return client;
+    return solrClientTestRule.getSolrClient();
   }
 
   public void upload(final String collection, final ContentStream... contents) {

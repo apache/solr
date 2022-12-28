@@ -84,7 +84,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
         .setSolrHome(tempSolrHome.toPath())
         .setCollectionName(COLLECTION_NAME)
         .init();
-    SolrClient client =  solrClientTestRule.getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient();
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);

@@ -36,7 +36,6 @@ import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
@@ -60,10 +59,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   @Before
   public void before() throws SolrServerException, IOException {
     getSolrClient().deleteByQuery("*:*");
-  }
-
-  public synchronized EmbeddedSolrServer getSolrClient() {
-    return getSolrClient();
   }
 
   private void assertQR(final String fieldName, final String queryValue, final int numFound)

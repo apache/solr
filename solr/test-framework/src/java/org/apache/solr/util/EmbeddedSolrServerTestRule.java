@@ -56,7 +56,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     private String schemaFile = "schema.xml";
     private String configFile = "solrconfig.xml";
     private String collectionName = DEFAULT_TEST_COLLECTION_NAME;
-    private RequestWriterSupplier requestWriterSupplier;
+    private RequestWriterSupplier requestWriterSupplier = RequestWriterSupplier.JavaBin;
 
     public Builder setSolrHome(Path solrHome) {
       this.solrHome = solrHome;
@@ -114,50 +114,30 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     String schemaFile = b.getSchemaFile();
     String configFile = b.getConfigFile();
     String collectionName = b.getCollectionName();
+    RequestWriterSupplier requestWriterSupplier = b.getRequestWriterSupplier();
 
-    if (b.getRequestWriterSupplier() != null) {
-      SolrConfig solrConfig;
+    SolrConfig solrConfig;
 
-      try {
-        solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
-
-      TestCoresLocator testCoreLocator =
-          new TestCoresLocator(
-              collectionName,
-              LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
-              solrConfig.getResourceName(),
-              IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
-
-      CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
-      container.load();
-      client = new EmbeddedSolrServer(container, collectionName, b.getRequestWriterSupplier());
-    } else {
-      SolrConfig solrConfig;
-
-      try {
-        solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
-
-      TestCoresLocator testCoreLocator =
-          new TestCoresLocator(
-              collectionName,
-              LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
-              solrConfig.getResourceName(),
-              IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
-
-      CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
-      container.load();
-      client = new EmbeddedSolrServer(container, collectionName);
+    try {
+      solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+
+    NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
+
+    TestCoresLocator testCoreLocator =
+        new TestCoresLocator(
+            collectionName,
+            LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
+            solrConfig.getResourceName(),
+            IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
+
+    CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
+    container.load();
+
+      client = new EmbeddedSolrServer(container, collectionName, requestWriterSupplier);
+
   }
 
   public Builder build() {
@@ -183,7 +163,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   @Override
   public EmbeddedSolrServer getSolrClient() {
-    assert (client != null);
+    assert client != null;
     return client;
   }
 
@@ -229,14 +209,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   // From TestHarness
   private NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig =
-        new CloudConfig.CloudConfigBuilder(
-                System.getProperty("host"),
-                Integer.getInteger("hostPort", 8983),
-                System.getProperty("hostContext", ""))
-            .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-            .setZkHost(System.getProperty("zkHost"))
-            .build();
+    CloudConfig cloudConfig = null;
     UpdateShardHandlerConfig updateShardHandlerConfig =
         new UpdateShardHandlerConfig(
             HttpClientUtil.DEFAULT_MAXCONNECTIONS,

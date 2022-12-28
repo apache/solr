@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +49,7 @@ public abstract class SolrClientTestRule extends ExternalResource {
   public abstract SolrClient getSolrClient();
 
   public void clearIndex() throws SolrServerException, IOException {
-    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
-    solrClientTestRule.getSolrClient().commit();
+    new UpdateRequest().deleteByQuery("*:*").commit(solrClientTestRule.getSolrClient(), null);
   }
 
   public abstract Path getSolrHome();
