@@ -148,7 +148,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .idleTimeout(cfg.getDistributedSocketTimeout())
           .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
-    updateOnlyClientBuilder.withQueryParams(queryParams);
+    updateOnlyClientBuilder.withTheseParamNamesInTheUrl(queryParams);
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
 

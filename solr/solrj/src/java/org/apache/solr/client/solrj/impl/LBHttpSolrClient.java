@@ -124,7 +124,7 @@ public class LBHttpSolrClient extends LBSolrClient {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
         if (queryParams != null) {
-          httpSolrClientBuilder.withQueryParams(queryParams);
+          httpSolrClientBuilder.withTheseParamNamesInTheUrl(queryParams);
         }
         client = httpSolrClientBuilder.build();
       }
@@ -141,7 +141,7 @@ public class LBHttpSolrClient extends LBSolrClient {
         clientBuilder.withRequestWriter(requestWriter);
       }
       if (queryParams != null) {
-        clientBuilder.withQueryParams(queryParams);
+        clientBuilder.withTheseParamNamesInTheUrl(queryParams);
       }
       client = clientBuilder.build();
     }

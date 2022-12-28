@@ -327,7 +327,7 @@ public abstract class LBSolrClient extends SolrClient {
    * Expert Method.
    *
    * @param queryParams set of param keys to only send via the query string
-   * @deprecated use {@link LBHttpSolrClient.Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link LBHttpSolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {
@@ -338,7 +338,7 @@ public abstract class LBSolrClient extends SolrClient {
    * This method should be removed as being able to add a query parameter isn't compatible with the
    * idea that query params are an immutable property of a solr client.
    *
-   * @deprecated use {@link LBHttpSolrClient.Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link LBHttpSolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
   public void addQueryParams(String queryOnlyParam) {

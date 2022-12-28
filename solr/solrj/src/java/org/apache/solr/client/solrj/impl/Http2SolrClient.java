@@ -1089,7 +1089,7 @@ public class Http2SolrClient extends SolrClient {
      *     query params.
      * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
      */
-    public Builder withQueryParams(Set<String> queryParams) {
+    public Builder withTheseParamNamesInTheUrl(Set<String> queryParams) {
       this.queryParams = queryParams;
       return this;
     }
@@ -1141,7 +1141,7 @@ public class Http2SolrClient extends SolrClient {
    *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
    *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Http2SolrClient.Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link Http2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {

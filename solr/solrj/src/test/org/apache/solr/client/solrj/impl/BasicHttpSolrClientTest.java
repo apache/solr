@@ -781,7 +781,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
     HttpSolrClient.Builder builder = new HttpSolrClient.Builder(clientUrl);
-    try (HttpSolrClient client = builder.withQueryParams(Set.of("serverOnly")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
       UpdateRequest req = new UpdateRequest();
@@ -789,7 +790,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
       verifyServletState(client, req);
     }
-    try (HttpSolrClient client = builder.withQueryParams(Set.of()).build()) {
+    try (HttpSolrClient client = builder.withTheseParamNamesInTheUrl(Set.of()).build()) {
       // test without server query params
       DebugServlet.clear();
       UpdateRequest req2 = new UpdateRequest();
@@ -798,7 +799,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req2));
       verifyServletState(client, req2);
     }
-    try (HttpSolrClient client = builder.withQueryParams(Set.of("serverOnly", "both")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params
       DebugServlet.clear();
       UpdateRequest req3 = new UpdateRequest();
@@ -807,7 +809,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req3));
       verifyServletState(client, req3);
     }
-    try (HttpSolrClient client = builder.withQueryParams(Set.of("serverOnly", "both")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params with single stream
       DebugServlet.clear();
       UpdateRequest req4 = new UpdateRequest();

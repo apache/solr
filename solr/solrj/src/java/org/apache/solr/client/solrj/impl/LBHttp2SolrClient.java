@@ -145,7 +145,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   /**
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Override
   @Deprecated
@@ -158,7 +158,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * This method should be removed as being able to add a query parameter isn't compatible with the
    * idea that query params are an immutable property of a solr client.
    *
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Override
   @Deprecated
@@ -345,7 +345,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
      *     query params.
      * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
      */
-    public LBHttp2SolrClient.Builder withQueryParams(Set<String> queryParams) {
+    public LBHttp2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> queryParams) {
       this.queryParams = queryParams;
       return this;
     }

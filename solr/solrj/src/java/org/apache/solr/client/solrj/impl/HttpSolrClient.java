@@ -200,9 +200,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * @param queryParams set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   *     multiple threads simultaneously. To avoid this, use {@link Builder#withQueryParams(Set)}.
+   *     multiple threads simultaneously. To avoid this, use {@link
+   *     Builder#withTheseParamNamesInTheUrl(Set)}.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {

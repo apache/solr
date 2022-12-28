@@ -26,7 +26,7 @@ import org.junit.Test;
 public class LBHttp2SolrClientTest extends SolrTestCase {
 
   /**
-   * Test method for {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} and {@link
+   * Test method for {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} and {@link
    * LBHttp2SolrClient#addQueryParams(String)}.
    *
    * <p>Validate that the query param keys passed in are used in the base <code>Http2SolrClient
@@ -43,7 +43,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
         LBHttp2SolrClient testClient =
-            new LBHttp2SolrClient.Builder(http2Client, url).withQueryParams(queryParams).build()) {
+            new LBHttp2SolrClient.Builder(http2Client, url)
+                .withTheseParamNamesInTheUrl(queryParams)
+                .build()) {
 
       assertArrayEquals(
           "Wrong queryParams found in lb client.",

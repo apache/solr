@@ -655,7 +655,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     UpdateRequest req = new UpdateRequest();
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withQueryParams(Set.of("serverOnly")).build()) {
+        new Http2SolrClient.Builder(clientUrl)
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
+            .build()) {
       // test without request query params
       DebugServlet.clear();
       setReqParamsOf(req, "serverOnly", "notServer");
@@ -670,7 +672,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       DebugServlet.clear();
     }
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withQueryParams(Set.of()).build()) {
+        new Http2SolrClient.Builder(clientUrl).withTheseParamNamesInTheUrl(Set.of()).build()) {
       req = new UpdateRequest();
       req.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req, "requestOnly", "notRequest");
@@ -685,7 +687,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl)
-            .withQueryParams(Set.of("serverOnly", "both"))
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
       req = new UpdateRequest();
       req.setQueryParams(Set.of("requestOnly", "both"));
@@ -698,7 +700,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl)
-            .withQueryParams(Set.of("serverOnly", "both"))
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
 
       // test with both request and server query params with single stream

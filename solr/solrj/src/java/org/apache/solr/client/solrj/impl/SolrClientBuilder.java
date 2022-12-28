@@ -70,7 +70,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * @param queryParams set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    */
-  public B withQueryParams(Set<String> queryParams) {
+  public B withTheseParamNamesInTheUrl(Set<String> queryParams) {
     this.queryParams = queryParams;
     return getThis();
   }
