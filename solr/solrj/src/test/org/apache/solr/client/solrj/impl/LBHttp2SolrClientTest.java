@@ -26,11 +26,14 @@ import org.junit.Test;
 public class LBHttp2SolrClientTest extends SolrTestCase {
 
   /**
-   * Test method for {@link LBHttp2SolrClient#setQueryParams(Set)} and {@link
+   * Test method for {@link LBHttp2SolrClient.Builder#withQueryParams(Set)} and {@link
    * LBHttp2SolrClient#addQueryParams(String)}.
    *
    * <p>Validate that the query params passed in are used in the base <code>Http2SolrClient</code>
    * instance.
+   *
+   * <p>TODO: Eliminate the addQueryParams aspect of test as it is not compatible with goal of
+   * immutable SolrClient
    */
   @Test
   public void testLBHttp2SolrClientSetQueryParams() throws IOException {
