@@ -189,7 +189,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     super.tearDown();
   }
 
-  private Http2SolrClient.Builder getHttp2SolrClient(
+  private Http2SolrClient.Builder getHttp2SolrClientBuilder(
       String url, int connectionTimeOut, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
         .connectionTimeout(connectionTimeOut)
@@ -200,7 +200,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -214,7 +214,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .build()) {
       try {
@@ -228,7 +228,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .requestTimeout(500)
             .build()) {
