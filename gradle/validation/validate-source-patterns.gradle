@@ -71,7 +71,7 @@ allprojects {
       extensions.each{
         include "**/*.${it}"
       }
-      
+
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
@@ -131,7 +131,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
     this.progressLoggerFactory = progressLoggerFactory
   }
-  
+
   @TaskAction
   public void check() {
     def invalidPatterns = [
@@ -173,6 +173,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
     def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
     def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
+    def ventilatedProsePattern = ~$/(?<!^)(\.)(\s)(.)/$;
 
     def isLicense = { matcher, ratDocument ->
       licenseMatcher.reset()
@@ -267,6 +268,12 @@ class ValidateSourcePatternsTask extends DefaultTask {
       }
       if (f.name.endsWith('.xml')) {
         checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
+      }
+      if (f.name.endsWith('.adoc')) {
+        def ventilatedProseMatcher = ventilatedProsePattern.matcher(text);
+        while (ventilatedProseMatcher.find()) {
+          reportViolation(f, "We use ventilated prose, i.e one sentence per line in ascii docs. File: " + f.name + ", position: " + ventilatedProseMatcher.start() + '...' + ventilatedProseMatcher.end());
+        }
       }
     }
     progress.completed()
