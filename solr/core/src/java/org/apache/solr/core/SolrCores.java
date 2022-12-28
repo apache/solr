@@ -83,20 +83,19 @@ public class SolrCores {
   // down, so we need to make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
     waitForLoadingCoresToFinish(30 * 1000);
-    Collection<SolrCore> coreList = new ArrayList<>();
 
     // It might be possible for one of the cores to move from one list to another while we're
     // closing them. So loop through the lists until they're all empty. In particular, the core
     // could have moved from the transient list to the pendingCloses list.
     while (true) {
+      Collection<SolrCore> coreList = new ArrayList<>();
 
       synchronized (modifyLock) {
         // remove all loaded cores; add to our working list.
         for (String name : getLoadedCoreNames()) {
           final var core = remove(name);
-          if (core != null) {
-            coreList.add(core);
-          }
+          assert core != null;
+          coreList.add(core);
         }
 
         coreList.addAll(pendingCloses);
@@ -130,7 +129,6 @@ public class SolrCores {
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(coreCloseExecutor);
       }
-      coreList.clear();
     }
   }
 
