@@ -308,17 +308,17 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   public void knnQueryUsedInFilters_shouldFilterResultsBeforeTheQueryExecution() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     assertQ(
-            req(
-                    CommonParams.Q,
-                    "id:(3 4 9 2)",
-                    "fq",
-                    "{!knn f=vector topK=4}" + vectorToSearch,
-                    "fq",
-                    "id:(4 20)",
-                    "fl",
-                    "id"),
-            "//result[@numFound='1']",
-            "//result/doc[1]/str[@name='id'][.='4']");
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fq",
+            "id:(4 20)",
+            "fl",
+            "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='4']");
   }
 
   @Test

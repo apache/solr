@@ -89,7 +89,7 @@ public class KnnQParser extends QParser {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
       if (filterQueries != null && filterQueries.length != 0) {
         try {
-          List<Query> filters = QueryUtils.parseFilterQueries(req, true);
+          List<Query> filters = QueryUtils.parseFilterQueries(req);
           SolrIndexSearcher.ProcessedFilter processedFilter =
               req.getSearcher().getProcessedFilter(filters);
           return processedFilter.filter;

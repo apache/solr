@@ -204,7 +204,7 @@ public class QueryComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req, false));
+        filters.addAll(QueryUtils.parseFilterQueries(req));
 
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request

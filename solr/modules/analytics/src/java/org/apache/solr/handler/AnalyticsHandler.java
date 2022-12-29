@@ -131,7 +131,7 @@ public class AnalyticsHandler extends RequestHandlerBase
     queries.add(query);
 
     // Filter Params
-    queries.addAll(QueryUtils.parseFilterQueries(req, false));
+    queries.addAll(QueryUtils.parseFilterQueries(req));
     return req.getSearcher().getDocSet(queries);
   }
 
