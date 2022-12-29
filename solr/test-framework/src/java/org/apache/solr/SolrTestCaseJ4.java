@@ -2871,28 +2871,28 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(
-          String zkHost,
-          String defaultCollection,
-          boolean shardLeadersOnly,
-          HttpClient httpClient,
-          int connectionTimeoutMillis,
-          int socketTimeoutMillis) {
+      String zkHost,
+      String defaultCollection,
+      boolean shardLeadersOnly,
+      HttpClient httpClient,
+      int connectionTimeoutMillis,
+      int socketTimeoutMillis) {
 
     RandomizingCloudSolrClientBuilder builder =
-            new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
       builder.sendUpdatesOnlyToShardLeaders();
     } else {
       builder.sendUpdatesToAllReplicasInShard();
     }
-    if (defaultCollection != null){
+    if (defaultCollection != null) {
       builder.setDefaultCollection(defaultCollection);
     }
     return builder
-            .withHttpClient(httpClient)
-            .withConnectionTimeout(connectionTimeoutMillis)
-            .withSocketTimeout(socketTimeoutMillis)
-            .build();
+        .withHttpClient(httpClient)
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
   }
 
   /**
