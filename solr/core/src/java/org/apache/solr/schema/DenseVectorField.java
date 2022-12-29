@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;

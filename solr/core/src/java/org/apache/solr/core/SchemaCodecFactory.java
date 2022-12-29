@@ -128,15 +128,15 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
                 int maxConn = vectorType.getHnswMaxConn();
                 int beamWidth = vectorType.getHnswBeamWidth();
                 return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
-              }
-              else {
+              } else {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }
             }
 
-            throw new SolrException(ErrorCode.SERVER_ERROR, "wrong field type for KNN vectors: " + fieldType);
-            }
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR, "wrong field type for KNN vectors: " + fieldType);
+          }
         };
   }
 
