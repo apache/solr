@@ -25,4 +25,4 @@ For more info on building an image, run:
 `./gradlew helpDocker`
 
 ## Additional Information
-You can find additional information in the xref:../solr/solr-ref-guide/modules/deployment-guide/docker-faq.adoc[Solr Ref Guide Docker FAQ]
+You can find additional information in the https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html[Solr Ref Guide Docker Page]
