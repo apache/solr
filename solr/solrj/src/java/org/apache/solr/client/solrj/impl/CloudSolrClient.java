@@ -99,7 +99,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
-  boolean parallelUpdates; // TODO final
+  private final boolean parallelUpdates;
   private ExecutorService threadPool =
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
@@ -107,26 +107,22 @@ public abstract class CloudSolrClient extends SolrClient {
   public static final String STATE_VERSION = "_stateVer_";
   protected long retryExpiryTime =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
-  private final Set<String> NON_ROUTABLE_PARAMS;
+  private static final Set<String> NON_ROUTABLE_PARAMS =
+      Set.of(
+          UpdateParams.EXPUNGE_DELETES,
+          UpdateParams.MAX_OPTIMIZE_SEGMENTS,
+          UpdateParams.COMMIT,
+          UpdateParams.WAIT_SEARCHER,
+          UpdateParams.OPEN_SEARCHER,
+          UpdateParams.SOFT_COMMIT,
+          UpdateParams.PREPARE_COMMIT,
+          UpdateParams.OPTIMIZE
 
-  {
-    NON_ROUTABLE_PARAMS = new HashSet<>();
-    NON_ROUTABLE_PARAMS.add(UpdateParams.EXPUNGE_DELETES);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.MAX_OPTIMIZE_SEGMENTS);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.WAIT_SEARCHER);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.OPEN_SEARCHER);
+          // Not supported via SolrCloud
+          // UpdateParams.ROLLBACK
+          );
 
-    NON_ROUTABLE_PARAMS.add(UpdateParams.SOFT_COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.PREPARE_COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.OPTIMIZE);
-
-    // Not supported via SolrCloud
-    // NON_ROUTABLE_PARAMS.add(UpdateParams.ROLLBACK);
-
-  }
-
-  protected volatile List<Object> locks = objectList(3);
+  protected volatile Object[] locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
@@ -1232,9 +1228,11 @@ public abstract class CloudSolrClient extends SolrClient {
     locks = objectList(n);
   }
 
-  protected static ArrayList<Object> objectList(int n) {
-    ArrayList<Object> l = new ArrayList<>(n);
-    for (int i = 0; i < n; i++) l.add(new Object());
+  protected static Object[] objectList(int n) {
+    Object[] l = new Object[n];
+    for (int i = 0; i < n; i++) {
+      l[i] = new Object();
+    }
     return l;
   }
 
@@ -1257,12 +1255,10 @@ public abstract class CloudSolrClient extends SolrClient {
       // it is readily available just return it
       return ref.get();
     }
-    List<Object> locks = this.locks;
-    final Object lock =
-        locks.get(
-            Math.abs(
-                Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
-    DocCollection fetchedCol = null;
+    Object[] locks = this.locks;
+    int lockId =
+        Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
+    final Object lock = locks[lockId];
     synchronized (lock) {
       /*we have waited for sometime just check once again*/
       cacheEntry = collectionStateCache.get(collection);
@@ -1272,7 +1268,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
       // We are going to fetch a new version
       // we MUST try to get a new version
-      fetchedCol = ref.get(); // this is a call to ZK
+      DocCollection fetchedCol = ref.get(); // this is a call to ZK
       if (fetchedCol == null) return null; // this collection no more exists
       if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
         cacheEntry.setRetriedAt(); // we retried and found that it is the same version
