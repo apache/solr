@@ -26,11 +26,9 @@ import org.junit.Test;
 public class LBHttp2SolrClientTest extends SolrTestCase {
 
   /**
-   * Test method for {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} and {@link
-   * LBHttp2SolrClient#addQueryParams(String)}.
-   *
-   * <p>Validate that the query param keys passed in are used in the base <code>Http2SolrClient
-   * </code> instance.
+   * Test method for {@link LBHttp2SolrClient.Builder} that validates that the query param keys
+   * passed in by the base <code>Http2SolrClient
+   * </code> instance are used by the LBHttp2SolrClient.
    *
    * <p>TODO: Eliminate the addQueryParams aspect of test as it is not compatible with goal of
    * immutable SolrClient
@@ -41,16 +39,14 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add("param1");
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
-        LBHttp2SolrClient testClient =
-            new LBHttp2SolrClient.Builder(http2Client, url)
-                .withTheseParamNamesInTheUrl(queryParams)
-                .build()) {
+    try (Http2SolrClient http2Client =
+            new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(queryParams).build();
+        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(http2Client, url).build()) {
 
       assertArrayEquals(
           "Wrong queryParams found in lb client.",
           queryParams.toArray(),
-          testClient.getQueryParams().toArray());
+          testClient.getUrlParamNames().toArray());
       assertArrayEquals(
           "Wrong queryParams found in base client.",
           queryParams.toArray(),

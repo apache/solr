@@ -144,8 +144,13 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return http2SolrClient.getRequestWriter();
   }
 
+  @Override
+  public Set<String> getUrlParamNames() {
+    return http2SolrClient.getUrlParamNames();
+  }
+
   /**
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
+   * @deprecated You should instead set this on the passed in Http2SolrClient used by the Builder.
    */
   @Override
   @Deprecated
@@ -158,7 +163,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * This method should be removed as being able to add a query parameter isn't compatible with the
    * idea that query params are an immutable property of a solr client.
    *
-   * @deprecated use {@link LBHttp2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
+   * @deprecated you should instead set this on the passed in Http2SolrClient used by the Builder.
    */
   @Override
   @Deprecated
@@ -315,7 +320,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
     private int aliveCheckInterval = CHECK_INTERVAL;
-    private Set<String> queryParams = Set.of();
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
@@ -337,24 +341,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-    /**
-     * Expert Method
-     *
-     * @param queryParams set of param keys that are only sent via the query string. Note that the
-     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
-     *     query params.
-     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-     */
-    public LBHttp2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> queryParams) {
-      this.queryParams = queryParams;
-      return this;
-    }
-
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.urlParamNames = this.queryParams;
-      this.http2SolrClient.urlParamNames = this.queryParams;
       solrClient.aliveCheckInterval = this.aliveCheckInterval;
       return solrClient;
     }
