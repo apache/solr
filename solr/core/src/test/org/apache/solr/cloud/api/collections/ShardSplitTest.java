@@ -152,8 +152,10 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     try (CloudSolrClient client =
         getCloudSolrClient(
-            zkServer.getZkAddress(), true, ((CloudLegacySolrClient) cloudClient).getHttpClient())) {
-      client.setDefaultCollection(collectionName);
+            zkServer.getZkAddress(),
+            collectionName,
+            true,
+            ((CloudLegacySolrClient) cloudClient).getHttpClient())) {
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
       try {

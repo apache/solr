@@ -88,11 +88,11 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         CloudSolrClient client =
             getCloudSolrClient(
                 cluster.getZkServer().getZkAddress(),
+                COLLECTION,
                 random().nextBoolean(),
                 httpClient,
                 30000,
                 60000);
-        client.setDefaultCollection(COLLECTION);
         return client;
     }
     throw new RuntimeException("impossible");

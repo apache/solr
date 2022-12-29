@@ -513,9 +513,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     CloudSolrClient cloudClient = null;
 
     try {
-      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
+      cloudClient =
+          getCloudSolrClient(
+              executor.solrCloudCluster.getZkServer().getZkAddress(), collectionName);
       cloudClient.connect();
-      cloudClient.setDefaultCollection(collectionName);
 
       int numDocs = 10;
       for (int d = 0; d < numDocs; d++) {

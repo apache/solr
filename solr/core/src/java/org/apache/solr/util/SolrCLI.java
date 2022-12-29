@@ -211,6 +211,8 @@ public class SolrCLI implements CLIO {
           new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
 
+        // TODO I believe this piece of logic actually can be removed, we don't ever pass in a
+        // "collection" parameter globally.  It can be moved to the one tool that uses this param.
         String collection = cli.getOptionValue("collection");
         if (collection != null) cloudSolrClient.setDefaultCollection(collection);
 
