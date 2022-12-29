@@ -140,6 +140,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.http2SolrClient.setRequestWriter(writer);
   }
 
+  @Override
   public RequestWriter getRequestWriter() {
     return http2SolrClient.getRequestWriter();
   }
