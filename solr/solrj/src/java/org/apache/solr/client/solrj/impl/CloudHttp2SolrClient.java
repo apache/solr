@@ -66,6 +66,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.myClient = builder.httpClient;
     }
     this.retryExpiryTime = builder.retryExpiryTime;
+    this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {
       this.myClient.requestWriter = builder.requestWriter;
     }
@@ -147,6 +148,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTime =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+    private String defaultCollection;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -254,6 +256,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      */
     public Builder setRetryExpiryTime(int secs) {
       this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+      return this;
+    }
+
+    /** Sets the default collection for request. */
+    public Builder setDefaultCollection(String collection) {
+      this.defaultCollection = collection;
       return this;
     }
 

@@ -90,7 +90,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private volatile String defaultCollection;
+  protected volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
@@ -343,7 +343,12 @@ public abstract class CloudSolrClient extends SolrClient {
     getLbClient().setRequestWriter(requestWriter);
   }
 
-  /** Sets the default collection for request */
+  /**
+   * Sets the default collection for request.
+   *
+   * @deprecated use {@link CloudHttp2SolrClient.Builder#setDefaultCollection(String)} instead
+   */
+  @Deprecated
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;
   }
