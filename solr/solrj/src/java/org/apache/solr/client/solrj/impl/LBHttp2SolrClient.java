@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -139,12 +140,10 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.http2SolrClient.setRequestWriter(writer);
   }
 
-  @Override
   public RequestWriter getRequestWriter() {
     return http2SolrClient.getRequestWriter();
   }
 
-  @Override
   public Set<String> getUrlParamNames() {
     return http2SolrClient.getUrlParamNames();
   }
@@ -152,10 +151,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
   /**
    * @deprecated You should instead set this on the passed in Http2SolrClient used by the Builder.
    */
-  @Override
   @Deprecated
   public void setQueryParams(Set<String> queryParams) {
-    super.setQueryParams(queryParams);
     this.http2SolrClient.setUrlParamNames(queryParams);
   }
 
@@ -165,11 +162,11 @@ public class LBHttp2SolrClient extends LBSolrClient {
    *
    * @deprecated you should instead set this on the passed in Http2SolrClient used by the Builder.
    */
-  @Override
   @Deprecated
   public void addQueryParams(String queryOnlyParam) {
-    super.addQueryParams(queryOnlyParam);
-    this.http2SolrClient.setUrlParamNames(getQueryParams());
+    Set<String> urlParamNames = new HashSet<>(this.http2SolrClient.getUrlParamNames());
+    urlParamNames.add(queryOnlyParam);
+    this.http2SolrClient.setUrlParamNames(urlParamNames);
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
