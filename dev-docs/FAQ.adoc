@@ -21,7 +21,7 @@ created a branch that can be deleted.
 
 === How do I run Solr in Docker?
 
-You can review instructions for running Solr in Docker https://github.com/apache/solr/blob/main/dev-docs/solr-source-code.adoc[here].
+You can review instructions for running Solr in Docker in the xref:solr-source-code.adoc[Solr Source Code developer doc].
 
 === Whats the fastest build lifecycle for frontend work on Solr Admin?
 
