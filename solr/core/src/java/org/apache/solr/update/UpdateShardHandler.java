@@ -137,7 +137,7 @@ public class UpdateShardHandler implements SolrInfoBean {
         HttpClientUtil.createClient(
             clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
-    Set<String> queryParams =
+    Set<String> urlParamNames =
         Set.of(
             DistributedUpdateProcessor.DISTRIB_FROM,
             DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
@@ -148,7 +148,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .idleTimeout(cfg.getDistributedSocketTimeout())
           .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
-    updateOnlyClientBuilder.withTheseParamNamesInTheUrl(queryParams);
+    updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
 

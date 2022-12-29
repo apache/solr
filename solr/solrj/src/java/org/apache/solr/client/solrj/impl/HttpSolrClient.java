@@ -188,7 +188,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
-    this.urlParamNames = builder.queryParams;
+    this.urlParamNames = builder.urlParamNames;
   }
 
   /**
@@ -1052,14 +1052,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
         return new HttpSolrClient(this);
       } else {
-        queryParams =
-            queryParams == null
+        urlParamNames =
+            urlParamNames == null
                 ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
-                : queryParams;
-        if (!queryParams.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
-          queryParams = new HashSet<>(queryParams);
-          queryParams.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
-          queryParams = Collections.unmodifiableSet(queryParams);
+                : urlParamNames;
+        if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
+          urlParamNames = new HashSet<>(urlParamNames);
+          urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
+          urlParamNames = Collections.unmodifiableSet(urlParamNames);
         }
         return new DelegationTokenHttpSolrClient(this);
       }
