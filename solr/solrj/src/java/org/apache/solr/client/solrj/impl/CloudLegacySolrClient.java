@@ -87,7 +87,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
     this.retryExpiryTime = builder.retryExpiryTime;
-    this.collectionStateCache.timeToLiveMs = builder.timeToLive * 1000L;
+    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -278,7 +278,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      */
     public Builder setCollectionCacheTtl(int seconds) {
       assert seconds > 0;
-      this.timeToLive = seconds;
+      this.timeToLiveSeconds = seconds;
       return this;
     }
 
