@@ -2683,6 +2683,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * not wish to have any randomized behavior should use the {@link
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
+  public static CloudSolrClient getCloudSolrClient(
+      MiniSolrCloudCluster cluster, String defaultCollection) {
+    return new RandomizingCloudSolrClientBuilder(cluster)
+        .setDefaultCollection(defaultCollection)
+        .build();
+  }
+
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
+   * not wish to have any randomized behavior should use the {@link
+   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
   public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
@@ -2696,16 +2708,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
-      return new RandomizingCloudSolrClientBuilder(
-              Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .build();
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
     }
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .build();
+    return builder.build();
   }
 
   public static RandomizingCloudSolrClientBuilder newCloudSolrClient(String zkHost) {
@@ -2720,18 +2730,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost, boolean shardLeadersOnly, int socketTimeoutMillis) {
+
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
-      return new RandomizingCloudSolrClientBuilder(
-              Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
     }
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
+    return builder.withSocketTimeout(socketTimeoutMillis).build();
   }
 
   /**
@@ -2744,17 +2751,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       boolean shardLeadersOnly,
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
-      return new RandomizingCloudSolrClientBuilder(
-              Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
     }
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+    return builder
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();
@@ -2767,18 +2771,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
-      return new RandomizingCloudSolrClientBuilder(
-              Collections.singletonList(zkHost), Optional.empty())
-          .withHttpClient(httpClient)
-          .sendUpdatesOnlyToShardLeaders()
-          .build();
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
     }
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
-        .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
-        .build();
+    return builder.withHttpClient(httpClient).build();
   }
 
   /**
@@ -2792,19 +2792,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       HttpClient httpClient,
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
+
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
     if (shardLeadersOnly) {
-      return new RandomizingCloudSolrClientBuilder(
-              Collections.singletonList(zkHost), Optional.empty())
-          .withHttpClient(httpClient)
-          .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
     }
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
+    return builder
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();
