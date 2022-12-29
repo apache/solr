@@ -343,10 +343,10 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
     Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
     Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
-    multipleadditivetreesmodelRerankedList = [1,3,4,7,8]
-    MultipleadditivetreesmodelinterleavingRerankedList = [7,1,3,4,8]
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
+    multipleadditivetreesmodelRerankedList = [7,1,3,4,8]
+    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
 
     Random Boolean Choices Generation from Seed: [0,0,1]
     */
@@ -389,11 +389,11 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     /*
     Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
     Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=Na", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
-    multipleadditivetreesmodelRerankedList = [1,3,4,7,8]
-    MultipleadditivetreesmodelinterleavingRerankedList = [7,1,3,4,8]
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
+    multipleadditivetreesmodelRerankedList = [7,1,3,4,8]
+    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
 
     Random Boolean Choices Generation from Seed: [0,0,1]
     */
