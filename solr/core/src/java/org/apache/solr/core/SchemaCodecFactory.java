@@ -36,8 +36,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Optional.of;
-
 /**
  * Per-field CodecFactory implementation, extends Lucene's and returns postings format
  * implementations according to the schema configuration. <br>
