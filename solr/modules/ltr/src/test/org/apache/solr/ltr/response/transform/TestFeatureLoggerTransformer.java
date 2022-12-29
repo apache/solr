@@ -139,27 +139,63 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0"
         };
+
+    int[] expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
 
     String[] tests = new String[17];
     tests[0] = "/response/numFound/==8";
     for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
       tests[i + 8] =
           "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
+
+    // user_device has a different default value (NaN), if zero we would like to see the zero value
+    final SolrQuery query2 = new SolrQuery();
+    query2.setQuery("*:*");
+    query2.add("fl", "*, score,features:[fv format=sparse]");
+    query2.add("rows", "10");
+    query2.add("debugQuery", "true");
+    query2.add(
+            "rq",
+            "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+
+    expectedFeatureVectors =
+            new String[] {
+                    "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+            };
+
+    expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
+
+    tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
+      tests[i + 8] =
+              "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query2.toQueryString(), tests);
   }
 
   @Test
@@ -173,18 +209,18 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-          "matchedTitle\\=NaN\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN"
         };
 
     String[] tests = new String[17];
