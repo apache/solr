@@ -137,9 +137,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add(
-        "rq",
-        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {
@@ -171,20 +169,20 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query2.add("rows", "10");
     query2.add("debugQuery", "true");
     query2.add(
-            "rq",
-            "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "rq",
+        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     expectedFeatureVectors =
-            new String[] {
-                    "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
-                    "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
-            };
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+        };
 
     expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
 
@@ -193,7 +191,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     for (int i = 1; i <= 8; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
       tests[i + 8] =
-              "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query2.toQueryString(), tests);
   }
@@ -207,9 +205,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add(
-        "rq",
-        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
+    query.add("rq", "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {

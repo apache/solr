@@ -300,7 +300,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     normalizeFeaturesInPlace(modelFeatureValues, isNullSameAsZero);
   }
 
-
   protected void normalizeFeaturesInPlace(float[] modelFeatureValues, boolean isNullSameAsZero) {
     float[] modelFeatureValuesNormalized = modelFeatureValues;
     if (modelFeatureValues.length != norms.size()) {
@@ -309,13 +308,13 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     if (isNullSameAsZero) {
       for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
         modelFeatureValuesNormalized[idx] =
-                norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+            norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
       }
     } else {
       for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
         if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
           modelFeatureValuesNormalized[idx] =
-                  norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+              norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
         }
       }
     }

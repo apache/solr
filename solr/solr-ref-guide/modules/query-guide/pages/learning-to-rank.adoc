@@ -555,6 +555,12 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 </transformer>
 ----
 
+When managing null values, the feature vector changes.
+
+* When defining a dense format: all features values are shown, also the default values which can be zero or null values.
+* When defining a sparse format: only non default values are shown. For the features defined in <<managing-features-null-values>>.
+If their values are `matchedTitle=0` and `productReviewScore=0`, the sparse format will return `productReviewScore:0` (0 is the default value of `matchedTitle=0` and therefore it is not returned, 0 is not the default value of `productReviewScore=0` and therefore it is returned).
+
 == Managing features' null values
 This feature is available only for {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel].
 
@@ -577,14 +583,14 @@ To manage null values, the `"myFeatures.json"` file needs to be modified. A `"de
     "name": "productReviewScore",
     "class": "org.apache.solr.ltr.feature.FieldValueFeature",
     "params": {
-      "value": "${product_review_score}",
+      "field": "product_review_score",
       "defaultValue": "NaN"
     }
   }
 ]
 ----
 
-Also the model configuration needs two additional parameters. `"isNullSameAsZero"` needs to be defined in the model `"params"` and set to `"false"`; then the `"missing"` parameter needs to be added to each branch where the corresponding feature supports null values. This can assume one value between `"left"` and `"right"`.
+Also, the model configuration needs two additional parameters. `"isNullSameAsZero"` needs to be defined in the model `"params"` and set to `"false"`; then the `"missing"` parameter needs to be added to each branch where the corresponding feature supports null values. This can assume one value between `"left"` and `"right"`.
 
 .Example: /path/myModel.json
 [source,json]
@@ -594,8 +600,7 @@ Also the model configuration needs two additional parameters. `"isNullSameAsZero
   "name":"multipleadditivetreesmodel",
   "features":[
     { "name": "matchedTitle"},
-    { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"},
-    { "name": "userDevice"}
+    { "name": "productReviewScore"}
   ],
   "params":{
     "isNullSameAsZero": "false",
@@ -613,10 +618,10 @@ Also the model configuration needs two additional parameters. `"isNullSameAsZero
             "threshold": "0f",
             "missing": "left",
             "left" : {
-            "value" : "50"
+              "value" : "50"
             },
             "right" : {
-            "value" : "65"
+              "value" : "65"
             }
           }
         }
