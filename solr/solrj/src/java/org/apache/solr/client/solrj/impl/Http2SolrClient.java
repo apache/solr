@@ -128,7 +128,7 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private HttpClient httpClient;
-  protected volatile Set<String> urlParamNames = Set.of();
+  private volatile Set<String> urlParamNames = Set.of();
   private int idleTimeout;
   private int requestTimeout;
 
