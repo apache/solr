@@ -18,48 +18,44 @@ package org.apache.solr.util;
 
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/** TODO NOCOMMIT document */
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private EmbeddedSolrServer client = null;
 
-  public EmbeddedSolrServerTestRule() {}
+  public Builder build() {
+    return new Builder();
+  }
 
   public class Builder {
-    private Path solrHome;
-    private String schemaFile = "schema.xml";
-    private String configFile = "solrconfig.xml";
+    private Path solrHome; // mandatory
+    private Path dataDir;
     private String collectionName = DEFAULT_TEST_COLLECTION_NAME;
+    private String configFile;
+    private String schemaFile;
     private RequestWriterSupplier requestWriterSupplier = RequestWriterSupplier.JavaBin;
 
     public Builder setSolrHome(Path solrHome) {
       this.solrHome = solrHome;
+      return this;
+    }
+
+    public Builder useTempDataDir() {
+      this.dataDir = LuceneTestCase.createTempDir("data-dir");
       return this;
     }
 
@@ -87,6 +83,10 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       return solrHome;
     }
 
+    public Path getDataDir() {
+      return this.dataDir;
+    }
+
     public String getSchemaFile() {
       return schemaFile;
     }
@@ -104,60 +104,74 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     }
 
     public void init() {
-
       EmbeddedSolrServerTestRule.this.init(this);
     }
   }
 
   private void init(Builder b) {
-    Path solrHome = b.getSolrHome();
-    String schemaFile = b.getSchemaFile();
-    String configFile = b.getConfigFile();
-    String collectionName = b.getCollectionName();
-    RequestWriterSupplier requestWriterSupplier = b.getRequestWriterSupplier();
 
-    SolrConfig solrConfig;
+    NodeConfig nodeConfig = buildTestNodeConfig(b);
 
-    try {
-      solrConfig = new SolrConfig(solrHome.resolve(collectionName), configFile);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    var coreLocator =
+        new ReadOnlyCoresLocator() {
+          @Override
+          public List<CoreDescriptor> discover(CoreContainer cc) {
+            return List.of(buildCoreDesc(cc, b));
+          }
+        };
 
-    NodeConfig nodeConfig = buildTestNodeConfig(solrHome);
-
-    TestCoresLocator testCoreLocator =
-        new TestCoresLocator(
-            collectionName,
-            LuceneTestCase.createTempDir("data-dir").toFile().getAbsolutePath(),
-            solrConfig.getResourceName(),
-            IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig).getResourceName());
-
-    CoreContainer container = new CoreContainer(nodeConfig, testCoreLocator);
+    CoreContainer container = new CoreContainer(nodeConfig, coreLocator);
     container.load();
 
-    client = new EmbeddedSolrServer(container, collectionName, requestWriterSupplier);
+    client = new EmbeddedSolrServer(container, b.getCollectionName(), b.getRequestWriterSupplier());
   }
 
-  public Builder build() {
-    return new Builder();
+  private NodeConfig buildTestNodeConfig(Builder b) {
+    // TODO nocommit dedupe this with TestHarness
+    var updateShardHandlerConfig =
+        new UpdateShardHandlerConfig(
+            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            30000,
+            30000,
+            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
+            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+    return new NodeConfig.NodeConfigBuilder("testNode", b.getSolrHome())
+        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .build();
   }
 
-  @Override
-  protected void before() throws Throwable {
-    super.before();
+  private CoreDescriptor buildCoreDesc(CoreContainer cc, Builder b) {
+    Map<String, String> coreProps = new HashMap<>();
+    if (b.configFile != null) {
+      coreProps.put(CoreDescriptor.CORE_CONFIG, b.configFile);
+    }
+    if (b.schemaFile != null) {
+      coreProps.put(CoreDescriptor.CORE_SCHEMA, b.schemaFile);
+    }
+    if (b.dataDir != null) {
+      coreProps.put(CoreDescriptor.CORE_DATADIR, b.dataDir.toString());
+    }
+
+    var coreName = b.collectionName;
+    var instanceDir = cc.getCoreRootDirectory().resolve(coreName);
+    return new CoreDescriptor(
+        coreName, instanceDir, coreProps, cc.getContainerProperties(), cc.getZkController());
   }
 
   @Override
   protected void after() {
-
+    if (client == null) {
+      return;
+    }
     try {
-
       client.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      client.getCoreContainer().shutdown();
     }
-    client.getCoreContainer().shutdown();
+    client = null; // not necessary but why not; maybe for GC
   }
 
   @Override
@@ -169,69 +183,5 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   @Override
   public Path getSolrHome() {
     return Path.of(client.getCoreContainer().getSolrHome());
-  }
-
-  // From TestHarness
-  private static class TestCoresLocator extends ReadOnlyCoresLocator {
-
-    final String coreName;
-    final String dataDir;
-    final String solrConfig;
-    final String schema;
-
-    public TestCoresLocator(String coreName, String dataDir, String solrConfig, String schema) {
-      this.coreName = coreName == null ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
-      this.dataDir = dataDir;
-      this.schema = schema;
-      this.solrConfig = solrConfig;
-    }
-
-    @Override
-    public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(
-          new CoreDescriptor(
-              coreName,
-              cc.getCoreRootDirectory().resolve(coreName),
-              cc,
-              CoreDescriptor.CORE_DATADIR,
-              dataDir,
-              CoreDescriptor.CORE_CONFIG,
-              solrConfig,
-              CoreDescriptor.CORE_SCHEMA,
-              schema,
-              CoreDescriptor.CORE_COLLECTION,
-              System.getProperty("collection", "collection1"),
-              CoreDescriptor.CORE_SHARD,
-              System.getProperty("shard", "shard1")));
-    }
-  }
-
-  // From TestHarness
-  private NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig = null;
-    UpdateShardHandlerConfig updateShardHandlerConfig =
-        new UpdateShardHandlerConfig(
-            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-            30000,
-            30000,
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-    // universal default metric reporter
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "default");
-    attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-    MetricsConfig metricsConfig =
-        new MetricsConfig.MetricsConfigBuilder()
-            .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-            .build();
-
-    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
-        .setCloudConfig(cloudConfig)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setMetricsConfig(metricsConfig)
-        .build();
   }
 }

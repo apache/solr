@@ -52,6 +52,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     solrClientTestRule
         .build()
         .setSolrHome(Path.of(SolrTestCaseJ4.TEST_HOME()))
+        .useTempDataDir()
         .setSchemaFile(schema)
         .init();
   }

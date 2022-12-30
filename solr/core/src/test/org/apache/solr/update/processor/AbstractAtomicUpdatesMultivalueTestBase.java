@@ -52,6 +52,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     solrClientTestRule
         .build()
         .setSolrHome(Paths.get(SolrTestCaseJ4.TEST_HOME()))
+        .useTempDataDir()
         .setRequestWriterSupplier(requestWriterSupplier)
         .init();
   }
