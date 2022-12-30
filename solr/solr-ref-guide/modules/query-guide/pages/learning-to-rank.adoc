@@ -561,7 +561,7 @@ When managing null values, the feature vector changes.
 * When defining a sparse format: only non default values are shown. For the features defined in <<managing-features-null-values>>.
 If their values are `matchedTitle=0` and `productReviewScore=0`, the sparse format will return `productReviewScore:0` (0 is the default value of `matchedTitle=0` and therefore it is not returned, 0 is not the default value of `productReviewScore=0` and therefore it is returned).
 
-== Managing features' null values
+==== Managing features' null values
 This feature is available only for {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel].
 
 In some scenarios a null value for a feature has a different meaning than a zero value. There are models that are trained aware of this behavior (e.g. https://xgboost.readthedocs.io/en/stable/faq.html#how-to-deal-with-missing-values), in Solr an additional `"missing"` branch parameter has been introduced to differentiate the model behavior. This defines the branch to follow when the corresponding feature value is null. With the default configuration a null and a zero value have the same meaning.
