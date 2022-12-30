@@ -66,6 +66,7 @@ import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -222,9 +223,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         zkStateReader
             .getZkClient()
             .exists(
-                ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
-                null,
-                true);
+                ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
     if (leaderZnodeStat == null) {
       // we just got to know the leader but its live node is gone already!
       throw new SolrException(
@@ -687,7 +686,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           zkStateReader
               .getZkClient()
               .exists(
-                  ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
+                  ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
                   null,
                   true);
       if (leaderZnodeStat == null || ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
