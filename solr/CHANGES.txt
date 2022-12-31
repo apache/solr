@@ -74,10 +74,13 @@ Improvements
 
 * SOLR-10462: Introduce Builder setter for pollQueueTime on ConcurrentUpdateHttp2SolrClient.  Deprecated 
   direct setter setPollQueueTime on ConcurrentUpdateHttp2SolrClient. (Eric Pugh)
-
+  
 * SOLR-10452: Introduce Builder setter withTheseParamNamesInTheUrl for queryParams, renaming them to urlParamNames
   to clarify they are parameter names, not the values. Deprecated direct setter setQueryParams and addQueryParams 
   on SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
+  
+* SOLR-10470: Introduce Builder setter for parallelCacheRefreshes on cloud SolrClients.  Deprecated
+  direct setter setParallelCacheRefreshes on cloud SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
   
 Optimizations
 ---------------------
