@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -747,14 +746,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  private Set<String> setOf(String... keys) {
-    Set<String> set = new TreeSet<>();
-    if (keys != null) {
-      Collections.addAll(set, keys);
-    }
-    return set;
-  }
-
   private void setReqParamsOf(UpdateRequest req, String... keys) {
     if (keys != null) {
       for (String k : keys) {
@@ -790,7 +781,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
     HttpSolrClient.Builder builder = new HttpSolrClient.Builder(clientUrl);
-    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
       UpdateRequest req = new UpdateRequest();
@@ -798,36 +790,38 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
       verifyServletState(client, req);
     }
-    try (HttpSolrClient client = builder.withQueryParams(setOf()).build()) {
+    try (HttpSolrClient client = builder.withTheseParamNamesInTheUrl(Set.of()).build()) {
       // test without server query params
       DebugServlet.clear();
       UpdateRequest req2 = new UpdateRequest();
-      req2.setQueryParams(setOf("requestOnly"));
+      req2.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req2, "requestOnly", "notRequest");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req2));
       verifyServletState(client, req2);
     }
-    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly", "both")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params
       DebugServlet.clear();
       UpdateRequest req3 = new UpdateRequest();
-      req3.setQueryParams(setOf("requestOnly", "both"));
+      req3.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req3, "serverOnly", "requestOnly", "both", "neither");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req3));
       verifyServletState(client, req3);
     }
-    try (HttpSolrClient client = builder.withQueryParams(setOf("serverOnly", "both")).build()) {
+    try (HttpSolrClient client =
+        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params with single stream
       DebugServlet.clear();
       UpdateRequest req4 = new UpdateRequest();
       req4.add(new SolrInputDocument());
-      req4.setQueryParams(setOf("requestOnly", "both"));
+      req4.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req4, "serverOnly", "requestOnly", "both", "neither");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req4));
       // NOTE: single stream requests send all the params
       // as part of the query string.  So add "neither" to the request
       // so it passes the verification step.
-      req4.setQueryParams(setOf("requestOnly", "both", "neither"));
+      req4.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req4);
     }
   }
