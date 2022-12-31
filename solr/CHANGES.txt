@@ -20,6 +20,8 @@ Other Changes
 
 * SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
 
+* SOLR-16598: Upgrade Protobuf to 3.21.12 (David Smiley)
+
 ==================  9.1.0 ==================
 
 New Features
