@@ -1059,8 +1059,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
           urlParamNames = new HashSet<>(urlParamNames);
           urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
-          urlParamNames = Collections.unmodifiableSet(urlParamNames);
         }
+        urlParamNames = Set.copyOf(urlParamNames);
         return new DelegationTokenHttpSolrClient(this);
       }
     }
