@@ -35,7 +35,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected Integer connectionTimeoutMillis = 15000;
   protected Integer socketTimeoutMillis = 120000;
   protected boolean followRedirects = false;
-  protected Set<String> queryParams;
+  protected Set<String> urlParamNames;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
@@ -70,8 +70,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * @param queryParams set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    */
-  public B withQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public B withTheseParamNamesInTheUrl(Set<String> queryParams) {
+    this.urlParamNames = queryParams;
     return getThis();
   }
 

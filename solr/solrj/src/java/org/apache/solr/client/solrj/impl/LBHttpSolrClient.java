@@ -17,7 +17,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -76,6 +78,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final boolean clientIsInternal;
   private final ConcurrentHashMap<String, HttpSolrClient> urlToClient = new ConcurrentHashMap<>();
   private final HttpSolrClient.Builder httpSolrClientBuilder;
+  private volatile Set<String> urlParamNames = new HashSet<>();
 
   private Integer connectionTimeout;
   private volatile Integer soTimeout;
@@ -123,8 +126,8 @@ public class LBHttpSolrClient extends LBSolrClient {
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
-        if (queryParams != null) {
-          httpSolrClientBuilder.withQueryParams(queryParams);
+        if (urlParamNames != null) {
+          httpSolrClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
         }
         client = httpSolrClientBuilder.build();
       }
@@ -140,8 +143,8 @@ public class LBHttpSolrClient extends LBSolrClient {
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }
-      if (queryParams != null) {
-        clientBuilder.withQueryParams(queryParams);
+      if (urlParamNames != null) {
+        clientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
       }
       client = clientBuilder.build();
     }
@@ -176,6 +179,26 @@ public class LBHttpSolrClient extends LBSolrClient {
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
+  }
+
+  @Deprecated
+  public Set<String> getQueryParams() {
+    return urlParamNames;
+  }
+
+  /**
+   * Expert Method.
+   *
+   * @param urlParamNames set of param keys to only send via the query string
+   */
+  @Deprecated
+  public void setQueryParams(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
+  }
+
+  @Deprecated
+  public void addQueryParams(String urlParamNames) {
+    this.urlParamNames.add(urlParamNames);
   }
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */
