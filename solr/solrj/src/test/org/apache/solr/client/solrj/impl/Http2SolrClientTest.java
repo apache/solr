@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -189,7 +188,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     super.tearDown();
   }
 
-  private Http2SolrClient.Builder getHttp2SolrClient(
+  private Http2SolrClient.Builder getHttp2SolrClientBuilder(
       String url, int connectionTimeOut, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
         .connectionTimeout(connectionTimeOut)
@@ -200,7 +199,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -214,7 +213,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .build()) {
       try {
@@ -228,7 +227,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClient(
+        getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .requestTimeout(500)
             .build()) {
@@ -619,14 +618,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  private Set<String> setOf(String... keys) {
-    Set<String> set = new TreeSet<>();
-    if (keys != null) {
-      Collections.addAll(set, keys);
-    }
-    return set;
-  }
-
   private void setReqParamsOf(UpdateRequest req, String... keys) {
     if (keys != null) {
       for (String k : keys) {
@@ -644,7 +635,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       if (values != null) {
         for (String value : values) {
           boolean shouldBeInQueryString =
-              client.getQueryParams().contains(name)
+              client.getUrlParamNames().contains(name)
                   || (request.getQueryParams() != null && request.getQueryParams().contains(name));
           assertEquals(
               shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
@@ -661,12 +652,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testQueryString() throws Exception {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
-    try (Http2SolrClient client = getHttp2SolrClient(clientUrl)) {
+    UpdateRequest req = new UpdateRequest();
+
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl)
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
+            .build()) {
       // test without request query params
       DebugServlet.clear();
-      client.setQueryParams(setOf("serverOnly"));
-      UpdateRequest req = new UpdateRequest();
       setReqParamsOf(req, "serverOnly", "notServer");
+
       try {
         client.request(req);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -675,9 +670,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
       // test without server query params
       DebugServlet.clear();
-      client.setQueryParams(setOf());
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withTheseParamNamesInTheUrl(Set.of()).build()) {
       req = new UpdateRequest();
-      req.setQueryParams(setOf("requestOnly"));
+      req.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req, "requestOnly", "notRequest");
       try {
         client.request(req);
@@ -687,22 +684,30 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
       // test with both request and server query params
       DebugServlet.clear();
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl)
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
+            .build()) {
       req = new UpdateRequest();
-      client.setQueryParams(setOf("serverOnly", "both"));
-      req.setQueryParams(setOf("requestOnly", "both"));
+      req.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl)
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
+            .build()) {
 
       // test with both request and server query params with single stream
       DebugServlet.clear();
       req = new UpdateRequest();
       req.add(new SolrInputDocument());
-      client.setQueryParams(setOf("serverOnly", "both"));
-      req.setQueryParams(setOf("requestOnly", "both"));
+      req.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
@@ -711,7 +716,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       // NOTE: single stream requests send all the params
       // as part of the query string.  So add "neither" to the request
       // so it passes the verification step.
-      req.setQueryParams(setOf("requestOnly", "both", "neither"));
+      req.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req);
     }
   }
