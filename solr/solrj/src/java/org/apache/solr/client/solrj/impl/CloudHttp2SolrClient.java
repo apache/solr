@@ -97,7 +97,10 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-    this.setParallelCacheRefreshesLocks(builder.parallelCacheRefreshesLocks);
+
+    //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
+    // locks.
+    this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
     this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
