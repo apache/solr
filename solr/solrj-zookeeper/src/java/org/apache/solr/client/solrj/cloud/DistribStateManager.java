@@ -125,13 +125,14 @@ public interface DistribStateManager extends SolrCloseable {
   }
 
   default DocCollection.PrsSupplier getPrsSupplier(String collName) {
-    return new DocCollection.PrsSupplier(() -> {
-      try {
-        return getReplicaStates(DocCollection.getCollectionPath(collName));
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return new DocCollection.PrsSupplier(
+        () -> {
+          try {
+            return getReplicaStates(DocCollection.getCollectionPath(collName));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
