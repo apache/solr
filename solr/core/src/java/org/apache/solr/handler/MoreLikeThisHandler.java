@@ -52,7 +52,6 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -395,15 +394,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags)
         throws IOException {
       Document doc = reader.document(id);
-      rawMLTQuery = mlt.like(id);
-      boostedMLTQuery = getBoostedQuery(rawMLTQuery);
-      if (terms != null) {
-        fillInterestingTermsFromMLTQuery(boostedMLTQuery, terms);
-      }
+      final Query boostedQuery = getBoostedMLTQuery(id, terms);
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
-      realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
+      realMLTQuery.add(boostedQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(
           new TermQuery(
               new Term(
@@ -421,6 +416,24 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         results.docList = searcher.getDocList(this.realMLTQuery, filters, null, start, rows, flags);
       }
       return results;
+    }
+
+    public List<InterestingTerm> getInterestingTerms(int docid) throws IOException {
+      final ArrayList<InterestingTerm> interestingTerms = new ArrayList<>();
+      getBoostedMLTQuery(docid, interestingTerms);
+      return interestingTerms;
+    }
+    /**
+     * Sets {@link #boostedMLTQuery} and return, also put interesting terms into terms list if
+     * provided non-null. Sorry. It lacks of perfection and overall sense.
+     */
+    private Query getBoostedMLTQuery(int id, List<InterestingTerm> terms) throws IOException {
+      rawMLTQuery = mlt.like(id);
+      boostedMLTQuery = getBoostedQuery(rawMLTQuery);
+      if (terms != null) {
+        fillInterestingTermsFromMLTQuery(boostedMLTQuery, terms);
+      }
+      return boostedMLTQuery;
     }
 
     public DocListAndSet getMoreLikeThis(
@@ -465,33 +478,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         results.docList = searcher.getDocList(boostedMLTQuery, filters, null, start, rows, flags);
       }
       return results;
-    }
-
-    public NamedList<BooleanQuery> getMoreLikeTheseQuery(DocList docs) throws IOException {
-      IndexSchema schema = searcher.getSchema();
-      NamedList<BooleanQuery> result = new NamedList<>();
-      DocIterator iterator = docs.iterator();
-      while (iterator.hasNext()) {
-        int id = iterator.nextDoc();
-        String uniqueId = schema.printableUniqueKey(reader.document(id));
-
-        BooleanQuery mltquery = (BooleanQuery) mlt.like(id);
-        if (mltquery.clauses().size() == 0) {
-          return result;
-        }
-        mltquery = (BooleanQuery) getBoostedQuery(mltquery);
-
-        // exclude current document from results
-        BooleanQuery.Builder mltQuery = new BooleanQuery.Builder();
-        mltQuery.add(mltquery, BooleanClause.Occur.MUST);
-
-        mltQuery.add(
-            new TermQuery(new Term(uniqueKeyField.getName(), uniqueId)),
-            BooleanClause.Occur.MUST_NOT);
-        result.add(uniqueId, mltQuery.build());
-      }
-
-      return result;
     }
 
     private void fillInterestingTermsFromMLTQuery(Query query, List<InterestingTerm> terms) {

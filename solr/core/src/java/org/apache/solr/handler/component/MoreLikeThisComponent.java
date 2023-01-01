@@ -21,23 +21,17 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.stream.Stream;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -103,23 +97,22 @@ public class MoreLikeThisComponent extends SearchComponent {
             rb.rsp.add("moreLikeThis", new NamedList<DocList>());
             return;
           }
-
           MoreLikeThisHandler.MoreLikeThisHelper mlt =
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
-
-          NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb.getResults().docList);
-
-          NamedList<NamedList<String>> temp = new NamedList<>();
-          Iterator<Entry<String, BooleanQuery>> idToQueryIt = bQuery.iterator();
-
-          while (idToQueryIt.hasNext()) {
-            Entry<String, BooleanQuery> idToQuery = idToQueryIt.next();
-            String s = idToQuery.getValue().toString();
-
-            log.debug("MLT Query:{}", s);
-            temp.add(idToQuery.getKey(), transferQuery(idToQuery.getValue(), rb.req.getSchema()));
+          NamedList<NamedList<?>> temp = new NamedList<>();
+          for (DocIterator iterator = rb.getResults().docList.iterator(); iterator.hasNext(); ) {
+            int id = iterator.nextDoc();
+            final List<MoreLikeThisHandler.InterestingTerm> terms = mlt.getInterestingTerms(id);
+            if (terms.isEmpty()) {
+              continue;
+            }
+            final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
+            final Document document = rb.req.getSearcher().doc(id);
+            final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
+            final NamedList<String> mltQ =
+                putMLTIntoParamList(rb.req.getSchema(), terms, uniqueKey, uniqueVal);
+            temp.add(uniqueVal, mltQ);
           }
-
           rb.rsp.add("moreLikeThis", temp);
         } else {
           NamedList<DocList> sim =
@@ -135,41 +128,51 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
   }
 
-  private NamedList<String> transferQuery(BooleanQuery mltQuery, IndexSchema schema) {
-    NamedList<String> locParams = new NamedList<>();
-    NamedList<String> params = new NamedList<>();
-    final BooleanQuery build = flattenMLTBQ(mltQuery);
-    build.visit(new QParamsTranslator(locParams, params, schema));
-    StringBuilder bq = new StringBuilder("{!bool");
-    locParams.forEachEntry((k, v) -> bq.append(" " + k + "=" + v));
-    params.add(CommonParams.Q, bq + "}");
-    return params;
+  private static NamedList<String> putMLTIntoParamList(
+      IndexSchema schema,
+      List<MoreLikeThisHandler.InterestingTerm> terms,
+      String uniqueField,
+      String uniqueVal) {
+    final NamedList<String> mltQ = new NamedList<>();
+    StringBuilder q = new StringBuilder("{!bool");
+    q.append(" must_not=$");
+    int cnt = 0;
+    String param = "mltq" + (cnt++);
+    q.append(param);
+    mltQ.add(param, "{!field f=" + uniqueField + "}" + uniqueVal);
+    final StringBuilder reuseStr = new StringBuilder();
+    final CharsRefBuilder reuseChar = new CharsRefBuilder();
+    for (MoreLikeThisHandler.InterestingTerm term : terms) {
+      param = "mltq" + (cnt++);
+      q.append(" should=$");
+      q.append(param);
+      mltQ.add(param, toParserParam(schema, term.term, term.boost, reuseStr, reuseChar));
+    }
+    q.append("}");
+    mltQ.add(CommonParams.Q, q.toString());
+    return mltQ;
   }
 
-  private static BooleanQuery flattenMLTBQ(BooleanQuery mltQuery) {
-    BooleanQuery.Builder transformer = new BooleanQuery.Builder();
-    mltQuery
-        .clauses()
-        .forEach(
-            clause -> {
-              if (clause.getOccur() == BooleanClause.Occur.MUST
-                  && clause.getQuery() instanceof BooleanQuery) {
-                BooleanQuery mustOf = (BooleanQuery) clause.getQuery();
-                final Stream<BooleanClause> clauses = mustOf.clauses().stream();
-                if (clauses.allMatch(
-                    subClause -> subClause.getOccur() == BooleanClause.Occur.SHOULD)) {
-                  mustOf
-                      .clauses()
-                      .forEach(
-                          subClause ->
-                              transformer.add(subClause.getQuery(), BooleanClause.Occur.SHOULD));
-                  return;
-                }
-              }
-              transformer.add(clause.getQuery(), clause.getOccur());
-            });
-    final BooleanQuery build = transformer.build();
-    return build;
+  private static String toParserParam(
+      IndexSchema schema,
+      Term term1,
+      float boost,
+      StringBuilder reuseStr,
+      CharsRefBuilder reuseChar) {
+    reuseStr.setLength(0);
+    if (boost != 1f) {
+      reuseStr.append("{!boost b=");
+      reuseStr.append(boost);
+      reuseStr.append("}");
+    }
+    final String field = term1.field();
+    final CharsRef val =
+        schema.getField(field).getType().indexedToReadable(term1.bytes(), reuseChar);
+    reuseStr.append("{!term f=");
+    reuseStr.append(field);
+    reuseStr.append("}");
+    reuseStr.append(val);
+    return reuseStr.toString();
   }
 
   @Override
@@ -479,79 +482,5 @@ public class MoreLikeThisComponent extends SearchComponent {
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  private static class QParamsTranslator extends QueryVisitor {
-
-    private final NamedList<String> locParams;
-    private final NamedList<String> params;
-    private final IndexSchema schema;
-    int cnt;
-
-    public QParamsTranslator(
-        NamedList<String> locParams, NamedList<String> params, IndexSchema schema) {
-      this.locParams = locParams;
-      this.params = params;
-      this.schema = schema;
-      cnt = 0;
-    }
-
-    @Override
-    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      if (!(parent instanceof BooleanQuery)
-          || ((BooleanQuery) parent).getMinimumNumberShouldMatch() > 1) {
-        throw new IllegalArgumentException(
-            "Expecting BooleanQuery with no minShouldMatch set, got " + parent);
-      }
-
-      if ((parent instanceof BooleanQuery)
-          && occur == BooleanClause.Occur.MUST) { // BQ.visit() is rather tricky, I don't know why.
-        return this;
-      }
-      return new QueryVisitor() {
-        @Override
-        public void consumeTerms(Query query, Term... terms) {
-          if (terms.length != 1 || terms[0] == null) {
-            throw new IllegalArgumentException(
-                "Expecting just a TermQuery, got " + query + ", " + Arrays.toString(terms));
-          }
-          params.add(ref(occur), termToQuery(terms[0]));
-        }
-
-        @Override
-        public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-          if (occur != BooleanClause.Occur.MUST || !(parent instanceof BoostQuery)) {
-            throw new IllegalArgumentException(
-                "Expecting BoostQuery, got " + parent + ", " + occur);
-          }
-          final String paramName = ref(occur);
-          return new QueryVisitor() {
-            @Override
-            public void consumeTerms(Query query, Term... terms) {
-              if (terms.length != 1 || terms[0] == null) {
-                throw new IllegalArgumentException(
-                    "Expecting just a TermQuery, got " + query + ", " + Arrays.toString(terms));
-              }
-              final Term term = terms[0];
-              params.add(
-                  paramName,
-                  "{!boost b=" + ((BoostQuery) parent).getBoost() + "}" + termToQuery(term));
-            }
-          };
-        }
-      };
-    }
-
-    private String ref(BooleanClause.Occur occur) {
-      final String paramName = "mltq" + cnt;
-      locParams.add(occur.name().toLowerCase(Locale.getDefault()), "$" + paramName);
-      cnt += 1;
-      return paramName;
-    }
-
-    private String termToQuery(Term term) { // shouldn't it be {!term} ??{!raw }?
-      final String s = schema.getField(term.field()).getType().indexedToReadable(term.text());
-      return "{!term f=" + term.field() + "}" + s;
-    }
   }
 }
