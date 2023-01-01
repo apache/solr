@@ -294,7 +294,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         "Timeout on waiting for c1 updated to have PRS state r1",
         () -> {
           DocCollection c = reader.getCollection("c1");
-          log.info("c.PRS!=null {}", c.getPerReplicaStates() != null);
           return c.getPerReplicaStates() != null
               && c.getPerReplicaStates().get("r1") != null
               && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
