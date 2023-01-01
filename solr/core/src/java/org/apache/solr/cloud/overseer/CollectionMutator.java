@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -42,6 +44,7 @@ import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,7 +175,13 @@ public class CollectionMutator {
 
     DocCollection collection =
         new DocCollection(
-            coll.getName(), coll.getSlicesMap(), props, coll.getRouter(), coll.getZNodeVersion());
+            coll.getName(),
+            coll.getSlicesMap(),
+            props,
+            coll.getRouter(),
+            coll.getZNodeVersion(),
+           stateManager.getPrsSupplier(coll.getName()))
+           ;
     if (replicaOps == null) {
       return new ZkWriteCommand(coll.getName(), collection);
     } else {

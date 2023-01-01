@@ -225,33 +225,49 @@ public class ClusterState implements JSONWriter.Writable {
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+  public static ClusterState createFromJson(
+      int version, byte[] bytes, Set<String> liveNodes, DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes);
+    return createFromCollectionMap(version, stateMap, liveNodes, prsSupplier);
+  }
+
+  @Deprecated
+  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+    return createFromJson(version, bytes, liveNodes, null);
   }
 
   public static ClusterState createFromCollectionMap(
-      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+      int version,
+      Map<String, Object> stateMap,
+      Set<String> liveNodes,
+      DocCollection.PrsSupplier prsSupplier) {
     Map<String, CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       @SuppressWarnings({"unchecked"})
       DocCollection coll =
-          collectionFromObjects(collectionName, (Map<String, Object>) entry.getValue(), version);
+          collectionFromObjects(
+              collectionName, (Map<String, Object>) entry.getValue(), version, prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
     return new ClusterState(collections, liveNodes);
   }
 
+  @Deprecated
+  public static ClusterState createFromCollectionMap(
+      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+    return createFromCollectionMap(version, stateMap, liveNodes, null);
+  }
+
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(
-      String name, Map<String, Object> objs, int version) {
+  public static DocCollection collectionFromObjects(
+      String name, Map<String, Object> objs, int version, DocCollection.PrsSupplier prsSupplier) {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
@@ -259,10 +275,6 @@ public class ClusterState implements JSONWriter.Writable {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
-    } else {
-      // prior to this call, PRS provider is set. We should unset it before
-      // deserializing the replicas and slices
-      DocCollection.clearReplicaStateProvider();
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
@@ -290,7 +302,7 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version);
+    return new DocCollection(name, slices, props, router, version, prsSupplier);
   }
 
   @Override

@@ -66,11 +66,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Map<String, Replica> replicaMap = new HashMap<>();
   private PrsSupplier prsSupplier;
 
+  @Deprecated
   public DocCollection(
       String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, Integer.MAX_VALUE);
+    this(name, slices, props, router, Integer.MAX_VALUE, null);
   }
 
+  @Deprecated
+  public DocCollection(
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion) {
+    this(name, slices, props, router, zkVersion, null);
+  }
   /**
    * @param name The name of the collection
    * @param slices The logical shards of the collection. This is used directly and a copy is not
@@ -84,7 +94,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       Map<String, Slice> slices,
       Map<String, Object> props,
       DocRouter router,
-      int zkVersion) {
+      int zkVersion,
+      PrsSupplier prsSupplier) {
     super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
     // overwrites
@@ -101,7 +112,17 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
-    prsSupplier = getReplicaStatesProvider();
+    if (this.perReplicaState) {
+      if (prsSupplier == null) {
+        throw new RuntimeException(
+            CollectionStateProps.PER_REPLICA_STATE
+                + " = true , but per-replica state supplier is not provided");
+      }
+      this.prsSupplier = prsSupplier;
+      for (Slice s : this.slices.values()) {
+        s.setPrsSupplier(prsSupplier);
+      }
+    }
     Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
@@ -139,6 +160,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection copyWith(PerReplicaStates newPerReplicaStates) {
     if (this.prsSupplier != null) {
+      log.info("In-place update of PRS: {}", newPerReplicaStates);
       this.prsSupplier.prs = newPerReplicaStates;
     }
     return this;
@@ -192,8 +214,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the resulting DocCollection
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices) {
-    DocCollection result = new DocCollection(getName(), slices, propMap, router, znodeVersion);
-    result.prsSupplier = prsSupplier;
+    DocCollection result =
+        new DocCollection(getName(), slices, propMap, router, znodeVersion, prsSupplier);
     return result;
   }
   /** Return collection name. */
@@ -448,6 +470,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return prsSupplier != null ? prsSupplier.get() : null;
   }
 
+  public PrsSupplier getPrsSupplier() {
+    return prsSupplier;
+  }
+
   public int getExpectedReplicaCount(Replica.Type type, int def) {
     Integer result = null;
     if (type == Replica.Type.NRT) result = numNrtReplicas;
@@ -471,32 +497,24 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static class PrsSupplier implements Supplier<PerReplicaStates> {
 
-    protected volatile PerReplicaStates prs;
+    private volatile PerReplicaStates prs;
 
-    PrsSupplier() {}
+    private Supplier<PerReplicaStates> supplier;
 
-    PrsSupplier(PerReplicaStates prs) {
+    public PrsSupplier(Supplier<PerReplicaStates> supplier) {
+      this.supplier = supplier;
+    }
+
+    public PrsSupplier(PerReplicaStates prs) {
       this.prs = prs;
     }
 
     @Override
     public PerReplicaStates get() {
+      if (prs == null) {
+        prs = supplier.get();
+      }
       return prs;
     }
-  }
-
-  public static final ThreadLocal<DocCollection.PrsSupplier> REPLICASTATES_PROVIDER =
-      new ThreadLocal<>();
-
-  public static void initReplicaStateProvider(DocCollection.PrsSupplier replicaStatesSupplier) {
-    REPLICASTATES_PROVIDER.set(replicaStatesSupplier);
-  }
-
-  public static DocCollection.PrsSupplier getReplicaStatesProvider() {
-    return REPLICASTATES_PROVIDER.get();
-  }
-
-  public static void clearReplicaStateProvider() {
-    REPLICASTATES_PROVIDER.remove();
   }
 }

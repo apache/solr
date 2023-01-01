@@ -1685,10 +1685,7 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
-    PerReplicaStatesFetcher.LazyPrsSupplier prsSupplier =
-        new PerReplicaStatesFetcher.LazyPrsSupplier(zkClient, collectionPath);
     while (true) {
-      DocCollection.initReplicaStateProvider(prsSupplier);
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
@@ -1713,8 +1710,6 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
-      } finally {
-        DocCollection.clearReplicaStateProvider();
       }
     }
   }

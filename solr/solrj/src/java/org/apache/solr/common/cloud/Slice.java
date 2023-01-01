@@ -45,7 +45,17 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public final String collection;
 
-  private final DocCollection.PrsSupplier prsSupplier;
+  private DocCollection.PrsSupplier prsSupplier;
+
+  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
+    this.prsSupplier = prsSupplier;
+    for (Replica r : replicas.values()) {
+      r.setPrsSupplier(prsSupplier);
+    }
+    if (leader == null) {
+      leader = findLeader();
+    }
+  }
 
   /**
    * Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON.
@@ -134,7 +144,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   // FUTURE: optional per-slice override of the collection replicationFactor
   private final Integer replicationFactor;
   private final Map<String, Replica> replicas;
-  private final Replica leader;
+  private Replica leader;
   private final State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
@@ -206,9 +216,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     } else {
       this.routingRules = null;
     }
-    this.prsSupplier = DocCollection.getReplicaStatesProvider();
-
-    leader = findLeader();
   }
 
   @SuppressWarnings({"unchecked"})
@@ -279,9 +286,14 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public Replica getLeader() {
     if (prsSupplier != null) {
+      // this  is a PRS collection. leader may keep changing
       return findLeader();
+    } else {
+      if (leader == null) {
+        leader = findLeader();
+      }
+      return leader;
     }
-    return leader;
   }
 
   public int getNumLeaderReplicas() {
