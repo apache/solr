@@ -29,7 +29,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @Nightly
-@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {
