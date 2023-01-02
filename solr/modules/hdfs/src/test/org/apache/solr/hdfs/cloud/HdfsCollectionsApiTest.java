@@ -73,7 +73,6 @@ public class HdfsCollectionsApiTest extends SolrCloudTestCase {
   public void testDataDirIsNotReused() throws Exception {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     String collection = "test";
-    cluster.getSolrClient().setDefaultCollection(collection);
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
         .setCreateNodeSet(jettySolrRunner.getNodeName())
         .process(cluster.getSolrClient());
