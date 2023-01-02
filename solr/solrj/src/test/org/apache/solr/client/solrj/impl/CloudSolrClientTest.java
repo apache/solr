@@ -968,16 +968,16 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(1, slice.getReplicas().size()); // sanity check
     final String old_leader_core_node_name = slice.getLeader().getName();
 
-    // NOTE: creating our own CloudSolrClient whose settings we can muck with...
+    // NOTE: creating our own CloudSolrClient with settings for this specific test...
     try (CloudSolrClient stale_client =
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
             .withParallelUpdates(true)
+            // don't let collection cache entries get expired, even on a slow machine...
+            .withCollectionCacheTtl(Integer.MAX_VALUE)
             .setDefaultCollection(COL)
             .build()) {
-      // don't let collection cache entries get expired, even on a slow machine...
-      stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
 
       // do a query to populate stale_client's cache...
       assertEquals(0, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
