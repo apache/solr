@@ -36,7 +36,7 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
 
-  api 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  implementation 'javax.servlet:javax.servlet-api'
 
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.google.guava:guava'
@@ -66,7 +66,7 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   // transitive of hadoop-common; used by Kerberos auth
   runtimeOnly 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
-  runtimeOnly 'commons-collections:commons-collections'
+//  runtimeOnly 'commons-collections:commons-collections'
   runtimeOnly 'com.google.re2j:re2j'
   runtimeOnly 'org.apache.commons:commons-configuration2'
   runtimeOnly 'org.apache.kerby:kerb-core'
@@ -103,7 +103,7 @@ dependencies {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
   // required for instantiating a Zookeeper server in tests or embedded
-  testRuntimeOnly ('org.xerial.snappy:snappy-java')
+  runtimeOnly ('org.xerial.snappy:snappy-java')
 }
 
 

@@ -38,15 +38,15 @@ public class SOLR749Test extends SolrTestCaseJ4 {
 
   public void testConstruction() {
     SolrCore core = h.getCore();
-    assertNotNull("core is null and it shouldn't be", core);
+    assertTrue("core is null and it shouldn't be", core != null);
     QParserPlugin parserPlugin = core.getQueryPlugin(QParserPlugin.DEFAULT_QTYPE);
-    assertNotNull("parserPlugin is null and it shouldn't be", parserPlugin);
+    assertTrue("parserPlugin is null and it shouldn't be", parserPlugin != null);
     assertTrue(
         "parserPlugin is not an instanceof " + FooQParserPlugin.class,
         parserPlugin instanceof FooQParserPlugin);
 
     ValueSourceParser vsp = core.getValueSourceParser("boost");
-    assertNotNull("vsp is null and it shouldn't be", vsp);
+    assertTrue("vsp is null and it shouldn't be", vsp != null);
     assertTrue(
         "vsp is not an instanceof " + DummyValueSourceParser.class,
         vsp instanceof DummyValueSourceParser);

@@ -115,7 +115,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof MetricImpl)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
     MetricImpl<?> that = (MetricImpl<?>) o;

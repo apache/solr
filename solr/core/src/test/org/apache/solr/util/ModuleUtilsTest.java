@@ -21,15 +21,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
-import org.apache.solr.SolrTestCase;
+import junit.framework.TestCase;
 
-public class ModuleUtilsTest extends SolrTestCase {
+public class ModuleUtilsTest extends TestCase {
   private Path mockRootDir;
   private final Set<String> expectedMods = Set.of("mod1", "mod2");
 
   @Override
   public void setUp() throws Exception {
-    super.setUp();
     mockRootDir = setupMockInstallDir(expectedMods);
   }
 

@@ -467,7 +467,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(add.commitWithin, -1);
-    assertTrue(add.overwrite);
+    assertEquals(add.overwrite, true);
     assertEquals("SolrInputDocument(fields: [id=1, val_s={add=foo}])", add.solrDoc.toString());
 
     req.close();
@@ -706,47 +706,47 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(9, p.deleteCommands.size());
     DeleteUpdateCommand delete = p.deleteCommands.get(0);
     assertEquals(delete.id, "10");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(1);
     assertEquals(delete.id, "20");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(2);
     assertEquals(delete.id, "30");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(3);
     assertEquals(delete.id, "40");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(4);
     assertEquals(delete.id, "50");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.getVersion(), 12345L);
 
     delete = p.deleteCommands.get(5);
     assertEquals(delete.id, "60");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.getVersion(), 67890L);
 
     delete = p.deleteCommands.get(6);
     assertEquals(delete.id, "70");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.getVersion(), 77777L);
 
     delete = p.deleteCommands.get(7);
-    assertNull(delete.id);
+    assertEquals(delete.id, null);
     assertEquals(delete.query, "id:80");
     assertEquals(delete.getVersion(), 88888L);
 
     delete = p.deleteCommands.get(8);
     assertEquals(delete.id, "90");
-    assertNull(delete.query);
+    assertEquals(delete.query, null);
     assertEquals(delete.getRoute(), "shard1");
     assertEquals(delete.getVersion(), 88888L);
 
@@ -815,7 +815,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   @Test
   public void testChildDocWithoutId() throws Exception {
     final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
-    assertFalse(json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON));
+    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
     checkTwoAnonymousChildDocs(json, false);
   }
 

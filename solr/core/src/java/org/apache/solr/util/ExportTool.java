@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,7 +56,6 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -173,7 +173,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
   }
 
-  static Set<String> formats = Set.of(JAVABIN, "jsonl");
+  static Set<String> formats = ImmutableSet.of(JAVABIN, "jsonl");
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
@@ -491,8 +491,8 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
-
-        try (SolrClient client = new HttpSolrClient.Builder(baseurl).build()) {
+        HttpSolrClient client = new HttpSolrClient.Builder(baseurl).build();
+        try {
           expectedDocs = getDocCount(replica.getCoreName(), client);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
@@ -555,12 +555,14 @@ public class ExportTool extends SolrCLI.ToolBase {
               return false;
             }
           }
+        } finally {
+          client.close();
         }
       }
     }
   }
 
-  static long getDocCount(String coreName, SolrClient client)
+  static long getDocCount(String coreName, HttpSolrClient client)
       throws SolrServerException, IOException {
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(0);

@@ -96,8 +96,7 @@ public abstract class FacetMerger {
       return oldVal;
     }
 
-    private final IdentityHashMap<FacetRequest, Collection<String>> refineSubMap =
-        new IdentityHashMap<>(4);
+    private Map<FacetRequest, Collection<String>> refineSubMap = new IdentityHashMap<>(4);
 
     public Collection<String> getSubsWithRefinement(FacetRequest freq) {
       if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
@@ -121,8 +120,7 @@ public abstract class FacetMerger {
       return subs;
     }
 
-    private final IdentityHashMap<FacetRequest, Collection<String>> partialSubsMap =
-        new IdentityHashMap<>(4);
+    private Map<FacetRequest, Collection<String>> partialSubsMap = new IdentityHashMap<>(4);
 
     public Collection<String> getSubsWithPartial(FacetRequest freq) {
       if (freq.getSubFacets().isEmpty()) return Collections.emptyList();

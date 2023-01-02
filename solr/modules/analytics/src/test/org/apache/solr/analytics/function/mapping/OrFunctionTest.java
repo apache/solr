@@ -53,22 +53,22 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     // Both exist
     val1.setValue(false).setExists(true);
     val2.setValue(false).setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(true).setExists(true);
     val2.setValue(false).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(false).setExists(true);
     val2.setValue(true).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(true).setExists(true);
     val2.setValue(true).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -88,20 +88,20 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
 
     // One value
     val.setValues(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     val.setValues(false);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
 
     // Multiple values
     val.setValues(false, false, true, false);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     val.setValues(false, false, false);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -120,7 +120,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val2.setValues();
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, no value
@@ -128,7 +128,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val2.setValues(true, false);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, one value
@@ -186,14 +186,14 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val2.setValue(true).setExists(true);
     val3.setValue(false).setExists(true);
     val4.setValue(false).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(false).setExists(true);
     val2.setValue(false).setExists(true);
     val3.setValue(false).setExists(true);
     val4.setValue(false).setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
   }
 }

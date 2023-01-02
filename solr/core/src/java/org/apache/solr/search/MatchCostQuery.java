@@ -68,7 +68,7 @@ public class MatchCostQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query rewrite = delegate.rewrite(reader);
-    if (delegate.equals(rewrite)) {
+    if (delegate == rewrite) {
       return this; // unchanged
     }
     return new MatchCostQuery(rewrite, matchCost);

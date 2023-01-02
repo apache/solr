@@ -18,7 +18,6 @@ package org.apache.solr.bench;
 
 import static org.apache.solr.bench.BaseBenchState.log;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,8 +37,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.quicktheories.core.Gen;
 import org.quicktheories.impl.BenchmarkRandomSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A tool to generate controlled random data for a benchmark. {@link SolrInputDocument}s are created
@@ -50,7 +47,6 @@ import org.slf4j.LoggerFactory;
  * them via {@link #generatedDocsIterator}.
  */
 public class Docs {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ThreadLocal<SolrRandomnessSource> random;
   private final Queue<SolrInputDocument> docs = new ConcurrentLinkedQueue<>();
@@ -117,7 +113,7 @@ public class Docs {
               SolrInputDocument doc = Docs.this.inputDocument();
               docs.add(doc);
             } catch (Exception e) {
-              log.error("error adding doc", e);
+              e.printStackTrace();
               executorService.shutdownNow();
               throw new RuntimeException(e);
             }

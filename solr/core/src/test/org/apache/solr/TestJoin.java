@@ -19,6 +19,7 @@ package org.apache.solr;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -373,7 +374,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         Set<Comparable> docs = join(fromDocs, pivot);
         List<Doc> docList = new ArrayList<>(docs.size());
         for (@SuppressWarnings({"rawtypes"}) Comparable id : docs) docList.add(model.get(id));
-        docList.sort(createComparator("_docid_", true, false, false, false));
+        Collections.sort(docList, createComparator("_docid_", true, false, false, false));
         List<Object> sortedDocs = new ArrayList<>();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;

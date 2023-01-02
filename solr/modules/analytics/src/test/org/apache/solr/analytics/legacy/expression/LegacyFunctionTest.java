@@ -39,7 +39,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j % INT + 1;
-      long l = j % LONG + 1L;
+      long l = j % LONG + 1;
       float f = j % FLOAT + 1;
       double d = j % DOUBLE + 1;
       double d0 = j % DOUBLE;
@@ -141,7 +141,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
 
     result = (Double) getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
     calculated = (Double) getStatResult("ar", "meanc", VAL_TYPE.DOUBLE);
-    assertEquals(result, calculated, 0.0);
+    assertTrue(result == calculated);
     assertEquals(getRawResponse(), result, calculated, 0.0);
   }
 

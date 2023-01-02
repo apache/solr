@@ -131,7 +131,7 @@ public class TestLTRQParserInterleaving extends TestRerankBase {
         "rq", "{!ltr model=modelA model=modelB interleavingAlgorithm=unsupported reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assertTrue(res.contains("Unknown Interleaving algorithm: unsupported"));
+    assert (res.contains("Unknown Interleaving algorithm: unsupported"));
   }
 
   @Test
@@ -145,7 +145,7 @@ public class TestLTRQParserInterleaving extends TestRerankBase {
     query.add("rq", "{!ltr model=modelA model=modelB model=C reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assertTrue(res.contains("Must provide one or two models in the request"));
+    assert (res.contains("Must provide one or two models in the request"));
   }
 
   @Test
@@ -159,7 +159,7 @@ public class TestLTRQParserInterleaving extends TestRerankBase {
     query.add("rq", "{!ltr model=modelA model=\"\" reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assertTrue(res.contains("the model 1 is empty"));
+    assert (res.contains("the model 1 is empty"));
   }
 
   @Test

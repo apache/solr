@@ -265,7 +265,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Replica)) return false;
+    if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
     Replica other = (Replica) o;
@@ -362,7 +362,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return replicaState;
   }
 
-  @Override
   public Object clone() {
     return new Replica(name, node, collection, shard, core, state, type, propMap);
   }

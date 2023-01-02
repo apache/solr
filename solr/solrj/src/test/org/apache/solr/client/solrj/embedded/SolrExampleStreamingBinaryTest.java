@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,15 +35,9 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override
   public SolrClient createNewSolrClient() {
-
-    SolrClient client =
-        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
-            .withQueueSize(2)
-            .withThreadCount(5)
-            .withResponseParser(new BinaryResponseParser())
-            .withRequestWriter(new BinaryRequestWriter())
-            .build();
-
+    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient) super.createNewSolrClient();
+    client.setParser(new BinaryResponseParser());
+    client.setRequestWriter(new BinaryRequestWriter());
     return client;
   }
 

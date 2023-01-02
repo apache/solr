@@ -50,38 +50,38 @@ public class TestSSLRandomization extends SolrCloudTestCase {
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42, clientAuth = 0.33, reason = "foo")
-  public static class FullyAnnotated {}
+  public class FullyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
-  public static class InheritedFullyAnnotated extends FullyAnnotated {}
+  public class InheritedFullyAnnotated extends FullyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
-  public static class NotAnnotated {}
+  public class NotAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
-  public static class InheritedNotAnnotated extends NotAnnotated {}
-  ;
-
-  /** Used by {@link #testSSLRandomizer} */
-  @SuppressSSL(bugUrl = "fakeBugUrl")
-  public static class Suppressed {}
-  ;
-
-  /** Used by {@link #testSSLRandomizer} */
-  public static class InheritedSuppressed extends Suppressed {}
+  public class InheritedNotAnnotated extends NotAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @SuppressSSL(bugUrl = "fakeBugUrl")
-  public static class InheritedAnnotationButSuppressed extends FullyAnnotated {}
+  public class Suppressed {}
+  ;
+
+  /** Used by {@link #testSSLRandomizer} */
+  public class InheritedSuppressed extends Suppressed {}
+  ;
+
+  /** Used by {@link #testSSLRandomizer} */
+  @SuppressSSL(bugUrl = "fakeBugUrl")
+  public class InheritedAnnotationButSuppressed extends FullyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42, clientAuth = 0.33, reason = "foo")
-  public static class InheritedSuppressedWithIgnoredAnnotation extends Suppressed {
+  public class InheritedSuppressedWithIgnoredAnnotation extends Suppressed {
     // Even with direct annotation, suppression at superclass overrules us.
     //
     // (If it didn't work this way, it would be a pain in the ass to quickly disable SSL for a
@@ -90,61 +90,60 @@ public class TestSSLRandomization extends SolrCloudTestCase {
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL()
-  public static class EmptyAnnotated {}
+  public class EmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
-  public static class InheritedEmptyAnnotated extends EmptyAnnotated {}
+  public class InheritedEmptyAnnotated extends EmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(0.5)
-  public static class InheritedEmptyAnnotationWithOverride extends EmptyAnnotated {}
+  public class InheritedEmptyAnnotationWithOverride extends EmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42, clientAuth = 0.33, reason = "foo")
-  public static class GrandchildInheritedEmptyAnnotationWithOverride
-      extends InheritedEmptyAnnotated {}
+  public class GrandchildInheritedEmptyAnnotationWithOverride extends InheritedEmptyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(0.5)
-  public static class SimplyAnnotated {}
+  public class SimplyAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(0.0)
-  public static class MinAnnotated {}
+  public class MinAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(1)
-  public static class MaxAnnotated {}
+  public class MaxAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 0.42)
-  public static class SSlButNoClientAuthAnnotated {}
+  public class SSlButNoClientAuthAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(clientAuth = 0.42)
-  public static class ClientAuthButNoSSLAnnotated {}
+  public class ClientAuthButNoSSLAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(ssl = 42.0)
-  public static class SSLOutOfRangeAnnotated {}
+  public class SSLOutOfRangeAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL(clientAuth = 42.0)
-  public static class ClientAuthOutOfRangeAnnotated {}
+  public class ClientAuthOutOfRangeAnnotated {}
   ;
 
   /** Used by {@link #testSSLRandomizer} */
-  public static class InheritedOutOfRangeAnnotated extends ClientAuthOutOfRangeAnnotated {}
+  public class InheritedOutOfRangeAnnotated extends ClientAuthOutOfRangeAnnotated {}
   ;
 
   public void testSSLRandomizer() {

@@ -64,7 +64,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     solrServer = null;
   }
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -71,8 +71,10 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
               field.useDocValuesAsStored());
 
           // uninvertable defaults to true (for now)
-          assertTrue(
-              f + " field's type has wrong uninvertable for ver=" + ver, field.isUninvertible());
+          assertEquals(
+              f + " field's type has wrong uninvertable for ver=" + ver,
+              true,
+              field.isUninvertible());
         }
 
         // regardless of version, explicit multiValued values on field or type

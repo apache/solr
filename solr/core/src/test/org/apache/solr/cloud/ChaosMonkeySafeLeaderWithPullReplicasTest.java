@@ -84,12 +84,10 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   protected static final String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
-  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
-  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
@@ -266,7 +264,8 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         del("*:*");
         break;
       } catch (SolrServerException | SolrException e) {
-        log.error("cluster may not be up yet", e);
+        // cluster may not be up yet
+        e.printStackTrace();
       }
       Thread.sleep(100);
     }

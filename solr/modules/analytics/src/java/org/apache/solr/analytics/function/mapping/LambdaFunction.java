@@ -1385,7 +1385,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(boolean paramValue) {
       if (!exists) {
         exists = true;
@@ -1754,7 +1753,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(int paramValue) {
       if (!exists) {
         exists = true;
@@ -2116,7 +2114,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(long paramValue) {
       if (!exists) {
         exists = true;
@@ -2479,7 +2476,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(float paramValue) {
       if (!exists) {
         exists = true;
@@ -2842,7 +2838,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(double paramValue) {
       if (!exists) {
         exists = true;
@@ -3210,7 +3205,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(long paramValue) {
       if (!exists) {
         exists = true;
@@ -3573,7 +3567,6 @@ public class LambdaFunction {
       return exists;
     }
 
-    @Override
     public void accept(String paramValue) {
       if (!exists) {
         exists = true;

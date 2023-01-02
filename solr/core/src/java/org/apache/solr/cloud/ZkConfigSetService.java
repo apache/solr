@@ -174,7 +174,6 @@ public class ZkConfigSetService extends ConfigSetService {
     }
   }
 
-  @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
     String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
     String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;
@@ -199,7 +198,7 @@ public class ZkConfigSetService extends ConfigSetService {
       throws IOException {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
-      // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
+      // if createNew is true then zkClient#makePath failOnExists is set to false
       zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
     } catch (KeeperException.NodeExistsException nodeExistsException) {
       throw new SolrException(

@@ -264,7 +264,6 @@ public class PivotFacetValue {
     }
   }
 
-  @Override
   public String toString() {
     return String.format(
         Locale.ROOT,

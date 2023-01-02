@@ -239,7 +239,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     solrMetricsContextMock = null;
   }
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -277,7 +276,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     replicas.clear();
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     stopComponentUnderTest();
@@ -461,7 +459,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
-              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
@@ -508,7 +505,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
-              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + Arrays.toString(new byte[0]));
@@ -550,7 +546,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // 1. Single line recording and executing a command
       Mockito.doAnswer(
               new Answer<Void>() {
-                @Override
                 public Void answer(InvocationOnMock invocation) {
                   handleCreateCollMessageProps(invocation.getArgument(1));
                   return null;
@@ -562,7 +557,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // 2. Recording a command to be executed as part of a batch of commands
       Mockito.doAnswer(
               new Answer<Void>() {
-                @Override
                 public Void answer(InvocationOnMock invocation) {
                   handleCreateCollMessageProps(invocation.getArgument(1));
                   return null;
@@ -574,12 +568,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // Mocking for state change via the Overseer queue
       Mockito.doAnswer(
               new Answer<Void>() {
-                @Override
                 public Void answer(InvocationOnMock invocation) {
                   try {
                     handleCreateCollMessage(invocation.getArgument(0));
                     verify(stateUpdateQueueMock, Mockito.atLeast(0))
-                        .offer((byte[]) invocation.getArgument(0));
+                        .offer(invocation.getArgument(0));
                   } catch (KeeperException e) {
                     throw new RuntimeException(e);
                   } catch (InterruptedException e) {
@@ -590,7 +583,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                 }
               })
           .when(overseerMock)
-          .offerStateUpdate((byte[]) any());
+          .offerStateUpdate(any());
     }
 
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
@@ -599,7 +592,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
-              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
@@ -646,7 +638,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
-              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + Arrays.toString(new byte[0]));

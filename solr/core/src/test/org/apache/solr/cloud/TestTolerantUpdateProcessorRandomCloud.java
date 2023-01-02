@@ -38,7 +38,9 @@ import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -48,7 +50,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -72,8 +73,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
-  /** one SolrClient for each server */
-  private static List<SolrClient> NODE_CLIENTS;
+  /** one HttpSolrClient for each server */
+  private static List<HttpSolrClient> NODE_CLIENTS;
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -108,11 +109,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
 
     if (NODE_CLIENTS != null) {
-      for (SolrClient client : NODE_CLIENTS) {
+      for (HttpSolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
-    NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
+    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -131,7 +132,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws IOException {
     if (NODE_CLIENTS != null) {
-      for (SolrClient client : NODE_CLIENTS) {
+      for (HttpSolrClient client : NODE_CLIENTS) {
         client.close();
       }
     }
@@ -241,16 +242,15 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
                       (hiBound < 0) ? maxDocId : hiBound - 1);
 
               if (lo != hi) {
-                assertTrue("lo=" + lo + " hi=" + hi, lo < hi);
+                assert lo < hi : "lo=" + lo + " hi=" + hi;
                 // NOTE: clear & set are exclusive of hi, so we use "}" in range query accordingly
                 q = "id_i:[" + lo + " TO " + hi + "}";
                 expectedDocIds.clear(lo, hi);
                 docsAffectedThisRequest.set(lo, hi);
               } else {
                 // edge case: special case DBQ of one doc
-                assertTrue(
-                    "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi,
-                    lo == rangeAxis && hi == rangeAxis);
+                assert (lo == rangeAxis && hi == rangeAxis)
+                    : "lo=" + lo + " axis=" + rangeAxis + " hi=" + hi;
                 q = "id_i:[" + lo + " TO " + lo + "]"; // have to be inclusive of both ends
                 expectedDocIds.clear(lo);
                 docsAffectedThisRequest.set(lo);
@@ -320,10 +320,9 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     final int max = atLeast(100);
     BitSet bits = new BitSet(max + 1);
     for (int i = 0; i <= max; i++) {
-      assertNotEquals(
+      assertFalse(
           "how is bitset already full? iter=" + i + " card=" + bits.cardinality() + "/max=" + max,
-          bits.cardinality(),
-          max + 1);
+          bits.cardinality() == max + 1);
       final int nextBit = randomUnsetBit(random(), bits, max);
       assertTrue("nextBit shouldn't be negative yet: " + nextBit, 0 <= nextBit);
       assertTrue("nextBit can't exceed max: " + nextBit, nextBit <= max);

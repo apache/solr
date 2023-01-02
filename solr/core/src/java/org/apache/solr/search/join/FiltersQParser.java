@@ -102,7 +102,7 @@ public class FiltersQParser extends QParser {
               + " is not defined for "
               + stringIncludingLocalParams);
     }
-    IdentityHashMap<QParser, Occur> clauses = new IdentityHashMap<>();
+    Map<QParser, Occur> clauses = new IdentityHashMap<>();
 
     for (String filter : params == null ? new String[0] : params) {
       if (filter == null || filter.length() == 0) {

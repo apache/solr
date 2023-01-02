@@ -33,7 +33,6 @@ class LongFieldWriter extends FieldWriter {
     this.field = field;
   }
 
-  @Override
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {

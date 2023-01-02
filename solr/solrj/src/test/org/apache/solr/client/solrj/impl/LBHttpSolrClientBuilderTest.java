@@ -34,7 +34,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   public void providesHttpClientToClient() {
     try (LBHttpSolrClient createdClient =
         new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
-      assertEquals(createdClient.getHttpClient(), ANY_HTTP_CLIENT);
+      assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
     }
   }
 
@@ -45,7 +45,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
             .withBaseSolrUrl(ANY_BASE_SOLR_URL)
             .withResponseParser(ANY_RESPONSE_PARSER)
             .build()) {
-      assertEquals(createdClient.getParser(), ANY_RESPONSE_PARSER);
+      assertTrue(createdClient.getParser().equals(ANY_RESPONSE_PARSER));
     }
   }
 

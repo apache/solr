@@ -113,7 +113,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
   }
 
   private void assertBruteForce(String input) throws Exception {
-    assertTrue(input.matches(" .* "));
+    assert input.matches(" .* ");
     baseParams.set("overlaps", "ALL");
 
     // loop through NAMES and find all tag offsets

@@ -42,9 +42,10 @@ dependencies {
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
   runtimeOnly 'com.lmax:disruptor'
 
+  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
@@ -61,7 +62,7 @@ ext {
 task run(type: JavaExec) {
   group = 'application'
   description = 'Run the main class with JavaExecTask'
-  mainClass = project.ext.mainClass
+  main = project.ext.mainClass
   classpath = sourceSets.main.runtimeClasspath
   systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
   args = ["-f", "conf/solr-exporter-config.xml"]

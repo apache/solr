@@ -18,6 +18,9 @@
 package org.apache.solr.prometheus.exporter;
 
 import static org.apache.solr.prometheus.exporter.MetricsConfiguration.xpathFactory;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +36,7 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
-public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
+public class MetricsQueryTemplateTest {
   @Test
   public void testTemplatesApplyDuringInit() throws Exception {
     MetricsConfiguration config = Helpers.loadConfiguration("conf/test-config-with-templates.xml");
@@ -125,7 +128,7 @@ public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
       JsonQuery jsonQuery = JsonQuery.compile(coreQueryTemplate.applyTemplate(matcher));
       List<JsonNode> results = jsonQuery.apply(parsedMetrics);
       assertNotNull(results);
-      assertEquals(1, results.size());
+      assertTrue(results.size() == 1);
       double value = results.get(0).get("value").doubleValue();
       assertEquals(expectedMetrics[m], value, 0.0001);
     }

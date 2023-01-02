@@ -223,7 +223,6 @@ public class PluginInfo implements MapSerializable {
     return l.isEmpty() ? null : l.get(0);
   }
 
-  @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> map) {
     map.putAll(attributes);

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -29,7 +30,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.json.BucketBasedJsonFacet;
 import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -110,7 +110,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
     }
     assertEquals("commit failed", 0, getRandClient().commit(COLLECTION).getStatus());
 
-    assertTrue(docCounter > uniqueMod);
+    assert docCounter > uniqueMod;
 
     // query our collection and confirm no duplicates on the signature field (using faceting)
     // Check every (node) for consistency...

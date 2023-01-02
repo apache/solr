@@ -48,7 +48,9 @@ artifacts {
 }
 
 dependencies {
-  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+  project(":solr:modules").childProjects.values().stream().map(project -> {
+    project.path
+  }).each { module ->
     modules project(path: module, configuration: "packaging")
   }
 
@@ -159,17 +161,15 @@ assemble.dependsOn installDist
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "bats@1.8.0",
-                     "ztombol/bats-support#v0.2.0",
-                     "ztombol/bats-assert#v0.3.0",
-                     "ztombol/bats-file#v0.2.0",
+  args = ["install", "bats",
+                     "ztombol/bats-support",
+                     "ztombol/bats-assert",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
-  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
 }
 
 task integrationTests(type: BatsTask) {

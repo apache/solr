@@ -66,7 +66,6 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
     setDomain(registryName);
   }
 
-  @Override
   protected synchronized void doInit() {
     if (serviceUrl != null && agentId != null) {
       mBeanServer = JmxUtil.findFirstMBeanServer();

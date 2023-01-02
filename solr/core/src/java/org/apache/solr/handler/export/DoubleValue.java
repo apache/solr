@@ -40,30 +40,25 @@ class DoubleValue implements SortValue {
     this.present = false;
   }
 
-  @Override
   public Object getCurrentValue() {
     assert present == true;
     return currentValue;
   }
 
-  @Override
   public String getField() {
     return field;
   }
 
-  @Override
   public DoubleValue copy() {
     return new DoubleValue(field, comp);
   }
 
-  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.reader = context.reader();
     this.vals = DocValues.getNumeric(this.reader, this.field);
     lastDocID = 0;
   }
 
-  @Override
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
       throw new AssertionError(
@@ -83,7 +78,6 @@ class DoubleValue implements SortValue {
     }
   }
 
-  @Override
   public void toGlobalValue(SortValue previousValue) {}
 
   @Override
@@ -91,20 +85,17 @@ class DoubleValue implements SortValue {
     return present;
   }
 
-  @Override
   public void setCurrentValue(SortValue sv) {
     DoubleValue dv = (DoubleValue) sv;
     this.currentValue = dv.currentValue;
     this.present = dv.present;
   }
 
-  @Override
   public void reset() {
     this.currentValue = comp.resetValue();
     this.present = false;
   }
 
-  @Override
   public int compareTo(SortValue o) {
     DoubleValue dv = (DoubleValue) o;
     return comp.compare(currentValue, dv.currentValue);

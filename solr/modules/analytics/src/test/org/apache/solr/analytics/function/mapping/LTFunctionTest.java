@@ -60,17 +60,17 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     // Value exists
     base.setValue(21.56).setExists(true);
     comp.setValue(21.56).setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
 
     base.setValue(21.56).setExists(true);
     comp.setValue(21.57).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     base.setValue(21.56).setExists(true);
     comp.setValue(-21.57).setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -103,17 +103,17 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     // Value exists
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
 
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValue("1800-01-02T10:20:31Z").setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
 
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValue("1000-01-02T10:20:31Z").setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -132,14 +132,14 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setValues();
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     base.setExists(false);
     comp.setValues(-4.2);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -180,14 +180,14 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(-4.2).setExists(true);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     base.setValues(-4.2);
     comp.setExists(false);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -228,14 +228,14 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setValues();
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     base.setExists(false);
     comp.setValues("1800-01-02T10:20:30Z");
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -281,14 +281,14 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     base.setValues("1800-01-02T10:20:30Z");
     comp.setExists(false);
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value

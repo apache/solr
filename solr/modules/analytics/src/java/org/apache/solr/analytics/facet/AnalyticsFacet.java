@@ -19,10 +19,9 @@ package org.apache.solr.analytics.facet;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import org.apache.solr.analytics.function.ExpressionCalculator;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
@@ -144,7 +143,7 @@ public abstract class AnalyticsFacet {
    * @return the response of the facet
    */
   public Iterable<Map<String, Object>> createResponse() {
-    List<Map<String, Object>> list = new ArrayList<>();
+    LinkedList<Map<String, Object>> list = new LinkedList<>();
     reductionData.forEach(
         (facetVal, dataCol) -> {
           Map<String, Object> bucket = new HashMap<>();

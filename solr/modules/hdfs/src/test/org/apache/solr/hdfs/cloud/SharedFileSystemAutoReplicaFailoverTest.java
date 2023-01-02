@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -39,6 +40,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -58,7 +60,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -87,6 +88,15 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
+
+  ThreadPoolExecutor executor =
+      new ExecutorUtil.MDCAwareThreadPoolExecutor(
+          0,
+          Integer.MAX_VALUE,
+          5,
+          TimeUnit.SECONDS,
+          new SynchronousQueue<>(),
+          new SolrNamedThreadFactory("testExecutor"));
 
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -125,20 +135,11 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     useJettyDataDir = false;
   }
 
-  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }
 
   public SharedFileSystemAutoReplicaFailoverTest() {
-    executor =
-        new ExecutorUtil.MDCAwareThreadPoolExecutor(
-            0,
-            Integer.MAX_VALUE,
-            5,
-            TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
-            new SolrNamedThreadFactory("testExecutor"));
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
   }

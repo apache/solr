@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -292,23 +291,23 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             "whitespace_l_stxt")) {
       values = createIndexableFields(field);
       assertEquals(field, 2, values.size());
-      MatcherAssert.assertThat(field, values.get(0), instanceOf(Field.class));
-      MatcherAssert.assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
+      assertThat(field, values.get(0), instanceOf(Field.class));
+      assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
     }
 
     // special cases...
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
+    assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
     //
     values = createIndexableFields("whitespace_nodv_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(0), instanceOf(Field.class));
     //
     values = createIndexableFields("whitespace_m_stxt");
     assertEquals(2, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
-    MatcherAssert.assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
+    assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
   }
 
   private List<IndexableField> createIndexableFields(String fieldName) {
@@ -430,14 +429,16 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
       {
         FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-        assertFalse(
+        assertEquals(
             "type " + ft.getTypeName() + " should not default to useDocValuesAsStored",
+            false,
             ft.useDocValuesAsStored());
       }
       {
         SchemaField sf = h.getCore().getLatestSchema().getField(n);
-        assertFalse(
+        assertEquals(
             "field " + sf.getName() + " should not default to useDocValuesAsStored",
+            false,
             sf.useDocValuesAsStored());
       }
     }
@@ -449,8 +450,9 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       if (entry.getKey().endsWith("_has_usedvs")) {
         num_types_found++;
         FieldType ft = entry.getValue();
-        assertTrue(
+        assertEquals(
             "type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value",
+            true,
             ft.useDocValuesAsStored());
       }
     }

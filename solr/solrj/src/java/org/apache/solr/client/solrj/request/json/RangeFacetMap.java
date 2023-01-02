@@ -119,7 +119,6 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
       this.value = value;
     }
 
-    @Override
     public String toString() {
       return value;
     }

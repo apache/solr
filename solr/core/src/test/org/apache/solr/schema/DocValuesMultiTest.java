@@ -47,7 +47,6 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));

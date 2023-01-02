@@ -113,7 +113,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
   public ConcurrentLRUCache(
       int upperWaterMark,
       final int lowerWaterMark,
-      int acceptableWaterMark,
+      int acceptableWatermark,
       int initialSize,
       boolean runCleanupThread,
       boolean runNewThreadForCleanup,
@@ -121,7 +121,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     this(
         upperWaterMark,
         lowerWaterMark,
-        acceptableWaterMark,
+        acceptableWatermark,
         initialSize,
         runCleanupThread,
         runNewThreadForCleanup,
@@ -132,7 +132,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
   public ConcurrentLRUCache(
       int upperWaterMark,
       final int lowerWaterMark,
-      int acceptableWaterMark,
+      int acceptableWatermark,
       int initialSize,
       boolean runCleanupThread,
       boolean runNewThreadForCleanup,
@@ -145,7 +145,7 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     newThreadForCleanup = runNewThreadForCleanup;
     this.upperWaterMark = upperWaterMark;
     this.lowerWaterMark = lowerWaterMark;
-    this.acceptableWaterMark = acceptableWaterMark;
+    this.acceptableWaterMark = acceptableWatermark;
     this.evictionListener = evictionListener;
     this.ramLowerWatermark = Long.MIN_VALUE;
     this.ramUpperWatermark = Long.MAX_VALUE;
@@ -153,11 +153,11 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     setRunCleanupThread(runCleanupThread);
   }
 
-  public ConcurrentLRUCache(int size, int lowerWaterMark) {
+  public ConcurrentLRUCache(int size, int lowerWatermark) {
     this(
         size,
-        lowerWaterMark,
-        (int) Math.floor((lowerWaterMark + size) / 2.0),
+        lowerWatermark,
+        (int) Math.floor((lowerWatermark + size) / 2.0),
         (int) Math.ceil(0.75 * size),
         false,
         false,

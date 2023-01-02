@@ -34,23 +34,24 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestDateValueStream val = new TestDateValueStream();
 
+    assertTrue(val instanceof DateValueStream);
+    DateValueStream casted = (DateValueStream) val;
+
     // No values
     val.setValues();
-    ((DateValueStream) val)
-        .streamDates(
-            value -> {
-              fail("There should be no values to stream");
-            });
+    casted.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
     Iterator<Date> values = Arrays.asList(date1, date2, date3).iterator();
-    ((DateValueStream) val)
-        .streamDates(
-            value -> {
-              assertTrue(values.hasNext());
-              assertEquals(values.next().toInstant(), value.toInstant());
-            });
+    casted.streamDates(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next().toInstant(), value.toInstant());
+        });
     assertFalse(values.hasNext());
   }
 
@@ -58,25 +59,26 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
   public void stringStreamCastingTest() {
     TestDateValueStream val = new TestDateValueStream();
 
+    assertTrue(val instanceof StringValueStream);
+    StringValueStream casted = (StringValueStream) val;
+
     // No values
     val.setValues();
-    ((StringValueStream) val)
-        .streamStrings(
-            value -> {
-              fail("There should be no values to stream");
-            });
+    casted.streamStrings(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
     Iterator<String> values =
         Arrays.asList("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z")
             .iterator();
-    ((StringValueStream) val)
-        .streamStrings(
-            value -> {
-              assertTrue(values.hasNext());
-              assertEquals(values.next(), value);
-            });
+    casted.streamStrings(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -87,23 +89,24 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestDateValueStream val = new TestDateValueStream();
 
+    assertTrue(val instanceof AnalyticsValueStream);
+    AnalyticsValueStream casted = (AnalyticsValueStream) val;
+
     // No values
     val.setValues();
-    ((AnalyticsValueStream) val)
-        .streamObjects(
-            value -> {
-              fail("There should be no values to stream");
-            });
+    casted.streamObjects(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Multiple Values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
     Iterator<Object> values = Arrays.<Object>asList(date1, date2, date3).iterator();
-    ((AnalyticsValueStream) val)
-        .streamObjects(
-            value -> {
-              assertTrue(values.hasNext());
-              assertEquals(values.next(), value);
-            });
+    casted.streamObjects(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 

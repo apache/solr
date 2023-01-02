@@ -43,6 +43,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -77,7 +78,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TestInjection.Hook;
 import org.junit.BeforeClass;
@@ -97,7 +97,13 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
+  String t1 = "a_t";
+  String i1 = "a_i1";
+  String tlong = "other_tl1";
   String tsort = "t_sortable";
+
+  String oddField = "oddField_s";
+  String missingField = "ignore_exception__missing_but_valid_field_t";
 
   private Map<String, List<SolrClient>> otherCollectionClients = new HashMap<>();
 
@@ -127,7 +133,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           }
         }
 
-        @Override
         public void waitForSearcher(
             String collection, int cnt, int timeoutms, boolean failOnTimeout)
             throws InterruptedException {
@@ -911,7 +916,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (SolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
+        try (HttpSolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -1040,7 +1045,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final SolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
+    try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       ThreadPoolExecutor executor = null;
       try {
         executor =
@@ -1177,7 +1182,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return res;
   }
 
-  @Override
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
@@ -1300,7 +1304,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+    try (HttpSolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
       // collection);
@@ -1397,7 +1401,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 .getLeader("shard1"));
 
     // now test that unloading a core gets us a new leader
-    try (SolrClient unloadClient =
+    try (HttpSolrClient unloadClient =
         getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
@@ -1541,7 +1545,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       final String shardId) {
     Callable<Object> call =
         () -> {
-          try (SolrClient client = getHttpSolrClient(baseUrl)) {
+          try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
             createCmd.setRoles("none");
@@ -1562,7 +1566,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             }
             client.request(createCmd);
           } catch (Exception e) {
-            log.error("error creating core", e);
+            e.printStackTrace();
             // fail
           }
           return null;
@@ -1669,7 +1673,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
               .process(cloudClient)
               .getStatus());
     } catch (Exception e) {
-      log.error("error creating collection", e);
+      e.printStackTrace();
       // fails
     }
     final List<SolrClient> collectionClients = new ArrayList<>();
@@ -1688,7 +1692,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                       .process(cloudClient)
                       .isSuccess());
             } catch (Exception e) {
-              log.error("error adding replica", e);
+              e.printStackTrace();
               // fails
             }
             return null;
@@ -1705,21 +1709,29 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     }
   }
 
-  @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
+    try {
+      // setup the server...
+      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
-    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
-
-    return client;
+      return client;
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    try {
+      // setup the server...
+      HttpSolrClient client =
+          getHttpSolrClient(
+              baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
-    SolrClient client =
-        getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
-
-    return client;
+      return client;
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   @Override

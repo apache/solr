@@ -16,12 +16,12 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -30,7 +30,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.core.StandardDirectoryFactory;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -137,8 +136,11 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       return;
     }
 
-    final Deque<Long> absVersions =
-        versions.stream().map(Math::abs).sorted().collect(Collectors.toCollection(ArrayDeque::new));
+    final LinkedList<Long> absVersions = new LinkedList<>();
+    for (Long version : versions) {
+      absVersions.add(Math.abs(version));
+    }
+    Collections.sort(absVersions);
     final Long minVersion = absVersions.getFirst();
     final Long maxVersion = absVersions.getLast();
 

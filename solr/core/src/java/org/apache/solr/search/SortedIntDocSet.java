@@ -750,7 +750,7 @@ public class SortedIntDocSet extends DocSet {
 
       @Override
       public long cost() {
-        return (long) limitIdx - startIdx;
+        return limitIdx - startIdx;
       }
     };
   }

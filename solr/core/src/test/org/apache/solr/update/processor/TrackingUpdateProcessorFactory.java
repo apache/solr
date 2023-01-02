@@ -69,11 +69,11 @@ public final class TrackingUpdateProcessorFactory extends UpdateRequestProcessor
 
   public static void startRecording(String group) {
     final List<UpdateCommand> updateCommands = groupToCommands.get(group);
-    SolrCloudTestCase.assertTrue(updateCommands == null || updateCommands.isEmpty());
+    assert updateCommands == null || updateCommands.isEmpty();
 
     List<UpdateCommand> existing =
         groupToCommands.put(group, Collections.synchronizedList(new ArrayList<>()));
-    SolrCloudTestCase.assertNull("Test cross-talk?", existing);
+    assert existing == null : "Test cross-talk?";
   }
 
   /**

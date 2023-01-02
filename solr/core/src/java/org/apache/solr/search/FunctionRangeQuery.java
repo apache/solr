@@ -62,7 +62,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
   class FunctionRangeCollector extends DelegatingCollector {
     final Map<Object, Object> fcontext;
     final Weight weight;
-    ValueSourceScorer valueSourceScorer;
+    ValueSourceScorer scorer;
     int maxdoc;
 
     public FunctionRangeCollector(Map<Object, Object> fcontext, Weight weight) {
@@ -73,7 +73,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
     @Override
     public void collect(int doc) throws IOException {
       assert doc < maxdoc;
-      if (valueSourceScorer.matches(doc)) {
+      if (scorer.matches(doc)) {
         leafDelegate.collect(doc);
       }
     }
@@ -83,7 +83,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
-      valueSourceScorer =
+      scorer =
           dv.getRangeScorer(
               weight,
               context,

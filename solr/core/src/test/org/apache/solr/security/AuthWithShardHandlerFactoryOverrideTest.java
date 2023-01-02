@@ -16,13 +16,12 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +81,7 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
 
   @Test
   public void collectionTest() throws Exception {
-    try (SolrClient client =
+    try (Http2SolrClient client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
@@ -102,7 +101,7 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
 
   @Test
   public void aliasTest() throws Exception {
-    try (SolrClient client =
+    try (Http2SolrClient client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 

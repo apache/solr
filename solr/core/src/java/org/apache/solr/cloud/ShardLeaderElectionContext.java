@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -97,7 +98,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    */
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -128,19 +129,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually
         // more than one replica.
-        MapWriter m =
-            ew ->
-                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower())
-                    .put(ZkStateReader.SHARD_ID_PROP, shardId)
-                    .put(ZkStateReader.COLLECTION_PROP, collection);
+        ZkNodeProps m =
+            new ZkNodeProps(
+                Overseer.QUEUE_OPERATION,
+                OverseerAction.LEADER.toLower(),
+                ZkStateReader.SHARD_ID_PROP,
+                shardId,
+                ZkStateReader.COLLECTION_PROP,
+                collection);
+
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader,
-              new ZkNodeProps(m),
+              m,
               zkController.getSolrCloudManager(),
               zkStateReader);
         } else {
-          zkController.getOverseer().getStateUpdateQueue().offer(m);
+          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
         }
       }
 
@@ -527,7 +532,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  private void rejoinLeaderElection(SolrCore core) throws InterruptedException, KeeperException {
+  private void rejoinLeaderElection(SolrCore core)
+      throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
       log.debug("Not rejoining election because CoreContainer is closed");

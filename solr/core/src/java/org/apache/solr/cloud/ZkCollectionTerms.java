@@ -58,7 +58,6 @@ class ZkCollectionTerms implements AutoCloseable {
     }
   }
 
-  @Override
   public void close() {
     synchronized (terms) {
       terms.values().forEach(ZkShardTerms::close);

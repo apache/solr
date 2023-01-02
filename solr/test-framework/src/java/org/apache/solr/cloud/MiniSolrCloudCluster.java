@@ -54,6 +54,8 @@ import java.util.function.Consumer;
 import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -76,8 +78,6 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -530,7 +530,8 @@ public class MiniSolrCloudCluster {
    *
    * @param name the instance name
    * @param hostContext the context to run on
-   * @param config a JettyConfig for the instance's {@link org.apache.solr.embedded.JettySolrRunner}
+   * @param config a JettyConfig for the instance's {@link
+   *     org.apache.solr.client.solrj.embedded.JettySolrRunner}
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config)
@@ -996,8 +997,8 @@ public class MiniSolrCloudCluster {
     @Override
     protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      com.codahale.metrics.jetty9.InstrumentedHandler metrics =
+          new com.codahale.metrics.jetty9.InstrumentedHandler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }
@@ -1025,7 +1026,7 @@ public class MiniSolrCloudCluster {
 
     private final int nodeCount;
     private final Path baseDir;
-    private String solrXml = DEFAULT_CLOUD_SOLR_XML;
+    private String solrxml = DEFAULT_CLOUD_SOLR_XML;
     private JettyConfig.Builder jettyConfigBuilder;
     private Optional<String> securityJson = Optional.empty();
 
@@ -1062,14 +1063,14 @@ public class MiniSolrCloudCluster {
 
     /** Use the provided string as solr.xml content */
     public Builder withSolrXml(String solrXml) {
-      this.solrXml = solrXml;
+      this.solrxml = solrXml;
       return this;
     }
 
     /** Read solr.xml from the provided path */
     public Builder withSolrXml(Path solrXml) {
       try {
-        this.solrXml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
+        this.solrxml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1133,7 +1134,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    @SuppressWarnings("InvalidParam")
     /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
@@ -1234,7 +1234,7 @@ public class MiniSolrCloudCluster {
           new MiniSolrCloudCluster(
               nodeCount,
               baseDir,
-              solrXml,
+              solrxml,
               jettyConfig,
               null,
               securityJson,

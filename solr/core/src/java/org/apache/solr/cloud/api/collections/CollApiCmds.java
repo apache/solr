@@ -185,7 +185,6 @@ public class CollApiCmds {
   }
 
   public static class MockOperationCmd implements CollectionApiCommand {
-    @Override
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
     public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
         throws InterruptedException {
@@ -208,7 +207,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
@@ -233,7 +231,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -278,7 +275,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -300,7 +296,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(m);
+        ccc.offerStateUpdate(Utils.toJSON(m));
       }
     }
   }
@@ -312,7 +308,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -329,7 +324,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(m);
+        ccc.offerStateUpdate(Utils.toJSON(m));
       }
     }
   }
@@ -341,7 +336,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       if (StringUtils.isBlank(message.getStr(COLLECTION_PROP))
@@ -377,7 +371,6 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
-    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
 
@@ -410,7 +403,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(message);
+        ccc.offerStateUpdate(Utils.toJSON(message));
       }
 
       try {

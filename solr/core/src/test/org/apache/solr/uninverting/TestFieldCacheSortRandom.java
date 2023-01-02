@@ -114,7 +114,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         if (type == SortField.Type.STRING) {
           doc.add(new StringField("stringdv", s, Field.Store.NO));
         } else {
-          assertSame(type, SortField.Type.STRING_VAL);
+          assert type == SortField.Type.STRING_VAL;
           doc.add(new BinaryDocValuesField("stringdv", new BytesRef(s)));
         }
         docValues.add(new BytesRef(s));
@@ -196,7 +196,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
 
       // Compute expected results:
-      f.matchValues.sort(
+      Collections.sort(
+          f.matchValues,
           new Comparator<BytesRef>() {
             @Override
             public int compare(BytesRef a, BytesRef b) {

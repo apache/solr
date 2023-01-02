@@ -19,7 +19,6 @@ package org.apache.solr.hdfs.store.blockcache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.store.Directory;
@@ -33,11 +32,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static class MapperCache implements Cache {
     public Map<String, byte[]> map =
@@ -103,7 +99,6 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   private Random random;
   private MapperCache mapperCache;
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -115,7 +110,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       Metrics metrics = new Metrics();
       int blockSize = 8192;
       int slabSize = blockSize * 16384;
-      long totalMemory = 1L * slabSize;
+      long totalMemory = 1 * slabSize;
       BlockCache blockCache = new BlockCache(metrics, true, totalMemory, slabSize, blockSize);
       BlockDirectoryCache cache =
           new BlockDirectoryCache(blockCache, "/collection1", metrics, true);
@@ -126,7 +121,6 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     random = random();
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -176,7 +170,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
         assertInputsEquals(name, fsDir, directory);
       }
     } catch (Exception e) {
-      log.error("Test failed on pass [{}]", i, e);
+      e.printStackTrace();
       fail("Test failed on pass [" + i + "]");
     }
     long t2 = System.nanoTime();

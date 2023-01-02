@@ -25,9 +25,9 @@ def resources = scriptResources(buildscript)
 configure(rootProject) {
   dependencyCheck {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
-    formats = ['ALL']
+    formats = ['HTML', 'JSON']
     skipProjects = [':solr:solr-ref-guide']
-    skipConfigurations = ['unifiedClasspath', 'permitUnusedDeclared']
+    skipConfigurations = ['unifiedClasspath']
     suppressionFile = file("${resources}/exclusions.xml")
   }
 

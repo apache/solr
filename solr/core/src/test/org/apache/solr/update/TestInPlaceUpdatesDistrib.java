@@ -37,6 +37,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -58,7 +59,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
@@ -490,7 +490,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // already had an init value of 0 -- which is an interesting edge case, so we don't exclude it
       final float multiplier = r.nextBoolean() ? -5.0F : 5.0F;
       final float value = r.nextFloat() * multiplier;
-      assertTrue(-5.0F <= value && value <= 5.0F);
+      assert -5.0F <= value && value <= 5.0F;
       valuesList.set(id, value);
     }
     log.info("inplace_updatable_float: {}", valuesList);
@@ -523,9 +523,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // thus ensuring that after all increments are done, there should be
       // 0 test docs matching the query inplace_updatable_float:[-10 TO 10]
       final float inc = (r.nextBoolean() ? -1.0F : 1.0F) * (r.nextFloat() + (float) atLeast(20));
-      assertTrue(20 < Math.abs(inc));
+      assert 20 < Math.abs(inc);
       final float value = (float) valuesList.get(id) + inc;
-      assertTrue(value < -10 || 10 < value);
+      assert value < -10 || 10 < value;
 
       valuesList.set(id, value);
       index("id", id, "inplace_updatable_float", map("inc", inc));
@@ -651,7 +651,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       final String fieldName,
       final List<Number> valuesList)
       throws Exception {
-    assertEquals(luceneDocids.size(), valuesList.size());
+    assert luceneDocids.size() == valuesList.size();
     final long numFoundExpected = luceneDocids.size();
 
     for (SolrClient client : clients) {
@@ -708,7 +708,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       final String fieldName,
       final List<Number> valuesList) {
 
-    assertEquals(luceneDocids.size(), valuesList.size());
+    assert luceneDocids.size() == valuesList.size();
     assertEquals(
         msgPre
             + ": rows param wasn't big enough, we need to compare all results matching the query",
@@ -758,10 +758,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
     LEADER.commit();
-    assertEquals(
+    assertTrue(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids,
-        getInternalDocIds("100"));
+        docids.equals(getInternalDocIds("100")));
 
     SolrDocument sdoc = LEADER.getById("100"); // RTG straight from the index
     assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
@@ -796,10 +795,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
     LEADER.commit();
-    assertEquals(
+    assertTrue(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids,
-        getInternalDocIds("100"));
+        docids.equals(getInternalDocIds("100")));
 
     currentVersion = addDocAndGetVersion("id", 100, "inplace_updatable_int", map("set", "100"));
     assertTrue(currentVersion > version);
@@ -846,10 +844,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // assert that the internal docid for id=100 document remains same, in each replica, as before
     LEADER.commit(); // can't get (real) [docid] from the tlogs, need to force a commit
-    assertEquals(
+    assertTrue(
         "Earlier: " + docids + ", now: " + getInternalDocIds("100"),
-        docids,
-        getInternalDocIds("100"));
+        docids.equals(getInternalDocIds("100")));
 
     log.info("ensureRtgWorksWithPartialUpdatesTest: This test passed fine...");
   }
@@ -867,7 +864,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       assertEquals(Integer.class, docid.getClass());
       ret.add((Integer) docid);
     }
-    assertEquals(clients.size(), ret.size());
+    assert clients.size() == ret.size();
     return ret;
   }
 
@@ -1489,14 +1486,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return slice.getLeader().getCoreUrl();
   }
 
-  protected String getBaseUrl(HttpSolrClient client) {
-    // take a complete Solr url that ends with /collection1 and truncates it to the root url
-    // that is used for admin api calls.
-    return client
-        .getBaseURL()
-        .substring(0, client.getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
-  }
-
   UpdateRequest regularUpdateRequest(Object... fields) {
     UpdateRequest ur = new UpdateRequest();
     SolrInputDocument doc = sdoc(fields);
@@ -1596,7 +1585,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
     LEADER.commit();
 
-    assertEquals(specialIds.size(), versions.size());
+    assert specialIds.size() == versions.size();
     return versions;
   }
 

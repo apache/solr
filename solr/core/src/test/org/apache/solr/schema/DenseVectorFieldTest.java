@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.hamcrest.MatcherAssert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
@@ -166,7 +167,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_NotAList_shouldThrowException() {
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Single string value should throw an exception",
             SolrException.class,
             () -> {
@@ -179,7 +180,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 + " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
 
     thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Single float value should throw an exception",
             SolrException.class,
             () -> {
@@ -197,7 +198,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {
@@ -216,7 +217,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Incorrect vector dimension should throw an exception",
             SolrException.class,
             () -> {
@@ -233,7 +234,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {

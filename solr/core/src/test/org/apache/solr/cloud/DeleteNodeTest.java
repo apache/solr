@@ -110,9 +110,9 @@ public class DeleteNodeTest extends SolrCloudTestCase {
           "####### DocCollection after: {}", cloudClient.getClusterState().getCollection(coll));
     }
     if (shouldFail) {
-      assertSame(String.valueOf(rsp), rsp.getRequestStatus(), RequestStatusState.FAILED);
+      assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
     } else {
-      assertNotSame(String.valueOf(rsp), rsp.getRequestStatus(), RequestStatusState.FAILED);
+      assertFalse(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
     }
   }
 }

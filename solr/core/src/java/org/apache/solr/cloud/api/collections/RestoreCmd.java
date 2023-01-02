@@ -52,8 +52,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -72,6 +70,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
@@ -321,9 +320,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ConfigSetService configSetService)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
-        log.warn(
-            "Config with name {} already exists. Skipping upload to Zookeeper and using existing config.",
-            restoreConfigName);
+        log.info("Using existing config {}", restoreConfigName);
         // TODO add overwrite option?
       } else {
         log.info("Uploading config {}", restoreConfigName);
@@ -401,7 +398,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     private void markAllShardsAsConstruction(DocCollection restoreCollection)
         throws KeeperException, InterruptedException {
       // TODO might instead createCollection accept an initial state?  Is there a race?
-      LinkedHashMapWriter<Object> propMap = new LinkedHashMapWriter<>();
+      Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
       for (Slice shard : restoreCollection.getSlices()) {
         propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
@@ -411,11 +408,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState,
-                new ZkNodeProps((MapWriter) propMap),
+                new ZkNodeProps(propMap),
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(propMap);
+        ccc.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
       }
     }
 
@@ -559,7 +556,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     // Mark all shards in ACTIVE STATE
     private void markAllShardsAsActive(DocCollection restoreCollection)
         throws KeeperException, InterruptedException {
-      LinkedHashMapWriter<Object> propMap = new LinkedHashMapWriter<>();
+      HashMap<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
       propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollection.getName());
       for (Slice shard : restoreCollection.getSlices()) {
@@ -569,11 +566,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState,
-                new ZkNodeProps((MapWriter) propMap),
+                new ZkNodeProps(propMap),
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(propMap);
+        ccc.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
       }
     }
 

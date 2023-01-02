@@ -163,7 +163,6 @@ public class Tracker {
     return Collections.unmodifiableList(values);
   }
 
-  @Override
   public String toString() {
     return String.format(
         Locale.ENGLISH, "%s (%s, %s%%): %s", name, count, percentage, Tracker.display(values));

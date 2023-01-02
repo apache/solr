@@ -17,7 +17,8 @@
 
 package org.apache.solr.common.cloud;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica.State;
@@ -49,18 +50,20 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
   public void testEntries() {
     PerReplicaStates entries =
         new PerReplicaStates(
-            "state.json", 0, List.of("R1:2:A", "R1:1:A:L", "R1:0:D", "R2:0:D", "R3:0:A"));
+            "state.json", 0, ImmutableList.of("R1:2:A", "R1:1:A:L", "R1:0:D", "R2:0:D", "R3:0:A"));
     assertEquals(2, entries.get("R1").version);
     entries =
         new PerReplicaStates(
-            "state.json", 0, List.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:0:A", "R1:0:D"));
+            "state.json", 0, ImmutableList.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:0:A", "R1:0:D"));
     assertEquals(2, entries.get("R1").version);
     assertEquals(2, entries.get("R1").getDuplicates().size());
     Set<String> modified =
         PerReplicaStates.findModifiedReplicas(
             entries,
             new PerReplicaStates(
-                "state.json", 0, List.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:1:A", "R1:0:D")));
+                "state.json",
+                0,
+                ImmutableList.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:1:A", "R1:0:D")));
     assertEquals(1, modified.size());
     assertTrue(modified.contains("R3"));
     modified =
@@ -69,7 +72,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
             new PerReplicaStates(
                 "state.json",
                 0,
-                List.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:1:A", "R1:0:D", "R4:0:A")));
+                ImmutableList.of("R1:1:A:L", "R1:2:A", "R2:0:D", "R3:1:A", "R1:0:D", "R4:0:A")));
     assertEquals(2, modified.size());
     assertTrue(modified.contains("R3"));
     assertTrue(modified.contains("R4"));
@@ -77,7 +80,9 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
         PerReplicaStates.findModifiedReplicas(
             entries,
             new PerReplicaStates(
-                "state.json", 0, List.of("R1:1:A:L", "R1:2:A", "R3:1:A", "R1:0:D", "R4:0:A")));
+                "state.json",
+                0,
+                ImmutableList.of("R1:1:A:L", "R1:2:A", "R3:1:A", "R1:0:D", "R4:0:A")));
     assertEquals(3, modified.size());
     assertTrue(modified.contains("R3"));
     assertTrue(modified.contains("R4"));
@@ -88,7 +93,8 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     String root = "/testReplicaStateOperations";
     cluster.getZkClient().create(root, null, CreateMode.PERSISTENT, true);
 
-    List<String> states = List.of("R1:2:A", "R1:1:A:L", "R1:0:D", "R3:0:A", "R4:13:A");
+    ImmutableList<String> states =
+        ImmutableList.of("R1:2:A", "R1:1:A:L", "R1:0:D", "R3:0:A", "R4:13:A");
 
     for (String state : states) {
       cluster.getZkClient().create(root + "/" + state, null, CreateMode.PERSISTENT, true);
@@ -126,13 +132,13 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(3, rs.states.size());
 
-    ops = PerReplicaStatesOps.flipLeader(Set.of("R4", "R3", "R1"), "R4", rs);
+    ops = PerReplicaStatesOps.flipLeader(ImmutableSet.of("R4", "R3", "R1"), "R4", rs);
     assertEquals(2, ops.ops.size());
     assertEquals(PerReplicaStates.Operation.Type.ADD, ops.ops.get(0).typ);
     assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.ops.get(1).typ);
     ops.persist(root, cluster.getZkClient());
     rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
-    ops = PerReplicaStatesOps.flipLeader(Set.of("R4", "R3", "R1"), "R3", rs);
+    ops = PerReplicaStatesOps.flipLeader(ImmutableSet.of("R4", "R3", "R1"), "R3", rs);
     assertEquals(4, ops.ops.size());
     ops.persist(root, cluster.getZkClient());
     rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);

@@ -72,7 +72,6 @@ public class AnalyticsHandler extends RequestHandlerBase
     AnalyticsRequestParser.init();
   }
 
-  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     SolrQueryTimeoutImpl.set(req);

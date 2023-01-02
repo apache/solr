@@ -45,7 +45,6 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
     }
   }
 
-  @Override
   public boolean isPersistent() {
     return false;
   }
@@ -65,7 +64,6 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
     // ram dir does not persist its dir anywhere
   }
 
-  @Override
   public void cleanupOldIndexDirectories(
       final String dataDirPath, final String currentIndexDirPath, boolean reload) {
     // currently a no-op

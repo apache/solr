@@ -21,6 +21,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.MapSerializable;
@@ -109,7 +110,7 @@ public class ConfigOverlay implements MapSerializable {
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
 
   private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
-    List<String> hierarchy = new ArrayList<>();
+    LinkedList<String> hierarchy = new LinkedList<>();
     if (!isEditableProp(propName, isXPath, hierarchy)) {
       if (failOnError)
         throw new SolrException(

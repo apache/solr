@@ -294,7 +294,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
               "fq",
               "id:1"),
           "//float[@name='score']='0.0'");
-      fail("should throw an exception");
+      assertTrue("should throw an exception", false);
     } catch (Exception e) {
       Throwable cause = e.getCause();
       assertNotNull(cause);

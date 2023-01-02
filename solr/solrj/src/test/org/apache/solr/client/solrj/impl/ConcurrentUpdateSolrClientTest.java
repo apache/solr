@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,20 +34,17 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
   public static class TestServlet extends HttpServlet
@@ -156,8 +152,9 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
                 serverUrl, successCounter, errorCounter, errors)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
-            .withPollQueueTime(0)
             .build();
+
+    concurrentClient.setPollQueueTime(0);
 
     // ensure it doesn't block where there's nothing to do yet
     concurrentClient.blockUntilFinished();
@@ -185,20 +182,17 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int expectedSuccesses = TestServlet.numReqsRcvd.get();
     assertTrue(expectedSuccesses > 0); // at least one request must have been sent
 
-    assertEquals(
+    assertTrue(
         "Expected no errors but got " + errorCounter.get() + ", due to: " + errors.toString(),
-        0,
-        errorCounter.get());
-    assertEquals(
+        errorCounter.get() == 0);
+    assertTrue(
         "Expected " + expectedSuccesses + " successes, but got " + successCounter.get(),
-        successCounter.get(),
-        expectedSuccesses);
+        successCounter.get() == expectedSuccesses);
 
     int expectedDocs = numDocs * numRunnables;
-    assertEquals(
+    assertTrue(
         "Expected CUSS to send " + expectedDocs + " but got " + TestServlet.numDocsRcvd.get(),
-        TestServlet.numDocsRcvd.get(),
-        expectedDocs);
+        TestServlet.numDocsRcvd.get() == expectedDocs);
   }
 
   @Test
@@ -250,8 +244,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
-            .withPollQueueTime(0)
             .build()) {
+      concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
@@ -323,7 +317,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
           if (this.collection == null) cuss.request(req);
           else cuss.request(req, this.collection);
         } catch (Throwable t) {
-          log.error("error making request", t);
+          t.printStackTrace();
         }
       }
     }
@@ -368,7 +362,6 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         this.errors = errors;
       }
 
-      @Override
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }

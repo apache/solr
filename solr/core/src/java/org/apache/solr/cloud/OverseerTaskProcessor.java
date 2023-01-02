@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -123,7 +124,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         @Override
         public String toString() {
-          return StrUtils.join(Set.of(runningTasks, blockedTasks.keySet()), ',');
+          return StrUtils.join(ImmutableSet.of(runningTasks, blockedTasks.keySet()), ',');
         }
       };
 
@@ -417,12 +418,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
   }
 
-  @Override
   public void close() {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
-      if (!ExecutorUtil.isShutdown(tpe)) {
+      if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
@@ -548,7 +548,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       response = null;
     }
 
-    @Override
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
       final Timer.Context timerContext = stats.time(statsName);

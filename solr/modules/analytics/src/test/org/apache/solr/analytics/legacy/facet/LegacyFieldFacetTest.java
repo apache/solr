@@ -17,11 +17,13 @@
 package org.apache.solr.analytics.legacy.facet;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -463,7 +465,8 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
             "false")) {
       SolrQueryResponse resp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
 
-      assertEquals(resp.getResponseHeader().toString(), 0, resp.getResponseHeader().get("status"));
+      Assert.assertEquals(
+          resp.getResponseHeader().toString(), 0, resp.getResponseHeader().get("status"));
       Boolean partialResults =
           resp.getResponseHeader()
               .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
@@ -480,91 +483,93 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
   @Test
   public void sumTest() throws Exception {
     // Int Date
-    ArrayList<Double> intDate = getDoubleList("sum", "fieldFacets", "date_dtd", "double", "int");
+    Collection<Double> intDate = getDoubleList("sum", "fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "sum");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Double> intString = getDoubleList("sum", "fieldFacets", "string_sd", "double", "int");
+    Collection<Double> intString =
+        getDoubleList("sum", "fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "sum");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Double> longDate = getDoubleList("sum", "fieldFacets", "date_dtd", "double", "long");
+    Collection<Double> longDate = getDoubleList("sum", "fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "sum");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Double> longString =
+    Collection<Double> longString =
         getDoubleList("sum", "fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "sum");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Double> floatDate =
+    Collection<Double> floatDate =
         getDoubleList("sum", "fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "sum");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Double> floatString =
+    Collection<Double> floatString =
         getDoubleList("sum", "fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "sum");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("sum", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "sum");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("sum", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "sum");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void meanTest() throws Exception {
     // Int Date
-    ArrayList<Double> intDate = getDoubleList("mean", "fieldFacets", "date_dtd", "double", "int");
+    Collection<Double> intDate = getDoubleList("mean", "fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Double> intString =
+    Collection<Double> intString =
         getDoubleList("mean", "fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Double> longDate = getDoubleList("mean", "fieldFacets", "date_dtd", "double", "long");
+    Collection<Double> longDate =
+        getDoubleList("mean", "fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Double> longString =
+    Collection<Double> longString =
         getDoubleList("mean", "fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Double> floatDate =
+    Collection<Double> floatDate =
         getDoubleList("mean", "fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Double> floatString =
+    Collection<Double> floatString =
         getDoubleList("mean", "fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("mean", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("mean", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
   }
 
   @SuppressWarnings("unchecked")
@@ -618,557 +623,564 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
   @Test
   public void medianFacetAscTest() throws Exception {
     // Int Date
-    ArrayList<Double> intDate = getDoubleList("median", "fieldFacets", "date_dtd", "double", "int");
+    Collection<Double> intDate =
+        getDoubleList("median", "fieldFacets", "date_dtd", "double", "int");
     ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "median");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Double> intString =
+    Collection<Double> intString =
         getDoubleList("median", "fieldFacets", "string_sd", "double", "int");
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "median");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Double> longDate =
+    Collection<Double> longDate =
         getDoubleList("median", "fieldFacets", "date_dtd", "double", "long");
     ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "median");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Double> longString =
+    Collection<Double> longString =
         getDoubleList("median", "fieldFacets", "string_sd", "double", "long");
     ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "median");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Double> floatDate =
+    Collection<Double> floatDate =
         getDoubleList("median", "fieldFacets", "date_dtd", "double", "float");
     ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "median");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Double> floatString =
+    Collection<Double> floatString =
         getDoubleList("median", "fieldFacets", "string_sd", "double", "float");
     ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "median");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("median", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "median");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("median", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "median");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void perc20Test() throws Exception {
     // Int Date
-    ArrayList<Integer> intDate =
+    Collection<Integer> intDate =
         getIntegerList("percentile_20n", "fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest =
         (ArrayList<Integer>) calculateStat(intDateTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Integer> intString =
+    Collection<Integer> intString =
         getIntegerList("percentile_20n", "fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest =
         (ArrayList<Integer>) calculateStat(intStringTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate =
+    Collection<Long> longDate =
         getLongList("percentile_20n", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Long> longString =
+    Collection<Long> longString =
         getLongList("percentile_20n", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest =
         (ArrayList<Long>) calculateStat(longStringTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Float> floatDate =
+    Collection<Float> floatDate =
         getFloatList("percentile_20n", "fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest =
         (ArrayList<Float>) calculateStat(floatDateTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Float> floatString =
+    Collection<Float> floatString =
         getFloatList("percentile_20n", "fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest =
         (ArrayList<Float>) calculateStat(floatStringTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("percentile_20n", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest =
         (ArrayList<Double>) calculateStat(doubleDateTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("percentile_20n", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest =
         (ArrayList<Double>) calculateStat(doubleStringTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // Date Int
-    ArrayList<String> dateInt =
+    Collection<String> dateInt =
         getStringList("percentile_20", "fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>) calculateStat(dateIntTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), dateInt, dateIntTest);
+    assertEquals(getRawResponse(), dateInt, dateIntTest);
     // Date Long
-    ArrayList<String> dateString =
+    Collection<String> dateString =
         getStringList("percentile_20", "fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest =
         (ArrayList<String>) calculateStat(dateLongTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), dateString, dateLongTest);
+    assertEquals(getRawResponse(), dateString, dateLongTest);
 
     // String Int
-    ArrayList<String> stringInt =
+    Collection<String> stringInt =
         getStringList("percentile_20", "fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest =
         (ArrayList<String>) calculateStat(stringIntTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
     // String Long
-    ArrayList<String> stringLong =
+    Collection<String> stringLong =
         getStringList("percentile_20", "fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest =
         (ArrayList<String>) calculateStat(stringLongTestStart, "perc_20");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void perc60Test() throws Exception {
     // Int Date
-    ArrayList<Integer> intDate =
+    Collection<Integer> intDate =
         getIntegerList("percentile_60n", "fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest =
         (ArrayList<Integer>) calculateStat(intDateTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Integer> intString =
+    Collection<Integer> intString =
         getIntegerList("percentile_60n", "fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest =
         (ArrayList<Integer>) calculateStat(intStringTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate =
+    Collection<Long> longDate =
         getLongList("percentile_60n", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Long> longString =
+    Collection<Long> longString =
         getLongList("percentile_60n", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest =
         (ArrayList<Long>) calculateStat(longStringTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Float> floatDate =
+    Collection<Float> floatDate =
         getFloatList("percentile_60n", "fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest =
         (ArrayList<Float>) calculateStat(floatDateTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Float> floatString =
+    Collection<Float> floatString =
         getFloatList("percentile_60n", "fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest =
         (ArrayList<Float>) calculateStat(floatStringTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("percentile_60n", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest =
         (ArrayList<Double>) calculateStat(doubleDateTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("percentile_60n", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest =
         (ArrayList<Double>) calculateStat(doubleStringTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // Date Int
-    ArrayList<String> dateInt =
+    Collection<String> dateInt =
         getStringList("percentile_60", "fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>) calculateStat(dateIntTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), dateInt, dateIntTest);
+    assertEquals(getRawResponse(), dateInt, dateIntTest);
     // Date Long
-    ArrayList<String> dateString =
+    Collection<String> dateString =
         getStringList("percentile_60", "fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest =
         (ArrayList<String>) calculateStat(dateLongTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), dateString, dateLongTest);
+    assertEquals(getRawResponse(), dateString, dateLongTest);
 
     // String Int
-    ArrayList<String> stringInt =
+    Collection<String> stringInt =
         getStringList("percentile_60", "fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest =
         (ArrayList<String>) calculateStat(stringIntTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
     // String Long
-    ArrayList<String> stringLong =
+    Collection<String> stringLong =
         getStringList("percentile_60", "fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest =
         (ArrayList<String>) calculateStat(stringLongTestStart, "perc_60");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void minTest() throws Exception {
     // Int Date
-    ArrayList<Integer> intDate = getIntegerList("minn", "fieldFacets", "date_dtd", "int", "int");
+    Collection<Integer> intDate = getIntegerList("minn", "fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>) calculateStat(intDateTestStart, "min");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Integer> intString = getIntegerList("minn", "fieldFacets", "string_sd", "int", "int");
+    Collection<Integer> intString =
+        getIntegerList("minn", "fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest =
         (ArrayList<Integer>) calculateStat(intStringTestStart, "min");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate = getLongList("minn", "fieldFacets", "date_dtd", "long", "long");
+    Collection<Long> longDate = getLongList("minn", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "min");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Long> longString = getLongList("minn", "fieldFacets", "string_sd", "long", "long");
+    Collection<Long> longString = getLongList("minn", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>) calculateStat(longStringTestStart, "min");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Float> floatDate = getFloatList("minn", "fieldFacets", "date_dtd", "float", "float");
+    Collection<Float> floatDate = getFloatList("minn", "fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>) calculateStat(floatDateTestStart, "min");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Float> floatString =
+    Collection<Float> floatString =
         getFloatList("minn", "fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest =
         (ArrayList<Float>) calculateStat(floatStringTestStart, "min");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("minn", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest =
         (ArrayList<Double>) calculateStat(doubleDateTestStart, "min");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("minn", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest =
         (ArrayList<Double>) calculateStat(doubleStringTestStart, "min");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // Date Int
-    ArrayList<String> dateInt = getStringList("min", "fieldFacets", "int_id", "date", "date");
+    Collection<String> dateInt = getStringList("min", "fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>) calculateStat(dateIntTestStart, "min");
-    assertEqualsList(getRawResponse(), dateInt, dateIntTest);
+    assertEquals(getRawResponse(), dateInt, dateIntTest);
     // Date Long
-    ArrayList<String> dateString = getStringList("min", "fieldFacets", "long_ld", "date", "date");
+    Collection<String> dateString = getStringList("min", "fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>) calculateStat(dateLongTestStart, "min");
-    assertEqualsList(getRawResponse(), dateString, dateLongTest);
+    assertEquals(getRawResponse(), dateString, dateLongTest);
 
     // String Int
-    ArrayList<String> stringInt = getStringList("min", "fieldFacets", "int_id", "str", "str");
+    Collection<String> stringInt = getStringList("min", "fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>) calculateStat(stringIntTestStart, "min");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
     // String Long
-    ArrayList<String> stringLong = getStringList("min", "fieldFacets", "long_ld", "str", "str");
+    Collection<String> stringLong = getStringList("min", "fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest =
         (ArrayList<String>) calculateStat(stringLongTestStart, "min");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void maxTest() throws Exception {
     // Int Date
-    ArrayList<Integer> intDate = getIntegerList("maxn", "fieldFacets", "date_dtd", "int", "int");
+    Collection<Integer> intDate = getIntegerList("maxn", "fieldFacets", "date_dtd", "int", "int");
     ArrayList<Integer> intDateTest = (ArrayList<Integer>) calculateStat(intDateTestStart, "max");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
 
     // Int String
-    ArrayList<Integer> intString = getIntegerList("maxn", "fieldFacets", "string_sd", "int", "int");
+    Collection<Integer> intString =
+        getIntegerList("maxn", "fieldFacets", "string_sd", "int", "int");
     ArrayList<Integer> intStringTest =
         (ArrayList<Integer>) calculateStat(intStringTestStart, "max");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate = getLongList("maxn", "fieldFacets", "date_dtd", "long", "long");
+    Collection<Long> longDate = getLongList("maxn", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "max");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
 
     // Long String
-    ArrayList<Long> longString = getLongList("maxn", "fieldFacets", "string_sd", "long", "long");
+    Collection<Long> longString = getLongList("maxn", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>) calculateStat(longStringTestStart, "max");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Float> floatDate = getFloatList("maxn", "fieldFacets", "date_dtd", "float", "float");
+    Collection<Float> floatDate = getFloatList("maxn", "fieldFacets", "date_dtd", "float", "float");
     ArrayList<Float> floatDateTest = (ArrayList<Float>) calculateStat(floatDateTestStart, "max");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
 
     // Float String
-    ArrayList<Float> floatString =
+    Collection<Float> floatString =
         getFloatList("maxn", "fieldFacets", "string_sd", "float", "float");
     ArrayList<Float> floatStringTest =
         (ArrayList<Float>) calculateStat(floatStringTestStart, "max");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Double> doubleDate =
+    Collection<Double> doubleDate =
         getDoubleList("maxn", "fieldFacets", "date_dtd", "double", "double");
     ArrayList<Double> doubleDateTest =
         (ArrayList<Double>) calculateStat(doubleDateTestStart, "max");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
 
     // Double String
-    ArrayList<Double> doubleString =
+    Collection<Double> doubleString =
         getDoubleList("maxn", "fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest =
         (ArrayList<Double>) calculateStat(doubleStringTestStart, "max");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // String Int
-    ArrayList<String> stringInt = getStringList("max", "fieldFacets", "int_id", "str", "str");
+    Collection<String> stringInt = getStringList("max", "fieldFacets", "int_id", "str", "str");
     ArrayList<String> stringIntTest = (ArrayList<String>) calculateStat(stringIntTestStart, "max");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
 
     // String Long
-    ArrayList<String> stringLong = getStringList("max", "fieldFacets", "long_ld", "str", "str");
+    Collection<String> stringLong = getStringList("max", "fieldFacets", "long_ld", "str", "str");
     ArrayList<String> stringLongTest =
         (ArrayList<String>) calculateStat(stringLongTestStart, "max");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
 
     // Date Int
-    ArrayList<String> dateInt = getStringList("max", "fieldFacets", "int_id", "date", "date");
+    Collection<String> dateInt = getStringList("max", "fieldFacets", "int_id", "date", "date");
     ArrayList<String> dateIntTest = (ArrayList<String>) calculateStat(dateIntTestStart, "max");
-    assertEqualsList(getRawResponse(), dateInt, dateIntTest);
+    assertEquals(getRawResponse(), dateInt, dateIntTest);
 
     // Date Long
-    ArrayList<String> dateString = getStringList("max", "fieldFacets", "long_ld", "date", "date");
+    Collection<String> dateString = getStringList("max", "fieldFacets", "long_ld", "date", "date");
     ArrayList<String> dateLongTest = (ArrayList<String>) calculateStat(dateLongTestStart, "max");
-    assertEqualsList(getRawResponse(), dateString, dateLongTest);
+    assertEquals(getRawResponse(), dateString, dateLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void uniqueTest() throws Exception {
     // Int Date
-    ArrayList<Long> intDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "int");
+    Collection<Long> intDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "int");
     ArrayList<Long> intDateTest = (ArrayList<Long>) calculateStat(intDateTestStart, "unique");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
     // Int String
-    ArrayList<Long> intString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "int");
+    Collection<Long> intString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "int");
     ArrayList<Long> intStringTest = (ArrayList<Long>) calculateStat(intStringTestStart, "unique");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "long");
+    Collection<Long> longDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "unique");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
     // Long String
-    ArrayList<Long> longString = getLongList("uniquen", "fieldFacets", "string_sd", "long", "long");
+    Collection<Long> longString =
+        getLongList("uniquen", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>) calculateStat(longStringTestStart, "unique");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Long> floatDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "float");
+    Collection<Long> floatDate = getLongList("uniquen", "fieldFacets", "date_dtd", "long", "float");
     ArrayList<Long> floatDateTest = (ArrayList<Long>) calculateStat(floatDateTestStart, "unique");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
     // Float String
-    ArrayList<Long> floatString =
+    Collection<Long> floatString =
         getLongList("uniquen", "fieldFacets", "string_sd", "long", "float");
     ArrayList<Long> floatStringTest =
         (ArrayList<Long>) calculateStat(floatStringTestStart, "unique");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Long> doubleDate =
+    Collection<Long> doubleDate =
         getLongList("uniquen", "fieldFacets", "date_dtd", "long", "double");
     ArrayList<Long> doubleDateTest = (ArrayList<Long>) calculateStat(doubleDateTestStart, "unique");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
     // Double String
-    ArrayList<Long> doubleString =
+    Collection<Long> doubleString =
         getLongList("uniquen", "fieldFacets", "string_sd", "long", "double");
     ArrayList<Long> doubleStringTest =
         (ArrayList<Long>) calculateStat(doubleStringTestStart, "unique");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // Date Int
-    ArrayList<Long> dateInt = getLongList("unique", "fieldFacets", "int_id", "long", "date");
+    Collection<Long> dateInt = getLongList("unique", "fieldFacets", "int_id", "long", "date");
     ArrayList<Long> dateIntTest = (ArrayList<Long>) calculateStat(dateIntTestStart, "unique");
-    assertEqualsList(getRawResponse(), dateInt, dateIntTest);
+    assertEquals(getRawResponse(), dateInt, dateIntTest);
     // Date Long
-    ArrayList<Long> dateString = getLongList("unique", "fieldFacets", "long_ld", "long", "date");
+    Collection<Long> dateString = getLongList("unique", "fieldFacets", "long_ld", "long", "date");
     ArrayList<Long> dateLongTest = (ArrayList<Long>) calculateStat(dateLongTestStart, "unique");
-    assertEqualsList(getRawResponse(), dateString, dateLongTest);
+    assertEquals(getRawResponse(), dateString, dateLongTest);
 
     // String Int
-    ArrayList<Long> stringInt = getLongList("unique", "fieldFacets", "int_id", "long", "str");
+    Collection<Long> stringInt = getLongList("unique", "fieldFacets", "int_id", "long", "str");
     ArrayList<Long> stringIntTest = (ArrayList<Long>) calculateStat(stringIntTestStart, "unique");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
     // String Long
-    ArrayList<Long> stringLong = getLongList("unique", "fieldFacets", "long_ld", "long", "str");
+    Collection<Long> stringLong = getLongList("unique", "fieldFacets", "long_ld", "long", "str");
     ArrayList<Long> stringLongTest = (ArrayList<Long>) calculateStat(stringLongTestStart, "unique");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void countTest() throws Exception {
     // Int Date
-    ArrayList<Long> intDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "int");
+    Collection<Long> intDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "int");
     ArrayList<Long> intDateTest = (ArrayList<Long>) calculateStat(intDateTestStart, "count");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
 
     // Int String
-    ArrayList<Long> intString = getLongList("countn", "fieldFacets", "string_sd", "long", "int");
+    Collection<Long> intString = getLongList("countn", "fieldFacets", "string_sd", "long", "int");
     ArrayList<Long> intStringTest = (ArrayList<Long>) calculateStat(intStringTestStart, "count");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Long Date
-    ArrayList<Long> longDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "long");
+    Collection<Long> longDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "long");
     ArrayList<Long> longDateTest = (ArrayList<Long>) calculateStat(longDateTestStart, "count");
-    assertEqualsList(getRawResponse(), longDate, longDateTest);
+    assertEquals(getRawResponse(), longDate, longDateTest);
 
     // Long String
-    ArrayList<Long> longString = getLongList("countn", "fieldFacets", "string_sd", "long", "long");
+    Collection<Long> longString = getLongList("countn", "fieldFacets", "string_sd", "long", "long");
     ArrayList<Long> longStringTest = (ArrayList<Long>) calculateStat(longStringTestStart, "count");
-    assertEqualsList(getRawResponse(), longString, longStringTest);
+    assertEquals(getRawResponse(), longString, longStringTest);
 
     // Float Date
-    ArrayList<Long> floatDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "float");
+    Collection<Long> floatDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "float");
     ArrayList<Long> floatDateTest = (ArrayList<Long>) calculateStat(floatDateTestStart, "count");
-    assertEqualsList(getRawResponse(), floatDate, floatDateTest);
+    assertEquals(getRawResponse(), floatDate, floatDateTest);
 
     // Float String
-    ArrayList<Long> floatString =
+    Collection<Long> floatString =
         getLongList("countn", "fieldFacets", "string_sd", "long", "float");
     ArrayList<Long> floatStringTest =
         (ArrayList<Long>) calculateStat(floatStringTestStart, "count");
-    assertEqualsList(getRawResponse(), floatString, floatStringTest);
+    assertEquals(getRawResponse(), floatString, floatStringTest);
 
     // Double Date
-    ArrayList<Long> doubleDate = getLongList("countn", "fieldFacets", "date_dtd", "long", "double");
+    Collection<Long> doubleDate =
+        getLongList("countn", "fieldFacets", "date_dtd", "long", "double");
     ArrayList<Long> doubleDateTest = (ArrayList<Long>) calculateStat(doubleDateTestStart, "count");
-    assertEqualsList(getRawResponse(), doubleDate, doubleDateTest);
+    assertEquals(getRawResponse(), doubleDate, doubleDateTest);
 
     // Double String
-    ArrayList<Long> doubleString =
+    Collection<Long> doubleString =
         getLongList("countn", "fieldFacets", "string_sd", "long", "double");
     ArrayList<Long> doubleStringTest =
         (ArrayList<Long>) calculateStat(doubleStringTestStart, "count");
-    assertEqualsList(getRawResponse(), doubleString, doubleStringTest);
+    assertEquals(getRawResponse(), doubleString, doubleStringTest);
 
     // Date Int
-    ArrayList<Long> dateInt = getLongList("count", "fieldFacets", "int_id", "long", "date");
+    Collection<Long> dateInt = getLongList("count", "fieldFacets", "int_id", "long", "date");
     ArrayList<Long> dateIntTest = (ArrayList<Long>) calculateStat(dateIntTestStart, "count");
-    assertEqualsList(getRawResponse(), dateIntTest, dateInt);
+    assertEquals(getRawResponse(), dateIntTest, dateInt);
 
     // Date Long
-    ArrayList<Long> dateLong = getLongList("count", "fieldFacets", "long_ld", "long", "date");
+    Collection<Long> dateLong = getLongList("count", "fieldFacets", "long_ld", "long", "date");
     ArrayList<Long> dateLongTest = (ArrayList<Long>) calculateStat(dateLongTestStart, "count");
-    assertEqualsList(getRawResponse(), dateLong, dateLongTest);
+    assertEquals(getRawResponse(), dateLong, dateLongTest);
 
     // String Int
-    ArrayList<Long> stringInt = getLongList("count", "fieldFacets", "int_id", "long", "str");
+    Collection<Long> stringInt = getLongList("count", "fieldFacets", "int_id", "long", "str");
     ArrayList<Long> stringIntTest = (ArrayList<Long>) calculateStat(stringIntTestStart, "count");
-    assertEqualsList(getRawResponse(), stringInt, stringIntTest);
+    assertEquals(getRawResponse(), stringInt, stringIntTest);
 
     // String Long
-    ArrayList<Long> stringLong = getLongList("count", "fieldFacets", "long_ld", "long", "str");
+    Collection<Long> stringLong = getLongList("count", "fieldFacets", "long_ld", "long", "str");
     ArrayList<Long> stringLongTest = (ArrayList<Long>) calculateStat(stringLongTestStart, "count");
-    assertEqualsList(getRawResponse(), stringLong, stringLongTest);
+    assertEquals(getRawResponse(), stringLong, stringLongTest);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void missingTest() throws Exception {
     // Int Date
-    ArrayList<Long> intDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "int");
+    Collection<Long> intDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "int");
     setLatestType("int");
-    assertEqualsList(getRawResponse(), intDateTestMissing, intDate);
+    assertEquals(getRawResponse(), intDateTestMissing, intDate);
 
     // Int String
-    ArrayList<Long> intString = getLongList("missingn", "fieldFacets", "string_sd", "long", "int");
-    assertEqualsList(getRawResponse(), intStringTestMissing, intString);
+    Collection<Long> intString = getLongList("missingn", "fieldFacets", "string_sd", "long", "int");
+    assertEquals(getRawResponse(), intStringTestMissing, intString);
 
     // Long Date
-    ArrayList<Long> longDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "long");
+    Collection<Long> longDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "long");
     setLatestType("long");
-    assertEqualsList(getRawResponse(), longDateTestMissing, longDate);
+    assertEquals(getRawResponse(), longDateTestMissing, longDate);
 
     // Long String
-    ArrayList<Long> longString =
+    Collection<Long> longString =
         getLongList("missingn", "fieldFacets", "string_sd", "long", "long");
-    assertEqualsList(getRawResponse(), longStringTestMissing, longString);
+    assertEquals(getRawResponse(), longStringTestMissing, longString);
 
     // Float Date
-    ArrayList<Long> floatDate = getLongList("missingn", "fieldFacets", "date_dtd", "long", "float");
+    Collection<Long> floatDate =
+        getLongList("missingn", "fieldFacets", "date_dtd", "long", "float");
     setLatestType("float");
-    assertEqualsList(getRawResponse(), floatDateTestMissing, floatDate);
+    assertEquals(getRawResponse(), floatDateTestMissing, floatDate);
 
     // Float String
-    ArrayList<Long> floatString =
+    Collection<Long> floatString =
         getLongList("missingn", "fieldFacets", "string_sd", "long", "float");
-    assertEqualsList(getRawResponse(), floatStringTestMissing, floatString);
+    assertEquals(getRawResponse(), floatStringTestMissing, floatString);
 
     // Double Date
-    ArrayList<Long> doubleDate =
+    Collection<Long> doubleDate =
         getLongList("missingn", "fieldFacets", "date_dtd", "long", "double");
     setLatestType("double");
-    assertEqualsList(getRawResponse(), doubleDateTestMissing, doubleDate);
+    assertEquals(getRawResponse(), doubleDateTestMissing, doubleDate);
 
     // Double String
-    ArrayList<Long> doubleString =
+    Collection<Long> doubleString =
         getLongList("missingn", "fieldFacets", "string_sd", "long", "double");
-    assertEqualsList(getRawResponse(), doubleStringTestMissing, doubleString);
+    assertEquals(getRawResponse(), doubleStringTestMissing, doubleString);
 
     // Date Int
-    ArrayList<Long> dateInt = getLongList("missing", "fieldFacets", "int_id", "long", "date");
+    Collection<Long> dateInt = getLongList("missing", "fieldFacets", "int_id", "long", "date");
     setLatestType("date");
-    assertEqualsList(getRawResponse(), dateIntTestMissing, dateInt);
+    assertEquals(getRawResponse(), dateIntTestMissing, dateInt);
 
     // Date Long
-    ArrayList<Long> dateLong = getLongList("missing", "fieldFacets", "long_ld", "long", "date");
-    assertEqualsList(getRawResponse(), dateLongTestMissing, dateLong);
+    Collection<Long> dateLong = getLongList("missing", "fieldFacets", "long_ld", "long", "date");
+    assertEquals(getRawResponse(), dateLongTestMissing, dateLong);
 
     // String Int
-    ArrayList<Long> stringInt = getLongList("missing", "fieldFacets", "int_id", "long", "str");
+    Collection<Long> stringInt = getLongList("missing", "fieldFacets", "int_id", "long", "str");
     setLatestType("string");
-    assertEqualsList(getRawResponse(), stringIntTestMissing, stringInt);
+    assertEquals(getRawResponse(), stringIntTestMissing, stringInt);
 
     // String Long
-    ArrayList<Long> stringLong = getLongList("missing", "fieldFacets", "long_ld", "long", "str");
-    assertEqualsList(getRawResponse(), stringLongTestMissing, stringLong);
+    Collection<Long> stringLong = getLongList("missing", "fieldFacets", "long_ld", "long", "str");
+    assertEquals(getRawResponse(), stringLongTestMissing, stringLong);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void multiValueTest() throws Exception {
     // Long
-    ArrayList<Double> lon =
+    Collection<Double> lon =
         getDoubleList("multivalued", "fieldFacets", "long_ldm", "double", "mean");
     ArrayList<Double> longTest = calculateNumberStat(multiLongTestStart, "mean");
-    assertEqualsList(getRawResponse(), lon, longTest);
+    assertEquals(getRawResponse(), lon, longTest);
     // Date
-    ArrayList<Double> date =
+    Collection<Double> date =
         getDoubleList("multivalued", "fieldFacets", "date_dtdm", "double", "mean");
     ArrayList<Double> dateTest = calculateNumberStat(multiDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), date, dateTest);
+    assertEquals(getRawResponse(), date, dateTest);
     // String
-    ArrayList<Double> string =
+    Collection<Double> string =
         getDoubleList("multivalued", "fieldFacets", "string_sdm", "double", "mean");
     ArrayList<Double> stringTest = calculateNumberStat(multiStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), string, stringTest);
+    assertEquals(getRawResponse(), string, stringTest);
   }
 
   @SuppressWarnings("unchecked")
@@ -1184,7 +1196,7 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
         getDoubleList("missingf", "fieldFacets", "date_dtdm", "double", "mean");
     // super.removeNodes(xPath, string);
     ArrayList<Double> stringTest = calculateNumberStat(multiDateTestStart, "mean");
-    assertEqualsList(getRawResponse(), string, stringTest);
+    assertEquals(getRawResponse(), string, stringTest);
 
     // Int String
     xPath =
@@ -1197,19 +1209,19 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
         "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='str0']";
     assertNull(getRawResponse(), getNode(xPath));
 
-    ArrayList<Double> intString =
+    List<Double> intString =
         getDoubleList("missingf", "fieldFacets", "string_sd", "double", "mean");
     // removeNodes(missingNodeXPathStr, intString);
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
-    assertEqualsList(getRawResponse(), intString, intStringTest);
+    assertEquals(getRawResponse(), intString, intStringTest);
 
     // Int Date
-    ArrayList<Double> intDate =
+    Collection<Double> intDate =
         getDoubleList("missingf", "fieldFacets", "date_dtd", "double", "mean");
     ArrayList<ArrayList<Double>> intDateMissingTestStart =
         (ArrayList<ArrayList<Double>>) intDateTestStart.clone();
     ArrayList<Double> intDateTest = calculateNumberStat(intDateMissingTestStart, "mean");
-    assertEqualsList(getRawResponse(), intDate, intDateTest);
+    assertEquals(getRawResponse(), intDate, intDateTest);
   }
 
   private void checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {
@@ -1217,18 +1229,15 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest {
     Collections.sort(list2);
     for (int i = 0; i < list1.size(); i++) {
       if ((Math.abs(list1.get(i) - list2.get(i)) < .00000000001) == false) {
-        assertEquals(getRawResponse(), list1.get(i), list2.get(i), 0.00000000001);
+        Assert.assertEquals(getRawResponse(), list1.get(i), list2.get(i), 0.00000000001);
       }
     }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public static void assertEqualsList(
-      String mes,
-      ArrayList<? extends Comparable> actual,
-      ArrayList<? extends Comparable> expected) {
-    Collections.sort(actual);
-    Collections.sort(expected);
-    assertEquals(mes, actual, expected);
+  public static void assertEquals(String mes, Object actual, Object expected) {
+    Collections.sort((List<Comparable>) actual);
+    Collections.sort((List<Comparable>) expected);
+    Assert.assertEquals(mes, actual, expected);
   }
 }

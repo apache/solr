@@ -21,10 +21,11 @@ import org.apache.http.cookie.CookieOrigin;
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Assert;
 import org.junit.Test;
 
 // Test cases imported from TestNetscapeCookieAttribHandlers of HttpClient project
-public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
+public class SolrPortAwareCookieSpecTest {
 
   @Test
   public void testDomainHostPortValidate() throws Exception {
@@ -49,19 +50,19 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
     SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> h.match(cookie, null));
 
     cookie.setDomain(null);
-    assertFalse(h.match(cookie, origin));
+    Assert.assertFalse(h.match(cookie, origin));
 
     cookie.setDomain("otherhost");
-    assertFalse(h.match(cookie, origin));
+    Assert.assertFalse(h.match(cookie, origin));
 
     cookie.setDomain("myhost");
-    assertTrue(h.match(cookie, origin));
+    Assert.assertTrue(h.match(cookie, origin));
 
     cookie.setDomain("myhost:80");
-    assertTrue(h.match(cookie, origin));
+    Assert.assertTrue(h.match(cookie, origin));
 
     cookie.setDomain("myhost:8080");
-    assertFalse(h.match(cookie, origin));
+    Assert.assertFalse(h.match(cookie, origin));
   }
 
   @Test
@@ -126,10 +127,10 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
 
     cookie.setDomain(null);
-    assertFalse(h.match(cookie, origin));
+    Assert.assertFalse(h.match(cookie, origin));
 
     cookie.setDomain(".somedomain.com");
-    assertTrue(h.match(cookie, origin));
+    Assert.assertTrue(h.match(cookie, origin));
   }
 
   @Test
@@ -139,7 +140,7 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
 
     cookie.setDomain(".somedomain.com");
-    assertTrue(h.match(cookie, origin));
+    Assert.assertTrue(h.match(cookie, origin));
   }
 
   @Test

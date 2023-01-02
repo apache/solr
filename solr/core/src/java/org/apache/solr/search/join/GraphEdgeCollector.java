@@ -78,7 +78,6 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     return numHits;
   }
 
-  @Override
   public void collect(int segDoc) throws IOException {
     int doc = segDoc + base;
     if (skipSet != null && skipSet.exists(doc)) {

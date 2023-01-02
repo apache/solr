@@ -53,7 +53,7 @@ public class HdfsUpdateLog extends UpdateLog {
 
   private final Object fsLock = new Object();
   private FileSystem fs;
-  private volatile Path hdfsTlogDir;
+  private volatile Path tlogDir;
   private final String confDir;
   private Integer tlogDfsReplication;
 
@@ -131,7 +131,7 @@ public class HdfsUpdateLog extends UpdateLog {
         if (debug) {
           log.debug(
               "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
-              hdfsTlogDir,
+              tlogDir,
               id);
         }
         versionInfo.reload();
@@ -139,16 +139,16 @@ public class HdfsUpdateLog extends UpdateLog {
       }
     }
 
-    hdfsTlogDir = new Path(dataDir, TLOG_NAME);
+    tlogDir = new Path(dataDir, TLOG_NAME);
     while (true) {
       try {
-        if (!fs.exists(hdfsTlogDir)) {
-          boolean success = fs.mkdirs(hdfsTlogDir);
+        if (!fs.exists(tlogDir)) {
+          boolean success = fs.mkdirs(tlogDir);
           if (!success) {
-            throw new RuntimeException("Could not create directory:" + hdfsTlogDir);
+            throw new RuntimeException("Could not create directory:" + tlogDir);
           }
         } else {
-          fs.mkdirs(hdfsTlogDir); // To check for safe mode
+          fs.mkdirs(tlogDir); // To check for safe mode
         }
         break;
       } catch (RemoteException e) {
@@ -161,32 +161,32 @@ public class HdfsUpdateLog extends UpdateLog {
           }
           continue;
         }
-        throw new RuntimeException("Problem creating directory: " + hdfsTlogDir, e);
+        throw new RuntimeException("Problem creating directory: " + tlogDir, e);
       } catch (IOException e) {
-        throw new RuntimeException("Problem creating directory: " + hdfsTlogDir, e);
+        throw new RuntimeException("Problem creating directory: " + tlogDir, e);
       }
     }
 
-    String[] oldBufferTlog = getBufferLogList(fs, hdfsTlogDir);
+    String[] oldBufferTlog = getBufferLogList(fs, tlogDir);
     if (oldBufferTlog != null && oldBufferTlog.length != 0) {
       existOldBufferLog = true;
     }
 
-    tlogFiles = getLogList(fs, hdfsTlogDir);
+    tlogFiles = getLogList(fs, tlogDir);
     id = getLastLogId() + 1; // add 1 since we will create a new log for the
     // next update
 
     if (debug) {
       log.debug(
           "UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}",
-          hdfsTlogDir,
+          tlogDir,
           Arrays.asList(tlogFiles),
           id);
     }
 
     TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
-      Path f = new Path(hdfsTlogDir, oldLogName);
+      Path f = new Path(tlogDir, oldLogName);
       try {
         oldLog = new HdfsTransactionLog(fs, f, null, true, tlogDfsReplication);
         addOldLog(oldLog, false); // don't remove old logs on startup since more
@@ -253,7 +253,7 @@ public class HdfsUpdateLog extends UpdateLog {
 
   @Override
   public String getLogDir() {
-    return hdfsTlogDir.toUri().toString();
+    return tlogDir.toUri().toString();
   }
 
   public static String[] getBufferLogList(FileSystem fs, Path tlogDir) {
@@ -321,17 +321,17 @@ public class HdfsUpdateLog extends UpdateLog {
         String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
     bufferTlog =
         new HdfsTransactionLog(
-            fs, new Path(hdfsTlogDir, newLogName), globalStrings, tlogDfsReplication);
+            fs, new Path(tlogDir, newLogName), globalStrings, tlogDfsReplication);
     bufferTlog.isBuffer = true;
   }
 
   @Override
   protected void deleteBufferLogs() {
     // Delete old buffer logs
-    String[] oldBufferTlog = getBufferLogList(fs, hdfsTlogDir);
+    String[] oldBufferTlog = getBufferLogList(fs, tlogDir);
     if (oldBufferTlog != null && oldBufferTlog.length != 0) {
       for (String oldBufferLogName : oldBufferTlog) {
-        Path f = new Path(hdfsTlogDir, oldBufferLogName);
+        Path f = new Path(tlogDir, oldBufferLogName);
         try {
           boolean s = fs.delete(f, false);
           if (!s) {
@@ -351,7 +351,7 @@ public class HdfsUpdateLog extends UpdateLog {
       String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
       HdfsTransactionLog ntlog =
           new HdfsTransactionLog(
-              fs, new Path(hdfsTlogDir, newLogName), globalStrings, tlogDfsReplication);
+              fs, new Path(tlogDir, newLogName), globalStrings, tlogDfsReplication);
       tlog = ntlog;
     }
   }
@@ -437,7 +437,6 @@ public class HdfsUpdateLog extends UpdateLog {
   // return true;
   // }
 
-  @Override
   public String toString() {
     return "HDFSUpdateLog{state=" + getState() + ", tlog=" + tlog + "}";
   }

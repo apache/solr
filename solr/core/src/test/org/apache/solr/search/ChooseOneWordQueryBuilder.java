@@ -36,12 +36,10 @@ public class ChooseOneWordQueryBuilder extends SolrSpanQueryBuilder {
     super(defaultField, analyzer, req, spanFactory);
   }
 
-  @Override
   public Query getQuery(Element e) throws ParserException {
     return implGetQuery(e, false);
   }
 
-  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     return (SpanQuery) implGetQuery(e, true);
   }

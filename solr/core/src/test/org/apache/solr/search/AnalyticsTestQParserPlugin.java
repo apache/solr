@@ -35,7 +35,6 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
-  @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestAnalyticsQueryParser(query, localParams, params, req);
@@ -48,7 +47,6 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    @Override
     public Query parse() {
       int base = localParams.getInt("base", 0);
       boolean iterate = localParams.getBool("iterate", false);
@@ -66,7 +64,6 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       this.base = base;
     }
 
-    @Override
     public DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher) {
       return new TestAnalyticsCollector(base, rb);
     }
@@ -82,13 +79,11 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
       this.rb = rb;
     }
 
-    @Override
     public void collect(int doc) throws IOException {
       ++count;
       leafDelegate.collect(doc);
     }
 
-    @Override
     @SuppressWarnings({"unchecked"})
     public void finish() throws IOException {
       @SuppressWarnings({"rawtypes"})
@@ -103,25 +98,20 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
   static class TestAnalyticsMergeStrategy implements MergeStrategy {
 
-    @Override
     public boolean mergesIds() {
       return false;
     }
 
-    @Override
     public boolean handlesMergeFields() {
       return false;
     }
 
-    @Override
     public int getCost() {
       return 100;
     }
 
-    @Override
     public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
-    @Override
     @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest shardRequest) {
       int count = 0;
@@ -144,7 +134,6 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
   static class TestIterative extends IterativeMergeStrategy {
 
-    @Override
     @SuppressWarnings({"unchecked"})
     public void process(ResponseBuilder rb, ShardRequest sreq) throws Exception {
       int count = 0;

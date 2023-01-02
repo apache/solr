@@ -34,6 +34,8 @@ public class CloudHttp2SolrClientBadInputTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).configure();
+
+    final List<String> solrUrls = new ArrayList<>();
   }
 
   @Test

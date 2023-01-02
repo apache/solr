@@ -166,7 +166,6 @@ for BRANCH in "${BRANCHES[@]}"; do
     fi
     if yesno "Have you resolved the merge conflict? (y/n) "; then
       LOG INFO "Continuing..."
-      $GIT_COMMAND cherry-pick --continue
     else
       if yesno "Clean up by aborting the cherry-pick? (y/n) "; then
         $GIT_COMMAND cherry-pick --abort

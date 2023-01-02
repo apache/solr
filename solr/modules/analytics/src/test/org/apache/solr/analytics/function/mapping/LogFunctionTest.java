@@ -68,7 +68,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -137,7 +137,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValue(21.56F).setExists(true);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, no value
@@ -145,7 +145,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setExists(false);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, one value
@@ -180,7 +180,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, no value
@@ -188,7 +188,7 @@ public class LogFunctionTest extends SolrTestCaseJ4 {
     val.setValues(4L, 10023L);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, one value

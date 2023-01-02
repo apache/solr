@@ -72,12 +72,10 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
 
   private final boolean runFullThrottle;
 
-  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
-  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }

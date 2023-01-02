@@ -61,6 +61,9 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
 
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -345,6 +348,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       // tag::solrj-ipod-query-bool-condensed[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boolProperties = new HashMap<>();
+      final List<Object> mustClauses = new ArrayList<>();
+      final List<Object> mustNotClauses = new ArrayList<>();
       queryTopLevel.put("bool", boolProperties);
       boolProperties.put("must", "name:iPod");
       boolProperties.put("must_not", "{!frange l=0 u=5}popularity");
@@ -739,7 +744,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         new FacetBucket("search", 1));
   }
 
-  private static class FacetBucket {
+  private class FacetBucket {
     private final Object val;
     private final int count;
 
@@ -759,9 +764,9 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
 
   private void assertHasFacetWithBucketValues(
       NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertNotNull(
+    assertTrue(
         "Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName));
+        response.getBucketBasedFacets(expectedFacetName) != null);
     final List<BucketJsonFacet> buckets =
         response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());

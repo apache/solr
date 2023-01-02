@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.junit.Assert.assertEquals;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.BlockingQueue;
@@ -93,7 +94,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     final int hardCommitMaxDocs = 7;
 
     // remainder of test designed with these assumptions
-    assertTrue(softCommitMaxDocs < hardCommitMaxDocs);
+    assert softCommitMaxDocs < hardCommitMaxDocs;
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
@@ -523,7 +524,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
       final BlockingQueue<Long> queue)
       throws InterruptedException {
 
-    assertTrue(0 < maxNumCommits);
+    assert 0 < maxNumCommits;
 
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;
@@ -604,7 +605,7 @@ class MockEventListener implements SolrEventListener {
   public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
 
   // if non enpty, then at least one offer failed (queues full)
-  private final StringBuilder fail = new StringBuilder();
+  private StringBuffer fail = new StringBuffer();
 
   public MockEventListener() {
     /* NOOP */
@@ -613,19 +614,19 @@ class MockEventListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     Long now = System.nanoTime();
-    if (!searcher.offer(now)) fail.append(", newSearcher @ ").append(now);
+    if (!searcher.offer(now)) fail.append(", newSearcher @ " + now);
   }
 
   @Override
   public void postCommit() {
     Long now = System.nanoTime();
-    if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
+    if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
   }
 
   @Override
   public void postSoftCommit() {
     Long now = System.nanoTime();
-    if (!soft.offer(now)) fail.append(", softCommit @ ").append(now);
+    if (!soft.offer(now)) fail.append(", softCommit @ " + now);
   }
 
   public void clear() {
@@ -636,6 +637,6 @@ class MockEventListener implements SolrEventListener {
   }
 
   public void assertSaneOffers() {
-    SolrTestCaseJ4.assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
+    assertEquals("Failure of MockEventListener" + fail.toString(), 0, fail.length());
   }
 }

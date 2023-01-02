@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +121,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(m);
+        ccc.offerStateUpdate(Utils.toJSON(m));
       }
     }
 
@@ -199,7 +200,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(m);
+        ccc.offerStateUpdate(Utils.toJSON(m));
       }
 
       zkStateReader.waitForState(

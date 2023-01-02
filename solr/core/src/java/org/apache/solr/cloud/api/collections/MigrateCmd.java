@@ -269,7 +269,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(m);
+      ccc.offerStateUpdate(Utils.toJSON(m));
     }
 
     // wait for a while until we see the new rule

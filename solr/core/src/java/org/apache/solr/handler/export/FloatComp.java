@@ -23,24 +23,20 @@ interface FloatComp {
   float resetValue();
 
   static class FloatAsc implements FloatComp {
-    @Override
     public float resetValue() {
       return Float.MAX_VALUE;
     }
 
-    @Override
     public int compare(float a, float b) {
       return Float.compare(b, a);
     }
   }
 
   static class FloatDesc implements FloatComp {
-    @Override
     public float resetValue() {
       return -Float.MAX_VALUE;
     }
 
-    @Override
     public int compare(float a, float b) {
       return Float.compare(a, b);
     }

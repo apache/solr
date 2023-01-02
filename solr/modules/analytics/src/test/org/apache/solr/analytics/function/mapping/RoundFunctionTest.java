@@ -98,7 +98,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamInts(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -135,7 +135,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamLongs(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value

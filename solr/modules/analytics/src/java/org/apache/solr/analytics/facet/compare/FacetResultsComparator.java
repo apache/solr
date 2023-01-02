@@ -43,6 +43,5 @@ public abstract class FacetResultsComparator implements Comparator<FacetBucket> 
    * @param b1 the first bucket to compare
    * @param b2 the second bucket to compare
    */
-  @Override
   public abstract int compare(FacetBucket b1, FacetBucket b2);
 }

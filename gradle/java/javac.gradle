@@ -82,3 +82,12 @@ configure(project(":solr:benchmark")) {
     }
   }
 }
+
+configure(project(":solr:modules:fkltr")) {
+  plugins.withType(JavaPlugin) {
+    tasks.named('compileJava').configure {
+      options.compilerArgs -= [ "-Werror", "-proc:none" ]
+      options.compilerArgs += "-Xlint:deprecation"
+    }
+  }
+}

@@ -168,7 +168,7 @@ public class TestCancellableCollector extends SolrTestCase {
         });
   }
 
-  public static class DummyCancellableCollector extends CancellableCollector {
+  public class DummyCancellableCollector extends CancellableCollector {
     private final CancellableCollector collector;
     private final boolean delayStart;
     private final boolean delayCollection;

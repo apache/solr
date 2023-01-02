@@ -31,6 +31,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -72,7 +73,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (SolrClient nodeClient = getHttpSolrClient(url)) {
+    try (HttpSolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
@@ -464,7 +465,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     for (String element : elements) {
       String value = namedList.get(element);
       assertNotNull("Expected element '" + element + "' but was not found", value);
-      assertFalse("Expected element '" + element + "' but was empty", value.isEmpty());
+      assertTrue("Expected element '" + element + "' but was empty", !value.isEmpty());
     }
   }
 }

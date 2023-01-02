@@ -41,7 +41,7 @@ public final class ReversedWildcardFilter extends TokenFilter {
   private final PositionIncrementAttribute posAtt;
   private State save = null;
 
-  ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
+  protected ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
     super(input);
     this.termAtt = addAttribute(CharTermAttribute.class);
     this.posAtt = addAttribute(PositionIncrementAttribute.class);

@@ -56,7 +56,6 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
-  @Override
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
       throws IOException {

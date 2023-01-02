@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/collection2", true);
   }
 
-  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(
@@ -90,7 +91,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     @Override
     void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException {
+        throws KeeperException, InterruptedException, IOException {
       super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
@@ -162,7 +163,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setupOnConnect() throws InterruptedException, KeeperException {
+    private void setupOnConnect() throws InterruptedException, KeeperException, IOException {
       assertNotNull(es);
       TestLeaderElectionContext context =
           new TestLeaderElectionContext(
@@ -536,11 +537,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                       server.expire(zk.getSessionId());
                     }
                   } catch (Exception e) {
-                    log.error("error expiring session", e);
+                    e.printStackTrace();
                   }
                   Thread.sleep(500);
+
                 } catch (Exception e) {
-                  log.error("error expiring session", e);
+
                 }
               }
             });

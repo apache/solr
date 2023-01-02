@@ -68,7 +68,7 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
       clientChroot = "/mychroot";
     }
 
-    try (CloudSolrClient client =
+    try (CloudHttp2SolrClient client =
         new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =

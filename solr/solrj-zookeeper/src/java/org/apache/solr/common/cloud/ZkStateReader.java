@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -353,7 +352,7 @@ public class ZkStateReader implements SolrCloseable {
                 }
               }
             }
-            stateHasChanged.set(!Objects.equals(oldState, watch.currentState));
+            stateHasChanged.set(oldState != watch.currentState);
             return watch;
           });
 
@@ -936,7 +935,6 @@ public class ZkStateReader implements SolrCloseable {
     return this;
   }
 
-  @Override
   public void close() {
     this.closed = true;
 
@@ -1308,7 +1306,7 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private static class VersionedCollectionProps {
+  private class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;
@@ -2252,7 +2250,7 @@ public class ZkStateReader implements SolrCloseable {
           try {
             final Stat stat =
                 getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
-            setIfNewer(new SolrZkClient.NodeData(stat, modAliasesJson));
+            setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
             return;
           } catch (KeeperException.BadVersionException e) {
             log.debug("{}", e, e);
@@ -2289,12 +2287,12 @@ public class ZkStateReader implements SolrCloseable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
-      if (log.isDebugEnabled()) {
-        log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
-      }
+      log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getZooKeeper().sync(ALIASES, null, null);
-      return setIfNewer(zkClient.getNode(ALIASES, null, true));
+      Stat stat = new Stat();
+      final byte[] data = zkClient.getData(ALIASES, null, stat, true);
+      return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
     }
 
     // ZK Watcher interface
@@ -2308,7 +2306,11 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Aliases: updating");
 
         // re-register the watch
-        setIfNewer(zkClient.getNode(ALIASES, this, true));
+        Stat stat = new Stat();
+        final byte[] data = zkClient.getData(ALIASES, this, stat, true);
+        // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but
+        // not a big deal
+        setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
       } catch (NoNodeException e) {
         // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException
@@ -2329,29 +2331,22 @@ public class ZkStateReader implements SolrCloseable {
      * Update the internal aliases reference with a new one, provided that its ZK version has
      * increased.
      *
-     * @param n the node data
+     * @param newAliases the potentially newer version of Aliases
      * @return true if aliases have been updated to a new version, false otherwise
      */
-    private boolean setIfNewer(SolrZkClient.NodeData n) {
-      assert n.stat.getVersion() >= 0;
+    private boolean setIfNewer(Aliases newAliases) {
+      assert newAliases.getZNodeVersion() >= 0;
       synchronized (this) {
-        int cmp = Integer.compare(aliases.getZNodeVersion(), n.stat.getVersion());
+        int cmp = Integer.compare(aliases.getZNodeVersion(), newAliases.getZNodeVersion());
         if (cmp < 0) {
-          if (log.isDebugEnabled()) {
-            log.debug(
-                "Aliases: cmp={}, new definition is: {}",
-                cmp,
-                Aliases.fromJSON(n.data, n.stat.getVersion()));
-          }
-          aliases = Aliases.fromJSON(n.data, n.stat.getVersion());
+          log.debug("Aliases: cmp={}, new definition is: {}", cmp, newAliases);
+          aliases = newAliases;
           this.notifyAll();
           return true;
         } else {
-          if (log.isDebugEnabled()) {
-            log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
-          }
-          assert cmp != 0 || Arrays.equals(aliases.toJSON(), n.data)
-              : aliases + " != " + Aliases.fromJSON(n.data, n.stat.getVersion());
+          log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
+          assert cmp != 0 || Arrays.equals(aliases.toJSON(), newAliases.toJSON())
+              : aliases + " != " + newAliases;
           return false;
         }
       }
@@ -2399,7 +2394,6 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private class CacheCleaner implements Runnable {
-    @Override
     public void run() {
       while (!Thread.interrupted()) {
         try {
@@ -2427,12 +2421,10 @@ public class ZkStateReader implements SolrCloseable {
     private final String collectionName;
     private final CollectionStateWatcher delegate;
 
-    @Override
     public int hashCode() {
       return collectionName.hashCode() * delegate.hashCode();
     }
 
-    @Override
     public boolean equals(Object other) {
       if (other instanceof DocCollectionAndLiveNodesWatcherWrapper) {
         DocCollectionAndLiveNodesWatcherWrapper that =

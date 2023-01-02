@@ -238,7 +238,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     // Test that enforceSchema correctly catches illegal field and returns null
     parameters.set("langid.enforceSchema", "true");
     liProcessor = createLangIdProcessor(parameters);
-    assertNull(liProcessor.getMappedField("inputfield", "sv"));
+    assertEquals(null, liProcessor.getMappedField("inputfield", "sv"));
 
     // Prove support for other mapping regex, still with enforceSchema=true
     parameters.add("langid.map.pattern", "text_(.*?)_field");

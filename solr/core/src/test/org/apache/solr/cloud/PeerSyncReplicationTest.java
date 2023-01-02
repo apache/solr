@@ -84,7 +84,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     fixShardCount(3);
   }
 
-  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }
@@ -218,7 +217,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       this.runner = nodeToBringUp;
     }
 
-    @Override
     public void run() {
       try {
         // If we don't wait for cores get loaded, the leader may put this replica into LIR state

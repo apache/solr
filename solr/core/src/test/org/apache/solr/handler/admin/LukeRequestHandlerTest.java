@@ -76,9 +76,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             "solr_dt",
             "2000-01-01T01:01:01Z",
             "solr_tdt",
-            "2000-01-01T01:01:01Z",
-            "solr_bin",
-            "PS9cPQ=="));
+            "2000-01-01T01:01:01Z"));
     assertU(commit());
   }
 
@@ -259,7 +257,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             field("title") + "/arr[@name='copyDests']/str[.='title_stemmed']",
             dynfield("bar_copydest_*") + "/arr[@name='copySources']/str[.='foo_copysource_*']",
             dynfield("foo_copysource_*") + "/arr[@name='copyDests']/str[.='bar_copydest_*']");
-    assertNull(xml, r);
+    assertEquals(xml, null, r);
   }
 
   public void testCatchAllCopyField() throws Exception {

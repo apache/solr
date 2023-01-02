@@ -594,7 +594,6 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  @Override
   public void close() {
     try {
       if (debug) {
@@ -799,7 +798,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  public abstract static class ReverseReader {
+  public abstract class ReverseReader {
 
     /**
      * Returns the next object from the log, or null if none available.
@@ -860,7 +859,6 @@ public class TransactionLog implements Closeable {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
-    @Override
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
@@ -901,12 +899,10 @@ public class TransactionLog implements Closeable {
     }
 
     /* returns the position in the log file of the last record returned by next() */
-    @Override
     public long position() {
       return prevPos + 4; // skip the length
     }
 
-    @Override
     public void close() {
       decref();
     }

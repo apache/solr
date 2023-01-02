@@ -19,6 +19,7 @@ package org.apache.solr.util.configuration;
 
 import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -31,14 +32,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.hadoop.HadoopSSLCredentialProvider;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
-public class SSLConfigurationsTest extends SolrTestCaseJ4 {
+public class SSLConfigurationsTest {
   private Map<String, String> envs;
   private SSLConfigurations sut;
 
@@ -56,10 +56,8 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
           SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
           CREDENTIAL_PROVIDER_PATH);
 
-  @Override
   @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  public void setUp() {
     envs = new HashMap<>();
   }
 
@@ -80,7 +78,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW1)
         .init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
@@ -89,7 +87,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2)
         .init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -97,7 +95,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -105,7 +103,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getTrustStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getTrustStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -113,7 +111,7 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getClientKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getClientKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -121,14 +119,14 @@ public class SSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getClientTrustStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getClientTrustStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
   public void testHadoopCredentialProviderPrioritySysPropAndEnvVars() throws IOException {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   private SSLConfigurations getSutWithMockedHadoopCredentialProvider(String key, String pw)

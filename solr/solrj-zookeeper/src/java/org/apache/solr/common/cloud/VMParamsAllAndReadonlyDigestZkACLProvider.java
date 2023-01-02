@@ -51,6 +51,7 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
   public static final String DEFAULT_DIGEST_FILE_VM_PARAM_NAME =
       VMParamsZkCredentialsInjector.DEFAULT_DIGEST_FILE_VM_PARAM_NAME;
 
+  private ZkCredentialsInjector zkCredentialsInjector;
   private DigestZkACLProvider digestZkACLProvider;
 
   public VMParamsAllAndReadonlyDigestZkACLProvider() {

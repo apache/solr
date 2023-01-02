@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -50,6 +51,9 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
     configureCluster(1)
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
+
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -600,7 +604,7 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         new FacetBucket("currency", 4));
   }
 
-  private static class FacetBucket {
+  private class FacetBucket {
     private final Object val;
     private final int count;
 
@@ -620,9 +624,9 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   private void assertHasFacetWithBucketValues(
       NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertNotNull(
+    assertTrue(
         "Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName));
+        response.getBucketBasedFacets(expectedFacetName) != null);
     final List<BucketJsonFacet> buckets =
         response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());
@@ -636,9 +640,9 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
 
   private void assertHasStatFacetWithValue(
       NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
-    assertNotNull(
+    assertTrue(
         "Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatValue(expectedFacetName));
+        response.getStatValue(expectedFacetName) != null);
     assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 

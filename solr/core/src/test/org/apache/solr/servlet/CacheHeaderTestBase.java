@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
@@ -28,11 +29,13 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.Test;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
   protected HttpRequestBase getSelectMethod(String method, String... params) {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     HttpRequestBase m = null;
 
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -46,9 +49,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
     URI uri =
         URI.create(
-            jetty.getBaseUrl().toString()
-                + "/"
-                + DEFAULT_TEST_COLLECTION_NAME
+            client.getBaseURL()
                 + "/select?"
                 + URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
 
@@ -63,7 +64,8 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     return m;
   }
 
-  HttpRequestBase getUpdateMethod(String method, String... params) {
+  protected HttpRequestBase getUpdateMethod(String method, String... params) {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     HttpRequestBase m = null;
 
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -73,9 +75,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
     URI uri =
         URI.create(
-            jetty.getBaseUrl()
-                + "/"
-                + DEFAULT_TEST_COLLECTION_NAME
+            client.getBaseURL()
                 + "/update?"
                 + URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
 
@@ -88,6 +88,11 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     return m;
+  }
+
+  protected HttpClient getClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
   }
 
   protected void checkResponseBody(String method, HttpResponse resp) throws Exception {

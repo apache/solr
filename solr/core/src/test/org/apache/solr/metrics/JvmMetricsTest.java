@@ -31,6 +31,7 @@ import org.junit.Test;
 
 /** Test {@link OperatingSystemMetricSet} and proper JVM metrics registration. */
 public class JvmMetricsTest extends SolrJettyTestBase {
+
   static final String[] STRING_OS_METRICS = {"arch", "name", "version"};
   static final String[] NUMERIC_OS_METRICS = {"availableProcessors", "systemLoadAverage"};
 
@@ -78,7 +79,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       assertNotNull(name, metrics.get(name));
       Object g = metrics.get(name);
       assertTrue(g instanceof Gauge);
-      Object v = ((Gauge<?>) g).getValue();
+      Object v = ((Gauge) g).getValue();
       assertTrue(v instanceof Long);
     }
   }
@@ -91,10 +92,9 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     }
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    Metric metric = metrics.get("system.properties");
-    assertNotNull(metrics.toString(), metric);
-    MetricsMap map = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metric).getGauge();
-    assertNotNull(metrics.toString(), map);
+    MetricsMap map =
+        (MetricsMap) ((SolrMetricManager.GaugeWrapper) metrics.get("system.properties")).getGauge();
+    assertNotNull(map);
     Map<String, Object> values = map.getValue();
     System.getProperties()
         .forEach(
@@ -115,13 +115,18 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
     NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(
-        s -> assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s)));
+        s -> {
+          assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
+        });
 
     // custom config
     solrXml = Files.readString(home.resolve("solr-hiddensysprops.xml"), StandardCharsets.UTF_8);
     NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
     Arrays.asList("foo", "bar", "baz")
-        .forEach(s -> assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s)));
+        .forEach(
+            s -> {
+              assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));
+            });
   }
 
   @Test
@@ -131,24 +136,24 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     assertTrue(metrics.size() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("buffers.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("buffers.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("classes.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("classes.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("os.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("os.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("gc.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("gc.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("memory.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("memory.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("threads.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("threads.")).count() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("system.")));
+        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("system.")).count() > 0);
   }
 }

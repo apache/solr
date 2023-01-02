@@ -37,7 +37,6 @@ public enum RoutedAliasTypes {
     }
   },
   DIMENSIONAL {
-    @Override
     public String getSeparatorPrefix() {
       throw new UnsupportedOperationException("dimensions within dimensions are not allowed");
     }

@@ -17,8 +17,6 @@
 
 package org.apache.solr.update;
 
-import static org.hamcrest.Matchers.containsString;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,10 +32,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
@@ -101,6 +100,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           + "        }\n"
           + "    }\n"
           + "}";
+
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -264,8 +265,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPFieldNameException() throws Exception {
     final String errMsg =
         "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
-    SolrException thrown = assertThrows(SolrException.class, () -> indexSampleData(errDoc));
-    MatcherAssert.assertThat(thrown.getMessage(), containsString(errMsg));
+    thrown.expect(SolrException.class);
+    indexSampleData(errDoc);
+    thrown.expectMessage(errMsg);
   }
 
   private void indexSampleData(String cmd) throws Exception {
@@ -403,7 +405,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           // doc_id -> descendentId must have at least one ancestor (since it's not a root level
           // document)
           final String descendentId = doc_id;
-          assertTrue(allDocs.get(descendentId).containsKey("ancestor_ids_ss"));
+          assert allDocs.get(descendentId).containsKey("ancestor_ids_ss");
           final List<Object> allAncestorIds =
               new ArrayList<>(allDocs.get(descendentId).getFieldValues("ancestor_ids_ss"));
 
@@ -670,8 +672,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     }
 
     private void assertValidPathSyntax(String path) {
-      assertTrue(path.startsWith("/"));
-      assertTrue((1 == path.length()) ^ !path.endsWith("/"));
+      assert path.startsWith("/");
+      assert (1 == path.length()) ^ !path.endsWith("/");
     }
   }
 }

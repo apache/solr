@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -37,7 +38,6 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -140,9 +140,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     }
 
     // check metrics
-    long replicationCount = 0;
-    long errorsCount = 0;
-    long skippedCount = 0;
+    int replicationCount = 0;
+    int errorsCount = 0;
+    int skippedCount = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
       List<String> registryNames =

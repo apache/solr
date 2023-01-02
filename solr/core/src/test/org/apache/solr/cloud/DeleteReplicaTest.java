@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -43,8 +44,8 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -176,7 +177,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Replica newLeader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
-    assertNotEquals(leader, newLeader);
+    assertFalse(leader.equals(newLeader));
 
     // Confirm that the instance and data directory were deleted by default
     assertFalse(
@@ -280,7 +281,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               cluster.getOpenOverseer().getSolrCloudManager(),
               cluster.getOpenOverseer().getZkStateReader());
     } else {
-      cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
+      cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
     }
 
     waitForState(
@@ -326,7 +327,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     JettySolrRunner leaderJetty = getJettyForReplica(leader);
     Replica replica1 =
         shard1.getReplicas(replica -> !replica.getName().equals(leader.getName())).get(0);
-    assertNotEquals(replica1.getName(), leader.getName());
+    assertFalse(replica1.getName().equals(leader.getName()));
 
     JettySolrRunner replica1Jetty = getJettyForReplica(replica1);
 
@@ -372,7 +373,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                         cluster.getOpenOverseer().getSolrCloudManager(),
                         cluster.getOpenOverseer().getZkStateReader());
               } else {
-                cluster.getOpenOverseer().getStateUpdateQueue().offer(m);
+                cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
               }
 
               boolean replicaDeleted = false;
@@ -394,7 +395,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                   }
                   Thread.sleep(500);
                 } catch (NullPointerException | SolrException e) {
-                  log.error("error deleting replica", e);
+                  e.printStackTrace();
                   Thread.sleep(500);
                 }
               }
@@ -402,7 +403,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                 fail("Timeout for waiting replica get deleted");
               }
             } catch (Exception e) {
-              log.error("Failed to delete replica", e);
+              e.printStackTrace();
               fail("Failed to delete replica");
             } finally {
               // avoiding deadlock

@@ -27,15 +27,18 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE =
       "Update handler should create and process _root_ field "
           + "unless there is no such a field in schema";
+
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   private static boolean expectRoot() {
     return useRootSchema;
@@ -67,15 +70,15 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     query.set(CommonParams.FL, "id,name,_root_");
 
     SolrDocumentList results = client.query(query).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(1L));
+    assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
 
     // Check retrieved field values
-    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
-    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
 
     String expectedRootValue = expectRoot() ? docId : null;
-    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
 
     // Update the doc
     docToUpdate.setField("name", "updated doc");
@@ -87,9 +90,9 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     foundDoc = results.get(0);
 
     // Check updated field values
-    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
-    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
-    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
   }
 
   @Test
@@ -107,21 +110,13 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     child.addField("name", "child doc");
     docToUpdate.addChildDocument(child);
     if (!useRootSchema) {
-      String message =
+      thrown.expect(SolrException.class);
+      thrown.expectMessage(
           "Unable to index docs with children:"
               + " the schema must include definitions for both a uniqueKey field"
-              + " and the '_root_' field, using the exact same fieldType";
-      SolrException thrown =
-          assertThrows(
-              SolrException.class,
-              () -> {
-                client.add(docToUpdate);
-              });
-      assertEquals(message, thrown.getMessage());
-
-    } else {
-      client.add(docToUpdate);
+              + " and the '_root_' field, using the exact same fieldType");
     }
+    client.add(docToUpdate);
     client.commit();
   }
 }

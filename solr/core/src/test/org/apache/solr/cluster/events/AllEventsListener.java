@@ -51,6 +51,5 @@ public class AllEventsListener implements ClusterEventListener {
     }
   }
 
-  @Override
   public void close() {}
 }

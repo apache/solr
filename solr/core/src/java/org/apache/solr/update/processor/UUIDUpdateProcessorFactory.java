@@ -61,7 +61,6 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   protected String fieldName = null;
 
-  @Override
   public void init(NamedList<?> args) {
 
     Object obj = args.remove(FIELD_PARAM);
@@ -70,7 +69,6 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     }
   }
 
-  @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     String fieldName = this.fieldName;

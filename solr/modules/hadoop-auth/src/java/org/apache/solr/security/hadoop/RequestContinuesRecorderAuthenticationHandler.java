@@ -25,9 +25,10 @@ import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 
-/**
- * {@link AuthenticationHandler} that delegates to another {@link AuthenticationHandler} and records
- * the response of managementOperation (which indicates whether the request should continue or not).
+/*
+ * {@link AuthenticationHandler} that delegates to another {@link AuthenticationHandler}
+ * and records the response of managementOperation (which indicates whether the request
+ * should continue or not).
  */
 public class RequestContinuesRecorderAuthenticationHandler implements AuthenticationHandler {
   // filled in by Plugin/Filter
@@ -40,22 +41,18 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
     this.authHandler = authHandler;
   }
 
-  @Override
   public String getType() {
     return authHandler.getType();
   }
 
-  @Override
   public void init(Properties config) throws ServletException {
     // authHandler has already been init'ed, nothing to do here
   }
 
-  @Override
   public void destroy() {
     authHandler.destroy();
   }
 
-  @Override
   public boolean managementOperation(
       AuthenticationToken token, HttpServletRequest request, HttpServletResponse response)
       throws IOException, AuthenticationException {
@@ -66,7 +63,6 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
     return result;
   }
 
-  @Override
   public AuthenticationToken authenticate(HttpServletRequest request, HttpServletResponse response)
       throws IOException, AuthenticationException {
     return authHandler.authenticate(request, response);

@@ -267,7 +267,6 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       return setData(Utils.fromJSON(securityJsonInputStream));
     }
 
-    @Override
     public String toString() {
       return "SecurityConfig: version=" + version + ", data=" + Utils.toJSONString(data);
     }

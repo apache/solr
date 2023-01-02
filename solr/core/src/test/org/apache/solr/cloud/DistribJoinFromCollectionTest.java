@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -150,7 +149,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       QueryResponse rsp = new QueryResponse(client.request(qr), client);
       SolrDocumentList hits = rsp.getResults();
-      assertEquals("Expected 1 doc, got " + hits, 1, hits.getNumFound());
+      assertTrue("Expected 1 doc, got " + hits, hits.getNumFound() == 1);
       SolrDocument doc = hits.get(0);
       assertEquals(toDocId, doc.getFirstValue("id"));
       assertEquals("b", doc.getFirstValue("get_s"));
@@ -176,7 +175,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
-      assertEquals("Expected 1 doc", 1, hits.getNumFound());
+      assertTrue("Expected 1 doc", hits.getNumFound() == 1);
       SolrDocument doc = hits.get(0);
       assertEquals(toDocId, doc.getFirstValue("id"));
       assertEquals("b", doc.getFirstValue("get_s"));
@@ -198,13 +197,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
-      assertEquals("Expected no hits", 0, hits.getNumFound());
+      assertTrue("Expected no hits", hits.getNumFound() == 0);
     }
   }
 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
     if (isScoresTest) {
-      MatcherAssert.assertThat(
+      assertThat(
           "score join doesn't return 1.0", doc.getFirstValue("score").toString(), not("1.0"));
     } else {
       assertEquals("Solr join has constant score", "1.0", doc.getFirstValue("score").toString());

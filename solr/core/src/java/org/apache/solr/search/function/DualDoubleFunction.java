@@ -18,7 +18,6 @@ package org.apache.solr.search.function;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -97,8 +96,8 @@ public abstract class DualDoubleFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof DualDoubleFunction)) return false;
+    if (this.getClass() != o.getClass()) return false;
     DualDoubleFunction other = (DualDoubleFunction) o;
-    return Objects.equals(this.a, other.a) && Objects.equals(this.b, other.b);
+    return this.a.equals(other.a) && this.b.equals(other.b);
   }
 }

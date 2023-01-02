@@ -98,7 +98,6 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       this.commits = commits;
     }
 
-    @Override
     public final String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("num=").append(commits.size());
@@ -129,7 +128,6 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       super(commits);
     }
 
-    @Override
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       super.appendDetails(sb, c);
       try {

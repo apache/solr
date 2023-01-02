@@ -190,7 +190,6 @@ public class HttpShardHandler extends ShardHandler {
                 responses.add(srsp);
               }
 
-              @Override
               public void onFailure(Throwable throwable) {
                 ssr.elapsedTime =
                     TimeUnit.MILLISECONDS.convert(
@@ -409,7 +408,6 @@ public class HttpShardHandler extends ShardHandler {
     return false;
   }
 
-  @Override
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
   }
