@@ -16,12 +16,20 @@
  */
 package org.apache.solr.opentelemetry;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import io.opentracing.util.GlobalTracer;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 10)
 public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   private OtelTracerConfigurator instance;
 
@@ -38,6 +46,10 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
+
+    // to be safe because this test tests tracing.
+    resetGlobalTracer();
+    ExecutorUtil.resetThreadLocalProviders();
   }
 
   @Override
@@ -47,6 +59,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.clearProperty("otelnothere");
     System.clearProperty("otel.k1");
     System.clearProperty("otel.k3");
+    System.clearProperty("otel.bsp.export.timeout");
   }
 
   @Test
@@ -72,5 +85,25 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     instance.setDefaultIfNotConfigured("OTEL_YEY", "default");
     assertEquals("default", instance.getCurrentOtelConfig().get("OTEL_YEY"));
     assertEquals("prop-k1", instance.getCurrentOtelConfig().get("OTEL_K1"));
+  }
+
+  @Test
+  public void testInjected() throws Exception {
+    // Make sure the batch exporter times out before our thread lingering time of 10s
+    instance.setDefaultIfNotConfigured("OTEL_BSP_SCHEDULE_DELAY", "1000");
+    instance.setDefaultIfNotConfigured("OTEL_BSP_EXPORT_TIMEOUT", "2000");
+    MiniSolrCloudCluster cluster =
+        new MiniSolrCloudCluster.Builder(2, createTempDir())
+            .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
+            .withSolrXml(getFile("solr/solr.xml").toPath())
+            .build();
+    try {
+      TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
+      timeOut.waitFor(
+          "Waiting for GlobalTracer is registered",
+          () -> GlobalTracer.get().toString().contains("TracerShim"));
+    } finally {
+      cluster.shutdown();
+    }
   }
 }

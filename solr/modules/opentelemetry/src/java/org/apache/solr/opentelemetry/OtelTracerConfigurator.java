@@ -17,6 +17,7 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.opentracingshim.OpenTracingShim;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentracing.Tracer;
 import java.lang.invoke.MethodHandles;
@@ -31,7 +32,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * OpenTracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP
- * format. This impl re-uses the existing OpenTracing instrumentation through a shim.
+ * format. This impl re-uses the existing OpenTracing instrumentation through a shim, and takes care
+ * of properly closing the backing Tracer when Solr shuts down.
  */
 public class OtelTracerConfigurator extends TracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,12 +67,15 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
 
-    return OpenTracingShim.createTracerShim(
-        AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk());
+    OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
+    Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
+    ClosableTracerShim closableTracerShim =
+        new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
+    return closableTracerShim;
   }
 
   /**
-   * Finds all configuration based on environment with prefix OTEL_ or sysprops with prefix otel.
+   * Finds all configuration based on environment with prefix <code>OTEL_</code> or System Properties with prefix <code>otel.</code>.
    *
    * @return a unified map of config, using the ENV_VAR as keys, even if the config was pulled from
    *     a system property.

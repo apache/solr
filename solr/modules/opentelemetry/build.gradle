@@ -35,6 +35,7 @@ dependencies {
   implementation 'io.opentracing:opentracing-api'
   implementation 'org.slf4j:slf4j-api'
 
+  implementation 'io.opentelemetry:opentelemetry-sdk'
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   permitUnusedDeclared 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
@@ -60,5 +61,8 @@ dependencies {
   // Both this and jaegertracer-configurator pull in com.squareup.okhttp3:okhttp HTTP client and kotlin stdlib.
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj')
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'io.opentracing:opentracing-util'
 }
