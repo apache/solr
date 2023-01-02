@@ -19,12 +19,9 @@ package org.apache.solr.opentelemetry;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import io.opentracing.util.GlobalTracer;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,10 +95,9 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
             .withSolrXml(getFile("solr/solr.xml").toPath())
             .build();
     try {
-      TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-      timeOut.waitFor(
-          "Waiting for GlobalTracer is registered",
-          () -> GlobalTracer.get().toString().contains("TracerShim"));
+      assertTrue(
+          "Tracer shim not registered with GlobalTracer",
+          GlobalTracer.get().toString().contains("ClosableTracerShim"));
     } finally {
       cluster.shutdown();
     }
