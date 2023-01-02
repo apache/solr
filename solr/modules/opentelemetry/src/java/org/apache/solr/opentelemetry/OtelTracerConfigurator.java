@@ -69,9 +69,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
     OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
     Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
-    ClosableTracerShim closableTracerShim =
-        new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
-    return closableTracerShim;
+    return new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
   }
 
   /**
