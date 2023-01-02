@@ -966,7 +966,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .withParallelUpdates(true)
             .sendDirectUpdatesToAnyShardReplica()
             // don't let collection cache entries get expired, even on a slow machine...
-            .setCollectionCacheTtl(Integer.MAX_VALUE)
+            .withCollectionCacheTtl(Integer.MAX_VALUE)
             .build()) {
 
       stale_client.setDefaultCollection(COL);
