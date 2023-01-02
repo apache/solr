@@ -73,7 +73,8 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   }
 
   /**
-   * Finds all configuration based on environment with prefix <code>OTEL_</code> or System Properties with prefix <code>otel.</code>.
+   * Finds all configuration based on environment with prefix <code>OTEL_</code> or System
+   * Properties with prefix <code>otel.</code>.
    *
    * @return a unified map of config, using the ENV_VAR as keys, even if the config was pulled from
    *     a system property.
