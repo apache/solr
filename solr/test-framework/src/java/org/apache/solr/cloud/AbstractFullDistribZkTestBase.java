@@ -147,6 +147,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected volatile ChaosMonkey chaosMonkey;
 
   protected Map<String, CloudJettyRunner> shardToLeaderJetty = new ConcurrentHashMap<>();
+  protected volatile Map<String, CloudSolrClient> solrClientForCollectionCache =
+      new ConcurrentHashMap<>();
   private static volatile boolean cloudInit;
   protected volatile boolean useJettyDataDir = true;
 
@@ -1988,6 +1990,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                       IOUtils.closeQuietly(c);
                     }));
 
+    customThreadPool.submit(
+        () ->
+            solrClientForCollectionCache.values().parallelStream()
+                .forEach(
+                    c -> {
+                      IOUtils.closeQuietly(c);
+                    }));
+
     customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
@@ -1995,6 +2005,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
     coreClients.clear();
+    solrClientForCollectionCache.clear();
 
     super.destroyServers();
   }
@@ -2279,6 +2290,26 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
     return commonCloudSolrClient;
+  }
+
+  protected CloudSolrClient getSolrClientForCollection(String collectionName) {
+    synchronized (this) {
+      if (!solrClientForCollectionCache.containsKey(collectionName)) {
+        CloudSolrClient solrClient =
+            getCloudSolrClient(
+                zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
+        solrClient.connect();
+        solrClientForCollectionCache.put(collectionName, solrClient);
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+              collectionName,
+              solrClient.isUpdatesToLeaders(),
+              solrClient.isParallelUpdates());
+        }
+      }
+    }
+    return solrClientForCollectionCache.get(collectionName);
   }
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
