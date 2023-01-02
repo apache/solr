@@ -45,12 +45,15 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
+import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -63,8 +66,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -534,15 +535,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(getServerUrl(port));
-  }
-
-  protected String getServerUrl(int port) {
-    String baseUrl = buildUrl(port);
-    if (baseUrl.endsWith("/")) {
-      return baseUrl + DEFAULT_TEST_CORENAME;
-    } else {
-      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
+    try {
+      // setup the client...
+      String baseUrl = buildUrl(port);
+      if (baseUrl.endsWith("/")) {
+        return getHttpSolrClient(baseUrl + DEFAULT_TEST_CORENAME);
+      } else {
+        return getHttpSolrClient(baseUrl + "/" + DEFAULT_TEST_CORENAME);
+      }
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
   }
 
@@ -1035,9 +1037,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     if ((flags & FUZZY) != 0) {
       if ((a instanceof Double && b instanceof Double)) {
-        double aaa = (Double) a;
-        double bbb = (Double) b;
-        if (aaa == bbb || (((Double) a).isNaN() && ((Double) b).isNaN())) {
+        double aaa = ((Double) a).doubleValue();
+        double bbb = ((Double) b).doubleValue();
+        if (aaa == bbb || ((Double) a).isNaN() && ((Double) b).isNaN()) {
           return null;
         }
         if ((aaa == 0.0) || (bbb == 0.0)) {
@@ -1074,7 +1076,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       log.error("Mismatched responses:\n{}\n{}", a, b);
-      fail(cmp);
+      Assert.fail(cmp);
     }
   }
 
@@ -1130,14 +1132,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       public void evaluate() throws Throwable {
         distribSetUp();
         if (!distribSetUpCalled) {
-          fail("One of the overrides of distribSetUp does not propagate the call.");
+          Assert.fail("One of the overrides of distribSetUp does not propagate the call.");
         }
         try {
           callStatement();
         } finally {
           distribTearDown();
           if (!distribTearDownCalled) {
-            fail("One of the overrides of distribTearDown does not propagate the call.");
+            Assert.fail("One of the overrides of distribTearDown does not propagate the call.");
           }
         }
       }

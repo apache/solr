@@ -164,7 +164,7 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
-  static class TermsParams {
+  class TermsParams {
     public String method;
     public boolean cache;
 

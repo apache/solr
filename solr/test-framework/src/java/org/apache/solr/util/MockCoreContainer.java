@@ -33,7 +33,6 @@ public class MockCoreContainer extends CoreContainer {
     super(new Object());
   }
 
-  @Override
   public Path getCoreRootDirectory() {
     return Paths.get("coreroot");
   }

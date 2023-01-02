@@ -59,7 +59,7 @@ dependencies {
   // used by the hadoop-specific test framework classes
   testImplementation 'commons-io:commons-io'
   testImplementation 'org.apache.commons:commons-compress'
-  testImplementation 'org.apache.commons:commons-collections4'
+  implementation 'org.apache.commons:commons-collections4'
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'io.dropwizard.metrics:metrics-core'
 
@@ -86,11 +86,4 @@ task copySolrCoreTestResources(type: Copy) {
 
 tasks.processTestResources.configure {
   dependsOn copySolrCoreTestResources
-}
-
-// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
-// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
-tasks.withType(Test).configureEach {
-  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
-           "--add-opens=java.base/java.util=ALL-UNNAMED"])
 }

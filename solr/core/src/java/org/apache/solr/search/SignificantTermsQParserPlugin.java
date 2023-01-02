@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -291,9 +290,10 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof TermWithScore)) return false;
+      if (obj == null) return false;
+      if (obj.getClass() != getClass()) return false;
       TermWithScore other = (TermWithScore) obj;
-      return Objects.equals(this.term, other.term);
+      return other.term.equals(this.term);
     }
 
     @Override

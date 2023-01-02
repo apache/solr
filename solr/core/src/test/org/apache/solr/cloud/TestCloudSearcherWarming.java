@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -33,7 +34,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.LogLevel;
@@ -61,7 +61,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     useFactory("solr.StandardDirectoryFactory");
   }
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -300,9 +299,12 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
               if (jettySolrRunner.getNodeName().equals(replica.getNodeName())) {
                 SolrDispatchFilter solrDispatchFilter = jettySolrRunner.getSolrDispatchFilter();
                 try (SolrCore core = solrDispatchFilter.getCores().getCore(coreName)) {
-                  assertFalse(
-                      "useColdSearcher is enabled! It should not be enabled for this test!",
-                      core.getSolrConfig().useColdSearcher);
+                  if (core.getSolrConfig().useColdSearcher) {
+                    log.error(
+                        "useColdSearcher is enabled! It should not be enabled for this test!");
+                    assert false;
+                    return false;
+                  }
                   if (log.isInfoEnabled()) {
                     log.info("Found SolrCore: {}, id: {}", core.getName(), core);
                   }

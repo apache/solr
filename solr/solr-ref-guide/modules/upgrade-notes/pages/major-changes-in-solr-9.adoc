@@ -64,12 +64,6 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
-== Solr 9.2
-=== Jetty Configuration
-* Solr no longer duplicates certain Jetty "server" library dependencies between `server/lib` and `WEB-INF/lib` (jetty-util, jetty-io, etc.).
-This is an improvement to the binary release artifact, but Jetty does not allow web-apps (Solr) to share these libraries by default.
-The `server/contexts/solr-jetty-context.xml` now explicitly removes these restrictions, allowing Solr to share these "server" jars which now live in `server/lib/ext`.
-
 == Solr 9.1
 === Querying and Indexing
 * Added Lucene91HnswVectorsFormat codec for DenseVectorField. In order to use the new codec, reindex is necessary.

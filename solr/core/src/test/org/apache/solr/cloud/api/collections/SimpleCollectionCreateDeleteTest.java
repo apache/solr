@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
@@ -28,7 +29,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
@@ -100,7 +100,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
           CollectionAdminRequest.createCollection(collectionName, 1, 1)
               .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
-      assertNotNull("Collection creation should not have failed", request.get("success"));
+      assertTrue("Collection creation should not have failed", request.get("success") != null);
     }
   }
 
@@ -175,9 +175,9 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       NamedList<Object> requestWithSharedConfig =
           createWithSharedConfig.process(cloudClient).getResponse();
-      assertNotNull(
+      assertTrue(
           "The collection with shared config set should have been created",
-          requestWithSharedConfig.get("success"));
+          requestWithSharedConfig.get("success") != null);
       assertTrue(
           "The new collection should exist after a successful creation",
           getZkClient()

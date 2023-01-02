@@ -256,7 +256,6 @@ public abstract class TimeSource {
    */
   public abstract long convertDelay(TimeUnit fromUnit, long value, TimeUnit toUnit);
 
-  @Override
   public String toString() {
     return getClass().getSimpleName();
   }

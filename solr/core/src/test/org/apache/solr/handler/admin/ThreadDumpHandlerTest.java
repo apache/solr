@@ -117,7 +117,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
             // (which *MAY* also be waiting on doneWithTestLatch, but may not have reached that line
             // yet)
             NamedList<?> monitorOwnerThreadInfo = getThreadInfo(rsp, "test-thread-monitor-owner");
-            assertNotNull(monitorOwnerThreadInfo);
+            assert monitorOwnerThreadInfo != null;
             assertTrue(
                 "Thread monitor ownerT: ",
                 monitorOwnerThreadInfo
@@ -145,7 +145,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 // same monitor owner 'ownerT'
                 final NamedList<?> monitorOwnerThreadInfo =
                     getThreadInfo(rsp, "test-thread-monitor-owner");
-                assertNotNull(monitorOwnerThreadInfo);
+                assert monitorOwnerThreadInfo != null;
                 assertTrue(
                     "Same thread ownerT: ",
                     monitorOwnerThreadInfo
@@ -155,7 +155,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 // blocked thread 'blockedT', waiting on the monitor
                 final NamedList<?> blockedThreadInfo =
                     getThreadInfo(rsp, "test-thread-monitor-blocked");
-                assertNotNull(blockedThreadInfo);
+                assert blockedThreadInfo != null;
                 assertTrue(
                     "blocked thread blockedT waiting on the monitor: ",
                     blockedThreadInfo._getStr("state", "").contains("BLOCKED")
@@ -172,7 +172,6 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
       assertFalse("ownerT is still alive", ownerT.isAlive());
       blockedT.join(1000);
       assertFalse("blockedT is still alive", blockedT.isAlive());
-      assertTrue(failures.isEmpty());
     }
   }
 
@@ -246,7 +245,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
             // yet)
             final NamedList<?> lockOwnerThreadInfo =
                 getThreadInfo(rsp, "test-thread-sync-lock-owner");
-            assertNotNull(lockOwnerThreadInfo);
+            assert lockOwnerThreadInfo != null;
             assertTrue(
                 "Thread lock:",
                 lockOwnerThreadInfo._getStr("synchronizers-locked", "").contains("ReentrantLock"));
@@ -272,7 +271,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 // lock owner 'ownerT'
                 final NamedList<?> lockOwnerThreadInfo =
                     getThreadInfo(rsp, "test-thread-sync-lock-owner");
-                assertNotNull(lockOwnerThreadInfo);
+                assert lockOwnerThreadInfo != null;
                 assertTrue(
                     "Thread locked: ",
                     lockOwnerThreadInfo
@@ -282,7 +281,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
                 // blocked thread 'blockedT', waiting on the lock
                 final NamedList<?> blockedThreadInfo =
                     getThreadInfo(rsp, "test-thread-sync-lock-blocked");
-                assertNotNull(blockedThreadInfo);
+                assert blockedThreadInfo != null;
                 assertTrue(
                     "Waiting on the lock: ",
                     blockedThreadInfo._getStr("state", "").contains("WAITING")
@@ -299,7 +298,6 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
       assertFalse("ownerT is still alive", ownerT.isAlive());
       blockedT.join(1000);
       assertFalse("blockedT is still alive", blockedT.isAlive());
-      assertTrue(failures.isEmpty());
     }
   }
 

@@ -54,7 +54,6 @@ public class SolrJSONWriter implements JsonTextWriter {
   }
 
   /** done with all writing */
-  @Override
   public void close() throws IOException {
     if (writer != null) writer.flushBuffer();
   }
@@ -78,7 +77,6 @@ public class SolrJSONWriter implements JsonTextWriter {
     this.level = level;
   }
 
-  @Override
   public int level() {
     return level;
   }

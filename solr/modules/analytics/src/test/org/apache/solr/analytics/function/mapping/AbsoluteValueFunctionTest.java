@@ -149,7 +149,7 @@ public class AbsoluteValueFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamInts(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -186,7 +186,7 @@ public class AbsoluteValueFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamLongs(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -223,7 +223,7 @@ public class AbsoluteValueFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamFloats(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -260,7 +260,7 @@ public class AbsoluteValueFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value

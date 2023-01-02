@@ -21,6 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -159,7 +160,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
           });
 
       Iterable<FacetBucket> facetResultsIter = applyOptions(facetResults);
-      final List<Map<String, Object>> results = new ArrayList<>();
+      final LinkedList<Map<String, Object>> results = new LinkedList<>();
       // Export each expression in the bucket.
       for (FacetBucket bucket : facetResultsIter) {
         Map<String, Object> bucketMap = new HashMap<>();
@@ -241,7 +242,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
           });
 
       Iterable<FacetBucket> facetResultsIter = applyOptions(facetResults);
-      final List<Map<String, Object>> results = new ArrayList<>();
+      final LinkedList<Map<String, Object>> results = new LinkedList<>();
       // Export each expression in the bucket.
       for (FacetBucket bucket : facetResultsIter) {
         Map<String, Object> bucketMap = new HashMap<>();

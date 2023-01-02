@@ -27,7 +27,11 @@ import org.apache.solr.SolrTestCaseJ4;
 public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
   public void testLargeString() throws IOException {
-    ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence("Hello World!".repeat(100));
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 100; i++) {
+      sb.append("Hello World!");
+    }
+    ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(sb.toString());
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     byte[] buf = new byte[256];
     try (FastOutputStream fos = new FastOutputStream(baos, buf, 0)) {
@@ -36,12 +40,12 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     }
     byte[] result = baos.toByteArray();
     ByteArrayUtf8CharSequence utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
-    assertEquals(utf81, utf8);
+    assertTrue(utf81.equals(utf8));
     baos.reset();
     utf8.write(baos);
     result = baos.toByteArray();
     utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
-    assertEquals(utf81, utf8);
+    assertTrue(utf81.equals(utf8));
 
     Map<String, Object> m0 = new HashMap<>();
     m0.put("str", utf8);
@@ -54,7 +58,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
       Map<?, ?> m1 =
           (Map<?, ?>) jbc.setReadStringAsCharSeq(true).unmarshal(new ByteArrayInputStream(result));
       utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
-      assertEquals(utf81, utf8);
+      assertTrue(utf81.equals(utf8));
     }
   }
 
@@ -62,12 +66,18 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     NamedList<String> nl = new NamedList<>();
     String str = " The value!";
     for (int i = 0; i < 5; i++) {
-      nl.add("key" + i, i + str.repeat(i));
+      StringBuffer sb = new StringBuffer();
+      sb.append(i);
+      for (int j = 0; j < i; j++) {
+        sb.append(str);
+      }
+      nl.add("key" + i, sb.toString());
     }
-    StringBuilder sb = new StringBuilder();
-    do {
+    StringBuffer sb = new StringBuffer();
+    for (; ; ) {
       sb.append(str);
-    } while (sb.length() <= 1024 * 4);
+      if (sb.length() > 1024 * 4) break;
+    }
     nl.add("key_long", sb.toString());
     nl.add("key5", "5" + str);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -85,7 +95,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     }
     byte[] buf = ((ByteArrayUtf8CharSequence) nl1.getVal(0)).getBuf();
     ByteArrayUtf8CharSequence valLong = (ByteArrayUtf8CharSequence) nl1.get("key_long");
-    assertNotSame(valLong.getBuf(), buf);
+    assertFalse(valLong.getBuf() == buf);
 
     for (int i = 1; i < 6; i++) {
       ByteArrayUtf8CharSequence val = (ByteArrayUtf8CharSequence) nl1.get("key" + i);

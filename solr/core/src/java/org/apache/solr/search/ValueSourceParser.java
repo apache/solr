@@ -1586,7 +1586,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof LongConstValueSource)) return false;
+      if (LongConstValueSource.class != o.getClass()) return false;
       LongConstValueSource other = (LongConstValueSource) o;
       return this.constant == other.constant;
     }
@@ -1739,7 +1739,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (!(o instanceof Function)) return false;
+        if (this.getClass() != o.getClass()) return false;
         Function other = (Function) o;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
@@ -1779,7 +1779,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof BoolConstValueSource)) return false;
+      if (BoolConstValueSource.class != o.getClass()) return false;
       BoolConstValueSource other = (BoolConstValueSource) o;
       return this.constant == other.constant;
     }

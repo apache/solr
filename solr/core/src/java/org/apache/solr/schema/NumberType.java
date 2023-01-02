@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 
-@SuppressWarnings("ImmutableEnumChecker")
 public enum NumberType {
   INTEGER(SortField.Type.INT, Integer.MIN_VALUE, Integer.MAX_VALUE),
   LONG(SortField.Type.LONG, Long.MIN_VALUE, Long.MAX_VALUE),
@@ -43,7 +42,7 @@ public enum NumberType {
    */
   public final Object sortMissingHigh;
 
-  NumberType(SortField.Type sortType, Object sortMissingLow, Object sortMissingHigh) {
+  private NumberType(SortField.Type sortType, Object sortMissingLow, Object sortMissingHigh) {
     this.sortType = sortType;
     this.sortMissingLow = sortMissingLow;
     this.sortMissingHigh = sortMissingHigh;

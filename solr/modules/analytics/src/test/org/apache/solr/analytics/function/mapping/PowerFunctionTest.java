@@ -73,7 +73,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     pow.setValue(21.56F).setExists(true);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, no value
@@ -81,7 +81,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     pow.setExists(false);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, one value
@@ -111,7 +111,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     pow.setValues();
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, no value
@@ -119,7 +119,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     pow.setValues(4L, 10023L);
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // Multiple values, one value

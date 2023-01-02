@@ -114,10 +114,11 @@ public final class LegacyFieldType extends FieldType {
     if (!super.equals(obj)) {
       return false;
     }
-    if (!(obj instanceof LegacyFieldType)) return false;
+    if (getClass() != obj.getClass()) return false;
     LegacyFieldType other = (LegacyFieldType) obj;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
-    return numericType == other.numericType;
+    if (numericType != other.numericType) return false;
+    return true;
   }
 
   /** Prints a Field for human consumption. */

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
@@ -60,7 +61,6 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.retries.to.followers");
   }
 
-  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
@@ -125,7 +125,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       // SolrQuery("*:*")).getResults().getNumFound();
 
       // Wait until new leader is elected
-      while (deadJetty.equals(leaderJetty)) {
+      while (deadJetty == leaderJetty) {
         updateMappingsFromZk(this.jettys, this.clients);
         leaderJetty = shardToLeaderJetty.get("shard1");
       }
@@ -190,13 +190,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Exception e) {
-              log.error("error killing overseer", e);
+              // e.printStackTrace();
             }
           }
           try {
             Thread.sleep(100);
           } catch (Exception e) {
-            log.error("error during sleep", e);
+            // e.printStackTrace();
           }
         }
       } catch (Exception t) {
@@ -246,7 +246,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    * @return SolrZkClient
    */
   private SolrZkClient electNewOverseer(String address)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);

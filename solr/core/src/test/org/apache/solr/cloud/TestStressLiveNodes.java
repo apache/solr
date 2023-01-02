@@ -244,7 +244,6 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       this.client = newSolrZkClient();
     }
     /** returns the number of nodes actually added w/o error */
-    @Override
     public Integer call() {
       running = true;
       // NOTE: test includes 'running'

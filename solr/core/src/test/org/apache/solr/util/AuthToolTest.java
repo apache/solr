@@ -42,14 +42,12 @@ public class AuthToolTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     dir = createTempDir("AuthToolTest").toAbsolutePath();
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

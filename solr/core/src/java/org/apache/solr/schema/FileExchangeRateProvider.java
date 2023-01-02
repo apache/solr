@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -132,11 +131,11 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FileExchangeRateProvider)) return false;
+    if (o == null || getClass() != o.getClass()) return false;
 
     FileExchangeRateProvider that = (FileExchangeRateProvider) o;
 
-    return Objects.equals(rates, that.rates);
+    return !(rates != null ? !rates.equals(that.rates) : that.rates != null);
   }
 
   @Override

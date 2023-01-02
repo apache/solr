@@ -40,6 +40,7 @@ import org.apache.solr.schema.FieldType;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -412,7 +413,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector3", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Incorrect destination field type should raise exception",
             SolrException.class,
             () -> {
@@ -433,7 +434,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector4", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        assertThrows(
+        Assert.assertThrows(
             "Incorrect destination dimension should raise exception",
             SolrException.class,
             () -> {

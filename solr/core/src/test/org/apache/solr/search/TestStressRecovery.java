@@ -346,7 +346,7 @@ public class TestStressRecovery extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       verbose("ERROR, id=", id, "found=", response, "model", info);
-                      fail();
+                      assertTrue(false);
                     }
                   }
                 }
@@ -373,7 +373,7 @@ public class TestStressRecovery extends TestRTGBase {
 
     int bufferedAddsApplied = 0;
     do {
-      assertSame(uLog.getState(), UpdateLog.State.ACTIVE);
+      assertTrue(uLog.getState() == UpdateLog.State.ACTIVE);
 
       // before we start buffering updates, we want to point
       // visibleModel away from the live model.
@@ -384,7 +384,7 @@ public class TestStressRecovery extends TestRTGBase {
         uLog.bufferUpdates();
       }
 
-      assertSame(uLog.getState(), UpdateLog.State.BUFFERING);
+      assertTrue(uLog.getState() == UpdateLog.State.BUFFERING);
 
       // sometimes wait for a second to allow time for writers to write something
       if (random().nextBoolean()) Thread.sleep(random().nextInt(10) + 1);

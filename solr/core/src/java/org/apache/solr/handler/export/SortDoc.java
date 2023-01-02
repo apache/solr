@@ -38,7 +38,7 @@ class SortDoc implements Comparable<SortDoc> {
   @Override
   public boolean equals(Object obj) {
     // subclasses are not equal
-    if (!(obj instanceof SortDoc)) {
+    if (!obj.getClass().equals(getClass())) {
       return false;
     }
     return compareTo((SortDoc) obj) == 0;
@@ -135,7 +135,6 @@ class SortDoc implements Comparable<SortDoc> {
     return (sd.docId + sd.docBase) - (docId + docBase);
   }
 
-  @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
     builder.append(ord).append(':').append(docBase).append(':').append(docId).append("; ");

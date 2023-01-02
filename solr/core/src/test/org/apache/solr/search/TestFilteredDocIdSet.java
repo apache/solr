@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import junit.framework.Assert;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -125,7 +126,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(DocSet.empty());
@@ -135,7 +136,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
@@ -151,7 +152,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
 
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
 
     // Now search w/ a Query which returns a null Scorer
     Query f =
@@ -201,7 +202,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
             .add(new MatchAllDocsQuery(), Occur.MUST)
             .add(f, Occur.FILTER)
             .build();
-    assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }

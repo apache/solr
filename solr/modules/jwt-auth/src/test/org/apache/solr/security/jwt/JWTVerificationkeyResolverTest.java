@@ -60,7 +60,6 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private List<JsonWebKey> keysToReturnFromSecondJwk;
   private Iterator<List<JsonWebKey>> refreshSequenceForSecondJwk;
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

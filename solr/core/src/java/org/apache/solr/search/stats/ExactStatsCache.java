@@ -383,7 +383,6 @@ public class ExactStatsCache extends StatsCache {
       this.colStatsCache = colStatsCache;
     }
 
-    @Override
     public TermStatistics termStatistics(
         SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
         throws IOException {

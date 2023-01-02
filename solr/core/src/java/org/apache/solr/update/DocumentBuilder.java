@@ -17,8 +17,8 @@
 package org.apache.solr.update;
 
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -413,7 +413,7 @@ public class DocumentBuilder {
     if (!largestIsLast
         && largestField != null
         && largestFieldLen > MIN_LENGTH_TO_MOVE_LAST) { // only bother if the value isn't tiny
-      List<IndexableField> addToEnd = new ArrayList<>();
+      LinkedList<IndexableField> addToEnd = new LinkedList<>();
       Iterator<IndexableField> iterator = doc.iterator();
       while (iterator.hasNext()) {
         IndexableField field = iterator.next();

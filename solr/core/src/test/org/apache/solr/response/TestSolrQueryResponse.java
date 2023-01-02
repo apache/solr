@@ -79,7 +79,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testResponse() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertNull("response initial value", response.getResponse());
+    assertEquals("response initial value", null, response.getResponse());
     final Object newValue =
         (random().nextBoolean() ? (random().nextBoolean() ? "answer" : Integer.valueOf(42)) : null);
     response.addResponse(newValue);
@@ -278,20 +278,20 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testResponseHeader() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertNull("responseHeader initially present", response.getResponseHeader());
+    assertEquals("responseHeader initially present", null, response.getResponseHeader());
     final NamedList<Object> newValue = new SimpleOrderedMap<>();
     newValue.add("key1", "value1");
     response.add("key2", "value2");
     response.addResponseHeader(newValue);
     assertEquals("responseHeader new value", newValue, response.getResponseHeader());
     response.removeResponseHeader();
-    assertNull("responseHeader removed value", response.getResponseHeader());
+    assertEquals("responseHeader removed value", null, response.getResponseHeader());
   }
 
   @Test
   public void testHttpCaching() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertTrue("httpCaching initial value", response.isHttpCaching());
+    assertEquals("httpCaching initial value", true, response.isHttpCaching());
     final boolean newValue = random().nextBoolean();
     response.setHttpCaching(newValue);
     assertEquals("httpCaching new value", newValue, response.isHttpCaching());

@@ -63,11 +63,13 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     configuration =
         Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
-    solrClient =
-        new Http2SolrClient.Builder(restTestHarness.getAdminURL())
-            .withResponseParser(new NoOpResponseParser("json"))
-            .build();
+    solrClient = new Http2SolrClient.Builder(restTestHarness.getAdminURL()).build();
     solrScraper = new SolrStandaloneScraper(solrClient, executor, "test");
+
+    NoOpResponseParser responseParser = new NoOpResponseParser();
+    responseParser.setWriterType("json");
+
+    solrClient.setParser(responseParser);
 
     Helpers.indexAllDocs(solrClient);
   }

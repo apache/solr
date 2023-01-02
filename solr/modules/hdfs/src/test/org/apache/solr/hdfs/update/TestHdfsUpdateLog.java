@@ -102,7 +102,6 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
 
     Thread thread =
         new Thread() {
-          @Override
           public void run() {
             int cnt = 0;
             while (true) {
@@ -121,7 +120,6 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
 
     Thread thread2 =
         new Thread() {
-          @Override
           public void run() {
             int cnt = 0;
             while (true) {

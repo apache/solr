@@ -88,14 +88,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
   private TestFixture fixture = null;
 
-  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     fixture = setupTestFixture(getTestName());
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     if (fixture != null) {

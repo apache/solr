@@ -72,14 +72,13 @@ public class EmbeddedSolrServer extends SolrClient {
   private final RequestWriterSupplier supplier;
   private boolean containerIsLocal = false;
 
-  @SuppressWarnings("ImmutableEnumChecker")
   public enum RequestWriterSupplier {
     JavaBin(() -> new BinaryRequestWriter()),
     XML(() -> new RequestWriter());
 
-    private final Supplier<RequestWriter> supplier;
+    private Supplier<RequestWriter> supplier;
 
-    RequestWriterSupplier(final Supplier<RequestWriter> supplier) {
+    private RequestWriterSupplier(final Supplier<RequestWriter> supplier) {
       this.supplier = supplier;
     }
 

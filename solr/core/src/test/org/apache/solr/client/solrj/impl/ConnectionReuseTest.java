@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -45,12 +44,9 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressSSL
 public class ConnectionReuseTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private AtomicInteger id = new AtomicInteger();
   private HttpClientContext context = HttpClientContext.create();
@@ -128,7 +124,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           try {
             client.add(c.solrDoc);
           } catch (Exception e) {
-            log.error("error adding doc", e);
+            e.printStackTrace();
           }
           if (!done
               && i > 0

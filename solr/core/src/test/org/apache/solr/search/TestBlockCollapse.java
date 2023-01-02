@@ -31,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -75,19 +74,19 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 " nullPolicy=collapse",
                 // when policy is 'collapse' hint should be ignored...
                 " nullPolicy=collapse hint=block")) {
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector("{!collapse field=foo_s1" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.OrdScoreCollector.class));
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector("{!collapse field=foo_i" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.IntScoreCollector.class));
           for (String selector : fieldValueSelectors) {
-            MatcherAssert.assertThat(
+            assertThat(
                 parseAndBuildCollector("{!collapse field=foo_s1 " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
           }
           for (String selector : fieldValueSelectors) {
-            MatcherAssert.assertThat(
+            assertThat(
                 parseAndBuildCollector("{!collapse field=foo_i " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
           }
@@ -95,15 +94,15 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           // anything with cscore() is (currently) off limits regardless of null policy or hint...
           for (String selector : Arrays.asList(" min=sum(42,cscore())", " max=cscore()")) {
             for (String hint : Arrays.asList("", " hint=block")) {
-              MatcherAssert.assertThat(
+              assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=_root_" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
-              MatcherAssert.assertThat(
+              assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=foo_s1" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
-              MatcherAssert.assertThat(
+              assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=foo_i" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
@@ -113,29 +112,29 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
         // block based collectors as long as nullPolicy isn't collapse...
         for (String np : Arrays.asList("", " nullPolicy=ignore", " nullPolicy=expand")) {
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector(
                   "{!collapse field=_root_" + np + "}", req), // implicit block collection on _root_
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector(
                   "{!collapse field=_root_ hint=top_fc" + np + "}",
                   req), // top_fc shouldn't stop implicit block collection
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector("{!collapse field=foo_s1 hint=block" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          MatcherAssert.assertThat(
+          assertThat(
               parseAndBuildCollector("{!collapse field=foo_i hint=block" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.BlockIntScoreCollector.class));
           for (String selector : fieldValueSelectors) {
-            MatcherAssert.assertThat(
+            assertThat(
                 parseAndBuildCollector(
                     "{!collapse field=foo_s1 hint=block " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.BlockOrdSortSpecCollector.class));
           }
           for (String selector : fieldValueSelectors) {
-            MatcherAssert.assertThat(
+            assertThat(
                 parseAndBuildCollector(
                     "{!collapse field=foo_i hint=block " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.BlockIntSortSpecCollector.class));

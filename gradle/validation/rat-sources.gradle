@@ -123,10 +123,6 @@ allprojects {
                     exclude "**/*.js"
                     break
 
-                case ":solr:modules:s3-repository":
-                    exclude "src/test-files/s3.conf" // empty file
-                    break
-
                 case ":solr:documentation":
                     exclude "src/markdown/*.md"
                     break

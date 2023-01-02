@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -154,7 +155,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final Random rand = new Random(5150);
     Thread docSenderThread =
         new Thread() {
-          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -183,7 +183,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread reloaderThread =
         new Thread() {
-          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(300) + 1);
@@ -206,7 +205,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread deleteThread =
         new Thread() {
-          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -235,7 +233,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread committerThread =
         new Thread() {
-          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(200) + 1);
@@ -323,9 +320,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getSolrClient(leader);
-    List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getSolrClient(r));
+    HttpSolrClient leaderSolr = getHttpSolrClient(leader);
+    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -334,7 +331,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
         String docId = String.valueOf(d);
         Long leaderVers = assertDocExists(leaderSolr, docId, null);
-        for (SolrClient replicaSolr : replicas) {
+        for (HttpSolrClient replicaSolr : replicas) {
           assertDocExists(replicaSolr, docId, leaderVers);
         }
       }
@@ -342,13 +339,13 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (SolrClient replicaSolr : replicas) {
+      for (HttpSolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  protected SolrClient getSolrClient(Replica replica) {
+  protected HttpSolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getCoreUrl());
   }
 
@@ -364,14 +361,23 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
    * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
    * server, using distrib=false, so it doesn't route to another replica.
    */
-  protected Long assertDocExists(SolrClient solr, String docId, Long expVers) throws Exception {
+  protected Long assertDocExists(HttpSolrClient solr, String docId, Long expVers) throws Exception {
     QueryRequest qr =
         new QueryRequest(
             params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList<?> rsp = solr.request(qr);
     SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
-    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
+    assertTrue(
+        "Doc with id="
+            + docId
+            + " not found in "
+            + solr.getBaseURL()
+            + " due to: "
+            + match
+            + "; rsp="
+            + rsp,
+        match == null);
 
     Long vers = (Long) doc.getFirstValue("_version_");
     assertNotNull(vers);
@@ -385,7 +391,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

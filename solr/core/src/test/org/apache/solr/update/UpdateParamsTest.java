@@ -52,10 +52,9 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
       handler.handleRequestBody(req, rsp);
       assertTrue("Old param update.processor should not have any effect anymore", true);
     } catch (Exception e) {
-      assertNotEquals(
+      assertFalse(
           "Got wrong exception while testing update.chain",
-          "unknown UpdateRequestProcessorChain: nonexistent",
-          e.getMessage());
+          e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistent"));
     }
 
     // Then check that the new param behaves correctly
@@ -64,7 +63,8 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     req.setParams(params);
     try {
       handler.handleRequestBody(req, rsp);
-      fail("Faulty update.chain parameter not causing an error - i.e. it is not detected");
+      assertFalse(
+          "Faulty update.chain parameter not causing an error - i.e. it is not detected", true);
     } catch (Exception e) {
       assertEquals(
           "Got wrong exception while testing update.chain",

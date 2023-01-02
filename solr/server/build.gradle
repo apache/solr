@@ -27,9 +27,8 @@ compileJava.enabled(false)
 configurations {
   libExt
   serverLib
-  solrCore
   runtimeClasspath {
-    extendsFrom serverLib, libExt, solrCore
+    extendsFrom serverLib, libExt
   }
   startJar
   webapp
@@ -37,6 +36,7 @@ configurations {
 }
 
 dependencies {
+  serverLib 'org.eclipse.jetty:jetty-continuation'
   serverLib 'org.eclipse.jetty:jetty-deploy'
   serverLib 'org.eclipse.jetty:jetty-http'
   serverLib 'org.eclipse.jetty:jetty-io'
@@ -58,9 +58,10 @@ dependencies {
   serverLib 'org.eclipse.jetty.http2:http2-common'
   serverLib 'org.eclipse.jetty.http2:http2-hpack'
 
-  serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  serverLib 'javax.servlet:javax.servlet-api'
 
-  libExt 'com.lmax:disruptor'
+  serverLib 'com.lmax:disruptor'
+  serverLib 'org.apache.commons:commons-collections4'
   libExt 'org.slf4j:jcl-over-slf4j'
   libExt 'org.slf4j:jul-to-slf4j'
   libExt 'org.slf4j:slf4j-api'
@@ -68,7 +69,7 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-api'
   libExt 'org.apache.logging.log4j:log4j-core'
   libExt 'org.apache.logging.log4j:log4j-layout-template-json'
-  libExt 'org.apache.logging.log4j:log4j-slf4j2-impl'
+  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
   libExt 'org.apache.logging.log4j:log4j-web'
 
   libExt('io.dropwizard.metrics:metrics-core', {
@@ -77,11 +78,7 @@ dependencies {
   libExt('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt('io.dropwizard.metrics:metrics-jetty10', {
-    exclude group: "org.eclipse.jetty", module: "*"
-    exclude group: "org.eclipse.jetty.http2", module: "*"
-    exclude group: "org.eclipse.jetty.toolchain", module: "*"
-  })
+  libExt 'io.dropwizard.metrics:metrics-jetty9'
   libExt 'io.dropwizard.metrics:metrics-jvm'
   libExt 'io.dropwizard.metrics:metrics-jmx'
 
@@ -90,8 +87,6 @@ dependencies {
   startJar('org.eclipse.jetty:jetty-start::shaded', {
     transitive false
   })
-
-  solrCore project(":solr:core")
 }
 
 // Add the following non-standard configurations to JAR validation.
@@ -116,12 +111,11 @@ task assemblePackaging(type: Sync) {
     include "README.md"
   })
 
-  // Add in the intersection of serverLib and solrCore
-  from(configurations.libExt + (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
+  from(configurations.libExt - configurations.serverLib, {
     into "lib/ext"
   })
 
-  from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
+  from(configurations.serverLib, {
     into "lib/"
   })
 

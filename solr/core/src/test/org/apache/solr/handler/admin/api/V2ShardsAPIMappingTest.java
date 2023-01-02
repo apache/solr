@@ -6,11 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
-<<<<<<< HEAD
  *     http://www.apache.org/licenses/LICENSE-2.0
-=======
- *      http://www.apache.org/licenses/LICENSE-2.0
->>>>>>> main
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,6 +50,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
+import org.apache.solr.handler.api.ApiRegistrar;
 import org.junit.Test;
 
 /**
@@ -69,14 +66,7 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
 
   @Override
   public void populateApiBag() {
-    final CollectionsHandler collectionsHandler = getRequestHandler();
-    apiBag.registerObject(new SplitShardAPI(collectionsHandler));
-    apiBag.registerObject(new CreateShardAPI(collectionsHandler));
-    apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
-    apiBag.registerObject(new SyncShardAPI(collectionsHandler));
-    apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
+    ApiRegistrar.registerShardApis(apiBag, getRequestHandler());
   }
 
   @Override
@@ -160,12 +150,12 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("someSplitKey", v1Params.get(SPLIT_KEY));
     assertEquals(123, v1Params.getPrimitiveInt(NUM_SUB_SHARDS));
     assertEquals("some_fuzz_value", v1Params.get(SPLIT_FUZZ));
-    assertTrue(v1Params.getPrimitiveBool(TIMING));
-    assertTrue(v1Params.getPrimitiveBool(SPLIT_BY_PREFIX));
-    assertTrue(v1Params.getPrimitiveBool(FOLLOW_ALIASES));
+    assertEquals(true, v1Params.getPrimitiveBool(TIMING));
+    assertEquals(true, v1Params.getPrimitiveBool(SPLIT_BY_PREFIX));
+    assertEquals(true, v1Params.getPrimitiveBool(FOLLOW_ALIASES));
     assertEquals("rewrite", v1Params.get(SPLIT_METHOD));
     assertEquals("some_async_id", v1Params.get(ASYNC));
-    assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
+    assertEquals(true, v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
     assertEquals("foo1", v1Params.get("property.foo"));
     assertEquals("bar1", v1Params.get("property.bar"));
   }
@@ -195,9 +185,9 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
     assertEquals("foo,bar,baz", v1Params.get(CREATE_NODE_SET_PARAM));
-    assertTrue(v1Params.getPrimitiveBool(FOLLOW_ALIASES));
+    assertEquals(true, v1Params.getPrimitiveBool(FOLLOW_ALIASES));
     assertEquals("some_async_id", v1Params.get(ASYNC));
-    assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
+    assertEquals(true, v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
     assertEquals(123, v1Params.getPrimitiveInt(REPLICATION_FACTOR));
     assertEquals(456, v1Params.getPrimitiveInt(NRT_REPLICAS));
     assertEquals(789, v1Params.getPrimitiveInt(TLOG_REPLICAS));
@@ -241,10 +231,10 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("dir1", v1Params.get("instanceDir"));
     assertEquals("dir2", v1Params.get("dataDir"));
     assertEquals("dir3", v1Params.get("ulogDir"));
-    assertTrue(v1Params.getPrimitiveBool(FOLLOW_ALIASES));
+    assertEquals(true, v1Params.getPrimitiveBool(FOLLOW_ALIASES));
     assertEquals("some_async_id", v1Params.get(ASYNC));
-    assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
-    assertTrue(v1Params.getPrimitiveBool("skipNodeAssignment"));
+    assertEquals(true, v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
+    assertEquals(true, v1Params.getPrimitiveBool("skipNodeAssignment"));
     assertEquals("tlog", v1Params.get("type"));
     assertEquals("foo1", v1Params.get("property.foo"));
     assertEquals("bar1", v1Params.get("property.bar"));

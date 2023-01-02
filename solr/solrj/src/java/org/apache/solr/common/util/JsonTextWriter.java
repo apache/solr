@@ -67,12 +67,10 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(']');
   }
 
-  @Override
   default void writeStrRaw(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
@@ -142,7 +140,6 @@ public interface JsonTextWriter extends TextWriter {
     }
   }
 
-  @Override
   default void writeIterator(IteratorWriter val) throws IOException {
     writeArrayOpener(-1);
     incLevel();
@@ -165,7 +162,6 @@ public interface JsonTextWriter extends TextWriter {
     writeArrayCloser();
   }
 
-  @Override
   default void writeMap(MapWriter val) throws IOException {
     writeMapOpener(-1);
     incLevel();
@@ -213,42 +209,34 @@ public interface JsonTextWriter extends TextWriter {
   //
   // Primitive types
   //
-  @Override
   default void writeNull(String name) throws IOException {
     _writeStr("null");
   }
 
-  @Override
   default void writeInt(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeLong(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeBool(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeFloat(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeDouble(String name, String val) throws IOException {
     _writeStr(val);
   }
 
-  @Override
   default void writeDate(String name, String val) throws IOException {
     writeStr(name, val, false);
   }
 
-  @Override
   default void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal)
       throws IOException {
     if (!excludeOuter) {
@@ -281,14 +269,12 @@ public interface JsonTextWriter extends TextWriter {
     }
   }
 
-  @Override
   default void writeArray(String name, List<?> l, boolean raw) throws IOException {
     writeArrayOpener(l.size());
     writeJsonIter(l.iterator(), raw);
     writeArrayCloser();
   }
 
-  @Override
   default void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     writeJsonIter(val, raw);
@@ -304,7 +290,6 @@ public interface JsonTextWriter extends TextWriter {
     out.append(hexdigits[(ch) & 0xf]);
   }
 
-  @Override
   default void writeNamedList(String name, NamedList<?> val) throws IOException {
     String namedListStyle = getNamedListStyle();
     if (val instanceof SimpleOrderedMap) {

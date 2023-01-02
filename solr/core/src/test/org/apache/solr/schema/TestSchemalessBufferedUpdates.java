@@ -116,7 +116,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
 
-      assertNotNull(rinfoFuture);
+      assertTrue(rinfoFuture != null);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 

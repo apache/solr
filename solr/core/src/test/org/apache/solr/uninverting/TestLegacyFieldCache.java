@@ -143,10 +143,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertTrue(
         "docsWithField(theLong) must be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertEquals(
+    assertTrue(
         "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length(),
-        NUM_DOCS);
+        docsWithField.length() == NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
@@ -159,10 +158,9 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertFalse(
         "docsWithField(sparse) must not be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertEquals(
+    assertTrue(
         "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length(),
-        NUM_DOCS);
+        docsWithField.length() == NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i % 2 == 0, docsWithField.get(i));
     }

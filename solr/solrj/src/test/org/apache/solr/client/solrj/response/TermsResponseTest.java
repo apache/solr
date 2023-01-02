@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
+import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -63,11 +64,11 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     QueryRequest request = new QueryRequest(query);
     List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 
-    assertNotNull(terms);
-    assertEquals(terms.size(), 1);
+    Assert.assertNotNull(terms);
+    Assert.assertEquals(terms.size(), 1);
 
     Term term = terms.get(0);
-    assertEquals(term.getTerm(), "samsung");
-    assertEquals(term.getFrequency(), 1);
+    Assert.assertEquals(term.getTerm(), "samsung");
+    Assert.assertEquals(term.getFrequency(), 1);
   }
 }

@@ -19,14 +19,10 @@ package org.noggit;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestJSONParser extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // these are to aid in debugging if an unexpected error occurs
   static int parserType;
@@ -250,7 +246,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       JSONParser parser = getParser(new String(arr));
       parser.setFlags(random().nextInt()); // set random parser flags
 
-      double ret = 0;
+      int ret = 0;
       try {
         for (; ; ) {
           int ev = parser.nextEvent();
@@ -281,11 +277,12 @@ public class TestJSONParser extends SolrTestCaseJ4 {
         }
       } catch (IOException ex) {
         // shouldn't happen
-        log.error(String.valueOf(ret)); // use ret
+        System.out.println(ret); // use ret
       } catch (JSONParser.ParseException ex) {
         // OK
       } catch (Throwable ex) {
-        log.error(lastParser(), ex);
+        ex.printStackTrace();
+        System.out.println(lastParser());
         throw new RuntimeException(ex);
       }
     }
@@ -305,7 +302,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object o) {
-      return (o instanceof Num && digits.equals(((Num) o).digits));
+      return (getClass() == o.getClass() && digits.equals(((Num) o).digits));
     }
 
     @Override
@@ -677,7 +674,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
       String sval = Long.toString(val);
       JSONParser parser = getParser("[" + val + "]");
       parser.nextEvent();
-      assertEquals(JSONParser.LONG, parser.nextEvent());
+      assertTrue(parser.nextEvent() == JSONParser.LONG);
       if (random().nextBoolean()) {
         assertEquals(val, parser.getLong());
       } else {

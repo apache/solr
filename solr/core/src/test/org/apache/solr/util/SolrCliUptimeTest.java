@@ -16,10 +16,11 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.SolrTestCase;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
-public class SolrCliUptimeTest extends SolrTestCase {
+public class SolrCliUptimeTest {
   @Test
   public void testUptime() {
     assertEquals("?", SolrCLI.uptime(0));

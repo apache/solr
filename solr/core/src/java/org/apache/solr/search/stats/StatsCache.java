@@ -97,7 +97,6 @@ public abstract class StatsCache implements PluginInfoInitialized {
       consumer.accept("missingGlobalFieldStats", missingGlobalFieldStats.longValue());
     }
 
-    @Override
     public String toString() {
       Map<String, Object> map = new HashMap<>();
       getSnapshot(map::put);

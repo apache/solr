@@ -365,7 +365,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
       return; // nothing to do (no log message needed)
 
     List<File> dirsList = Arrays.asList(oldIndexDirs);
-    dirsList.sort(Collections.reverseOrder());
+    Collections.sort(dirsList, Collections.reverseOrder());
 
     int i = 0;
     if (afterCoreReload) {

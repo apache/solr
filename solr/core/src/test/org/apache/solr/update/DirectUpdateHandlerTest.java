@@ -443,7 +443,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testPostSoftCommitEvents() {
     SolrCore core = h.getCore();
-    assertNotNull(core);
+    assert core != null;
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     MySolrEventListener listener = new MySolrEventListener();
     core.registerNewSearcherListener(listener);
@@ -451,8 +451,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "999"));
     assertU(commit("softCommit", "true"));
     assertEquals("newSearcher was called more than once", 1, listener.newSearcherCount.get());
-    assertNotEquals(
-        "postSoftCommit was not called", Long.MAX_VALUE, listener.postSoftCommitAt.get());
+    assertFalse("postSoftCommit was not called", listener.postSoftCommitAt.get() == Long.MAX_VALUE);
     assertTrue(
         "newSearcher was called after postSoftCommitCallback",
         listener.postSoftCommitAt.get() >= listener.newSearcherOpenedAt.get());

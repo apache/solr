@@ -20,17 +20,26 @@
 
 allprojects { prj ->
   plugins.withId("java", {
-    prj.apply plugin: 'ca.cutterslade.analyze'
+      prj.apply plugin: 'ca.cutterslade.analyze'
+      tasks.named('analyzeClassesDependencies').configure {
+        enabled = false
+      }
+      tasks.named('analyzeTestClassesDependencies').configure {
+        enabled = false
+      }
+      tasks.named('analyzeDependencies').configure {
+        enabled = true
+      }
 
     analyzeClassesDependencies {
-      warnUsedUndeclared = false // means fail build if UsedUndeclared found
-      warnUnusedDeclared = false // means fail build if UnusedDeclared found
+      warnUsedUndeclared = true // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means fail build if UnusedDeclared found
       logDependencyInformationToFiles = true
     }
 
     analyzeTestClassesDependencies {
-      warnUsedUndeclared = false // means fail build if UsedUndeclared found
-      warnUnusedDeclared = false // means fail build if UnusedDeclared found
+      warnUsedUndeclared = true // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means fail build if UnusedDeclared found
       logDependencyInformationToFiles = true
     }
   })

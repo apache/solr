@@ -29,7 +29,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
@@ -280,7 +279,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private final void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
-    try (SolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
+    try (HttpSolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -805,7 +804,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return leaderReplica;
       }
 
-      try (SolrClient httpSolrClient =
+      try (HttpSolrClient httpSolrClient =
           recoverySolrClientBuilder(leaderReplica.getCoreUrl()).build()) {
         httpSolrClient.ping();
         return leaderReplica;

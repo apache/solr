@@ -440,12 +440,6 @@ public class SolrZkClient implements Closeable {
     return result;
   }
 
-  public NodeData getNode(final String path, Watcher watcher, boolean retryOnConnLoss)
-      throws KeeperException, InterruptedException {
-    Stat stat = new Stat();
-    return new NodeData(stat, getData(path, watcher, stat, retryOnConnLoss));
-  }
-
   /** Returns node's state */
   public Stat setData(
       final String path, final byte data[], final int version, boolean retryOnConnLoss)
@@ -786,7 +780,6 @@ public class SolrZkClient implements Closeable {
     out.println(sb.toString());
   }
 
-  @Override
   public void close() {
     if (isClosed) return; // it's okay if we over close - same as solrcore
     isClosed = true;
@@ -1094,17 +1087,6 @@ public class SolrZkClient implements Closeable {
               return this;
             }
           });
-    }
-  }
-
-  public static class NodeData {
-
-    public final Stat stat;
-    public final byte[] data;
-
-    public NodeData(Stat stat, byte[] data) {
-      this.stat = stat;
-      this.data = data;
     }
   }
 }

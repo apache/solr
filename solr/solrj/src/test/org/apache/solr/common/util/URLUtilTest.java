@@ -16,10 +16,13 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.SolrTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 
-public class URLUtilTest extends SolrTestCase {
+public class URLUtilTest {
 
   @Test
   public void test() {

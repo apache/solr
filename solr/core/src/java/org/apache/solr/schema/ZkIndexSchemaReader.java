@@ -223,12 +223,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
     return uniqueCoreId;
   }
 
-  @Override
   public String toString() {
     return "ZkIndexSchemaReader: " + managedSchemaPath + ", uniqueCoreId: " + uniqueCoreId;
   }
 
-  @Override
   public int hashCode() {
     return managedSchemaPath.hashCode() + uniqueCoreId.hashCode();
   }
@@ -236,7 +234,6 @@ public class ZkIndexSchemaReader implements OnReconnect {
   // We need the uniqueCoreId which is core name + start time nanos to be the tie breaker
   // as there can be multiple ZkIndexSchemaReader instances active for the same core after
   // a reload (one is initializing and the other is being shutdown)
-  @Override
   public boolean equals(Object other) {
     if (other == null) return false;
     if (other == this) return true;

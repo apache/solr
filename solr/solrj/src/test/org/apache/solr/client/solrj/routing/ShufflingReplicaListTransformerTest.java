@@ -65,7 +65,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
     final Set<TYPE> inputSet = new HashSet<>(inputs);
     final Set<TYPE> transformedSet = new HashSet<>(transformedInputs);
 
-    assertEquals(inputSet, transformedSet);
+    assertTrue(inputSet.equals(transformedSet));
   }
 
   private final List<String> createRandomUrls() throws Exception {

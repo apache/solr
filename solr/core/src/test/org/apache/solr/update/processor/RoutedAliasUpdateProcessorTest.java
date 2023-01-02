@@ -20,7 +20,6 @@ package org.apache.solr.update.processor;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,19 +55,15 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore // don't try to run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String intField = "integer_i";
 
@@ -271,8 +267,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         try {
           Thread.sleep(500);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.error("interrupted", e);
+          e.printStackTrace();
           fail(e.getMessage());
         }
       }

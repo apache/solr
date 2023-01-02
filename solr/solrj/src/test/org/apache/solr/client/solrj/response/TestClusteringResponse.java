@@ -27,6 +27,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.Assert;
 import org.junit.Test;
 
 /** Test for ClusteringComponent's response in Solrj */
@@ -48,7 +49,7 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     QueryResponse qr = new QueryResponse(response, null);
     ClusteringResponse clusteringResponse = qr.getClusteringResponse();
     List<Cluster> clusters = clusteringResponse.getClusters();
-    assertEquals(4, clusters.size());
+    Assert.assertEquals(4, clusters.size());
 
     checkCluster(
         clusters.get(0), Arrays.asList("label1"), Arrays.asList("id1", "id2", "id3"), 0.6d, false);
@@ -71,9 +72,9 @@ public class TestClusteringResponse extends SolrJettyTestBase {
       List<String> docRefs,
       double score,
       boolean otherTopics) {
-    assertEquals(cluster.getLabels(), labels);
-    assertEquals(cluster.getDocs(), docRefs);
-    assertEquals(0, Double.compare(cluster.getScore(), score));
-    assertEquals(otherTopics, cluster.isOtherTopics());
+    Assert.assertEquals(cluster.getLabels(), labels);
+    Assert.assertEquals(cluster.getDocs(), docRefs);
+    Assert.assertTrue(Double.compare(cluster.getScore(), score) == 0);
+    Assert.assertEquals(otherTopics, cluster.isOtherTopics());
   }
 }

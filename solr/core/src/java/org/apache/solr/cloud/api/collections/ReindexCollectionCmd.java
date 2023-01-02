@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -33,7 +34,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -137,9 +137,10 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return states.get(p);
     }
 
-    static final Map<String, State> states =
-        Stream.of(State.values())
-            .collect(Collectors.toUnmodifiableMap(State::toLower, Function.identity()));
+    static Map<String, State> states =
+        Collections.unmodifiableMap(
+            Stream.of(State.values())
+                .collect(Collectors.toMap(State::toLower, Function.identity())));
   }
 
   public enum Cmd {
@@ -159,9 +160,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return cmds.get(p);
     }
 
-    static final Map<String, Cmd> cmds =
-        Stream.of(Cmd.values())
-            .collect(Collectors.toUnmodifiableMap(Cmd::toLower, Function.identity()));
+    static Map<String, Cmd> cmds =
+        Collections.unmodifiableMap(
+            Stream.of(Cmd.values()).collect(Collectors.toMap(Cmd::toLower, Function.identity())));
   }
 
   private String zkHost;
@@ -407,7 +408,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(cmd);
+        ccc.offerStateUpdate(Utils.toJSON(cmd));
       }
 
       TestInjection.injectReindexLatch();
@@ -561,7 +562,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(props);
+          ccc.offerStateUpdate(Utils.toJSON(props));
         }
       }
       // 9. set FINISHED state on the target and clear the state on the source
@@ -581,7 +582,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(props);
+        ccc.offerStateUpdate(Utils.toJSON(props));
       }
 
       reindexingState.put(STATE, State.FINISHED.toLower());
@@ -739,7 +740,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       Map<String, Object> reindexingState)
       throws Exception {
     HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (SolrClient solrClient =
+    try (HttpSolrClient solrClient =
         new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
@@ -797,7 +798,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private void killDaemon(String daemonName, String daemonUrl) throws Exception {
     log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
     HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (SolrClient solrClient =
+    try (HttpSolrClient solrClient =
         new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
@@ -962,7 +963,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(props);
+      ccc.offerStateUpdate(Utils.toJSON(props));
     }
     removeReindexingState(collection);
   }

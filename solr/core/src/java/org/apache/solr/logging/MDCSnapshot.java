@@ -47,7 +47,6 @@ public final class MDCSnapshot implements Closeable {
     this.snapshot = MDC.getCopyOfContextMap();
   }
 
-  @Override
   public void close() {
     MDC.clear();
     if (snapshot != null && !snapshot.isEmpty()) { // common case optimization

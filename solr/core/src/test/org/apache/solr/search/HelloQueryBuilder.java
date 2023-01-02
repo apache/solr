@@ -30,7 +30,6 @@ public class HelloQueryBuilder extends SolrQueryBuilder {
     super(defaultField, analyzer, req, queryFactory);
   }
 
-  @Override
   public Query getQuery(Element e) {
     return new MatchAllDocsQuery();
   }

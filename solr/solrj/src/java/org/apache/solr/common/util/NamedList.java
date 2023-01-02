@@ -156,7 +156,6 @@ public class NamedList<T>
   }
 
   /** The total number of name/value pairs */
-  @Override
   public int size() {
     return nvPairs.size() >> 1;
   }
@@ -248,7 +247,6 @@ public class NamedList<T>
    * @see #indexOf
    * @see #get(String,int)
    */
-  @Override
   public T get(String name) {
     return get(name, 0);
   }
@@ -409,7 +407,6 @@ public class NamedList<T>
         return size() == 0;
       }
 
-      @Override
       public boolean containsKey(Object key) {
         return NamedList.this.get((String) key) != null;
       }

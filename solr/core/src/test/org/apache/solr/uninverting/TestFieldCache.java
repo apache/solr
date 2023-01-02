@@ -176,10 +176,9 @@ public class TestFieldCache extends SolrTestCase {
     assertTrue(
         "docsWithField(theLong) must be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertEquals(
+    assertTrue(
         "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length(),
-        NUM_DOCS);
+        docsWithField.length() == NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
@@ -192,10 +191,9 @@ public class TestFieldCache extends SolrTestCase {
     assertFalse(
         "docsWithField(sparse) must not be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertEquals(
+    assertTrue(
         "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length(),
-        NUM_DOCS);
+        docsWithField.length() == NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i % 2 == 0, docsWithField.get(i));
     }
@@ -281,7 +279,7 @@ public class TestFieldCache extends SolrTestCase {
           assertEquals(i, termOrds.nextDoc());
         }
         long ord = termOrds.nextOrd();
-        assertNotEquals(ord, SortedSetDocValues.NO_MORE_ORDS);
+        assert ord != SortedSetDocValues.NO_MORE_ORDS;
         BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
       }
@@ -292,7 +290,7 @@ public class TestFieldCache extends SolrTestCase {
 
     // test bad field
     termOrds = cache.getDocTermOrds(reader, "bogusfield", null);
-    assertEquals(0, termOrds.getValueCount());
+    assertTrue(termOrds.getValueCount() == 0);
 
     FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
   }

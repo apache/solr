@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -43,7 +44,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -535,14 +535,16 @@ public class ChaosMonkey {
             () -> {
               while (!stop) {
                 try {
+
                   Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
                   causeSomeChaos();
+
                 } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                  log.error("interrupted", e);
+                  //
                 } catch (Exception e) {
-                  log.error("error causing some chaos", e);
+                  // TODO Auto-generated catch block
+                  e.printStackTrace();
                 }
               }
               monkeyLog("finished");

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,7 +29,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -98,7 +98,7 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     // bring shard replica down
     DocCollection state = getCollectionState(collection);
     Replica leader = state.getLeader("shard1");
-    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> !leader.equals(r));
+    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();

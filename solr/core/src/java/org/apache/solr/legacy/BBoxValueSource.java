@@ -88,11 +88,13 @@ class BBoxValueSource extends ShapeValuesSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof BBoxValueSource)) return false;
+    if (o == null || getClass() != o.getClass()) return false;
 
     BBoxValueSource that = (BBoxValueSource) o;
 
-    return strategy.equals(that.strategy);
+    if (!strategy.equals(that.strategy)) return false;
+
+    return true;
   }
 
   @Override

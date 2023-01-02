@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -138,7 +137,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
                       "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Parent filter 'QueryBitSetProducer(subject:bleh)' doesn't match any parent documents"));
@@ -157,7 +156,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
                       "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Parent filter 'QueryBitSetProducer(text:e)' doesn't match any parent documents"));
@@ -176,8 +175,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
                       "id, subject,[child parentFilter=\"\"]"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
-        e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));
+    assertThat(e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));
   }
 
   private void testSubQueryXML() {

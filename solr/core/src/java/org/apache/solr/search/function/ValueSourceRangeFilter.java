@@ -18,7 +18,6 @@ package org.apache.solr.search.function;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -148,13 +147,18 @@ public class ValueSourceRangeFilter extends Query {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof ValueSourceRangeFilter)) return false;
-
     ValueSourceRangeFilter other = (ValueSourceRangeFilter) o;
-    return Objects.equals(this.valueSource, other.valueSource)
-        && this.includeLower == other.includeLower
-        && this.includeUpper == other.includeUpper
-        && Objects.equals(this.lowerVal, other.lowerVal)
-        && Objects.equals(this.upperVal, other.upperVal);
+
+    if (!this.valueSource.equals(other.valueSource)
+        || this.includeLower != other.includeLower
+        || this.includeUpper != other.includeUpper) {
+      return false;
+    }
+    if (this.lowerVal != null ? !this.lowerVal.equals(other.lowerVal) : other.lowerVal != null)
+      return false;
+    if (this.upperVal != null ? !this.upperVal.equals(other.upperVal) : other.upperVal != null)
+      return false;
+    return true;
   }
 
   @Override

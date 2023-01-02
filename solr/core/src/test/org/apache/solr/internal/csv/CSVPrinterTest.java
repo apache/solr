@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Random;
-import org.apache.solr.SolrTestCase;
+import junit.framework.TestCase;
 
 /** CSVPrinterTest */
-public class CSVPrinterTest extends SolrTestCase {
+public class CSVPrinterTest extends TestCase {
 
   String lineSeparator = "\n";
 
@@ -131,7 +131,7 @@ public class CSVPrinterTest extends SolrTestCase {
 
     if (!equals(lines, parseResult)) {
       System.out.println("Printer output :" + printable(result));
-      fail();
+      assertTrue(false);
     }
   }
 

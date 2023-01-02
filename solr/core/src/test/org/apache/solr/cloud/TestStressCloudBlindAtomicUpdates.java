@@ -33,7 +33,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -50,7 +52,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   /**
    * Service to execute all parallel work
@@ -167,7 +168,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       IOUtils.closeQuietly(CLOUD_CLIENT);
       CLOUD_CLIENT = null;
     }
-    for (SolrClient client : CLIENTS) {
+    for (HttpSolrClient client : CLIENTS) {
       if (null == client) {
         log.error("CLIENTS contains a null SolrClient???");
       }
@@ -359,7 +360,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     // check all the final index contents match our expectations
     int incorrectDocs = 0;
     for (int id = 0; id < numDocsInIndex; id += DOC_ID_INCR) {
-      assertEquals("WTF? " + id, 0, id % DOC_ID_INCR);
+      assert 0 == id % DOC_ID_INCR : "WTF? " + id;
 
       final long expect = expected[id / DOC_ID_INCR].longValue();
 
@@ -421,7 +422,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     }
 
     private void doRandomAtomicUpdate(int docId) throws Exception {
-      assertEquals("WTF? " + docId, 0, docId % DOC_ID_INCR);
+      assert 0 == docId % DOC_ID_INCR : "WTF? " + docId;
 
       final int delta = TestUtil.nextInt(rand, -1000, 1000);
       log.info("worker={}, docId={}, delta={}", workerId, docId, delta);
@@ -437,7 +438,6 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       counter.getAndAdd(delta);
     }
 
-    @Override
     public void run() {
       final String origThreadName = Thread.currentThread().getName();
       try {
@@ -522,7 +522,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assertNotNull(client.getDefaultCollection());
+    assert null != client.getDefaultCollection();
     ZkStateReader.from(client).forceUpdateCollection(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);

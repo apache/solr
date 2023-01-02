@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,7 +131,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
@@ -235,7 +236,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   zkController.getSolrCloudManager(),
                   zkStateReader);
         } else {
-          zkController.getOverseer().offerStateUpdate(m);
+          zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
         }
       }
       if (coll != null && coll.isPerReplicaState()) {

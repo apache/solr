@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -58,8 +59,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
-import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -75,7 +76,8 @@ import org.slf4j.LoggerFactory;
  * org.apache.solr.handler.SolrDefaultStreamFactory}.
  *
  * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
- * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />}
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream"
+ * /&gt; }
  *
  * @since 5.1.0
  */
@@ -88,14 +90,13 @@ public class StreamHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  private Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
+  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     String defaultCollection;
@@ -160,14 +161,13 @@ public class StreamHandler extends RequestHandlerBase
     }
 
     @Override
-    protected Object initNewInstance(SolrPackageLoader.SolrPackage.Version newest, SolrCore core) {
+    protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
       // This is called from super constructor, so be careful that pluginInfo.className is done
       // initializing.
       return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
   }
 
-  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -331,7 +331,6 @@ public class StreamHandler extends RequestHandlerBase
     return adjustedParams;
   }
 
-  @Override
   public String getDescription() {
     return "StreamHandler";
   }
@@ -347,21 +346,16 @@ public class StreamHandler extends RequestHandlerBase
       this.e = e;
     }
 
-    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    @Override
     public void close() {}
 
-    @Override
     public void open() {}
 
-    @Override
     public void setStreamContext(StreamContext context) {}
 
-    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -376,7 +370,6 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
-    @Override
     public Tuple read() {
       String msg = e.getMessage();
 
@@ -396,21 +389,16 @@ public class StreamHandler extends RequestHandlerBase
       this.it = col.iterator();
     }
 
-    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    @Override
     public void close() {}
 
-    @Override
     public void open() {}
 
-    @Override
     public void setStreamContext(StreamContext context) {}
 
-    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -425,7 +413,6 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
-    @Override
     public Tuple read() {
       if (it.hasNext()) {
         return it.next().getInfo();
@@ -443,21 +430,16 @@ public class StreamHandler extends RequestHandlerBase
       this.message = message;
     }
 
-    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    @Override
     public void close() {}
 
-    @Override
     public void open() {}
 
-    @Override
     public void setStreamContext(StreamContext context) {}
 
-    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -472,7 +454,6 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
-    @Override
     public Tuple read() {
       if (sendEOF) {
         return Tuple.EOF();
@@ -492,28 +473,23 @@ public class StreamHandler extends RequestHandlerBase
       this.tupleStream = tupleStream;
     }
 
-    @Override
     public StreamComparator getStreamSort() {
       return this.tupleStream.getStreamSort();
     }
 
-    @Override
     public void close() throws IOException {
       this.tupleStream.close();
     }
 
-    @Override
     public void open() throws IOException {
       this.begin = System.nanoTime();
       this.tupleStream.open();
     }
 
-    @Override
     public void setStreamContext(StreamContext context) {
       this.tupleStream.setStreamContext(context);
     }
 
-    @Override
     public List<TupleStream> children() {
       return this.tupleStream.children();
     }
@@ -528,7 +504,6 @@ public class StreamHandler extends RequestHandlerBase
           .withExpression("--non-expressible--");
     }
 
-    @Override
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {

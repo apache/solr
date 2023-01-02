@@ -179,7 +179,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  @Override
   public void write(OutputStream os) throws IOException {
     try {
       _write(os);
@@ -832,12 +831,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public static class IgnoreException extends IOException {
-    @Override
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
     }
 
-    @Override
     public String getMessage() {
       return "Early Client Disconnect";
     }

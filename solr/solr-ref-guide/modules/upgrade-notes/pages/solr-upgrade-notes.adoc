@@ -1,6 +1,5 @@
 = Solr Upgrade Notes
-:page-children: major-changes-in-solr-10, \
-    major-changes-in-solr-9, \
+:page-children: major-changes-in-solr-9, \
     major-changes-in-solr-8, \
     major-changes-in-solr-7, \
     major-changes-in-solr-6

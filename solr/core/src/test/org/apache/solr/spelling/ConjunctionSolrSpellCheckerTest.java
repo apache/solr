@@ -24,6 +24,7 @@ import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
@@ -54,7 +55,7 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
             "Cannot set up test.  2 NGramDistances with different gram sizes should not be equal.");
       }
     }
-    assertEquals(
+    Assert.assertEquals(
         "The distance " + sameDistance + " does not properly implement equals.",
         sameDistance1,
         sameDistance2);

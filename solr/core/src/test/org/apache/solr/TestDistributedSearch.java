@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -51,7 +52,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
 import org.apache.solr.handler.component.StatsField.Stat;
@@ -1145,7 +1145,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             Double val = (Double) svals.get(s);
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
-            assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);
+            assertFalse("stat shouldn't be 0: " + s, val.equals(0.0D));
           } else {
             // count or missing
             assertTrue(
@@ -1155,7 +1155,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "stat should be a Long: " + s + " -> " + svals.get(s).getClass(),
                 svals.get(s) instanceof Long);
             Long val = (Long) svals.get(s);
-            assertNotEquals("stat shouldn't be 0: " + s, 0L, (long) val);
+            assertFalse("stat shouldn't be 0: " + s, val.equals(0L));
           }
         }
       }
@@ -1287,7 +1287,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
       // things we explicit expect because we asked for them
       // NOTE: min is expected to be null even though requested because of no values
-      assertNull("wrong min", s.getMin());
+      assertEquals("wrong min", null, s.getMin());
       assertTrue("mean should be NaN", ((Double) s.getMean()).isNaN());
       assertEquals("wrong stddev", 0.0D, s.getStddev(), 0.0D);
 
@@ -1842,10 +1842,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertEquals(
+    assertTrue(
         "Variable len param must be an even number, it was: " + pairs.length,
-        0,
-        (pairs.length % 2));
+        (pairs.length % 2) == 0);
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -1877,10 +1876,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertEquals(
+    assertTrue(
         "Variable len param must be an even number, it was: " + pairs.length,
-        0,
-        (pairs.length % 2));
+        (pairs.length % 2) == 0);
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -2015,12 +2013,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                       + " header set if a shard is down",
                   Boolean.TRUE,
                   rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-              assertNotNull(
-                  "Expected to find error in the down shard info: " + info, info.get("error"));
+              assertTrue(
+                  "Expected to find error in the down shard info: " + info,
+                  info.get("error") != null);
             } else {
-              assertNotNull(
+              assertTrue(
                   "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
-                  info.get("shardAddress"));
+                  info.get("shardAddress") != null);
             }
           } else {
             assertEquals(
@@ -2030,9 +2029,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                     + rsp,
                 Boolean.TRUE,
                 rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-            assertNotNull(
+            assertTrue(
                 "Expected to find error in the down shard info: " + info.toString(),
-                info.get("error"));
+                info.get("error") != null);
           }
         }
       }

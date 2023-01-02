@@ -192,7 +192,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertNotNull("result is null and it shouldn't be", result);
+    assertTrue("result is null and it shouldn't be", result != null);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -521,7 +521,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertNotNull("result is null and it shouldn't be", result);
+    assertTrue("result is null and it shouldn't be", result != null);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -561,7 +561,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertNotNull("result is null and it shouldn't be", result);
+    assertTrue("result is null and it shouldn't be", result != null);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -645,7 +645,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertNotNull("result is null and it shouldn't be", result);
+    assertTrue("result is null and it shouldn't be", result != null);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -818,14 +818,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */
-  public static class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
+  public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
     @Override
     public void setFlags(int flags) {
       super.setFlags(900 + flags); // silly modification
     }
   }
 
-  private static class CustomTokenizer extends Tokenizer {
+  private class CustomTokenizer extends Tokenizer {
     CharTermAttribute charAtt;
     FlagsAttribute customAtt;
     boolean sentOneToken;
@@ -854,7 +854,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
   }
 
-  private static class CustomTokenFilter extends TokenFilter {
+  private class CustomTokenFilter extends TokenFilter {
     FlagsAttribute flagAtt;
 
     public CustomTokenFilter(TokenStream input) {

@@ -131,7 +131,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       Thread thread =
           new Thread() {
-            @Override
             public void run() {
               try {
                 zkClient.makePath("collections/collection2", false);
@@ -154,7 +153,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       Thread thread2 =
           new Thread() {
-            @Override
             public void run() {
               try {
 

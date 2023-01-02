@@ -74,8 +74,7 @@ public class StatsField {
    * @lucene.internal
    * @lucene.experimental
    */
-  @SuppressWarnings("ImmutableEnumChecker")
-  public enum Stat {
+  public static enum Stat {
     min(true),
     max(true),
     missing(true),
@@ -88,7 +87,6 @@ public class StatsField {
     countDistinct(false, distinctValues),
     percentiles(true) {
       /** special for percentiles * */
-      @Override
       boolean parseParams(StatsField sf) {
         String percentileParas = sf.localParams.get(this.name());
         if (percentileParas != null) {
@@ -120,7 +118,6 @@ public class StatsField {
     },
     cardinality(true) {
       /** special for percentiles * */
-      @Override
       boolean parseParams(StatsField sf) {
         try {
           sf.hllOpts = HllOptions.parseHllOptions(sf.localParams, sf.schemaField);
@@ -554,7 +551,6 @@ public class StatsField {
     return tagList;
   }
 
-  @Override
   public String toString() {
     return "StatsField<" + originalParam + ">";
   }

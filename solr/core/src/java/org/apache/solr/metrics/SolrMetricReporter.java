@@ -50,7 +50,6 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
    *
    * @param pluginInfo the plugin's configuration
    */
-  @Override
   @SuppressWarnings("unchecked")
   public void init(PluginInfo pluginInfo) {
     if (pluginInfo != null) {

@@ -19,7 +19,8 @@ package org.apache.solr.internal.csv;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import org.apache.solr.SolrTestCase;
+import java.util.Arrays;
+import junit.framework.TestCase;
 
 /**
  * CSVParserTest
@@ -29,7 +30,7 @@ import org.apache.solr.SolrTestCase;
  * approach for fixing a potential bug (it's likely that the parser itself fails if the lexer has
  * problems...).
  */
-public class CSVParserTest extends SolrTestCase {
+public class CSVParserTest extends TestCase {
 
   /** TestCSVParser. */
   static class TestCSVParser extends CSVParser {
@@ -217,10 +218,10 @@ public class CSVParserTest extends SolrTestCase {
     String[] tmp = null;
     for (String[] re : res) {
       tmp = parser.getLine();
-      assertArrayEquals(re, tmp);
+      assertTrue(Arrays.equals(re, tmp));
     }
     tmp = parser.getLine();
-    assertNull(tmp);
+    assertTrue(tmp == null);
   }
 
   public void testNextValue() throws IOException {
@@ -233,7 +234,7 @@ public class CSVParserTest extends SolrTestCase {
       }
     }
     tmp = parser.nextValue();
-    assertNull(tmp);
+    assertTrue(tmp == null);
   }
 
   public void testGetAllValues() throws IOException {
@@ -242,7 +243,7 @@ public class CSVParserTest extends SolrTestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertArrayEquals(res[i], tmp[i]);
+      assertTrue(Arrays.equals(res[i], tmp[i]));
     }
   }
 
@@ -262,7 +263,7 @@ public class CSVParserTest extends SolrTestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertArrayEquals(res[i], tmp[i]);
+      assertTrue(Arrays.equals(res[i], tmp[i]));
     }
   }
 
@@ -280,7 +281,7 @@ public class CSVParserTest extends SolrTestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertArrayEquals(res[i], tmp[i]);
+      assertTrue(Arrays.equals(res[i], tmp[i]));
     }
   }
 
@@ -306,7 +307,7 @@ public class CSVParserTest extends SolrTestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertArrayEquals(res[i], tmp[i]);
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
     }
   }
@@ -333,7 +334,7 @@ public class CSVParserTest extends SolrTestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertArrayEquals(res[i], tmp[i]);
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
     }
   }
@@ -353,7 +354,7 @@ public class CSVParserTest extends SolrTestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertArrayEquals(res[i], tmp[i]);
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
     }
   }
@@ -371,7 +372,7 @@ public class CSVParserTest extends SolrTestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertArrayEquals(res[i], tmp[i]);
+        assertTrue(Arrays.equals(res[i], tmp[i]));
       }
     }
   }
@@ -415,7 +416,7 @@ public class CSVParserTest extends SolrTestCase {
     String[][] tmp = parser.getAllValues();
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertArrayEquals(res[i], tmp[i]);
+      assertTrue(Arrays.equals(res[i], tmp[i]));
     }
   }
 
@@ -454,7 +455,7 @@ public class CSVParserTest extends SolrTestCase {
     assertTrue(tmp.length > 0);
 
     if (!CSVPrinterTest.equals(res, tmp)) {
-      fail();
+      assertTrue(false);
     }
   }
 
@@ -480,7 +481,7 @@ public class CSVParserTest extends SolrTestCase {
     assertTrue(tmp.length > 0);
 
     if (!CSVPrinterTest.equals(res, tmp)) {
-      fail();
+      assertTrue(false);
     }
 
     String[][] res_comments = {
@@ -494,7 +495,7 @@ public class CSVParserTest extends SolrTestCase {
     tmp = parser.getAllValues();
 
     if (!CSVPrinterTest.equals(res_comments, tmp)) {
-      fail();
+      assertTrue(false);
     }
   }
 
@@ -541,7 +542,7 @@ public class CSVParserTest extends SolrTestCase {
     parser = new CSVParser(new StringReader(code));
     CSVParser parser1 = new CSVParser(new StringReader(code));
     for (String[] datum : data) {
-      assertArrayEquals(parser1.getLine(), datum);
+      assertTrue(Arrays.equals(parser1.getLine(), datum));
       for (String d : datum) {
         assertEquals(parser.nextValue(), d);
       }

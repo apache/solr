@@ -17,7 +17,7 @@
 
 package org.apache.solr.util;
 
-import static org.junit.Assert.assertEquals;
+import static junit.framework.Assert.assertEquals;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
@@ -63,8 +63,8 @@ import org.apache.solr.common.util.SuppressForbidden;
  *   // ... some test code ...
  *
  *   // convinience method for only dealing with Message String of the LogEvent
- *   MatcherAssert.assertThat(secWarnLog.pollMessage(), containsString("hoss"));
- *   MatcherAssert.assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
+ *   assertThat(secWarnLog.pollMessage(), containsString("hoss"));
+ *   assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
  *
  *   // ... more test code ...
  *
@@ -224,7 +224,6 @@ public final class LogListener implements Closeable, AutoCloseable {
     CTX.updateLoggers();
   }
 
-  @Override
   public void close() {
     if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidently get a double close
       final LoggerConfig loggerConfig = CTX.getConfiguration().getLoggerConfig(loggerName);
@@ -412,29 +411,24 @@ public final class LogListener implements Closeable, AutoCloseable {
       return getOnMismatch();
     }
 
-    @Override
     public Result filter(Logger logger, Level level, Marker marker, String msg, Object... params) {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(Logger logger, Level level, Marker marker, String msg, Object p0) {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger, Level level, Marker marker, String msg, Object p0, Object p1) {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger, Level level, Marker marker, String msg, Object p0, Object p1, Object p2) {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -447,7 +441,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -461,7 +454,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -476,7 +468,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -492,7 +483,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -509,7 +499,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -527,7 +516,6 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(
         Logger logger,
         Level level,
@@ -546,17 +534,14 @@ public final class LogListener implements Closeable, AutoCloseable {
       return doFilter(level, msg, null);
     }
 
-    @Override
     public Result filter(Logger logger, Level level, Marker marker, Object msg, Throwable t) {
       return doFilter(level, null == msg ? null : msg.toString(), t);
     }
 
-    @Override
     public Result filter(Logger logger, Level level, Marker marker, Message msg, Throwable t) {
       return doFilter(level, msg.getFormattedMessage(), t);
     }
 
-    @Override
     public Result filter(LogEvent event) {
       // NOTE: For our usage, we're not worried about needing to filter LogEvents rom remote JVMs
       // with ThrowableProxy

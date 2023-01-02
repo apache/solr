@@ -45,7 +45,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
   private static final String SUCCESS_XPATH =
       "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
 
-  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
+import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -59,7 +60,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
-    assertEquals("samsung", response.getFirstSuggestion("samsang"));
+    Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
 
   @Test
@@ -138,7 +139,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     response = request.process(client).getSpellCheckResponse();
-    assertEquals("name:(+faith +hope +loaves)", response.getCollatedResult());
+    assertTrue("name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
 
     // Test Expanded Collation Results
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
@@ -156,15 +157,15 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
       assertTrue(
           "name:(+faith +hope +love)".equals(collation.getCollationQueryString())
               || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));
-      assertEquals(1, collation.getNumberOfHits());
+      assertTrue(collation.getNumberOfHits() == 1);
 
       List<Correction> misspellingsAndCorrections = collation.getMisspellingsAndCorrections();
-      assertEquals(3, misspellingsAndCorrections.size());
+      assertTrue(misspellingsAndCorrections.size() == 3);
       for (Correction correction : misspellingsAndCorrections) {
         if ("fauth".equals(correction.getOriginal())) {
-          assertEquals("faith", correction.getCorrection());
+          assertTrue("faith".equals(correction.getCorrection()));
         } else if ("home".equals(correction.getOriginal())) {
-          assertEquals("hope", correction.getCorrection());
+          assertTrue("hope".equals(correction.getCorrection()));
         } else if ("loane".equals(correction.getOriginal())) {
           assertTrue(
               "love".equals(correction.getCorrection())
@@ -182,7 +183,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
       assertEquals(2, collations.size());
       String collation1 = collations.get(0).getCollationQueryString();
       String collation2 = collations.get(1).getCollationQueryString();
-      assertNotEquals(collation1 + " equals " + collation2, collation1, collation2);
+      assertFalse(collation1 + " equals " + collation2, collation1.equals(collation2));
       for (Collation collation : collations) {
         assertTrue(
             "name:(+faith +hope +love)".equals(collation.getCollationQueryString())

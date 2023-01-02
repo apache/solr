@@ -64,7 +64,6 @@ public class TermStats {
     return new TermStatistics(t.bytes(), docFreq, totalTermFreq);
   }
 
-  @Override
   public String toString() {
     return StatsUtil.termStatsToString(this, false);
   }

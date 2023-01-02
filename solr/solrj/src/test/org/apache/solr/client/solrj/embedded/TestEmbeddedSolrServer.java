@@ -16,15 +16,23 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import junit.framework.Assert;
 import org.apache.solr.core.SolrCore;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
+
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -33,27 +41,27 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
   }
 
   public void testGetCoreContainer() {
-    assertEquals(cores, ((EmbeddedSolrServer) getSolrCore0()).getCoreContainer());
-    assertEquals(cores, (getSolrCore1()).getCoreContainer());
+    Assert.assertEquals(cores, ((EmbeddedSolrServer) getSolrCore0()).getCoreContainer());
+    Assert.assertEquals(cores, (getSolrCore1()).getCoreContainer());
   }
 
   public void testClose() throws IOException {
 
     EmbeddedSolrServer solrServer = (EmbeddedSolrServer) getSolrCore0();
 
-    assertEquals(3, cores.getCores().size());
+    Assert.assertEquals(3, cores.getCores().size());
     List<SolrCore> solrCores = new ArrayList<>();
     for (SolrCore solrCore : cores.getCores()) {
-      assertFalse(solrCore.isClosed());
+      Assert.assertEquals(false, solrCore.isClosed());
       solrCores.add(solrCore);
     }
 
     solrServer.close();
 
-    assertEquals(3, cores.getCores().size());
+    Assert.assertEquals(3, cores.getCores().size());
 
     for (SolrCore solrCore : solrCores) {
-      assertFalse(solrCore.isClosed());
+      Assert.assertEquals(false, solrCore.isClosed());
     }
   }
 }

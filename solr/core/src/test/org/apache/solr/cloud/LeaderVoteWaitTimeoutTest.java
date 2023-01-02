@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.JSONTestUtil;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -105,7 +104,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     }
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     if (null != proxies) {
@@ -293,7 +291,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner)
       throws IOException, SolrServerException {
-    try (SolrClient solrClient =
+    try (HttpSolrClient solrClient =
         new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
       solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId)));
       solrClient.commit(collection);
@@ -304,17 +302,17 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
     Replica leader = cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
-    SolrClient leaderSolr = getSolrClient(leader, testCollectionName);
-    List<SolrClient> replicas = new ArrayList<>(notLeaders.size());
+    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
+    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
-      replicas.add(getSolrClient(r, testCollectionName));
+      replicas.add(getHttpSolrClient(r, testCollectionName));
     }
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists(leaderSolr, docId);
-        for (SolrClient replicaSolr : replicas) {
+        for (HttpSolrClient replicaSolr : replicas) {
           assertDocExists(replicaSolr, docId);
         }
       }
@@ -322,25 +320,34 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (SolrClient replicaSolr : replicas) {
+      for (HttpSolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  private void assertDocExists(SolrClient solr, String docId) throws Exception {
+  private void assertDocExists(HttpSolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
-    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
+    assertTrue(
+        "Doc with id="
+            + docId
+            + " not found in "
+            + solr.getBaseURL()
+            + " due to: "
+            + match
+            + "; rsp="
+            + rsp,
+        match == null);
   }
 
-  private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
+  private NamedList<Object> realTimeGetDocId(HttpSolrClient solr, String docId)
       throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }
 
-  protected SolrClient getSolrClient(Replica replica, String coll) {
+  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
     return getHttpSolrClient(url);

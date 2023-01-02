@@ -110,7 +110,7 @@ public class ApiBag {
    * <p>This is only possible currently for AnnotatedApis. All other Api implementations will resort
    * to the default "overwriting" behavior of PathTrie
    */
-  static class CommandAggregatingPathTrie extends PathTrie<Api> {
+  class CommandAggregatingPathTrie extends PathTrie<Api> {
 
     public CommandAggregatingPathTrie(Set<String> reserved) {
       super(reserved);
@@ -145,7 +145,7 @@ public class ApiBag {
     }
   }
 
-  static class CommandAggregatingAnnotatedApi extends AnnotatedApi {
+  class CommandAggregatingAnnotatedApi extends AnnotatedApi {
 
     private Collection<AnnotatedApi> combinedApis;
 
@@ -196,7 +196,7 @@ public class ApiBag {
       PathTrie<Api> registry = apis.get(method);
 
       if (registry == null)
-        apis.put(method, registry = new CommandAggregatingPathTrie(Set.of("_introspect")));
+        apis.put(method, registry = new CommandAggregatingPathTrie(ImmutableSet.of("_introspect")));
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {
@@ -213,7 +213,8 @@ public class ApiBag {
           if (!wildCardNames.contains(o.toString()))
             throw new RuntimeException("" + o + " is not a valid part name");
           ValidatingJsonMap pathMeta = parts.getMap(o.toString(), NOT_NULL);
-          pathMeta.get("type", ENUM_OF, Set.of("enum", "string", "int", "number", "boolean"));
+          pathMeta.get(
+              "type", ENUM_OF, ImmutableSet.of("enum", "string", "int", "number", "boolean"));
         }
       }
       verifyCommands(api.getSpec());
@@ -263,7 +264,6 @@ public class ApiBag {
       this.isCoreSpecific = isCoreSpecific;
     }
 
-    @Override
     @SuppressWarnings({"unchecked"})
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 
@@ -384,6 +384,7 @@ public class ApiBag {
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final Set<String> KNOWN_TYPES =
       ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
+
   // A Spec template for GET AND POST APIs using the /$handlerName template-variable.
   public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER =
       () -> {

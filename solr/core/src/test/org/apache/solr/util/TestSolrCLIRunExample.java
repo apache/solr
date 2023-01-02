@@ -38,14 +38,14 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -230,7 +230,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg =
           new Thread() {
-            @Override
             public void run() {
               try {
                 standaloneSolr.start();
@@ -295,7 +294,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   protected List<Closeable> closeables = new ArrayList<>();
 
-  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -400,7 +398,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           exampleSolrHomeDir.isDirectory());
 
       if ("techproducts".equals(exampleName)) {
-        SolrClient solrClient =
+        HttpSolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");
@@ -417,15 +415,14 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             }
             numFound = solrClient.query(query).getResults().getNumFound();
           }
-          assertEquals(
+          assertTrue(
               "expected 32 docs in the "
                   + exampleName
                   + " example but found "
                   + numFound
                   + ", output: "
                   + toolOutput,
-              32,
-              numFound);
+              numFound == 32);
         } finally {
           solrClient.close();
         }
@@ -608,6 +605,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         tool.runTool(
             SolrCLI.processCommandLineArgs(
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-    assertEquals("Execution should have failed with return code 1", 1, code);
+    assertTrue("Execution should have failed with return code 1", code == 1);
   }
 }

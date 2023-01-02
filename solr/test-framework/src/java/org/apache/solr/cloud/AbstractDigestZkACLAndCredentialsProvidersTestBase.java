@@ -27,6 +27,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -162,9 +164,12 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   @Test
   public void testNoCredentials() throws Exception {
     List<TestZkCredentialsInjector> testZkCredentialsInjectors =
-        List.of(
-            new TestZkCredentialsInjector(NoCredentialZkCredentialsInjector.class),
-            new TestZkCredentialsInjector(VMParamsZkCredentialsInjector.class));
+        new ArrayList<>() {
+          {
+            add(new TestZkCredentialsInjector(NoCredentialZkCredentialsInjector.class));
+            add(new TestZkCredentialsInjector(VMParamsZkCredentialsInjector.class));
+          }
+        };
 
     testInjectors(
         testZkCredentialsInjectors,
@@ -183,13 +188,18 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   @Test
   public void testWrongCredentials() throws Exception {
     List<TestZkCredentialsInjector> testZkCredentialsInjectors =
-        List.of(
-            new TestZkCredentialsInjector(WrongAllCredentialZkCredentialsInjector.class),
-            new TestZkCredentialsInjector(
-                VMParamsZkCredentialsInjector.class,
-                List.of(
-                    DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
-                List.of(ALL_USERNAME, ALL_PASSWORD + "Wrong")));
+        new ArrayList<>() {
+          {
+            add(new TestZkCredentialsInjector(WrongAllCredentialZkCredentialsInjector.class));
+            add(
+                new TestZkCredentialsInjector(
+                    VMParamsZkCredentialsInjector.class,
+                    Arrays.asList(
+                        DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
+                        DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
+                    Arrays.asList(ALL_USERNAME, ALL_PASSWORD + "Wrong")));
+          }
+        };
 
     testInjectors(
         testZkCredentialsInjectors,
@@ -208,13 +218,18 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   @Test
   public void testAllCredentials() throws Exception {
     List<TestZkCredentialsInjector> testZkCredentialsInjectors =
-        List.of(
-            new TestZkCredentialsInjector(AllCredentialZkCredentialsInjector.class),
-            new TestZkCredentialsInjector(
-                VMParamsZkCredentialsInjector.class,
-                List.of(
-                    DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
-                List.of(ALL_USERNAME, ALL_PASSWORD)));
+        new ArrayList<>() {
+          {
+            add(new TestZkCredentialsInjector(AllCredentialZkCredentialsInjector.class));
+            add(
+                new TestZkCredentialsInjector(
+                    VMParamsZkCredentialsInjector.class,
+                    Arrays.asList(
+                        DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
+                        DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
+                    Arrays.asList(ALL_USERNAME, ALL_PASSWORD)));
+          }
+        };
 
     testInjectors(
         testZkCredentialsInjectors, true, true, true, true, true, true, true, true, true, true);
@@ -223,13 +238,18 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   @Test
   public void testReadonlyCredentials() throws Exception {
     List<TestZkCredentialsInjector> testZkCredentialsInjectors =
-        List.of(
-            new TestZkCredentialsInjector(ConnectWithReadonlyCredsInjector.class),
-            new TestZkCredentialsInjector(
-                VMParamsZkCredentialsInjector.class,
-                List.of(
-                    DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
-                List.of(READONLY_USERNAME, READONLY_PASSWORD)));
+        new ArrayList<>() {
+          {
+            add(new TestZkCredentialsInjector(ConnectWithReadonlyCredsInjector.class));
+            add(
+                new TestZkCredentialsInjector(
+                    VMParamsZkCredentialsInjector.class,
+                    Arrays.asList(
+                        DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
+                        DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME),
+                    Arrays.asList(READONLY_USERNAME, READONLY_PASSWORD)));
+          }
+        };
     testInjectors(
         testZkCredentialsInjectors,
         true,
@@ -473,32 +493,46 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
       implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
-      return List.of(
-          new ZkCredential(ALL_USERNAME, ALL_PASSWORD, ZkCredential.Perms.ALL),
-          new ZkCredential(READONLY_USERNAME, READONLY_PASSWORD, ZkCredential.Perms.READ));
+      return new ArrayList<>() {
+        {
+          add(new ZkCredential(ALL_USERNAME, ALL_PASSWORD, ZkCredential.Perms.ALL));
+          add(new ZkCredential(READONLY_USERNAME, READONLY_PASSWORD, ZkCredential.Perms.READ));
+        }
+      };
     }
   }
 
   public static class ConnectWithReadonlyCredsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
-      return List.of(
-          new ZkCredential(READONLY_USERNAME, READONLY_PASSWORD, ZkCredential.Perms.ALL));
+      return new ArrayList<>() {
+        {
+          // uses readonly creds to connect to zookeeper, hence "all"
+          add(new ZkCredential(READONLY_USERNAME, READONLY_PASSWORD, ZkCredential.Perms.ALL));
+        }
+      };
     }
   }
 
   public static class AllCredentialZkCredentialsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
-      return List.of(new ZkCredential(ALL_USERNAME, ALL_PASSWORD, ZkCredential.Perms.ALL));
+      return new ArrayList<>() {
+        {
+          add(new ZkCredential(ALL_USERNAME, ALL_PASSWORD, ZkCredential.Perms.ALL));
+        }
+      };
     }
   }
 
   public static class WrongAllCredentialZkCredentialsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
-      return List.of(
-          new ZkCredential(ALL_USERNAME, ALL_PASSWORD + "Wrong", ZkCredential.Perms.ALL));
+      return new ArrayList<>() {
+        {
+          add(new ZkCredential(ALL_USERNAME, ALL_PASSWORD + "Wrong", ZkCredential.Perms.ALL));
+        }
+      };
     }
   }
 

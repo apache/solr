@@ -64,22 +64,20 @@
     </RollingRandomAccessFile>
 
 
-    <RollingRandomAccessFile
+    <RandomAccessFile
         name="RandomCountsFile"
-        fileName="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log"
-        filePattern="${sys:solr.log.dir:-work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log.%i">
+        fileName="${sys:solr.log.dir:-build/work/solr-logs}/${sys:solr.log.name:-solr}_random_counts.log">
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.}
           %m%notEmpty{ =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
-      <Policies>
-        <OnStartupTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="128 MB"/>
-      </Policies>
-      <DefaultRolloverStrategy max="10"/>
-    </RollingRandomAccessFile>
+    </RandomAccessFile>
+    <AsyncLogger name="org.apache.solr.bench.BaseBenchState.RandomCounts" level="info" additivity="false">
+      <AppenderRef ref="RandomCountsFile"/>
+    </AsyncLogger>
+
   </Appenders>
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
@@ -93,9 +91,6 @@
     </AsyncLogger>
     <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
       <AppenderRef ref="SlowLogFile"/>
-    </AsyncLogger>
-    <AsyncLogger name="org.apache.solr.bench.BaseBenchState.RandomCounts" level="info" additivity="false">
-      <AppenderRef ref="RandomCountsFile"/>
     </AsyncLogger>
 
     <AsyncRoot level="info">

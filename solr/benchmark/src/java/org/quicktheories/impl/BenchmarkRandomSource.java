@@ -49,7 +49,6 @@ public class BenchmarkRandomSource
     this.distribution = distribution;
   }
 
-  @Override
   public BenchmarkRandomSource withDistribution(Distribution distribution) {
     if (this.distribution == distribution) {
       return this;

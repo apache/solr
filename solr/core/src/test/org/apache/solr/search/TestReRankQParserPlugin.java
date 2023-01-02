@@ -623,7 +623,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     stats = metrics.getValue();
     long inserts2 = (Long) stats.get("inserts");
     // Last query was NOT added to the cache
-    assertEquals(inserts1, inserts2);
+    assertTrue(inserts1 == inserts2);
 
     // Test range query embedded in larger query
     params = new ModifiableSolrParams();
@@ -894,7 +894,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
                 + ReRankQParserPlugin.RERANK_QUERY
                 + " parameter is not specified",
             () -> h.query(req(params)));
-    assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
+    assertTrue(se.code() == SolrException.ErrorCode.BAD_REQUEST.code);
     unIgnoreException("reRankQuery parameter is mandatory");
   }
 

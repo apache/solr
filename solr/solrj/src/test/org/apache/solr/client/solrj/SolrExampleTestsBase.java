@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import junit.framework.Assert;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,7 +44,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     // Now try a timed commit...
     SolrInputDocument doc3 = new SolrInputDocument();
@@ -57,7 +58,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
     up.process(client);
 
     rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     // TODO: not a great way to test this - timing is easily out
     // of whack due to parallel tests and various computer specs/load
@@ -80,7 +81,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
       rsp = client.query(new SolrQuery("id:id3"));
     }
 
-    assertEquals(1, rsp.getResults().getNumFound());
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
 
     // Now test the new convenience parameter on the add() for commitWithin
     SolrInputDocument doc4 = new SolrInputDocument();
@@ -108,7 +109,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
       rsp = client.query(new SolrQuery("id:id3"));
     }
 
-    assertEquals(1, rsp.getResults().getNumFound());
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
   }
 
   @Test
@@ -118,7 +119,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     // Now add one document...
     SolrInputDocument doc3 = new SolrInputDocument();
@@ -130,7 +131,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
     // now check that it comes out...
     rsp = client.query(new SolrQuery("id:id3"));
-    assertEquals(1, rsp.getResults().getNumFound());
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
 
     // now test commitWithin on a delete
     UpdateRequest up = new UpdateRequest();
@@ -140,7 +141,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
     // the document should still be there
     rsp = client.query(new SolrQuery("id:id3"));
-    assertEquals(1, rsp.getResults().getNumFound());
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
 
     // check if the doc has been deleted every 250 ms for 30 seconds
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -153,7 +154,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
       }
     } while (!timeout.hasTimedOut());
 
-    fail("commitWithin failed to commit");
+    Assert.fail("commitWithin failed to commit");
   }
 
   @Test

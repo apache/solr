@@ -34,7 +34,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -44,7 +46,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
@@ -108,7 +109,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -204,7 +205,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assertTrue(fieldNum < MAX_FIELD_NUM);
+    assert fieldNum < MAX_FIELD_NUM;
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -245,7 +246,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (SolrClient client : CLIENTS) {
+    for (HttpSolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -354,7 +355,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   private static String buildORQuery(String... clauses) {
-    assertTrue(0 < clauses.length);
+    assert 0 < clauses.length;
     return "(" + String.join(" OR ", clauses) + ")";
   }
 
@@ -581,7 +582,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * @param options can set any of options used in a term facet other than field or (sub) facets
      */
     public TermFacet(final String field, final Map<String, Object> options) {
-      assertNotNull(field);
+      assert null != field;
       this.field = field;
 
       jsonData.putAll(options);
@@ -623,8 +624,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static String toJSONFacetParamValue(final Map<String, TermFacet> facets) {
-      assertNotNull(facets);
-      assertFalse(facets.isEmpty());
+      assert null != facets;
+      assert !facets.isEmpty();
 
       // see class javadocs for why we always want processEmpty
       final Map<String, Object> jsonData = map("processEmpty", true);
@@ -700,9 +701,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // never used a prefix on a numeric field
         return null;
       }
-      assertTrue(
-          "possible facet fields have changed, breaking test",
-          facetField.contains("multi_s") || facetField.contains("solo_s"));
+      assert (facetField.contains("multi_s") || facetField.contains("solo_s"))
+          : "possible facet fields have changed, breaking test";
 
       switch (r.nextInt(5)) {
         case 0:
@@ -900,7 +900,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assertNotNull(client.getDefaultCollection());
+    assert null != client.getDefaultCollection();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

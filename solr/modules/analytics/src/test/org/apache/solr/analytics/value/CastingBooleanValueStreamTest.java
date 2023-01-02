@@ -28,23 +28,24 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
   public void stringStreamCastingTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
+    assertTrue(val instanceof StringValueStream);
+    StringValueStream casted = (StringValueStream) val;
+
     // No values
     val.setValues();
-    ((StringValueStream) val)
-        .streamStrings(
-            value -> {
-              fail("There should be no values to stream");
-            });
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(false, true, false);
     Iterator<String> values = Arrays.asList("false", "true", "false").iterator();
-    ((StringValueStream) val)
-        .streamStrings(
-            value -> {
-              assertTrue(values.hasNext());
-              assertEquals(values.next(), value);
-            });
+    casted.streamStrings(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -52,24 +53,25 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
   public void objectStreamCastingTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
+    assertTrue(val instanceof AnalyticsValueStream);
+    AnalyticsValueStream casted = (AnalyticsValueStream) val;
+
     // No values
     val.setValues();
-    ((AnalyticsValueStream) val)
-        .streamObjects(
-            value -> {
-              fail("There should be no values to stream");
-            });
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(false, true, false);
     Iterator<Object> values =
         Arrays.<Object>asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE).iterator();
-    ((AnalyticsValueStream) val)
-        .streamObjects(
-            value -> {
-              assertTrue(values.hasNext());
-              assertEquals(values.next(), value);
-            });
+    casted.streamObjects(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 

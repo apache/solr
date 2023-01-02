@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.hamcrest.core.Is.is;
+
 import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -79,9 +81,9 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
     addDoc(commit());
 
     Document doc22 = getDoc("22");
-    assertEquals("class2", doc22.get(CLASS));
+    assertThat(doc22.get(CLASS), is("class2"));
     Document doc21 = getDoc("21");
-    assertEquals("class1", doc21.get(CLASS));
+    assertThat(doc21.get(CLASS), is("class1"));
   }
 
   @Test

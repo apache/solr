@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -1707,7 +1708,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         // first sort the docs in each group
         for (Grp grp : groups.values()) {
-          grp.docs.sort(groupComparator);
+          Collections.sort(grp.docs, groupComparator);
         }
 
         // now sort the groups
@@ -1718,7 +1719,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         }
 
         List<Grp> sortedGroups = new ArrayList<>(groups.values());
-        sortedGroups.sort(
+        Collections.sort(
+            sortedGroups,
             groupComparator == sortComparator
                 ? createFirstDocComparator(sortComparator)
                 : createMaxDocComparator(sortComparator));

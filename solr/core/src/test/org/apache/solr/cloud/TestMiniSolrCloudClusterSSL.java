@@ -33,8 +33,9 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -43,8 +44,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
@@ -67,7 +66,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   static {
     try {
       DEFAULT_SSL_CONTEXT = SSLContext.getDefault();
-      assertNotNull(DEFAULT_SSL_CONTEXT);
+      assert null != DEFAULT_SSL_CONTEXT;
     } catch (Exception e) {
       throw new RuntimeException(
           "Unable to initialize 'Default' SSLContext Algorithm, JVM is borked", e);
@@ -219,7 +218,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
             expectThrows(
                 SolrServerException.class,
                 () -> {
-                  try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+                  try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
                     CoreAdminRequest req = new CoreAdminRequest();
                     req.setAction(CoreAdminAction.STATUS);
                     client.request(req);
@@ -312,14 +311,14 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       assertEquals("http vs https: " + baseURL, ssl ? "https" : "http:", baseURL.substring(0, 5));
 
       // verify solr client success with expected protocol
-      try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
 
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
       // ensure it has the necessary protocols/credentials for each jetty server
 
-      try (SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+      try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }
 
@@ -330,7 +329,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       expectThrows(
           SolrServerException.class,
           () -> {
-            try (SolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
+            try (HttpSolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
               CoreAdminRequest req = new CoreAdminRequest();
               req.setAction(CoreAdminAction.STATUS);
               client.request(req);
@@ -401,7 +400,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
     final SSLConnectionSocketFactory sslFactory =
         clientConfig.buildClientSSLConnectionSocketFactory();
-    assertNotNull(sslFactory);
+    assert null != sslFactory;
 
     final Registry<ConnectionSocketFactory> socketFactoryReg =
         RegistryBuilder.<ConnectionSocketFactory>create()
@@ -421,7 +420,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    *
    * @see #getHttpSolrClient
    */
-  public static SolrClient getRandomizedHttpSolrClient(String url) {
+  public static HttpSolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,
     // so this method may seem redundant -- but the point here is to sanity check 2 things:
     // 1) a direct test that "new HttpSolrClient" works given the current JVM/sysprop defaults
@@ -430,7 +429,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // ... so we are hopefully future proofing against possible changes to
     // SolrTestCaseJ4.getHttpSolrClient that "optimize" the test client construction in a way that
     // would prevent us from finding bugs with regular HttpSolrClient instantiation.
-    // This test fails if you return a Http2SolrClient
     if (random().nextBoolean()) {
       return (new HttpSolrClient.Builder(url)).build();
     } // else...

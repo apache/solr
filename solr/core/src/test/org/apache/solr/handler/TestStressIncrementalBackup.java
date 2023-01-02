@@ -110,7 +110,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
-          @Override
           public void run() {
             try {
               int docIdCounter = 0;
@@ -181,8 +180,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
         assertEquals(RequestStatusState.COMPLETED, state);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("interrupted", e);
+        e.printStackTrace();
       }
     } else {
       CollectionAdminResponse rsp = backup.process(cluster.getSolrClient());

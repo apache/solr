@@ -24,6 +24,5 @@ public final class NoOpReplicaListTransformer implements ReplicaListTransformer 
 
   private NoOpReplicaListTransformer() {}
 
-  @Override
   public <T> void transform(List<T> choices) {}
 }

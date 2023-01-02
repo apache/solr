@@ -51,17 +51,14 @@ public class TimedVersionBucket extends VersionBucket {
     }
   }
 
-  @Override
   public void unlock() {
     lock.unlock();
   }
 
-  @Override
   public void signalAll() {
     condition.signalAll();
   }
 
-  @Override
   public void awaitNanos(long nanosTimeout) {
     try {
       if (nanosTimeout > 0) {

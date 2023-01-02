@@ -35,13 +35,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.RetryUtil;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -131,15 +128,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     long status = container.getStatus();
 
-    assertEquals("Load complete flag should be set", LOAD_COMPLETE, (status & LOAD_COMPLETE));
-    assertEquals(
+    assertTrue("Load complete flag should be set", (status & LOAD_COMPLETE) == LOAD_COMPLETE);
+    assertTrue(
         "Core discovery should be complete",
-        CORE_DISCOVERY_COMPLETE,
-        (status & CORE_DISCOVERY_COMPLETE));
-    assertEquals(
+        (status & CORE_DISCOVERY_COMPLETE) == CORE_DISCOVERY_COMPLETE);
+    assertTrue(
         "Initial core loading should be complete",
-        INITIAL_CORE_LOAD_COMPLETE,
-        (status & INITIAL_CORE_LOAD_COMPLETE));
+        (status & INITIAL_CORE_LOAD_COMPLETE) == INITIAL_CORE_LOAD_COMPLETE);
     return container;
   }
 
@@ -333,12 +328,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order
       // would be fragile
-      RetryUtil.retryUntil(
+      assertEquals(
           "There should only be 3 cores loaded, coreLOS and two coreT? cores",
-          5,
-          200,
-          TimeUnit.MILLISECONDS,
-          () -> 3 == cc.getLoadedCoreNames().size());
+          3,
+          cc.getLoadedCoreNames().size());
 
       SolrCore c1 = cc.getCore("coreT1");
       assertNotNull("Core T1 should NOT BE NULL", c1);
@@ -454,8 +447,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNull(cc.getCore("core0"));
 
       SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
-      MatcherAssert.assertThat(
-          core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();
@@ -608,8 +600,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
                 if (cc != null) cc.shutdown();
               }
             });
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Error reading core root directory"));
+    assertThat(thrown.getMessage(), containsString("Error reading core root directory"));
     // So things can be cleaned up by the framework!
     homeDir.setReadable(true, false);
   }
@@ -634,14 +625,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     NodeConfig config =
         SolrXmlConfig.fromString(
             solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         config.getCoreRootDirectory().toString(),
         containsString(solrHomeDirectory.toAbsolutePath().toString()));
 
     NodeConfig absConfig =
         SolrXmlConfig.fromString(
             solrHomeDirectory, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         absConfig.getCoreRootDirectory().toString(),
         not(containsString(solrHomeDirectory.toAbsolutePath().toString())));
   }

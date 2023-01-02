@@ -76,7 +76,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RTimer;
-import org.hamcrest.MatcherAssert;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -110,7 +110,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Monster("Only useful to verify the performance of serialization+ deserialization")
   // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
   public void testQueryPerf() throws Exception {
-    SolrClient client = getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
@@ -318,26 +318,26 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("id", docID);
     doc.addField("name", "my name!");
 
-    assertNull(doc.getField("foo"));
-    assertNotNull(doc.getField("name").getValue());
+    Assert.assertEquals(null, doc.getField("foo"));
+    Assert.assertTrue(doc.getField("name").getValue() != null);
 
     UpdateResponse upres = client.add(doc);
     // System.out.println( "ADD:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     upres = client.commit(true, true);
     // System.out.println( "COMMIT:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     upres = client.optimize(true, true);
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     SolrQuery query = new SolrQuery();
     query.setQuery("id:" + docID);
     QueryResponse response = client.query(query);
 
-    assertEquals(docID, response.getResults().get(0).getFieldValue("id"));
+    Assert.assertEquals(docID, response.getResults().get(0).getFieldValue("id"));
 
     // Now add a few docs for facet testing...
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -368,15 +368,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     upres = client.add(docs);
     // System.out.println( "ADD:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     upres = client.commit(true, true);
     // System.out.println( "COMMIT:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     upres = client.optimize(true, true);
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
-    assertEquals(0, upres.getStatus());
+    Assert.assertEquals(0, upres.getStatus());
 
     query = new SolrQuery("*:*");
     query.addFacetQuery("price:[* TO 2]");
@@ -388,20 +388,20 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.removeFilterQuery("inStock:true");
 
     response = client.query(query);
-    assertEquals(0, response.getStatus());
-    assertEquals(5, response.getResults().getNumFound());
-    assertEquals(3, response.getFacetQuery().size());
-    assertEquals(2, response.getFacetField("inStock").getValueCount());
-    assertEquals(4, response.getFacetField("price").getValueCount());
+    Assert.assertEquals(0, response.getStatus());
+    Assert.assertEquals(5, response.getResults().getNumFound());
+    Assert.assertEquals(3, response.getFacetQuery().size());
+    Assert.assertEquals(2, response.getFacetField("inStock").getValueCount());
+    Assert.assertEquals(4, response.getFacetField("price").getValueCount());
 
     // test a second query, test making a copy of the main query
     SolrQuery query2 = query.getCopy();
     query2.addFilterQuery("inStock:true");
-    assertNotSame(query.getFilterQueries(), query2.getFilterQueries());
+    Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
     response = client.query(query2);
-    assertEquals(1, query2.getFilterQueries().length);
-    assertEquals(0, response.getStatus());
-    assertEquals(2, response.getResults().getNumFound());
+    Assert.assertEquals(1, query2.getFilterQueries().length);
+    Assert.assertEquals(0, response.getStatus());
+    Assert.assertEquals(2, response.getResults().getNumFound());
     for (SolrDocument outDoc : response.getResults()) {
       assertEquals(true, outDoc.getFieldValue("inStock"));
     }
@@ -424,21 +424,21 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertTrue(
         "echoed fq is not a List: " + echo.get("fq").getClass(), echo.get("fq") instanceof List);
     values = (List) echo.get("fq");
-    assertEquals(2, values.size());
-    assertEquals("{!field f=inStock}true", values.get(0));
-    assertEquals("{!term f=name}hoss", values.get(1));
+    Assert.assertEquals(2, values.size());
+    Assert.assertEquals("{!field f=inStock}true", values.get(0));
+    Assert.assertEquals("{!term f=name}hoss", values.get(1));
     assertTrue(
         "echoed facet.query is not a List: " + echo.get("facet.query").getClass(),
         echo.get("facet.query") instanceof List);
     values = (List) echo.get("facet.query");
-    assertEquals(2, values.size());
-    assertEquals("price:[* TO 2]", values.get(0));
-    assertEquals("price:[2 TO 4]", values.get(1));
+    Assert.assertEquals(2, values.size());
+    Assert.assertEquals("price:[* TO 2]", values.get(0));
+    Assert.assertEquals("price:[2 TO 4]", values.get(1));
 
     if (jetty != null) {
       // check system wide system handler + "/admin/info/system"
       String url = jetty.getBaseUrl().toString();
-      try (SolrClient adminClient = getHttpSolrClient(url)) {
+      try (HttpSolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");
         QueryResponse rsp = adminClient.query(q);
@@ -599,9 +599,25 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     Random random = random();
     int numIterations = atLeast(3);
 
-    try (SolrClient client = getSolrClient()) {
+    SolrClient client = getSolrClient();
 
+    // save the old parser, so we can set it back.
+    ResponseParser oldParser = null;
+    if (client instanceof HttpSolrClient) {
+      HttpSolrClient httpSolrClient = (HttpSolrClient) client;
+      oldParser = httpSolrClient.getParser();
+    }
+
+    try {
       for (int iteration = 0; iteration < numIterations; iteration++) {
+        // choose format
+        if (client instanceof HttpSolrClient) {
+          if (random.nextBoolean()) {
+            ((HttpSolrClient) client).setParser(new BinaryResponseParser());
+          } else {
+            ((HttpSolrClient) client).setParser(new XMLResponseParser());
+          }
+        }
 
         int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
 
@@ -632,6 +648,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           assertEquals(expected, actual);
         }
       }
+    } finally {
+      if (oldParser != null) {
+        // set the old parser back
+        ((HttpSolrClient) client).setParser(oldParser);
+      }
     }
   }
 
@@ -645,7 +666,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
     assertEquals(400, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
+    assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
     // the df=text here is a kluge for the test to supply a default field in case there is none in
     // schema.xml. alternatively, the resulting assertion could be modified to assert that no
@@ -862,7 +883,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     File file = getFile("solrj/books.csv");
@@ -901,17 +922,16 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertEquals("close exactly once", 1, closed[0]);
     }
     rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(10, rsp.getResults().getNumFound());
+    Assert.assertEquals(10, rsp.getResults().getNumFound());
   }
 
-  @Override
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
     NamedList<Object> result =
         client.request(
             new StreamingUpdateRequest(
@@ -919,7 +939,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
                 .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(10, rsp.getResults().getNumFound());
+    Assert.assertEquals(10, rsp.getResults().getNumFound());
   }
 
   @Test
@@ -928,7 +948,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     List<Pair<NamedList<String>, Object>> docs = new ArrayList<>();
     NamedList<String> params = new NamedList<>();
@@ -944,7 +964,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     NamedList<Object> result = client.request(up);
     System.out.println(result.jsonStr());
     rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(12, rsp.getResults().getNumFound());
+    Assert.assertEquals(12, rsp.getResults().getNumFound());
   }
 
   private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
@@ -959,7 +979,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(0, rsp.getResults().getNumFound());
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.addFile(getFile("solrj/docs1.xml"), "application/xml"); // 2
@@ -968,11 +988,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
-    assertEquals(
+    Assert.assertEquals(
         "\u1234", ((NamedList) ((NamedList) result.get("responseHeader")).get("params")).get("a"));
     assertNotNull("Couldn't upload xml files", result);
     rsp = client.query(new SolrQuery("*:*"));
-    assertEquals(5, rsp.getResults().getNumFound());
+    Assert.assertEquals(5, rsp.getResults().getNumFound());
   }
 
   @Test
@@ -1424,7 +1444,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       // now get deeper and look at the pivots...
 
       NamedList<List<PivotField>> pivots = rsp.getFacetPivot();
-      assertFalse(pivots.get("pivot_key").isEmpty());
+      assertTrue(!pivots.get("pivot_key").isEmpty());
 
       List<PivotField> list = pivots.get("pivot_key");
       PivotField featuresBBBPivot = list.get(0);
@@ -2109,7 +2129,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     if (missing) {
       ff = pivot.get(2);
       assertEquals("features", ff.getField());
-      assertNull(ff.getValue());
+      assertEquals(null, ff.getValue());
       assertEquals(1, ff.getCount());
       counts = ff.getPivot();
       assertEquals(1, counts.size());
@@ -2143,7 +2163,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("aaa", counts.get(1).getValue());
     assertEquals(2, counts.get(1).getCount());
     if (missing) {
-      assertNull(counts.get(2).getValue());
+      assertEquals(null, counts.get(2).getValue());
       assertEquals(1, counts.get(2).getCount());
     }
 
@@ -2199,7 +2219,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     if (missing) {
       p = pivot.get(2);
       assertEquals("features", p.getField());
-      assertNull(p.getValue());
+      assertEquals(null, p.getValue());
       assertEquals(1, p.getCount());
       assertEquals(1, p.getPivot().size());
       p = p.getPivot().get(0);
@@ -2209,9 +2229,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertEquals(1, p.getPivot().size());
       p = p.getPivot().get(0);
       assertEquals("inStock", p.getField());
-      assertNull(p.getValue());
+      assertEquals(null, p.getValue());
       assertEquals(1, p.getCount());
-      assertNull(p.getPivot());
+      assertEquals(null, p.getPivot());
     }
 
     // -- SOLR-2255 Test excluding a filter Query --
@@ -2855,10 +2875,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue(
           "MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
-      assertEquals(
+      assertTrue(
           "MoreLikeThis response for id=" + id + " had not returned exactly 2 documents",
-          2,
-          mltResp.size());
+          mltResp.size() == 2);
     }
 
     // now test with multiple mlt.fl parameters
@@ -2878,10 +2897,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue(
           "MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
-      assertEquals(
+      assertTrue(
           "MoreLikeThis response for id=" + id + " had not returned exactly 2 documents",
-          2,
-          mltResp.size());
+          mltResp.size() == 2);
     }
   }
 
@@ -2952,9 +2970,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.addSort("id", SolrQuery.ORDER.desc);
 
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(1L));
+    assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
 
     // Rewrite child free doc
     docToUpdate.setField("title_s", "i am a parent");
@@ -2970,11 +2988,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     results = client.query(q).getResults();
 
-    MatcherAssert.assertThat(results.getNumFound(), is(2L));
+    assertThat(results.getNumFound(), is(2L));
     foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
     foundDoc = results.get(1);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
   }
 
   @Test
@@ -3008,13 +3026,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     SolrQuery q = new SolrQuery("*:*");
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(4L));
+    assertThat(results.getNumFound(), is(4L));
 
     client.deleteById("p0");
     client.commit();
 
     results = client.query(q).getResults();
-    MatcherAssert.assertThat(
+    assertThat(
         "All the children are expected to be deleted together with parent",
         results.getNumFound(),
         is(0L));

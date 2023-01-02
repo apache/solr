@@ -35,7 +35,7 @@ If you did, though, and need to restart Solr, issue these commands:
 ----
 
 This starts the first node.
-When it's done start the second node, and tell it how to connect to ZooKeeper:
+When it's done start the second node, and tell it how to connect to to ZooKeeper:
 
 [source,bash]
 ----
@@ -459,7 +459,7 @@ This results in the following response, which shows a facet for each category an
             {
               "field":"directed_by_str",
               "value":"Michael Winterbottom",
-              "count":4}]}]}}}
+              "count":4}}]}]}}}
 
 We've truncated this output as well - you will see a lot of genres and directors in your screen.
 
