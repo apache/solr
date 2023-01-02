@@ -755,16 +755,16 @@ public class MiniSolrCloudCluster {
   }
 
   /**
-   * creates a basic CloudSolrClient Builder that then can be customized by callers,
-   * for example by specifying what collection they want to use.
+   * creates a basic CloudSolrClient Builder that then can be customized by callers, for example by
+   * specifying what collection they want to use.
    *
    * @return CloudLegacySolrClient.Builder
    */
-  protected CloudLegacySolrClient.Builder basicSolrClientBuilder() {
+  public CloudLegacySolrClient.Builder basicSolrClientBuilder() {
     return new CloudLegacySolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-            .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
-            .withConnectionTimeout(15000);
+        .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
+        .withConnectionTimeout(15000);
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
