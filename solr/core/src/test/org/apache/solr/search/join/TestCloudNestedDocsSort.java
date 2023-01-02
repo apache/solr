@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -34,6 +35,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,8 +68,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
         .withProperty("schema", "schema.xml")
         .process(cluster.getSolrClient());
 
-    client = cluster.getSolrClient();
-    client.setDefaultCollection("collection1");
+    client = cluster.basicSolrClientBuilder().withDefaultCollection("collection1").build();
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
@@ -131,7 +132,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   @AfterClass
   public static void cleanUpAfterClass() {
-    client = null;
+    IOUtils.closeQuietly(client);
   }
 
   @Test
