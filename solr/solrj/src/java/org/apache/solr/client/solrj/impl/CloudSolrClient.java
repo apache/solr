@@ -188,7 +188,7 @@ public abstract class CloudSolrClient extends SolrClient {
     final AtomicLong puts = new AtomicLong();
     final AtomicLong hits = new AtomicLong();
     final Lock evictLock = new ReentrantLock(true);
-    protected volatile long timeToLive = 60 * 1000L;
+    protected volatile long timeToLiveMs = 60 * 1000L;
 
     @Override
     public ExpiringCachedDocCollection get(Object key) {
@@ -199,7 +199,7 @@ public abstract class CloudSolrClient extends SolrClient {
         evictStale();
         return null;
       }
-      if (val.isExpired(timeToLive)) {
+      if (val.isExpired(timeToLiveMs)) {
         super.remove(key);
         return null;
       }
@@ -217,7 +217,7 @@ public abstract class CloudSolrClient extends SolrClient {
       if (!evictLock.tryLock()) return;
       try {
         for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
-          if (e.getValue().isExpired(timeToLive)) {
+          if (e.getValue().isExpired(timeToLiveMs)) {
             super.remove(e.getKey());
           }
         }
@@ -286,10 +286,12 @@ public abstract class CloudSolrClient extends SolrClient {
    * Sets the cache ttl for DocCollection Objects cached.
    *
    * @param seconds ttl value in seconds
+   * @deprecated use {@link CloudSolrClient.Builder#withCollectionCacheTtl(int)} instead
    */
+  @Deprecated
   public void setCollectionCacheTTl(int seconds) {
     assert seconds > 0;
-    this.collectionStateCache.timeToLive = seconds * 1000L;
+    this.collectionStateCache.timeToLiveMs = seconds * 1000L;
   }
 
   protected abstract LBSolrClient getLbClient();
