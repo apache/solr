@@ -16,21 +16,31 @@
  */
 package org.apache.solr.core;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Solr Standalone File System ConfigSetService impl.
+ * FileSystem ConfigSetService impl.
  *
  * <p>Loads a ConfigSet defined by the core's configSet property, looking for a directory named for
  * the configSet property value underneath a base directory. If no configSet property is set, loads
@@ -38,11 +48,20 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  /** .metadata.json hidden file where metadata is stored */
+  public static final String METADATA_FILE = ".metadata.json";
+
   private final Path configSetBase;
 
   public FileSystemConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
     this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
+  }
+
+  /** Testing purpose */
+  protected FileSystemConfigSetService(Path configSetBase) {
+    super(null, false);
+    this.configSetBase = configSetBase;
   }
 
   @Override
@@ -60,68 +79,184 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile = configSetBase.resolve(configName).resolve("solrconfig.xml");
+    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
     return Files.exists(solrConfigXmlFile);
   }
 
   @Override
   public void deleteConfig(String configName) throws IOException {
-    throw new UnsupportedOperationException();
+    deleteDir(getConfigDir(configName));
   }
 
   @Override
   public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
       throws IOException {
-    throw new UnsupportedOperationException();
+    Path configDir = getConfigDir(configName);
+    Objects.requireNonNull(filesToDelete);
+    for (String fileName : filesToDelete) {
+      Path file = configDir.resolve(fileName);
+      if (Files.exists(file)) {
+        if (Files.isDirectory(file)) {
+          deleteDir(file);
+        } else {
+          Files.delete(file);
+        }
+      }
+    }
   }
 
   @Override
   public void copyConfig(String fromConfig, String toConfig) throws IOException {
-    throw new UnsupportedOperationException();
+    Path source = getConfigDir(fromConfig);
+    Path dest = getConfigDir(toConfig);
+    copyRecursively(source, dest);
+  }
+
+  private void deleteDir(Path dir) throws IOException {
+    try {
+      Files.walkFileTree(
+          dir,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
+                throws IOException {
+              Files.delete(path);
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException ioException)
+                throws IOException {
+              Files.delete(dir);
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    } catch (NoSuchFileException e) {
+      // do nothing
+    }
   }
 
   @Override
-  public void uploadConfig(String configName, Path dir) throws IOException {
-    throw new UnsupportedOperationException();
+  public void uploadConfig(String configName, Path source) throws IOException {
+    Path dest = getConfigDir(configName);
+    copyRecursively(source, dest);
   }
 
   @Override
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    throw new UnsupportedOperationException();
+    Path filePath = getConfigDir(configName).resolve(fileName);
+    if (!Files.exists(filePath) || overwriteOnExists) {
+      Files.write(filePath, data);
+    }
   }
 
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
-    throw new UnsupportedOperationException();
+    // store metadata in .metadata.json file
+    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    Files.write(metadataPath, Utils.toJSON(data));
   }
 
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
-    throw new UnsupportedOperationException();
+    // get metadata from .metadata.json file
+    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    byte[] data = null;
+    try {
+      data = Files.readAllBytes(metadataPath);
+    } catch (NoSuchFileException e) {
+      return Collections.emptyMap();
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> metadata = (Map<String, Object>) Utils.fromJSON(data);
+    return metadata;
   }
 
   @Override
-  public void downloadConfig(String configName, Path dir) throws IOException {
-    throw new UnsupportedOperationException();
+  public void downloadConfig(String configName, Path dest) throws IOException {
+    Path source = getConfigDir(configName);
+    copyRecursively(source, dest);
+  }
+
+  private void copyRecursively(Path source, Path target) throws IOException {
+    try {
+      Files.walkFileTree(
+          source,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+              Files.createDirectories(target.resolve(source.relativize(dir).toString()));
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              Files.copy(
+                  file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    } catch (NoSuchFileException e) {
+      // do nothing
+    }
   }
 
   @Override
   public List<String> listConfigs() throws IOException {
     try (Stream<Path> configs = Files.list(configSetBase)) {
-      return configs.map(Path::getFileName).map(Path::toString).collect(Collectors.toList());
+      return configs
+          .map(Path::getFileName)
+          .map(Path::toString)
+          .sorted()
+          .collect(Collectors.toList());
     }
   }
 
   @Override
-  public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
-    throw new UnsupportedOperationException();
+  public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
+    Path filePath = getConfigDir(configName).resolve(fileName);
+    byte[] data = null;
+    try {
+      data = Files.readAllBytes(filePath);
+    } catch (NoSuchFileException e) {
+      // do nothing
+    }
+    return data;
   }
 
   @Override
   public List<String> getAllConfigFiles(String configName) throws IOException {
-    throw new UnsupportedOperationException();
+    Path configDir = getConfigDir(configName);
+    List<String> filePaths = new ArrayList<>();
+    Files.walkFileTree(
+        configDir,
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            // don't include hidden (.) files
+            if (!Files.isHidden(file)) {
+              filePaths.add(configDir.relativize(file).toString());
+              return FileVisitResult.CONTINUE;
+            }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
+            String relativePath = configDir.relativize(dir).toString();
+            if (!relativePath.isEmpty()) {
+              filePaths.add(relativePath + "/");
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
+    Collections.sort(filePaths);
+    return filePaths;
   }
 
   protected Path locateInstanceDir(CoreDescriptor cd) {
@@ -136,8 +271,8 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected Long getCurrentSchemaModificationVersion(
-      String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
+  public Long getCurrentSchemaModificationVersion(
+      String configSet, SolrConfig solrConfig, String schemaFileName) {
     Path schemaFile = solrConfig.getResourceLoader().getConfigPath().resolve(schemaFileName);
     try {
       return Files.getLastModifiedTime(schemaFile).toMillis();
@@ -147,5 +282,14 @@ public class FileSystemConfigSetService extends ConfigSetService {
       log.warn("Unexpected exception when getting modification time of {}", schemaFile, e);
       return null; // debatable; we'll see an error soon if there's a real problem
     }
+  }
+
+  protected Path getConfigDir(String configName) throws IOException {
+    // startsWith works simply; we must normalize()
+    Path path = configSetBase.resolve(configName).normalize();
+    if (!path.startsWith(configSetBase)) {
+      throw new IOException("configName=" + configName + " is not found under configSetBase dir");
+    }
+    return path;
   }
 }
