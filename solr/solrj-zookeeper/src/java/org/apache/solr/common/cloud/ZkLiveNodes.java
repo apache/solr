@@ -54,16 +54,16 @@ public class ZkLiveNodes implements Watcher {
     return liveNodesListeners;
   }
 
-  public void addLiveNodesListener(LiveNodesListener liveNodesListener) {
+  public void addListener(LiveNodesListener liveNodesListener) {
     this.liveNodesListeners.add(liveNodesListener);
   }
 
-  public void removeLiveNodesListener(LiveNodesListener liveNodesListener) {
+  public void removeListener(LiveNodesListener liveNodesListener) {
     this.liveNodesListeners.remove(liveNodesListener);
   }
 
   /* Refresh live nodes */
-  public synchronized void refreshLiveNodes() throws KeeperException, InterruptedException {
+  public synchronized void refresh() throws KeeperException, InterruptedException {
     SortedSet<String> newLiveNodes;
     try {
       List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, this, true);
@@ -94,7 +94,7 @@ public class ZkLiveNodes implements Watcher {
               listener -> {
                 if (listener.onChange(
                     new TreeSet<>(oldLiveNodes), new TreeSet<>(finalNewLiveNodes))) {
-                  removeLiveNodesListener(listener);
+                  removeListener(listener);
                 }
               });
     }
@@ -117,7 +117,7 @@ public class ZkLiveNodes implements Watcher {
 
   public void refreshAndWatch() {
     try {
-      refreshLiveNodes();
+      refresh();
     } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
       log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
     } catch (KeeperException e) {

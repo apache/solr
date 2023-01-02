@@ -462,7 +462,7 @@ public class ZkStateReader implements SolrCloseable {
       }
       // No need to set watchers because we should already have watchers registered for everything.
       refreshCollectionList(null);
-      zkLiveNodes.refreshLiveNodes();
+      zkLiveNodes.refresh();
 
       Set<String> updatedCollections = new HashSet<>();
 
@@ -527,7 +527,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Refresh the set of live nodes. */
   public void updateLiveNodes() throws KeeperException, InterruptedException {
-    zkLiveNodes.refreshLiveNodes();
+    zkLiveNodes.refresh();
   }
 
   public Integer compareStateVersions(String coll, int version) {
@@ -570,7 +570,7 @@ public class ZkStateReader implements SolrCloseable {
     try {
       // on reconnect of SolrZkClient force refresh and re-add watches.
       loadClusterProperties();
-      zkLiveNodes.refreshLiveNodes();
+      zkLiveNodes.refresh();
       refreshCollections();
       refreshCollectionList(new CollectionsChildWatcher());
       refreshAliases(aliasesManager);
@@ -681,7 +681,7 @@ public class ZkStateReader implements SolrCloseable {
 
     this.clusterState = new ClusterState(result, zkLiveNodes.getLiveNodes());
     // Listen for future live nodes changes to update ClusterState
-    zkLiveNodes.addLiveNodesListener(
+    zkLiveNodes.addListener(
         (o, n) -> {
           clusterState.setLiveNodes(n);
           return false;
@@ -870,11 +870,11 @@ public class ZkStateReader implements SolrCloseable {
       removeLiveNodesListener(listener);
     }
 
-    zkLiveNodes.addLiveNodesListener(listener);
+    zkLiveNodes.addListener(listener);
   }
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
-    zkLiveNodes.removeLiveNodesListener(listener);
+    zkLiveNodes.removeListener(listener);
   }
 
   /**
