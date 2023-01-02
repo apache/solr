@@ -68,9 +68,6 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     waitForState(
         "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
-    cluster.getSolrClient().setDefaultCollection(collection);
-
-
 
     // start a couple indexing threads
 
