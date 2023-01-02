@@ -1,0 +1,2 @@
+# commands to decrypt and copy to server.
+ansible-playbook --vault-id neo@~/ansible/vault/passwordFiles/neo -i ~/ansible/hosts playBooks/decryptAndCopyAuthnClientSecret.yml

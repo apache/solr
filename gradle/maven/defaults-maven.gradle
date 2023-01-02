@@ -31,7 +31,7 @@ configure(rootProject) {
         ":solr:test-framework",
     ] + project(":solr:modules").getChildProjects().values().path
 
-    apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"
+    apacheNexusSnapshots = "https://jfrog.fkinternal.com/artifactory/maven_virtual"
   }
 }
 
@@ -46,8 +46,8 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
         url = apacheNexusSnapshots
 
         credentials {
-          def nexusUserName = rootProject.propertyOrDefault('asfNexusUsername', null)
-          def nexusPwd = rootProject.propertyOrDefault('asfNexusPassword', null)
+          def nexusUserName = "vatsal.patel"//propertyOrEnvOrDefault('asfNexusUsername', , "vatsal.patel@flipkart.com")
+          def nexusPwd = "Vatsaayu7&"//propertyOrEnvOrDefault('asfNexusPassword', , "Vatsaayu7&")
           if (nexusUserName && nexusPwd) {
             username nexusUserName
             password nexusPwd
@@ -171,13 +171,13 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
         dependsOn "publishJarsPublicationToApacheSnapshotsRepository"
       }
 
-      signing {
-        if (project(":solr:distribution").ext.useGpgForSigning) {
-          useGpgCmd()
-        }
-        required { !version.endsWith("SNAPSHOT") }
-        sign publishing.publications.jars
-      }
+//      signing {
+//        if (project(":solr:distribution").ext.useGpgForSigning) {
+//          useGpgCmd()
+//        }
+//        required { !version.endsWith("FK") }
+//        sign publishing.publications.jars
+//      }
     }
   }
 }

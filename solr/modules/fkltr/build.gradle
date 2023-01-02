@@ -1,0 +1,153 @@
+plugins {
+  id 'java-library'
+}
+
+configurations {
+  fkltrLib
+  runtimeClasspath {
+    extendsFrom fkltrLib
+  }
+  compileClasspath {
+    extendsFrom fkltrLib
+  }
+}
+
+dependencies {
+
+  implementation project(':solr:core')
+//  implementation(configurations.solrCore)
+  implementation project(':solr:solrj')
+
+  implementation("com.flipkart.ads:ab-client"){
+    transitive = false
+  }
+  implementation("mysql:mysql-connector-java"){
+    transitive = false
+  }
+  implementation ('org.projectlombok:lombok'){
+    transitive = false
+  }
+  implementation ('com.flipkart.ads:content-ranking') {
+    transitive = false
+  }
+  implementation("com.flipkart.ads:ad-selector-client"){
+    transitive = false
+  }
+  implementation("com.flipkart.ads:ranking-models"){
+    transitive = false
+  }
+  implementation("com.flipkart.kloud.config:client-java"){
+    transitive = false
+  }
+  implementation("com.flipkart.kloud.config:commons-java") {
+    transitive = false
+  }
+  implementation("com.flipkart.kloud.authn:client"){
+    transitive = false
+  }
+  implementation("com.flipkart.kloud.authn:commons"){
+    transitive = false
+  }
+  implementation("com.flipkart.ads:neo-serving-models"){
+    transitive = false
+  }
+  implementation("com.flipkart.ads:commons"){
+    transitive = false
+  }
+  implementation("org.apache.commons:commons-collections4"){
+    force = true
+  }
+  implementation("commons-collections:commons-collections"){
+    transitive = false
+  }
+  implementation("com.fasterxml.jackson.core:jackson-core"){
+    transitive = false
+  }
+  implementation("commons-io:commons-io") {
+    transitive = false
+  }
+  implementation("joda-time:joda-time"){
+    transitive =false
+  }
+  implementation("com.flipkart.m3:varys-models"){
+    transitive = false
+  }
+  implementation("com.fasterxml.jackson.core:jackson-databind"){
+    transitive = false
+  }
+  implementation("com.flipkart.security:cryptex-client"){
+    transitive = false
+  }
+  implementation("com.flipkart.security:cryptex-client-interface"){
+    transitive = false
+  }
+  implementation("com.flipkart.security:cryptex-data-models"){
+    transitive = false
+  }
+  implementation("org.apache.avro:avro"){
+    transitive = false
+  }
+  implementation("org.apache.commons:commons-lang3"){
+    transitive = false
+  }
+  implementation("com.flipkart.cp.usercluster.userservice:data-model"){
+    transitive = false
+  }
+  implementation("fk-ads-demand-aggregator:hazelcast"){
+    transitive = false
+  }
+  implementation("com.fasterxml.jackson.core:jackson-annotations"){
+    transitive = false
+  }
+  implementation("com.mashape.unirest:unirest-java"){
+    transitive = false
+  }
+  implementation("org.apache.httpcomponents:httpcore-nio"){
+    transitive = false
+  }
+  implementation("org.json:json"){
+    transitive = false
+  }
+  implementation("neo-ingestion-v2:client"){
+    transitive = false
+  }
+  implementation("org.apache.httpcomponents:httpasyncclient"){
+    transitive = false
+  }
+  implementation("com.flipkart:ablibrary"){
+    transitive = false
+  }
+  implementation("io.dropwizard.metrics:metrics-core"){
+    transitive = false
+  }
+  implementation("io.vavr:vavr"){
+    transitive = false
+  }
+  implementation("org.antlr:antlr-complete"){
+    transitive = false
+  }
+  implementation("org.jdbi:jdbi"){
+    transitive = false
+  }
+  implementation("io.github.resilience4j:resilience4j-retry"){
+    transitive = false
+  }
+  implementation("io.github.resilience4j:resilience4j-retry"){
+    transitive = false
+  }
+  implementation("org.codehaus.jackson:jackson-core-asl"){
+    transitive = false
+  }
+  implementation("org.codehaus.jackson:jackson-mapper-asl"){
+    transitive = false
+  }
+  implementation('com.google.guava:guava'){
+    transitive = false
+  }
+
+  testImplementation project(':solr:test-framework')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'junit:junit'
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.slf4j:slf4j-api'
+}

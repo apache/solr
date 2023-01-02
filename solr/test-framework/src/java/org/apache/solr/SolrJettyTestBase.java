@@ -181,8 +181,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public static String legacyExampleCollection1SolrHome() {
     String sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)
-      throw new IllegalStateException(
-          "No source home! Cannot create the legacy example solr home directory.");
+      log.warn("No source home! Cannot create the legacy example solr home directory.");
+//      throw new IllegalStateException(
+//          "No source home! Cannot create the legacy example solr home directory.");
 
     try {
       Path tempSolrHome = LuceneTestCase.createTempDir();

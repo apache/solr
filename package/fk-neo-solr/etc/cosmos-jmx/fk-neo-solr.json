@@ -1,0 +1,196 @@
+{
+  "servers": [
+    {
+      "port": "18983",
+      "host": "_HOSTNAME_",
+      "process": "fk-noe-solr",
+      "queries": [
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=*,name0=fkltrMetrics,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).fkltrMetrics.(\\w+)",
+              "typeNameGenerator": "solr.core.fkltrMetrics.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=*,category=QUERY,scope=/select,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).QUERY.select.(\\w+)",
+              "typeNameGenerator": "solr.core.QUERY.select.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=replica_n*,category=UPDATE,scope=/update,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).UPDATE.update.(\\w+)",
+              "typeNameGenerator": "solr.core.UPDATE.update.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=replica_t*,category=UPDATE,scope=/update,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).UPDATE.update.(\\w+)",
+              "typeNameGenerator": "solr.core.UPDATE.update.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=*,category=REPLICATION,scope=/replication,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).REPLICATION.replication.(\\w+)",
+              "typeNameGenerator": "solr.core.REPLICATION.replication.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=*,category=ADMIN,scope=/admin/ping,name=requestTimes",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).ADMIN.adminping.requestTimes",
+              "typeNameGenerator": "solr.core.ADMIN.adminping.requestTimes",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=core,dom2=*,dom3=*,dom4=*,category=SEARCHER,scope=searcher,name=*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.core.(\\w+).shard(\\d+).replica_(\\w+).SEARCHER.searcher.(\\w+)",
+              "typeNameGenerator": "solr.core.SEARCHER.searcher.${4}",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${1}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${3}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "obj": "solr:dom1=node,category=QUERY,scope=httpShardHandler,name=http_//*",
+          "typeNameModifiers": [
+            {
+              "typeNameMatcher": "solr.node.QUERY.httpShardHandler.http_(\\w+)solr(\\w+)_shard(\\d+)_replica_(\\w+)selectpostrequests",
+              "typeNameGenerator": "solr.node.QUERY.httpShardHandler.selectpostrequests",
+              "tags": [
+                {
+                  "name": "collection",
+                  "valueGenerator": "${2}"
+                },
+                {
+                  "name": "shard",
+                  "valueGenerator": "${3}"
+                },
+                {
+                  "name": "replica",
+                  "valueGenerator": "${4}"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "numQueryThreads": 1
+    }
+  ]
+}

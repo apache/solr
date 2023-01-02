@@ -1,0 +1,81 @@
+Resources -
+https://lucene.apache.org/solr/guide/8_0/collections-api.html
+https://lucene.apache.org/solr/guide/8_0/configsets-api.html
+
+----------------
+
+CONFIG apis -
+
+Upload configSet command -
+bin/solr zk upconfig -z _ZOOKEEPER_HOST_/_CHROOT_ -n _CONFIG_NAME_ -d _CONFIG_DIR_
+
+Upload configSet api -
+(cd _CONFIG_DIR_/conf && zip -r - *) > myConfigSet.zip
+curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myConfigSet.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=_CONFIG_NAME_"
+
+LIST configSets -
+curl -X GET http://localhost:8983/api/cluster/configs?omitHeader=true
+
+DELETE configSet -
+curl -X DELETE http://localhost:8983/api/cluster/configs/_CONFIG_NAME_?omitHeader=true
+
+----------------
+
+COLLECTION MODIFICATION apis -
+
+CREATE COLLECTION -
+/admin/collections?action=CREATE&name=_COLLECTION_NAME_&collection.configName=_CONFIG_NAME_&numShards=_NUM_SHARDS_&replicationFactor=_REPLICATION_FACTOR_&maxShardsPerNode=_MAX_SHARDS_PER_NODE_
+
+RELOAD COLLECTION -
+/admin/collections?action=RELOAD&name=_COLLECTION_NAME_
+
+MODIFY COLLECTION -
+/admin/collections?action=MODIFYCOLLECTION&collection=_COLLECTION_NAME_&<attribute-name>=<attribute-value>
+
+CHANGE REPLICATION_FACTOR -
+/admin/collections?action=MODIFYCOLLECTION&collection=_COLLECTION_NAME_&replicationFactor=_REPLICATION_FACTOR_
+
+SPLIT SHARD -
+/admin/collections?action=SPLITSHARD&collection=_COLLECTION_NAME_&shard=_SHARD_
+
+DELETE SHARD -
+/admin/collections?action=DELETESHARD&shard=_SHARD_&collection=_COLLECTION_NAME_
+
+CREATE ALIAS -
+/admin/collections?action=CREATEALIAS&name=_ALIAS_NAME_&collections=<collectionList>
+
+DELETE ALIAS -
+/admin/collections?action=DELETEALIAS&name=_ALIAS_NAME_
+
+DELETE COLLECTION -
+/admin/collections?action=DELETE&name=_COLLECTION_NAME_
+
+DELETE REPLICA -
+/admin/collections?action=DELETEREPLICA&collection=_COLLECTION_NAME_&shard=_SHARD_&replica=_REPLICA_
+
+ADD REPLICA -
+/admin/collections?action=ADDREPLICA&collection=_COLLECTION_NAME_&shard=_SHARD_
+
+DELETE NODE -
+/admin/collections?action=DELETENODE&node=nodeName
+
+REPLACE NODE -
+/admin/collections?action=REPLACENODE&sourceNode=source-node&targetNode=target-node
+
+MOVE REPLICA -
+/admin/collections?action=MOVEREPLICA&collection=_COLLECTION_NAME_&shard=_SHARD_&replica=_REPLICA_&sourceNode=nodeName&targetNode=nodeName
+
+UTILIZE NODE -
+/admin/collections?action=UTILIZENODE&node=nodeName
+
+----------------
+
+COLLECTION READ apis -
+
+CLUSTER STATUS -
+/admin/collections?action=CLUSTERSTATUS
+
+LIST COLLECTIONS -
+/admin/collections?action=LIST
+
+--------------------

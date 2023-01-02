@@ -50,7 +50,12 @@ if (forcedLuceneVersion != null) {
 
     allprojects {
       repositories {
-        mavenLocal()
+        maven {
+          url "https://jfrog.fkinternal.com/artifactory/maven_virtual"
+          metadataSources {
+            artifact()
+          }
+        }
       }
 
       tasks.withType(Test) {

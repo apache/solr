@@ -59,7 +59,7 @@ dependencies {
   // used by the hadoop-specific test framework classes
   testImplementation 'commons-io:commons-io'
   testImplementation 'org.apache.commons:commons-compress'
-  testImplementation 'org.apache.commons:commons-collections4'
+  implementation 'org.apache.commons:commons-collections4'
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'io.dropwizard.metrics:metrics-core'
 
