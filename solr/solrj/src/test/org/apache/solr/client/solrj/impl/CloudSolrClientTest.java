@@ -306,7 +306,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
-            .setDefaultCollection("routing_collection")
+            .withDefaultCollection("routing_collection")
             .build()) {
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
@@ -976,7 +976,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             .withParallelUpdates(true)
             // don't let collection cache entries get expired, even on a slow machine...
             .withCollectionCacheTtl(Integer.MAX_VALUE)
-            .setDefaultCollection(COL)
+            .withDefaultCollection(COL)
             .build()) {
 
       // do a query to populate stale_client's cache...

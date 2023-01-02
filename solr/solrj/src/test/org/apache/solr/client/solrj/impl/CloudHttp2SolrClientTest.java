@@ -305,7 +305,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
-            .setDefaultCollection("routing_collection")
+            .withDefaultCollection("routing_collection")
             .build()) {
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
@@ -964,7 +964,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
             .sendDirectUpdatesToAnyShardReplica()
-            .setDefaultCollection(COL)
+            .withDefaultCollection(COL)
             // don't let collection cache entries get expired, even on a slow machine...
             .withCollectionCacheTtl(Integer.MAX_VALUE)
             .build()) {

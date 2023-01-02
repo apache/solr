@@ -343,7 +343,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /** Sets the default collection for request. */
-    public Builder setDefaultCollection(String collection) {
+    public Builder withDefaultCollection(String collection) {
       this.defaultCollection = collection;
       return this;
     }

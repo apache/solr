@@ -2677,7 +2677,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static CloudSolrClient getCloudSolrClient(String zkHost, String defaultCollection) {
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .setDefaultCollection(defaultCollection)
+        .withDefaultCollection(defaultCollection)
         .build();
   }
 
@@ -2698,7 +2698,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static CloudSolrClient getCloudSolrClient(
       MiniSolrCloudCluster cluster, String defaultCollection) {
     return new RandomizingCloudSolrClientBuilder(cluster)
-        .setDefaultCollection(defaultCollection)
+        .withDefaultCollection(defaultCollection)
         .build();
   }
 
@@ -2794,7 +2794,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       builder.sendUpdatesToAllReplicasInShard();
     }
     if (defaultCollection != null) {
-      builder.setDefaultCollection(defaultCollection);
+      builder.withDefaultCollection(defaultCollection);
     }
     return builder
         .withConnectionTimeout(connectionTimeoutMillis)
@@ -2834,7 +2834,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       builder.sendUpdatesToAllReplicasInShard();
     }
     if (defaultCollection != null) {
-      builder.setDefaultCollection(defaultCollection);
+      builder.withDefaultCollection(defaultCollection);
     }
     return builder.withHttpClient(httpClient).build();
   }
@@ -2886,7 +2886,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       builder.sendUpdatesToAllReplicasInShard();
     }
     if (defaultCollection != null) {
-      builder.setDefaultCollection(defaultCollection);
+      builder.withDefaultCollection(defaultCollection);
     }
     return builder
         .withHttpClient(httpClient)
