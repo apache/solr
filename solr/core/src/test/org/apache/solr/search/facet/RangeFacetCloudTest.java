@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -152,7 +151,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -499,7 +498,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -549,7 +548,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -602,7 +601,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -666,7 +665,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -718,7 +717,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          rsp =CLOUD_CLIENT.query(solrQuery);
+          rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -779,7 +778,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -832,7 +831,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -882,7 +881,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -926,7 +925,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                   + subFacet
                   + " } }");
 
-      QueryResponse rsp =CLOUD_CLIENT.query(solrQuery);
+      QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
       try {
         @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo =
@@ -973,7 +972,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                   + subFacet
                   + " } }");
 
-      rsp =CLOUD_CLIENT.query(solrQuery);
+      rsp = CLOUD_CLIENT.query(solrQuery);
       try {
         @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo =
@@ -1218,7 +1217,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     }
     return ", other:" + val;
   }
-
 
   @AfterClass
   public static void afterClass() throws Exception {
