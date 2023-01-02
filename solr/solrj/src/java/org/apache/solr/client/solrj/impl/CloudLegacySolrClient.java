@@ -87,6 +87,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
     this.retryExpiryTime = builder.retryExpiryTime;
+    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -267,6 +268,17 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /** Provides a {@link LBHttpSolrClient} for the builder to use when creating clients. */
     public Builder withLBHttpSolrClient(LBHttpSolrClient loadBalancedSolrClient) {
       this.loadBalancedSolrClient = loadBalancedSolrClient;
+      return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param seconds ttl value in seconds
+     */
+    public Builder withCollectionCacheTtl(int seconds) {
+      assert seconds > 0;
+      this.timeToLiveSeconds = seconds;
       return this;
     }
 

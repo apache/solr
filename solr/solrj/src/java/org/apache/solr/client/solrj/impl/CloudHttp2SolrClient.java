@@ -98,6 +98,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
 
+    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
+
     //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
@@ -151,6 +153,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTime =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+    private int timeToLiveSeconds = 60;
     private int parallelCacheRefreshesLocks = 3;
 
     /**
@@ -270,6 +273,17 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      */
     public Builder setRetryExpiryTime(int secs) {
       this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+      return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param timeToLiveSeconds ttl value in seconds
+     */
+    public Builder withCollectionCacheTtl(int timeToLiveSeconds) {
+      assert timeToLiveSeconds > 0;
+      this.timeToLiveSeconds = timeToLiveSeconds;
       return this;
     }
 
