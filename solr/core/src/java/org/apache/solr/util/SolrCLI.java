@@ -207,15 +207,18 @@ public class SolrCLI implements CLIO {
       String zkHost = cli.getOptionValue(OPTION_ZKHOST.getOpt(), ZK_HOST);
 
       log.debug("Connecting to Solr cluster: {}", zkHost);
-      try (var cloudSolrClient =
-          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .build()) {
 
-        // TODO I believe this piece of logic actually can be removed, we don't ever pass in a
-        // "collection" parameter globally.  It can be moved to the one tool that uses this param.
-        String collection = cli.getOptionValue("collection");
-        if (collection != null) cloudSolrClient.setDefaultCollection(collection);
+      CloudLegacySolrClient.Builder builder =
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty());
 
+      // TODO I believe this piece of logic actually can be removed, we don't ever pass in a
+      // "collection" parameter globally.  It can be moved to the one tool that uses this param.
+      String collection = cli.getOptionValue("collection");
+      if (collection != null) {
+        builder.withDefaultCollection(collection);
+      }
+
+      try (var cloudSolrClient = builder.build()) {
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
       }
