@@ -127,6 +127,8 @@ Bug Fixes
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
 
+* SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
+
 
 Build
 ---------------------
