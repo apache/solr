@@ -348,7 +348,7 @@ public abstract class CloudSolrClient extends SolrClient {
   /**
    * Sets the default collection for request.
    *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder#setDefaultCollection(String)} instead
+   * @deprecated use {@link CloudHttp2SolrClient.Builder#withDefaultCollection(String)} instead
    */
   @Deprecated
   public void setDefaultCollection(String collection) {
