@@ -179,8 +179,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
 
     ZkStateReader.from(solrClient).forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     for (int i = 1; i < nShards + 1; i++) {
-      ZkStateReader.from(solrClient)
-          .getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
+      ZkStateReader.from(solrClient).getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
     }
 
     // collect the data dirs

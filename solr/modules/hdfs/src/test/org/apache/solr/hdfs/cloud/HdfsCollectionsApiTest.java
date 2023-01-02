@@ -77,7 +77,8 @@ public class HdfsCollectionsApiTest extends SolrCloudTestCase {
         .setCreateNodeSet(jettySolrRunner.getNodeName())
         .process(cluster.getSolrClient());
     waitForState("", collection, clusterShape(1, 1));
-    try (CloudSolrClient solrClient = cluster.basicSolrClientBuilder().withDefaultCollection(collection).build()) {
+    try (CloudSolrClient solrClient =
+        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build()) {
       solrClient.add(new SolrInputDocument("id", "1"));
       solrClient.add(new SolrInputDocument("id", "2"));
       solrClient.commit();
@@ -85,19 +86,19 @@ public class HdfsCollectionsApiTest extends SolrCloudTestCase {
 
       jettySolrRunner.stop();
       waitForState(
-              "",
-              collection,
-              (liveNodes, collectionState) -> {
-                Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
-                return replica.getState() == Replica.State.DOWN;
-              });
+          "",
+          collection,
+          (liveNodes, collectionState) -> {
+            Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
+            return replica.getState() == Replica.State.DOWN;
+          });
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 
       jettySolrRunner.start();
 
       CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
-              .setCreateNodeSet(cluster.getJettySolrRunner(1).getNodeName())
-              .process(cluster.getSolrClient());
+          .setCreateNodeSet(cluster.getJettySolrRunner(1).getNodeName())
+          .process(cluster.getSolrClient());
       waitForState("", collection, clusterShape(1, 1));
       QueryResponse response = cluster.getSolrClient().query(collection, new SolrQuery("*:*"));
       assertEquals(0L, response.getResults().getNumFound());
