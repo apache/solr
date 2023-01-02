@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -305,8 +306,17 @@ public class ForceLeaderTest extends HttpPartitionTest {
       throws IOException, SolrServerException {
     CollectionAdminRequest.ForceLeader forceLeader =
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
+    boolean shardLeadersOnly = random().nextBoolean();
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+    if (shardLeadersOnly) {
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
+    }
     try (CloudSolrClient cloudClient =
-        getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000)) {
+        builder.withConnectionTimeout(3000).withSocketTimeout(60000).build()) {
       cloudClient.request(forceLeader);
     }
   }

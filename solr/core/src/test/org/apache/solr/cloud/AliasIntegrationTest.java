@@ -890,11 +890,13 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       responseConsumer.accept(cluster.getSolrClient().query(collectionList, solrQuery));
     } else {
       // new CloudSolrClient (random shardLeadersOnly)
+
+      RandomizingCloudSolrClientBuilder builder = new RandomizingCloudSolrClientBuilder(cluster);
       boolean useDefaultCollection = random().nextBoolean();
       try (CloudSolrClient solrClient =
           useDefaultCollection
-              ? getCloudSolrClient(cluster, collectionList)
-              : getCloudSolrClient(cluster)) {
+              ? builder.withDefaultCollection(collectionList).build()
+              : builder.build()) {
         if (useDefaultCollection) {
           responseConsumer.accept(solrClient.query(null, solrQuery));
         } else {

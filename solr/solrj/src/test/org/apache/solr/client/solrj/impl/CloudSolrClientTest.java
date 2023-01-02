@@ -628,7 +628,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String collection = getSaferTestName();
 
     try (CloudSolrClient client =
-        getCloudSolrClient(cluster.getZkServer().getZkAddress(), collection)) {
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection(collection)
+            .build()) {
       // important to have one replica on each node
       RequestStatusState state =
           CollectionAdminRequest.createCollection(collection, "conf", 1, NODE_COUNT)
@@ -700,7 +703,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client =
-        getCloudSolrClient(cluster.getZkServer().getZkAddress(), "multicollection1")) {
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection("multicollection1")
+            .build()) {
 
       String async1 =
           CollectionAdminRequest.createCollection("multicollection1", "conf", 2, 1)

@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,15 +87,21 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
-        CloudSolrClient client =
-            getCloudSolrClient(
-                cluster.getZkServer().getZkAddress(),
-                COLLECTION,
-                random().nextBoolean(),
-                httpClient,
-                30000,
-                60000);
-        return client;
+        RandomizingCloudSolrClientBuilder builder =
+            new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+        boolean shardLeadersOnly = random().nextBoolean();
+        if (shardLeadersOnly) {
+          builder.sendUpdatesOnlyToShardLeaders();
+        } else {
+          builder.sendUpdatesToAllReplicasInShard();
+        }
+        builder.withDefaultCollection(COLLECTION);
+        return builder
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(30000)
+            .withSocketTimeout(60000)
+            .build();
     }
     throw new RuntimeException("impossible");
   }
