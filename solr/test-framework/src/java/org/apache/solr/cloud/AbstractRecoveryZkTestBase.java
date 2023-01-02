@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static MiniSolrCloudCluster cluster;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
