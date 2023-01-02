@@ -147,8 +147,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected volatile ChaosMonkey chaosMonkey;
 
   protected Map<String, CloudJettyRunner> shardToLeaderJetty = new ConcurrentHashMap<>();
-  protected Map<String, CloudSolrClient> solrClientForCollectionCache =
-      new ConcurrentHashMap<>();
+  protected Map<String, CloudSolrClient> solrClientForCollectionCache = new ConcurrentHashMap<>();
   private static volatile boolean cloudInit;
   protected volatile boolean useJettyDataDir = true;
 
