@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -82,19 +81,20 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     }
     log.info("Indexing {} documents", maxDoc);
 
-    try (SolrClient solrClient = cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();) {
+    try (SolrClient solrClient =
+        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build(); ) {
       final StoppableIndexingThread indexThread =
-              new StoppableIndexingThread(null, solrClient, "1", true, maxDoc, 1, true);
+          new StoppableIndexingThread(null, solrClient, "1", true, maxDoc, 1, true);
       threads.add(indexThread);
       indexThread.start();
 
       final StoppableIndexingThread indexThread2 =
-              new StoppableIndexingThread(null, solrClient, "2", true, maxDoc, 1, true);
+          new StoppableIndexingThread(null, solrClient, "2", true, maxDoc, 1, true);
       threads.add(indexThread2);
       indexThread2.start();
 
       // give some time to index...
-      int[] waitTimes = new int[]{200, 2000, 3000};
+      int[] waitTimes = new int[] {200, 2000, 3000};
       Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
       // bring shard replica down
@@ -123,7 +123,9 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
 
       new UpdateRequest().commit(solrClient, collection);
 
-      cluster.getZkStateReader().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
+      cluster
+          .getZkStateReader()
+          .waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
 
       // test that leader and replica have same doc count
       state = getCollectionState(collection);

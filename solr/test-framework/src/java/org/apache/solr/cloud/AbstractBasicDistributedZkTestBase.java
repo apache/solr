@@ -1602,7 +1602,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     SolrClient clientForCollection1 = getSolrClientForCollection("collection1");
     long collection1Docs =
-            clientForCollection1.query(new SolrQuery("*:*")).getResults().getNumFound();
+        clientForCollection1.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     long collection2Docs =
         otherCollectionClients
