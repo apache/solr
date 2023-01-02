@@ -303,14 +303,14 @@ public class TaggerTest extends TaggerTestCase {
   }
 
   private TestTag tt(String doc, String substring, int substringIndex, N name) {
-    assertEquals(0, substringIndex);
+    assert substringIndex == 0;
 
     // little bit of copy-paste code from super.tt()
     int startOffset = -1, endOffset;
     int substringIndex1 = 0;
     for (int i = 0; i <= substringIndex1; i++) {
       startOffset = doc.indexOf(substring, ++startOffset);
-      assertTrue("The test itself is broken", startOffset >= 0);
+      assert startOffset >= 0 : "The test itself is broken";
     }
     endOffset = startOffset + substring.length(); // 1 greater (exclusive)
     return new TestTag(startOffset, endOffset, substring, lookupByName(name.getName()));

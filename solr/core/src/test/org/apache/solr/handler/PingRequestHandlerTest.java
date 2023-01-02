@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -29,7 +30,6 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -87,7 +87,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testEnablingServer() throws Exception {
 
-    assertFalse(healthcheckFile.exists());
+    assertTrue(!healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
@@ -116,7 +116,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testDisablingServer() throws Exception {
 
-    assertFalse(healthcheckFile.exists());
+    assertTrue(!healthcheckFile.exists());
 
     healthcheckFile.createNewFile();
 

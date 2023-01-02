@@ -667,7 +667,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         .toArray(new String[list.size()]);
   }
 
-  private static class PosVal<T extends Comparable<T>> {
+  private class PosVal<T extends Comparable<T>> {
     int pos;
     T val;
 
@@ -676,7 +676,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
       this.val = val;
     }
 
-    @Override
     public String toString() {
       return "(" + pos + ": " + val.toString() + ")";
     }
@@ -3148,10 +3147,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
         toStringArray(getRandomInstants(2, false).stream().sorted().collect(Collectors.toList()));
     String[] min = new String[] {ints[0], longs[0], doubles[0], floats[0], dates[0]};
     String[] max = new String[] {ints[1], longs[1], doubles[1], floats[1], dates[1]};
-    assertTrue(
-        fieldTypeNames.length == fieldTypes.length
-            && fieldTypeNames.length == max.length
-            && fieldTypeNames.length == min.length);
+    assert fieldTypeNames.length == fieldTypes.length
+        && fieldTypeNames.length == max.length
+        && fieldTypeNames.length == min.length;
     for (int i = 0; i < fieldTypeNames.length; i++) {
       SchemaField fieldIndexed = h.getCore().getLatestSchema().getField("foo_" + fieldTypeNames[i]);
       SchemaField fieldIndexedAndDv =
@@ -3266,7 +3264,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private List<Integer> getRandomInts(int length, boolean missingVals, int boundPosNeg) {
-    assertTrue(boundPosNeg > 0L);
+    assert boundPosNeg > 0L;
     return getRandomList(
         length,
         missingVals,
@@ -3278,7 +3276,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private List<Long> getRandomLongs(int length, boolean missingVals, long boundPosNeg) {
-    assertTrue(boundPosNeg > 0L);
+    assert boundPosNeg > 0L;
     return getRandomList(
         length,
         missingVals,
@@ -3302,7 +3300,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private String[] getSequentialStringArrayWithDates(int length) {
-    assertTrue(length < 60);
+    assert length < 60;
     String[] arr = new String[length];
     for (int i = 0; i < length; i++) {
       arr[i] = String.format(Locale.ROOT, "1995-12-11T19:59:%02dZ", i);
@@ -3319,7 +3317,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestFieldNotIndexed(String field, String[] values) throws IOException {
-    assertTrue(values.length == 10);
+    assert values.length == 10;
     // test preconditions
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
     assertFalse("Field should be indexed=false", sf.indexed());
@@ -3413,9 +3411,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointFieldReturn(String field, String type, String[] values) {
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
-    assertTrue(
-        "Unexpected field definition for " + field,
-        sf.stored() || (sf.hasDocValues() && sf.useDocValuesAsStored()));
+    assert sf.stored() || (sf.hasDocValues() && sf.useDocValuesAsStored())
+        : "Unexpected field definition for " + field;
     for (int i = 0; i < values.length; i++) {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }
@@ -3630,7 +3627,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointFieldFacetField(
       String nonDocValuesField, String docValuesField, String[] numbers) {
-    assertTrue(numbers != null && numbers.length == 10);
+    assert numbers != null && numbers.length == 10;
 
     assertFalse(h.getCore().getLatestSchema().getField(docValuesField).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
@@ -4012,7 +4009,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     final String MATCH_ONE = "//*[@numFound='" + (searchable ? "1" : "0") + "']";
     final String MATCH_TWO = "//*[@numFound='" + (searchable ? "2" : "0") + "']";
 
-    assertTrue(numbers != null && numbers.length == 20);
+    assert numbers != null && numbers.length == 20;
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
     for (int i = 0; i < 10; i++) {
@@ -4060,7 +4057,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestPointFieldMultiValuedReturn(String fieldName, String type, String[] numbers) {
-    assertTrue(numbers != null && numbers.length == 20);
+    assert numbers != null && numbers.length == 20;
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
     for (int i = 9; i >= 0; i--) {
@@ -4119,7 +4116,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointFieldMultiValuedRangeQuery(
       String fieldName, String type, String[] numbers) {
-    assertTrue(numbers != null && numbers.length == 20);
+    assert numbers != null && numbers.length == 20;
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.multiValued());
     assertTrue(sf.getType() instanceof PointField);
@@ -4282,7 +4279,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointFieldMultiValuedFacetField(
       String nonDocValuesField, String dvFieldName, String[] numbers) {
-    assertTrue(numbers != null && numbers.length == 20);
+    assert numbers != null && numbers.length == 20;
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof PointField);
@@ -4593,7 +4590,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointMultiValuedFunctionQuery(
       String nonDocValuesField, String docValuesField, String[] numbers) {
-    assertTrue(numbers != null && numbers.length == 20);
+    assert numbers != null && numbers.length == 20;
     for (int i = 0; i < 10; i++) {
       assertU(
           adoc(
@@ -4702,7 +4699,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     long inc1;
     for (; ; ) {
       number2 = random().nextInt();
-      inc1 = (long) number2 - number1;
+      inc1 = number2 - number1;
       if (Math.abs(inc1) < (long) Integer.MAX_VALUE) {
         break;
       }
@@ -4807,7 +4804,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
    * @param values list of values in ascending order
    */
   private <T extends Comparable<T>> void doTestPointFieldSort(String field, List<T> values) {
-    assertTrue(values != null && 2 <= values.size());
+    assert values != null && 2 <= values.size();
 
     final List<SolrInputDocument> docs = new ArrayList<>(values.size());
     final String[] ascXpathChecks = new String[values.size() + 1];
@@ -5752,34 +5749,34 @@ public class TestPointFields extends SolrTestCaseJ4 {
                     PointValues.size(ir, field));
               }
               if (ignoredField) {
-                assertEquals(
+                assertTrue(
                     "Field " + field + " should not have docValues",
-                    DocIdSetIterator.NO_MORE_DOCS,
-                    DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
-                assertEquals(
+                    DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc()
+                        == DocIdSetIterator.NO_MORE_DOCS);
+                assertTrue(
                     "Field " + field + " should not have docValues",
-                    DocIdSetIterator.NO_MORE_DOCS,
-                    DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc());
-                assertEquals(
+                    DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc()
+                        == DocIdSetIterator.NO_MORE_DOCS);
+                assertTrue(
                     "Field " + field + " should not have docValues",
-                    DocIdSetIterator.NO_MORE_DOCS,
-                    DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc());
-                assertEquals(
+                    DocValues.getSorted(leafReaderForCheckingDVs, field).nextDoc()
+                        == DocIdSetIterator.NO_MORE_DOCS);
+                assertTrue(
                     "Field " + field + " should not have docValues",
-                    DocIdSetIterator.NO_MORE_DOCS,
-                    DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc());
+                    DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc()
+                        == DocIdSetIterator.NO_MORE_DOCS);
               } else {
                 if (sf.hasDocValues()) {
                   if (sf.multiValued()) {
-                    assertNotEquals(
+                    assertFalse(
                         "Field " + field + " should have docValues",
-                        DocIdSetIterator.NO_MORE_DOCS,
-                        DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
+                        DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc()
+                            == DocIdSetIterator.NO_MORE_DOCS);
                   } else {
-                    assertNotEquals(
+                    assertFalse(
                         "Field " + field + " should have docValues",
-                        DocIdSetIterator.NO_MORE_DOCS,
-                        DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc());
+                        DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc()
+                            == DocIdSetIterator.NO_MORE_DOCS);
                   }
                 } else {
                   expectThrows(

@@ -46,7 +46,6 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       this.regex = regex;
     }
 
-    @Override
     public <T> void transform(List<T> choices) {
       log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();

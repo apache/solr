@@ -60,7 +60,6 @@ public abstract class FacetRequest {
       this.sortDirection = sortDirection;
     }
 
-    @Override
     public boolean equals(Object other) {
       if (other instanceof FacetSort) {
         final FacetSort that = (FacetSort) other;
@@ -70,12 +69,10 @@ public abstract class FacetRequest {
       return false;
     }
 
-    @Override
     public int hashCode() {
       return Objects.hash(sortVariable, sortDirection);
     }
 
-    @Override
     public String toString() {
       return sortVariable + " " + sortDirection;
     }

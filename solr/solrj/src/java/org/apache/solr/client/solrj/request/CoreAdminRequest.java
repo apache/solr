@@ -150,7 +150,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       return configSet;
     }
 
-    @Override
     public String getCollection() {
       return collection;
     }
@@ -345,7 +344,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       return params;
     }
 
-    @Override
     public String toString() {
       if (action != null) {
         return "WaitForState: " + getParams();
@@ -404,7 +402,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       this.shard = shard;
     }
 
-    @Override
     public String getCollection() {
       return collection;
     }

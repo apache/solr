@@ -24,12 +24,10 @@ public interface IntComp {
 
   static class IntAsc implements IntComp {
 
-    @Override
     public int resetValue() {
       return Integer.MAX_VALUE;
     }
 
-    @Override
     public int compare(int a, int b) {
       return Integer.compare(b, a);
     }
@@ -37,12 +35,10 @@ public interface IntComp {
 
   static class IntDesc implements IntComp {
 
-    @Override
     public int resetValue() {
       return Integer.MIN_VALUE;
     }
 
-    @Override
     public int compare(int a, int b) {
       return Integer.compare(a, b);
     }

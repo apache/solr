@@ -18,7 +18,6 @@ package org.apache.solr.search.function.distance;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -105,12 +104,12 @@ public class GeohashHaversineFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeohashHaversineFunction)) return false;
+    if (this.getClass() != o.getClass()) return false;
     GeohashHaversineFunction other = (GeohashHaversineFunction) o;
-    return Objects.equals(this.name(), other.name())
-        && Objects.equals(geoHash1, other.geoHash1)
-        && Objects.equals(geoHash2, other.geoHash2)
-        && (degreesToDist == other.degreesToDist);
+    return this.name().equals(other.name())
+        && geoHash1.equals(other.geoHash1)
+        && geoHash2.equals(other.geoHash2)
+        && degreesToDist == other.degreesToDist;
   }
 
   @Override

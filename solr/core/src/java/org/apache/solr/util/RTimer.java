@@ -45,12 +45,10 @@ public class RTimer {
   private static class NanoTimeTimerImpl implements TimerImpl {
     private long start;
 
-    @Override
     public void start() {
       start = System.nanoTime();
     }
 
-    @Override
     public double elapsed() {
       return TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
     }

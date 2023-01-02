@@ -74,7 +74,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
                   try {
                     invokeBulkCall((String) e.getKey(), errs);
                   } catch (Exception e1) {
-                    log.error("error invoking bulk call", e1);
+                    e1.printStackTrace();
                   }
                 });
         threads.add(t);

@@ -25,13 +25,11 @@ import org.junit.Test;
  */
 public class MoveReplicaTest extends AbstractMoveReplicaTestBase {
 
-  @Override
   @Test
   public void test() throws Exception {
     super.test();
   }
 
-  @Override
   @Test
   public void testFailedMove() throws Exception {
     super.testFailedMove();

@@ -60,7 +60,7 @@ public class OrderedExecutor implements Executor {
     }
 
     try {
-      if (ExecutorUtil.isShutdown(delegate)) throw new RejectedExecutionException();
+      if (delegate.isShutdown()) throw new RejectedExecutionException();
 
       delegate.execute(
           () -> {

@@ -59,7 +59,6 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     return super.computeSelfCost(planner, mq).multiplyBy(.1);
   }
 
-  @Override
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();

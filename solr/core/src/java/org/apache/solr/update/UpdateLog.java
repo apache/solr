@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -201,8 +200,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   // list of recent logs, newest first
-  protected final Deque<TransactionLog> logs = new ArrayDeque<>();
-  protected Deque<TransactionLog> newestLogsOnStartup = new ArrayDeque<>();
+  protected final Deque<TransactionLog> logs = new LinkedList<>();
+  protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords; // number of records in the recent logs
 
   protected Map<BytesRef, LogPtr> map = new HashMap<>();
@@ -243,7 +242,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  @SuppressWarnings("JdkObsolete")
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
   // Needs to be String because hdfs.Path is incompatible with nio.Path
@@ -1702,7 +1700,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     synchronized (this) {
-      logList = new ArrayDeque<>(logs);
+      logList = new LinkedList<>(logs);
       for (TransactionLog log : logList) {
         log.incref();
       }
@@ -1808,7 +1806,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       versionInfo.unblockUpdates();
     }
 
-    if (ExecutorUtil.isShutdown(recoveryExecutor)) {
+    if (recoveryExecutor.isShutdown()) {
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
@@ -1847,7 +1845,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     boolean inSortedOrder;
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
-      this.translogs = new ArrayDeque<>();
+      this.translogs = new LinkedList<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
     }

@@ -56,7 +56,6 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
     return DEFAULT_CREDENTIAL_KEY_MAP;
   }
 
-  @Override
   protected String getCredential(String keystoreKey) {
     try {
       char[] password = hadoopConfigurationProvider.getPassword(keystoreKey);

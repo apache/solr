@@ -158,17 +158,17 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(core.getRequestHandlers().get(path), handler1);
     core.close();
     cores.shutdown();
-    assertTrue("Handler not closed", handler1.closed);
+    assertTrue("Handler not closed", handler1.closed == true);
   }
 
   @Test
   public void testRefCount() {
     SolrCore core = h.getCore();
-    assertEquals("Refcount != 1", 1, core.getOpenCount());
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
 
     final CoreContainer cores = h.getCoreContainer();
     SolrCore c1 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
-    assertEquals("Refcount != 2", 2, core.getOpenCount());
+    assertTrue("Refcount != 2", core.getOpenCount() == 2);
 
     ClosingRequestHandler handler1 = new ClosingRequestHandler();
     handler1.inform(core);
@@ -181,26 +181,26 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     SolrCore c2 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     c1.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertFalse("Handler is closed", handler1.closed);
+    assertTrue("Handler is closed", handler1.closed == false);
 
     c1 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     assertTrue("Refcount < 2", core.getOpenCount() >= 2);
-    assertFalse("Handler is closed", handler1.closed);
+    assertTrue("Handler is closed", handler1.closed == false);
 
     c2.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertFalse("Handler is closed", handler1.closed);
+    assertTrue("Handler is closed", handler1.closed == false);
 
     c1.close();
     cores.shutdown();
-    assertEquals("Refcount != 0", 0, core.getOpenCount());
+    assertTrue("Refcount != 0", core.getOpenCount() == 0);
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
   }
 
   @Test
   public void testRefCountMT() throws Exception {
     SolrCore core = h.getCore();
-    assertEquals("Refcount != 1", 1, core.getOpenCount());
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
 
     final ClosingRequestHandler handler1 = new ClosingRequestHandler();
     handler1.inform(core);
@@ -239,7 +239,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
                   yieldInt(l);
                   assertTrue("Refcount > 17", core.getOpenCount() <= 17);
                   yieldInt(l);
-                  assertFalse("Handler is closed", handler1.closed);
+                  assertTrue("Handler is closed", handler1.closed == false);
                   yieldInt(l);
                   core.close();
                   core = null;
@@ -260,7 +260,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     }
 
     cores.shutdown();
-    assertEquals("Refcount != 0", 0, core.getOpenCount());
+    assertTrue("Refcount != 0", core.getOpenCount() == 0);
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
 
     service.shutdown();
@@ -292,7 +292,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
-    assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
+    assertEquals(
+        "wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
 
@@ -310,7 +311,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     // make up for the fact that opening a searcher in this empty core is very fast by opening new
     // searchers continuously to increase the likelihood for race.
     SolrCore core = h.getCore();
-    assertEquals("Refcount != 1", 1, core.getOpenCount());
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
     executor.execute(new NewSearcherRunnable(core));
 
     // Since we called getCore() vs getCoreInc() and don't own a refCount, the container should

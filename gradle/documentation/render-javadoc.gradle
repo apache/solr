@@ -418,7 +418,7 @@ class RenderJavadocTask extends DefaultTask {
 
     // append prettify to scripts
     ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.min.js inject-javadocs.js")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.js inject-javadocs.js")
     }
 
     ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")

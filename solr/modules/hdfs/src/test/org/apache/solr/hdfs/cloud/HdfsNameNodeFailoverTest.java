@@ -68,7 +68,6 @@ public class HdfsNameNodeFailoverTest extends AbstractBasicDistributedZkTestBase
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
   }
 
-  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

@@ -24,7 +24,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -122,10 +121,11 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof OpenExchangeRatesOrgProvider)) return false;
+    if (o == null || getClass() != o.getClass()) return false;
 
     OpenExchangeRatesOrgProvider that = (OpenExchangeRatesOrgProvider) o;
-    return Objects.equals(rates, that.rates);
+
+    return !(rates != null ? !rates.equals(that.rates) : that.rates != null);
   }
 
   @Override

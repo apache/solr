@@ -37,7 +37,6 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
-  @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     boolean storeParent = shouldStoreDocParent(req.getSchema());

@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.TreeSet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -130,6 +131,7 @@ public abstract class DelegationTokenRequest<
       super(METHOD.PUT);
       this.token = token;
       setResponseParser(new NoOpResponseParser());
+      Set<String> queryParams = new TreeSet<>();
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 

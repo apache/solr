@@ -22,10 +22,10 @@ import com.codahale.metrics.Timer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +50,6 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -152,8 +151,7 @@ public class Overseer implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE =
       Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
-  public static final int STATE_UPDATE_MAX_QUEUE =
-      Integer.getInteger("solr.OverseerStateUpdateMaxQueueSize", 20000);
+  public static final int STATE_UPDATE_MAX_QUEUE = 20000;
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
@@ -315,11 +313,11 @@ public class Overseer implements SolrCloseable {
             }
           }
 
-          ArrayDeque<Pair<String, byte[]>> queue = null;
+          LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we
             // flush clusterstate
-            queue = new ArrayDeque<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
           } catch (KeeperException.SessionExpiredException e) {
             log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
             return;
@@ -369,7 +367,7 @@ public class Overseer implements SolrCloseable {
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together
               queue =
-                  new ArrayDeque<>(
+                  new LinkedList<>(
                       stateUpdateQueue.peekElements(
                           1000, 100, node -> !processedNodes.contains(node)));
             }
@@ -930,7 +928,6 @@ public class Overseer implements SolrCloseable {
     return updaterThread;
   }
 
-  @Override
   public synchronized void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
@@ -1174,10 +1171,6 @@ public class Overseer implements SolrCloseable {
     return reader;
   }
 
-  public void offerStateUpdate(MapWriter mw) throws KeeperException, InterruptedException {
-    offerStateUpdate(Utils.toJSON(mw));
-  }
-
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
     // When cluster state update is distributed, the Overseer cluster state update queue should only
     // ever receive QUIT messages. These go to sendQuitToOverseer for execution path clarity.
@@ -1222,8 +1215,8 @@ public class Overseer implements SolrCloseable {
   public void sendQuitToOverseer(String overseerId) throws KeeperException, InterruptedException {
     getOverseerQuitNotificationQueue()
         .offer(
-            ew ->
-                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())
-                    .put(ID, overseerId));
+            Utils.toJSON(
+                new ZkNodeProps(
+                    Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(), ID, overseerId)));
   }
 }

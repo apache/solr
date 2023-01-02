@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,11 +35,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile Trap trap;
   private static final BlockingQueue<List<Object>> lastStacktraces =
@@ -195,7 +191,8 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
   private static void recordStackTrace(StackTraceElement[] stackTrace) {
     // keep the last n limited traces.
-    ArrayList<Object> stack = new ArrayList<>();
+    // e.printStackTrace();
+    ArrayList<Object> stack = new ArrayList<Object>();
     stack.add(
         "" + (new Date().getTime() - startTime) + " (" + Thread.currentThread().getName() + ")");
     for (int l = 2; l < stackTrace.length && l < keepStackTraceLines; l++) {
@@ -207,8 +204,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e1) {
-        Thread.currentThread().interrupt();
-        log.error("interrupted", e1);
+        e1.printStackTrace();
       }
     }
   }

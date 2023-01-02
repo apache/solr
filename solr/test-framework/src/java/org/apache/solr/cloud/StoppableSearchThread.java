@@ -51,9 +51,11 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
         // to come to the aid of their country.
         cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
       } catch (Exception e) {
-        log.error("QUERY REQUEST FAILED:", e);
+        System.err.println("QUERY REQUEST FAILED:");
+        e.printStackTrace();
         if (e instanceof SolrServerException) {
-          log.error("ROOT CAUSE:", ((SolrServerException) e).getRootCause());
+          System.err.println("ROOT CAUSE:");
+          ((SolrServerException) e).getRootCause().printStackTrace();
         }
         queryFails.incrementAndGet();
       }

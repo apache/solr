@@ -112,7 +112,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
         // but in the case of a reused StateZkReader,
         // closing the provider must not have closed the ZkStateReader...
-        assertFalse(reusedZkReader.isClosed());
+        assertEquals(false, reusedZkReader.isClosed());
 
       } finally {
         reusedZkReader.close();

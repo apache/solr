@@ -26,11 +26,16 @@ import org.apache.tools.ant.types.Commandline
 
 buildscript {
   repositories {
-    mavenCentral()
+    maven {
+      url "https://jfrog.fkinternal.com/artifactory/maven_virtual"
+      metadataSources {
+        artifact()
+      }
+    }
   }
 
   dependencies {
-    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.9'
+    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.2'
   }
 }
 

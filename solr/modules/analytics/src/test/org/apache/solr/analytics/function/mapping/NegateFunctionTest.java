@@ -60,11 +60,11 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
 
     // Value exists
     val.setValue(true).setExists(true);
-    assertFalse(func.getBoolean());
+    assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
 
     val.setValue(false).setExists(true);
-    assertTrue(func.getBoolean());
+    assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -177,7 +177,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamBooleans(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -214,7 +214,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamInts(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -251,7 +251,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamLongs(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -288,7 +288,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamFloats(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value
@@ -325,7 +325,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.streamDoubles(
         value -> {
-          fail("There should be no values to stream");
+          assertTrue("There should be no values to stream", false);
         });
 
     // One value

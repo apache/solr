@@ -252,7 +252,7 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    Preconditions.checkState(repository.exists(source), "Path %s does not exist", source);
+    Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 

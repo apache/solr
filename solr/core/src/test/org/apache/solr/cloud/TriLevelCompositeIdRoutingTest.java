@@ -63,7 +63,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     NUM_ADDS = atLeast(200);
   }
 
-  @Override
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13369")
   @Test
   public void test() throws Exception {
@@ -148,7 +147,6 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     }
   }
 
-  @Override
   void doAddDoc(String id) throws Exception {
     index("id", id);
     // todo - target diff servers and use cloud clients as well as non-cloud clients

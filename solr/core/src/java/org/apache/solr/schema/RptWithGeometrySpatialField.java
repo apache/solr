@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -134,11 +133,12 @@ public class RptWithGeometrySpatialField
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof CachingShapeValuesource)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
 
       CachingShapeValuesource that = (CachingShapeValuesource) o;
-      return Objects.equals(targetValueSource, that.targetValueSource)
-          && Objects.equals(fieldName, that.fieldName);
+
+      if (!targetValueSource.equals(that.targetValueSource)) return false;
+      return fieldName.equals(that.fieldName);
     }
 
     @Override
@@ -217,7 +217,7 @@ public class RptWithGeometrySpatialField
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof PerSegCacheKey)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
 
       PerSegCacheKey that = (PerSegCacheKey) o;
 

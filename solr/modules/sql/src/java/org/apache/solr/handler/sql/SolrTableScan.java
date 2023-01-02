@@ -90,7 +90,6 @@ class SolrTableScan extends TableScan implements SolrRel {
             .FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
   }
 
-  @Override
   public void implement(Implementor implementor) {
     implementor.solrTable = solrTable;
     implementor.table = table;

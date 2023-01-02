@@ -26,7 +26,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -45,7 +47,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -71,19 +72,19 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   private static CloudSolrClient CLOUD_CLIENT;
 
   /** A client for talking directly to the leader of shard1 */
-  private static SolrClient S_ONE_LEADER_CLIENT;
+  private static HttpSolrClient S_ONE_LEADER_CLIENT;
 
   /** A client for talking directly to the leader of shard2 */
-  private static SolrClient S_TWO_LEADER_CLIENT;
+  private static HttpSolrClient S_TWO_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard1 */
-  private static SolrClient S_ONE_NON_LEADER_CLIENT;
+  private static HttpSolrClient S_ONE_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a passive replica of shard2 */
-  private static SolrClient S_TWO_NON_LEADER_CLIENT;
+  private static HttpSolrClient S_TWO_NON_LEADER_CLIENT;
 
   /** A client for talking directly to a node that has no piece of the collection */
-  private static SolrClient NO_COLLECTION_CLIENT;
+  private static HttpSolrClient NO_COLLECTION_CLIENT;
 
   /** id field doc routing prefix for shard1 */
   private static final String S_ONE_PRE = "abc!";
@@ -1248,7 +1249,6 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       this.msgSubStr = msgSubStr;
     }
 
-    @Override
     public String toString() {
       return "type=<" + type + ">,id=<" + id + ">,msgSubStr=<" + msgSubStr + ">";
     }

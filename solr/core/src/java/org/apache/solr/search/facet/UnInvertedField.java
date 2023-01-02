@@ -89,7 +89,7 @@ public class UnInvertedField extends DocTermOrds {
     int termNum;
 
     long memSize() {
-      return 8L
+      return 8
           + // obj header
           8
           + 8

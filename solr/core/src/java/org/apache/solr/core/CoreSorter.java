@@ -120,7 +120,6 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     return this;
   }
 
-  @Override
   public int compare(CoreDescriptor cd1, CoreDescriptor cd2) {
     String s1 = getShardName(cd1.getCloudDescriptor());
     String s2 = getShardName(cd2.getCloudDescriptor());
@@ -155,7 +154,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof CountsForEachShard)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
       CountsForEachShard that = (CountsForEachShard) o;
       return totalReplicasInDownNodes == that.totalReplicasInDownNodes
           && myReplicas == that.myReplicas

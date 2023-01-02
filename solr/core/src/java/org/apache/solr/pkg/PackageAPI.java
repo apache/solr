@@ -35,7 +35,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.PackagePayload;
+import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -66,13 +66,13 @@ public class PackageAPI {
 
   final CoreContainer coreContainer;
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
-  private final SolrPackageLoader packageLoader;
+  private final PackageLoader packageLoader;
   Packages pkgs;
 
   public final Edit editAPI = new Edit();
   public final Read readAPI = new Read();
 
-  public PackageAPI(CoreContainer coreContainer, SolrPackageLoader loader) {
+  public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
     if (coreContainer.getPackageStoreAPI() == null) {
       throw new IllegalStateException("Must successfully load PackageStoreAPI first");
     }
@@ -192,7 +192,7 @@ public class PackageAPI {
 
     public PkgVersion() {}
 
-    public PkgVersion(PackagePayload.AddVersion addVersion) {
+    public PkgVersion(Package.AddVersion addVersion) {
       this.pkg = addVersion.pkg;
       this.version = addVersion.version;
       this.files = addVersion.files == null ? null : Collections.unmodifiableList(addVersion.files);
@@ -247,7 +247,7 @@ public class PackageAPI {
         payload.addError("Package null");
         return;
       }
-      SolrPackageLoader.SolrPackage pkg = coreContainer.getPackageLoader().getPackage(p);
+      PackageLoader.Package pkg = coreContainer.getPackageLoader().getPackage(p);
       if (pkg == null) {
         payload.addError("No such package: " + p);
         return;
@@ -269,9 +269,9 @@ public class PackageAPI {
     }
 
     @Command(name = "add")
-    public void add(PayloadObj<PackagePayload.AddVersion> payload) {
+    public void add(PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
-      PackagePayload.AddVersion add = payload.get();
+      Package.AddVersion add = payload.get();
       if (add.files.isEmpty()) {
         payload.addError("No files specified");
         return;
@@ -322,9 +322,9 @@ public class PackageAPI {
     }
 
     @Command(name = "delete")
-    public void del(PayloadObj<PackagePayload.DelVersion> payload) {
+    public void del(PayloadObj<Package.DelVersion> payload) {
       if (!checkEnabled(payload)) return;
-      PackagePayload.DelVersion delVersion = payload.get();
+      Package.DelVersion delVersion = payload.get();
       try {
         coreContainer
             .getZkController()

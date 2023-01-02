@@ -20,12 +20,12 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,15 +77,14 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
-    assertEquals(
+    assertTrue(
         "Expected 1 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        1,
-        notLeaders.size());
+        notLeaders.size() == 1);
 
     if (log.isInfoEnabled()) {
       log.info("All replicas active for {}", testCollectionName);
@@ -132,15 +131,14 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
-    assertEquals(
+    assertTrue(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        2,
-        notLeaders.size());
+        notLeaders.size() == 2);
 
     log.info("All replicas active for {}", testCollectionName);
 
@@ -192,7 +190,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (SolrClient client = getHttpSolrClient(replicaCoreUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 

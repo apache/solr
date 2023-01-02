@@ -200,7 +200,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
+    assertTrue("Healthcheck action failed!", tool.runTool(cli) == 0);
   }
 
   protected void doTestDeleteAction(String testCollectionName, String solrUrl) throws Exception {
@@ -212,9 +212,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     SolrCLI.DeleteTool tool = new SolrCLI.DeleteTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    assertEquals("Delete action failed!", 0, tool.runTool(cli));
-    assertFalse(
-        SolrCLI.safeCheckCollectionExists(
+    assertTrue("Delete action failed!", tool.runTool(cli) == 0);
+    assertTrue(
+        !SolrCLI.safeCheckCollectionExists(
             solrUrl, testCollectionName)); // it should not exist anymore
   }
 
@@ -248,7 +248,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
-    assertEquals("Set config property failed!", 0, tool.runTool(cli));
+    assertTrue("Set config property failed!", tool.runTool(cli) == 0);
 
     configJson = SolrCLI.getJson(configUrl);
     maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);

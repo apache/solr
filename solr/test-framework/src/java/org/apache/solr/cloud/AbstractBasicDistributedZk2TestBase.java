@@ -24,6 +24,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -34,7 +35,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
@@ -176,8 +176,8 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     ZkStateReader.from(cloudClient).getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
 
     int docs = 2;
-    for (JettySolrRunner jetty : jettys) {
-      final String clientUrl = getBaseUrl(jetty);
+    for (SolrClient client : clients) {
+      final String clientUrl = getBaseUrl((HttpSolrClient) client);
       addAndQueryDocs(clientUrl, docs);
       docs += 2;
     }
@@ -188,34 +188,33 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     SolrQuery query = new SolrQuery("*:*");
 
-    String collectionUrl = baseUrl + "/onenodecollection" + "core";
-    try (SolrClient client = getHttpSolrClient(collectionUrl)) {
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
 
       // it might take a moment for the proxy node to see us in their cloud state
-      waitForNon403or404or503(client, collectionUrl);
+      waitForNon403or404or503(qclient);
 
       // add a doc
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs);
-      client.add(doc);
-      client.commit();
+      qclient.add(doc);
+      qclient.commit();
 
-      QueryResponse results = client.query(query);
+      QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
 
-    try (SolrClient client = getHttpSolrClient(baseUrl + "/onenodecollection")) {
-      QueryResponse results = client.query(query);
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
+      QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs + 1);
-      client.add(doc);
-      client.commit();
+      qclient.add(doc);
+      qclient.commit();
 
       query = new SolrQuery("*:*");
       query.set("rows", 0);
-      results = client.query(query);
+      results = qclient.query(query);
       assertEquals(docs, results.getResults().getNumFound());
     }
   }
@@ -422,7 +421,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     checkShardConsistency(true, false);
 
     // try a backup command
-    try (final SolrClient client =
+    try (final HttpSolrClient client =
         getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
       final String backupName = "the_backup";
       ModifiableSolrParams params = new ModifiableSolrParams();

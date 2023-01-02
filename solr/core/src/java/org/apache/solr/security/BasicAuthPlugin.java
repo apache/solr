@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -273,7 +274,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   public static final String PROPERTY_REALM = "realm";
   public static final String FORWARD_CREDENTIALS = "forwardCredentials";
   private static final Set<String> PROPS =
-      Set.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
+      ImmutableSet.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
 
   /**
    * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front
@@ -286,7 +287,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private static class BasicAuthUserPrincipal implements Principal, Serializable {
+  private class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 
@@ -312,7 +313,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof BasicAuthUserPrincipal)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
       BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }

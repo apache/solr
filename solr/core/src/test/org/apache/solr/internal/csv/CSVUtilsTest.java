@@ -17,10 +17,10 @@
 package org.apache.solr.internal.csv;
 
 import java.io.IOException;
-import org.apache.solr.SolrTestCase;
+import junit.framework.TestCase;
 
 /** CSVUtilsTest */
-public class CSVUtilsTest extends SolrTestCase {
+public class CSVUtilsTest extends TestCase {
 
   // ======================================================
   //   static parser tests

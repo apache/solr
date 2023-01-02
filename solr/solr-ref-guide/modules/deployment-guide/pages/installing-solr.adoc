@@ -18,10 +18,8 @@
 // under the License.
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
-Please be sure to review the xref:system-requirements.adoc[] before starting Solr.
 
-Solr can also be xref:solr-in-docker.adoc[installed and deployed in Docker].
-The official image uses the binary release directly, so the xref:#directory-layout[directory layout] will be identical to what is described below.
+Please be sure to review the xref:system-requirements.adoc[] before starting Solr.
 
 == Available Solr Packages
 
@@ -98,7 +96,7 @@ Solr's `modules` directory includes 1st-party add-ons for specialized features t
 See the section xref:configuration-guide:solr-modules.adoc[] for more information.
 
 prometheus-exporter/::
-A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
+A standalone application, included under `bin/`, that montiors Solr instances and produces Prometheus metrics.
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 
 docker/::

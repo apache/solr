@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -543,7 +544,7 @@ public class ExtendedDismaxQParser extends QParser {
 
   /** Parses all function queries */
   protected List<Query> getBoostFunctions() throws SyntaxError {
-    List<Query> boostFunctions = new ArrayList<>();
+    List<Query> boostFunctions = new LinkedList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
         if (null == boostFunc || "".equals(boostFunc)) continue;
@@ -563,7 +564,7 @@ public class ExtendedDismaxQParser extends QParser {
 
   /** Parses all boost queries */
   protected List<Query> getBoostQueries() throws SyntaxError {
-    List<Query> boostQueries = new ArrayList<>();
+    List<Query> boostQueries = new LinkedList<>();
     if (config.hasBoostParams()) {
       for (String qs : config.boostParams) {
         if (qs.trim().length() == 0) continue;

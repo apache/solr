@@ -1336,7 +1336,6 @@ public class SolrQuery extends ModifiableSolrParams {
       return order;
     }
 
-    @Override
     public boolean equals(Object other) {
       if (this == other) return true;
       if (!(other instanceof SortClause)) return false;
@@ -1344,7 +1343,6 @@ public class SolrQuery extends ModifiableSolrParams {
       return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
     }
 
-    @Override
     public int hashCode() {
       return this.getItem().hashCode();
     }
@@ -1357,7 +1355,6 @@ public class SolrQuery extends ModifiableSolrParams {
      *
      * @return a description of the current sort clause
      */
-    @Override
     public String toString() {
       return "["
           + getClass().getSimpleName()

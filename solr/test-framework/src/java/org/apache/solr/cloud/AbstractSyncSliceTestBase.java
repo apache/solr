@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,9 +25,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,14 +37,10 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Test sync phase that occurs when Leader goes down and a new Leader is elected. */
 @LogLevel("org.apache.solr.update.processor.DistributedZkUpdateProcessor=WARN")
 public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private boolean success = false;
 
   @Override
@@ -101,10 +96,12 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = shardToJetty.get(SHARD1).get(2).jetty.getBaseUrl().toString();
+    String baseUrl =
+        ((HttpSolrClient) shardToJetty.get("shard1").get(2).client.solrClient).getBaseURL();
+    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     // we only set the connect timeout, not so timeout
-    try (SolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
+    try (HttpSolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
       baseClient.request(request);
     }
 
@@ -146,7 +143,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     CloudJettyRunner deadJetty = leaderJetty;
 
     // let's get the latest leader
-    while (deadJetty.equals(leaderJetty)) {
+    while (deadJetty == leaderJetty) {
       updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = shardToLeaderJetty.get("shard1");
     }
@@ -238,7 +235,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     try {
       commit();
     } catch (Throwable t) {
-      log.error("commit error", t);
+      t.printStackTrace();
     }
     if (shardFailMessage == null) {
       // try again

@@ -152,8 +152,8 @@ public class TestOrdValues extends SolrTestCase {
           inOrder
               ? id2String(N_DOCS - i) // in-order ==> larger  values first
               : id2String(i + 1); // reverse  ==> smaller values first
-      assertEquals(
-          "id of result " + i + " should be " + expectedId + " != " + score, expectedId, id);
+      assertTrue(
+          "id of result " + i + " should be " + expectedId + " != " + score, expectedId.equals(id));
     }
     r.close();
   }
@@ -161,10 +161,10 @@ public class TestOrdValues extends SolrTestCase {
   // LUCENE-1250
   public void testEqualsNull() {
     OrdFieldSource ofs = new OrdFieldSource("f");
-    assertNotEquals(null, ofs);
+    assertFalse(ofs.equals(null));
 
     ReverseOrdFieldSource rofs = new ReverseOrdFieldSource("f");
-    assertNotEquals(null, rofs);
+    assertFalse(rofs.equals(null));
   }
 
   /**

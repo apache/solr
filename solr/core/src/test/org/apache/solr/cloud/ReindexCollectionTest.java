@@ -73,7 +73,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();
     solrClient =
-        new RandomizingCloudSolrClientBuilder(
+        new CloudSolrClientBuilder(
                 Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
             .build();
   }

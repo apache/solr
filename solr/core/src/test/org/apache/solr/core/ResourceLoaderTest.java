@@ -27,6 +27,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,6 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -59,7 +59,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   public void testInstanceDir() throws Exception {
     final Path dir = createTempDir();
     try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
-      MatcherAssert.assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -165,12 +165,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       assertEquals(
           "Should have been able to read 3 bytes from bomStream", 3, bomStream.read(firstBytes));
 
-      assertArrayEquals(
+      assertTrue(
           "This test only works if "
               + fileWithBom
               + " contains a BOM -- it appears someone removed it.",
-          bomExpected,
-          firstBytes);
+          Arrays.equals(bomExpected, firstBytes));
     } finally {
       try {
         bomStream.close();

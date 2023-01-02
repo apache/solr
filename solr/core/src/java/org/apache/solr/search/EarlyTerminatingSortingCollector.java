@@ -67,9 +67,9 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
   }
 
   /** Sort used to sort the search results */
-  private final Sort sort;
+  protected final Sort sort;
   /** Number of documents to collect in each segment */
-  private final int numDocsToCollect;
+  protected final int numDocsToCollect;
 
   private final AtomicBoolean terminatedEarly = new AtomicBoolean(false);
 

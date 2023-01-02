@@ -272,14 +272,13 @@ public class DistributedFacetPivotSmallAdvancedTest extends BaseDistributedSearc
             .get("place_t,company_t")
             .get(0)
             .getValue();
-    assertNotEquals(
+    assertFalse(
         "both shards have same top constraint, test is invalid"
             + "(did someone change the test data?) ==> "
             + s0pivValue
             + "=="
             + s1pivValue,
-        s0pivValue,
-        s1pivValue);
+        s0pivValue.equals(s1pivValue));
   }
 
   private void doTestDeepPivotStatsOnString() throws Exception {

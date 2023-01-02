@@ -178,7 +178,8 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    shardIdNames.sort(
+    Collections.sort(
+        shardIdNames,
         (String o1, String o2) -> {
           Integer one = map.get(o1);
           Integer two = map.get(o2);

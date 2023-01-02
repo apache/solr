@@ -17,7 +17,12 @@
 
 pluginManagement {
     repositories {
-        mavenCentral()
+        maven {
+            url "https://jfrog.fkinternal.com/artifactory/maven_virtual"
+            metadataSources {
+                artifact() //Look directly for artifact
+            }
+        }
         gradlePluginPortal()
     }
 }
@@ -28,7 +33,6 @@ includeBuild("dev-tools/solr-missing-doclet")
 
 include "solr:solrj"
 include "solr:solrj-zookeeper"
-include "solr:solrj-streaming"
 include "solr:core"
 include "solr:server"
 include "solr:modules:analysis-extras"
@@ -45,6 +49,7 @@ include "solr:modules:ltr"
 include "solr:modules:s3-repository"
 include "solr:modules:scripting"
 include "solr:modules:sql"
+include "solr:modules:fkltr"
 include "solr:webapp"
 include "solr:benchmark"
 include "solr:test-framework"

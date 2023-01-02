@@ -32,24 +32,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
-import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,27 +60,10 @@ public class PluginBag<T> implements AutoCloseable {
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
   private final ApiBag apiBag;
-  private final ResourceConfig jerseyResources;
-
-  public static class JerseyMetricsLookupRegistry
-      extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
-
-  private final JerseyMetricsLookupRegistry infoBeanByResource;
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    if (klass == SolrRequestHandler.class) {
-      this.apiBag = new ApiBag(core != null);
-      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
-      this.jerseyResources =
-          (core == null)
-              ? new JerseyApplications.CoreContainerApp(infoBeanByResource)
-              : new JerseyApplications.SolrCoreApp(core, infoBeanByResource);
-    } else {
-      this.apiBag = null;
-      this.jerseyResources = null;
-      this.infoBeanByResource = null;
-    }
+    this.apiBag = klass == SolrRequestHandler.class ? new ApiBag(core != null) : null;
     this.core = core;
     this.klass = klass;
     // TODO: since reads will dominate writes, we could also think about creating a new instance of
@@ -234,24 +213,6 @@ public class PluginBag<T> implements AutoCloseable {
                 apiBag.register(api, nameSubstitutes);
               }
             }
-
-            // TODO Should we use <requestHandler name="/blah"> to override the path that each
-            //  resource registers under?
-            Collection<Class<? extends JerseyResource>> jerseyApis =
-                apiSupport.getJerseyResources();
-            if (!CollectionUtils.isEmpty(jerseyApis)) {
-              for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
-                if (log.isDebugEnabled()) {
-                  log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
-                }
-                jerseyResources.register(jerseyClazz);
-                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
-                // mapping
-                if (inst instanceof RequestHandlerBase) {
-                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
-                }
-              }
-            }
           }
         }
       } else {
@@ -398,7 +359,6 @@ public class PluginBag<T> implements AutoCloseable {
       return Optional.ofNullable(inst);
     }
 
-    @Override
     public T get() {
       return inst;
     }
@@ -436,7 +396,6 @@ public class PluginBag<T> implements AutoCloseable {
       return pluginInfo;
     }
 
-    @Override
     public String toString() {
       return String.valueOf(inst);
     }
@@ -530,9 +489,5 @@ public class PluginBag<T> implements AutoCloseable {
 
   public ApiBag getApiBag() {
     return apiBag;
-  }
-
-  public ResourceConfig getJerseyEndpoints() {
-    return jerseyResources;
   }
 }

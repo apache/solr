@@ -608,10 +608,9 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     for (int i = 0; i < q.length; i += 2) {
       if (ShardParams.DISTRIB_SINGLE_PASS.equals(q[i].toString())
           && Boolean.parseBoolean(q[i + 1].toString())) {
-        assertEquals(
+        assertTrue(
             "distrib.singlePass=true made more requests than number of shards",
-            sliceCount,
-            numRequests);
+            numRequests == sliceCount);
         distribSinglePass = true;
       }
       if (CommonParams.FL.equals(q[i].toString())) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
+import java.util.Arrays;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -99,7 +100,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
           new BigEndianAscendingWordSerializer(
               shortWordLength, 0 /*wordCount*/, 0 /*bytePadding, none*/);
 
-      assertArrayEquals(serializer.getBytes(), new byte[0]);
+      assert (Arrays.equals(serializer.getBytes(), new byte[0]));
     }
     { // Should work on a byte-divisible sequence, with no padding.
       final BigEndianAscendingWordSerializer serializer =
@@ -122,7 +123,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
             -70, -86, -86, -86, -86, -86, -86, -84,
             -113, -1, -1, -1, -1, -1, -1, -15
           };
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
     { // Should pad the array correctly.
       final BigEndianAscendingWordSerializer serializer =
@@ -134,7 +135,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       // 0x00 | 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 1};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
   }
 
@@ -147,7 +148,8 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       final BigEndianAscendingWordSerializer serializer =
           new BigEndianAscendingWordSerializer(
               shortWordLength, 0 /*wordCount*/, 0 /*bytePadding, none*/);
-      assertArrayEquals(serializer.getBytes(), new byte[0]);
+
+      assert (Arrays.equals(serializer.getBytes(), new byte[0]));
     }
     { // Should work on a non-byte-divisible sequence, with no padding.
       final BigEndianAscendingWordSerializer serializer =
@@ -173,7 +175,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
 
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {79, -62};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
     { // Should work on a byte-divisible sequence, with no padding.
       final BigEndianAscendingWordSerializer serializer =
@@ -206,7 +208,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
 
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {8, -122, 66, -104, -24};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
     { // Should pad the array correctly.
       final BigEndianAscendingWordSerializer serializer =
@@ -217,7 +219,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       // 0000 0000 | 0000 1|000
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {0, 8};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
   }
 
@@ -230,7 +232,8 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       final BigEndianAscendingWordSerializer serializer =
           new BigEndianAscendingWordSerializer(
               shortWordLength, 0 /*wordCount*/, 0 /*bytePadding, none*/);
-      assertArrayEquals(serializer.getBytes(), new byte[0]);
+
+      assert (Arrays.equals(serializer.getBytes(), new byte[0]));
     }
     { // Should work on a non-byte-divisible sequence, with no padding.
       final BigEndianAscendingWordSerializer serializer =
@@ -261,7 +264,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
 
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {0, 4, -128, 10, -128, 9, 96};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
     { // Should work on a byte-divisible sequence, with no padding.
       final BigEndianAscendingWordSerializer serializer =
@@ -308,7 +311,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes =
           new byte[] {0, 0, -128, 0, -128, 0, 96, 0, 64, 0, 40, 0, 24, 0, 14, 0, 8};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
     { // Should pad the array correctly.
       final BigEndianAscendingWordSerializer serializer =
@@ -320,7 +323,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
       // 0x00 0x00 0x00 0x80
       final byte[] bytes = serializer.getBytes();
       final byte[] expectedBytes = new byte[] {0, 0, 0, -128};
-      assertArrayEquals(bytes, expectedBytes);
+      assertTrue(Arrays.equals(bytes, expectedBytes));
     }
   }
 }

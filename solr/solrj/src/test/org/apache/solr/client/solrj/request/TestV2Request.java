@@ -92,7 +92,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
   @Test
   public void testHttpSolrClient() throws Exception {
-    SolrClient solrClient =
+    HttpSolrClient solrClient =
         new HttpSolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
     doTest(solrClient);
     solrClient.close();
@@ -198,7 +198,8 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.GET)
             .build();
 
-    try (SolrClient client1 = new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
+    try (HttpSolrClient client1 =
+        new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
       V2Response rsp = v2r.process(client1);
       assertEquals("0", rsp._getStr("responseHeader/status", null));
     }

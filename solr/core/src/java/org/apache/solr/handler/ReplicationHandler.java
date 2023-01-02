@@ -183,7 +183,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return new CommitVersionInfo(generation, version);
     }
 
-    @Override
     public String toString() {
       return "generation=" + generation + ",version=" + version;
     }
@@ -1629,9 +1628,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // Throw exception on directory traversal attempts
-    protected String validateFilenameOrError(String fileName) {
-      if (fileName != null) {
-        Path filePath = Paths.get(fileName);
+    protected String validateFilenameOrError(String filename) {
+      if (filename != null) {
+        Path filePath = Paths.get(filename);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -1641,7 +1640,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (filePath.isAbsolute()) {
           throw new SolrException(ErrorCode.FORBIDDEN, "File name must be relative");
         }
-        return fileName;
+        return filename;
       } else return null;
     }
 
@@ -1682,7 +1681,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
@@ -1809,7 +1807,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
-    @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
       return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
@@ -1822,7 +1819,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
-    @Override
     protected Path initFile() {
       // if it is a conf file read from config directory
       return core.getResourceLoader().getConfigPath().resolve(cfileName);

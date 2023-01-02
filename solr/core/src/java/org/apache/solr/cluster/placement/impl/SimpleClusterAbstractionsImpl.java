@@ -81,7 +81,6 @@ class SimpleClusterAbstractionsImpl {
       return liveNodes;
     }
 
-    @Override
     public Set<Node> getLiveDataNodes() {
       return liveNodesWithData;
     }
@@ -133,19 +132,20 @@ class SimpleClusterAbstractionsImpl {
      * comparing node names given that new instances of {@link Node} are created with names equal to
      * existing instances (See {@link ReplicaImpl} constructor).
      */
-    @Override
     public boolean equals(Object obj) {
+      if (obj == null) {
+        return false;
+      }
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof NodeImpl)) {
+      if (obj.getClass() != getClass()) {
         return false;
       }
       NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
-    @Override
     public int hashCode() {
       return Objects.hashCode(nodeName);
     }
@@ -300,12 +300,14 @@ class SimpleClusterAbstractionsImpl {
       return shardState;
     }
 
-    @Override
     public boolean equals(Object obj) {
+      if (obj == null) {
+        return false;
+      }
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ShardImpl)) {
+      if (obj.getClass() != getClass()) {
         return false;
       }
       ShardImpl other = (ShardImpl) obj;
@@ -316,7 +318,6 @@ class SimpleClusterAbstractionsImpl {
           && Objects.equals(this.leader, other.leader);
     }
 
-    @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
     }
@@ -460,12 +461,14 @@ class SimpleClusterAbstractionsImpl {
       }
     }
 
-    @Override
     public boolean equals(Object obj) {
+      if (obj == null) {
+        return false;
+      }
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ReplicaImpl)) {
+      if (obj.getClass() != getClass()) {
         return false;
       }
       ReplicaImpl other = (ReplicaImpl) obj;
@@ -477,7 +480,6 @@ class SimpleClusterAbstractionsImpl {
           && Objects.equals(this.node, other.node);
     }
 
-    @Override
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
     }

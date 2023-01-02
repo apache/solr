@@ -90,7 +90,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  static class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
     int[] counts;
 
     public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
@@ -141,7 +141,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  static class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
     int[] counts;
 
     public AvgSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -195,7 +195,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  static class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
     int[] counts;
 
     public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)

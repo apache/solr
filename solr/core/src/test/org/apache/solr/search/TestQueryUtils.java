@@ -45,26 +45,26 @@ public class TestQueryUtils extends SolrTestCaseJ4 {
 
   public void positive(Query q) {
     assertFalse(QueryUtils.isNegative(q));
-    assertSame(QueryUtils.getAbs(q), q);
+    assertTrue(QueryUtils.getAbs(q) == q);
     Collection<BooleanClause> clauses =
         (q instanceof BooleanQuery) ? ((BooleanQuery) q).clauses() : null;
     if (clauses != null) {
       if (clauses.size() != 0) {
-        assertSame(QueryUtils.makeQueryable(q), q);
+        assertTrue(QueryUtils.makeQueryable(q) == q);
       }
     } else {
-      assertSame(QueryUtils.makeQueryable(q), q);
+      assertTrue(QueryUtils.makeQueryable(q) == q);
     }
   }
 
   public void negative(Query q) {
     assertTrue(QueryUtils.isNegative(q));
     Query abs = QueryUtils.getAbs(q);
-    assertNotSame(q, abs);
+    assertTrue(q != abs);
     Query neg2 = QueryUtils.fixNegativeQuery(q);
 
-    assertNotEquals(abs, q);
-    assertNotEquals(neg2, q);
+    assertFalse(abs.equals(q));
+    assertFalse(neg2.equals(q));
   }
 
   public void testNegativeQueries() {

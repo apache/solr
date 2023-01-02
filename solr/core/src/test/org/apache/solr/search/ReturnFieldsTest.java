@@ -572,13 +572,12 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       int offset = TestUtil.nextInt(r, 0, WHITESPACE_CHARACTERS.length - 1);
       char c = WHITESPACE_CHARACTERS[offset];
       // sanity check
-      assertTrue(
-          String.format(
+      assert Character.isWhitespace(c)
+          : String.format(
               Locale.ENGLISH,
               "Not really whitespace? WHITESPACE_CHARACTERS[%d] is '\\u%04X'",
               offset,
-              (int) c),
-          Character.isWhitespace(c));
+              (int) c);
       out.append(c);
     }
     return out.toString();

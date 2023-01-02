@@ -82,7 +82,6 @@ public class XmlQParserPlugin extends QParserPlugin {
       super(qstr, localParams, params, req);
     }
 
-    @Override
     public Query parse() throws SyntaxError {
       final String qstr = getString();
       if (qstr == null || qstr.isEmpty()) {
@@ -102,7 +101,6 @@ public class XmlQParserPlugin extends QParserPlugin {
     }
   }
 
-  @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new XmlQParser(qstr, localParams, params, req);

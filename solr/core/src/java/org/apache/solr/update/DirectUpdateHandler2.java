@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
@@ -300,27 +301,33 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } catch (SolrException e) {
       throw e;
     } catch (AlreadyClosedException e) {
-      String errorMsg =
-          "Server error writing document id " + cmd.getPrintableId() + " to the index.";
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          String.format(
+              Locale.ROOT,
+              "Server error writing document id %s to the index",
+              cmd.getPrintableId()),
+          e);
     } catch (IllegalArgumentException iae) {
-      String errorDetails =
-          (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
-              ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
-              : "");
-      String errorMsg =
-          "Exception writing document id "
-              + cmd.getPrintableId()
-              + " to the index; possible analysis error: "
-              + iae.getMessage()
-              + errorDetails;
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, iae);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          String.format(
+              Locale.ROOT,
+              "Exception writing document id %s to the index; possible analysis error: "
+                  + iae.getMessage()
+                  + (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
+                      ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
+                      : ""),
+              cmd.getPrintableId()),
+          iae);
     } catch (RuntimeException t) {
-      String errorMsg =
-          "Exception writing document id "
-              + cmd.getPrintableId()
-              + " to the index; possible analysis error.";
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, t);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          String.format(
+              Locale.ROOT,
+              "Exception writing document id %s to the index; possible analysis error.",
+              cmd.getPrintableId()),
+          t);
     }
   }
 
@@ -737,7 +744,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
-          if (shouldCommit(cmd, writer)) {
+          if (writer.hasUncommittedChanges()) {
             SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
             writer.commit();
           } else {
@@ -815,15 +822,6 @@ public class DirectUpdateHandler2 extends UpdateHandler
         SolrException.log(log, e);
       }
     }
-  }
-
-  /**
-   * Determines whether the commit command should effectively trigger a commit on the index writer.
-   * This method is called with the commit lock and is the last step before effectively calling
-   * {@link IndexWriter#commit()}.
-   */
-  protected boolean shouldCommit(CommitUpdateCommand cmd, IndexWriter writer) throws IOException {
-    return writer.hasUncommittedChanges() || (cmd.commitData != null && !cmd.commitData.isEmpty());
   }
 
   @Override

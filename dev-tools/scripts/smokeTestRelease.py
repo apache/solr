@@ -277,19 +277,16 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   if os.path.exists(gpgHomeDir):
     shutil.rmtree(gpgHomeDir)
   os.makedirs(gpgHomeDir, 0o700)
-  gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
-  run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
+  run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
+      '%s/solr.gpg.import.log' % tmpDir)
 
   if mavenURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
-    stopGpgAgent(gpgHomeDir, logFile)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
-    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
@@ -327,11 +324,6 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
           if line.lower().find('warning') != -1:
             print('      GPG: %s' % line.strip())
 
-      # Make sure to shutdown the GPG agent at the end
-      stopGpgAgent(gpgHomeDir, logFile)
-
-def stopGpgAgent(gpgHomeDir, logFile):
-  run('gpgconf --homedir %s --kill gpg-agent' % (gpgHomeDir), logFile)
 
 def testChanges(version, changesURLString):
   print('  check changes HTML...')
@@ -931,8 +923,6 @@ def verifyMavenSigs(tmpDir, artifacts, keysFile):
     sys.stdout.write('.')
   print()
 
-  # Make sure to shutdown the GPG agent at the end
-  stopGpgAgent(gpgHomeDir, logFile)
 
 def print_warnings_in_file(file):
   with open(file) as f:

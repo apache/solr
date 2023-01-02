@@ -27,9 +27,9 @@ public class TestLukeRequest extends SolrTestCaseJ4 {
     final LukeRequest req = new LukeRequest();
     final SolrParams params = req.getParams();
 
-    assertNull(
+    assertTrue(
         "Expected the request to omit the 'includeIndexFieldFlags' param",
-        params.get("includeIndexFieldFlags"));
+        params.get("includeIndexFieldFlags") == null);
   }
 
   @Test

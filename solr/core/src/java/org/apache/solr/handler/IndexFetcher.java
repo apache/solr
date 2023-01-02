@@ -97,7 +97,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -370,7 +369,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (SolrClient client =
+    try (HttpSolrClient client =
         new Builder(leaderUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout)
@@ -397,7 +396,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (SolrClient client =
+    try (HttpSolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout)
@@ -843,7 +842,7 @@ public class IndexFetcher {
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
-      if (fsyncService != null && !ExecutorUtil.isShutdown(fsyncService)) fsyncService.shutdown();
+      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
       fsyncService = null;
       stop = false;
       fsyncException = null;
@@ -900,7 +899,7 @@ public class IndexFetcher {
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
    */
   private void terminateAndWaitFsyncService() throws Exception {
-    if (ExecutorUtil.isTerminated(fsyncService)) return;
+    if (fsyncService.isTerminated()) return;
     fsyncService.shutdown();
     // give a long wait say 1 hr
     fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
@@ -1987,7 +1986,7 @@ public class IndexFetcher {
       InputStream is = null;
 
       // TODO use shardhandler
-      try (SolrClient client =
+      try (HttpSolrClient client =
           new Builder(leaderUrl)
               .withHttpClient(myHttpClient)
               .withResponseParser(null)
@@ -2020,22 +2019,18 @@ public class IndexFetcher {
       outStream = copy2Dir.createOutput(this.saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
 
-    @Override
     public void sync() throws IOException {
       copy2Dir.sync(Collections.singleton(saveAs));
     }
 
-    @Override
     public void write(byte[] buf, int packetSize) throws IOException {
       outStream.writeBytes(buf, 0, packetSize);
     }
 
-    @Override
     public void close() throws Exception {
       outStream.close();
     }
 
-    @Override
     public void delete() throws Exception {
       copy2Dir.deleteFile(saveAs);
     }
@@ -2079,23 +2074,19 @@ public class IndexFetcher {
       this.fileChannel = this.fileOutputStream.getChannel();
     }
 
-    @Override
     public void sync() throws IOException {
       FileUtils.sync(file);
     }
 
-    @Override
     public void write(byte[] buf, int packetSize) throws IOException {
       fileChannel.write(ByteBuffer.wrap(buf, 0, packetSize));
     }
 
-    @Override
     public void close() throws Exception {
       // close the FileOutputStream (which also closes the Channel)
       fileOutputStream.close();
     }
 
-    @Override
     public void delete() throws Exception {
       Files.delete(file.toPath());
     }
@@ -2120,7 +2111,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler
-    try (SolrClient client =
+    try (HttpSolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout)

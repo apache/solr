@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,9 +31,16 @@ import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public ExpectedException expectedException = ExpectedException.none();
+
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
   private static SolrResourceLoader loader = null;
@@ -69,9 +77,9 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       plugins[1] = new PluginInfo("repository", attrs);
     }
 
-    SolrException thrown =
-        assertThrows(SolrException.class, () -> new BackupRepositoryFactory(plugins));
-    assertEquals("More than one backup repository is configured as default", thrown.getMessage());
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("More than one backup repository is configured as default");
+    new BackupRepositoryFactory(plugins);
   }
 
   @Test
@@ -93,10 +101,9 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       plugins[1] = new PluginInfo("repository", attrs);
     }
 
-    SolrException thrown =
-        assertThrows(SolrException.class, () -> new BackupRepositoryFactory(plugins));
-
-    assertEquals("Duplicate backup repository with name repo1", thrown.getMessage());
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("Duplicate backup repository with name repo1");
+    new BackupRepositoryFactory(plugins);
   }
 
   @Test
@@ -104,10 +111,9 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
     PluginInfo[] plugins = new PluginInfo[0];
     BackupRepositoryFactory f = new BackupRepositoryFactory(plugins);
 
-    NullPointerException thrown =
-        assertThrows(NullPointerException.class, () -> f.newInstance(loader, "repo1"));
-
-    assertEquals("Could not find a backup repository with name repo1", thrown.getMessage());
+    expectedException.expect(NullPointerException.class);
+    expectedException.expectMessage("Could not find a backup repository with name repo1");
+    f.newInstance(loader, "repo1");
   }
 
   @Test
@@ -141,9 +147,12 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       assertEquals("/tmp", repo.getConfigProperty("location"));
     }
 
-    NullPointerException thrown =
-        assertThrows(NullPointerException.class, () -> f.newInstance(loader, "boom"));
-
-    assertEquals("Could not find a backup repository with name boom", thrown.getMessage());
+    {
+      try {
+        BackupRepository repo = f.newInstance(loader, "boom");
+        fail();
+      } catch (Exception e) {
+      }
+    }
   }
 }

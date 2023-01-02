@@ -68,7 +68,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName, schemaFileName);
   }
 
-  @Override
   @After
   public void tearDown() throws Exception {
     System.clearProperty("mergePolicySort");
@@ -115,7 +114,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
-    assertTrue("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
+    assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
   }
 
   @Test
@@ -136,7 +135,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
-    assertFalse("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
+    assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
   }
 
   public void testSortingMPSolrIndexConfigCreation() throws Exception {

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.internal.csv;
 
-import org.apache.solr.SolrTestCase;
+import junit.framework.TestCase;
 
 /**
  * CSVStrategyTest
@@ -26,7 +26,7 @@ import org.apache.solr.SolrTestCase;
  * approach for fixing a potential bug (it's likely that the strategy itself fails if the lexer has
  * problems...).
  */
-public class CSVStrategyTest extends SolrTestCase {
+public class CSVStrategyTest extends TestCase {
 
   // ======================================================
   //   getters
@@ -52,16 +52,16 @@ public class CSVStrategyTest extends SolrTestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertTrue(strategy.getIgnoreLeadingWhitespaces());
-    assertFalse(strategy.getUnicodeEscapeInterpretation());
-    assertTrue(strategy.getIgnoreEmptyLines());
+    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
+    assertEquals(true, strategy.getIgnoreEmptyLines());
     // explicit csv settings
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertTrue(strategy.getIgnoreLeadingWhitespaces());
-    assertFalse(strategy.getUnicodeEscapeInterpretation());
-    assertTrue(strategy.getIgnoreEmptyLines());
+    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
+    assertEquals(true, strategy.getIgnoreEmptyLines());
   }
 
   public void testSetExcelStrategy() {
@@ -69,8 +69,8 @@ public class CSVStrategyTest extends SolrTestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertFalse(strategy.getIgnoreLeadingWhitespaces());
-    assertFalse(strategy.getUnicodeEscapeInterpretation());
-    assertFalse(strategy.getIgnoreEmptyLines());
+    assertEquals(false, strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(false, strategy.getUnicodeEscapeInterpretation());
+    assertEquals(false, strategy.getIgnoreEmptyLines());
   }
 }

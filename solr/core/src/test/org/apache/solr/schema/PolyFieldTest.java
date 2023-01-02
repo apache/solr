@@ -113,7 +113,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertNotNull(home);
     try {
       fields = home.createFields("35.0,foo");
-      fail();
+      assertTrue(false);
     } catch (Exception e) {
       //
     }

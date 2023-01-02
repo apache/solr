@@ -16,6 +16,9 @@
  */
 package org.apache.solr.ltr.norm;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
-public class TestStandardNormalizer extends SolrTestCaseJ4 {
+public class TestStandardNormalizer {
 
   private final SolrResourceLoader solrResourceLoader =
       new SolrResourceLoader(Paths.get("").toAbsolutePath());

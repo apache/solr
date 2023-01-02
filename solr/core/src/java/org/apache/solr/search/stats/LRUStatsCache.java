@@ -129,7 +129,7 @@ public class LRUStatsCache extends ExactStatsCache {
     // force-fetched on next request and cached.
 
     // check for missing stats from previous requests
-    if (!missingColStats.isEmpty() || !missingTermStats.isEmpty()) {
+    if (!missingColStats.isEmpty() || !missingColStats.isEmpty()) {
       // needs to fetch anyway, so get the full query stats + the missing stats for caching
       ShardRequest sreq = super.doRetrieveStatsRequest(rb);
       if (!missingColStats.isEmpty()) {

@@ -17,10 +17,11 @@
 package org.apache.solr.internal.csv;
 
 import java.io.StringReader;
-import org.apache.solr.SolrTestCase;
+import java.util.Arrays;
+import junit.framework.TestCase;
 
 /** ExtendedBufferedReaderTest */
-public class ExtendedBufferedReaderTest extends SolrTestCase {
+public class ExtendedBufferedReaderTest extends TestCase {
 
   // ======================================================
   //   the test cases
@@ -88,20 +89,20 @@ public class ExtendedBufferedReaderTest extends SolrTestCase {
 
     ExtendedBufferedReader br = getEBR("");
     assertEquals(0, br.read(res, 0, 0));
-    assertArrayEquals(res, ref);
+    assertTrue(Arrays.equals(res, ref));
 
     br = getEBR("abcdefg");
     ref[0] = 'a';
     ref[1] = 'b';
     ref[2] = 'c';
     assertEquals(3, br.read(res, 0, 3));
-    assertArrayEquals(res, ref);
+    assertTrue(Arrays.equals(res, ref));
     assertEquals('c', br.readAgain());
 
     assertEquals('d', br.lookAhead());
     ref[4] = 'd';
     assertEquals(1, br.read(res, 4, 1));
-    assertArrayEquals(res, ref);
+    assertTrue(Arrays.equals(res, ref));
     assertEquals('d', br.readAgain());
   }
 
@@ -111,43 +112,43 @@ public class ExtendedBufferedReaderTest extends SolrTestCase {
 
   public void testReadLine() throws Exception {
     ExtendedBufferedReader br = getEBR("");
-    assertNull(br.readLine());
+    assertTrue(br.readLine() == null);
 
     br = getEBR("\n");
-    assertEquals("", br.readLine());
-    assertNull(br.readLine());
+    assertTrue(br.readLine().equals(""));
+    assertTrue(br.readLine() == null);
 
     br = getEBR("foo\n\nhello");
     assertEquals(0, br.getLineNumber());
-    assertEquals("foo", br.readLine());
+    assertTrue(br.readLine().equals("foo"));
     assertEquals(1, br.getLineNumber());
-    assertEquals("", br.readLine());
+    assertTrue(br.readLine().equals(""));
     assertEquals(2, br.getLineNumber());
-    assertEquals("hello", br.readLine());
+    assertTrue(br.readLine().equals("hello"));
     assertEquals(3, br.getLineNumber());
-    assertNull(br.readLine());
+    assertTrue(br.readLine() == null);
     assertEquals(3, br.getLineNumber());
 
     br = getEBR("foo\n\nhello");
     assertEquals('f', br.read());
     assertEquals('o', br.lookAhead());
-    assertEquals("oo", br.readLine());
+    assertTrue(br.readLine().equals("oo"));
     assertEquals(1, br.getLineNumber());
     assertEquals('\n', br.lookAhead());
-    assertEquals("", br.readLine());
+    assertTrue(br.readLine().equals(""));
     assertEquals(2, br.getLineNumber());
     assertEquals('h', br.lookAhead());
-    assertEquals("hello", br.readLine());
-    assertNull(br.readLine());
+    assertTrue(br.readLine().equals("hello"));
+    assertTrue(br.readLine() == null);
     assertEquals(3, br.getLineNumber());
 
     br = getEBR("foo\rbaar\r\nfoo");
-    assertEquals("foo", br.readLine());
+    assertTrue(br.readLine().equals("foo"));
     assertEquals('b', br.lookAhead());
-    assertEquals("baar", br.readLine());
+    assertTrue(br.readLine().equals("baar"));
     assertEquals('f', br.lookAhead());
-    assertEquals("foo", br.readLine());
-    assertNull(br.readLine());
+    assertTrue(br.readLine().equals("foo"));
+    assertTrue(br.readLine() == null);
   }
 
   public void testSkip0() throws Exception {
@@ -170,11 +171,11 @@ public class ExtendedBufferedReaderTest extends SolrTestCase {
     assertEquals(3, br.skip(3));
     assertEquals('f', br.lookAhead());
     assertEquals(2, br.skip(5));
-    assertNull(br.readLine());
+    assertTrue(br.readLine() == null);
 
     br = getEBR("12345");
     assertEquals(5, br.skip(5));
-    assertEquals(ExtendedBufferedReader.END_OF_STREAM, br.lookAhead());
+    assertTrue(br.lookAhead() == ExtendedBufferedReader.END_OF_STREAM);
   }
 
   public void testSkipUntil() throws Exception {
@@ -193,16 +194,16 @@ public class ExtendedBufferedReaderTest extends SolrTestCase {
 
   public void testReadUntil() throws Exception {
     ExtendedBufferedReader br = getEBR("");
-    assertEquals("", br.readUntil(';'));
+    assertTrue(br.readUntil(';').equals(""));
     br = getEBR("ABCDEF;GHL;;MN");
-    assertEquals("ABCDEF", br.readUntil(';'));
-    assertEquals(0, br.readUntil(';').length());
+    assertTrue(br.readUntil(';').equals("ABCDEF"));
+    assertTrue(br.readUntil(';').length() == 0);
     br.skip(1);
-    assertEquals("GHL", br.readUntil(';'));
+    assertTrue(br.readUntil(';').equals("GHL"));
     br.skip(1);
-    assertEquals("", br.readUntil(';'));
+    assertTrue(br.readUntil(';').equals(""));
     br.skip(1);
-    assertEquals("MN", br.readUntil(','));
+    assertTrue(br.readUntil(',').equals("MN"));
   }
 
   private ExtendedBufferedReader getEBR(String s) {

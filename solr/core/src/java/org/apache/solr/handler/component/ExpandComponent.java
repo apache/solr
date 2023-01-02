@@ -432,7 +432,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       newFilters.add(groupQuery);
     }
 
-    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(newFilters);
+    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
     if (pfilter.postFilter != null) {
       pfilter.postFilter.setLastDelegate(groupExpandCollector);
       collector = pfilter.postFilter;
@@ -557,7 +557,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     }
 
-    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
@@ -657,7 +656,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.collapsedSet = collapsedSet;
     }
 
-    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 

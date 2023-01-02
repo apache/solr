@@ -27,6 +27,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +58,7 @@ public class SocketProxy {
 
   private CountDownLatch closed = new CountDownLatch(1);
 
-  public List<Bridge> connections = new ArrayList<>();
+  public List<Bridge> connections = new LinkedList<>();
 
   private final int listenPort;
 
@@ -95,7 +96,6 @@ public class SocketProxy {
     doOpen();
   }
 
-  @Override
   public String toString() {
     return "SocketyProxy: port=" + listenPort + "; target=" + target;
   }
@@ -350,7 +350,6 @@ public class SocketProxy {
         pause.get().countDown();
       }
 
-      @Override
       public void run() {
         byte[] buf = new byte[1024];
 
@@ -438,7 +437,6 @@ public class SocketProxy {
       pause.get().countDown();
     }
 
-    @Override
     public void run() {
       try {
         while (!socket.isClosed()) {

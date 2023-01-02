@@ -97,7 +97,12 @@ dependencies {
 // We're using commons-codec for computing checksums.
 buildscript {
   repositories {
-    mavenCentral()
+    maven {
+      url "https://jfrog.fkinternal.com/artifactory/maven_virtual"
+      metadataSources {
+        artifact()
+      }
+    }
   }
   dependencies {
     classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"

@@ -311,7 +311,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           collection);
       Thread.currentThread().interrupt();
     } finally {
-      if (!ExecutorUtil.isShutdown(parallelExecutor)) parallelExecutor.shutdown();
+      if (!parallelExecutor.isShutdown()) parallelExecutor.shutdown();
     }
 
     if (log.isInfoEnabled()) {
@@ -324,7 +324,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  private static List<String> getActiveReplicaCoreUrls(
+  protected static List<String> getActiveReplicaCoreUrls(
       ZkController zkController, String collection, String localCoreNodeName) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
@@ -378,8 +378,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1
-            || (remoteVersion < expectedZkVersion
-                && !zkController.getCoreContainer().isShutDown())) {
+            || remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown()) {
           try {
             HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
             NamedList<Object> zkversionResp = mrr.future.get();
@@ -1044,7 +1043,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  @Override
   public ManagedIndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
     if (!isMutable) {
       String msg = "This ManagedIndexSchema is not mutable.";
@@ -1311,7 +1309,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   /** Informs analyzers used by a fieldType. */
-  private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
+  protected void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
     // must inform any sub-components used in the
     // tokenizer chain if they are ResourceLoaderAware
     if (!fieldType.supportsAnalyzers()) return;
@@ -1444,7 +1442,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * ResourceLoaderAware interface, which need to be informed after they are loaded (as they depend
    * on this callback to complete initialization work)
    */
-  private void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
+  protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
     CharFilterFactory[] charFilters = chain.getCharFilterFactories();
     for (CharFilterFactory next : charFilters) {
       if (next instanceof ResourceLoaderAware) {

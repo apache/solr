@@ -117,9 +117,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     // add grandchildren after children
     for (ListIterator<String[]> iter = block.listIterator(); iter.hasNext(); ) {
       String[] child = iter.next();
-      assertTrue(
-          Arrays.toString(child),
-          Objects.equals(child[0], "child_s") && Objects.equals(child[2], "parentchild_s"));
+      assert Objects.equals(child[0], "child_s") && Objects.equals(child[2], "parentchild_s")
+          : Arrays.toString(child);
       String child_s = child[1];
       String parentchild_s = child[3];
       int grandChildPos = 0;
@@ -179,6 +178,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "//doc/arr[@name='child_s']/str='" + klm[0] + "'",
         "//doc/arr[@name='child_s']/str='" + klm[1] + "'",
         "//doc/arr[@name='child_s']/str='" + klm[2] + "'");
+    assert klm.length == 3 : "change asserts pls " + Arrays.toString(klm);
   }
 
   private static final String beParents[] =

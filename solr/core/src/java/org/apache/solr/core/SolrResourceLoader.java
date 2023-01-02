@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +63,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
-import org.apache.solr.pkg.SolrPackageLoader;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -599,7 +600,6 @@ public class SolrResourceLoader
   private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
-  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
@@ -711,7 +711,6 @@ public class SolrResourceLoader
   }
 
   /** Tell all {@link SolrCoreAware} instances about the SolrCore */
-  @Override
   public void inform(SolrCore core) {
     if (getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
@@ -839,7 +838,7 @@ public class SolrResourceLoader
 
   /** If these components are trying to load classes, use schema classloader */
   private static final Set<Class<?>> schemaResourceLoaderComponents =
-      Set.of(
+      ImmutableSet.of(
           CharFilterFactory.class,
           TokenFilterFactory.class,
           TokenizerFactory.class,
@@ -896,14 +895,14 @@ public class SolrResourceLoader
     if (info.cName.pkg == null) return findClass(info.className, type);
     return _classLookup(
         info,
-        (Function<SolrPackageLoader.SolrPackage.Version, Class<? extends T>>)
+        (Function<PackageLoader.Package.Version, Class<? extends T>>)
             ver -> ver.getLoader().findClass(info.cName.className, type),
         registerCoreReloadListener);
   }
 
   private <T> T _classLookup(
       PluginInfo info,
-      Function<SolrPackageLoader.SolrPackage.Version, T> fun,
+      Function<PackageLoader.Package.Version, T> fun,
       boolean registerCoreReloadListener) {
     PluginInfo.ClassName cName = info.cName;
     if (registerCoreReloadListener) {

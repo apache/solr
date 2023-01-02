@@ -33,5 +33,4 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
-  testImplementation 'org.slf4j:slf4j-api'
 }

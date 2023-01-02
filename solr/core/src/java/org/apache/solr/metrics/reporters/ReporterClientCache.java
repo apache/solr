@@ -69,7 +69,6 @@ public class ReporterClientCache<T> implements Closeable {
   }
 
   /** Empty this cache, and close all clients that are {@link Closeable}. */
-  @Override
   public void close() {
     for (T client : cache.values()) {
       if (client instanceof Closeable) {

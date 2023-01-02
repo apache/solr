@@ -75,7 +75,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
-      copy.sort(CoreSorter.countsComparator);
+      Collections.sort(copy, CoreSorter.countsComparator);
       for (int j = 0; j < copy.size(); j++) {
         assertEquals(expectedCounts.get(j), copy.get(j));
       }
@@ -154,11 +154,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (Map.Entry<CountsForEachShard, List<CoreDescriptor>> entry : myCountsToDescs.entrySet()) {
       for (CoreDescriptor descriptor : entry.getValue()) {
         CountsForEachShard prev = myDescsToCounts.put(descriptor, entry.getKey());
-        assertNull(prev); // sanity check
+        assert prev == null; // sanity check
       }
     }
 
-    assertEquals(myCountsToDescs.size(), perShardCounts.size()); // just a sanity check
+    assert myCountsToDescs.size() == perShardCounts.size(); // just a sanity check
 
     CoreContainer mockCC = mock(CoreContainer.class);
     {
@@ -192,7 +192,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       CountsForEachShard lastCounts = null;
       for (CoreDescriptor resultDesc : resultDescs) {
         CountsForEachShard counts = myDescsToCounts.get(resultDesc);
-        if (!counts.equals(lastCounts)) {
+        if (counts != lastCounts) {
           resultCounts.add(counts);
         }
         lastCounts = counts;

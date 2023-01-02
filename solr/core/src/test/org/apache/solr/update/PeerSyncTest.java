@@ -42,11 +42,9 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@SuppressWarnings("JdkObsolete")
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 100; // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
@@ -349,7 +347,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
+    assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
 
     // Reordered DBQ with Child-nodes (SOLR-10114)
     docsAdded.clear();
@@ -464,7 +462,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since other has nothing
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertNull(mur.versionsAndRanges);
+      assertEquals(null, mur.versionsAndRanges);
     }
   }
 
@@ -479,7 +477,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               otherVersions, completeList, ourUpdates, ourLowThreshold);
       // no updates requested since us and other have the same versions
       assertEquals(0L, mur.totalRequestedUpdates);
-      assertNull(mur.versionsAndRanges);
+      assertEquals(null, mur.versionsAndRanges);
     }
   }
 
@@ -513,7 +511,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
          */
         assertTrue(missing < ourLowThreshold);
         assertEquals(0L, mur.totalRequestedUpdates);
-        assertNull(mur.versionsAndRanges);
+        assertEquals(null, mur.versionsAndRanges);
       }
     }
   }
@@ -549,7 +547,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
            */
           assertTrue(missing < ourLowThreshold);
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
         }
       }
     }
@@ -584,7 +582,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
         }
       }
       {
@@ -599,7 +597,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
         }
       }
       {
@@ -614,7 +612,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {
@@ -657,7 +655,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates because ???
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
         }
       }
       {
@@ -672,7 +670,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         } else {
           // request no updates since we don't need a complete list ...
           assertEquals(0L, mur.totalRequestedUpdates);
-          assertNull(mur.versionsAndRanges);
+          assertEquals(null, mur.versionsAndRanges);
           // ... and all the missing versions are older/lower than our 'low' threshold
           for (Long version : otherVersions) {
             if (!ourUpdates.contains(version)) {

@@ -436,7 +436,7 @@ public class RandomDataHistogram {
       @Override
       public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Surrogate)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Surrogate surrogate = (Surrogate) o;
         return hashCode.equals(surrogate.hashCode)
             && identityHashcode.equals(surrogate.identityHashcode);

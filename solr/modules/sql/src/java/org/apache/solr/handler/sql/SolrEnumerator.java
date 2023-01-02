@@ -58,7 +58,6 @@ class SolrEnumerator implements Enumerator<Object> {
    *
    * @return A new row from the results
    */
-  @Override
   public Object current() {
     if (fields.size() == 1) {
       return this.getter(current, fields.get(0));
@@ -112,7 +111,6 @@ class SolrEnumerator implements Enumerator<Object> {
     return val;
   }
 
-  @Override
   public boolean moveNext() {
     try {
       Tuple tuple = this.tupleStream.read();
@@ -128,12 +126,10 @@ class SolrEnumerator implements Enumerator<Object> {
     }
   }
 
-  @Override
   public void reset() {
     throw new UnsupportedOperationException();
   }
 
-  @Override
   public void close() {
     if (this.tupleStream != null) {
       try {

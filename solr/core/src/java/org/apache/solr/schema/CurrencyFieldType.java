@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -308,7 +307,6 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * @see Currency#getDefaultFractionDigits
    * @see #getConvertedValueSource
    */
-  @Override
   public RawCurrencyValueSource getValueSource(SchemaField field, QParser parser) {
     getAmountField(field).checkFieldCacheSource();
     getCurrencyField(field).checkFieldCacheSource();
@@ -515,20 +513,22 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof ConvertedCurrencyValueSource)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
 
       ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
 
-      return Objects.equals(source, that.source)
+      return !(source != null ? !source.equals(that.source) : that.source != null)
           && (rate == that.rate)
-          && Objects.equals(targetCurrency, that.targetCurrency);
+          && !(targetCurrency != null
+              ? !targetCurrency.equals(that.targetCurrency)
+              : that.targetCurrency != null);
     }
 
     @Override
     public int hashCode() {
       int result = targetCurrency != null ? targetCurrency.hashCode() : 0;
       result = 31 * result + (source != null ? source.hashCode() : 0);
-      result = 31 * result + (int) Double.doubleToLongBits(rate);
+      result = 31 * (int) Double.doubleToLongBits(rate);
       return result;
     }
   }
@@ -727,13 +727,19 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof RawCurrencyValueSource)) return false;
+      if (o == null || getClass() != o.getClass()) return false;
 
       RawCurrencyValueSource that = (RawCurrencyValueSource) o;
 
-      return Objects.equals(amountValues, that.amountValues)
-          && Objects.equals(currencyValues, that.currencyValues)
-          && Objects.equals(targetCurrency, that.targetCurrency);
+      return !(amountValues != null
+              ? !amountValues.equals(that.amountValues)
+              : that.amountValues != null)
+          && !(currencyValues != null
+              ? !currencyValues.equals(that.currencyValues)
+              : that.currencyValues != null)
+          && !(targetCurrency != null
+              ? !targetCurrency.equals(that.targetCurrency)
+              : that.targetCurrency != null);
     }
 
     @Override

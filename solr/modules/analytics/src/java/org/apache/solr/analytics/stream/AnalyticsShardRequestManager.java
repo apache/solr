@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.TimeExceededStubException;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -204,7 +203,7 @@ public class AnalyticsShardRequestManager {
    */
   protected class AnalyticsShardRequester implements Callable<SolrException> {
     private String baseUrl;
-    SolrClient client;
+    HttpSolrClient client;
 
     /**
      * Create a requester for analytics shard data.

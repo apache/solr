@@ -40,12 +40,12 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.junit.After;
@@ -87,14 +87,14 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     final String user = "admin";
     final String pass = "SolrRocks";
 
-    HttpClient httpClient = null;
-    SolrClient solrClient = null;
+    HttpClient cl = null;
+    HttpSolrClient httpSolrClient = null;
     try {
-      httpClient = HttpClientUtil.createClient(null);
+      cl = HttpClientUtil.createClient(null);
       String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
-      solrClient = getHttpSolrClient(baseUrl);
+      httpSolrClient = getHttpSolrClient(baseUrl);
 
-      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
       // Initialize security.json with multiple auth plugins configured
       String multiAuthPluginSecurityJson =
@@ -106,15 +106,9 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
               .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
       securityConfHandler.securityConfEdited();
       verifySecurityStatus(
-          httpClient,
-          baseUrl + authcPrefix,
-          "authentication/class",
-          "solr.MultiAuthPlugin",
-          5,
-          user,
-          pass);
+          cl, baseUrl + authcPrefix, "authentication/class", "solr.MultiAuthPlugin", 5, user, pass);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authzPrefix,
           "authorization/class",
           "solr.MultiAuthRuleBasedAuthorizationPlugin",
@@ -123,32 +117,32 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
           pass);
 
       // anonymous requests are blocked by all plugins
-      int statusCode = doHttpGetAnonymous(httpClient, baseUrl + "/admin/info/system");
+      int statusCode = doHttpGetAnonymous(cl, baseUrl + "/admin/info/system");
       assertEquals("anonymous get succeeded but should not have", 401, statusCode);
       // update blockUnknown to allow anonymous for the basic plugin
       String command = "{\n" + "'set-property': { 'basic': {'blockUnknown':false} }\n" + "}";
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
-      statusCode = doHttpGetAnonymous(httpClient, baseUrl + "/admin/info/system");
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 200);
+      statusCode = doHttpGetAnonymous(cl, baseUrl + "/admin/info/system");
       assertEquals("anonymous get failed but should have succeeded", 200, statusCode);
 
       // For the multi-auth plugin, every command is wrapped with an object that identifies the
       // "scheme"
       command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
       // no scheme identified!
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 400);
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 400);
 
       command = "{\n" + "'set-user': { 'foo': {'harry':'HarryIsCool'} }\n" + "}";
       // no "foo" scheme configured
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 400);
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 400);
 
       command = "{\n" + "'set-user': { 'basic': {'harry':'HarryIsCool'} }\n" + "}";
 
       // no creds, should fail ...
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
+      doHttpPost(cl, baseUrl + authcPrefix, command, null, null, 401);
       // with basic creds, should pass ...
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authcPrefix,
           "authentication/schemes[0]/credentials/harry",
           NOT_NULL_PREDICATE,
@@ -158,13 +152,13 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
       // authz command but missing the "scheme" wrapper
       command = "{\n" + "'set-user-role': {'harry':['users']}\n" + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 400);
+      doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 400);
 
       // add "harry" to the "users" role ...
       command = "{\n" + "'set-user-role': { 'basic': {'harry':['users']} }\n" + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authzPrefix,
           "authorization/schemes[0]/user-role/harry",
           NOT_NULL_PREDICATE,
@@ -174,20 +168,14 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
       // give the users role a custom permission
       verifySecurityStatus(
-          httpClient,
-          baseUrl + authzPrefix,
-          "authorization/permissions[6]",
-          NULL_PREDICATE,
-          5,
-          user,
-          pass);
+          cl, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
       command =
           "{\n"
               + "'set-permission': { 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status' }\n"
               + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authzPrefix,
           "authorization/permissions[6]/path",
           new ExpectedValuePredicate("/admin/zookeeper/status"),
@@ -199,9 +187,9 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
           "{\n"
               + "'update-permission': { 'index':'7', 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status2' }\n"
               + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authzPrefix,
           "authorization/permissions[6]/path",
           new ExpectedValuePredicate("/admin/zookeeper/status2"),
@@ -211,22 +199,16 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
       // delete the permission
       command = "{\n" + "'delete-permission': 7\n" + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
-          baseUrl + authzPrefix,
-          "authorization/permissions[6]",
-          NULL_PREDICATE,
-          5,
-          user,
-          pass);
+          cl, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
 
       // delete the user
       command = "{\n" + "'delete-user': { 'basic': 'harry' }\n" + "}";
 
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authcPrefix,
           "authentication/schemes[0]/credentials/harry",
           NULL_PREDICATE,
@@ -238,13 +220,9 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       command = "{\n" + "'set-property': { 'mock': { 'blockUnknown':false } }\n" + "}";
 
       doHttpPostWithHeader(
-          httpClient,
-          baseUrl + authcPrefix,
-          command,
-          new BasicHeader("Authorization", "mock foo"),
-          200);
+          cl, baseUrl + authcPrefix, command, new BasicHeader("Authorization", "mock foo"), 200);
       verifySecurityStatus(
-          httpClient,
+          cl,
           baseUrl + authcPrefix,
           "authentication/schemes[1]/blockUnknown",
           new ExpectedValuePredicate(Boolean.FALSE),
@@ -252,11 +230,11 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
           user,
           pass);
     } finally {
-      if (httpClient != null) {
-        HttpClientUtil.close(httpClient);
+      if (cl != null) {
+        HttpClientUtil.close(cl);
       }
-      if (solrClient != null) {
-        solrClient.close();
+      if (httpSolrClient != null) {
+        httpSolrClient.close();
       }
     }
   }

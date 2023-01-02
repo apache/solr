@@ -51,7 +51,6 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     systemClearPropertySolrTestsMergePolicyFactory();
   }
 
-  @Override
   public void setUp() throws Exception {
     super.setUp();
     // delete all, then add initial doc

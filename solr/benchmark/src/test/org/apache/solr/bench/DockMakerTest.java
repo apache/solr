@@ -191,14 +191,17 @@ public class DockMakerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWordListZipfian() {
+  public void testWordListZipfian() throws Exception {
     Docs docs = docs();
+
     docs.field("wordList", strings().wordList().withDistribution(Distribution.ZIPFIAN).multi(30));
 
-    SolrInputDocument doc = docs.inputDocument();
-    SolrInputField field = doc.getField("wordList");
-
-    assertNotNull(field.getValue().toString());
+    Set<String> values = new HashSet<>();
+    for (int i = 0; i < 1; i++) {
+      SolrInputDocument doc = docs.inputDocument();
+      SolrInputField field = doc.getField("wordList");
+      values.add(field.getValue().toString());
+    }
   }
 
   @Test

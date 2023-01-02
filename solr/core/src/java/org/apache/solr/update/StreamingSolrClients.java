@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.update.SolrCmdDistributor.SolrError;
+import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.eclipse.jetty.client.api.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class StreamingSolrClients {
   private Http2SolrClient httpClient;
 
   private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
-  private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
+  private List<Error> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
 
@@ -53,7 +53,7 @@ public class StreamingSolrClients {
     this.httpClient = updateShardHandler.getUpdateOnlyHttpClient();
   }
 
-  public List<SolrError> getErrors() {
+  public List<Error> getErrors() {
     return errors;
   }
 
@@ -74,9 +74,8 @@ public class StreamingSolrClients {
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
               .alwaysStreamDeletes()
-              .setPollQueueTime(pollQueueTime) // minimize connections created
               .build();
-
+      client.setPollQueueTime(pollQueueTime); // minimize connections created
       solrClients.put(url, client);
     }
 
@@ -117,7 +116,7 @@ public class StreamingSolrClients {
 class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
-  private final List<SolrError> errors;
+  private final List<Error> errors;
 
   public ErrorReportingConcurrentUpdateSolrClient(Builder builder) {
     super(builder);
@@ -128,7 +127,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
   @Override
   public void handleError(Throwable ex) {
     log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
-    SolrError error = new SolrError();
+    Error error = new Error();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {
       error.statusCode = ((SolrException) ex).code();
@@ -148,19 +147,18 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
 
   static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
     protected SolrCmdDistributor.Req req;
-    protected List<SolrError> errors;
+    protected List<Error> errors;
 
     public Builder(
         String baseSolrUrl,
         Http2SolrClient client,
         SolrCmdDistributor.Req req,
-        List<SolrError> errors) {
+        List<Error> errors) {
       super(baseSolrUrl, client);
       this.req = req;
       this.errors = errors;
     }
 
-    @Override
     public ErrorReportingConcurrentUpdateSolrClient build() {
       return new ErrorReportingConcurrentUpdateSolrClient(this);
     }

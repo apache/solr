@@ -30,7 +30,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /**
@@ -888,7 +887,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
                     "group.offset",
                     "-1"));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    MatcherAssert.assertThat(
+    assertThat(
         exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
     resetExceptionIgnores();
 

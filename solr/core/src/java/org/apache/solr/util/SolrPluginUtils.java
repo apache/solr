@@ -72,6 +72,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
@@ -442,7 +443,7 @@ public class SolrPluginUtils {
         sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
       }
 
-      DocList results = req.getSearcher().getDocList(query, sort, start, limit);
+      DocList results = req.getSearcher().getDocList(query, (DocSet) null, sort, start, limit);
       return results;
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);

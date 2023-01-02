@@ -29,7 +29,7 @@
 <solr>
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
-  <str name="sharedLib">${solr.sharedLib:}</str>
+  <str name="sharedLib">/opt/solr/server/solr-webapp/webapp/WEB-INF/lib</str>
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>

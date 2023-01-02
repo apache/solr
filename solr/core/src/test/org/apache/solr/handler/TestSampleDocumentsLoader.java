@@ -17,10 +17,15 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.handler.designer.DefaultSampleDocumentsLoader.CSV_MULTI_VALUE_DELIM_PARAM;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,7 +40,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestSampleDocumentsLoader extends SolrTestCase {
+public class TestSampleDocumentsLoader {
 
   SampleDocumentsLoader loader;
   File exampleDir;
@@ -58,7 +63,7 @@ public class TestSampleDocumentsLoader extends SolrTestCase {
   @Test
   public void testCsv() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(DefaultSampleDocumentsLoader.CSV_MULTI_VALUE_DELIM_PARAM, "\\|");
+    params.set(CSV_MULTI_VALUE_DELIM_PARAM, "\\|");
     List<SolrInputDocument> docs =
         loadTestDocs(params, new File(exampleDir, "films/films.csv"), -1, 1100);
     boolean foundIt = false;

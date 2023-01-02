@@ -228,7 +228,6 @@ public class TermsFacetMap extends JsonFacetMap<TermsFacetMap> {
       this.value = value;
     }
 
-    @Override
     public String toString() {
       return value;
     }

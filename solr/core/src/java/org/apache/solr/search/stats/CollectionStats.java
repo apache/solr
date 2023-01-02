@@ -61,7 +61,6 @@ public class CollectionStats {
     return new CollectionStatistics(field, maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
   }
 
-  @Override
   public String toString() {
     return StatsUtil.colStatsToString(this);
   }

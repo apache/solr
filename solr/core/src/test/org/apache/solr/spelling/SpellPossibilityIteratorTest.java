@@ -114,7 +114,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
       count++;
     }
-    assertEquals(1000, count);
+    assertTrue(count == 1000);
 
     lotsaSuggestions.put(new Token("AYE_BEE1", 0, 7), AYE_BEE);
     lotsaSuggestions.put(new Token("AYE_BEE2", 0, 7), AYE_BEE);
@@ -142,16 +142,15 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
       if (count == 0) {
-        assertEquals("I", rsp.corrections.get(0).getCorrection());
-        assertEquals("alpha", rsp.corrections.get(1).getCorrection());
-        assertEquals("one", rsp.corrections.get(2).getCorrection());
+        assertTrue("I".equals(rsp.corrections.get(0).getCorrection()));
+        assertTrue("alpha".equals(rsp.corrections.get(1).getCorrection()));
+        assertTrue("one".equals(rsp.corrections.get(2).getCorrection()));
       }
       count++;
     }
-    assertEquals(
+    assertTrue(
         ("Three maps (8*9*10) should return 720 iterations but instead returned " + count),
-        720,
-        count);
+        count == 720);
 
     suggestions.remove(TOKEN_CEE);
     iter = new PossibilityIterator(suggestions, 100, 10000, false);
@@ -160,8 +159,8 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       iter.next();
       count++;
     }
-    assertEquals(
-        ("Two maps (8*9) should return 72 iterations but instead returned " + count), 72, count);
+    assertTrue(
+        ("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
 
     suggestions.remove(TOKEN_BEE);
     iter = new PossibilityIterator(suggestions, 5, 10000, false);
@@ -170,7 +169,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       iter.next();
       count++;
     }
-    assertEquals(("We requested 5 suggestions but got " + count), 5, count);
+    assertTrue(("We requested 5 suggestions but got " + count), count == 5);
 
     suggestions.remove(TOKEN_AYE);
     iter = new PossibilityIterator(suggestions, Integer.MAX_VALUE, 10000, false);
@@ -179,7 +178,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       iter.next();
       count++;
     }
-    assertEquals(("No maps should return 0 iterations but instead returned " + count), 0, count);
+    assertTrue(("No maps should return 0 iterations but instead returned " + count), count == 0);
   }
 
   @Test
@@ -217,12 +216,12 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
           aCount++;
         }
       }
-      assertNotNull(c);
+      assertTrue(c != null);
       assertTrue(ab != null || (a != null && b != null));
       assertTrue(ab == null || (a == null && b == null));
       assertTrue(dupChecker.add(rsp));
     }
-    assertEquals(2160, aCount);
-    assertEquals(180, abCount);
+    assertTrue(aCount == 2160);
+    assertTrue(abCount == 180);
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -95,7 +96,7 @@ public class LeaderElector {
    * @param replacement has someone else been the leader already?
    */
   private void checkIfIamLeader(final ElectionContext context, boolean replacement)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
@@ -170,7 +171,7 @@ public class LeaderElector {
   }
 
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     context.runLeaderProcess(weAreReplacement, 0);
   }
 
@@ -213,7 +214,7 @@ public class LeaderElector {
   }
 
   public int joinElection(ElectionContext context, boolean replacement)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     return joinElection(context, replacement, false);
   }
 
@@ -226,7 +227,7 @@ public class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement, boolean joinAtHead)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     context.joinedElectionFired();
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
@@ -381,7 +382,7 @@ public class LeaderElector {
   }
 
   void retryElection(ElectionContext context, boolean joinAtHead)
-      throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException, IOException {
     ElectionWatcher watcher = this.watcher;
     ElectionContext ctx = context.copy();
     if (electionContexts != null) {

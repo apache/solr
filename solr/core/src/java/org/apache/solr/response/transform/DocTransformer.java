@@ -149,17 +149,14 @@ public abstract class DocTransformer {
       this.field = field;
     }
 
-    @Override
     public String getName() {
       return "noop";
     }
 
-    @Override
     public String[] getExtraRequestFields() {
       return this.field == null ? null : new String[] {field};
     }
 
-    @Override
     public void transform(SolrDocument doc, int docid) {
       // No-Op
     }

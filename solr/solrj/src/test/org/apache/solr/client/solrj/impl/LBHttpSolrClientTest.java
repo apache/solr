@@ -16,15 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.io.IOException;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Test the LBHttpSolrClient. */
-public class LBHttpSolrClientTest extends SolrTestCase {
+public class LBHttpSolrClientTest {
 
   /**
    * Test method for {@link LBHttpSolrClient.Builder}.

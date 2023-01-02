@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.collect.ImmutableMap;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -80,13 +80,13 @@ public abstract class TransientSolrCoreCacheFactory {
   public static final PluginInfo DEFAULT_TRANSIENT_SOLR_CACHE_INFO =
       new PluginInfo(
           "transientSolrCoreCacheFactory",
-          Map.of(
+          ImmutableMap.of(
               "class",
               TransientSolrCoreCacheFactoryDefault.class.getName(),
               "name",
               TransientSolrCoreCacheFactory.class.getName()),
           null,
-          Collections.emptyList());
+          Collections.<PluginInfo>emptyList());
 
   // Need this because the plugin framework doesn't require a PluginINfo in the init method, don't
   // see a way to pass additional parameters and we need this when we create the transient core

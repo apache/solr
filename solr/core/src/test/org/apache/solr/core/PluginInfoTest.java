@@ -78,7 +78,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
 
     Node nodeWithAName = getNode("<plugin name=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAName, "Node with a Name", true, false);
-    assertEquals("myName", pi2.name);
+    assertTrue(pi2.name.equals("myName"));
   }
 
   @Test
@@ -99,7 +99,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
 
     Node nodeWithAClass = getNode("<plugin class=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAClass, "Node with a Class", false, true);
-    assertEquals("myName", pi2.className);
+    assertTrue(pi2.className.equals("myName"));
   }
 
   @Test
@@ -133,7 +133,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
   public void testHasChildren() throws Exception {
     Node node = getNode(configWith2Children, "plugin");
     PluginInfo pi = new PluginInfo(node, "node with 2 Children", false, false);
-    assertEquals(2, pi.children.size());
+    assertTrue(pi.children.size() == 2);
   }
 
   @Test
@@ -144,7 +144,8 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertNotNull(childInfo);
     PluginInfo notExistent = pi.getChild("doesnotExist");
     assertNull(notExistent);
-    assertEquals(0, (int) (Integer) childInfo.initArgs.get("index"));
+    assertTrue(childInfo instanceof PluginInfo);
+    assertTrue((Integer) childInfo.initArgs.get("index") == 0);
     Node node2 = getNode(configWithNoChildren, "plugin");
     PluginInfo pi2 = new PluginInfo(node2, "with No Children", false, false);
     PluginInfo noChild = pi2.getChild("long");
@@ -156,9 +157,10 @@ public class PluginInfoTest extends DOMUtilTestBase {
     Node node = getNode(configWith2Children, "plugin");
     PluginInfo pi = new PluginInfo(node, "with children", false, false);
     List<PluginInfo> children = pi.getChildren("child");
-    assertEquals(2, children.size());
+    assertTrue(children.size() == 2);
     for (PluginInfo childInfo : children) {
       assertNotNull(childInfo);
+      assertTrue(childInfo instanceof PluginInfo);
     }
   }
 
@@ -166,6 +168,6 @@ public class PluginInfoTest extends DOMUtilTestBase {
   public void testInitArgsCount() throws Exception {
     Node node = getNode(configWithNoChildren, "plugin");
     PluginInfo pi = new PluginInfo(node, "from static", true, false);
-    assertEquals(pi.initArgs.size(), node.getChildNodes().getLength());
+    assertTrue(pi.initArgs.size() == node.getChildNodes().getLength());
   }
 }

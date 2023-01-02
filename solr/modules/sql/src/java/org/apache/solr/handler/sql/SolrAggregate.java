@@ -89,7 +89,6 @@ class SolrAggregate extends Aggregate implements SolrRel {
     return new SolrAggregate(getCluster(), traitSet, hints, input, groupSet, groupSets, aggCalls);
   }
 
-  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
 

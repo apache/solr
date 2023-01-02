@@ -45,7 +45,6 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     this.plugin = plugin;
   }
 
-  @Override
   public List<ReplicaPosition> assign(
       SolrCloudManager solrCloudManager, List<Assign.AssignRequest> assignRequests)
       throws Assign.AssignmentException, IOException, InterruptedException {

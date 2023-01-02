@@ -27,8 +27,9 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -36,7 +37,6 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -54,17 +54,17 @@ public class TestRawTransformer extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static JettySolrRunner JSR;
 
-  private static SolrClient CLIENT;
+  private static HttpSolrClient CLIENT;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     if (random().nextBoolean()) {
       initStandalone();
       JSR.start();
-      CLIENT = JSR.newClient();
+      CLIENT = (HttpSolrClient) JSR.newClient();
     } else {
       initCloud();
-      CLIENT = JSR.newClient();
+      CLIENT = (HttpSolrClient) JSR.newClient();
       JSR = null;
     }
     initIndex();

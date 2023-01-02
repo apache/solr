@@ -122,7 +122,6 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
 
       lparser =
           new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer()) {
-            @Override
             protected Query newWildcardQuery(org.apache.lucene.index.Term t) {
               try {
                 org.apache.lucene.search.Query wildcardQuery =
@@ -143,7 +142,6 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               return query;
             }
 
-            @Override
             protected Query newRangeQuery(
                 String field,
                 String part1,

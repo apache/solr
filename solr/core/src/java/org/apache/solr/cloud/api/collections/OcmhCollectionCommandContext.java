@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -70,11 +69,6 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
   @Override
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
     ocmh.overseer.offerStateUpdate(data);
-  }
-
-  @Override
-  public void offerStateUpdate(MapWriter mw) throws KeeperException, InterruptedException {
-    ocmh.overseer.offerStateUpdate(mw);
   }
 
   @Override

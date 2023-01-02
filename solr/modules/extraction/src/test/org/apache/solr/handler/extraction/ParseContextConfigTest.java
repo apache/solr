@@ -47,6 +47,6 @@ public class ParseContextConfigTest extends SolrTestCaseJ4 {
 
     PDFParserConfig pdfParserConfig = parseContext.get(PDFParserConfig.class);
 
-    assertTrue(pdfParserConfig.getExtractInlineImages());
+    assertEquals(true, pdfParserConfig.getExtractInlineImages());
   }
 }
