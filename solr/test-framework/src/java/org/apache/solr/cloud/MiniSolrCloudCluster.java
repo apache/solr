@@ -41,6 +41,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -148,6 +149,7 @@ public class MiniSolrCloudCluster {
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
+  private Map<String, CloudSolrClient> solrClientForCollectionCache = new ConcurrentHashMap<>();
 
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
@@ -700,6 +702,12 @@ public class MiniSolrCloudCluster {
     try {
 
       IOUtils.closeQuietly(solrClient);
+
+      solrClientForCollectionCache.values().parallelStream()
+          .forEach(
+              c -> {
+                IOUtils.closeQuietly(c);
+              });
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -727,6 +735,30 @@ public class MiniSolrCloudCluster {
 
   public CloudSolrClient getSolrClient() {
     return solrClient;
+  }
+
+  public CloudSolrClient getSolrClientForCollection(String collectionName) {
+    return solrClientForCollectionCache.computeIfAbsent(
+        collectionName,
+        k -> {
+          CloudSolrClient solrClient =
+              new CloudLegacySolrClient.Builder(
+                      Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+                  .withDefaultCollection(collectionName)
+                  .withSocketTimeout(90000)
+                  .withConnectionTimeout(15000)
+                  .build();
+
+          solrClient.connect();
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+                collectionName,
+                solrClient.isUpdatesToLeaders(),
+                solrClient.isParallelUpdates());
+          }
+          return solrClient;
+        });
   }
 
   public SolrZkClient getZkClient() {
