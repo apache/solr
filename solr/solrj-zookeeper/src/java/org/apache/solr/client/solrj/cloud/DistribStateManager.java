@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -121,6 +122,17 @@ public interface DistribStateManager extends SolrCloseable {
   default PerReplicaStates getReplicaStates(String path)
       throws KeeperException, InterruptedException {
     throw new UnsupportedOperationException("Not implemented");
+  }
+
+  default DocCollection.PrsSupplier getPrsSupplier(String collName) {
+    return new DocCollection.PrsSupplier(
+        () -> {
+          try {
+            return getReplicaStates(DocCollection.getCollectionPath(collName));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**

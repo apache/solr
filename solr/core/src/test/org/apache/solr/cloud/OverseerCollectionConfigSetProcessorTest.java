@@ -661,6 +661,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     handleCreateCollMessageProps(ZkNodeProps.load(bytes));
   }
 
+  @SuppressWarnings("DirectInvocationOnMock")
   private void handleCreateCollMessageProps(ZkNodeProps props) {
     log.info("track created replicas / collections");
     try {
@@ -676,7 +677,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               collName,
               new ClusterState.CollectionRef(
                   new DocCollection(
-                      collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
+                      collName,
+                      new HashMap<>(),
+                      props.getProperties(),
+                      DocRouter.DEFAULT,
+                      0,
+                      distribStateManagerMock.getPrsSupplier(collName))));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);

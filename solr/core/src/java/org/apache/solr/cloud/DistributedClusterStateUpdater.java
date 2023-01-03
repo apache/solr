@@ -628,13 +628,16 @@ public class DistributedClusterStateUpdater {
       // This factory method can detect a missing configName and supply it by reading it from the
       // old ZK location.
       // TODO in Solr 10 remove that factory method
-      ClusterState clusterState =
+
+      ClusterState clusterState;
+      clusterState =
           ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
               Collections.emptySet(),
               updater.getCollectionName(),
               zkStateReader.getZkClient());
+
       return clusterState;
     }
   }

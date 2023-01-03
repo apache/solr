@@ -32,6 +32,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -161,7 +162,15 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
             new ZkWriteCommand(
-                "prs1", new DocCollection("prs1", new HashMap<>(), prsProps, DocRouter.DEFAULT, 0));
+                "prs1",
+                new DocCollection(
+                    "prs1",
+                    new HashMap<>(),
+                    prsProps,
+                    DocRouter.DEFAULT,
+                    0,
+                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                        zkClient, DocCollection.getCollectionPath("c1"))));
         ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         // First write is flushed immediately

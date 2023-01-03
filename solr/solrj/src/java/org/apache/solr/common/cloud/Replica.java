@@ -137,10 +137,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
-  private PerReplicaStates.State replicaState;
+  private DocCollection.PrsSupplier prsSupplier;
 
   // mutable
   private State state;
+
+  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
+    this.prsSupplier = prsSupplier;
+  }
 
   public Replica(String name, Map<String, Object> map, String collection, String shard) {
     super(new HashMap<>());
@@ -151,7 +155,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.node = (String) propMap.get(ReplicaStateProps.NODE_NAME);
     this.core = (String) propMap.get(ReplicaStateProps.CORE_NAME);
     this.type = Type.get((String) propMap.get(ReplicaStateProps.TYPE));
-    readPrs();
     // default to ACTIVE
     this.state =
         State.getState(
@@ -180,7 +183,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     if (props != null) {
       this.propMap.putAll(props);
     }
-    readPrs();
     validate();
   }
 
@@ -202,29 +204,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.node = String.valueOf(details.get("node_name"));
 
     this.propMap.putAll(details);
-    readPrs();
     type =
         Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ReplicaStateProps.TYPE, "NRT")));
     if (state == null)
       state =
           State.getState(String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, "active")));
     validate();
-  }
-
-  private void readPrs() {
-    ClusterState.getReplicaStatesProvider()
-        .get()
-        .ifPresent(
-            it -> {
-              log.debug("A replica  {} state fetched from per-replica state", name);
-              replicaState = it.getStates().get(name);
-              if (replicaState != null) {
-                propMap.put(
-                    ReplicaStateProps.STATE,
-                    replicaState.state.toString().toLowerCase(Locale.ROOT));
-                if (replicaState.isLeader) propMap.put(ReplicaStateProps.LEADER, "true");
-              }
-            });
   }
 
   private final void validate() {
@@ -303,6 +288,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   /** Returns the {@link State} of this replica. */
   public State getState() {
+    if (prsSupplier != null) {
+      PerReplicaStates.State s = prsSupplier.get().get(name);
+      if (s != null) {
+        return s.state;
+      } else {
+        return State.DOWN;
+      }
+    }
     return state;
   }
 
@@ -312,7 +305,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isActive(Set<String> liveNodes) {
-    return this.node != null && liveNodes.contains(this.node) && this.state == State.ACTIVE;
+    return this.node != null && liveNodes.contains(this.node) && getState() == State.ACTIVE;
   }
 
   public Type getType() {
@@ -320,6 +313,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
+    if (prsSupplier != null) {
+      PerReplicaStates.State st = prsSupplier.get().get(name);
+      return st == null ? false : st.isLeader;
+    }
     return getBool(ReplicaStateProps.LEADER, false);
   }
 
@@ -354,16 +351,18 @@ public class Replica extends ZkNodeProps implements MapWriter {
       if (state.isLeader) props.put(ReplicaStateProps.LEADER, "true");
     }
     Replica r = new Replica(name, props, collection, shard);
-    r.replicaState = state;
     return r;
   }
 
   public PerReplicaStates.State getReplicaState() {
-    return replicaState;
+    if (prsSupplier != null) {
+      return prsSupplier.get().get(name);
+    }
+    return null;
   }
 
   public Object clone() {
-    return new Replica(name, node, collection, shard, core, state, type, propMap);
+    return new Replica(name, node, collection, shard, core, getState(), type, propMap);
   }
 
   @Override
@@ -401,7 +400,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
           .put(ReplicaStateProps.COLLECTION, collection, p)
           .put(ReplicaStateProps.NODE_NAME, node, p)
           .put(ReplicaStateProps.TYPE, type.toString(), p)
-          .put(ReplicaStateProps.STATE, state.toString(), p);
+          .put(ReplicaStateProps.STATE, shard, p);
     };
   }
 

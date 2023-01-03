@@ -87,7 +87,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
                 .build()) {
       livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
-          ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
+          ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
