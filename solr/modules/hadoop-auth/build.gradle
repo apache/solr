@@ -66,7 +66,7 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   // transitive of hadoop-common; used by Kerberos auth
   runtimeOnly 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
-  runtimeOnly 'commons-collections:commons-collections'
+//  runtimeOnly 'commons-collections:commons-collections'
   runtimeOnly 'com.google.re2j:re2j'
   runtimeOnly 'org.apache.commons:commons-configuration2'
   runtimeOnly 'org.apache.kerby:kerb-core'

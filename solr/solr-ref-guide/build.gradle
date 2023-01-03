@@ -35,7 +35,7 @@ def isBranchReleased = propertyOrEnvOrDefault("refguide.isBranchReleased", "SOLR
 // Double quotes in YAML can't be used as this requires more complicated
 // escaping, see spec: https://yaml.org/spec/1.2.2/#732-single-quoted-style
 def escapeYamlSingleQuotesString(props) {
-  return props.collectEntries{k, v -> [k, v.toString().replace("'","''")]}
+    return props.collectEntries{k, v -> [k, v.toString().replace("'","''")]}
 }
 
 // Attach building the ref guide to standard convention tasks. This
@@ -102,30 +102,30 @@ task buildLocalAntoraYaml {
         displayVersion += prerelease
     }
     def props = [
-        solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
-        solr_version_major : splitVersion[0],
-        solr_version_minor : splitVersion[1],
-        solr_version_patch : splitVersion[2],
-        displayVersion     : displayVersion,
-        prerelease         : prerelease,
+            solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+            solr_version_major : splitVersion[0],
+            solr_version_minor : splitVersion[1],
+            solr_version_patch : splitVersion[2],
+            displayVersion     : displayVersion,
+            prerelease         : prerelease,
     ]
     props.putAll([
-        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
-        lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
+            solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
+            lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
     ])
 
     doLast {
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
         // These variable names must use underscores, not dashes or periods
         props.putAll([
-            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
-            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
-            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
-            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
-            ["dep_version_tika", "org.apache.tika", "tika-core"],
-            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
-            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
+                ["dep_version_commons_codec", "commons-codec", "commons-codec"],
+                ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
+                ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
+                ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
+                ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
+                ["dep_version_tika", "org.apache.tika", "tika-core"],
+                ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
+                ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
         ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
 
 
@@ -155,12 +155,12 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
     into project.ext.playbooksDir
 
     def props = [
-        'site_url'           : "",
-        'redirect_facility'  : "static",
-        'source_url'         : project.rootDir,
-        'source_branches'    : "HEAD",
-        'start_path'         : project.rootDir.relativePath(file(project.ext.siteStagingDir)),
-        'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
+            'site_url'           : "",
+            'redirect_facility'  : "static",
+            'source_url'         : project.rootDir,
+            'source_branches'    : "HEAD",
+            'start_path'         : project.rootDir.relativePath(file(project.ext.siteStagingDir)),
+            'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
     ]
 
     expand(escapeYamlSingleQuotesString(props))
@@ -186,12 +186,12 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
     }
 
     def props = [
-        'site_url'           : "https://solr.apache.org/guide",
-        'redirect_facility'  : "httpd",
-        'source_url'         : "https://github.com/apache/solr.git",
-        'source_branches'    : branches,
-        'start_path'         : 'solr/solr-ref-guide',
-        'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
+            'site_url'           : "https://solr.apache.org/guide",
+            'redirect_facility'  : "httpd",
+            'source_url'         : "https://github.com/apache/solr.git",
+            'source_branches'    : branches,
+            'start_path'         : 'solr/solr-ref-guide',
+            'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
     ]
 
     expand(escapeYamlSingleQuotesString(props))
@@ -328,7 +328,7 @@ task buildUIBundle(type: NpxTask) {
     command = "gulp"
 
     args = [
-        "bundle",
+            "bundle",
     ]
     execOverrides {
         // The it variable contains the `ExecSpec`
@@ -383,24 +383,24 @@ task buildLocalAntoraSite(type: NpxTask) {
 
     // Use a local build of the Lucene and Solr javadocs for a local refGuide
     def extraArgs = [
-        // This attribute should not include ":link", the other 2 should
-        // This attribute should also not be relative, because it is used in multiple path directories in the site
-        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
-        "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
-        "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
+            // This attribute should not include ":link", the other 2 should
+            // This attribute should also not be relative, because it is used in multiple path directories in the site
+            "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
+            "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
+            "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
     ]
 
     if (buildLocalUI) {
         dependsOn tasks.buildUIBundle
         extraArgs.addAll([
-            "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
+                "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
         ])
         inputs.files("${buildDir}/dist/ui-bundle.zip")
     }
 
     args = [
-        "${project.ext.siteStagingDir}/playbook.yml",
-        "--fetch"
+            "${project.ext.siteStagingDir}/playbook.yml",
+            "--fetch"
     ] + extraArgs
 
     environment = ["SITE_SEARCH_ENABLED": "true"]
@@ -432,16 +432,16 @@ task checkSiteLinks(type: NpxTask) {
 
     command = "link-checker"
     args = [
-        "${buildDir}/site",
-        "--url-ignore", "file:/",
-        "--mkdocs",
-        "--allow-hash-href",
-        "--disable-external",
-        "--debug",
-        // Ignore the java docs url in the header, since it is an absolute path
-        "--url-ignore", "${project(':solr:documentation').docroot.toPath()}/index\\.html",
-        "--json",
-        "-v",
+            "${buildDir}/site",
+            "--url-ignore", "file:/",
+            "--mkdocs",
+            "--allow-hash-href",
+            "--disable-external",
+            "--debug",
+            // Ignore the java docs url in the header, since it is an absolute path
+            "--url-ignore", "${project(':solr:documentation').docroot.toPath()}/index\\.html",
+            "--json",
+            "-v",
     ]
 
     def outputFile = "${buildDir}/validation/link-check.json"
@@ -489,13 +489,13 @@ task buildOfficialSite(type: NpxTask) {
     if (buildLocalUI) {
         dependsOn tasks.buildUIBundle
         extraArgs.addAll([
-            "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
+                "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
         ])
         inputs.files("${buildDir}/dist/ui-bundle.zip")
     }
 
     args = [
-        officialPlaybook,
+            officialPlaybook,
     ] + extraArgs
 
     environment = ["SITE_SEARCH_ENABLED": "true"]

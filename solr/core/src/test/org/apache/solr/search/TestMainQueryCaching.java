@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +40,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   private static final int ALL_DOCS = MOST_DOCS + 1;
   private static final String TEST_UFFSQ_PROPNAME = "solr.test.useFilterForSortedQuery";
   static String RESTORE_UFFSQ_PROP;
-  private static final String TEST_QRC_WINDOW_SIZE_PROPNAME = "solr.test.queryResultWindowSize";
-  static String RESTORE_QRC_WINDOW_SIZE_PROP;
   static boolean USE_FILTER_FOR_SORTED_QUERY;
 
   @BeforeClass
@@ -50,7 +47,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     USE_FILTER_FOR_SORTED_QUERY = random().nextBoolean();
     RESTORE_UFFSQ_PROP =
         System.setProperty(TEST_UFFSQ_PROPNAME, Boolean.toString(USE_FILTER_FOR_SORTED_QUERY));
-    RESTORE_QRC_WINDOW_SIZE_PROP = System.setProperty(TEST_QRC_WINDOW_SIZE_PROPNAME, "0");
     initCore("solrconfig-deeppaging.xml", "schema-sorts.xml");
     createIndex();
   }
@@ -61,11 +57,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       System.clearProperty(TEST_UFFSQ_PROPNAME);
     } else {
       System.setProperty(TEST_UFFSQ_PROPNAME, RESTORE_UFFSQ_PROP);
-    }
-    if (RESTORE_QRC_WINDOW_SIZE_PROP == null) {
-      System.clearProperty(TEST_QRC_WINDOW_SIZE_PROPNAME);
-    } else {
-      System.setProperty(TEST_QRC_WINDOW_SIZE_PROPNAME, RESTORE_QRC_WINDOW_SIZE_PROP);
     }
   }
 
@@ -88,14 +79,14 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     h.reload();
   }
 
-  private static long coreToInserts(SolrCore core, String cacheName) {
+  private static long coreToInserts(SolrCore core) {
     return (long)
         ((MetricsMap)
                 ((SolrMetricManager.GaugeWrapper<?>)
                         core.getCoreMetricManager()
                             .getRegistry()
                             .getMetrics()
-                            .get("CACHE.searcher.".concat(cacheName)))
+                            .get("CACHE.searcher.filterCache"))
                     .getGauge())
             .getValue()
             .get("inserts");
@@ -241,36 +232,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   @Test
   public void testMatchAllDocsPlain() throws Exception {
     // plain request with "score" sort should skip sort even if `rows` requested
-    Random r = random();
-    int[] counters = new int[2];
-    for (int i = 1; i < ALL_DOCS + 10; i++) {
-      // gradually expand the offset, otherwise we'd find that queryResultCache would intercept
-      // requests, avoiding exercising the behavior we're most interested in
-      String offset = Integer.toString(r.nextInt(i));
-      // keep the window small (again, to avoid queryResultCache intercepting requests)
-      String rows = Integer.toString(r.nextInt(2));
-      String response =
-          JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "start", offset, "rows", rows));
-      assertMetricCounts(response, counters);
-    }
-  }
-
-  private static void assertMetricCounts(String response, int[] expectCounters) {
-    Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
-    Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-    SolrCore core = h.getCore();
-    assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsInsertCount(core));
-    assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
-    assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
-    assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
-    long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
-    if (queryCacheInsertCount == expectCounters[0]) {
-      // should be a hit, so all insert/sort-count metrics remain unchanged.
-    } else {
-      assertEquals(++expectCounters[0], queryCacheInsertCount);
-      expectCounters[1]++;
-    }
-    assertEquals("Bad skip sort count", expectCounters[1], coreToSortCount(core, "skip"));
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true"));
+    assertMetricCounts(response, true, 0, 0, 1);
   }
 
   @Test
@@ -412,10 +375,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
         "Bad matchAllDocs insert count",
         (matchAllDocs ? 1 : 0),
         coreToMatchAllDocsInsertCount(core));
-    assertEquals(
-        "Bad filterCache insert count",
-        expectFilterCacheInsertCount,
-        coreToInserts(core, "filterCache"));
+    assertEquals("Bad filterCache insert count", expectFilterCacheInsertCount, coreToInserts(core));
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals(

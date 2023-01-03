@@ -48,7 +48,9 @@ artifacts {
 }
 
 dependencies {
-  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+  project(":solr:modules").childProjects.values().stream().map(project -> {
+    project.path
+  }).each { module ->
     modules project(path: module, configuration: "packaging")
   }
 
