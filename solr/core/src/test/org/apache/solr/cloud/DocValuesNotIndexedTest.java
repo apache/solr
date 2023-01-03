@@ -153,8 +153,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     SchemaResponse.UpdateResponse multipleUpdatesResponse =
         multiUpdateRequest.process(cluster.getSolrClient(), COLLECTION);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
-
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
+    cluster.setDefaultCollection(COLLECTION);
   }
 
   @AfterClass
