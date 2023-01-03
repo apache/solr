@@ -104,6 +104,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
+  @Deprecated public static final String LIVE_NODES_ZKNODE = ZkLiveNodes.LIVE_NODES_ZKNODE;
 
   // TODO: Deprecate and remove support for roles.json in an upcoming release.
   /**
