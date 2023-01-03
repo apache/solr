@@ -95,7 +95,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
   private final Random rand = new Random();
-
+  private String idField = ID;
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
@@ -290,6 +290,20 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   protected abstract LBSolrClient getLbClient();
+
+  /**
+   * @param idField the field to route documents on.
+   */
+  public void setIdField(String idField) {
+    this.idField = idField;
+  }
+
+  /**
+   * @return the field that updates are routed on.
+   */
+  public String getIdField() {
+    return idField;
+  }
 
   public abstract ClusterStateProvider getClusterStateProvider();
 

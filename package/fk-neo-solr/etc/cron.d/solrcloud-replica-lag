@@ -1,0 +1,1 @@
+*/1 * * * * root /usr/lib/nagios/plugins/fk-nsca-wrapper/nsca_wrapper -H `hostname` -S 'solrcloud-replica-lag' -b /usr/sbin/send_nsca -c /etc/send_nsca.cfg -C "python /usr/share/fk-neo-solr/nagios/checkIndexReplicationLag.py"

@@ -1,0 +1,94 @@
+#!/bin/bash -e
+
+PACKAGE=_PACKAGE_
+USER=_USER_
+VERSION=_VERSION_
+
+HOSTNAME_IP=`hostname -i`
+HOSTNAME_STRING=`hostname -f`
+ENV=`cat "/etc/default/$PACKAGE-env"`
+
+SERVICE=${PACKAGE}
+
+CMD="$1"
+
+die() {
+  # syntax: die message ...
+  #
+  # exit script with error message
+  echo "$PACKAGE postinst error: $*"
+  echo -e "\033[31m ================================\033[0m"
+  echo -e "\033[31m Deployment FAILED on $HOSTNAME\033[0m"
+  echo -e "\033[31m ================================\033[0m"
+  exit 2
+}
+
+# cosmos setup
+function cosmosSetup() {
+    sed -i -e "s/_HOSTNAME_/$HOSTNAME_STRING/g" /etc/cosmos-jmx/${PACKAGE}.json
+    chmod 755 /etc/cosmos-jmx/${PACKAGE}.json
+
+    # Not starting cosmos as cosmos is not defined as dependency.
+    #/etc/init.d/cosmos-collectd start
+    #/etc/init.d/cosmos-jmx start
+}
+
+# config setup
+function configSetup() {
+    chmod 755 /etc/confd/conf.d/${PACKAGE}.in.sh.toml
+    chmod 755 /etc/confd/templates/${PACKAGE}.in.sh.tmpl
+
+    # updating service name, it mimics the effect of -s option passed to install_solr_service script.
+    sed -i -e "s/_SERVICE_/$SERVICE/g" /etc/confd/templates/${PACKAGE}.in.sh.tmpl
+    sed -i -e "s/_SERVICE_/$SERVICE/g" /etc/confd/conf.d/${PACKAGE}.in.sh.toml
+
+    # updating SOLR_HOST.
+    sed -i -e "s/_SOLR_HOST_/$HOSTNAME_IP/g" /etc/confd/templates/${PACKAGE}.in.sh.tmpl
+
+    # updating environment so that corresponding bucket is picked.
+    sed -i -e "s/_ENV_/$ENV/g" /etc/confd/conf.d/${PACKAGE}.in.sh.toml
+
+    echo "Restarting Confd"
+    sudo /etc/init.d/fk-config-service-confd restart
+    sleep 5
+}
+
+function unzipOfflineModels() {
+    #uncompress all offline models
+    tar -zxvf ${DEB_DIR}/usr/share/${PACKAGE}/offlinemodels/offline_models.tar.gz  -C ${DEB_DIR}/usr/share/${PACKAGE}/offlinemodels/ --no-same-owner || true
+}
+
+if [ "$CMD" == "configure" ]; then
+
+    cosmosSetup
+
+    # install solr service.
+    cd /usr/share/${PACKAGE}/lib/
+    tar xzf solr-${VERSION}.tgz solr-${VERSION}/bin/install_solr_service.sh --strip-components=2
+    # -n because we don't want to start solr immediately. -f to force upgrade.
+    sudo bash ./install_solr_service.sh solr-${VERSION}.tgz -u ${USER} -s ${SERVICE} -n -f
+
+    # changing ownership of /usr/share/${PACKAGE}
+    chown -R ${USER}:${USER} /usr/share/${PACKAGE}
+
+    # changing ownership of authn client-secret file
+    chown ${USER}:${USER} /etc/vault/${PACKAGE}-authn-secret
+
+    # changing ownership of cron files
+    chown root:root /etc/cron.d/solrcloud-replica-lag
+
+    # configSetup is done after solr setup as it should override default configs.
+    configSetup
+    unzipOfflineModels
+    case "$PACKAGE" in
+        *) if [ -x "/etc/init.d/$PACKAGE" ]; then
+                echo "Please help yourself with start or restart and plan properly, check if you want reload or restart etc."
+                #/etc/init.d/${PACKAGE} restart
+           fi;;
+    esac
+fi
+
+echo -e "\033[32m ================================\033[0m"
+echo -e "\033[32m BUILD Completed on $HOSTNAME\033[0m"
+echo -e "\033[32m ================================\033[0m"
+exit 0

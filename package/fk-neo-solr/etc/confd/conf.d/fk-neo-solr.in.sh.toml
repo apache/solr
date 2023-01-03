@@ -1,0 +1,9 @@
+[template]
+prefix="/_ENV_-_SERVICE_-defaults"
+src = "fk-neo-solr.in.sh.tmpl"
+dest = "/etc/default/_SERVICE_.in.sh"
+mode = "0644"
+keys = [
+    "/zk.hosts",
+    "/preserve_frame_pointer_flag"
+]

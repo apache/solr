@@ -73,7 +73,10 @@ org.gradle.jvmargs=-Xmx3g \\
  --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \\
  --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED \\
  --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \\
- --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+ --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \\
+ --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \\
+ --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \\
+ --add-opens java.base/sun.nio.ch=ALL-UNNAMED
 
 # Run at normal priority, in parallel
 org.gradle.parallel=true

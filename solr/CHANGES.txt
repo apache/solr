@@ -4,24 +4,6 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
-==================  9.1.1 ==================
-
-Bug Fixes
----------------------
-
-* SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
-
-* SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
-
-Other Changes
----------------------
-
-* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
-
-* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
-
-* SOLR-16598: Upgrade Protobuf to 3.21.12 (David Smiley)
-
 ==================  9.1.0 ==================
 
 New Features

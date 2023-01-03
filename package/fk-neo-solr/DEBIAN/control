@@ -1,0 +1,8 @@
+Package: _PACKAGE_
+Version: _VERSION_
+Architecture: all
+Section: flipkart/neo
+Priority: standard
+Maintainer: M3 - Optimization Team <m3-optimization@flipkart.com>
+Depends: oracle-java8-jdk, fk-config-service-confd
+Description: Flipkart Neo-Solr service

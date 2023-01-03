@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema name="banners" version="1.6">
+
+  <!-- SimilarityFactory to be used for scoring. Similarity is anyways not calculated in case of MatchAllDocsQuery. -->
+  <similarity class="com.flipkart.solr.ltr.similarity.NoOpSimilarityFactory"/>
+
+  <!-- Using deprecated Trie* fieldTypes instead of new *Point ones because *Point ones are not supporting matchAll
+      query and we rely heavily on -(field:*) queries.
+    -->
+  <fieldType name="int" class="solr.TrieIntField" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+  <fieldType name="long" class="solr.TrieLongField" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+  <fieldType name="double" class="solr.TrieDoubleField" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+  <fieldType name="boolean" class="solr.BoolField" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+
+  <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
+  <fieldType name="string" class="solr.StrField" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+  <fieldType name="strings" class="solr.StrField" multiValued="true" indexed="false" stored="false" uninvertible="false" omitNorms="true" omitTermFreqAndPositions="true"/>
+
+  <!-- Field to use to determine and enforce document uniqueness.
+      Unless this field is marked with required="false", it will be a required field
+    -->
+  <uniqueKey>bannerId</uniqueKey>
+
+  <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
+      or Solr won't start. _version_ and update log are required for SolrCloud
+   -->
+  <field name="_version_" type="long" docValues="true"/>
+
+  <!-- External version field, used to detect stale entries in custom caches.
+      Can also be used for DocBasedVersionConstraintsProcessor.
+   -->
+  <field name="version" type="long" stored="true" required="true"/>
+
+  <field name="bannerId" type="string" indexed="true"  stored="true" required="true"/>
+  <field name="bannerStatus" type="string" indexed="true"/>
+
+  <field name="bannerCreator" type="string" indexed="true"  stored="true"/>
+  <field name="bannerMarketplace" type="string" indexed="true"  stored="true"/>
+
+  <field name="bannerEAStatus" type="string" indexed="true"/>
+  <field name="EAEnabled" type="string" indexed="true"/>
+  <field name="startTime" type="long" indexed="true"/>
+  <field name="endTime" type="long" indexed="true"/>
+
+  <field name="widgetType" type="string" indexed="true" stored="true"/>
+  <field name="creativeId" type="string" indexed="true" stored="true"/>
+  <field name="vernacularCreativeGroupId" type="string" stored="true"/>
+
+  <field name="bannerGroupId" type="string" indexed="true" stored="true" required="true"/>
+  <field name="bannerGroupPriceType" type="string" indexed="true"/>
+  <field name="bannerGroupStatus" type="string" indexed="true"/>
+  <field name="bannerGroupType" type="string" indexed="true"/>
+  <field name="deliveryType" type="string" indexed="true"/>
+  <field name="preBookEnabled" type="string" indexed="true"/>
+
+  <field name="locale" type="string" indexed="true" stored="true"/>
+
+  <field name="themeNamePlusTemplateIdStrings" type="strings" indexed="true"  stored="true"/>
+  <field name="themes" type="strings" indexed="true"  stored="true"/>
+  <field name="storeIds" type="strings" indexed="true" stored="true"/>
+  <field name="minDiscount" type="int" indexed="true" stored="true"/>
+  <field name="maxDiscount" type="int" indexed="true" stored="true"/>
+  <field name="minPrice" type="int" indexed="false" stored="true"/>
+  <field name="maxPrice" type="int" indexed="false" stored="true"/>
+  <field name="creativeTemplateId" type="string" indexed="true" stored="true"/>
+
+  <field name="collectionId" type="string" indexed="false"  stored="true"/>
+  <field name="crsId" type="string" indexed="false"  stored="true"/>
+  <field name="crsName" type="string" indexed="false"  stored="true"/>
+  <field name="strategyIds" type="strings" indexed="false"  stored="true"/>
+  <field name="customerRating" type="string" indexed="false"  stored="true"/>
+  <field name="brand" type="string" indexed="false" stored="true"/>
+
+  <field name="category_info" type="strings" indexed="true"/>
+
+  <field name="includedStores" type="strings" indexed="true"/>
+   <field name="includedShops" type="strings" indexed="true"/>
+
+  <field name="includedUserSegmentGroups" type="strings" indexed="true"/>
+  <field name="excludedUserSegmentGroups" type="strings" indexed="true"/>
+  <field name="includedUserSegments" type="strings" indexed="true"/>
+  <field name="excludedUserSegments" type="strings" indexed="true"/>
+  <field name="excludedKeywords" type="strings" indexed="true"/>
+
+  <field name="includedBusinessZones" type="strings" indexed="true"/>
+
+  <field name="trafficSources" type="strings" indexed="true"/>
+  <field name="mobileModel" type="strings" indexed="true"/>
+  <field name="mobileBrand" type="strings" indexed="true"/>
+  <field name="minAppVersionAndroid" type="int" indexed="true"/>
+  <field name="maxAppVersionAndroid" type="int" indexed="true"/>
+  <field name="minAppVersionIos" type="long" indexed="true"/>
+  <field name="maxAppVersionIos" type="long" indexed="true"/>
+
+  <field name="lockInMembershipStatus" type="string" indexed="true"/>
+  <field name="lockInMembershipStartTimeMin" type="long" indexed="true"/>
+  <field name="lockInMembershipStartTimeMax" type="long" indexed="true"/>
+  <field name="lockInMembershipExpiredTimeMin" type="long" indexed="true"/>
+  <field name="lockInMembershipExpiredTimeMax" type="long" indexed="true"/>
+  <field name="lockInMembershipStartRelativeTime" type="long" indexed="true"/>
+  <field name="lockInMembershipEndRelativeTime" type="long" indexed="true"/>
+  <field name="eligibleRewards" type="strings" indexed="true"/>
+  <field name="earnedPointsMin" type="int" indexed="true"/>
+  <field name="earnedPointsMax" type="int" indexed="true"/>
+  <field name="pendingPointsMin" type="int" indexed="true"/>
+  <field name="pendingPointsMax" type="int" indexed="true"/>
+  <field name="allPointsMin" type="int" indexed="true"/>
+  <field name="allPointsMax" type="int" indexed="true"/>
+
+  <field name="advertiserTld" type="strings" indexed="true"/>
+  <field name="contentIABCategories" type="strings" indexed="true"/>
+  <field name="excludedPublishers" type="strings" indexed="true"/>
+  <field name="includedPublisherIABCategories" type="strings" indexed="true"/>
+  <field name="includedPublishers" type="strings" indexed="true"/>
+  <field name="includedUserType" type="string" indexed="true"/>
+  <field name="locationTargetingType" type="string" indexed="true"/>
+  <field name="contentLanguage" type="strings" indexed="true"/>
+  <field name="videoDurationInSecs" type="int" indexed="true"/>
+  <field name="videoPlacements" type="strings" indexed="true"/>
+  <field name="userLoggedInStatus" type="string" indexed="true"/>
+  <field name="excludeMobileModel" type="strings" indexed="true"/>
+  <field name="excludeMobileBrand" type="strings" indexed="true"/>
+
+  <field name="asp" type="double" stored="true"/>
+  <field name="teamType" type="string" stored="true"/>
+  <field name="relevantStores" type="string" stored="true"/> <!-- jsonString of List<String>  -->
+
+  <field name="brands" type="string" stored="true"/> <!-- jsonString of List<String>  -->
+  <field name="relevantStoreScores" type="string" stored="true"/> <!-- jsonString of Map<String, Map<String, Double>>  -->
+  <field name="similarStoreScores" type="string" stored="true"/> <!-- jsonString of Map<String, Map<String, Double>>  -->
+  <field name="crossStoreScores" type="string" stored="true"/> <!-- jsonString of Map<String, Map<String, Double>>  -->
+  <field name="excludedStores" type="string" stored="true"/> <!-- jsonString of List<String>  -->
+  <field name="servingStore" type="string" stored="true"/>
+  <field name="servingTeamId" type="string" indexed="true" stored="true"/>
+
+  <field name="bannerGroupPriceValue" type="double" stored="true"/>
+  <field name="localBcapStatus" type="string" indexed="true"/>
+  <field name="placementPriceMap" type="string" stored="true" required="false"/>
+  <field name="userSegments" type="string" stored="true" />
+
+  <field name="targetedOfferIds" type="strings" indexed="true" stored="true"/>
+  <field name="offerBasedContent" type="boolean" indexed="true" required="false" stored="true"/>
+  <field name="affluenceTags" type="strings" indexed="true" stored="true"/>
+  <field name="normalizedASP" type="int" indexed="false" stored="true"/>
+  <field name="brandMonetary" type="boolean" indexed="false" stored="true"/>
+  <field name="avgRating" type="string" indexed="false" stored="true"/>
+  <field name="brandVector" type="int" indexed="false" stored="true"/>
+</schema>

@@ -17,7 +17,12 @@
 
 pluginManagement {
     repositories {
-        mavenCentral()
+        maven {
+            url "https://jfrog.fkinternal.com/artifactory/maven_virtual"
+            metadataSources {
+                artifact() //Look directly for artifact
+            }
+        }
         gradlePluginPortal()
     }
 }
@@ -44,6 +49,7 @@ include "solr:modules:ltr"
 include "solr:modules:s3-repository"
 include "solr:modules:scripting"
 include "solr:modules:sql"
+include "solr:modules:fkltr"
 include "solr:webapp"
 include "solr:benchmark"
 include "solr:test-framework"
