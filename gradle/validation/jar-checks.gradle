@@ -165,7 +165,10 @@ subprojects {
       def errors = []
       jarInfos.each { dep ->
         def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
-        if (!expectedChecksumFile.exists()) {
+        def forceLuceneVersion = project.properties['lucene.dev.version']
+        if (dep.module.id.group == 'org.apache.lucene' && forceLuceneVersion != null && forceLuceneVersion.endsWith('-SNAPSHOT')) {
+          logger.log(LogLevel.INFO, "Skipping jar checksum validation for local SNAPSHOT dependency ('${dep.module}')")
+        } else if (!expectedChecksumFile.exists()) {
           errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
         } else {
           dep.referencedFiles += expectedChecksumFile

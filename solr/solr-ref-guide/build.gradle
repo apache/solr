@@ -126,7 +126,8 @@ task buildLocalAntoraYaml {
             ["dep_version_tika", "org.apache.tika", "tika-core"],
             ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
 
         copy {
