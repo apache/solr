@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.search.QueryUtils.makeQueryable;
 
 import com.google.common.collect.Lists;
 import java.io.IOException;
@@ -205,7 +206,7 @@ public class RealTimeGetComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req, true));
+        filters.addAll(QueryUtils.parseFilterQueries(req));
         if (!filters.isEmpty()) {
           rb.setFilters(filters);
         }
@@ -326,6 +327,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
           if (rb.getFilters() != null) {
             for (Query raw : rb.getFilters()) {
+              raw = makeQueryable(raw);
               Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
               Scorer scorer =
                   searcherInfo

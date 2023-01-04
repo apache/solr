@@ -22,6 +22,8 @@ Other Changes
 
 * SOLR-16598: Upgrade Protobuf to 3.21.12 (David Smiley)
 
+* SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
+
 ==================  9.1.0 ==================
 
 New Features
