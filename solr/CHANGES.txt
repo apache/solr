@@ -199,6 +199,8 @@ Bug Fixes
 
 * SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
+* SOLR-16557: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
+
 ==================  9.1.0 ==================
 
 New Features
