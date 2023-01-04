@@ -29,6 +29,8 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
 ==================  9.2.0 ==================
 
 New Features

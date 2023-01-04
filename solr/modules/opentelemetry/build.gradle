@@ -45,9 +45,6 @@ dependencies {
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
   compileOnly 'org.apache.tomcat:annotations-api'
 
-
-  // Both this and jaegertracer-configurator pull in com.squareup.okhttp3:okhttp HTTP client and kotlin stdlib.
-
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:solrj')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
