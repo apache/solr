@@ -19,7 +19,6 @@ package org.apache.solr.security.hadoop;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -199,9 +198,9 @@ public class KerberosTestServices {
    * and https://issues.apache.org/jira/browse/DIRKRB-753
    */
   static final List<String> incompatibleLanguagesWithMiniKdc =
-      Arrays.asList(
+      List.of(
           "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
-          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as");
+          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as", "raj", "bho", "bgc");
 
   public static class Builder {
     private File kdcWorkDir;
