@@ -106,7 +106,7 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_SIMILARITY);
     args.remove(KNN_SIMILARITY_FUNCTION);
 
-    this.knnAlgorithm = Optional.ofNullable(args.get(KNN_ALGORITHM)).orElse(DEFAULT_KNN_ALGORITHM);
+    this.knnAlgorithm = args.getOrDefault(KNN_ALGORITHM, DEFAULT_KNN_ALGORITHM);
 
     args.remove(KNN_ALGORITHM);
 
