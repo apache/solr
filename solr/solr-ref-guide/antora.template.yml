@@ -53,3 +53,4 @@ asciidoc:
     dep-version-tika: '${dep_version_tika}'
     dep-version-zookeeper: '${dep_version_zookeeper}'
     dep-version-lucene: '${dep_version_lucene}'
+    dep-version-opentelemetry: '${dep_version_opentelemetry}'

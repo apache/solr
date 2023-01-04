@@ -30,13 +30,9 @@ image::distributed-tracing/query-request-tracing.png[]
 The `TracerConfigurator` is a class used to provide an instance of `io.opentracing.Tracer` based on configuration in `solr.xml`.
 These are pluggable, and each plugin is shipped as a xref:configuration-guide:solr-modules.adoc[Solr Module]:
 
-**opentelemetry**:
+**opentelemetry**: The `opentelemetry` module supports OTLP over gRPC or HTTP.
 
-The `opentelemetry` module supports the OTLP over gRPC or HTTP. By adding other exporter libraries to Solr, it can also be configured to export traces in Jaeger and Zipkin formats.
-
-**jaegertracer-configurator**:
-
-The `jaegertracer-configurator` module supports the Jaeger format over the Thrift transport.
+**jaegertracer-configurator**: The `jaegertracer-configurator` module supports the Jaeger format over the Thrift transport.
 
 A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 
@@ -63,7 +59,7 @@ Enable the module with either system property `-Dsolr.modules=opentelemetry` or 
 
 === Configuration
 
-The tracer can be configured through environment variables or Java system properties, see https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL SDK Environment Variables] and https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[Java SDK Autoconfigure].
+The tracer can be configured through environment variables or Java system properties, see https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL SDK Environment Variables] and https://github.com/open-telemetry/opentelemetry-java/blob/v{dep-version-opentelemetry}/sdk-extensions/autoconfigure/README.md[Java SDK Autoconfigure].
 
 The default configuration will ship traces to a collector running on localhost, using https://opentelemetry.io/docs/reference/specification/protocol/[OTLP] over https://grpc.io[gRPC], and will propagate trace IDs using https://www.w3.org/TR/trace-context/[W3C TraceContext]. Here are the environment settings that are enabled by default:
 
@@ -95,10 +91,11 @@ SOLR_OPTS=-Dotel.exporter.otlp.endpoint=my-remote-collector:4317 -Dotel.traces.s
 ----
 
 Consult the https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL documentation] for details on all the configuration options.
+This version of Solr uses https://github.com/open-telemetry/opentelemetry-java/tree/v{dep-version-opentelemetry}[OpenTelemetry SDK v{dep-version-opentelemetry}].
 
 === Using other exporters
 
-The OTEL tracer also supports other exporters like Jaeger and Zipkin. However, Solr does not ship with those 3rd party libraries, thus you need ot add them to Solr yourself if you have this as a requirement. Say you add the Zipkin exporter jar file(s) to `$SOLR_TIP/lib/`, then you would enable OpenTelemetry module to send traces on the Zipkin format using the Protobuf encoding with a configuration like this:
+The OTEL tracer also supports other exporters like Jaeger and Zipkin. However, Solr does not ship with those 3rd party libraries, thus you need to add them to Solr yourself if you have this as a requirement. Say you add the Zipkin exporter jar file(s) to `$SOLR_TIP/lib/`, then you would enable OpenTelemetry module to send traces on the Zipkin format using the Protobuf encoding with a configuration like this:
 
 [source,bash]
 ----
