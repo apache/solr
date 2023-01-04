@@ -824,11 +824,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testReadOnlyCollection() throws Exception {
     String collectionName = getSaferTestName();
-    CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(solrClient);
 
-    solrClient.setDefaultCollection(collectionName);
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(cluster.getSolrClient());
+    CloudSolrClient solrClient = cluster.getSolrClientForCollection(collectionName);
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
