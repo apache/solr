@@ -19,19 +19,10 @@ apply plugin: 'java-library'
 
 description = 'Open Telemetry (OTEL) tracer'
 
-// This is a hacky way to use permitTestUnusedDeclared with bom declared dependencies.
-// See https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
-configurations {
-  constraintsOnly
-  permitUnusedDeclared.extendsFrom constraintsOnly
-  implementation.extendsFrom constraintsOnly
-  runtimeOnly.extendsFrom constraintsOnly
-}
-
 dependencies {
   implementation project(':solr:core')
 
-  constraintsOnly(platform('io.opentelemetry:opentelemetry-bom-alpha'))
+  runtimeOnly(platform('io.opentelemetry:opentelemetry-bom-alpha'))
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'org.slf4j:slf4j-api'
@@ -41,22 +32,16 @@ dependencies {
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
   runtimeOnly 'io.opentelemetry:opentelemetry-semconv'
-  permitUnusedDeclared 'io.opentelemetry:opentelemetry-semconv'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
-  permitUnusedDeclared 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // NOTE: sdk-autoconfigure needs both opentelemetry-sdk-metrics and opentelemetry-sdk-logs even if we don't use them
 
   // gRPC transport via netty - since we already ship netty this is more lightweight than netty-shaded
   runtimeOnly 'io.grpc:grpc-netty'
-  permitUnusedDeclared 'io.grpc:grpc-netty'
   runtimeOnly 'io.grpc:grpc-protobuf'
-  permitUnusedDeclared 'io.grpc:grpc-protobuf'
   runtimeOnly 'io.grpc:grpc-stub'
-  permitUnusedDeclared 'io.grpc:grpc-stub'
   runtimeOnly 'io.grpc:grpc-context'
-  permitUnusedDeclared 'io.grpc:grpc-context'
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
   compileOnly 'org.apache.tomcat:annotations-api'
 
