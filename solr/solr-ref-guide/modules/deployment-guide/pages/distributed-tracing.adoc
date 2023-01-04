@@ -20,7 +20,7 @@ Solr includes a general tracing framework based on OpenTracing that can be used 
 
 Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/gRPC and Jaeger/Thrift formats. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
 
-A sampled distributed tracing query request displayed in Jaeger looks like this:
+A sampled distributed tracing query request displayed in Jaeger UI looks like this:
 
 .Tracing of a Solr query
 image::distributed-tracing/query-request-tracing.png[]
@@ -104,6 +104,11 @@ OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans
 ----
 
 == Jaeger Tracer Module
+
+[WARNING]
+====
+This module is deprecated as of Solr 9.2, and will be removed in version 10. Users should migrate to OpenTelemetry.
+====
 
 The module `jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer. Enable the module with either system property `-Dsolr.modules=jaegertracer-configurator` or environment variable `SOLR_MODULES=jaegertracer-configurator`.
 
