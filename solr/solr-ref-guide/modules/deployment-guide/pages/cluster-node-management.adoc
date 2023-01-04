@@ -165,9 +165,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
         "health": "GREEN",
         "aliases":["both_collections"]
       },
-      "collection2":{
-        "..."
-      }
+      "collection2":{"key": "value"}
     },
     "aliases":{ "both_collections":"collection1,collection2" },
     "roles":{
@@ -851,9 +849,8 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
       "95thPcRequestTime":0.519016,
       "99thPcRequestTime":0.519016,
       "999thPcRequestTime":0.519016},
-    "removeshard",{
-      "..."
-  }],
+    "removeshard",{}
+  ],
   "collection_operations":[
     "splitshard",{
       "requests":1,
@@ -881,7 +878,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   ],
   "overseer_queue":[
     "..."
-  ],
-  "..."
+  ]
  }
 ----
