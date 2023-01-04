@@ -37,7 +37,6 @@ dependencies {
 
   implementation 'io.opentelemetry:opentelemetry-sdk'
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
-  permitUnusedDeclared 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
   implementation 'io.opentelemetry:opentelemetry-semconv'
@@ -46,8 +45,11 @@ dependencies {
   permitUnusedDeclared 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
+  // NOTE: sdk-autoconfigure needs both opentelemetry-sdk-metrics and opentelemetry-sdk-logs even if we don't use them
+
   // gRPC transport via netty - since we already ship netty this is more lightweight than netty-shaded
-  runtimeOnly 'io.grpc:grpc-netty'
+  implementation 'io.grpc:grpc-netty'
+  permitUnusedDeclared 'io.grpc:grpc-netty'
   implementation 'io.grpc:grpc-protobuf'
   permitUnusedDeclared 'io.grpc:grpc-protobuf'
   implementation 'io.grpc:grpc-stub'
