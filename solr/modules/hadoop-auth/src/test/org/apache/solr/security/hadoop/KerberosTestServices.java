@@ -190,6 +190,9 @@ public class KerberosTestServices {
 
   public static final String krb5LoginModuleName =
       System.getProperty("java.vendor").contains("IBM")
+              // added the following check for Solr since newer OpenJ9 builds don't have IBM
+              // specific classes.
+              && System.getProperty("java.specification.vendor").contains("IBM")
           ? "com.ibm.security.auth.module.Krb5LoginModule"
           : "com.sun.security.auth.module.Krb5LoginModule";
 
