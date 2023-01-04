@@ -19,7 +19,6 @@ package org.apache.solr.security.hadoop;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -198,18 +197,10 @@ public class KerberosTestServices {
    * These Locales don't generate dates that are compatible with Hadoop MiniKdc. See LocaleTest.java
    * and https://issues.apache.org/jira/browse/DIRKRB-753
    */
-  static final List<String> incompatibleLanguagesWithMiniKdc = getIncompatibleLanguagesWithMiniKdc();
-
-  private static List<String> getIncompatibleLanguagesWithMiniKdc() {
-    List<String> locales = Arrays.asList(
-        "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
-        "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as");
-    if (Runtime.version().feature() >= 20) {
-      locales.addAll(List.of("raj", "bho", "bgc"));
-    }
-    return List.copyOf(locales);
-  }
-
+  static final List<String> incompatibleLanguagesWithMiniKdc =
+      List.of(
+          "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
+          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as", "raj", "bho", "bgc");
 
   public static class Builder {
     private File kdcWorkDir;
