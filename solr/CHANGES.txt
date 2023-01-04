@@ -90,6 +90,15 @@ Improvements
 
 * SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
 
+* SOLR-10463: Introduce Builder setter for retryExpiryTime on cloud SolrClients.  Deprecated 
+  direct setter setRetryExpiryTime on cloud SolrClients. (Eric Pugh)
+
+* SOLR-10461: Introduce Builder setter for aliveCheckInterval on load balanced SolrClients.  Deprecated 
+  direct setter setAliveCheckInterval on SolrClients. (Eric Pugh, David Smiley)
+
+* SOLR-10462: Introduce Builder setter for pollQueueTime on ConcurrentUpdateHttp2SolrClient.  Deprecated 
+  direct setter setPollQueueTime on ConcurrentUpdateHttp2SolrClient. (Eric Pugh)
+  
 Optimizations
 ---------------------
 
@@ -187,6 +196,8 @@ Other Changes
 Bug Fixes
 ---------------------
 * SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
+
+* SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
 ==================  9.1.0 ==================
 

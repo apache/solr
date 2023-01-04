@@ -74,8 +74,9 @@ public class StreamingSolrClients {
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
               .alwaysStreamDeletes()
+              .setPollQueueTime(pollQueueTime) // minimize connections created
               .build();
-      client.setPollQueueTime(pollQueueTime); // minimize connections created
+
       solrClients.put(url, client);
     }
 

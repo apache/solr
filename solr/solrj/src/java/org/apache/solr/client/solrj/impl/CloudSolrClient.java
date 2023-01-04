@@ -105,7 +105,7 @@ public abstract class CloudSolrClient extends SolrClient {
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   public static final String STATE_VERSION = "_stateVer_";
-  private long retryExpiryTime =
+  protected long retryExpiryTime =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
 
@@ -231,7 +231,10 @@ public abstract class CloudSolrClient extends SolrClient {
    * This is the time to wait to refetch the state after getting the same state version from ZK
    *
    * <p>secs
+   *
+   * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
    */
+  @Deprecated
   public void setRetryExpiryTime(int secs) {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }

@@ -50,8 +50,8 @@ import org.slf4j.MDC;
  * but this class may be used for updates because the server will forward them to the appropriate
  * leader.
  *
- * <p>It offers automatic failover when a server goes down and it detects when the server comes back
- * up.
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes
+ * back up.
  *
  * <p>Load balancing is done using a simple round-robin on the list of servers.
  *
@@ -69,11 +69,11 @@ import org.slf4j.MDC;
  * </blockquote>
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link #setAliveCheckInterval} , the default
- * is set to one minute.
+ * a dedicated thread. This interval can be set using {@link
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
  *
  * <p><b>When to use this?</b><br>
- * This can be used as a software load balancer when you do not wish to setup an external load
+ * This can be used as a software load balancer when you do not wish to set up an external load
  * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
  * httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
@@ -301,14 +301,33 @@ public class LBHttp2SolrClient extends LBSolrClient {
   public static class Builder {
     private final Http2SolrClient http2Client;
     private final String[] baseSolrUrls;
+    private int aliveCheckInterval;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2Client = http2Client;
       this.baseSolrUrls = baseSolrUrls;
     }
 
+    /**
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
+     *
+     * @param aliveCheckInterval time in milliseconds
+     */
+    public LBHttp2SolrClient.Builder setAliveCheckInterval(int aliveCheckInterval) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+      }
+      this.aliveCheckInterval = aliveCheckInterval;
+      return this;
+    }
+
     public LBHttp2SolrClient build() {
-      return new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
+      LBHttp2SolrClient solrClient =
+          new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
+      solrClient.aliveCheckInterval = this.aliveCheckInterval;
+      return solrClient;
     }
   }
 }
