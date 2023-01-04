@@ -5,6 +5,7 @@ Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
 ==================  9.2.0 ==================
+
 New Features
 ---------------------
 
@@ -15,6 +16,8 @@ New Features
 * SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
+
+* SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
 Improvements
 ---------------------
