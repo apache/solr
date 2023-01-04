@@ -124,7 +124,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
               String knnAlgorithm = vectorType.getKnnAlgorithm();
-              if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
+              if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
                 int maxConn = vectorType.getHnswMaxConn();
                 int beamWidth = vectorType.getHnswBeamWidth();
                 return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
