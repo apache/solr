@@ -94,8 +94,9 @@ public class SolrCores {
         // remove all loaded cores; add to our working list.
         for (String name : getLoadedCoreNames()) {
           final var core = remove(name);
-          assert core != null;
-          coreList.add(core);
+          if (core != null) { // maybe in pendingCloses due to transient core eviction
+            coreList.add(core);
+          }
         }
 
         coreList.addAll(pendingCloses);
