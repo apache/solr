@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -239,7 +240,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             // don't include hidden (.) files
-            if (!Files.isHidden(file)) {
+            if (!Files.isHidden(file) && !METADATA_FILE.equals(file.getFileName().toString())) {
               filePaths.add(configDir.relativize(file).toString());
               return FileVisitResult.CONTINUE;
             }
@@ -250,7 +251,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
             String relativePath = configDir.relativize(dir).toString();
             if (!relativePath.isEmpty()) {
-              filePaths.add(relativePath + "/");
+              filePaths.add(relativePath + File.separator);
             }
             return FileVisitResult.CONTINUE;
           }
