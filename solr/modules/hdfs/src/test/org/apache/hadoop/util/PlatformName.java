@@ -18,6 +18,7 @@ package org.apache.hadoop.util;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.solr.client.solrj.util.Constants;
 
 /**
  * A helper class for getting build-info of the java-vm.
@@ -45,9 +46,7 @@ public class PlatformName {
    * A public static variable to indicate the current java vendor is
    * IBM java or not.
    */
-  public static final boolean IBM_JAVA = JAVA_VENDOR_NAME.contains("IBM")
-      // added the following check for Solr since newer OpenJ9 builds don't have IBM specific classes.
-      && System.getProperty("java.specification.vendor").contains("IBM");
+  public static final boolean IBM_JAVA = Constants.IS_IBM_JAVA;
 
   public static void main(String[] args) {
     System.out.println(PLATFORM_NAME);

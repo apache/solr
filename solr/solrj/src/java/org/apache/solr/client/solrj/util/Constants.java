@@ -25,4 +25,15 @@ public class Constants {
   public static final boolean JRE_IS_MINIMUM_JAVA11 = true;
   // Future, enable if needed...
   // public static final boolean JRE_IS_MINIMUM_JAVA17 = Runtime.version().feature() >= 17;
+
+  public static final boolean IS_IBM_JAVA = isIBMJava();
+
+  private static boolean isIBMJava() {
+    try {
+      Class.forName("com.ibm.security.auth.module.Krb5LoginModule", false, null);
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
 }
