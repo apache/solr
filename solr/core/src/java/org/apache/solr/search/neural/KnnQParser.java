@@ -91,7 +91,7 @@ public class KnnQParser extends QParser {
         try {
           List<Query> filters = QueryUtils.parseFilterQueries(req);
           SolrIndexSearcher.ProcessedFilter processedFilter =
-              req.getSearcher().getProcessedFilter(filters);
+              req.getSearcher().getProcessedFilter(null, filters);
           return processedFilter.filter;
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
