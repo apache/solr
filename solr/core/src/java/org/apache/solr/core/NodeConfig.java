@@ -100,7 +100,7 @@ public class NodeConfig {
 
   private final MetricsConfig metricsConfig;
 
-  private final PluginInfo solrCoresConfig;
+  private final PluginInfo coreManagerConfig;
 
   private final PluginInfo tracerConfig;
 
@@ -136,7 +136,7 @@ public class NodeConfig {
       Properties solrProperties,
       PluginInfo[] backupRepositoryPlugins,
       MetricsConfig metricsConfig,
-      PluginInfo solrCoresConfig,
+      PluginInfo coreManagerConfig,
       PluginInfo tracerConfig,
       boolean fromZookeeper,
       String defaultZkHost,
@@ -170,7 +170,7 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.solrCoresConfig = solrCoresConfig;
+    this.coreManagerConfig = coreManagerConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
@@ -368,8 +368,8 @@ public class NodeConfig {
     return metricsConfig;
   }
 
-  public PluginInfo getSolrCoresConfig() {
-    return solrCoresConfig;
+  public PluginInfo getCoreManagerConfig() {
+    return coreManagerConfig;
   }
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
@@ -551,7 +551,7 @@ public class NodeConfig {
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
-    private PluginInfo solrCoresPlugin;
+    private PluginInfo coreManagerPlugin;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
@@ -713,8 +713,8 @@ public class NodeConfig {
       return this;
     }
 
-    public void setSolrCoresConfig(PluginInfo pluginInfo) {
-      this.solrCoresPlugin = pluginInfo;
+    public void setCoreManagerConfig(PluginInfo pluginInfo) {
+      this.coreManagerPlugin = pluginInfo;
     }
 
     public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
@@ -790,7 +790,7 @@ public class NodeConfig {
           solrProperties,
           backupRepositoryPlugins,
           metricsConfig,
-          solrCoresPlugin,
+          coreManagerPlugin,
           tracerConfig,
           fromZookeeper,
           defaultZkHost,

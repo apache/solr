@@ -31,7 +31,7 @@ public class TransientSolrCores extends SolrCores {
 
   public TransientSolrCores(CoreContainer container) {
     super(container);
-    initArgs = container.cfg.getSolrCoresConfig().initArgs;
+    initArgs = container.cfg.getCoreManagerConfig().initArgs;
     transientSolrCoreCache = new TransientSolrCoreCacheDefault(this);
   }
 
@@ -53,7 +53,7 @@ public class TransientSolrCores extends SolrCores {
   }
 
   @Override
-  protected void removeCoreDescriptor(CoreDescriptor p) {
+  public void removeCoreDescriptor(CoreDescriptor p) {
     if (p.isTransient()) {
       synchronized (modifyLock) {
         getTransientCacheHandler().removeTransientDescriptor(p.getName());

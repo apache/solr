@@ -36,7 +36,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Holds/manages {@link SolrCore}s within {@link CoreContainer}. */
+/** AKA CoreManager: Holds/manages {@link SolrCore}s within {@link CoreContainer}. */
 public class SolrCores {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

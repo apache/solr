@@ -168,7 +168,7 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setSolrCoresConfig(getPluginInfo(root.get("solrCores")));
+    configBuilder.setCoreManagerConfig(getPluginInfo(root.get("coreManager")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -384,7 +384,7 @@ public class SolrXmlConfig {
                 var attrs = Map.of("class", TransientSolrCores.class.getName());
                 var initArgs = new NamedList<>();
                 initArgs.add(TransientSolrCoreCacheDefault.TRANSIENT_CACHE_SIZE, cacheSize);
-                builder.setSolrCoresConfig(new PluginInfo(null, attrs, initArgs, null));
+                builder.setCoreManagerConfig(new PluginInfo(null, attrs, initArgs, null));
                 break;
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
