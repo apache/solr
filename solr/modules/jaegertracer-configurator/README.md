@@ -18,6 +18,8 @@
 Welcome to Apache Solr Jaeger Tracer Configurator
 ========
 
+**WARNING**: This module is deprecated for removal in v10.0.
+
 Apache Solr Jaeger Tracer Configurator provides a way for you to expose Solr's tracing to Jaeger.
 
 # Setup Jaeger Tracer Configurator

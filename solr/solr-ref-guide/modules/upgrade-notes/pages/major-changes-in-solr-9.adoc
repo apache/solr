@@ -70,6 +70,11 @@ Due to changes in Lucene 9, that isn't possible any more.
 This is an improvement to the binary release artifact, but Jetty does not allow web-apps (Solr) to share these libraries by default.
 The `server/contexts/solr-jetty-context.xml` now explicitly removes these restrictions, allowing Solr to share these "server" jars which now live in `server/lib/ext`.
 
+=== Tracing
+* A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
+  At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
+  Users should start migrating to the new module to prepare for a smooth transition.
+
 == Solr 9.1
 === Querying and Indexing
 * Added Lucene91HnswVectorsFormat codec for DenseVectorField. In order to use the new codec, reindex is necessary.
