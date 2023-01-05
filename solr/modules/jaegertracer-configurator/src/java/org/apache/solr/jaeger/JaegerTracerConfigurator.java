@@ -21,6 +21,10 @@ import io.jaegertracing.Configuration;
 import io.opentracing.Tracer;
 import org.apache.solr.core.TracerConfigurator;
 
+/**
+ * @deprecated This module will be removed in v10.0
+ */
+@Deprecated(forRemoval = true, since = "9.2")
 public class JaegerTracerConfigurator extends TracerConfigurator {
 
   @Override

@@ -182,6 +182,8 @@ Other Changes
 
 * SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
 
+* SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
