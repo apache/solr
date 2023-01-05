@@ -22,8 +22,8 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class CoreAugmenterFactory extends TransformerFactory {
 
-    @Override
-    public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
-        return new ValueAugmenterFactory.ValueAugmenter( field, req.getCore().getName() );
-    }
+  @Override
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    return new ValueAugmenterFactory.ValueAugmenter(field, req.getCore().getName());
+  }
 }
