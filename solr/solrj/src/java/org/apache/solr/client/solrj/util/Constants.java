@@ -17,8 +17,14 @@
 
 package org.apache.solr.client.solrj.util;
 
+import java.lang.invoke.MethodHandles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // Clone of org.apache.lucene.util.Constants, so SolrJ can use it
 public class Constants {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
 
   public static final boolean JRE_IS_MINIMUM_JAVA9 = true;
@@ -30,9 +36,14 @@ public class Constants {
 
   private static boolean isIBMJava() {
     try {
-      Class.forName("com.ibm.security.auth.module.Krb5LoginModule", false, null);
+      Class.forName(
+          "com.ibm.security.auth.module.Krb5LoginModule", false, Constants.class.getClassLoader());
       return true;
-    } catch (ClassNotFoundException e) {
+    } catch (SecurityException se) {
+      log.warn(
+          "Unable to determine if IBM Java due to SecurityException. Assuming not IBM Java.", se);
+      return false;
+    } catch (ClassNotFoundException ignore) {
       return false;
     }
   }
