@@ -199,7 +199,7 @@ public class ZkConfigSetService extends ConfigSetService {
       throws IOException {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
-      // if createNew is true then zkClient#makePath failOnExists is set to false
+      // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
       zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
     } catch (KeeperException.NodeExistsException nodeExistsException) {
       throw new SolrException(

@@ -303,7 +303,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Test Multi-Threaded routed updates for UpdateRequest
     try (CloudSolrClient threadedClient =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .withParallelUpdates(true)
             .build()) {
@@ -968,15 +968,16 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(1, slice.getReplicas().size()); // sanity check
     final String old_leader_core_node_name = slice.getLeader().getName();
 
-    // NOTE: creating our own CloudSolrClient whose settings we can muck with...
+    // NOTE: creating our own CloudSolrClient with settings for this specific test...
     try (CloudSolrClient stale_client =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
             .withParallelUpdates(true)
+            // don't let collection cache entries get expired, even on a slow machine...
+            .withCollectionCacheTtl(Integer.MAX_VALUE)
             .build()) {
-      // don't let collection cache entries get expired, even on a slow machine...
-      stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
+
       stale_client.setDefaultCollection(COL);
 
       // do a query to populate stale_client's cache...

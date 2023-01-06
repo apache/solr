@@ -108,6 +108,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             .withConnectionTimeout(builder.connectionTimeoutMillis)
             .withSocketTimeout(builder.socketTimeoutMillis)
             .withFollowRedirects(false)
+            .withTheseParamNamesInTheUrl(builder.urlParamNames)
             .build();
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
@@ -140,15 +141,26 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return this.client.getQueryParams();
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return this.client.getUrlParamNames();
   }
 
   /**
    * Expert Method.
    *
    * @param queryParams set of param keys to only send via the query string
+   * @deprecated use {@link ConcurrentUpdateSolrClient.Builder#withTheseParamNamesInTheUrl(Set)}
+   *     instead
    */
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     this.client.setQueryParams(queryParams);
   }
