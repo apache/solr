@@ -17,7 +17,6 @@
 package org.apache.solr.core.backup;
 
 import com.google.common.base.Preconditions;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
