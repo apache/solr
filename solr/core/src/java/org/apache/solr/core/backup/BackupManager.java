@@ -17,6 +17,8 @@
 package org.apache.solr.core.backup;
 
 import com.google.common.base.Preconditions;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -329,10 +331,15 @@ public class BackupManager {
   private void downloadConfigToRepo(ConfigSetService configSetService, String configName, URI dir)
       throws IOException {
     List<String> filePaths = configSetService.getAllConfigFiles(configName);
+    // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
-      URI uri = repository.resolve(dir, filePath);
+      // Replace '/' to ensure that propre file is resolved for writing.
+      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
+      // always separates file paths with '/'
       if (!filePath.endsWith("/")) {
         log.debug("Writing file {}", filePath);
+        // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
         byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
         try (OutputStream os = repository.createOutput(uri)) {
           os.write(data);

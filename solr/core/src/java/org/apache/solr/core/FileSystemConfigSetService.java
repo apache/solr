@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -94,7 +95,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     Path configDir = getConfigDir(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
-      Path file = configDir.resolve(fileName);
+      Path file = configDir.resolve(normalizePathToOSSeparator(fileName));
       if (Files.exists(file)) {
         if (Files.isDirectory(file)) {
           deleteDir(file);
@@ -146,7 +147,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOSSeparator(fileName));
     if (!Files.exists(filePath) || overwriteOnExists) {
       Files.write(filePath, data);
     }
@@ -218,7 +219,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOSSeparator(fileName));
     byte[] data = null;
     try {
       data = Files.readAllBytes(filePath);
@@ -234,18 +235,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     List<String> filePaths = new ArrayList<>();
     Files.walkFileTree(
         configDir,
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
-            Path filePath = configDir.relativize(file);
-            String filePathStr = filePath.toString();
-            filePathStr =
-                filePathStr.replace(
-                    filePath.getFileSystem().getSeparator(), "/"); // normalize slashes
-            // don't include .metadata.json hidden file
-            if (!filePathStr.equals(METADATA_FILE)) {
-              filePaths.add(filePathStr);
+            // don't include hidden (.) files
+            if (!Files.isHidden(file) && !METADATA_FILE.equals(file.getFileName().toString())) {
+              filePaths.add(normalizePathToForwardSlash(configDir.relativize(file).toString()));
               return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
@@ -255,13 +251,21 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
             String relativePath = configDir.relativize(dir).toString();
             if (!relativePath.isEmpty()) {
-              filePaths.add(relativePath + "/");
+              filePaths.add(normalizePathToForwardSlash(relativePath + File.separator));
             }
             return FileVisitResult.CONTINUE;
           }
         });
     Collections.sort(filePaths);
     return filePaths;
+  }
+
+  private String normalizePathToForwardSlash(String path) {
+    return path.replace(File.separatorChar, '/');
+  }
+
+  private String normalizePathToOSSeparator(String path) {
+    return path.replace('/', File.separatorChar);
   }
 
   protected Path locateInstanceDir(CoreDescriptor cd) {
