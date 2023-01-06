@@ -105,7 +105,7 @@ public abstract class CloudSolrClient extends SolrClient {
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   public static final String STATE_VERSION = "_stateVer_";
-  private long retryExpiryTime =
+  protected long retryExpiryTime =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
 
@@ -126,7 +126,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   }
 
-  private volatile List<Object> locks = objectList(3);
+  protected volatile List<Object> locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
@@ -188,7 +188,7 @@ public abstract class CloudSolrClient extends SolrClient {
     final AtomicLong puts = new AtomicLong();
     final AtomicLong hits = new AtomicLong();
     final Lock evictLock = new ReentrantLock(true);
-    protected volatile long timeToLive = 60 * 1000L;
+    protected volatile long timeToLiveMs = 60 * 1000L;
 
     @Override
     public ExpiringCachedDocCollection get(Object key) {
@@ -199,7 +199,7 @@ public abstract class CloudSolrClient extends SolrClient {
         evictStale();
         return null;
       }
-      if (val.isExpired(timeToLive)) {
+      if (val.isExpired(timeToLiveMs)) {
         super.remove(key);
         return null;
       }
@@ -217,7 +217,7 @@ public abstract class CloudSolrClient extends SolrClient {
       if (!evictLock.tryLock()) return;
       try {
         for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
-          if (e.getValue().isExpired(timeToLive)) {
+          if (e.getValue().isExpired(timeToLiveMs)) {
             super.remove(e.getKey());
           }
         }
@@ -231,7 +231,10 @@ public abstract class CloudSolrClient extends SolrClient {
    * This is the time to wait to refetch the state after getting the same state version from ZK
    *
    * <p>secs
+   *
+   * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
    */
+  @Deprecated
   public void setRetryExpiryTime(int secs) {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
@@ -283,10 +286,12 @@ public abstract class CloudSolrClient extends SolrClient {
    * Sets the cache ttl for DocCollection Objects cached.
    *
    * @param seconds ttl value in seconds
+   * @deprecated use {@link CloudSolrClient.Builder#withCollectionCacheTtl(int)} instead
    */
+  @Deprecated
   public void setCollectionCacheTTl(int seconds) {
     assert seconds > 0;
-    this.collectionStateCache.timeToLive = seconds * 1000L;
+    this.collectionStateCache.timeToLiveMs = seconds * 1000L;
   }
 
   protected abstract LBSolrClient getLbClient();
@@ -1219,7 +1224,10 @@ public abstract class CloudSolrClient extends SolrClient {
   /**
    * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
    * locks
+   *
+   * @deprecated use {@link CloudHttp2SolrClient.Builder#setParallelCacheRefreshes(int)} instead
    */
+  @Deprecated
   public void setParallelCacheRefreshes(int n) {
     locks = objectList(n);
   }

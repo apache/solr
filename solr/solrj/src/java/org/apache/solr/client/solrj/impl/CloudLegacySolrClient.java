@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -85,6 +86,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
+    this.retryExpiryTime = builder.retryExpiryTime;
+    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -194,6 +197,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
+    protected long retryExpiryTime =
+        TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
@@ -263,6 +268,17 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /** Provides a {@link LBHttpSolrClient} for the builder to use when creating clients. */
     public Builder withLBHttpSolrClient(LBHttpSolrClient loadBalancedSolrClient) {
       this.loadBalancedSolrClient = loadBalancedSolrClient;
+      return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param seconds ttl value in seconds
+     */
+    public Builder withCollectionCacheTtl(int seconds) {
+      assert seconds > 0;
+      this.timeToLiveSeconds = seconds;
       return this;
     }
 

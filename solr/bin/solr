@@ -1811,7 +1811,12 @@ if [[ -n "${SOLR_MODULES:-}" ]] ; then
   SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
 fi
 
-: "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
+# Default placement plugin
+if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
+  SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
+fi
+
+: ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then
   echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
