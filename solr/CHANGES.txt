@@ -22,6 +22,11 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Deprecation Removals
+----------------------
+
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
 Other Changes
 ---------------------
 
@@ -30,6 +35,7 @@ Other Changes
   (David Smiley)
 
 ==================  9.2.0 ==================
+
 New Features
 ---------------------
 
@@ -40,6 +46,8 @@ New Features
 * SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
+
+* SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
 Improvements
 ---------------------
@@ -65,6 +73,8 @@ Improvements
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-16475: Make the default replica placement plugin configurable as system property on startup (janhoy)
+
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
 * SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
@@ -88,6 +98,27 @@ Improvements
 * SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
  for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
 
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
+* SOLR-10463: Introduce Builder setter for retryExpiryTime on cloud SolrClients.  Deprecated 
+  direct setter setRetryExpiryTime on cloud SolrClients. (Eric Pugh)
+
+* SOLR-10461: Introduce Builder setter for aliveCheckInterval on load balanced SolrClients.  Deprecated 
+  direct setter setAliveCheckInterval on SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
+
+* SOLR-10462: Introduce Builder setter for pollQueueTime on ConcurrentUpdateHttp2SolrClient.  Deprecated 
+  direct setter setPollQueueTime on ConcurrentUpdateHttp2SolrClient. (Eric Pugh)
+
+* SOLR-10464: Introduce Builder setter for collectionCacheTtl on cloud SolrClients.  Deprecated
+  direct setter setCollectionCacheTTL on cloud SolrClients. (Eric Pugh, David Smiley)
+  
+* SOLR-10452: Introduce Builder setter withTheseParamNamesInTheUrl for queryParams, renaming them to urlParamNames
+  to clarify they are parameter names, not the values. Deprecated direct setter setQueryParams and addQueryParams 
+  on SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
+  
+* SOLR-10470: Introduce Builder setter for parallelCacheRefreshes on cloud SolrClients.  Deprecated
+  direct setter setParallelCacheRefreshes on cloud SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
+  
 Optimizations
 ---------------------
 
@@ -124,11 +155,12 @@ Bug Fixes
 
 * SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
-* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
-
 * SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
+
+* SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
+
 
 Build
 ---------------------
@@ -176,6 +208,22 @@ Other Changes
 * SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
+
+* SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
+
+* SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
+
+==================  9.1.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
+
+* SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
+
+* SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
 ==================  9.1.0 ==================
 
