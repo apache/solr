@@ -43,6 +43,8 @@ Improvements
 * SOLR-15748: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
+* SOLR-16475: Make the default replica placement plugin configurable as system property on startup (janhoy)
+
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
 * SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud.
