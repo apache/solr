@@ -22,14 +22,17 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Deprecation Removals
+----------------------
+
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
 Other Changes
 ---------------------
 
 * SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
   Previously, the modules would come transitively.
   (David Smiley)
-
-* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
 ==================  9.2.0 ==================
 
