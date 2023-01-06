@@ -440,7 +440,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   private void testCollapseQueries(String group, String hint, boolean numeric) {
-    // Test no docs  https://issues.apache.org/jira/browse/SOLR-16611
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=" + group + "" + hint + "}");
