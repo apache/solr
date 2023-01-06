@@ -161,6 +161,8 @@ Bug Fixes
 
 * SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
 
+* SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
+
 
 Build
 ---------------------

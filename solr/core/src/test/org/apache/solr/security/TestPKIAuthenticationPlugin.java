@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -210,7 +209,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
           new long[] {Instant.now().toEpochMilli(), 99999999999L, 9999999999999L}) {
         String s = validUser + " " + validTimestamp;
         byte[] payload = s.getBytes(UTF_8);
-        byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+        byte[] payloadCipher = aKeyPair.encrypt(payload);
         String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
         PKIAuthenticationPlugin.PKIHeaderData header = parseCipher(base64Cipher);
         assertNotNull(
@@ -227,7 +226,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String s = "user1 " + timestamp;
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = aKeyPair.encrypt(payload);
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(parseCipher(base64Cipher));
   }
@@ -237,7 +236,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String s = "user1 " + timestamp;
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = aKeyPair.encrypt(payload);
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(parseCipher(base64Cipher));
   }
@@ -245,7 +244,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   public void testParseCipherInvalidKey() {
     String s = "user1 " + Instant.now().toEpochMilli();
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = aKeyPair.encrypt(payload);
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(
         PKIAuthenticationPlugin.parseCipher(
@@ -256,7 +255,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String s = "user1" + Instant.now().toEpochMilli(); // missing space
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = aKeyPair.encrypt(payload);
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(parseCipher(base64Cipher));
   }
@@ -265,7 +264,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     String s = "user1 aaaaaaaaaa";
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = aKeyPair.encrypt(payload);
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(parseCipher(base64Cipher));
   }
