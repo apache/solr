@@ -18,7 +18,7 @@
 
 Solr includes a general tracing framework based on OpenTracing that can be used to trace the lifecycle of a request for performance monitoring.
 
-Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/gRPC and Jaeger/Thrift formats. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
+Tracing data can be configured to send to various backends, either directly or via an agent. Solr can send traces directly in OTLP/gRPC format. You can support many other destinations and cloud providers by installing an agent on each node and sending traces to localhost.
 
 A sampled distributed tracing query request displayed in Jaeger UI looks like this:
 
@@ -31,8 +31,6 @@ The `TracerConfigurator` is a class used to provide an instance of `io.opentraci
 These are pluggable, and each plugin is shipped as a xref:configuration-guide:solr-modules.adoc[Solr Module]:
 
 **opentelemetry**: The `opentelemetry` module supports OTLP over gRPC or HTTP.
-
-**jaegertracer-configurator**: The `jaegertracer-configurator` module supports the Jaeger format over the Thrift transport.
 
 A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 
@@ -101,39 +99,4 @@ The OTEL tracer also supports other exporters like Jaeger and Zipkin. However, S
 ----
 OTEL_TRACES_EXPORTER=zipkin
 OTEL_EXPORTER_ZIPKIN_ENDPOINT=http://localhost:9411/api/v2/spans
-----
-
-== Jaeger Tracer Module
-
-[WARNING]
-====
-This module is deprecated as of Solr 9.2, and will be removed in version 10. Users should migrate to OpenTelemetry.
-====
-
-The module `jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer. Enable the module with either system property `-Dsolr.modules=jaegertracer-configurator` or environment variable `SOLR_MODULES=jaegertracer-configurator`.
-
-Learn more about the available samplers at https://www.jaegertracing.io/docs/sampling/#client-sampling-configuration.
-
-Then Jaeger tracer is configured in `solr.xml` like this:
-
-[source,xml]
-----
-<tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator" />
-----
-
-_There are no configuration elements in the XML_; instead, this 3rd party system is configured using System Properties or Environment Variables.
-The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
-
-For example, to use the probabilistic sampler, you could set this environment variable:
-
-[source,bash]
-----
-export JAEGER_SAMPLER_TYPE=probabilistic
-----
-
-or System property:
-
-[source,bash]
-----
-bin/solr start -DJAEGER_SAMPLER_TYPE=probabilistic
 ----

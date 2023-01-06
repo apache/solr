@@ -22,6 +22,11 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Deprecation Removals
+----------------------
+
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
 Other Changes
 ---------------------
 
