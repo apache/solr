@@ -31,8 +31,6 @@ import org.junit.rules.ExternalResource;
  */
 public abstract class SolrClientTestRule extends ExternalResource {
 
-  protected SolrClientTestRule() {}
-
   public abstract SolrClient getSolrClient();
 
   public abstract SolrClient getSolrClient(String name);
