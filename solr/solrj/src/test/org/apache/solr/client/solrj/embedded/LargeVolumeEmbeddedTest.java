@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import java.nio.file.Paths;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
@@ -26,7 +28,9 @@ public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   public static void beforeTest() throws Exception {
     solrClientTestRule
         .build()
-        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .withSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
         .init();
+
+    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }
 }

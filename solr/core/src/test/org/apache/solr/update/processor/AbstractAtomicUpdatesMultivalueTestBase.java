@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
@@ -51,10 +52,12 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     SolrTestCaseJ4.newRandomConfig();
     solrClientTestRule
         .build()
-        .setSolrHome(Paths.get(SolrTestCaseJ4.TEST_HOME()))
-        .useTempDataDir()
-        .setRequestWriterSupplier(requestWriterSupplier)
+        .withSolrHome(Paths.get(SolrTestCaseJ4.TEST_HOME()))
+        .withTempDataDir()
+        .withRequestWriterSupplier(requestWriterSupplier)
         .init();
+
+    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }
 
   @Before
