@@ -40,6 +40,8 @@ import org.junit.Test;
  */
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
+  private static SolrClient client;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     solrClientTestRule
@@ -48,11 +50,10 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
         .init();
 
     solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    client = getSolrClient();
   }
 
   static String field = "name";
-
-  SolrClient client = getSolrClient();
 
   @Test
   public void testSpellCheckResponse() throws Exception {
