@@ -16,23 +16,7 @@
  */
 package org.apache.solr;
 
-import com.google.common.io.ByteStreams;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.ClassRule;
 
@@ -43,51 +27,5 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
   public EmbeddedSolrServer getSolrClient() {
     return solrClientTestRule.getSolrClient();
-  }
-
-  public void upload(final String collection, final ContentStream... contents) {
-    final Path base = solrClientTestRule.getSolrHome().resolve(collection);
-    writeTo(base, contents);
-  }
-
-  private void writeTo(final Path base, final ContentStream... contents) {
-    try {
-      Files.createDirectories(base);
-
-      for (final ContentStream content : contents) {
-        final File file = new File(base.toFile(), content.getName());
-        file.getParentFile().mkdirs();
-
-        try (OutputStream os = new FileOutputStream(file)) {
-          ByteStreams.copy(content.getStream(), os);
-        }
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  public Collection<ContentStream> download(final String collection, final String... names) {
-    final Path base = solrClientTestRule.getSolrHome().resolve(collection);
-    final List<ContentStream> result = new ArrayList<>();
-
-    if (Files.exists(base)) {
-      for (final String name : names) {
-        final File file = new File(base.toFile(), name);
-        if (file.exists() && file.canRead()) {
-          try {
-            final ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ByteStreams.copy(new FileInputStream(file), os);
-            final ByteArrayStream stream =
-                new ContentStreamBase.ByteArrayStream(os.toByteArray(), name);
-            result.add(stream);
-          } catch (final IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
-    }
-
-    return result;
   }
 }

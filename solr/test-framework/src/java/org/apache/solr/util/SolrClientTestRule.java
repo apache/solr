@@ -16,41 +16,28 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.EmbeddedSolrServerTestBase.solrClientTestRule;
-
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * SolrClientTestRule is an abstract class that extends JUnit's {@link ExternalResource} class,
- * which is a TestRule that allows for specifying methods to be run before and after a test.
- * SolrClientTestRule provides access to a {@link SolrClient} instance. SolrClientTestRule should be
- * used in tests that need to interact with a Solr server and provides a convenient way to manage
- * the lifecycle of the SolrClient instance.
+ * Provides access to a {@link SolrClient} instance and a running Solr in tests. Implementations
+ * could run Solr in different ways (e.g. strictly embedded, adding HTTP/Jetty, adding SolrCloud, or
+ * an external process). It's a JUnit {@link ExternalResource} (a {@code TestRule}), and thus closes
+ * the client and Solr itself when the test completes. This test utility is encouraged to be used by
+ * external projects that wish to test communicating with Solr, especially for plugin providers.
  */
 public abstract class SolrClientTestRule extends ExternalResource {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   protected SolrClientTestRule() {}
-
-  @Override
-  protected void before() throws Throwable {
-    super.before();
-  }
 
   public abstract SolrClient getSolrClient();
 
-  public void clearIndex() throws SolrServerException, IOException {
-    new UpdateRequest().deleteByQuery("*:*").commit(solrClientTestRule.getSolrClient(), null);
-  }
+  public abstract SolrClient getSolrClient(String name);
 
-  public abstract Path getSolrHome();
+  public void clearIndex() throws SolrServerException, IOException {
+    new UpdateRequest().deleteByQuery("*:*").commit(getSolrClient(), null);
+  }
 }

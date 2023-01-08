@@ -16,6 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+import static org.apache.solr.SolrTestCaseJ4.getFile;
+import static org.apache.solr.SolrTestCaseJ4.resetFactory;
+import static org.apache.solr.SolrTestCaseJ4.useFactory;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
@@ -29,10 +33,11 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
@@ -46,19 +51,72 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
+public class TestCoreAdmin extends SolrTestCase {
 
   private static String tempDirProp;
 
+  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+
+  protected static Path SOLR_HOME;
+  protected static Path CONFIG_HOME;
+
+  protected CoreContainer cores = null;
+
   @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  @BeforeClass
+  public static void setUpHome() throws IOException {
+    // wtf?
+    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
+    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    SOLR_HOME = createTempDir("solrHome");
+    FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
+  }
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+
+    System.setProperty("solr.solr.home", SOLR_HOME.toString());
+    System.setProperty(
+        "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
+    System.out.println("Solr home: " + SOLR_HOME.toString());
+
+    // The index is always stored within a temporary directory
+    File tempDir = createTempDir().toFile();
+
+    File dataDir = new File(tempDir, "data1");
+    File dataDir2 = new File(tempDir, "data2");
+    System.setProperty("dataDir1", dataDir.getAbsolutePath());
+    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
+    System.setProperty("tempDir", tempDir.getAbsolutePath());
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+    SolrTestCaseJ4.newRandomConfig();
+    solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
+
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(CONFIG_HOME.resolve("../configsets").normalize().toString())
+        .create();
+
+    cores = solrClientTestRule.getSolrClient().getCoreContainer();
+    // cores.setPersistent(false);
+  }
+
+  protected Path getSolrXml() throws Exception {
+    return SOLR_HOME.resolve("solr.xml");
+  }
 
   /*
   @Override
@@ -204,14 +262,14 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testCoreSwap() throws Exception {
     // index marker docs to core0
-    SolrClient cli0 = getSolrCore0();
+    SolrClient cli0 = solrClientTestRule.getSolrClient("core0");
     SolrInputDocument d = new SolrInputDocument("id", "core0-0");
     cli0.add(d);
     d = new SolrInputDocument("id", "core0-1");
     cli0.add(d);
     cli0.commit();
     // index a marker doc to core1
-    SolrClient cli1 = getSolrCore1();
+    SolrClient cli1 = solrClientTestRule.getSolrClient("core1");
     d = new SolrInputDocument("id", "core1-0");
     cli1.add(d);
     cli1.commit();
@@ -252,8 +310,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     CoreAdminRequest.swapCore("core0", "core1", getSolrAdmin());
 
     // assert state after swap
-    cli0 = getSolrCore0();
-    cli1 = getSolrCore1();
+    cli0 = solrClientTestRule.getSolrClient("core0");
+    cli1 = solrClientTestRule.getSolrClient("core1");
 
     rsp = cli0.query(q);
     docs = rsp.getResults();
@@ -291,39 +349,47 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     useFactory(null); // use FS factory
 
     try {
-      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+      solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
+      cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
-      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
+      String ddir =
+          CoreAdminRequest.getCoreStatus("core0", solrClientTestRule.getSolrClient("core0"))
+              .getDataDirectory();
       Path data = Paths.get(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
-      getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
-      getSolrCore0().commit();
+      solrClientTestRule.getSolrClient("core0").add(new SolrInputDocument("id", "core0-1"));
+      solrClientTestRule.getSolrClient("core0").commit();
 
       cores.shutdown();
 
       // destroy the index
       Files.move(data.resolve("_0.si"), data.resolve("backup"));
-      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+      solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
+      cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
       // Need to run a query to confirm that the core couldn't load
-      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
+      expectThrows(
+          SolrException.class,
+          () -> solrClientTestRule.getSolrClient("core0").query(new SolrQuery("*:*")));
 
       // We didn't fix anything, so should still throw
-      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
+      expectThrows(
+          SolrException.class,
+          () -> CoreAdminRequest.reloadCore("core0", solrClientTestRule.getSolrClient("core0")));
 
       Files.move(data.resolve("backup"), data.resolve("_0.si"));
-      CoreAdminRequest.reloadCore("core0", getSolrCore0());
-      assertEquals(1, getSolrCore0().query(new SolrQuery("*:*")).getResults().getNumFound());
+      CoreAdminRequest.reloadCore("core0", solrClientTestRule.getSolrClient("core0"));
+      assertEquals(
+          1,
+          solrClientTestRule
+              .getSolrClient("core0")
+              .query(new SolrQuery("*:*"))
+              .getResults()
+              .getNumFound());
     } finally {
       resetFactory();
     }
-  }
-
-  @BeforeClass
-  public static void before() {
-    // wtf?
-    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
   }
 
   @After

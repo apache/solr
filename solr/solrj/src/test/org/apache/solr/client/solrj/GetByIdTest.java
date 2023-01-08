@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 import static org.apache.solr.SolrTestCaseJ4.params;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
@@ -37,8 +38,10 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   public static void beforeClass() throws Exception {
     solrClientTestRule
         .build()
-        .setSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
+        .withSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
         .init();
+
+    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }
 
   @Before
