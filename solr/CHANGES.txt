@@ -132,6 +132,7 @@ Bug Fixes
 
 * SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
 
+* SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
 
 Build
 ---------------------
