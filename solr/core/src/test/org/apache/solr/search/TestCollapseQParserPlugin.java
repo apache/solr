@@ -440,6 +440,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   private void testCollapseQueries(String group, String hint, boolean numeric) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=" + group + "" + hint + "}");
+    assertQ(req(params, "indent", "on"), "*[count(//doc)=0]");
 
     String[] doc = {
       "id", "1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"
@@ -479,7 +483,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertU(commit());
 
     // Test collapse by score and following sort by score
-    ModifiableSolrParams params = new ModifiableSolrParams();
+    params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field=" + group + "" + hint + "}");
     params.add("defType", "edismax");
@@ -1095,7 +1099,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
             " sort='bogus_sort_s desc' ",
           }) {
 
-        ModifiableSolrParams params = null;
+        ModifiableSolrParams params;
 
         // w/default nullPolicy, no groups found
         params = new ModifiableSolrParams();
