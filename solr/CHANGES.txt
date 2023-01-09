@@ -202,6 +202,8 @@ Bug Fixes
 
 * SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
 
+* SOLR-16480: ConfigSets now have an overridable allow-list for filetypes. (Houston Putman)
+
 ==================  9.1.0 ==================
 
 New Features
