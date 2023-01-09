@@ -22,6 +22,11 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Deprecation Removals
+----------------------
+
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
 Other Changes
 ---------------------
 
@@ -67,6 +72,8 @@ Improvements
 
 * SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
+
+* SOLR-16475: Make the default replica placement plugin configurable as system property on startup (janhoy)
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
@@ -148,14 +155,13 @@ Bug Fixes
 
 * SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
 
-* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
-
 * SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
 
 * SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
 
 * SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
 
+* SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
 
 Build
 ---------------------
@@ -206,6 +212,8 @@ Other Changes
 
 * SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
 
+* SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
@@ -215,6 +223,8 @@ Bug Fixes
 * SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
 * SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
 ==================  9.1.0 ==================
 
