@@ -390,7 +390,7 @@ public class CoreContainer {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
-    this.solrCores = newCoreManager();
+    this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
@@ -422,20 +422,6 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
-  }
-
-  private SolrCores newCoreManager() {
-    final PluginInfo info = cfg.getCoreManagerConfig();
-    if (info == null) {
-      return new SolrCores(this);
-    } else {
-      return loader.newInstance(
-          info.className,
-          SolrCores.class,
-          null,
-          new Class<?>[] {CoreContainer.class},
-          new Object[] {this});
-    }
   }
 
   @SuppressWarnings({"unchecked"})

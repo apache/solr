@@ -54,9 +54,8 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   protected final Map<String, CoreDescriptor> transientDescriptors;
 
-  public TransientSolrCoreCacheDefault(TransientSolrCores solrCores) {
+  public TransientSolrCoreCacheDefault(TransientSolrCores solrCores, int cacheMaxSize) {
     this.solrCores = solrCores;
-    int cacheMaxSize = getConfiguredCacheMaxSize(solrCores.initArgs);
 
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.

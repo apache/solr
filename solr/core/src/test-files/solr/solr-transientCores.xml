@@ -16,7 +16,5 @@
   -->
 
 <solr>
-  <coreManager class="org.apache.solr.core.TransientSolrCores">
-    <int name="transientCacheSize">4</int>
-  </coreManager>
+  <int name="transientCacheSize">4</int>
 </solr>

@@ -92,6 +92,9 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
+  @Deprecated
+  private final int transientCacheSize;
+
   private final boolean useSchemaCache;
 
   private final String managementPath;
@@ -99,8 +102,6 @@ public class NodeConfig {
   private final PluginInfo[] backupRepositoryPlugins;
 
   private final MetricsConfig metricsConfig;
-
-  private final PluginInfo coreManagerConfig;
 
   private final PluginInfo tracerConfig;
 
@@ -129,6 +130,7 @@ public class NodeConfig {
       CloudConfig cloudConfig,
       Integer coreLoadThreads,
       int replayUpdatesThreads,
+      int transientCacheSize,
       boolean useSchemaCache,
       String managementPath,
       Path solrHome,
@@ -136,7 +138,6 @@ public class NodeConfig {
       Properties solrProperties,
       PluginInfo[] backupRepositoryPlugins,
       MetricsConfig metricsConfig,
-      PluginInfo coreManagerConfig,
       PluginInfo tracerConfig,
       boolean fromZookeeper,
       String defaultZkHost,
@@ -163,6 +164,7 @@ public class NodeConfig {
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
+    this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
     this.solrHome = solrHome;
@@ -170,7 +172,6 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.coreManagerConfig = coreManagerConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
@@ -344,6 +345,10 @@ public class NodeConfig {
     return cloudConfig;
   }
 
+  public int getTransientCacheSize() {
+    return transientCacheSize;
+  }
+
   protected final Path solrHome;
   protected final SolrResourceLoader loader;
   protected final Properties solrProperties;
@@ -366,10 +371,6 @@ public class NodeConfig {
 
   public MetricsConfig getMetricsConfig() {
     return metricsConfig;
-  }
-
-  public PluginInfo getCoreManagerConfig() {
-    return coreManagerConfig;
   }
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
@@ -546,12 +547,13 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
+    @Deprecated
+    private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
-    private PluginInfo coreManagerPlugin;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
@@ -688,6 +690,13 @@ public class NodeConfig {
       return this;
     }
 
+    // Remove in Solr 10.0
+    @Deprecated
+    public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
+      this.transientCacheSize = transientCacheSize;
+      return this;
+    }
+
     public NodeConfigBuilder setUseSchemaCache(boolean useSchemaCache) {
       this.useSchemaCache = useSchemaCache;
       return this;
@@ -711,10 +720,6 @@ public class NodeConfig {
     public NodeConfigBuilder setMetricsConfig(MetricsConfig metricsConfig) {
       this.metricsConfig = metricsConfig;
       return this;
-    }
-
-    public void setCoreManagerConfig(PluginInfo pluginInfo) {
-      this.coreManagerPlugin = pluginInfo;
     }
 
     public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
@@ -783,6 +788,7 @@ public class NodeConfig {
           cloudConfig,
           coreLoadThreads,
           replayUpdatesThreads,
+          transientCacheSize,
           useSchemaCache,
           managementPath,
           solrHome,
@@ -790,7 +796,6 @@ public class NodeConfig {
           solrProperties,
           backupRepositoryPlugins,
           metricsConfig,
-          coreManagerPlugin,
           tracerConfig,
           fromZookeeper,
           defaultZkHost,

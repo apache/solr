@@ -21,18 +21,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.solr.common.util.NamedList;
 
 /** A {@link SolrCores} that supports {@link CoreDescriptor#isTransient()}. */
 public class TransientSolrCores extends SolrCores {
 
-  public final NamedList<?> initArgs;
-  protected TransientSolrCoreCache transientSolrCoreCache;
+  protected final TransientSolrCoreCache transientSolrCoreCache;
 
-  public TransientSolrCores(CoreContainer container) {
+  public TransientSolrCores(CoreContainer container, int cacheSize) {
     super(container);
-    initArgs = container.cfg.getCoreManagerConfig().initArgs;
-    transientSolrCoreCache = new TransientSolrCoreCacheDefault(this);
+    transientSolrCoreCache = new TransientSolrCoreCacheDefault(this, cacheSize);
   }
 
   @Override

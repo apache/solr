@@ -63,6 +63,15 @@ public class SolrCores {
   // core list, we need to essentially queue them up to be handled via pendingCoreOps.
   private final List<SolrCore> pendingCloses = new ArrayList<>();
 
+  public static SolrCores newSolrCores(CoreContainer coreContainer) {
+    final int transientCacheSize = coreContainer.getConfig().getTransientCacheSize();
+    if (transientCacheSize > 0) {
+      return new TransientSolrCores(coreContainer, transientCacheSize);
+    } else {
+      return new SolrCores(coreContainer);
+    }
+  }
+
   public SolrCores(CoreContainer container) {
     this.container = container;
   }
