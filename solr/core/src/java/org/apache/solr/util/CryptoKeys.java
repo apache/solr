@@ -39,7 +39,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -313,11 +312,12 @@ public final class CryptoKeys {
       return keySizeInBytes;
     }
 
-    public byte[] encrypt(byte[] buffer) {
+    public byte[] encrypt(ByteBuffer buffer) {
       // This is necessary to pad the plaintext to match the exact size of the keysize in openj9.
       // OpenJDK seems to do this padding internally, but OpenJ9 does not pad the byte input to
       // the key size in bytes without padding. This only works with "RSA/ECB/nopadding".
-      byte[] paddedPlaintext = Arrays.copyOf(buffer, getKeySizeInBytes());
+      byte[] paddedPlaintext = new byte[getKeySizeInBytes()];
+      buffer.get(paddedPlaintext, buffer.arrayOffset() + buffer.position(), buffer.limit());
 
       try {
         // This is better than nothing, but still not very secure

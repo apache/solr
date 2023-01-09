@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.lucene.tests.util.TestUtil;
@@ -49,7 +50,7 @@ public class TestRSAKeyPair extends SolrTestCase {
     String plaintextString = TestUtil.randomSimpleString(random(), keySizeInBytes);
     final byte[] plaintext = plaintextString.getBytes(StandardCharsets.UTF_8);
 
-    byte[] encrypted = kp.encrypt(plaintext);
+    byte[] encrypted = kp.encrypt(ByteBuffer.wrap(plaintext));
     MatcherAssert.assertThat(plaintext, not(equalTo(encrypted)));
 
     byte[] decrypted = CryptoKeys.decryptRSA(encrypted, kp.getPublicKey());

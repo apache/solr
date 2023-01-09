@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.Principal;
 import java.security.PublicKey;
@@ -463,7 +464,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
     String s = usr + " " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(payload);
+    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(myNodeName + " " + base64Cipher);
