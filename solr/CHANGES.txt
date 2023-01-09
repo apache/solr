@@ -226,6 +226,8 @@ Bug Fixes
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
+* SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
+
 ==================  9.1.0 ==================
 
 New Features
