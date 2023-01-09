@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.TRUE;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -182,7 +183,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // NOTE: for `pullServiceTimeMs`, it can't be super-short. This is just to simplify our
         // indexing code,
         // based on the fact that our indexing is based on a PULL-node client.
-        final long pullServiceTimeMs = 1000 + r.nextInt(9000);
+        final long pullServiceTimeMs = 1000 + (long) r.nextInt(9000);
         Future<?> jettyManipulationFuture =
             executor.submit(
                 () -> {
@@ -212,7 +213,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   }
                 });
         String hostCore;
-        long start = System.currentTimeMillis();
+        long start = new Date().getTime();
         long individualRequestStart = start;
         int count = 0;
         while (nrtCore.equals(
@@ -223,9 +224,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     client,
                     p -> p.add("shards.preference", "replica.type:NRT")))) {
           count++;
-          individualRequestStart = System.currentTimeMillis();
+          individualRequestStart = new Date().getTime();
         }
-        long now = System.currentTimeMillis();
+        long now = new Date().getTime();
         log.info(
             "phase1 NRT queries count={}, overall_duration={}, baseline_expected_overall_duration={}, switch-to-pull_duration={}",
             count,
@@ -249,7 +250,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // attempts to add another doc while NRT is down should fail, then eventually succeed when
         // NRT comes back up
         count = 0;
-        start = System.currentTimeMillis();
+        start = new Date().getTime();
         individualRequestStart = start;
         for (; ; ) {
           try {
@@ -261,9 +262,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             count++;
             Thread.sleep(100);
           }
-          individualRequestStart = System.currentTimeMillis();
+          individualRequestStart = new Date().getTime();
         }
-        now = System.currentTimeMillis();
+        now = new Date().getTime();
         log.info(
             "successfully added another doc; duration: {}, overall_duration={}, baseline_expected_overall_duration={}, exception_count={}",
             now - individualRequestStart,
@@ -281,7 +282,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // which to detect regressions.
         assertWithinTolerance(nrtDowntimeMs, now - start, 3000);
         count = 0;
-        start = System.currentTimeMillis();
+        start = new Date().getTime();
         individualRequestStart = start;
         while (pullCore.equals(
             hostCore =
@@ -295,9 +296,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     }))) {
           count++;
           Thread.sleep(100);
-          individualRequestStart = System.currentTimeMillis();
+          individualRequestStart = new Date().getTime();
         }
-        now = System.currentTimeMillis();
+        now = new Date().getTime();
         log.info(
             "query retries between NRT index-ready and query-ready: {}; overall_duration={}; baseline_expected_overall_duration={}; failover-request_duration={}",
             count,
@@ -317,15 +318,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         AtomicBoolean done = new AtomicBoolean();
         long runMinutes = 1;
         long finishTimeMs =
-            System.currentTimeMillis()
-                + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
+            new Date().getTime() + TimeUnit.MILLISECONDS.convert(runMinutes, TimeUnit.MINUTES);
         JettySolrRunner[] jettys = new JettySolrRunner[] {nrtJettyF, pullJettyF};
         Random threadRandom = new Random(r.nextInt());
         Future<Integer> f =
             executor.submit(
                 () -> {
                   int iteration = 0;
-                  while (System.currentTimeMillis() < finishTimeMs && !done.get()) {
+                  while (new Date().getTime() < finishTimeMs && !done.get()) {
                     int idx = iteration++ % jettys.length;
                     JettySolrRunner toManipulate = jettys[idx];
                     try {
@@ -348,7 +348,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                   return iteration;
                 });
         count = 0;
-        start = System.currentTimeMillis();
+        start = new Date().getTime();
         try {
           do {
             pullCore.equals(
@@ -375,7 +375,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           }
           Integer toggleCount = f.get();
           long secondsDuration =
-              TimeUnit.SECONDS.convert(System.currentTimeMillis() - start, TimeUnit.MILLISECONDS);
+              TimeUnit.SECONDS.convert(new Date().getTime() - start, TimeUnit.MILLISECONDS);
           log.info(
               "{}! {} seconds, {} toggles, {} requests served",
               result,
