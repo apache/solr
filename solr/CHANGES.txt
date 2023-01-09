@@ -161,8 +161,9 @@ Bug Fixes
 
 * SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
 
-* SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
+* SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
 
+* SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
 
 Build
 ---------------------
@@ -226,6 +227,8 @@ Bug Fixes
 * SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
 
 ==================  9.1.0 ==================
 
