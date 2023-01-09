@@ -92,8 +92,7 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
-  @Deprecated
-  private final int transientCacheSize;
+  @Deprecated private final int transientCacheSize;
 
   private final boolean useSchemaCache;
 
@@ -547,8 +546,7 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
-    @Deprecated
-    private int transientCacheSize = -1;
+    @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
