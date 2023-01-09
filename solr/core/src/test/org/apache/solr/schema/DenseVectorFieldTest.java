@@ -145,6 +145,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type3 = (DenseVectorField) vector3.getType();
       MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type3.getDimension(), is(5));
+
       MatcherAssert.assertThat(type3.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
       MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
@@ -155,8 +156,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField typeDefault = (DenseVectorField) vectorDefault.getType();
       MatcherAssert.assertThat(
           typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      MatcherAssert.assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
-      assertNull(typeDefault.getKnnAlgorithm());
       MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
       MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
     } finally {

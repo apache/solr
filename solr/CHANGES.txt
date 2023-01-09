@@ -26,6 +26,8 @@ Other Changes
 
 * SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
 
+* SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
+
 ==================  9.1.0 ==================
 
 New Features
