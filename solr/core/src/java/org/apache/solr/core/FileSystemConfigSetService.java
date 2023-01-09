@@ -94,7 +94,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     Path configDir = getConfigDir(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
-      Path file = configDir.resolve(normalizePathToOSSeparator(fileName));
+      Path file = configDir.resolve(normalizePathToOsSeparator(fileName));
       if (Files.exists(file)) {
         if (Files.isDirectory(file)) {
           deleteDir(file);
@@ -146,7 +146,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = getConfigDir(configName).resolve(normalizePathToOSSeparator(fileName));
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
     if (!Files.exists(filePath) || overwriteOnExists) {
       Files.write(filePath, data);
     }
@@ -218,7 +218,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
-    Path filePath = getConfigDir(configName).resolve(normalizePathToOSSeparator(fileName));
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
     byte[] data = null;
     try {
       data = Files.readAllBytes(filePath);
@@ -250,7 +250,9 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
             String relativePath = configDir.relativize(dir).toString();
             if (!relativePath.isEmpty()) {
-              filePaths.add(normalizePathToForwardSlash(relativePath + File.separator));
+              // We always want to have a trailing forward slash on a directory to
+              // match the normalization to forward slashes everywhere.
+              filePaths.add(relativePath + '/');
             }
             return FileVisitResult.CONTINUE;
           }
@@ -260,11 +262,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   private String normalizePathToForwardSlash(String path) {
-    return path.replace(File.separatorChar, '/');
+    return path.replace(configSetBase.getFileSystem().getSeparator(), "/");
   }
 
-  private String normalizePathToOSSeparator(String path) {
-    return path.replace('/', File.separatorChar);
+  private String normalizePathToOsSeparator(String path) {
+    return path.replace("/", configSetBase.getFileSystem().getSeparator());
   }
 
   protected Path locateInstanceDir(CoreDescriptor cd) {
