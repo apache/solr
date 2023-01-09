@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,25 +83,25 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
-  private final Http2SolrClient httpClient;
+  private final Http2SolrClient solrClient;
 
   /**
    * @deprecated Use {@link LBHttp2SolrClient.Builder} instead
    */
   @Deprecated
-  public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
+  public LBHttp2SolrClient(Http2SolrClient solrClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
-    this.httpClient = httpClient;
+    this.solrClient = solrClient;
   }
 
-  private LBHttp2SolrClient(Http2SolrClient httpClient, List<String> baseSolrUrls) {
+  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
     super(baseSolrUrls);
-    this.httpClient = httpClient;
+    this.solrClient = solrClient;
   }
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    return httpClient;
+    return solrClient;
   }
 
   /**
@@ -115,12 +116,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   public void setParser(ResponseParser parser) {
     super.setParser(parser);
-    this.httpClient.setParser(parser);
+    this.solrClient.setParser(parser);
   }
 
   @Override
   public ResponseParser getParser() {
-    return httpClient.getParser();
+    return solrClient.getParser();
   }
 
   /**
@@ -136,24 +137,37 @@ public class LBHttp2SolrClient extends LBSolrClient {
   @Override
   public void setRequestWriter(RequestWriter writer) {
     super.setRequestWriter(writer);
-    this.httpClient.setRequestWriter(writer);
+    this.solrClient.setRequestWriter(writer);
   }
 
   @Override
   public RequestWriter getRequestWriter() {
-    return httpClient.getRequestWriter();
+    return solrClient.getRequestWriter();
   }
 
-  @Override
+  public Set<String> getUrlParamNames() {
+    return solrClient.getUrlParamNames();
+  }
+
+  /**
+   * @deprecated You should instead set this on the passed in Http2SolrClient used by the Builder.
+   */
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
-    super.setQueryParams(queryParams);
-    this.httpClient.setQueryParams(queryParams);
+    this.solrClient.setUrlParamNames(queryParams);
   }
 
-  @Override
+  /**
+   * This method should be removed as being able to add a query parameter isn't compatible with the
+   * idea that query params are an immutable property of a solr client.
+   *
+   * @deprecated you should instead set this on the passed in Http2SolrClient used by the Builder.
+   */
+  @Deprecated
   public void addQueryParams(String queryOnlyParam) {
-    super.addQueryParams(queryOnlyParam);
-    this.httpClient.setQueryParams(getQueryParams());
+    Set<String> urlParamNames = new HashSet<>(this.solrClient.getUrlParamNames());
+    urlParamNames.add(queryOnlyParam);
+    this.solrClient.setUrlParamNames(urlParamNames);
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
@@ -299,12 +313,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   public static class Builder {
-    private final Http2SolrClient http2Client;
+
+    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
+    private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
-    private int aliveCheckInterval;
+    private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
-      this.http2Client = http2Client;
+      this.http2SolrClient = http2Client;
       this.baseSolrUrls = baseSolrUrls;
     }
 
@@ -325,7 +341,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
-          new LBHttp2SolrClient(this.http2Client, Arrays.asList(this.baseSolrUrls));
+          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
       solrClient.aliveCheckInterval = this.aliveCheckInterval;
       return solrClient;
     }

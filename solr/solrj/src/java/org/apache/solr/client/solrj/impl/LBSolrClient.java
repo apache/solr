@@ -62,7 +62,6 @@ public abstract class LBSolrClient extends SolrClient {
   // defaults
   protected static final Set<Integer> RETRY_CODES =
       new HashSet<>(Arrays.asList(404, 403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT =
       5; // number of times we'll ping dead servers not in the server list
 
@@ -78,14 +77,12 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  protected int aliveCheckInterval = CHECK_INTERVAL;
+  protected int aliveCheckInterval = LBHttpSolrClient.Builder.CHECK_INTERVAL;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
-
-  protected Set<String> queryParams = new HashSet<>();
 
   static {
     solrQuery.setRows(0);
@@ -318,23 +315,6 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected ServerWrapper createServerWrapper(String baseUrl) {
     return new ServerWrapper(baseUrl);
-  }
-
-  public Set<String> getQueryParams() {
-    return queryParams;
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
-  }
-
-  public void addQueryParams(String queryOnlyParam) {
-    this.queryParams.add(queryOnlyParam);
   }
 
   public static String normalize(String server) {
