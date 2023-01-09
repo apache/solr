@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,9 +147,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
-    if (!Files.exists(filePath) || overwriteOnExists) {
-      Files.write(filePath, data);
+    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+      log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+    } else {
+      Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
+      if (!Files.exists(filePath) || overwriteOnExists) {
+        Files.write(filePath, data);
+      }
     }
   }
 
@@ -195,8 +200,14 @@ public class FileSystemConfigSetService extends ConfigSetService {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
-              Files.copy(
-                  file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+              if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(file.getFileName().toString())) {
+                log.warn(
+                    "Not including uploading file to config, as it is a forbidden type: {}",
+                    file.getFileName());
+              } else {
+                Files.copy(
+                    file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+              }
               return FileVisitResult.CONTINUE;
             }
           });
