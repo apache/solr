@@ -1051,10 +1051,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this(USAGE);
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public String getFlParam() {
       return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
     }
