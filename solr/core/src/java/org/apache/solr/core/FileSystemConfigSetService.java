@@ -94,7 +94,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     Path configDir = getConfigDir(configName);
     Objects.requireNonNull(filesToDelete);
     for (String fileName : filesToDelete) {
-      Path file = configDir.resolve(fileName);
+      Path file = configDir.resolve(normalizePathToOsSeparator(fileName));
       if (Files.exists(file)) {
         if (Files.isDirectory(file)) {
           deleteDir(file);
@@ -146,7 +146,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
     if (!Files.exists(filePath) || overwriteOnExists) {
       Files.write(filePath, data);
     }
@@ -218,7 +218,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public byte[] downloadFileFromConfig(String configName, String fileName) throws IOException {
-    Path filePath = getConfigDir(configName).resolve(fileName);
+    Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
     byte[] data = null;
     try {
       data = Files.readAllBytes(filePath);
@@ -234,13 +234,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     List<String> filePaths = new ArrayList<>();
     Files.walkFileTree(
         configDir,
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             // don't include hidden (.) files
-            if (!Files.isHidden(file)) {
-              filePaths.add(configDir.relativize(file).toString());
+            if (!Files.isHidden(file) && !METADATA_FILE.equals(file.getFileName().toString())) {
+              filePaths.add(normalizePathToForwardSlash(configDir.relativize(file).toString()));
               return FileVisitResult.CONTINUE;
             }
             return FileVisitResult.CONTINUE;
@@ -250,13 +250,23 @@ public class FileSystemConfigSetService extends ConfigSetService {
           public FileVisitResult postVisitDirectory(Path dir, IOException ioException) {
             String relativePath = configDir.relativize(dir).toString();
             if (!relativePath.isEmpty()) {
-              filePaths.add(relativePath + "/");
+              // We always want to have a trailing forward slash on a directory to
+              // match the normalization to forward slashes everywhere.
+              filePaths.add(relativePath + '/');
             }
             return FileVisitResult.CONTINUE;
           }
         });
     Collections.sort(filePaths);
     return filePaths;
+  }
+
+  private String normalizePathToForwardSlash(String path) {
+    return path.replace(configSetBase.getFileSystem().getSeparator(), "/");
+  }
+
+  private String normalizePathToOsSeparator(String path) {
+    return path.replace("/", configSetBase.getFileSystem().getSeparator());
   }
 
   protected Path locateInstanceDir(CoreDescriptor cd) {
