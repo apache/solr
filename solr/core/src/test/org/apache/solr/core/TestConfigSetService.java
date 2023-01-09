@@ -72,18 +72,11 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
     Path configDir = createTempDir("testconfig");
-    String solrConfigXml = "solrconfig.xml";
-    Files.createFile(configDir.resolve(solrConfigXml));
-    String file1 = "file1";
-    Files.write(configDir.resolve(file1), testdata);
-    String file2 = "file2";
-    Files.createFile(configDir.resolve(file2));
-    String subDirPath = "subdir";
-    String subdir = subDirPath + "/";
-    Files.createDirectory(configDir.resolve(subDirPath));
-    String file3 = subdir + "file3";
-    Files.createFile(configDir.resolve(subDirPath).resolve("file3"));
-    String file4 = subdir + "file4";
+    Files.createFile(configDir.resolve("solrconfig.xml"));
+    Files.write(configDir.resolve("file1"), testdata);
+    Files.createFile(configDir.resolve("file2"));
+    Files.createDirectory(configDir.resolve("subdir"));
+    Files.createFile(configDir.resolve("subdir").resolve("file3"));
 
     configSetService.uploadConfig(configName, configDir);
 
@@ -91,12 +84,12 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     assertFalse(configSetService.checkConfigExists("dummyConfig"));
 
     byte[] data = "file3 data".getBytes(StandardCharsets.UTF_8);
-    configSetService.uploadFileToConfig(configName, file3, data, true);
-    assertArrayEquals(configSetService.downloadFileFromConfig(configName, file3), data);
+    configSetService.uploadFileToConfig(configName, "subdir/file3", data, true);
+    assertArrayEquals(configSetService.downloadFileFromConfig(configName, "subdir/file3"), data);
 
     data = "file4 data".getBytes(StandardCharsets.UTF_8);
-    configSetService.uploadFileToConfig(configName, file4, data, true);
-    assertArrayEquals(configSetService.downloadFileFromConfig(configName, file4), data);
+    configSetService.uploadFileToConfig(configName, "subdir/file4", data, true);
+    assertArrayEquals(configSetService.downloadFileFromConfig(configName, "subdir/file4"), data);
 
     Map<String, Object> metadata = configSetService.getConfigMetadata(configName);
     assertTrue(metadata.isEmpty());
@@ -110,7 +103,9 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
     assertTrue(configSetService.getConfigMetadata(configName).containsKey("foo"));
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);
-    assertEquals(configFiles, List.of(file1, file2, solrConfigXml, subdir, file3, file4));
+    assertEquals(
+        configFiles,
+        List.of("file1", "file2", "solrconfig.xml", "subdir/", "subdir/file3", "subdir/file4"));
 
     List<String> configs = configSetService.listConfigs();
     assertEquals(configs, List.of("testconfig"));
