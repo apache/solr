@@ -1040,23 +1040,34 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** Trivial validator of CoreAugmenterFactory */
   private static class CoreValidator implements FlValidator {
     private static final String NAME = "core";
-    private static final String USAGE = "["+NAME+"]";
+    private static final String USAGE = "[" + NAME + "]";
     private final String resultKey;
+
     public CoreValidator(final String resultKey) {
       this.resultKey = resultKey;
     }
+
     public CoreValidator() {
       this(USAGE);
     }
-    public String getDefaultTransformerFactoryName() { return NAME; }
-    public String getFlParam() { return USAGE.equals(resultKey) ? resultKey : resultKey+":"+USAGE; }
-    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
-                                               final SolrInputDocument expected,
-                                               final SolrDocument actual,
-                                               final String wt) {
-      final Object value =  actual.getFirstValue(resultKey);
+
+    public String getDefaultTransformerFactoryName() {
+      return NAME;
+    }
+
+    public String getFlParam() {
+      return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
+    }
+
+    @Override
+    public Collection<String> assertRTGResults(
+        final Collection<FlValidator> validators,
+        final SolrInputDocument expected,
+        final SolrDocument actual,
+        final String wt) {
+      final Object value = actual.getFirstValue(resultKey);
       assertNotNull(getFlParam() + " => no value in actual doc", value);
-      assertTrue(USAGE + " must be an String: " + value, value instanceof String);
+      assertTrue(USAGE + " must be a String: " + value, value instanceof String);
 
       // trivial sanity check
       assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
