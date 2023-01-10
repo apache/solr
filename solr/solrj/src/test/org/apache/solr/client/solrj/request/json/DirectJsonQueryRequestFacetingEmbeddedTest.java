@@ -79,7 +79,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
     final String schema =
         tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/managed-schema";
 
-    solrClientTestRule.build().withSolrHome(tempSolrHome.toPath()).init();
+    solrClientTestRule.startSolr(tempSolrHome.toPath());
 
     solrClientTestRule.newCollection(COLLECTION_NAME).create();
 

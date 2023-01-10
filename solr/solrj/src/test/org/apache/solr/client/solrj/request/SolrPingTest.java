@@ -39,7 +39,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
     SolrTestCaseJ4.newRandomConfig();
 
-    solrClientTestRule.build().withSolrHome(testHome.toPath()).init();
+    solrClientTestRule.startSolr(testHome.toPath());
 
     solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }

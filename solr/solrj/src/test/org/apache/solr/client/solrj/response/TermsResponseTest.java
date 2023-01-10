@@ -35,10 +35,7 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule
-        .build()
-        .withSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
-        .init();
+    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
 
     solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }

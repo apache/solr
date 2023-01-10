@@ -39,17 +39,14 @@ import org.junit.Test;
  * @since solr 1.3
  */
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
-
   private static SolrClient client;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule
-        .build()
-        .withSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
-        .init();
+    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
 
     solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+
     client = getSolrClient();
   }
 

@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -48,9 +49,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -103,19 +106,27 @@ public class TestCoreAdmin extends SolrTestCase {
     System.setProperty("tempDir", tempDir.getAbsolutePath());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     SolrTestCaseJ4.newRandomConfig();
-    solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
 
-    solrClientTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(CONFIG_HOME.resolve("../configsets").normalize().toString())
-        .create();
+    var updateShardHandlerConfig =
+        new UpdateShardHandlerConfig(
+            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+            30000,
+            30000,
+            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
+            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+
+    solrClientTestRule.startSolr(
+        new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
+            .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+            .setCoreRootDirectory(SOLR_HOME.toString())
+            .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
+            .build());
+
+    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
 
     cores = solrClientTestRule.getSolrClient().getCoreContainer();
     // cores.setPersistent(false);
-  }
-
-  protected Path getSolrXml() throws Exception {
-    return SOLR_HOME.resolve("solr.xml");
   }
 
   /*
@@ -349,7 +360,28 @@ public class TestCoreAdmin extends SolrTestCase {
     useFactory(null); // use FS factory
 
     try {
-      solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
+      var updateShardHandlerConfig =
+          new UpdateShardHandlerConfig(
+              HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+              HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+              30000,
+              30000,
+              UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
+              UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+
+      solrClientTestRule.startSolr(
+          new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
+              .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+              .setCoreRootDirectory(SOLR_HOME.toString())
+              .setConfigSetBaseDirectory(
+                  CONFIG_HOME.resolve("../configsets").normalize().toString())
+              .build());
+      ;
+      solrClientTestRule
+          .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+          .withConfigSet("shared")
+          .create();
+
       cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
       String ddir =
@@ -365,7 +397,19 @@ public class TestCoreAdmin extends SolrTestCase {
 
       // destroy the index
       Files.move(data.resolve("_0.si"), data.resolve("backup"));
-      solrClientTestRule.build().withSolrHome(SOLR_HOME).init();
+
+      solrClientTestRule.startSolr(
+          new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
+              .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+              .setCoreRootDirectory(SOLR_HOME.toString())
+              .setConfigSetBaseDirectory(
+                  CONFIG_HOME.resolve("../configsets").normalize().toString())
+              .build());
+      ;
+      solrClientTestRule
+          .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+          .withConfigSet("shared")
+          .create();
       cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
       // Need to run a query to confirm that the core couldn't load

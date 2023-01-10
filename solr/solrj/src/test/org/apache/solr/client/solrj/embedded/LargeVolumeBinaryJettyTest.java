@@ -30,10 +30,7 @@ import org.junit.BeforeClass;
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule
-        .build()
-        .withSolrHome(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()))
-        .init();
+    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
 
     solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
   }
