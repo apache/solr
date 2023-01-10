@@ -87,7 +87,7 @@ done
 CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
 # shellcheck disable=SC2164
-SOLR_TIP=$(cd "$SOLR_TIP"; pwd)
+SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
@@ -1511,7 +1511,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             fi
 
             if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
-              SOLR_SERVER_DIR="$(pwd)/$2"
+              SOLR_SERVER_DIR="$(pwd -P)/$2"
             else
               # see if the arg value is relative to the tip vs full path
               if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
@@ -1558,8 +1558,8 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
-    if [[ -d "$(pwd)/$SOLR_HOME" ]]; then
-      SOLR_HOME="$(pwd)/$SOLR_HOME"
+    if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd -P)/$SOLR_HOME"
     elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
       SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
       SOLR_PID_DIR="$SOLR_HOME"
@@ -1660,7 +1660,7 @@ if [ $# -gt 0 ]; then
             fi
 
             if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
-              SOLR_SERVER_DIR="$(pwd)/$2"
+              SOLR_SERVER_DIR="$(pwd -P)/$2"
             else
               # see if the arg value is relative to the tip vs full path
               if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
@@ -1958,8 +1958,8 @@ fi
 if [ -z "${SOLR_HOME:-}" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
 elif [[ $SOLR_HOME != /* ]]; then
-  if [[ -d "$(pwd)/$SOLR_HOME" ]]; then
-    SOLR_HOME="$(pwd)/$SOLR_HOME"
+  if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
+    SOLR_HOME="$(pwd -P)/$SOLR_HOME"
   elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
     SOLR_PID_DIR="$SOLR_HOME"
