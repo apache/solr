@@ -3395,8 +3395,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown())
           return;
         cfg = solrCore.getSolrConfig();
-        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
+        solrConfigversion = solrCore.getSolrConfig().getZnodeVersion();
+        overlayVersion = solrCore.getSolrConfig().getOverlay().getVersion();
         if (managedSchmaResourcePath != null) {
           managedSchemaVersion =
               ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
