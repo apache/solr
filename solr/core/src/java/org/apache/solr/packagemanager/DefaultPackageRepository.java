@@ -17,23 +17,24 @@
 
 package org.apache.solr.packagemanager;
 
-import static org.apache.solr.util.SolrCLI.getSolrClient;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,16 +106,21 @@ public class DefaultPackageRepository extends PackageRepository {
   }
 
   private void initPackages() {
-    try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(repositoryURL).useHttp1_1(true).build()) {
+      GenericSolrRequest request =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET, "/repository.json", new ModifiableSolrParams());
+      request.setResponseParser(new NoOpResponseParser("json"));
+      NamedList<Object> resp = client.request(request);
       SolrPackage[] items =
-          PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
-
+          PackageUtils.getMapper().readValue((String) resp.get("response"), SolrPackage[].class);
       packages = CollectionUtil.newHashMap(items.length);
       for (SolrPackage pkg : items) {
         pkg.setRepository(name);
         packages.put(pkg.name, pkg);
       }
-    } catch (IOException ex) {
+    } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.INVALID_STATE, ex);
     }
     if (log.isDebugEnabled()) {

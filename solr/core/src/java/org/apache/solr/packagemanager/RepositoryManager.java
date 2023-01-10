@@ -17,9 +17,7 @@
 
 package org.apache.solr.packagemanager;
 
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-import static org.apache.solr.packagemanager.PackageUtils.PACKAGE_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
@@ -47,7 +45,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -239,12 +236,15 @@ public class RepositoryManager {
       add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
       add.manifestSHA512 = manifestSHA512;
 
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH, new ModifiableSolrParams()) {
-        @Override
-        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-          return new RequestWriter.StringPayloadContentWriter("{add:"+add.jsonStr()+"}", "application/octet-stream");
-        }
-      };
+      GenericSolrRequest request =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH, new ModifiableSolrParams()) {
+            @Override
+            public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+              return new RequestWriter.StringPayloadContentWriter(
+                  "{add:" + add.jsonStr() + "}", "application/octet-stream");
+            }
+          };
 
       V2Request req =
           new V2Request.Builder(PackageUtils.PACKAGE_PATH)
@@ -253,7 +253,6 @@ public class RepositoryManager {
               .build();
       try {
         NamedList<Object> resp = solrClient.request(request);
-        //V2Response resp = req.process(solrClient);
         PackageUtils.printGreen("Response: " + resp.jsonStr());
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);

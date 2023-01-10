@@ -556,6 +556,9 @@ public class Http2SolrClient extends SolrClient {
     if (contentType != null) {
       mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
       encoding = MimeTypes.getCharsetFromContentType(contentType);
+      if (parser.getWriterType().equals("json") && encoding == null) {
+        encoding = FALLBACK_CHARSET.name();
+      }
     }
     return processErrorsAndResponse(
         response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);

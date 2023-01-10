@@ -21,7 +21,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Console;
@@ -77,19 +76,6 @@ import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -98,7 +84,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -120,12 +105,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.noggit.CharArr;
-import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -583,8 +568,7 @@ public class SolrCLI implements CLIO {
     Throwable rootCause = SolrException.getRootCause(exc);
     boolean wasCommError =
         (rootCause instanceof ConnectException
-            || rootCause instanceof ConnectTimeoutException
-            || rootCause instanceof NoHttpResponseException
+            || rootCause instanceof SolrServerException
             || rootCause instanceof SocketException);
     return wasCommError;
   }
@@ -605,25 +589,6 @@ public class SolrCLI implements CLIO {
 
   public static SolrClient getSolrClient(String solrUrl) {
     return new Http2SolrClient.Builder(solrUrl).maxConnectionsPerHost(32).build();
-  }
-
-  public static CloseableHttpClient getHttpClient() {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
-    params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false);
-    return HttpClientUtil.createClient(params);
-  }
-
-  @SuppressWarnings("deprecation")
-  public static void closeHttpClient(CloseableHttpClient httpClient) {
-    if (httpClient != null) {
-      try {
-        HttpClientUtil.close(httpClient);
-      } catch (Exception exc) {
-        // safe to ignore, we're just shutting things down
-      }
-    }
   }
 
   public static String getSolrUrlFromUri(URI uri) {
@@ -651,166 +616,30 @@ public class SolrCLI implements CLIO {
     return solrClient.request(req);
   }
 
-  /** Useful when a tool just needs to send one request to Solr. */
-  public static Map<String, Object> getJson(String getUrl) throws Exception {
-    Map<String, Object> json = null;
-    CloseableHttpClient httpClient = getHttpClient();
-    try {
-      json = getJson(httpClient, getUrl, 2, true);
-    } finally {
-      closeHttpClient(httpClient);
-    }
-    return json;
-  }
-
-  /** Utility function for sending HTTP GET request to Solr with built-in retry support. */
-  public static Map<String, Object> getJson(
-      HttpClient httpClient, String getUrl, int attempts, boolean isFirstAttempt) throws Exception {
-    Map<String, Object> json = null;
-    if (attempts >= 1) {
-      try {
-        json = getJson(httpClient, getUrl);
-      } catch (Exception exc) {
-        if (exceptionIsAuthRelated(exc)) {
-          throw exc;
-        }
-        if (--attempts > 0 && checkCommunicationError(exc)) {
-          if (!isFirstAttempt) {
-            // only show the log warning after the second attempt fails
-            log.warn(
-                "Request to {} failed, sleeping for 5 seconds before re-trying the request ...",
-                getUrl,
-                exc);
-          }
-          try {
-            Thread.sleep(5000);
-          } catch (InterruptedException ie) {
-            Thread.interrupted();
-          }
-
-          // retry using recursion with one-less attempt available
-          json = getJson(httpClient, getUrl, attempts, false);
-        } else {
-          // no more attempts or error is not retry-able
-          throw exc;
-        }
-      }
-    }
-
-    return json;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static class SolrResponseHandler implements ResponseHandler<Map<String, Object>> {
-    @Override
-    public Map<String, Object> handleResponse(HttpResponse response)
-        throws ClientProtocolException, IOException {
-      HttpEntity entity = response.getEntity();
-      if (entity != null) {
-
-        String respBody = EntityUtils.toString(entity);
-        Object resp = null;
-        try {
-          resp = fromJSONString(respBody);
-        } catch (JSONParser.ParseException pe) {
-          throw new ClientProtocolException(
-              "Expected JSON response from server but received: "
-                  + respBody
-                  + "\nTypically, this indicates a problem with the Solr server; check the Solr server logs for more information.");
-        }
-        if (resp instanceof Map) {
-          return (Map<String, Object>) resp;
-        } else {
-          throw new ClientProtocolException(
-              "Expected JSON object in response but received " + resp);
-        }
-      } else {
-        StatusLine statusLine = response.getStatusLine();
-        throw new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase());
-      }
-    }
-  }
-
-  /**
-   * Utility function for sending HTTP GET request to Solr and then doing some validation of the
-   * response.
-   */
-  public static Map<String, Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
-    try {
-      // ensure we're requesting JSON back from Solr
-      HttpGet httpGet =
-          new HttpGet(
-              new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
-
-      // make the request and get back a parsed JSON object
-      Map<String, Object> json =
-          httpClient.execute(
-              httpGet,
-              new SolrResponseHandler(),
-              HttpClientUtil.createNewHttpClientRequestContext());
-      // check the response JSON from Solr to see if it is an error
-      Long statusCode = asLong("/responseHeader/status", json);
-      if (statusCode != null && statusCode == -1) {
-        throw new SolrServerException(
-            "Unable to determine outcome of GET request to: " + getUrl + "! Response: " + json);
-      } else if (statusCode != null && statusCode != 0) {
-        String errMsg = asString("/error/msg", json);
-        if (errMsg == null) errMsg = String.valueOf(json);
-        throw new SolrServerException(errMsg);
-      } else {
-        // make sure no "failure" object in there either
-        Object failureObj = json.get("failure");
-        if (failureObj != null) {
-          if (failureObj instanceof Map) {
-            Object err = ((Map) failureObj).get("");
-            if (err != null) throw new SolrServerException(err.toString());
-          }
-          throw new SolrServerException(failureObj.toString());
-        }
-      }
-      return json;
-    } catch (ClientProtocolException cpe) {
-      // Currently detecting authentication by string-matching the HTTP response
-      // Perhaps SolrClient should have thrown an exception itself??
-      if (cpe.getMessage().contains("HTTP ERROR 401")
-          || cpe.getMessage().contentEquals("HTTP ERROR 403")) {
-        int code = cpe.getMessage().contains("HTTP ERROR 401") ? 401 : 403;
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(code),
-            "Solr requires authentication for "
-                + getUrl
-                + ". Please supply valid credentials. HTTP code="
-                + code);
-      } else {
-        throw cpe;
-      }
-    }
-  }
-
   /** Helper function for reading a String value from a JSON Object tree. */
-  public static String asString(String jsonPath, Map<String, Object> json) {
+  public static String asString(String jsonPath, NamedList<Object> json) {
     return pathAs(String.class, jsonPath, json);
   }
 
   /** Helper function for reading a Long value from a JSON Object tree. */
-  public static Long asLong(String jsonPath, Map<String, Object> json) {
+  public static Long asLong(String jsonPath, NamedList<Object> json) {
     return pathAs(Long.class, jsonPath, json);
   }
 
   /** Helper function for reading a List of Strings from a JSON Object tree. */
   @SuppressWarnings("unchecked")
-  public static List<String> asList(String jsonPath, Map<String, Object> json) {
+  public static List<String> asList(String jsonPath, NamedList<Object> json) {
     return pathAs(List.class, jsonPath, json);
   }
 
   /** Helper function for reading a Map from a JSON Object tree. */
   @SuppressWarnings("unchecked")
-  public static Map<String, Object> asMap(String jsonPath, Map<String, Object> json) {
-    return pathAs(Map.class, jsonPath, json);
+  public static Map<String, Object> asMap(String jsonPath, NamedList<Object> json) {
+    return pathAs(SimpleOrderedMap.class, jsonPath, json).asMap();
   }
 
   @SuppressWarnings("unchecked")
-  public static <T> T pathAs(Class<T> clazz, String jsonPath, Map<String, Object> json) {
+  public static <T> T pathAs(Class<T> clazz, String jsonPath, NamedList<Object> json) {
     T val = null;
     Object obj = atPath(jsonPath, json);
     if (obj != null) {
@@ -840,14 +669,14 @@ public class SolrCLI implements CLIO {
    * echoParams value for the "/query" request handler.
    */
   @SuppressWarnings("unchecked")
-  public static Object atPath(String jsonPath, Map<String, Object> json) {
+  public static Object atPath(String jsonPath, NamedList<Object> json) {
     if ("/".equals(jsonPath)) return json;
 
     if (!jsonPath.startsWith("/"))
       throw new IllegalArgumentException(
           "Invalid JSON path: " + jsonPath + "! Must start with a /");
 
-    Map<String, Object> parent = json;
+    NamedList<Object> parent = json;
     Object result = null;
     String[] path =
         jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
@@ -865,9 +694,9 @@ public class SolrCLI implements CLIO {
         // success - found the node at the desired path
         result = child;
       } else {
-        if (child instanceof Map) {
+        if (child instanceof NamedList) {
           // keep walking the path down to the desired node
-          parent = (Map<String, Object>) child;
+          parent = (NamedList<Object>) child;
         } else {
           // early termination - hit a leaf before the requested node
           break;
@@ -992,14 +821,12 @@ public class SolrCLI implements CLIO {
 
       String solrHome = (String) info.get("solr_home");
       status.put("solr_home", solrHome != null ? solrHome : "?");
-      status.put("version", ((NamedList) info.get("lucene")).get("solr-impl-version"));
+      status.put("version", asString("/lucene/solr-impl-version", info));
+      status.put("startTime", atPath("/jvm/jmx/startTime", info).toString());
+      status.put("uptime", uptime(asLong("/jvm/jmx/upTimeMS", info)));
 
-      @SuppressWarnings("unchecked")
-      NamedList<Object> jvm = (NamedList<Object>) info.get("jvm");
-      status.put("startTime", ((NamedList) jvm.get("jmx")).get("startTime"));
-      status.put("uptime", uptime((Long) ((NamedList) jvm.get("jmx")).get("upTimeMS")));
-      String usedMemory = (String) ((NamedList) jvm.get("memory")).get("used");
-      String totalMemory = (String) ((NamedList) jvm.get("memory")).get("total");
+      String usedMemory = asString("/jvm/memory/used", info);
+      String totalMemory = asString("/jvm/memory/used", info);
       status.put("memory", usedMemory + " of " + totalMemory);
 
       if ("solrcloud".equals(info.get("mode"))) {
@@ -1020,13 +847,12 @@ public class SolrCLI implements CLIO {
       Map<String, String> cloudStatus = new LinkedHashMap<>();
       cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
-      NamedList<Object> response = solrClient.request(new CollectionAdminRequest.ClusterStatus());
+      NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
-      NamedList<Object> cluster = (NamedList) response.get("cluster");
-      List<String> liveNodes = (List<String>) cluster.get("live_nodes");
+      List<String> liveNodes = asList("/cluster/live_nodes", json);
       cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
-      Map<String, Object> collections = ((NamedList) cluster.get("collections")).asMap();
+      Map<String, Object> collections = asMap("/cluster/collections", json);
       cloudStatus.put("collections", String.valueOf(collections.size()));
 
       return cloudStatus;
@@ -1341,9 +1167,9 @@ public class SolrCLI implements CLIO {
                           new ModifiableSolrParams()));
               @SuppressWarnings("unchecked")
               NamedList<Object> jvm = (NamedList<Object>) systemInfo.get("jvm");
-              uptime = uptime((Long) ((NamedList) jvm.get("jmx")).get("upTimeMS"));
-              String usedMemory = (String) ((NamedList) jvm.get("memory")).get("used");
-              String totalMemory = (String) ((NamedList) jvm.get("memory")).get("total");
+              uptime = uptime(asLong("/jvm/jmx/upTimeMS", systemInfo));
+              String usedMemory = asString("/jvm/memory/used", systemInfo);
+              String totalMemory = asString("/jvm/memory/total", systemInfo);
               memory = usedMemory + " of " + totalMemory;
 
               // if we get here, we can trust the state

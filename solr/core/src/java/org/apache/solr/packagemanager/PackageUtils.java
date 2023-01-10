@@ -32,21 +32,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.V2Response;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -98,52 +92,27 @@ public class PackageUtils {
     if (sig != null) {
       params.add("sig", sig);
     }
-    GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.PUT, resource, params) {
-      @Override
-      public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-        return new RequestWriter.ContentWriter() {
-          public final ByteBuffer payload = buffer;
-
+    GenericSolrRequest request =
+        new GenericSolrRequest(SolrRequest.METHOD.PUT, resource, params) {
           @Override
-          public void write(OutputStream os) throws IOException {
-            if (payload == null) return;
-            os.write(payload.array());
-          }
+          public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+            return new RequestWriter.ContentWriter() {
+              public final ByteBuffer payload = buffer;
 
-          @Override
-          public String getContentType() {
-            return "application/octet-stream";
+              @Override
+              public void write(OutputStream os) throws IOException {
+                if (payload == null) return;
+                os.write(payload.array());
+              }
+
+              @Override
+              public String getContentType() {
+                return "application/octet-stream";
+              }
+            };
           }
         };
-      }
-    };
     client.request(request);
-//    V2Response rsp =
-//        new V2Request.Builder(resource)
-//            .withMethod(SolrRequest.METHOD.PUT)
-//            .withPayload(buffer)
-//            .forceV2(true)
-//            .withMimeType("application/octet-stream")
-//            .withParams(params)
-//            .build()
-//            .process(client);
-//    if (!name.equals(rsp.getResponse().get(CommonParams.FILE))) {
-//      throw new SolrException(
-//          ErrorCode.BAD_REQUEST,
-//          "Mismatch in file uploaded. Uploaded: "
-//              + rsp.getResponse().get(CommonParams.FILE)
-//              + ", Original: "
-//              + name);
-//    }
-  }
-
-  /** Download JSON from the url and deserialize into klass. */
-  public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
-    try {
-      return getMapper().readValue(getJsonStringFromUrl(client, url), klass);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   /** Download JSON from a Solr url and deserialize into klass. */
@@ -174,34 +143,14 @@ public class PackageUtils {
     return null;
   }
 
-  /** Returns JSON string from a given URL */
-  public static String getJsonStringFromUrl(HttpClient client, String url) {
-    try {
-      HttpResponse resp = client.execute(new HttpGet(url));
-      if (resp.getStatusLine().getStatusCode() != 200) {
-        throw new SolrException(
-            ErrorCode.NOT_FOUND,
-            "Error (code=" + resp.getStatusLine().getStatusCode() + ") fetching from URL: " + url);
-      }
-      return new String(resp.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    } catch (UnsupportedOperationException | IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   /** Returns JSON string from a given Solr URL */
   public static String getJsonStringFromUrl(
       SolrClient client, String path, Map<String, String[]> params) {
     try {
-      NamedList<Object> response =
-          client.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET, path, new ModifiableSolrParams(params)));
-      int statusCode = (Integer) ((NamedList) response.get("responseHeader")).get("status");
-      if (statusCode != 0) {
-        throw new SolrException(
-            ErrorCode.NOT_FOUND, "Error (code=" + statusCode + ") fetching from path: " + path);
-      }
+      GenericSolrRequest request =
+          new GenericSolrRequest(SolrRequest.METHOD.GET, path, new ModifiableSolrParams(params));
+      request.setResponseParser(new NoOpResponseParser("json"));
+      NamedList<Object> response = client.request(request);
       return response.jsonStr();
     } catch (UnsupportedOperationException | IOException | SolrServerException e) {
       throw new RuntimeException(e);
@@ -215,13 +164,15 @@ public class PackageUtils {
   public static Manifest fetchManifest(
       SolrClient solrClient, String manifestFilePath, String expectedSHA512)
       throws IOException, SolrServerException {
-    NamedList<Object> response =
-        solrClient.request(
-            new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                "/api/node/files" + manifestFilePath,
-                new ModifiableSolrParams()));
-    String manifestJson = response.jsonStr();
+    GenericSolrRequest request =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/api/node/files" + manifestFilePath,
+            new ModifiableSolrParams());
+    request.setResponseParser(new NoOpResponseParser("json"));
+    NamedList<Object> response = solrClient.request(request);
+    Object json = response.get("response");
+    String manifestJson = (String) json;
     String calculatedSHA512 =
         BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {

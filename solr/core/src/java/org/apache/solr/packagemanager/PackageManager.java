@@ -423,12 +423,13 @@ public class PackageManager implements Closeable {
       try {
         @SuppressWarnings("unchecked")
         boolean packageParamsExist =
-            ((Map<Object, Object>)
-                    PackageUtils.getJson(
-                            solrClient,
-                            PackageUtils.getCollectionParamsPath(collection) + "/packages",
-                            Map.class)
-                        .getOrDefault("response", Collections.emptyMap()))
+            solrClient
+                .request(
+                    new GenericSolrRequest(
+                        SolrRequest.METHOD.GET,
+                        PackageUtils.getCollectionParamsPath(collection) + "/packages",
+                        new ModifiableSolrParams()))
+                .asShallowMap()
                 .containsKey("params");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -728,21 +729,18 @@ public class PackageManager implements Closeable {
   @SuppressWarnings({"rawtypes", "unchecked"})
   Map<String, String> getPackageParams(String packageName, String collection) {
     try {
-      return (Map<String, String>)
-          ((Map)
-                  ((Map)
-                          ((Map)
-                                  PackageUtils.getJson(
-                                          solrClient,
-                                          PackageUtils.getCollectionParamsPath(collection)
-                                              + "/packages",
-                                          Map.class)
-                                      .get("response"))
-                              .get("params"))
-                      .get("packages"))
-              .get(packageName);
+      NamedList<Object> response =
+          solrClient.request(
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  PackageUtils.getCollectionParamsPath(collection) + "/packages",
+                  new ModifiableSolrParams()));
+      return (Map<String, String>) SolrCLI.atPath("/response/params/packages/" + packageName, response);
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
+      if (log.isWarnEnabled()) {
+        log.warn("There are no parameters to return for package: " + packageName);
+      }
       return Collections.emptyMap();
     }
   }
