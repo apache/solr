@@ -290,31 +290,25 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   @SuppressWarnings("unchecked")
   Collection<X509Certificate> readSslCertsFromFileOrList(Object trustedCertsFileObj) {
     Collection<X509Certificate> certs = new HashSet<>();
+    List<String> trustedCertsFileList;
     if (trustedCertsFileObj instanceof String) {
-      String trustedCertsFile = (String) trustedCertsFileObj;
-      log.info("Reading trustedCerts from file {}", trustedCertsFile);
-      try {
-        certs.addAll(parseCertsFromFile(trustedCertsFile));
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + trustedCertsFile, e);
-      }
+      trustedCertsFileList = List.of((String) trustedCertsFileObj);
     } else if (trustedCertsFileObj instanceof List) {
-      List<String> trustedCertsFileList = (List<String>) trustedCertsFileObj;
-      log.info("Reading trustedCerts from list of files {}", trustedCertsFileList);
-      trustedCertsFileList.forEach(
-          f -> {
-            try {
-              certs.addAll(parseCertsFromFile(f));
-            } catch (IOException e) {
-              throw new SolrException(
-                  SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + f, e);
-            }
-          });
+      trustedCertsFileList = (List<String>) trustedCertsFileObj;
     } else {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "trustedCertsFile is neither a String or List");
     }
+    log.info("Reading trustedCerts from file(s) {}", trustedCertsFileList);
+    trustedCertsFileList.forEach(
+        f -> {
+          try {
+            certs.addAll(parseCertsFromFile(f));
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + f, e);
+          }
+        });
     return certs;
   }
 
