@@ -395,11 +395,11 @@ public abstract class ConfigSetService {
   public abstract void uploadConfig(String configName, Path dir) throws IOException;
 
   /**
-   * Upload a file to config If file does not exist, it will be uploaded If createNew param is set
-   * to true then file be overwritten
+   * Upload a file to config If file does not exist, it will be uploaded If overwriteOnExists is set
+   * to true then file will be overwritten
    *
    * @param configName the name to give the config
-   * @param fileName the name of the file
+   * @param fileName the name of the file with '/' used as the file path separator
    * @param data the content of the file
    * @param overwriteOnExists if true then file will be overwritten
    * @throws SolrException if file exists and overwriteOnExists == false
@@ -420,7 +420,7 @@ public abstract class ConfigSetService {
    * Download a file from config If the file does not exist, it returns null
    *
    * @param configName the name of the config
-   * @param filePath the file to download
+   * @param filePath the file to download with '/' as the separator
    * @return the content of the file
    */
   public abstract byte[] downloadFileFromConfig(String configName, String filePath)
@@ -453,7 +453,7 @@ public abstract class ConfigSetService {
    * Delete files in config
    *
    * @param configName the name of the config
-   * @param filesToDelete a list of file paths to delete
+   * @param filesToDelete a list of file paths to delete using '/' as file path separator
    */
   public abstract void deleteFilesFromConfig(String configName, List<String> filesToDelete)
       throws IOException;
@@ -488,7 +488,7 @@ public abstract class ConfigSetService {
    * lexicographically e.g. solrconfig.xml, lang/, lang/stopwords_en.txt
    *
    * @param configName the config name
-   * @return list of file name paths in the config
+   * @return list of file name paths in the config with '/' uses as file path separators
    */
   public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 

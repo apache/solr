@@ -17,11 +17,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,7 +35,6 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
    */
   protected DelegationTokenHttpSolrClient(Builder builder) {
     super(builder);
-    setQueryParams(new TreeSet<>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
   }
 
   @Override
@@ -50,14 +47,15 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
     return super.createMethod(request, collection);
   }
 
+  @Deprecated
   @Override
-  public void setQueryParams(Set<String> queryParams) {
-    queryParams = queryParams == null ? Set.of(DELEGATION_TOKEN_PARAM) : queryParams;
-    if (!queryParams.contains(DELEGATION_TOKEN_PARAM)) {
-      queryParams = new HashSet<>(queryParams);
-      queryParams.add(DELEGATION_TOKEN_PARAM);
-      queryParams = Collections.unmodifiableSet(queryParams);
+  public void setQueryParams(Set<String> urlParamNames) {
+    urlParamNames = urlParamNames == null ? Set.of(DELEGATION_TOKEN_PARAM) : urlParamNames;
+    if (!urlParamNames.contains(DELEGATION_TOKEN_PARAM)) {
+      urlParamNames = new HashSet<>(urlParamNames);
+      urlParamNames.add(DELEGATION_TOKEN_PARAM);
+      urlParamNames = Collections.unmodifiableSet(urlParamNames);
     }
-    super.setQueryParams(queryParams);
+    super.setQueryParams(urlParamNames);
   }
 }
