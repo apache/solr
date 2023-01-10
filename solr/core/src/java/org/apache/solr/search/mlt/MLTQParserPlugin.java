@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
-/**
- * Usage: {!mlt qf=queryField1,queryField2}uniqueId
- */
+/** Usage: {!mlt qf=queryField1,queryField2}uniqueId */
 public class MLTQParserPlugin extends QParserPlugin {
   public static final String NAME = "mlt";
-  
+
   @Override
-  public QParser createParser(String qstr, SolrParams localParams,
-      SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     if (req.getCore().getCoreDescriptor().getCloudDescriptor() != null) {
       return new CloudMLTQParser(qstr, localParams, params, req);
     } else {

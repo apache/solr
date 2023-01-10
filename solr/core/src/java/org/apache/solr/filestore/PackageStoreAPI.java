@@ -17,6 +17,9 @@
 
 package org.apache.solr.filestore;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -27,10 +30,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -55,16 +58,11 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-
-
 public class PackageStoreAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String PACKAGESTORE_DIRECTORY = "filestore";
   public static final String TRUSTED_DIR = "_trusted_";
   public static final String KEYS_DIR = "/_trusted_/keys";
-
 
   private final CoreContainer coreContainer;
   PackageStore packageStore;
@@ -80,12 +78,10 @@ public class PackageStoreAPI {
     return packageStore;
   }
 
-  /**
-   * get a list of nodes randomly shuffled
-   * * @lucene.internal
-   */
+  /** get a list of nodes randomly shuffled * @lucene.internal */
   public ArrayList<String> shuffledNodes() {
-    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes =
+        coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
     Collections.shuffle(l, BlobRepository.RANDOM);
@@ -101,28 +97,30 @@ public class PackageStoreAPI {
           continue;
         }
 
-        packageStore.get(path, entry -> {
-          if (entry.getMetaData().signatures == null ||
-              entry.getMetaData().signatures.isEmpty()) {
-            errs.accept(path + " has no signature");
-            return;
-          }
-          if (validateSignatures) {
-            try {
-              packageStore.refresh(KEYS_DIR);
-              validate(entry.meta.signatures, entry, false);
-            } catch (Exception e) {
-              log.error("Error validating package artifact", e);
-              errs.accept(e.getMessage());
-            }
-          }
-        }, false);
+        packageStore.get(
+            path,
+            entry -> {
+              if (entry.getMetaData().signatures == null
+                  || entry.getMetaData().signatures.isEmpty()) {
+                errs.accept(path + " has no signature");
+                return;
+              }
+              if (validateSignatures) {
+                try {
+                  packageStore.refresh(KEYS_DIR);
+                  validate(entry.meta.signatures, entry, false);
+                } catch (Exception e) {
+                  log.error("Error validating package artifact", e);
+                  errs.accept(e.getMessage());
+                }
+              }
+            },
+            false);
       } catch (Exception e) {
         log.error("Error reading file ", e);
         errs.accept("Error reading file " + path + " " + e.getMessage());
       }
     }
-
   }
 
   public class FSWrite {
@@ -130,46 +128,48 @@ public class PackageStoreAPI {
     static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
 
     @EndPoint(
-            path = "/cluster/files/*",
-            method = SolrRequest.METHOD.DELETE,
-            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+        path = "/cluster/files/*",
+        method = SolrRequest.METHOD.DELETE,
+        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
     public void delete(SolrQueryRequest req, SolrQueryResponse rsp) {
       if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
         throw new RuntimeException(PackageAPI.ERR_MSG);
       }
 
       try {
-        coreContainer.getZkController().getZkClient().create(TMP_ZK_NODE, "true".getBytes(UTF_8),
-                CreateMode.EPHEMERAL, true);
+        coreContainer
+            .getZkController()
+            .getZkClient()
+            .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
         String path = req.getPathTemplateValues().get("*");
         validateName(path, true);
-        if(coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
+        if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
         }
         PackageStore.FileType type = packageStore.getType(path, true);
-        if(type == PackageStore.FileType.NOFILE) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path does not exist: " + path);
+        if (type == PackageStore.FileType.NOFILE) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + path);
         }
         packageStore.delete(path);
-      } catch (SolrException e){
+      } catch (SolrException e) {
         throw e;
       } catch (Exception e) {
-        log.error("Unknown error",e);
+        log.error("Unknown error", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }  finally {
+      } finally {
         try {
           coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
         } catch (Exception e) {
           log.error("Unexpected error  ", e);
         }
-
       }
     }
 
     @EndPoint(
-            path = "/node/files/*",
-            method = SolrRequest.METHOD.DELETE,
-            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+        path = "/node/files/*",
+        method = SolrRequest.METHOD.DELETE,
+        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
     public void deleteLocal(SolrQueryRequest req, SolrQueryResponse rsp) {
       String path = req.getPathTemplateValues().get("*");
       validateName(path, true);
@@ -185,11 +185,14 @@ public class PackageStoreAPI {
         throw new RuntimeException(PackageAPI.ERR_MSG);
       }
       try {
-        coreContainer.getZkController().getZkClient().create(TMP_ZK_NODE, "true".getBytes(UTF_8),
-            CreateMode.EPHEMERAL, true);
+        coreContainer
+            .getZkController()
+            .getZkClient()
+            .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
 
         Iterable<ContentStream> streams = req.getContentStreams();
-        if (streams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
+        if (streams == null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
         String path = req.getPathTemplateValues().get("*");
         if (path == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No path");
@@ -201,8 +204,26 @@ public class PackageStoreAPI {
           List<String> signatures = readSignatures(req, buf);
           MetaData meta = _createJsonMetaData(buf, signatures);
           PackageStore.FileType type = packageStore.getType(path, true);
-          if(type != PackageStore.FileType.NOFILE) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists "+ path);
+          boolean[] returnAfter = new boolean[] {false};
+          if (type == PackageStore.FileType.FILE) {
+            // a file already exist at the same path
+            packageStore.get(
+                path,
+                fileEntry -> {
+                  if (meta.equals(fileEntry.meta)) {
+                    // the file content is same too. this is an idempotent put
+                    // do not throw an error
+                    returnAfter[0] = true;
+                    rsp.add(CommonParams.FILE, path);
+                    rsp.add("message", "File with same metadata exists ");
+                  }
+                },
+                true);
+          }
+          if (returnAfter[0]) return;
+          if (type != PackageStore.FileType.NOFILE) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Path already exists " + path);
           }
           packageStore.put(new PackageStore.FileEntry(ByteBuffer.wrap(buf), meta, path));
           rsp.add(CommonParams.FILE, path);
@@ -212,7 +233,8 @@ public class PackageStoreAPI {
       } catch (InterruptedException e) {
         log.error("Unexpected error", e);
       } catch (KeeperException.NodeExistsException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
       } catch (KeeperException e) {
         log.error("Unexpected error", e);
       } finally {
@@ -234,36 +256,41 @@ public class PackageStoreAPI {
       return sigs;
     }
 
-    private void validate(List<String> sigs,
-                          byte[] buf) throws SolrException, IOException {
+    private void validate(List<String> sigs, byte[] buf) throws SolrException, IOException {
       Map<String, byte[]> keys = packageStore.getKeys();
       if (keys == null || keys.isEmpty()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "package store does not have any keys");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "package store does not have any keys");
       }
       CryptoKeys cryptoKeys = null;
       try {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error parsing public keys in Package store");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in Package store");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, ByteBuffer.wrap(buf)) == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig +" len: "+buf.length+  " content sha512: "+
-              DigestUtils.sha512Hex(buf));
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Signature does not match any public key : "
+                  + sig
+                  + " len: "
+                  + buf.length
+                  + " content sha512: "
+                  + DigestUtils.sha512Hex(buf));
         }
-
       }
     }
-
   }
 
   /**
    * Creates a JSON string with the metadata.
+   *
    * @lucene.internal
    */
-  public static MetaData _createJsonMetaData(byte[] buf, List<String> signatures) throws IOException {
+  public static MetaData _createJsonMetaData(byte[] buf, List<String> signatures)
+      throws IOException {
     String sha512 = DigestUtils.sha512Hex(buf);
     Map<String, Object> vals = new HashMap<>();
     vals.put(MetaData.SHA512, sha512);
@@ -291,17 +318,20 @@ public class PackageStoreAPI {
       }
       String getFrom = req.getParams().get("getFrom");
       if (getFrom != null) {
-        coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
-          log.debug("Downloading file {}", pathCopy);
-          try {
-            packageStore.fetch(pathCopy, getFrom);
-          } catch (Exception e) {
-            log.error("Failed to download file: {}", pathCopy, e);
-          }
-          log.info("downloaded file: {}", pathCopy);
-        });
+        coreContainer
+            .getUpdateShardHandler()
+            .getUpdateExecutor()
+            .submit(
+                () -> {
+                  log.debug("Downloading file {}", pathCopy);
+                  try {
+                    packageStore.fetch(pathCopy, getFrom);
+                  } catch (Exception e) {
+                    log.error("Failed to download file: {}", pathCopy, e);
+                  }
+                  log.info("downloaded file: {}", pathCopy);
+                });
         return;
-
       }
       if (path == null) {
         path = "";
@@ -321,8 +351,7 @@ public class PackageStoreAPI {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
-          @SuppressWarnings({"rawtypes"})
-          List l = packageStore.list(parentPath, s -> s.equals(fileName));
+          List<PackageStore.FileDetails> l = packageStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
         }
@@ -335,18 +364,25 @@ public class PackageStoreAPI {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.add(CommonParams.WT, FILE_STREAM);
       req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-      rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
-        packageStore.get(path, (it) -> {
-          try {
-            org.apache.commons.io.IOUtils.copy(it.getInputStream(), os);
-          } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
-          }
-        }, false);
-
-      });
+      rsp.add(
+          FILE_STREAM,
+          (SolrCore.RawWriter)
+              os ->
+                  packageStore.get(
+                      path,
+                      it -> {
+                        try {
+                          InputStream inputStream = it.getInputStream();
+                          if (inputStream != null) {
+                            inputStream.transferTo(os);
+                          }
+                        } catch (IOException e) {
+                          throw new SolrException(
+                              SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
+                        }
+                      },
+                      false));
     }
-
   }
 
   public static class MetaData implements MapWriter {
@@ -355,9 +391,9 @@ public class PackageStoreAPI {
     List<String> signatures;
     Map<String, Object> otherAttribs;
 
-    @SuppressWarnings({"unchecked"})
-    public MetaData(@SuppressWarnings({"rawtypes"})Map m) {
-      m = Utils.getDeepCopy(m, 3);
+    @SuppressWarnings("unchecked")
+    public MetaData(Map<String, Object> m) {
+      m = (Map<String, Object>) Utils.getDeepCopy(m, 3);
       this.sha512 = (String) m.remove(SHA512);
       this.signatures = (List<String>) m.remove("sig");
       this.otherAttribs = m;
@@ -370,6 +406,22 @@ public class PackageStoreAPI {
       if (!otherAttribs.isEmpty()) {
         otherAttribs.forEach(ew.getBiConsumer());
       }
+    }
+
+    @Override
+    public int hashCode() {
+      return sha512.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that instanceof MetaData) {
+        MetaData metaData = (MetaData) that;
+        return Objects.equals(sha512, metaData.sha512)
+            && Objects.equals(signatures, metaData.signatures)
+            && Objects.equals(otherAttribs, metaData.otherAttribs);
+      }
+      return false;
     }
   }
 
@@ -387,51 +439,58 @@ public class PackageStoreAPI {
       for (int i = 0; i < part.length(); i++) {
         for (int j = 0; j < INVALIDCHARS.length(); j++) {
           if (part.charAt(i) == INVALIDCHARS.charAt(j))
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported char in file name: " + part);
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Unsupported char in file name: " + part);
         }
       }
     }
-    if (failForTrusted &&  TRUSTED_DIR.equals(parts.get(0))) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "trying to write into /_trusted_/ directory");
+    if (failForTrusted && TRUSTED_DIR.equals(parts.get(0))) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "trying to write into /_trusted_/ directory");
     }
   }
 
-  /**Validate a file for signature
+  /**
+   * Validate a file for signature
    *
    * @param sigs the signatures. atleast one should succeed
    * @param entry The file details
    * @param isFirstAttempt If there is a failure
    */
-  public void validate(List<String> sigs,
-                       PackageStore.FileEntry entry,
-                       boolean isFirstAttempt) throws SolrException, IOException {
+  public void validate(List<String> sigs, PackageStore.FileEntry entry, boolean isFirstAttempt)
+      throws SolrException, IOException {
     if (!isFirstAttempt) {
-      //we are retrying because last validation failed.
+      // we are retrying because last validation failed.
       // get all keys again and try again
       packageStore.refresh(KEYS_DIR);
     }
 
     Map<String, byte[]> keys = packageStore.getKeys();
     if (keys == null || keys.isEmpty()) {
-      if(isFirstAttempt) {
+      if (isFirstAttempt) {
         validate(sigs, entry, false);
         return;
       }
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Packagestore does not have any public keys");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Packagestore does not have any public keys");
     }
     CryptoKeys cryptoKeys = null;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error parsing public keys in ZooKeeper");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in ZooKeeper");
     }
     for (String sig : sigs) {
-      Supplier<String> errMsg = () -> "Signature does not match any public key : " + sig + "sha256 " + entry.getMetaData().sha512;
+      Supplier<String> errMsg =
+          () ->
+              "Signature does not match any public key : "
+                  + sig
+                  + "sha256 "
+                  + entry.getMetaData().sha512;
       if (entry.getBuffer() != null) {
         if (cryptoKeys.verify(sig, entry.getBuffer()) == null) {
-          if(isFirstAttempt) {
+          if (isFirstAttempt) {
             validate(sigs, entry, false);
             return;
           }
@@ -440,15 +499,13 @@ public class PackageStoreAPI {
       } else {
         InputStream inputStream = entry.getInputStream();
         if (cryptoKeys.verify(sig, inputStream) == null) {
-          if(isFirstAttempt)  {
+          if (isFirstAttempt) {
             validate(sigs, entry, false);
             return;
           }
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errMsg.get());
         }
-
       }
-
     }
   }
 }

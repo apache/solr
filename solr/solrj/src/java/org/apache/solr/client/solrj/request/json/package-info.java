@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Allows sending of requests using Solr's JSON query/faceting API
- */
+
+/** Allows sending of requests using Solr's JSON query/faceting API */
 package org.apache.solr.client.solrj.request.json;

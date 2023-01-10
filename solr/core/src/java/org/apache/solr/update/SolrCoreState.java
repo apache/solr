@@ -16,6 +16,13 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
@@ -29,61 +36,47 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-
-/**
- * The state in this class can be easily shared between SolrCores across
- * SolrCore reloads.
- * 
- */
+/** The state in this class can be easily shared between SolrCores across SolrCore reloads. */
 public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int PAUSE_UPDATES_TIMEOUT_MILLIS = Integer.getInteger("solr.cloud.wait-for-updates-on-shutdown-millis", 2500);
-  
+  private static final int PAUSE_UPDATES_TIMEOUT_MILLIS =
+      Integer.getInteger("solr.cloud.wait-for-updates-on-shutdown-millis", 2500);
+
   protected boolean closed = false;
   private final Object updateLock = new Object();
   private final Object reloadLock = new Object();
 
-  /**
-   * If true then all update requests will be refused
-   */
+  /** If true then all update requests will be refused */
   private final AtomicBoolean pauseUpdateRequests = new AtomicBoolean();
 
   /**
-   * Phaser is used to track in flight update requests and can be used
-   * to wait for all in-flight requests to finish. A Phaser terminates
-   * automatically when the number of registered parties reach zero.
-   * Since we track requests with this phaser, we disable the automatic
-   * termination by overriding the onAdvance method to return false.
+   * Phaser is used to track in flight update requests and can be used to wait for all in-flight
+   * requests to finish. A Phaser terminates automatically when the number of registered parties
+   * reach zero. Since we track requests with this phaser, we disable the automatic termination by
+   * overriding the onAdvance method to return false.
    *
    * @see #registerInFlightUpdate()
    * @see #deregisterInFlightUpdate()
    * @see #pauseUpdatesAndAwaitInflightRequests()
    */
-  private final Phaser inflightUpdatesCounter = new Phaser()  {
-    @Override
-    protected boolean onAdvance(int phase, int registeredParties) {
-      // disable termination of phaser
-      return false;
-    }
-  };
+  private final Phaser inflightUpdatesCounter =
+      new Phaser() {
+        @Override
+        protected boolean onAdvance(int phase, int registeredParties) {
+          // disable termination of phaser
+          return false;
+        }
+      };
 
   public Object getUpdateLock() {
     return updateLock;
   }
-  
+
   public Object getReloadLock() {
     return reloadLock;
   }
-  
-  
+
   private int solrCoreStateRefCnt = 1;
 
   public void increfSolrCoreState() {
@@ -94,7 +87,7 @@ public abstract class SolrCoreState {
       solrCoreStateRefCnt++;
     }
   }
-  
+
   public boolean decrefSolrCoreState(IndexWriterCloser closer) {
     boolean close = false;
     synchronized (this) {
@@ -105,7 +98,7 @@ public abstract class SolrCoreState {
         close = true;
       }
     }
-    
+
     if (close) {
       try {
         log.debug("Closing SolrCoreState");
@@ -118,14 +111,16 @@ public abstract class SolrCoreState {
   }
 
   /**
-   * Pauses all update requests to this core and waits (indefinitely) for all in-flight
-   * update requests to finish
+   * Pauses all update requests to this core and waits (indefinitely) for all in-flight update
+   * requests to finish
    */
   public void pauseUpdatesAndAwaitInflightRequests() throws TimeoutException, InterruptedException {
     if (pauseUpdateRequests.compareAndSet(false, true)) {
       int arrivalNumber = inflightUpdatesCounter.register();
-      assert arrivalNumber >= 0 : "Registration of in-flight request should have succeeded but got arrival phase number < 0";
-      inflightUpdatesCounter.awaitAdvanceInterruptibly(inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+      assert arrivalNumber >= 0
+          : "Registration of in-flight request should have succeeded but got arrival phase number < 0";
+      inflightUpdatesCounter.awaitAdvanceInterruptibly(
+          inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -142,61 +137,57 @@ public abstract class SolrCoreState {
     return true;
   }
 
-  /**
-   * De-registers in-flight update requests to this core (marks them as completed)
-   */
+  /** De-registers in-flight update requests to this core (marks them as completed) */
   public void deregisterInFlightUpdate() {
     int arrivalPhaseNumber = inflightUpdatesCounter.arriveAndDeregister();
     assert arrivalPhaseNumber >= 0 : "inflightUpdatesCounter should not have been terminated";
   }
 
   public abstract Lock getCommitLock();
-  
+
   /**
-   * Force the creation of a new IndexWriter using the settings from the given
-   * SolrCore.
-   * 
+   * Force the creation of a new IndexWriter using the settings from the given SolrCore.
+   *
    * @param rollback close IndexWriter if false, else rollback
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void newIndexWriter(SolrCore core, boolean rollback) throws IOException;
-  
-  
+
   /**
-   * Expert method that closes the IndexWriter - you must call {@link #openIndexWriter(SolrCore)}
-   * in a finally block after calling this method.
-   * 
+   * Expert method that closes the IndexWriter - you must call {@link #openIndexWriter(SolrCore)} in
+   * a finally block after calling this method.
+   *
    * @param core that the IW belongs to
    * @param rollback true if IW should rollback rather than close
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void closeIndexWriter(SolrCore core, boolean rollback) throws IOException;
-  
+
   /**
-   * Expert method that opens the IndexWriter - you must call {@link #closeIndexWriter(SolrCore, boolean)}
-   * first, and then call this method in a finally block.
-   * 
+   * Expert method that opens the IndexWriter - you must call {@link #closeIndexWriter(SolrCore,
+   * boolean)} first, and then call this method in a finally block.
+   *
    * @param core that the IW belongs to
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void openIndexWriter(SolrCore core) throws IOException;
-  
+
   /**
-   * Get the current IndexWriter. If a new IndexWriter must be created, use the
-   * settings from the given {@link SolrCore}.
-   * 
+   * Get the current IndexWriter. If a new IndexWriter must be created, use the settings from the
+   * given {@link SolrCore}.
+   *
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
-  
+
   /**
-   * Rollback the current IndexWriter. When creating the new IndexWriter use the
-   * settings from the given {@link SolrCore}.
-   * 
+   * Rollback the current IndexWriter. When creating the new IndexWriter use the settings from the
+   * given {@link SolrCore}.
+   *
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void rollbackIndexWriter(SolrCore core) throws IOException;
-  
+
   /**
    * Get the current Sort of the current IndexWriter's MergePolicy..
    *
@@ -214,13 +205,12 @@ public abstract class SolrCoreState {
    */
   public abstract RecoveryStrategy.Builder getRecoveryStrategyBuilder();
 
-
   public interface IndexWriterCloser {
     void closeWriter(IndexWriter writer) throws IOException;
   }
 
   public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
-  
+
   public abstract void cancelRecovery();
 
   public abstract void close(IndexWriterCloser closer);
@@ -235,11 +225,11 @@ public abstract class SolrCoreState {
   public abstract void setLastReplicateIndexSuccess(boolean success);
 
   public static class CoreIsClosedException extends AlreadyClosedException {
-    
+
     public CoreIsClosedException() {
       super();
     }
-    
+
     public CoreIsClosedException(String s) {
       super(s);
     }

@@ -8,10 +8,9 @@ com.google.common.base.Supplier
 com.google.common.base.Charsets
 
 @defaultMessage Use methods in java.util.Objects instead
-com.google.common.base.Objects#equal(java.lang.Object,java.lang.Object)
-com.google.common.base.Objects#hashCode(java.lang.Object[])
-com.google.common.base.Preconditions#checkNotNull(java.lang.Object)
-com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Object)
+com.google.common.base.Objects#equal(**)
+com.google.common.base.Objects#hashCode(**)
+com.google.common.base.Preconditions#checkNotNull(**)
 
 @defaultMessage Use methods in java.util.Comparator instead
 com.google.common.collect.Ordering

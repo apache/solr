@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
 public interface RESTfulServerProvider {
   String getBaseURL();
 }

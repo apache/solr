@@ -19,9 +19,7 @@ package org.apache.solr.metrics;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 
-/**
- *
- */
+/** */
 public class MockCounterSupplier implements MetricRegistry.MetricSupplier<Counter> {
   public String foo;
 

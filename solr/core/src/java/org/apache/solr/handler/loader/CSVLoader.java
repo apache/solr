@@ -16,18 +16,22 @@
  */
 package org.apache.solr.handler.loader;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import java.io.IOException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import java.io.*;
 
 public class CSVLoader extends ContentStreamLoader {
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp,
-      ContentStream stream, UpdateRequestProcessor processor) throws Exception {
-    new SingleThreadedCSVLoader(req,processor).load(req, rsp, stream, processor);
+  public void load(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ContentStream stream,
+      UpdateRequestProcessor processor)
+      throws Exception {
+    new SingleThreadedCSVLoader(req, processor).load(req, rsp, stream, processor);
   }
 }
 
@@ -37,7 +41,7 @@ class SingleThreadedCSVLoader extends CSVLoaderBase {
   }
 
   @Override
-  void addDoc(int line, String[] vals) throws IOException {
+  public void addDoc(int line, String[] vals) throws IOException {
     templateAdd.clear();
     SolrInputDocument doc = new SolrInputDocument();
     doAdd(line, vals, doc, templateAdd);

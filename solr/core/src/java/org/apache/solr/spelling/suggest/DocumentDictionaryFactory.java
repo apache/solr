@@ -21,22 +21,20 @@ import org.apache.lucene.search.suggest.DocumentDictionary;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-/**
- * Factory for {@link DocumentDictionary}
- */
+/** Factory for {@link DocumentDictionary} */
 public class DocumentDictionaryFactory extends DictionaryFactory {
-  
+
   public static final String FIELD = "field";
-  
+
   public static final String WEIGHT_FIELD = "weightField";
-  
+
   public static final String PAYLOAD_FIELD = "payloadField";
 
   public static final String CONTEXT_FIELD = "contextField";
 
   @Override
   public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
-    if(params == null) {
+    if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");
     }
@@ -49,7 +47,7 @@ public class DocumentDictionaryFactory extends DictionaryFactory {
       throw new IllegalArgumentException(FIELD + " is a mandatory parameter");
     }
 
-    return new DocumentDictionary(searcher.getIndexReader(), field, weightField, payloadField, contextField);
+    return new DocumentDictionary(
+        searcher.getIndexReader(), field, weightField, payloadField, contextField);
   }
-  
 }

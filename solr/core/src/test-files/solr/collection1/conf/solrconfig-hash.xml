@@ -52,10 +52,4 @@
 
   <requestHandler name="/select" class="solr.SearchHandler" />
 
-  <!-- config for the admin interface -->
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-  </admin>
-
 </config>
-

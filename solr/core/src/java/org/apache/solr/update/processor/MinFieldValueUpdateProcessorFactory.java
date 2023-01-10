@@ -16,31 +16,25 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
 /**
- * An update processor that keeps only the minimum value from any selected 
- * fields where multiple values are found.   Correct behavior requires tha all 
- * of the values in the SolrInputFields being mutated are mutually comparable; 
- * If this is not the case, then a SolrException will br thrown. 
- * <p>
- * By default, this processor matches no fields.
- * </p>
+ * An update processor that keeps only the minimum value from any selected fields where multiple
+ * values are found. Correct behavior requires tha all of the values in the SolrInputFields being
+ * mutated are mutually comparable; If this is not the case, then a SolrException will br thrown.
  *
- * <p>
- * In the example configuration below, if a document contains multiple integer 
- * values (ie: <code>64, 128, 1024</code>) in the field 
- * <code>smallestFileSize</code> then only the smallest value 
- * (ie: <code>64</code>) will be kept in that field.
- * <br>
+ * <p>By default, this processor matches no fields.
+ *
+ * <p>In the example configuration below, if a document contains multiple integer values (ie: <code>
+ * 64, 128, 1024</code>) in the field <code>smallestFileSize</code> then only the smallest value
+ * (ie: <code>64</code>) will be kept in that field. <br>
  *
  * <pre class="prettyprint">
  *  &lt;processor class="solr.MinFieldValueUpdateProcessorFactory"&gt;
@@ -52,29 +46,23 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  * @see Collections#min
  * @since 4.0.0
  */
-public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
+public final class MinFieldValueUpdateProcessorFactory
+    extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
-    @SuppressWarnings({"rawtypes"})
-    Collection result = values;
+  public <T> Collection<T> pickSubset(Collection<T> values) {
     try {
-      // NOTE: the extra cast to Object is needed to prevent compile
-      // errors on Eclipse Compiler (ecj) used for javadoc lint
-      result = Collections.singletonList((Object) Collections.min(values));
+      // Use the signature with null comparator to let the JDK deal with unsafe casts, and catch CCE
+      // if needed
+      return Collections.singletonList(Collections.min(values, null));
     } catch (ClassCastException e) {
-      throw new SolrException
-        (BAD_REQUEST, 
-         "Field values are not mutually comparable: " + e.getMessage(), e);
+      throw new SolrException(
+          BAD_REQUEST, "Field values are not mutually comparable: " + e.getMessage(), e);
     }
-    return result;
   }
 
   @Override
   public FieldNameSelector getDefaultSelector(SolrCore core) {
     return SELECT_NO_FIELDS;
   }
-  
 }
-

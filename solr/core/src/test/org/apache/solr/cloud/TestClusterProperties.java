@@ -26,7 +26,7 @@ import org.junit.Test;
 public class TestClusterProperties extends SolrCloudTestCase {
 
   private ClusterProperties props;
-  
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).configure();
@@ -37,7 +37,7 @@ public class TestClusterProperties extends SolrCloudTestCase {
     super.setUp();
     props = new ClusterProperties(zkClient());
   }
-  
+
   @Test
   public void testSetPluginClusterProperty() throws Exception {
     String propertyName = ClusterProperties.EXT_PROPRTTY_PREFIX + "pluginA.propertyA";
@@ -45,12 +45,11 @@ public class TestClusterProperties extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     assertEquals("valueA", props.getClusterProperty(propertyName, null));
   }
-  
+
   @Test(expected = SolrException.class)
   public void testSetInvalidPluginClusterProperty() throws Exception {
     String propertyName = "pluginA.propertyA";
     CollectionAdminRequest.setClusterProperty(propertyName, "valueA")
         .process(cluster.getSolrClient());
   }
-
 }

@@ -17,7 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.lucene.util.SloppyMath;
@@ -29,10 +28,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class HaversineMetersEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
 
-  public HaversineMetersEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public HaversineMetersEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
-
 
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
@@ -48,12 +47,11 @@ public class HaversineMetersEvaluator extends RecursiveEvaluator {
   public static class HaversineDistance implements DistanceMeasure {
     private static final long serialVersionUID = -9108154600539125566L;
 
-    public HaversineDistance() {
-    }
+    public HaversineDistance() {}
 
+    @Override
     public double compute(double[] a, double[] b) throws DimensionMismatchException {
       return SloppyMath.haversinMeters(a[0], a[1], b[0], b[1]);
     }
   }
-
 }

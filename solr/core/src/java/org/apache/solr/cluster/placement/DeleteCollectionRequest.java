@@ -16,8 +16,5 @@
  */
 package org.apache.solr.cluster.placement;
 
-/**
- * Delete collection request.
- */
-public interface DeleteCollectionRequest extends ModificationRequest {
-}
+/** Delete collection request. */
+public interface DeleteCollectionRequest extends ModificationRequest {}

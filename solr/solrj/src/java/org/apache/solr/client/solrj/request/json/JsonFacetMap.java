@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * A common parent for a small set of classes that allow easier composition of JSON facet objects.
  *
- * Designed for use with {@link JsonQueryRequest#withFacet(String, Map)}
+ * <p>Designed for use with {@link JsonQueryRequest#withFacet(String, Map)}
  */
 public abstract class JsonFacetMap<B extends JsonFacetMap<B>> extends HashMap<String, Object> {
 
@@ -40,9 +40,8 @@ public abstract class JsonFacetMap<B extends JsonFacetMap<B>> extends HashMap<St
     return getThis();
   }
 
-  public B withSubFacet(String facetName,
-                        @SuppressWarnings({"rawtypes"})JsonFacetMap map) {
-    if (! containsKey("facet")) {
+  public B withSubFacet(String facetName, @SuppressWarnings({"rawtypes"}) JsonFacetMap map) {
+    if (!containsKey("facet")) {
       put("facet", new HashMap<String, Object>());
     }
 
@@ -53,7 +52,7 @@ public abstract class JsonFacetMap<B extends JsonFacetMap<B>> extends HashMap<St
   }
 
   public B withStatSubFacet(String facetName, String statFacet) {
-    if (! containsKey("facet")) {
+    if (!containsKey("facet")) {
       put("facet", new HashMap<String, Object>());
     }
 

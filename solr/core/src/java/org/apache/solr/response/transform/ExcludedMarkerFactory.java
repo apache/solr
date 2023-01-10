@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -26,32 +25,27 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
 /**
- *
  * @since solr 4.0
  */
-public class ExcludedMarkerFactory extends TransformerFactory
-{
+public class ExcludedMarkerFactory extends TransformerFactory {
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     String idfield = uniqueKeyField.getName();
-    return new ExcludedTransformer(field,idfield, uniqueKeyField.getType());
+    return new ExcludedTransformer(field, idfield, uniqueKeyField.getType());
   }
 }
 
 class ExcludedTransformer extends BaseEditorialTransformer {
 
-  public ExcludedTransformer( String name, String idFieldName, FieldType ft)
-  {
+  public ExcludedTransformer(String name, String idFieldName, FieldType ft) {
     super(name, idFieldName, ft);
   }
 
   @SuppressWarnings("unchecked")
   @Override
   protected Set<BytesRef> getIdSet() {
-    return (Set<BytesRef>)context.getRequest().getContext().get(QueryElevationComponent.EXCLUDED);
+    return (Set<BytesRef>) context.getRequest().getContext().get(QueryElevationComponent.EXCLUDED);
   }
-
 }
-

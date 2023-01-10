@@ -22,11 +22,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * This is a simple test to make sure the schema loads when
- * provided a tokenizerFactory that requires a match version
- *
+ * This is a simple test to make sure the schema loads when provided a tokenizerFactory that
+ * requires a match version
  */
-
 public class SynonymTokenizerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -38,6 +36,6 @@ public class SynonymTokenizerTest extends SolrTestCaseJ4 {
   public void testSchemaLoading() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("text_synonyms") );
+    assertTrue(schema.getFieldTypes().containsKey("text_synonyms"));
   }
 }

@@ -17,46 +17,50 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.util.concurrent.ExecutorService;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 
-import java.util.concurrent.ExecutorService;
-
 /**
- * Data passed to Collection API command execution, to allow calls from either the {@link OverseerCollectionMessageHandler}
- * when commands are executed on the Overseer, or - in a future change - allow Collection API commands to be executed in a
- * distributed way, unrelated to and not depending upon Overseer abstractions (including overseer collection message handling).
+ * Data passed to Collection API command execution, to allow calls from either the {@link
+ * OverseerCollectionMessageHandler} when commands are executed on the Overseer, or - in a future
+ * change - allow Collection API commands to be executed in a distributed way, unrelated to and not
+ * depending upon Overseer abstractions (including overseer collection message handling).
  */
 public interface CollectionCommandContext {
   /**
-   * When this method returns {@code true}, Overseer specific actions do not make sense and commands should not be doing them.
+   * When this method returns {@code true}, Overseer specific actions do not make sense and commands
+   * should not be doing them.
    */
   boolean isDistributedCollectionAPI();
 
   ShardHandler newShardHandler();
 
   SolrCloudManager getSolrCloudManager();
+
   ZkStateReader getZkStateReader();
 
   DistributedClusterStateUpdater getDistributedClusterStateUpdater();
+
   CoreContainer getCoreContainer();
 
   default ShardRequestTracker asyncRequestTracker(String asyncId) {
-    return new ShardRequestTracker(asyncId, getAdminPath(), getZkStateReader(), newShardHandler().getShardHandlerFactory());
+    return new ShardRequestTracker(
+        asyncId, getAdminPath(), getZkStateReader(), newShardHandler().getShardHandlerFactory());
   }
 
-  /**
-   * admin path passed to Overseer is a constant, including in tests.
-   */
+  /** admin path passed to Overseer is a constant, including in tests. */
   default String getAdminPath() {
     return CommonParams.CORES_HANDLER_PATH;
   }
@@ -66,31 +70,41 @@ public interface CollectionCommandContext {
   ExecutorService getExecutorService();
 
   /**
-   * This method enables the commands to enqueue to the overseer cluster state update. This should only be used when the
-   * cluster state update is running in the Overseer (and will throw an exception if called when Collection API is distributed
-   * given that distributed Collection API implies distributed Cluster State Update)
+   * This method enables the commands to enqueue to the overseer cluster state update. This should
+   * only be used when the cluster state update is running in the Overseer (and will throw an
+   * exception if called when Collection API is distributed given that distributed Collection API
+   * implies distributed Cluster State Update)
    */
   default void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
-    throw new IllegalStateException("Bug! offerStateUpdate() should not be called when distributed cluster state updates are enabled");
+    throw new IllegalStateException(
+        "Bug! offerStateUpdate() should not be called when distributed cluster state updates are enabled");
+  }
+
+  default void offerStateUpdate(MapWriter data) throws KeeperException, InterruptedException {
+    offerStateUpdate(Utils.toJSON(data));
   }
 
   default String getOverseerId() {
-    throw new IllegalStateException("Bug! getOverseerId() default implementation should never be called");
+    throw new IllegalStateException(
+        "Bug! getOverseerId() default implementation should never be called");
   }
 
   /**
-   * Command delegating to Overseer to retrieve cluster state update stats from a Collection API call. This does not make
-   * sense when cluster state updates are distributed given Overseer does not see them and can't collect stats.
+   * Command delegating to Overseer to retrieve cluster state update stats from a Collection API
+   * call. This does not make sense when cluster state updates are distributed given Overseer does
+   * not see them and can't collect stats.
    */
   default Stats getOverseerStats() {
-    throw new IllegalStateException("Bug! getOverseerStats() should not be called when distributed state updates are enabled");
+    throw new IllegalStateException(
+        "Bug! getOverseerStats() should not be called when distributed state updates are enabled");
   }
 
   /**
-   * Method used by Per Replica States implementation to force the cluster state updater to immediately reload a collection from Zookeeper.
-   * This method is not used when cluster state updates are distributed.
+   * Method used by Per Replica States implementation to force the cluster state updater to
+   * immediately reload a collection from Zookeeper. This method is not used when cluster state
+   * updates are distributed.
    */
   default void submitIntraProcessMessage(Overseer.Message message) {
-    throw new IllegalStateException("Bug! submitIntraProcessMessage() should not be called when distributed state updates are enabled");
+    // this is ignored
   }
 }

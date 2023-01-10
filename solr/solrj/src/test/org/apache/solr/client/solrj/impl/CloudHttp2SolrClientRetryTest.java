@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.Collections;
 import java.util.Optional;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,36 +38,47 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
   }
 
   @Test
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
-    try (CloudHttp2SolrClient solrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty()).build()) {
-      CollectionAdminRequest.createCollection(collectionName, 1, 1)
-          .process(solrClient);
+    try (CloudSolrClient solrClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .build()) {
+      CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
       solrClient.add(collectionName, new SolrInputDocument("id", "1"));
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CommonParams.QT, "/admin/metrics");
-      String updateRequestCountKey = "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
+      String updateRequestCountKey =
+          "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
       params.set("key", updateRequestCountKey);
       params.set("indent", "true");
 
       QueryResponse response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       NamedList<Object> namedList = response.getResponse();
       System.out.println(namedList);
-      @SuppressWarnings({"rawtypes"})
-      NamedList metrics = (NamedList) namedList.get("metrics");
+      NamedList<?> metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(1L, metrics.get(updateRequestCountKey));
 
       TestInjection.failUpdateRequests = "true:100";
       try {
-        expectThrows(BaseCloudSolrClient.RouteException.class,
-            "Expected an exception on the client when failure is injected during updates", () -> {
+        expectThrows(
+            CloudSolrClient.RouteException.class,
+            "Expected an exception on the client when failure is injected during updates",
+            () -> {
               solrClient.add(collectionName, new SolrInputDocument("id", "2"));
             });
       } finally {
@@ -78,7 +88,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       namedList = response.getResponse();
       System.out.println(namedList);
-      metrics = (NamedList) namedList.get("metrics");
+      metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(2L, metrics.get(updateRequestCountKey));
     }
   }

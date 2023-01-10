@@ -253,7 +253,7 @@ limitations under the License.
 
 #menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
 
-#menu #login.global p a { background-image: url( ../../img/ico/users.png ); }
+#menu #login.global p a { background-image: url( ../../img/ico/logout.png ); }
 
 #menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 #menu #logging.global .level a { background-image: url( ../../img/ico/gear.png ); }
@@ -271,6 +271,9 @@ limitations under the License.
 #menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-leader.png ); }
 #menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
 
+#menu #schema-designer.global p a { background-image: url( ../../img/ico/book-open-text.png ); }
+#menu #security.global p a { background-image: url( ../../img/ico/users.png ); }
+
 .sub-menu .ping.error a
 {
 
@@ -286,6 +289,7 @@ limitations under the License.
 .sub-menu .stream a { background-image: url( ../../img/ico/node.png ); }
 .sub-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
 .sub-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
+.sub-menu .paramsets a { background-image: url( ../../img/ico/paramset.png ); }
 .sub-menu .files a { background-image: url( ../../img/ico/folder.png ); }
 .sub-menu .schema a { background-image: url( ../../img/ico/book-open-text.png ); }
 .sub-menu .replication a { background-image: url( ../../img/ico/node.png ); }

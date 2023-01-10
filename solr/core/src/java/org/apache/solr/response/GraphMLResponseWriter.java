@@ -20,47 +20,40 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.Iterator;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.graph.Traversal;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
-
 public class GraphMLResponseWriter implements QueryResponseWriter {
 
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    /* NOOP */
-  }
-
+  @Override
   public String getContentType(SolrQueryRequest req, SolrQueryResponse res) {
     return "application/xml";
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse res) throws IOException {
 
     Exception e1 = res.getException();
-    if(e1 != null) {
+    if (e1 != null) {
       e1.printStackTrace(new PrintWriter(writer));
       return;
     }
 
-    TupleStream stream =  (TupleStream)req.getContext().get("stream");
+    TupleStream stream = (TupleStream) req.getContext().get("stream");
 
-    if(stream instanceof GraphHandler.DummyErrorStream) {
-      GraphHandler.DummyErrorStream d = (GraphHandler.DummyErrorStream)stream;
+    if (stream instanceof GraphHandler.DummyErrorStream) {
+      GraphHandler.DummyErrorStream d = (GraphHandler.DummyErrorStream) stream;
       Exception e = d.getException();
       e.printStackTrace(new PrintWriter(writer));
       return;
     }
 
-
-    Traversal traversal = (Traversal)req.getContext().get("traversal");
+    Traversal traversal = (Traversal) req.getContext().get("traversal");
     PrintWriter printWriter = new PrintWriter(writer);
 
     try {
@@ -80,7 +73,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
       printWriter.println("<graph id=\"G\" edgedefault=\"directed\">");
 
       while (true) {
-        //Output the graph
+        // Output the graph
         tuple = stream.read();
         if (tuple.EOF) {
           break;
@@ -92,13 +85,11 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           id = tuple.getString("collection") + "." + id;
         }
 
-        printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
+        printWriter.write("<node id=\"" + xmlEscape(id) + "\"");
 
         List<String> outfields = new ArrayList<>();
-        Iterator<Object> keys = tuple.getFields().keySet().iterator();
-        while(keys.hasNext()) {
-          String key = String.valueOf(keys.next());
-          if(key.equals("node") || key.equals("ancestors") || key.equals("collection")) {
+        for (String key : tuple.getFields().keySet()) {
+          if (key.equals("node") || key.equals("ancestors") || key.equals("collection")) {
             continue;
           } else {
             outfields.add(key);
@@ -110,7 +101,12 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
           for (String nodeAttribute : outfields) {
             Object o = tuple.get(nodeAttribute);
             if (o != null) {
-              printWriter.println("<data key=\"" + xmlEscape(nodeAttribute) + "\">" + xmlEscape(o.toString()) + "</data>");
+              printWriter.println(
+                  "<data key=\""
+                      + xmlEscape(nodeAttribute)
+                      + "\">"
+                      + xmlEscape(o.toString())
+                      + "</data>");
             }
           }
           printWriter.println("</node>");
@@ -120,7 +116,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
         List<String> ancestors = tuple.getStrings("ancestors");
 
-        if(ancestors != null) {
+        if (ancestors != null) {
           for (String ancestor : ancestors) {
             ++edgeCount;
             printWriter.write("<edge id=\"" + edgeCount + "\" ");
@@ -137,23 +133,23 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
   }
 
   private String xmlEscape(String s) {
-    if(s.indexOf(">") > -1) {
+    if (s.indexOf(">") > -1) {
       s = s.replace(">", "&gt;");
     }
 
-    if(s.indexOf("<") > -1) {
+    if (s.indexOf("<") > -1) {
       s = s.replace("<", "&lt;");
     }
 
-    if(s.indexOf("\"")> -1) {
+    if (s.indexOf("\"") > -1) {
       s = s.replace("\"", "&quot;");
     }
 
-    if(s.indexOf("'") > -1) {
+    if (s.indexOf("'") > -1) {
       s = s.replace("'", "&apos;");
     }
 
-    if(s.indexOf("&") > -1) {
+    if (s.indexOf("&") > -1) {
       s = s.replace("&", "&amp;");
     }
 

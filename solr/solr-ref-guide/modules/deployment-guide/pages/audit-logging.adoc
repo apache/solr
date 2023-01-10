@@ -1,0 +1,249 @@
+= Audit Logging
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr has the ability to log an audit trail of all HTTP requests entering the system.
+Audit loggers are pluggable to suit any possible format or log destination.
+
+[quote, Wikipedia, https://en.wikipedia.org/wiki/Audit_trail]
+An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of records that provide documentary evidence of the sequence of activities that have affected at any time a specific operation, procedure, event, or device.
+
+== Configuring Audit Logging
+Audit logging is configured in `security.json` under the `auditlogging` key.
+
+The example below uses plugin defaults to configure synchronous audit logging to Solr's default log file.
+
+[source,json]
+----
+{
+  "auditlogging":{
+    "class": "solr.SolrLogAuditLoggerPlugin"
+  }
+}
+----
+
+By default any audit logging plugin will log asynchronously in the background to avoid slowing down the requests.
+To make audit logging happen synchronously, add the parameter `async` with a value of `false`.
+
+When using asynchronous logging, you may optionally also configure queue size, number of threads, and whether it should block when the queue is full or discard events:
+
+[source,json]
+----
+{
+  "auditlogging":{
+    "class": "solr.SolrLogAuditLoggerPlugin",
+    "async": true,
+    "blockAsync" : false,
+    "numThreads" : 2,
+    "queueSize" : 4096,
+    "eventTypes": ["REJECTED", "ANONYMOUS_REJECTED", "UNAUTHORIZED", "COMPLETED", "ERROR"]
+  }
+}
+----
+
+=== Audit Logging Parameters
+These parameters are:
+
+`class`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The audit logging plugin class name.
+Either `solr.SolrLogAuditLoggingPlugin` or `solr.MultiDestinationAuditLogger` (described below in the section <<Chaining Multiple Loggers>>).
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Defines if events are logged asynchronously.
+This defaults to `true` to avoid slowing down requests.
+However, if you are confident in the performance characteristics of your system and need events logged synchronously, you can change this to `false`.
+
+`blockAsync`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Defines if requests should be blocked if the queue is full.
+The default of `false` will discard unlogged events.
+Only used when `async=true`.
+
+`numThreads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The number of threads available to audit logging.
+If the number of CPU-cores available to the server is higher than 4, then the default is modified to `CPU-cores / 2`.
+Only used when `async=true`.
+
+`queueSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `4096`
+|===
++
+The size of the queue.
+Only used when `async=true`.
+
+`eventTypes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `["REJECTED", "ANONYMOUS_REJECTED", "UNAUTHORIZED", "COMPLETED", "ERROR"]`
+|===
++
+The event types to log.
+See the section <<Event Types>> below for type options.
+
+`muteRules`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Defines the circumstances when events should not be logged (muted).
+Possible rules can exclude requests from certain users, IPs, paths, or request parameters.
+See the section <<Muting Certain Events>> below for mute rule options.
+
+[#audit-event-types]
+=== Event Types
+
+The event types logged can be configured with the `eventTypes` parameter.
+By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged.
+
+These are the event types triggered by the framework:
+
+[%header,format=csv,separator=;]
+|===
+EventType;Usage
+`AUTHENTICATED`;User successfully authenticated
+`REJECTED`;Authentication request rejected
+`ANONYMOUS`;Request proceeds with unknown user
+`ANONYMOUS_REJECTED`;Request from unknown user rejected
+`AUTHORIZED`;Authorization succeeded
+`UNAUTHORIZED`;Authorization failed
+`COMPLETED`;Request completed successfully
+`ERROR`;Request was not executed due to an error
+|===
+
+=== Muting Certain Events
+
+The configuration parameter `muteRules` lets you mute logging for certain events.
+You may specify multiple rules and combination of rules that will cause muting.
+You can mute by request type, username, collection name, path, request parameters or IP address.
+
+The following example uses `muteRules` to mute audit logging for three categories of requests: any `SEARCH` requests, any requests made by user `johndoe`, and any requests from IP address `192.168.0.10`:
+
+[source,json]
+----
+{
+  "auditlogging":{
+    "class": "solr.SolrLogAuditLoggerPlugin",
+    "muteRules": [ "type:SEARCH", "user:johndoe", "ip:192.168.0.10" ]
+  }
+}
+----
+
+A mute rule may also be a list, in which case all items in the list must be true for muting to happen.
+The configuration below has three mute rules:
+
+[source,json]
+----
+{
+  "auditlogging":{
+    "class": "solr.SolrLogAuditLoggerPlugin",
+    "muteRules": [
+      "ip:192.168.0.10", <1>
+      [ "path:/admin/collections", "param:action=LIST" ], <2>
+      [ "path:/admin/collections", "param:collection=test" ] <3>
+    ]
+  }
+}
+----
+
+<1> This will mute all events from client IP `192.168.0.10`.
+<2> This rule will mute Collection API requests with `action=LIST`.
+<3> The final rule will mute Collection API requests for the collection named `test`.
+
+Note how you can mix single string rules with lists of rules that must all match:
+
+Options for mute rules are:
+
+* `type:<request-type>`: A request-type by name: `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, or `UNKNOWN`.
+* `collection:<collection-name>`: A collection by name.
+* `user:<userid>`: A user by userid.
+* `path:</path/to/handler>`: A request path relative to `/solr` or for search or update requests relative to collection.
+Path is prefix matched, i.e., `/admin` will mute any sub path as well.
+* `ip:<ip-address>`: An IPv4 address.
+* `param:<param>=<value>`: A request parameter.
+This will likely mostly be used in conjunction with the `path` rule, as shown in the example above.
+
+
+=== Chaining Multiple Loggers
+
+Using the `MultiDestinationAuditLogger` multiple audit logger plugins can be configured in a chain to log to multiple destinations.
+
+[source,json]
+----
+{
+  "auditlogging":{
+    "class" : "solr.MultiDestinationAuditLogger",
+    "plugins" : [
+      { "class" : "solr.SolrLogAuditLoggerPlugin" },
+      { "class" : "solr.MyOtherAuditPlugin",
+        "customParam" : "value"
+      }
+    ]
+  }
+}
+----
+
+Note that logging to alternate destinations would need to be defined with a custom audit logging plugin.
+See the javadocs for the base class at {solr-javadocs}/core/org/apache/solr/security/AuditLoggerPlugin.html[AuditLoggerPlugin].
+
+== Metrics
+
+Audit logging plugins record metrics about count and timing of log requests, as well as queue size for async loggers.
+The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g., `SolrLogAuditLoggerPlugin`.
+The individual metrics are:
+
+* `count`: (_meter_) Records number and rate of audit logs written.
+* `errors`: (_meter_) Records number and rate of errors.
+* `lost`: (_meter_) Records number and rate of events lost if the queue is full and `blockAsync=false`.
+* `requestTimes`: (_timer_) Records latency and percentiles for audit logging performance.
+* `totalTime`: (_counter_) Records total time spent logging.
+* `queueCapacity`: (_gauge_) Records the maximum size of the async logging queue.
+* `queueSize`: (_gauge_) Records the number of events currently waiting in the queue.
+* `queuedTime`: (_timer_) Records the amount of time events waited in queue.
+Adding this with the `requestTimes` metric will show the total time from event to logging complete.
+* `async`: (_gauge_) Tells whether this logger is in async mode.
+
+TIP: If you experience a very high request rate and have a slow audit logger plugin, you may see the `queueSize` and `queuedTime` metrics increase, and possibly start dropping events (shown by an increase in `lost` count).
+In this case you may want to increase the `numThreads` setting.

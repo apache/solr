@@ -16,6 +16,18 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
+import com.codahale.metrics.SlidingTimeWindowReservoir;
+import com.codahale.metrics.SlidingWindowReservoir;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.UniformReservoir;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -23,8 +35,6 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
-import com.codahale.metrics.*;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -34,20 +44,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class for constructing instances of {@link com.codahale.metrics.MetricRegistry.MetricSupplier}
- * based on plugin configuration. This allows us to customize eg. {@link com.codahale.metrics.Reservoir}
- * implementations and parameters for timers and histograms.
- * <p>Custom supplier implementations must provide a zero-args constructor, and may optionally implement
- * {@link org.apache.solr.util.plugin.PluginInfoInitialized} interface for configuration - if they don't then
- * {@link org.apache.solr.util.SolrPluginUtils#invokeSetters(Object, Iterable, boolean)} will be used for initialization.</p>
+ * Helper class for constructing instances of {@link
+ * com.codahale.metrics.MetricRegistry.MetricSupplier} based on plugin configuration. This allows us
+ * to customize eg. {@link com.codahale.metrics.Reservoir} implementations and parameters for timers
+ * and histograms.
+ *
+ * <p>Custom supplier implementations must provide a zero-args constructor, and may optionally
+ * implement {@link org.apache.solr.util.plugin.PluginInfoInitialized} interface for configuration -
+ * if they don't then {@link org.apache.solr.util.SolrPluginUtils#invokeSetters(Object, Iterable,
+ * boolean)} will be used for initialization.
  */
 public class MetricSuppliers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Default {@link Counter} supplier. No configuration available.
-   */
-  public static final class DefaultCounterSupplier implements MetricRegistry.MetricSupplier<Counter> {
+  /** Default {@link Counter} supplier. No configuration available. */
+  public static final class DefaultCounterSupplier
+      implements MetricRegistry.MetricSupplier<Counter> {
     @Override
     public Counter newMetric() {
       return new Counter();
@@ -77,13 +89,15 @@ public class MetricSuppliers {
   /**
    * Default {@link Meter} supplier. The following configuration is available, either as attribute
    * or initArgs:
+   *
    * <ul>
-   *   <li>clock - (string) can be set to {@link #CLOCK_USER} for {@link com.codahale.metrics.Clock.UserTimeClock} or
-   *   {@link #CLOCK_CPU} for {@link CpuTimeClock}. If not set then the value of
-   *   {@link Clock#defaultClock()} will be used.</li>
+   *   <li>clock - (string) can be set to {@link #CLOCK_USER} for {@link
+   *       com.codahale.metrics.Clock.UserTimeClock} or {@link #CLOCK_CPU} for {@link CpuTimeClock}.
+   *       If not set then the value of {@link Clock#defaultClock()} will be used.
    * </ul>
    */
-  public static final class DefaultMeterSupplier implements MetricRegistry.MetricSupplier<Meter>, PluginInfoInitialized {
+  public static final class DefaultMeterSupplier
+      implements MetricRegistry.MetricSupplier<Meter>, PluginInfoInitialized {
 
     public Clock clk = Clock.defaultClock();
 
@@ -96,10 +110,9 @@ public class MetricSuppliers {
     public Meter newMetric() {
       return new Meter(clk);
     }
-
   }
 
-  private static Clock getClock(PluginInfo info, String param) {
+  public static Clock getClock(PluginInfo info, String param) {
     if (info == null) {
       return Clock.defaultClock();
     }
@@ -108,7 +121,7 @@ public class MetricSuppliers {
       clock = info.attributes.get(param);
     }
     if (clock == null && info.initArgs != null) {
-      clock = (String)info.initArgs.get(param);
+      clock = (String) info.initArgs.get(param);
     }
     Clock clk = Clock.defaultClock();
     if (clock != null) {
@@ -121,8 +134,9 @@ public class MetricSuppliers {
     return clk;
   }
 
-  /** Implementation class, must implement {@link Reservoir}. Supports non-standard configuration
-   * of the implementations available in metrics-core.
+  /**
+   * Implementation class, must implement {@link Reservoir}. Supports non-standard configuration of
+   * the implementations available in metrics-core.
    */
   public static final String RESERVOIR = "reservoir";
   /** Size of reservoir. */
@@ -141,7 +155,6 @@ public class MetricSuppliers {
   private static final double DEFAULT_ALPHA = 0.015;
   private static final long DEFAULT_WINDOW = 300;
 
-  @SuppressWarnings({"unchecked"})
   private static final Reservoir getReservoir(SolrResourceLoader loader, PluginInfo info) {
     if (info == null) {
       return new ExponentiallyDecayingReservoir();
@@ -158,15 +171,15 @@ public class MetricSuppliers {
           clazz = val;
         }
       }
-      Number n = (Number)info.initArgs.get(RESERVOIR_SIZE);
+      Number n = (Number) info.initArgs.get(RESERVOIR_SIZE);
       if (n != null) {
         size = n.intValue();
       }
-      n = (Number)info.initArgs.get(RESERVOIR_EDR_ALPHA);
+      n = (Number) info.initArgs.get(RESERVOIR_EDR_ALPHA);
       if (n != null) {
         alpha = n.doubleValue();
       }
-      n = (Number)info.initArgs.get(RESERVOIR_WINDOW);
+      n = (Number) info.initArgs.get(RESERVOIR_WINDOW);
       if (n != null) {
         window = n.longValue();
       }
@@ -197,13 +210,14 @@ public class MetricSuppliers {
         try {
           reservoir = loader.newInstance(clazz, Reservoir.class);
           if (reservoir instanceof PluginInfoInitialized) {
-            ((PluginInfoInitialized)reservoir).init(info);
+            ((PluginInfoInitialized) reservoir).init(info);
           } else {
             SolrPluginUtils.invokeSetters(reservoir, info.initArgs, true);
           }
           return reservoir;
         } catch (Exception e) {
-          log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
+          log.warn(
+              "Error initializing custom Reservoir implementation (will use default): {}", info, e);
           return new ExponentiallyDecayingReservoir(size, alpha, clk);
         }
       }
@@ -211,12 +225,12 @@ public class MetricSuppliers {
   }
 
   /**
-   * Default supplier of {@link Timer} instances, with configurable clock and reservoir.
-   * See {@link DefaultMeterSupplier} for clock configuration. Reservoir configuration uses
-   * {@link #RESERVOIR}, {@link #RESERVOIR_EDR_ALPHA}, {@link #RESERVOIR_SIZE} and
-   * {@link #RESERVOIR_WINDOW}.
+   * Default supplier of {@link Timer} instances, with configurable clock and reservoir. See {@link
+   * DefaultMeterSupplier} for clock configuration. Reservoir configuration uses {@link #RESERVOIR},
+   * {@link #RESERVOIR_EDR_ALPHA}, {@link #RESERVOIR_SIZE} and {@link #RESERVOIR_WINDOW}.
    */
-  public static final class DefaultTimerSupplier implements MetricRegistry.MetricSupplier<Timer>, PluginInfoInitialized {
+  public static final class DefaultTimerSupplier
+      implements MetricRegistry.MetricSupplier<Timer>, PluginInfoInitialized {
 
     public Clock clk = Clock.defaultClock();
     private PluginInfo info;
@@ -242,10 +256,9 @@ public class MetricSuppliers {
     }
   }
 
-  /**
-   * Default supplier of {@link Histogram} instances, with configurable reservoir.
-   */
-  public static final class DefaultHistogramSupplier implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
+  /** Default supplier of {@link Histogram} instances, with configurable reservoir. */
+  public static final class DefaultHistogramSupplier
+      implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
 
     private PluginInfo info;
     private SolrResourceLoader loader;
@@ -271,12 +284,14 @@ public class MetricSuppliers {
 
   /**
    * Create a {@link Counter} supplier.
+   *
    * @param loader resource loader
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
   @SuppressWarnings({"unchecked"})
-  public static MetricRegistry.MetricSupplier<Counter> counterSupplier(SolrResourceLoader loader, PluginInfo info) {
+  public static MetricRegistry.MetricSupplier<Counter> counterSupplier(
+      SolrResourceLoader loader, PluginInfo info) {
     if (info == null || info.className == null || info.className.trim().isEmpty()) {
       return new DefaultCounterSupplier();
     }
@@ -295,7 +310,7 @@ public class MetricSuppliers {
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
-      ((PluginInfoInitialized)supplier).init(info);
+      ((PluginInfoInitialized) supplier).init(info);
     } else {
       SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
     }
@@ -304,12 +319,14 @@ public class MetricSuppliers {
 
   /**
    * Create a {@link Meter} supplier.
+   *
    * @param loader resource loader
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
   @SuppressWarnings({"unchecked"})
-  public static MetricRegistry.MetricSupplier<Meter> meterSupplier(SolrResourceLoader loader, PluginInfo info) {
+  public static MetricRegistry.MetricSupplier<Meter> meterSupplier(
+      SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Meter> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultMeterSupplier();
@@ -323,13 +340,13 @@ public class MetricSuppliers {
         try {
           supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
         } catch (Exception e) {
-          log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
+          log.warn("Error creating custom Meter supplier (will use default): {}", info, e);
           supplier = new DefaultMeterSupplier();
         }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
-      ((PluginInfoInitialized)supplier).init(info);
+      ((PluginInfoInitialized) supplier).init(info);
     } else {
       SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
     }
@@ -338,12 +355,14 @@ public class MetricSuppliers {
 
   /**
    * Create a {@link Timer} supplier.
+   *
    * @param loader resource loader
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
   @SuppressWarnings({"unchecked"})
-  public static MetricRegistry.MetricSupplier<Timer> timerSupplier(SolrResourceLoader loader, PluginInfo info) {
+  public static MetricRegistry.MetricSupplier<Timer> timerSupplier(
+      SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Timer> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultTimerSupplier(loader);
@@ -363,7 +382,7 @@ public class MetricSuppliers {
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
-      ((PluginInfoInitialized)supplier).init(info);
+      ((PluginInfoInitialized) supplier).init(info);
     } else {
       SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
     }
@@ -372,11 +391,13 @@ public class MetricSuppliers {
 
   /**
    * Create a {@link Histogram} supplier.
+   *
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
   @SuppressWarnings({"unchecked"})
-  public static MetricRegistry.MetricSupplier<Histogram> histogramSupplier(SolrResourceLoader loader, PluginInfo info) {
+  public static MetricRegistry.MetricSupplier<Histogram> histogramSupplier(
+      SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Histogram> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultHistogramSupplier(loader);
@@ -396,7 +417,7 @@ public class MetricSuppliers {
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
-      ((PluginInfoInitialized)supplier).init(info);
+      ((PluginInfoInitialized) supplier).init(info);
     } else {
       SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
     }
@@ -407,16 +428,10 @@ public class MetricSuppliers {
   // collection, or rather eliminate the overhead of the metrics accounting and their
   // memory footprint.
 
-  /**
-   * Marker interface for all no-op metrics.
-   */
-  public interface NoOpMetric {
+  /** Marker interface for all no-op metrics. */
+  public interface NoOpMetric {}
 
-  }
-
-  /**
-   * No-op implementation of {@link Counter} supplier.
-   */
+  /** No-op implementation of {@link Counter} supplier. */
   public static final class NoOpCounterSupplier implements MetricRegistry.MetricSupplier<Counter> {
     public static final NoOpCounterSupplier INSTANCE = new NoOpCounterSupplier();
 
@@ -450,10 +465,9 @@ public class MetricSuppliers {
     }
   }
 
-  /**
-   * No-op implementation of {@link Histogram} supplier.
-   */
-  public static final class NoOpHistogramSupplier implements MetricRegistry.MetricSupplier<Histogram> {
+  /** No-op implementation of {@link Histogram} supplier. */
+  public static final class NoOpHistogramSupplier
+      implements MetricRegistry.MetricSupplier<Histogram> {
     public static final NoOpHistogramSupplier INSTANCE = new NoOpHistogramSupplier();
 
     private static final class NoOpHistogram extends Histogram implements NoOpMetric {
@@ -481,9 +495,7 @@ public class MetricSuppliers {
     }
   }
 
-  /**
-   * No-op implementation of {@link Meter} supplier.
-   */
+  /** No-op implementation of {@link Meter} supplier. */
   public static final class NoOpMeterSupplier implements MetricRegistry.MetricSupplier<Meter> {
     public static final NoOpMeterSupplier INSTANCE = new NoOpMeterSupplier();
 
@@ -507,9 +519,7 @@ public class MetricSuppliers {
     }
   }
 
-  /**
-   * No-op implementation of {@link Timer} supplier.
-   */
+  /** No-op implementation of {@link Timer} supplier. */
   public static final class NoOpTimerSupplier implements MetricRegistry.MetricSupplier<Timer> {
     public static final NoOpTimerSupplier INSTANCE = new NoOpTimerSupplier();
 
@@ -548,9 +558,7 @@ public class MetricSuppliers {
     }
   }
 
-  /**
-   * No-op implementation of {@link Gauge}.
-   */
+  /** No-op implementation of {@link Gauge}. */
   public static final class NoOpGauge implements Gauge<Object>, NoOpMetric {
     public static final NoOpGauge INSTANCE = new NoOpGauge();
 

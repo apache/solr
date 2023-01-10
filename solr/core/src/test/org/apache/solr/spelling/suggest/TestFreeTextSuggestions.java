@@ -21,37 +21,68 @@ import org.junit.BeforeClass;
 
 public class TestFreeTextSuggestions extends SolrTestCaseJ4 {
   static final String URI = "/free_text_suggest";
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
+    initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
     assertQ(req("qt", URI, "q", "", SuggesterParams.SUGGEST_BUILD_ALL, "true"));
   }
-  
+
   public void test() {
-    assertQ(req("qt", URI, "q", "foo b", SuggesterParams.SUGGEST_COUNT, "1", SuggesterParams.SUGGEST_DICT, "free_text_suggest"),
+    assertQ(
+        req(
+            "qt",
+            URI,
+            "q",
+            "foo b",
+            SuggesterParams.SUGGEST_COUNT,
+            "1",
+            SuggesterParams.SUGGEST_DICT,
+            "free_text_suggest"),
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo b']/int[@name='numFound'][.='1']",
-        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo b']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo bar']"
-    );
-    
-    assertQ(req("qt", URI, "q", "foo ", SuggesterParams.SUGGEST_COUNT, "2", SuggesterParams.SUGGEST_DICT, "free_text_suggest"),
+        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo b']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo bar']");
+
+    assertQ(
+        req(
+            "qt",
+            URI,
+            "q",
+            "foo ",
+            SuggesterParams.SUGGEST_COUNT,
+            "2",
+            SuggesterParams.SUGGEST_DICT,
+            "free_text_suggest"),
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo ']/int[@name='numFound'][.='2']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo ']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo bar']",
-        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo ']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='foo bee']"
-    );
-    
-    assertQ(req("qt", URI, "q", "foo", SuggesterParams.SUGGEST_COUNT, "2", SuggesterParams.SUGGEST_DICT, "free_text_suggest"),
+        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo ']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='foo bee']");
+
+    assertQ(
+        req(
+            "qt",
+            URI,
+            "q",
+            "foo",
+            SuggesterParams.SUGGEST_COUNT,
+            "2",
+            SuggesterParams.SUGGEST_DICT,
+            "free_text_suggest"),
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo']/int[@name='numFound'][.='1']",
-        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo']"
-    );
-    assertQ(req("qt", URI, "q", "b", SuggesterParams.SUGGEST_COUNT, "5", SuggesterParams.SUGGEST_DICT, "free_text_suggest"),
+        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='foo']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='foo']");
+    assertQ(
+        req(
+            "qt",
+            URI,
+            "q",
+            "b",
+            SuggesterParams.SUGGEST_COUNT,
+            "5",
+            SuggesterParams.SUGGEST_DICT,
+            "free_text_suggest"),
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/int[@name='numFound'][.='5']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='bar']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[2]/str[@name='term'][.='baz']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[3]/str[@name='term'][.='bee']",
         "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[4]/str[@name='term'][.='blah']",
-        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[5]/str[@name='term'][.='boo']"
-    );
+        "//lst[@name='suggest']/lst[@name='free_text_suggest']/lst[@name='b']/arr[@name='suggestions']/lst[5]/str[@name='term'][.='boo']");
   }
-  
 }

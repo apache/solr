@@ -21,19 +21,19 @@ import org.junit.BeforeClass;
 
 /**
  * Tests {@link BooleanSimilarityFactory} when specified on a per-fieldtype basis.
+ *
  * @see SchemaSimilarityFactory
  */
 public class TestBooleanSimilarityFactory extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-booleansimilarity.xml");
+    initCore("solrconfig-basic.xml", "schema-booleansimilarity.xml");
   }
-  
+
   /** Boolean w/ default parameters */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     BooleanSimilarity sim = getSimilarity("text", BooleanSimilarity.class);
     assertEquals(BooleanSimilarity.class, sim.getClass());
   }
-
 }

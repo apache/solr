@@ -97,8 +97,6 @@ subprojects {
     dependsOn configurations.jarValidation
 
     doFirst {
-      def isSolr = project.path.startsWith(":solr")
-
       // When gradle resolves a configuration it applies exclude rules from inherited configurations
       // globally (this seems like a bug to me). So we process each inherited configuration independently
       // but make sure there are no other dependencies on jarValidation itself.
@@ -114,7 +112,9 @@ subprojects {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          conf.excludeRules = excludeRules
+          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
+          newConfExcludeRules.addAll(excludeRules)
+          conf.excludeRules = newConfExcludeRules
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
@@ -127,33 +127,25 @@ subprojects {
       while (!queue.isEmpty()) {
         def dep = queue.removeFirst()
 
-        // Skip any artifacts from other Solr modules (they will be resolved there).
+        // Skip any artifacts from other Solr Modules (they will be resolved there).
         if (dep.moduleGroup == "org.apache.solr") {
           continue
         }
 
-        // Skip any artifacts from Lucene modules.
-        if (dep.moduleGroup.startsWith("org.apache.lucene")) {
-          // ... but process their transitive dependencies for Solr compatibility.
-          if (isSolr) {
-            queue.addAll(dep.children)
-          }
-        } else {
-          queue.addAll(dep.children)
-          dep.moduleArtifacts.each { resolvedArtifact ->
-            def file = resolvedArtifact.file
-            if (visited.add(file)) {
-              infos.add([
-                  name           : resolvedArtifact.name,
-                  jarName        : file.toPath().getFileName().toString(),
-                  path           : file,
-                  module         : resolvedArtifact.moduleVersion,
-                  checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
-                  // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
-                  // so that we can determine unused dangling files later on.
-                  referencedFiles: []
-              ])
-            }
+        queue.addAll(dep.children)
+        dep.moduleArtifacts.each { resolvedArtifact ->
+          def file = resolvedArtifact.file
+          if (visited.add(file)) {
+            infos.add([
+                name           : resolvedArtifact.name,
+                jarName        : file.toPath().getFileName().toString(),
+                path           : file,
+                module         : resolvedArtifact.moduleVersion,
+                checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
+                // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
+                // so that we can determine unused dangling files later on.
+                referencedFiles: []
+            ])
           }
         }
       }
@@ -188,7 +180,7 @@ subprojects {
       }
 
       if (errors) {
-        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
+        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ") + "\n\nThese missing checksums can be generated using:\n  ./gradlew updateLicenses"
         if (failOnError) {
           throw new GradleException(msg)
         } else {

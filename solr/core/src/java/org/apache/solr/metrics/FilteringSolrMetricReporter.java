@@ -16,14 +16,11 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.MetricFilter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.codahale.metrics.MetricFilter;
-
-/**
- * A {@link SolrMetricReporter} that supports (prefix) filters.
- */
+/** A {@link SolrMetricReporter} that supports (prefix) filters. */
 public abstract class FilteringSolrMetricReporter extends SolrMetricReporter {
 
   protected List<String> filters = new ArrayList<>();
@@ -46,8 +43,8 @@ public abstract class FilteringSolrMetricReporter extends SolrMetricReporter {
   }
 
   /**
-   * Report only metrics with names matching any of the prefix filters.
-   * If the filters list is empty then all names will match.
+   * Report only metrics with names matching any of the prefix filters. If the filters list is empty
+   * then all names will match.
    */
   protected MetricFilter newMetricFilter() {
     final MetricFilter filter;
@@ -58,5 +55,4 @@ public abstract class FilteringSolrMetricReporter extends SolrMetricReporter {
     }
     return filter;
   }
-
 }

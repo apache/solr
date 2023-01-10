@@ -16,16 +16,15 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * A response that is returned by processing the {@link org.apache.solr.client.solrj.request.FieldAnalysisRequest}.
- * Holds a map of {@link Analysis} objects per field name as well as a map of {@link Analysis} objects per field type.
- *
+ * A response that is returned by processing the {@link
+ * org.apache.solr.client.solrj.request.FieldAnalysisRequest}. Holds a map of {@link Analysis}
+ * objects per field name as well as a map of {@link Analysis} objects per field type.
  *
  * @since solr 1.4
  */
@@ -39,34 +38,32 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     super.setResponse(response);
 
     @SuppressWarnings("unchecked")
-    NamedList<NamedList<NamedList<NamedList<Object>>>> analysisNL
-      = (NamedList<NamedList<NamedList<NamedList<Object>>>>) response.get("analysis");
+    NamedList<NamedList<NamedList<NamedList<Object>>>> analysisNL =
+        (NamedList<NamedList<NamedList<NamedList<Object>>>>) response.get("analysis");
 
-    for (Map.Entry<String, NamedList<NamedList<Object>>> entry
-           : analysisNL.get("field_types")) {
+    for (Map.Entry<String, NamedList<NamedList<Object>>> entry : analysisNL.get("field_types")) {
 
       analysisByFieldTypeName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
 
-    for (Map.Entry<String, NamedList<NamedList<Object>>> entry
-           : analysisNL.get("field_names")) {
+    for (Map.Entry<String, NamedList<NamedList<Object>>> entry : analysisNL.get("field_names")) {
 
       analysisByFieldName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
   }
 
   private Analysis buildAnalysis(NamedList<NamedList<Object>> value) {
-      Analysis analysis = new Analysis();
-      
-      NamedList<Object> queryNL = value.get("query");
-      List<AnalysisPhase> phases = (queryNL == null) ? null : buildPhases(queryNL);
-      analysis.setQueryPhases(phases);
+    Analysis analysis = new Analysis();
 
-      NamedList<Object> indexNL = value.get("index");
-      phases = buildPhases(indexNL);
-      analysis.setIndexPhases(phases);
-      
-      return analysis;
+    NamedList<Object> queryNL = value.get("query");
+    List<AnalysisPhase> phases = (queryNL == null) ? null : buildPhases(queryNL);
+    analysis.setQueryPhases(phases);
+
+    NamedList<Object> indexNL = value.get("index");
+    phases = buildPhases(indexNL);
+    analysis.setIndexPhases(phases);
+
+    return analysis;
   }
 
   /**
@@ -82,7 +79,6 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
    * Returns the analysis for the given field type or {@code null} if no such analysis exists.
    *
    * @param fieldTypeName The name of the field type.
-   *
    * @return The analysis for the given field type.
    */
   public Analysis getFieldTypeAnalysis(String fieldTypeName) {
@@ -111,7 +107,6 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
    * Returns the analysis for the given field name or {@code null} if no such analysis exists.
    *
    * @param fieldName The field name.
-   *
    * @return The analysis for the given field name.
    */
   public Analysis getFieldNameAnalysis(String fieldName) {
@@ -127,43 +122,37 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     return analysisByFieldName.entrySet();
   }
 
-
-  //================================================= Inner Classes ==================================================
+  // ===== Inner Classes =====
 
   /**
-   * The analysis of a field. Holds a list of all the query time analysis phases (if a query analysis was requested)
-   * as well as index time phases.
+   * The analysis of a field. Holds a list of all the query time analysis phases (if a query
+   * analysis was requested) as well as index time phases.
    */
   public static class Analysis {
 
     private List<AnalysisPhase> queryPhases;
     private List<AnalysisPhase> indexPhases;
 
-    /**
-     * This class should only be instantiated internally.
-     */
-    private Analysis() {
-    }
+    /** This class should only be instantiated internally. */
+    private Analysis() {}
 
     /**
-     * Returns the number of query time analysis phases in this analysis or 
-     * {@code -1} if query time analysis doesn't exist.
+     * Returns the number of query time analysis phases in this analysis or {@code -1} if query time
+     * analysis doesn't exist.
      *
-     * @return Returns the number of query time analysis phases in this 
-     *         analysis or {@code -1} if query time analysis doesn't exist.
+     * @return Returns the number of query time analysis phases in this analysis or {@code -1} if
+     *     query time analysis doesn't exist.
      */
     public int getQueryPhasesCount() {
       return queryPhases == null ? -1 : queryPhases.size();
     }
 
     /**
-     * Returns the query time analysis phases for this analysis or {@code null}
-     * if query time analysis doesn't exist.
-     * 
+     * Returns the query time analysis phases for this analysis or {@code null} if query time
+     * analysis doesn't exist.
      *
-     * @return The query time analysis phases for this analysis or {@code null}
-     *         if query time analysis doesn't exist.
-     *         
+     * @return The query time analysis phases for this analysis or {@code null} if query time
+     *     analysis doesn't exist.
      */
     public Iterable<AnalysisPhase> getQueryPhases() {
       return queryPhases;
@@ -194,7 +183,5 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     private void setIndexPhases(List<AnalysisPhase> indexPhases) {
       this.indexPhases = indexPhases;
     }
-
   }
-
 }

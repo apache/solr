@@ -20,15 +20,12 @@ package org.apache.solr.common.util;
 public class StringBytes {
   byte[] bytes;
 
-  /**
-   * Offset of first valid byte.
-   */
+  /** Offset of first valid byte. */
   int offset;
 
-  /**
-   * Length of used bytes.
-   */
+  /** Length of used bytes. */
   int length;
+
   private int hash;
 
   public StringBytes(byte[] bytes, int offset, int length) {

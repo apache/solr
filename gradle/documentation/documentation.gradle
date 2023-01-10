@@ -38,7 +38,7 @@ configure(rootProject) {
       }
     }())
 
-    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
+    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://solr.apache.org/guide/solr/${refguideUrlVersion}")
   }
 
   task documentation() {
@@ -91,9 +91,7 @@ configure(project(':solr:documentation')) {
       builtBy documentation
     }
   }
-}
 
-configure(project(':solr:documentation')) {
   task documentationMinimal() {
     group = 'documentation'
     description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
@@ -101,6 +99,9 @@ configure(project(':solr:documentation')) {
   }
 
   task copyChangesToHtmlForMiniSite(type: Copy) {
+    dependsOn 'copyDocumentationAssets'
+    dependsOn 'markdownToHtml'
+
     from project.docroot
     into project.docrootMinimal
     include 'changes/**'

@@ -18,28 +18,20 @@
 package org.apache.solr.client.solrj.request.beans;
 
 import java.util.Objects;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**
- * POJO for Rate Limiter Metadata Configuration
- */
+/** POJO for Rate Limiter Metadata Configuration */
 public class RateLimiterPayload implements ReflectMapWriter {
-  @JsonProperty
-  public Boolean enabled;
+  @JsonProperty public Boolean enabled;
 
-  @JsonProperty
-  public Integer guaranteedSlots;
+  @JsonProperty public Integer guaranteedSlots;
 
-  @JsonProperty
-  public Integer allowedRequests;
+  @JsonProperty public Integer allowedRequests;
 
-  @JsonProperty
-  public Boolean slotBorrowingEnabled;
+  @JsonProperty public Boolean slotBorrowingEnabled;
 
-  @JsonProperty
-  public Integer slotAcquisitionTimeoutInMS;
+  @JsonProperty public Integer slotAcquisitionTimeoutInMS;
 
   public RateLimiterPayload copy() {
     RateLimiterPayload result = new RateLimiterPayload();
@@ -57,17 +49,22 @@ public class RateLimiterPayload implements ReflectMapWriter {
   public boolean equals(Object obj) {
     if (obj instanceof RateLimiterPayload) {
       RateLimiterPayload that = (RateLimiterPayload) obj;
-      return Objects.equals(this.enabled, that.enabled) &&
-          Objects.equals(this.guaranteedSlots, that.guaranteedSlots) &&
-          Objects.equals(this.allowedRequests, that.allowedRequests) &&
-          Objects.equals(this.slotBorrowingEnabled, that.slotBorrowingEnabled) &&
-          Objects.equals(this.slotAcquisitionTimeoutInMS, that.slotAcquisitionTimeoutInMS);
+      return Objects.equals(this.enabled, that.enabled)
+          && Objects.equals(this.guaranteedSlots, that.guaranteedSlots)
+          && Objects.equals(this.allowedRequests, that.allowedRequests)
+          && Objects.equals(this.slotBorrowingEnabled, that.slotBorrowingEnabled)
+          && Objects.equals(this.slotAcquisitionTimeoutInMS, that.slotAcquisitionTimeoutInMS);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, guaranteedSlots, allowedRequests, slotBorrowingEnabled, slotAcquisitionTimeoutInMS);
+    return Objects.hash(
+        enabled,
+        guaranteedSlots,
+        allowedRequests,
+        slotBorrowingEnabled,
+        slotAcquisitionTimeoutInMS);
   }
 }

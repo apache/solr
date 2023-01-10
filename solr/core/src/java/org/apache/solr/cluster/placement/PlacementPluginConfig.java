@@ -19,10 +19,8 @@ package org.apache.solr.cluster.placement;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 /**
- * Configuration beans should use this interface to define public
- * (mutable) configuration properties. Implementations must have a
- * public zero-args constructor. Class fields may be optionally
- * annotated with {@link org.apache.solr.common.annotation.JsonProperty} if needed.
+ * Configuration beans should use this interface to define public (mutable) configuration
+ * properties. Implementations must have a public zero-args constructor. Class fields may be
+ * optionally annotated with {@link org.apache.solr.common.annotation.JsonProperty} if needed.
  */
-public interface PlacementPluginConfig extends ReflectMapWriter {
-}
+public interface PlacementPluginConfig extends ReflectMapWriter {}

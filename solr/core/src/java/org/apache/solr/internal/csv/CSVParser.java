@@ -20,38 +20,36 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 
-
 /**
  * Parses CSV files according to the specified configuration.
  *
- * Because CSV appears in many different dialects, the parser supports many
- * configuration settings by allowing the specification of a {@link CSVStrategy}.
- * 
- * <p>Parsing of a csv-string having tabs as separators,
- * '"' as an optional value encapsulator, and comments starting with '#':</p>
+ * <p>Because CSV appears in many different dialects, the parser supports many configuration
+ * settings by allowing the specification of a {@link CSVStrategy}.
+ *
+ * <p>Parsing of a csv-string having tabs as separators, '"' as an optional value encapsulator, and
+ * comments starting with '#':
+ *
  * <pre>
- *  String[][] data = 
+ *  String[][] data =
  *   (new CSVParser(new StringReader("a\tb\nc\td"), new CSVStrategy('\t','"','#'))).getAllValues();
  * </pre>
- * 
- * <p>Parsing of a csv-string in Excel CSV format</p>
+ *
+ * <p>Parsing of a csv-string in Excel CSV format
+ *
  * <pre>
  *  String[][] data =
  *   (new CSVParser(new StringReader("a;b\nc;d"), CSVStrategy.EXCEL_STRATEGY)).getAllValues();
  * </pre>
- * 
- * <p>
- * Internal parser state is completely covered by the strategy
- * and the reader-state.</p>
- * 
- * <p>see <a href="package-summary.html">package documentation</a> 
- * for more details</p>
+ *
+ * <p>Internal parser state is completely covered by the strategy and the reader-state.
+ *
+ * <p>see <a href="package-summary.html">package documentation</a> for more details
  */
 public class CSVParser {
 
   /** length of the initial token (content-)buffer */
   private static final int INITIAL_TOKEN_LENGTH = 50;
-  
+
   // the token types
   /** Token has no valid content, i.e. is in its initialized state. */
   protected static final int TT_INVALID = -1;
@@ -64,25 +62,24 @@ public class CSVParser {
 
   /** Immutable empty String array. */
   private static final String[] EMPTY_STRING_ARRAY = new String[0];
-   
+
   // the input stream
   private final ExtendedBufferedReader in;
 
   private final CSVStrategy strategy;
-  
-  // the following objects are shared to reduce garbage 
+
+  // the following objects are shared to reduce garbage
   /** A record buffer for getLine(). Grows as necessary and is reused. */
-  @SuppressWarnings({"rawtypes"})
-  private final ArrayList record = new ArrayList();
+  private final ArrayList<String> record = new ArrayList<>();
+
   private final Token reusableToken = new Token();
   private final CharBuffer wsBuf = new CharBuffer();
   private final CharBuffer code = new CharBuffer(4);
 
-  
   /**
    * Token is an internal token representation.
-   * 
-   * It is used as contract between the lexer and the parser. 
+   *
+   * <p>It is used as contract between the lexer and the parser.
    */
   static class Token {
     /** Token type, see TT_xxx constants. */
@@ -91,28 +88,28 @@ public class CSVParser {
     CharBuffer content = new CharBuffer(INITIAL_TOKEN_LENGTH);
     /** Token ready flag: indicates a valid token with content (ready for the parser). */
     boolean isReady;
-    
+
     Token reset() {
-        content.clear();
-        type = TT_INVALID;
-        isReady = false;
-        return this;
+      content.clear();
+      type = TT_INVALID;
+      isReady = false;
+      return this;
     }
   }
-  
+
   // ======================================================
   //  the constructor
   // ======================================================
-  
+
   /**
    * CSV parser using the default {@link CSVStrategy}.
-   * 
+   *
    * @param input a Reader containing "csv-formatted" input
    */
   public CSVParser(Reader input) {
     this(input, CSVStrategy.DEFAULT_STRATEGY);
   }
-  
+
   /**
    * Customized CSV parser using the given {@link CSVStrategy}
    *
@@ -123,29 +120,25 @@ public class CSVParser {
     this.in = new ExtendedBufferedReader(input);
     this.strategy = strategy;
   }
-  
+
   // ======================================================
   //  the parser
   // ======================================================
-  
+
   /**
-   * Parses the CSV according to the given strategy
-   * and returns the content as an array of records
+   * Parses the CSV according to the given strategy and returns the content as an array of records
    * (whereas records are arrays of single values).
-   * <p>
-   * The returned content starts at the current parse-position in
-   * the stream.
-   * 
+   *
+   * <p>The returned content starts at the current parse-position in the stream.
+   *
    * @return matrix of records x values ('null' when end of file)
    * @throws IOException on parse error or input read-failure
    */
-  @SuppressWarnings({"unchecked"})
   public String[][] getAllValues() throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    ArrayList records = new ArrayList();
+    ArrayList<String[]> records = new ArrayList<>();
     String[] values;
     String[][] ret = null;
-    while ((values = getLine()) != null)  {
+    while ((values = getLine()) != null) {
       records.add(values);
     }
     if (records.size() > 0) {
@@ -154,11 +147,10 @@ public class CSVParser {
     }
     return ret;
   }
-  
+
   /**
-   * Parses the CSV according to the given strategy
-   * and returns the next csv-value as string.
-   * 
+   * Parses the CSV according to the given strategy and returns the next csv-value as string.
+   *
    * @return next value in the input stream ('null' when end of file)
    * @throws IOException on parse error or input read-failure
    */
@@ -167,7 +159,7 @@ public class CSVParser {
     String ret = null;
     switch (tkn.type) {
       case TT_TOKEN:
-      case TT_EORECORD: 
+      case TT_EORECORD:
         ret = tkn.content.toString();
         break;
       case TT_EOF:
@@ -176,20 +168,16 @@ public class CSVParser {
       case TT_INVALID:
       default:
         // error no token available (or error)
-        throw new IOException(
-          "(line " + getLineNumber() 
-          + ") invalid parse sequence");
+        throw new IOException("(line " + getLineNumber() + ") invalid parse sequence");
         // unreachable: break;
     }
     return ret;
   }
-  
+
   /**
-   * Parses from the current point in the stream til
-   * the end of the current line.
-   * 
-   * @return array of values til end of line 
-   *        ('null' when end of file has been reached)
+   * Parses from the current point in the stream til the end of the current line.
+   *
+   * @return array of values til end of line ('null' when end of file has been reached)
    * @throws IOException on parse error or input read-failure
    */
   @SuppressWarnings({"unchecked"})
@@ -197,78 +185,75 @@ public class CSVParser {
     String[] ret = EMPTY_STRING_ARRAY;
     record.clear();
     while (true) {
-        reusableToken.reset();
-        nextToken(reusableToken);
-        switch (reusableToken.type) {
-            case TT_TOKEN:
-                record.add(reusableToken.content.toString());
-                break;
-            case TT_EORECORD:
-                record.add(reusableToken.content.toString());
-                break;
-            case TT_EOF:
-                if (reusableToken.isReady) {
-                    record.add(reusableToken.content.toString());
-                } else {
-                    ret = null;
-                }
-                break;
-            case TT_INVALID:
-            default:
-                // error: throw IOException
-                throw new IOException("(line " + getLineNumber() + ") invalid parse sequence");
-            // unreachable: break;
-        }
-        if (reusableToken.type != TT_TOKEN) {
-            break;
-        }
+      reusableToken.reset();
+      nextToken(reusableToken);
+      switch (reusableToken.type) {
+        case TT_TOKEN:
+          record.add(reusableToken.content.toString());
+          break;
+        case TT_EORECORD:
+          record.add(reusableToken.content.toString());
+          break;
+        case TT_EOF:
+          if (reusableToken.isReady) {
+            record.add(reusableToken.content.toString());
+          } else {
+            ret = null;
+          }
+          break;
+        case TT_INVALID:
+        default:
+          // error: throw IOException
+          throw new IOException("(line " + getLineNumber() + ") invalid parse sequence");
+          // unreachable: break;
+      }
+      if (reusableToken.type != TT_TOKEN) {
+        break;
+      }
     }
     if (!record.isEmpty()) {
-      ret = (String[]) record.toArray(new String[record.size()]);
+      ret = record.toArray(new String[record.size()]);
     }
     return ret;
   }
-  
+
   /**
    * Returns the current line number in the input stream.
-   * 
-   * ATTENTION: in case your csv has multiline-values the returned
-   *            number does not correspond to the record-number
-   * 
-   * @return  current line number
+   *
+   * <p>ATTENTION: in case your csv has multiline-values the returned number does not correspond to
+   * the record-number
+   *
+   * @return current line number
    */
   public int getLineNumber() {
-    return in.getLineNumber();  
+    return in.getLineNumber();
   }
-  
+
   // ======================================================
   //  the lexer(s)
   // ======================================================
- 
-  /**
-   * Convenience method for <code>nextToken(null)</code>.
-   */
+
+  /** Convenience method for <code>nextToken(null)</code>. */
   protected Token nextToken() throws IOException {
-      return nextToken(new Token());
+    return nextToken(new Token());
   }
-  
- /**
+
+  /**
    * Returns the next token.
-   * 
-   * A token corresponds to a term, a record change or an
-   * end-of-file indicator.
-   * 
+   *
+   * <p>A token corresponds to a term, a record change or an end-of-file indicator.
+   *
    * @param tkn an existing Token object to reuse. The caller is responsible to initialize the
-   * Token.
+   *     Token.
    * @return the next token found
    * @throws IOException on stream access error
    */
   protected Token nextToken(Token tkn) throws IOException {
     wsBuf.clear(); // resuse
-    
+
     // get the last read char (required for empty line detection)
     int lastChar = in.readAgain();
-    
+
     //  read the next char and set eol
     /* note: unfortunately isEndOfLine may consumes a character silently.
      *       this has no effect outside of the method. so a simple workaround
@@ -278,12 +263,12 @@ public class CSVParser {
     int c = in.read();
     boolean eol = isEndOfLine(c);
     c = in.readAgain();
-     
+
     //  empty line detection: eol AND (last char was EOL or beginning)
-    while (strategy.getIgnoreEmptyLines() && eol 
-      && (lastChar == '\n' 
-      || lastChar == ExtendedBufferedReader.UNDEFINED) 
-      && !isEndOfFile(lastChar)) {
+    while (strategy.getIgnoreEmptyLines()
+        && eol
+        && (lastChar == '\n' || lastChar == ExtendedBufferedReader.UNDEFINED)
+        && !isEndOfFile(lastChar)) {
       // go on char ahead ...
       lastChar = c;
       c = in.read();
@@ -300,8 +285,8 @@ public class CSVParser {
     if (isEndOfFile(lastChar) || (lastChar != strategy.getDelimiter() && isEndOfFile(c))) {
       tkn.type = TT_EOF;
       return tkn;
-    } 
-    
+    }
+
     //  important: make sure a new char gets consumed in each iteration
     while (!tkn.isReady && tkn.type != TT_EOF) {
       // ignore whitespaces at beginning of a token
@@ -321,7 +306,7 @@ public class CSVParser {
         tkn.isReady = true;
       } else if (eol) {
         // empty token return TT_EORECORD("")
-        //noop: tkn.content.append("");
+        // noop: tkn.content.append("");
         tkn.type = TT_EORECORD;
         tkn.isReady = true;
       } else if (c == strategy.getEncapsulator()) {
@@ -329,7 +314,7 @@ public class CSVParser {
         encapsulatedTokenLexer(tkn, c);
       } else if (isEndOfFile(c)) {
         // end of file return TT_EOF()
-        //noop: tkn.content.append("");
+        // noop: tkn.content.append("");
         tkn.type = TT_EOF;
         tkn.isReady = true;
       } else {
@@ -341,29 +326,29 @@ public class CSVParser {
         simpleTokenLexer(tkn, c);
       }
     }
-    return tkn;  
+    return tkn;
   }
-  
+
   /**
    * A simple token lexer
-   * 
-   * Simple token are tokens which are not surrounded by encapsulators.
-   * A simple token might contain escaped delimiters (as \, or \;). The
-   * token is finished when one of the following conditions become true:
+   *
+   * <p>Simple token are tokens which are not surrounded by encapsulators. A simple token might
+   * contain escaped delimiters (as \, or \;). The token is finished when one of the following
+   * conditions become true:
+   *
    * <ul>
-   *   <li>end of line has been reached (TT_EORECORD)</li>
-   *   <li>end of stream has been reached (TT_EOF)</li>
-   *   <li>an unescaped delimiter has been reached (TT_TOKEN)</li>
+   *   <li>end of line has been reached (TT_EORECORD)
+   *   <li>end of stream has been reached (TT_EOF)
+   *   <li>an unescaped delimiter has been reached (TT_TOKEN)
    * </ul>
-   *  
-   * @param tkn  the current token
-   * @param c    the current character
+   *
+   * @param tkn the current token
+   * @param c the current character
    * @return the filled token
-   * 
    * @throws IOException on stream access error
    */
   private Token simpleTokenLexer(Token tkn, int c) throws IOException {
-    for (;;) {
+    for (; ; ) {
       if (isEndOfLine(c)) {
         // end of record
         tkn.type = TT_EORECORD;
@@ -380,14 +365,14 @@ public class CSVParser {
         tkn.isReady = true;
         break;
       } else if (c == '\\' && strategy.getUnicodeEscapeInterpretation() && in.lookAhead() == 'u') {
-        // interpret unicode escaped chars (like \u0070 -> p)
+        // interpret unicode escaped chars (like "\\u0070" -> p)
         tkn.content.append((char) unicodeEscapeLexer(c));
       } else if (c == strategy.getEscape()) {
-        tkn.content.append((char)readEscape(c));
+        tkn.content.append((char) readEscape(c));
       } else {
         tkn.content.append((char) c);
       }
-      
+
       c = in.read();
     }
 
@@ -397,18 +382,16 @@ public class CSVParser {
 
     return tkn;
   }
-  
-  
+
   /**
    * An encapsulated token lexer
-   * 
-   * Encapsulated tokens are surrounded by the given encapsulating-string.
-   * The encapsulator itself might be included in the token using a
-   * doubling syntax (as "", '') or using escaping (as in \", \').
-   * Whitespaces before and after an encapsulated token are ignored.
-   * 
-   * @param tkn    the current token
-   * @param c      the current character
+   *
+   * <p>Encapsulated tokens are surrounded by the given encapsulating-string. The encapsulator
+   * itself might be included in the token using a doubling syntax (as "", '') or using escaping (as
+   * in \", \'). Whitespaces before and after an encapsulated token are ignored.
+   *
+   * @param tkn the current token
+   * @param c the current character
    * @return a valid token object
    * @throws IOException on invalid state
    */
@@ -417,13 +400,13 @@ public class CSVParser {
     int startLineNumber = getLineNumber();
     // ignore the given delimiter
     // assert c == delimiter;
-    for (;;) {
+    for (; ; ) {
       c = in.read();
 
-      if (c == '\\' && strategy.getUnicodeEscapeInterpretation() && in.lookAhead()=='u') {
+      if (c == '\\' && strategy.getUnicodeEscapeInterpretation() && in.lookAhead() == 'u') {
         tkn.content.append((char) unicodeEscapeLexer(c));
       } else if (c == strategy.getEscape()) {
-        tkn.content.append((char)readEscape(c));
+        tkn.content.append((char) readEscape(c));
       } else if (c == strategy.getEncapsulator()) {
         if (in.lookAhead() == strategy.getEncapsulator()) {
           // double or escaped encapsulator -> add single encapsulator to token
@@ -431,7 +414,7 @@ public class CSVParser {
           tkn.content.append((char) c);
         } else {
           // token finish mark (encapsulator) reached: ignore whitespace till delimiter
-          for (;;) {
+          for (; ; ) {
             c = in.read();
             if (c == strategy.getDelimiter()) {
               tkn.type = TT_TOKEN;
@@ -449,31 +432,31 @@ public class CSVParser {
             } else if (!isWhitespace(c)) {
               // error invalid char between token and next delimiter
               throw new IOException(
-                      "(line " + getLineNumber()
-                              + ") invalid char between encapsulated token end delimiter"
-              );
+                  "(line "
+                      + getLineNumber()
+                      + ") invalid char between encapsulated token end delimiter");
             }
           }
         }
       } else if (isEndOfFile(c)) {
         // error condition (end of file before end of token)
         throw new IOException(
-                "(startline " + startLineNumber + ")"
-                        + "eof reached before encapsulated token finished"
-        );
+            "(startline "
+                + startLineNumber
+                + ")"
+                + "eof reached before encapsulated token finished");
       } else {
         // consume character
         tkn.content.append((char) c);
       }
     }
   }
-  
-  
+
   /**
    * Decodes Unicode escapes.
-   * 
-   * Interpretation of "\\uXXXX" escape sequences
-   * where XXXX is a hex-number.
+   *
+   * <p>Interpretation of "\\uXXXX" escape sequences where XXXX is a hex-number.
+   *
    * @param c current char which is discarded because it's the "\\" of "\\uXXXX"
    * @return the decoded character
    * @throws IOException on wrong unicode escape sequence or read error
@@ -485,7 +468,7 @@ public class CSVParser {
     code.clear();
     try {
       for (int i = 0; i < 4; i++) {
-        c  = in.read();
+        c = in.read();
         if (isEndOfFile(c) || isEndOfLine(c)) {
           throw new NumberFormatException("number too short");
         }
@@ -494,8 +477,12 @@ public class CSVParser {
       ret = Integer.parseInt(code.toString(), 16);
     } catch (NumberFormatException e) {
       throw new IOException(
-        "(line " + getLineNumber() + ") Wrong unicode escape sequence found '" 
-        + code.toString() + "'" + e.toString());
+          "(line "
+              + getLineNumber()
+              + ") Wrong unicode escape sequence found '"
+              + code.toString()
+              + "'"
+              + e.toString());
     }
     return ret;
   }
@@ -505,44 +492,54 @@ public class CSVParser {
     c = in.read();
     int out;
     switch (c) {
-      case 'r': out='\r'; break;
-      case 'n': out='\n'; break;
-      case 't': out='\t'; break;
-      case 'b': out='\b'; break;
-      case 'f': out='\f'; break;
-      default : out=c;
+      case 'r':
+        out = '\r';
+        break;
+      case 'n':
+        out = '\n';
+        break;
+      case 't':
+        out = '\t';
+        break;
+      case 'b':
+        out = '\b';
+        break;
+      case 'f':
+        out = '\f';
+        break;
+      default:
+        out = c;
     }
     return out;
   }
-  
+
   // ======================================================
   //  strategies
   // ======================================================
-  
+
   /**
-   * Obtain the specified CSV Strategy.  This should not be modified.
-   * 
+   * Obtain the specified CSV Strategy. This should not be modified.
+   *
    * @return strategy currently being used
    */
   public CSVStrategy getStrategy() {
     return this.strategy;
   }
-  
+
   // ======================================================
   //  Character class checker
   // ======================================================
-  
+
   /**
    * @return true if the given char is a whitespace character
    */
   private boolean isWhitespace(int c) {
     return Character.isWhitespace((char) c) && (c != strategy.getDelimiter());
   }
-  
+
   /**
-   * Greedy - accepts \n and \r\n 
-   * This checker consumes silently the second control-character...
-   * 
+   * Greedy - accepts \n and \r\n This checker consumes silently the second control-character...
+   *
    * @return true if the given character is a line-terminator
    */
   private boolean isEndOfLine(int c) throws IOException {
@@ -555,7 +552,7 @@ public class CSVParser {
     }
     return (c == '\n');
   }
-  
+
   /**
    * @return true if the given character indicates end of file
    */

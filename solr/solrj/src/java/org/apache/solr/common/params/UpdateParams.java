@@ -19,11 +19,9 @@ package org.apache.solr.common.params;
 /**
  * A collection of standard params used by Update handlers
  *
- *
  * @since solr 1.2
  */
-public interface UpdateParams
-{
+public interface UpdateParams {
 
   /** Open up a new searcher as part of a commit */
   public static String OPEN_SEARCHER = "openSearcher";
@@ -32,10 +30,10 @@ public interface UpdateParams
   public static String WAIT_SEARCHER = "waitSearcher";
 
   public static String SOFT_COMMIT = "softCommit";
-  
+
   /** overwrite indexing fields */
   public static String OVERWRITE = "overwrite";
-  
+
   /** Commit everything after the command completes */
   public static String COMMIT = "commit";
 
@@ -53,14 +51,18 @@ public interface UpdateParams
 
   public static String COLLECTION = "collection";
 
-  /** Select the update processor chain to use.  A RequestHandler may or may not respect this parameter */
+  /**
+   * Select the update processor chain to use. A RequestHandler may or may not respect this
+   * parameter
+   */
   public static final String UPDATE_CHAIN = "update.chain";
 
-  /** Override the content type used for UpdateLoader **/
+  /** Override the content type used for UpdateLoader * */
   public static final String ASSUME_CONTENT_TYPE = "update.contentType";
-  
+
   /**
-   If optimizing, set the maximum number of segments left in the index after optimization.  Integer.MAX_INT is the default to respect maxMergeSegmentsMB
+   * If optimizing, set the maximum number of segments left in the index after optimization.
+   * Integer.MAX_INT is the default to respect maxMergeSegmentsMB
    */
   public static final String MAX_OPTIMIZE_SEGMENTS = "maxSegments";
 
@@ -70,8 +72,8 @@ public interface UpdateParams
   public static final String VERSIONS = "versions";
 
   /**
-   * If set to true, then Solr must fail to process any Atomic Update which can not 
-   * be done "In-Place" with out re-indexing the entire document.
+   * If set to true, then Solr must fail to process any Atomic Update which can not be done
+   * "In-Place" with out re-indexing the entire document.
    */
   public static final String REQUIRE_PARTIAL_DOC_UPDATES_INPLACE = "update.partial.requireInPlace";
 }

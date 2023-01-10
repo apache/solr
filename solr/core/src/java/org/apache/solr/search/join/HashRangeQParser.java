@@ -30,7 +30,8 @@ public class HashRangeQParser extends QParser {
   public static final String LOWER_BOUND = "l";
   public static final String UPPER_BOUND = "u";
 
-  public HashRangeQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public HashRangeQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 

@@ -18,19 +18,17 @@ package org.apache.solr.schema;
 
 import java.util.HashMap;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.util.LuceneTestCase;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.handler.admin.LukeRequestHandlerTest; // jdoc
+import org.apache.solr.handler.admin.LukeRequestHandlerTest;
 
 /**
- * A Test only custom FieldType that specifies null for various params when constructing 
- * TokenizerChain instances to ensure that they are still well behaved.
+ * A Test only custom FieldType that specifies null for various params when constructing
+ * TokenizerChain instances to ensure that they are still well-behaved.
  *
  * @see LukeRequestHandlerTest#testNullFactories
  */
@@ -42,15 +40,17 @@ public class CustomAnalyzerStrField extends StrField {
     Random r = LuceneTestCase.random();
 
     // two arg constructor
-    Analyzer a2 = new TokenizerChain
-      (new KeywordTokenizerFactory(new HashMap<>()),
-       r.nextBoolean() ? null : new TokenFilterFactory[0]);
-    
+    Analyzer a2 =
+        new TokenizerChain(
+            new KeywordTokenizerFactory(new HashMap<>()),
+            r.nextBoolean() ? null : new TokenFilterFactory[0]);
+
     // three arg constructor
-    Analyzer a3 = new TokenizerChain
-      (r.nextBoolean() ? null : new CharFilterFactory[0],
-       new KeywordTokenizerFactory(new HashMap<>()),
-       r.nextBoolean() ? null : new TokenFilterFactory[0]);
+    Analyzer a3 =
+        new TokenizerChain(
+            r.nextBoolean() ? null : new CharFilterFactory[0],
+            new KeywordTokenizerFactory(new HashMap<>()),
+            r.nextBoolean() ? null : new TokenFilterFactory[0]);
 
     if (r.nextBoolean()) {
       indexAnalyzer = a2;

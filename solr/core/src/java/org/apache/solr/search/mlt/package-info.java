@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * APIs and classes for implementing MoreLikeThis (mlt) QueryParser.
- */
+
+/** APIs and classes for implementing MoreLikeThis (mlt) QueryParser. */
 package org.apache.solr.search.mlt;
-
-

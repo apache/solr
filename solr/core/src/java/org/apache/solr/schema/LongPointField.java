@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -34,6 +33,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
  * {@code PointField} implementation for {@code Long} values.
+ *
  * @see PointField
  * @see LongPoint
  */
@@ -57,7 +57,12 @@ public class LongPointField extends PointField implements LongValueFieldType {
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+  public Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
       boolean maxInclusive) {
     long actualMin, actualMax;
     if (min == null) {
@@ -85,7 +90,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   public Object toObject(SchemaField sf, BytesRef term) {
     return LongPoint.decodeDimension(term.bytes, term.offset);
   }
-  
+
   @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
@@ -98,9 +103,10 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), parseLongFromUser(field.getName(), externalVal));
+    return LongPoint.newExactQuery(
+        field.getName(), parseLongFromUser(field.getName(), externalVal));
   }
-  
+
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
@@ -109,7 +115,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     }
     long[] values = new long[externalVal.size()];
     int i = 0;
-    for (String val:externalVal) {
+    for (String val : externalVal) {
       values[i] = parseLongFromUser(field.getName(), val);
       i++;
     }
@@ -142,16 +148,17 @@ public class LongPointField extends PointField implements LongValueFieldType {
     field.checkFieldCacheSource();
     return new LongFieldSource(field.getName());
   }
-  
+
   @Override
-  protected ValueSource getSingleValueSource(org.apache.lucene.search.SortedNumericSelector.Type choice,
-      SchemaField field) {
+  protected ValueSource getSingleValueSource(
+      org.apache.lucene.search.SortedNumericSelector.Type choice, SchemaField field) {
     return new MultiValuedLongFieldSource(field.getName(), choice);
   }
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    long longValue = (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
+    long longValue =
+        (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
     return new LongPoint(field.getName(), longValue);
   }
 

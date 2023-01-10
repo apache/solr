@@ -1,0 +1,10 @@
+{
+  "exact": [
+    "foo",
+    "bar"
+  ],
+  "glob": [
+  ],
+  "regexp": [
+  ]
+}

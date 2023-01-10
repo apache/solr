@@ -16,21 +16,23 @@
  */
 package org.apache.solr.request;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopSpan;
+import io.opentracing.util.GlobalTracer;
 import java.io.Closeable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
@@ -40,33 +42,28 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 
-
 /**
- * Base implementation of <code>SolrQueryRequest</code> that provides some
- * convenience methods for accessing parameters, and manages an IndexSearcher
- * reference.
+ * Base implementation of <code>SolrQueryRequest</code> that provides some convenience methods for
+ * accessing parameters, and manages an IndexSearcher reference.
  *
- * <p>
- * The <code>close()</code> method must be called on any instance of this
- * class once it is no longer in use.
- * </p>
- *
- *
- *
+ * <p>The <code>close()</code> method must be called on any instance of this class once it is no
+ * longer in use.
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected volatile IndexSchema schema;
   protected SolrParams params;
-  protected Map<Object,Object> context;
+  protected Map<Object, Object> context;
   protected Iterable<ContentStream> streams;
-  protected Map<String,Object> json;
+  protected Map<String, Object> json;
 
   private final RTimerTree requestTimer;
   protected final long startTime;
 
-  @SuppressForbidden(reason = "Need currentTimeMillis to get start time for request (to be used for stats/debugging)")
+  @SuppressForbidden(
+      reason =
+          "Need currentTimeMillis to get start time for request (to be used for stats/debugging)")
   public SolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer) {
     this.core = core;
     this.schema = null == core ? null : core.getLatestSchema();
@@ -80,9 +77,9 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   }
 
   @Override
-  public Map<Object,Object> getContext() {
+  public Map<Object, Object> getContext() {
     // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
-    if (context==null) context = new HashMap<>();
+    if (context == null) context = new HashMap<>();
     return context;
   }
 
@@ -101,7 +98,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     this.params = params;
   }
 
-
   // Get the start time of this request in milliseconds
   @Override
   public long getStartTime() {
@@ -109,21 +105,28 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   }
 
   @Override
-  public RTimerTree getRequestTimer () {
+  public RTimerTree getRequestTimer() {
     return requestTimer;
   }
 
   // The index searcher associated with this request
   protected RefCounted<SolrIndexSearcher> searcherHolder;
+
   @Override
   public SolrIndexSearcher getSearcher() {
-    if(core == null) return null;//a request for a core admin will not have a core
+    if (core == null) return null; // a request for a core admin will not have a core
     // should this reach out and get a searcher from the core singleton, or
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
 
-    if (searcherHolder==null) {
+    if (searcherHolder == null) {
       searcherHolder = core.getSearcher();
+
+      // We start tracking here instead of at construction, because if getSearcher is never called,
+      // it's not fatal to forget close(), and lots of test code is sloppy about it. However, when
+      // we get another searcher reference, having this tracked may be a good hint about where the
+      // leak comes from.
+      assert ObjectReleaseTracker.track(this);
     }
 
     return searcherHolder.get();
@@ -138,15 +141,12 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   // The index schema associated with this request
   @Override
   public IndexSchema getSchema() {
-    //a request for a core admin will no have a core
+    // a request for a core admin will no have a core
     return schema;
   }
 
   @Override
   public Tracer getTracer() {
-    if (core != null) {
-      return core.getCoreContainer().getTracer(); // this is the common path
-    }
     final HttpSolrCall call = getHttpSolrCall();
     if (call != null) {
       final Tracer tracer = (Tracer) call.getReq().getAttribute(Tracer.class.getName());
@@ -154,7 +154,22 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
         return tracer;
       }
     }
+    if (core != null) {
+      return core.getCoreContainer().getTracer();
+    }
     return GlobalTracer.get(); // this way is not ideal (particularly in tests) but it's okay
+  }
+
+  @Override
+  public Span getSpan() {
+    final HttpSolrCall call = getHttpSolrCall();
+    if (call != null) {
+      final Span span = (Span) call.getReq().getAttribute(Span.class.getName());
+      if (span != null) {
+        return span;
+      }
+    }
+    return NoopSpan.INSTANCE;
   }
 
   @Override
@@ -163,26 +178,26 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   }
 
   /**
-   * Frees resources associated with this request, this method <b>must</b>
-   * be called when the object is no longer in use.
+   * Frees resources associated with this request, this method <b>must</b> be called when the object
+   * is no longer in use.
    */
   @Override
   public void close() {
-    if (searcherHolder!=null) {
+    if (searcherHolder != null) {
+      assert ObjectReleaseTracker.release(this);
       searcherHolder.decref();
       searcherHolder = null;
     }
   }
 
-  /** A Collection of ContentStreams passed to the request
-   */
+  /** A Collection of ContentStreams passed to the request */
   @Override
   public Iterable<ContentStream> getContentStreams() {
-    return streams; 
+    return streams;
   }
-  
-  public void setContentStreams( Iterable<ContentStream> s ) {
-    streams = s; 
+
+  public void setContentStreams(Iterable<ContentStream> s) {
+    streams = s;
   }
 
   @Override
@@ -212,25 +227,24 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   List<CommandOperation> parsedCommands;
 
+  @Override
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = getContentStreams();
-      if (contentStreams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
+      if (contentStreams == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
       for (ContentStream contentStream : contentStreams) {
         parsedCommands = ApiBag.getCommandOperations(contentStream, getValidators(), validateInput);
       }
-
     }
     return CommandOperation.clone(parsedCommands);
-
   }
 
   protected ValidatingJsonMap getSpec() {
     return null;
   }
 
-  @SuppressWarnings({"unchecked"})
-  protected Map<String, JsonSchemaValidator> getValidators(){
-    return Collections.EMPTY_MAP;
+  protected Map<String, JsonSchemaValidator> getValidators() {
+    return Collections.emptyMap();
   }
 }

@@ -25,21 +25,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-
 import org.apache.solr.common.params.CommonParams;
 
 /**
- * Represent the field-value information needed to construct and index
- * a Lucene Document.  Like the SolrDocument, the field values should
- * match those specified in schema.xml
- *
+ * Represent the field-value information needed to construct and index a Lucene Document. Like the
+ * SolrDocument, the field values should match those specified in schema.xml
  *
  * @since solr 1.3
  */
-public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument> implements Iterable<SolrInputField>
-{
-  private final Map<String,SolrInputField> _fields;
+public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument>
+    implements Iterable<SolrInputField> {
+  private final Map<String, SolrInputField> _fields;
   private List<SolrInputDocument> _childDocuments;
+
+  // Required by reflection based libraries for (de)serialization
+  public SolrInputDocument() {
+    _fields = new LinkedHashMap<>();
+  }
 
   public SolrInputDocument(String... fields) {
     _fields = new LinkedHashMap<>();
@@ -52,29 +54,27 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     BiConsumer<CharSequence, Object> bc = ew.getBiConsumer();
-    BiConsumer<CharSequence, Object> wrapper = (k, o) -> {
-      if (o instanceof SolrInputField) {
-        o = ((SolrInputField) o).getValue();
-      }
-      bc.accept(k, o);
-    };
+    BiConsumer<CharSequence, Object> wrapper =
+        (k, o) -> {
+          if (o instanceof SolrInputField) {
+            o = ((SolrInputField) o).getValue();
+          }
+          bc.accept(k, o);
+        };
     _fields.forEach(wrapper);
     if (_childDocuments != null) {
       ew.put(CommonParams.CHILDDOC, _childDocuments);
     }
   }
 
-  public SolrInputDocument(Map<String,SolrInputField> fields) {
+  public SolrInputDocument(Map<String, SolrInputField> fields) {
     _fields = fields;
   }
-  
-  /**
-   * Remove all fields from the document
-   */
+
+  /** Remove all fields from the document */
   @Override
-  public void clear()
-  {
-    if( _fields != null ) {
+  public void clear() {
+    if (_fields != null) {
       _fields.clear();
     }
     _childDocuments = null;
@@ -84,95 +84,96 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   // Add / Set fields
   ///////////////////////////////////////////////////////////////////
 
-  /** 
+  /**
    * Add a field value to any existing values that may or may not exist.
-   * 
-   * The class type of value and the name parameter should match schema.xml. 
-   * schema.xml can be found in conf directory under the solr home by default.
-   * 
-   * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
-   * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
+   *
+   * <p>The class type of value and the name parameter should match schema.xml. schema.xml can be
+   * found in conf directory under the solr home by default.
+   *
+   * @param name Name of the field, should match one of the field names defined under "fields" tag
+   *     in schema.xml.
+   * @param value Value of the field, should be of same class type as defined by "type" attribute of
+   *     the corresponding field in schema.xml.
    */
-  public void addField(String name, Object value) 
-  {
-    SolrInputField field = _fields.get( name );
-    if( field == null || field.value == null ) {
+  @Override
+  public void addField(String name, Object value) {
+    SolrInputField field = _fields.get(name);
+    if (field == null || field.value == null) {
       setField(name, value);
-    }
-    else {
-      field.addValue( value );
+    } else {
+      field.addValue(value);
     }
   }
-  
-  /** Get the first value for a field.
-   * 
+
+  /**
+   * Get the first value for a field.
+   *
    * @param name name of the field to fetch
    * @return first value of the field or null if not present
    */
   @Override
-  public Object getFieldValue(String name) 
-  {
+  public Object getFieldValue(String name) {
     SolrInputField field = getField(name);
     Object o = null;
-    if (field!=null) o = field.getFirstValue();
+    if (field != null) o = field.getFirstValue();
     return o;
   }
 
-  /** Get all the values for a field.
+  /**
+   * Get all the values for a field.
    *
    * @param name name of the field to fetch
    * @return value of the field or null if not set
    */
   @Override
-  public Collection<Object> getFieldValues(String name)
-  {
+  public Collection<Object> getFieldValues(String name) {
     SolrInputField field = getField(name);
-    if (field!=null) {
+    if (field != null) {
       return field.getValues();
     }
     return null;
   }
 
-  /** Get all field names.
+  /**
+   * Get all field names.
    *
    * @return Set of all field names.
    */
   @Override
-  public Collection<String> getFieldNames()
-  {
+  public Collection<String> getFieldNames() {
     return _fields.keySet();
   }
 
-  /** Set a field value; replacing the existing value if present.
+  /**
+   * Set a field value; replacing the existing value if present.
    *
    * @param name name of the field to set
    * @param value value of the field
    */
-  public void setField(String name, Object value )
-  {
-    SolrInputField field = new SolrInputField( name );
-    _fields.put( name, field );
-    field.setValue( value );
+  @Override
+  public void setField(String name, Object value) {
+    SolrInputField field = new SolrInputField(name);
+    _fields.put(name, field);
+    field.setValue(value);
   }
 
   /**
    * Remove a field from the document
    *
    * @param name The field name whose field is to be removed from the document
-   * @return the previous field with <code>name</code>, or
-   *         <code>null</code> if there was no field for <code>key</code>.
+   * @return the previous field with <code>name</code>, or <code>null</code> if there was no field
+   *     for <code>key</code>.
    */
   public SolrInputField removeField(String name) {
-    return _fields.remove( name );
+    return _fields.remove(name);
   }
 
   ///////////////////////////////////////////////////////////////////
   // Get the field values
   ///////////////////////////////////////////////////////////////////
 
-  public SolrInputField getField( String field )
-  {
-    return _fields.get( field );
+  public SolrInputField getField(String field) {
+    return _fields.get(field);
   }
 
   @Override
@@ -181,17 +182,17 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
 
   @Override
-  public String toString()
-  {
-    return "SolrInputDocument(fields: " + _fields.values()
-        + ( _childDocuments == null ? "" : (", children: " + _childDocuments) )
+  public String toString() {
+    return "SolrInputDocument(fields: "
+        + _fields.values()
+        + (_childDocuments == null ? "" : (", children: " + _childDocuments))
         + ")";
   }
 
   public SolrInputDocument deepCopy() {
     SolrInputDocument clone = new SolrInputDocument();
-    Set<Entry<String,SolrInputField>> entries = _fields.entrySet();
-    for (Map.Entry<String,SolrInputField> fieldEntry : entries) {
+    Set<Entry<String, SolrInputField>> entries = _fields.entrySet();
+    for (Map.Entry<String, SolrInputField> fieldEntry : entries) {
       clone._fields.put(fieldEntry.getKey(), fieldEntry.getValue().deepCopy());
     }
 
@@ -205,9 +206,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     return clone;
   }
 
-  //---------------------------------------------------
+  // ---------------------------------------------------
   // MAP interface
-  //---------------------------------------------------
+  // ---------------------------------------------------
 
   @Override
   public boolean containsKey(Object key) {
@@ -246,7 +247,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
 
   @Override
   public void putAll(Map<? extends String, ? extends SolrInputField> t) {
-    _fields.putAll( t );
+    _fields.putAll(t);
   }
 
   @Override
@@ -266,12 +267,13 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
 
   @Override
   public void addChildDocument(SolrInputDocument child) {
-   if (_childDocuments == null) {
-     _childDocuments = new ArrayList<>();
-   }
+    if (_childDocuments == null) {
+      _childDocuments = new ArrayList<>();
+    }
     _childDocuments.add(child);
   }
 
+  @Override
   public void addChildDocuments(Collection<SolrInputDocument> children) {
     for (SolrInputDocument child : children) {
       addChildDocument(child);
@@ -306,10 +308,12 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
 
   /** Returns the list of child documents, or null if none. */
+  @Override
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
   }
 
+  @Override
   public boolean hasChildDocuments() {
     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
     return !isEmpty;
@@ -318,6 +322,6 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   @Override
   @Deprecated
   public int getChildDocumentCount() {
-    return hasChildDocuments() ? _childDocuments.size(): 0;
+    return hasChildDocuments() ? _childDocuments.size() : 0;
   }
 }

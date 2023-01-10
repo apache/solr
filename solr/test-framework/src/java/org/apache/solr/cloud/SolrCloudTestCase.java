@@ -19,33 +19,24 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
@@ -53,8 +44,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -62,10 +53,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Base class for SolrCloud tests
- * <p>
- * Derived tests should call {@link #configureCluster(int)} in a {@code BeforeClass}
- * static method or {@code Before} setUp method.  This configures and starts a {@link MiniSolrCloudCluster}, available
- * via the {@code cluster} variable.  Cluster shutdown is handled automatically if using {@code BeforeClass}.
+ *
+ * <p>Derived tests should call {@link #configureCluster(int)} in a {@code BeforeClass} static
+ * method or {@code Before} setUp method. This configures and starts a {@link MiniSolrCloudCluster},
+ * available via the {@code cluster} variable. Cluster shutdown is handled automatically if using
+ * {@code BeforeClass}.
  *
  * <pre>
  *   <code>
@@ -81,265 +73,41 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Boolean USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
+  public static final Boolean USE_PER_REPLICA_STATE =
+      Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
-  public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
+  // this is an important timeout for test stability - can't be too short
+  public static final int DEFAULT_TIMEOUT = 45;
 
-  private static class Config {
-    final String name;
-    final Path path;
-    private Config(String name, Path path) {
-      this.name = name;
-      this.path = path;
-    }
-  }
-
-  /**
-   * Builder class for a MiniSolrCloudCluster
-   */
-  public static class Builder {
-
-    private final int nodeCount;
-    private final Path baseDir;
-    private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
-    private JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig.buildServerSSLConfig());
-    private Optional<String> securityJson = Optional.empty();
-
-    private List<Config> configs = new ArrayList<>();
-    private Map<String, Object> clusterProperties = new HashMap<>();
-
-    private boolean trackJettyMetrics;
-    private boolean useDistributedCollectionConfigSetExecution;
-    private boolean useDistributedClusterStateUpdate;
-
-    /**
-     * Create a builder
-     *
-     * @param nodeCount the number of nodes in the cluster
-     * @param baseDir   a base directory for the cluster
-     */
-    public Builder(int nodeCount, Path baseDir) {
-      this.nodeCount = nodeCount;
-      this.baseDir = baseDir;
-      // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which collection API strategy
-      // to use (distributed or Overseer based) and which cluster update strategy to use (distributed if collection API
-      // is distributed, but Overseer based or distributed randomly chosen if Collection API is Overseer based)
-      this.useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
-      this.useDistributedClusterStateUpdate = useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
-    }
-
-    /**
-     * Use a JettyConfig.Builder to configure the cluster's jetty servers
-     */
-    public Builder withJettyConfig(Consumer<JettyConfig.Builder> fun) {
-      fun.accept(jettyConfigBuilder);
-      return this;
-    }
-
-    /**
-     * Use the provided string as solr.xml content
-     */
-    public Builder withSolrXml(String solrXml) {
-      this.solrxml = solrXml;
-      return this;
-    }
-
-    /**
-     * Read solr.xml from the provided path
-     */
-    public Builder withSolrXml(Path solrXml) {
-      try {
-        this.solrxml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return this;
-    }
-
-    /**
-     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
-     *
-     * @param securityJson The path specifying the security.json file
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withSecurityJson(Path securityJson) {
-      try {
-        this.securityJson = Optional.of(new String(Files.readAllBytes(securityJson), Charset.defaultCharset()));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return this;
-    }
-
-    /**
-     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
-     *
-     * @param securityJson The string specifying the security.json configuration
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withSecurityJson(String securityJson) {
-      this.securityJson = Optional.of(securityJson);
-      return this;
-    }
-
-    /**
-     * Upload a collection config before tests start
-     *
-     * @param configName the config name
-     * @param configPath the path to the config files
-     */
-    public Builder addConfig(String configName, Path configPath) {
-      this.configs.add(new Config(configName, configPath));
-      return this;
-    }
-
-    /**
-     * This method makes the MiniSolrCloudCluster use the "other" Collection API execution strategy than it normally would.
-     * When some test classes call this method (and some don't) we make sure that a run of multiple tests with a single
-     * seed will exercise both code lines (distributed and Overseer based Collection API) so regressions can be spotted
-     * faster.<p>
-     *
-     * The real need is for a few tests covering reasonable use cases to call this method. If you're adding a new test,
-     * you don't have to call it (but it's ok if you do).
-     */
-    public Builder useOtherCollectionConfigSetExecution() {
-      // Switch from Overseer to distributed Collection execution and vice versa
-      useDistributedCollectionConfigSetExecution = !useDistributedCollectionConfigSetExecution;
-      // Reverse distributed cluster state updates as well if possible (state can't be Overseer based if Collections API is distributed)
-      useDistributedClusterStateUpdate = !useDistributedClusterStateUpdate || useDistributedCollectionConfigSetExecution;
-      return this;
-    }
-
-    /**
-     * Force the cluster Collection and config state API execution as well as the cluster state update strategy to be
-     * either Overseer based or distributed. <b>This method can be useful when
-     * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the issue, as well obviously for
-     * tests that are not compatible with one of the two modes.
-     * <p>
-     * If this method is not called, the strategy being used will be random if the configuration passed to the cluster
-     * ({@code solr.xml} equivalent) contains a placeholder similar to:
-     * <pre>
-     * {@code
-     * <solrcloud>
-     *   ....
-     *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
-     *   <str name="distributedCollectionConfigSetExecution">${solr.distributedCollectionConfigSetExecution:false}</str>
-     *   ....
-     * </solrcloud>
-     * }</pre>
-     * For an example of a configuration supporting this setting, see {@link MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}.
-     * When a test sets a different {@code solr.xml} config (using {@link #withSolrXml}), if the config does not contain
-     * the placeholder, the strategy will be defined by the values assigned to {@code useDistributedClusterStateUpdates}
-     * and {@code useDistributedCollectionConfigSetExecution} in {@link org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
-     *
-     * @param distributedCollectionConfigSetApi When {@code true}, Collection and Config Set API commands are executed in
-     *                    a distributed way by nodes. When {@code false}, they are executed by Overseer.
-     * @param distributedClusterStateUpdates When {@code true}, cluster state updates are handled in a distributed way by nodes. When
-     *                    {@code false}, cluster state updates are handled by Overseer.<p>
-     *                    If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must be {@code true}.
-     */
-    public Builder withDistributedClusterStateUpdates(boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
-      useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
-      useDistributedClusterStateUpdate = distributedClusterStateUpdates;
-      return this;
-    }
-
-    /**
-     * Set a cluster property
-     *
-     * @param propertyName  the property name
-     * @param propertyValue the property value
-     */
-    public Builder withProperty(String propertyName, String propertyValue) {
-      this.clusterProperties.put(propertyName, propertyValue);
-      return this;
-    }
-
-    public Builder withMetrics(boolean trackJettyMetrics) {
-      this.trackJettyMetrics = trackJettyMetrics;
-      return this;
-    }
-
-    /**
-     * Configure and run the {@link MiniSolrCloudCluster}
-     *
-     * @throws Exception if an error occurs on startup
-     */
-    public MiniSolrCloudCluster configure() throws Exception {
-      return cluster = build();
-    }
-
-    /**
-     * Configure, run and return the {@link MiniSolrCloudCluster}
-     *
-     * @throws Exception if an error occurs on startup
-     */
-    public MiniSolrCloudCluster build() throws Exception {
-      // Two lines below will have an impact on how the MiniSolrCloudCluster and therefore the test run if the config being
-      // used in the test does have the appropriate placeholders. See for example DEFAULT_CLOUD_SOLR_XML in MiniSolrCloudCluster.
-      // Hard coding values here will impact such tests.
-      // To hard code behavior for tests not having these placeholders - and for SolrCloud as well for that matter! -
-      // change the values assigned to useDistributedClusterStateUpdates and useDistributedCollectionConfigSetExecution in
-      // org.apache.solr.core.CloudConfig.CloudConfigBuilder. Do not forget then to revert before commit!
-      System.setProperty("solr.distributedCollectionConfigSetExecution", Boolean.toString(useDistributedCollectionConfigSetExecution));
-      System.setProperty("solr.distributedClusterStateUpdates", Boolean.toString(useDistributedClusterStateUpdate));
-
-      JettyConfig jettyConfig = jettyConfigBuilder.build();
-      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
-          null, securityJson, trackJettyMetrics);
-      CloudSolrClient client = cluster.getSolrClient();
-      for (Config config : configs) {
-        cluster.uploadConfigSet(config.path, config.name);
-      }
-
-      if (clusterProperties.size() > 0) {
-        ClusterProperties props = new ClusterProperties(cluster.getSolrClient().getZkStateReader().getZkClient());
-        for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
-          props.setClusterProperty(entry.getKey(), entry.getValue());
-        }
-      }
-      return cluster;
-    }
-
-    public Builder withDefaultClusterProperty(String key, String value) {
-      @SuppressWarnings({"unchecked"})
-      HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
-      if (defaults == null) {
-        defaults = new HashMap<>();
-        this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
-      }
-      @SuppressWarnings({"unchecked"})
-      HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
-      if (cluster == null) {
-        cluster = new HashMap<>();
-        defaults.put(CollectionAdminParams.CLUSTER, cluster);
-      }
-      cluster.put(key, value);
-      return this;
-    }
-  }
-
-  /**
-   * The cluster
-   */
+  /** The cluster */
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    if (reader == null)
-      cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    ZkStateReader reader = cluster.getZkStateReader();
+    if (reader == null) cluster.getSolrClient().connect();
+    return cluster.getZkStateReader().getZkClient();
   }
 
   /**
-   * Call this to configure a cluster of n nodes.
-   * <p>
-   * NB you must call {@link Builder#configure()} to start the cluster
+   * Call this to configure a cluster of n nodes. It will be shut down automatically after the
+   * tests.
+   *
+   * <p>NB you must call {@link MiniSolrCloudCluster.Builder#configure()} to start the cluster
    *
    * @param nodeCount the number of nodes
    */
-  protected static Builder configureCluster(int nodeCount) {
-    return new Builder(nodeCount, createTempDir());
+  protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
+    // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
+    // collection API strategy to use (distributed or Overseer based) and which cluster update
+    // strategy to use (distributed if collection API is distributed, but Overseer based or
+    // distributed randomly chosen if Collection API is Overseer based)
+
+    boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
+    boolean useDistributedClusterStateUpdate =
+        useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
+    return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
+        .withDistributedClusterStateUpdates(
+            useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
   }
 
   @AfterClass
@@ -354,44 +122,59 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void checkClusterConfiguration() {
-
-  }
+  public void checkClusterConfiguration() {}
 
   /* Cluster helper methods ************************************/
 
-  /**
-   * Get the collection state for a particular collection
-   */
+  /** Get the collection state for a particular collection */
   protected static DocCollection getCollectionState(String collectionName) {
-    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    return cluster.getSolrClient().getClusterState().getCollection(collectionName);
   }
 
-  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+  protected static void waitForState(
+      String message, String collection, CollectionStatePredicate predicate) {
     waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
   }
 
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
-   * <p>
-   * This is a convenience method using the {@link #DEFAULT_TIMEOUT}
    *
-   * @param message    a message to report on failure
+   * <p>This is a convenience method using the {@link #DEFAULT_TIMEOUT}
+   *
+   * @param message a message to report on failure
    * @param collection the collection to watch
-   * @param predicate  a predicate to match against the collection state
+   * @param predicate a predicate to match against the collection state
    */
-  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
+  protected static void waitForState(
+      String message,
+      String collection,
+      CollectionStatePredicate predicate,
+      int timeout,
+      TimeUnit timeUnit) {
     log.info("waitForState ({}): {}", collection, message);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cluster.getSolrClient().waitForState(collection, timeout, timeUnit, (n, c) -> {
-        state.set(c);
-        liveNodesLastSeen.set(n);
-        return predicate.matches(n, c);
-      });
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              collection,
+              timeout,
+              timeUnit,
+              (n, c) -> {
+                state.set(c);
+                liveNodesLastSeen.set(n);
+                return predicate.matches(n, c);
+              });
     } catch (Exception e) {
-      fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
+      fail(
+          message
+              + "\n"
+              + e.getMessage()
+              + "\nLive Nodes: "
+              + Arrays.toString(liveNodesLastSeen.get().toArray())
+              + "\nLast available state: "
+              + state.get());
     }
   }
 
@@ -401,10 +184,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
-      if (collectionState == null)
-        return false;
-      if (collectionState.getSlices().size() != expectedShards)
-        return false;
+      if (collectionState == null) return false;
+      if (collectionState.getSlices().size() != expectedShards) return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
     };
   }
@@ -413,15 +194,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of active shards and active replicas
    */
-  public static CollectionStatePredicate activeClusterShape(int expectedShards, int expectedReplicas) {
+  public static CollectionStatePredicate activeClusterShape(
+      int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
-      if (collectionState == null)
-        return false;
+      if (collectionState == null) return false;
       if (log.isInfoEnabled()) {
-        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
+        log.info(
+            "active slice count: {} expected: {}",
+            collectionState.getActiveSlices().size(),
+            expectedShards);
       }
-      if (collectionState.getActiveSlices().size() != expectedShards)
-        return false;
+      if (collectionState.getActiveSlices().size() != expectedShards) return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
     };
   }
@@ -451,7 +234,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     };
   }
 
-  private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+  private static boolean compareActiveReplicaCountsForShards(
+      int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
     int activeReplicas = 0;
     for (Slice slice : collectionState) {
       for (Replica replica : slice) {
@@ -461,26 +245,24 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
+    log.info(
+        "active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
 
     return activeReplicas == expectedReplicas;
-
   }
 
-  /**
-   * Get a (reproducibly) random shard from a {@link DocCollection}
-   */
+  /** Get a (reproducibly) random shard from a {@link DocCollection} */
   protected static Slice getRandomShard(DocCollection collection) {
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
-      fail("Couldn't get random shard for collection as it has no shards!\n" + collection.toString());
+      fail(
+          "Couldn't get random shard for collection as it has no shards!\n"
+              + collection.toString());
     Collections.shuffle(shards, random());
     return shards.get(0);
   }
 
-  /**
-   * Get a (reproducibly) random replica from a {@link Slice}
-   */
+  /** Get a (reproducibly) random replica from a {@link Slice} */
   protected static Replica getRandomReplica(Slice slice) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
@@ -489,36 +271,42 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return replicas.get(0);
   }
 
-  /**
-   * Get a (reproducibly) random replica from a {@link Slice} matching a predicate
-   */
+  /** Get a (reproducibly) random replica from a {@link Slice} matching a predicate */
   protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
     Collections.shuffle(replicas, random());
     for (Replica replica : replicas) {
-      if (matchPredicate.test(replica))
-        return replica;
+      if (matchPredicate.test(replica)) return replica;
     }
     fail("Couldn't get random replica that matched conditions\n" + slice.toString());
-    return null;  // just to keep the compiler happy - fail will always throw an Exception
+    return null; // just to keep the compiler happy - fail will always throw an Exception
   }
 
   /**
    * Get the {@link CoreStatus} data for a {@link Replica}
-   * <p>
-   * This assumes that the replica is hosted on a live node.
+   *
+   * <p>This assumes that the replica is hosted on a live node.
    */
-  protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
+  protected static CoreStatus getCoreStatus(Replica replica)
+      throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
+    try (SolrClient client =
+        getHttpSolrClient(
+            jetty.getBaseUrl().toString(),
+            ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }
 
   @SuppressWarnings({"rawtypes"})
-  protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
+  protected NamedList waitForResponse(
+      Predicate<NamedList> predicate,
+      SolrRequest request,
+      int intervalInMillis,
+      int numRetries,
+      String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;
     for (; i < numRetries; i++) {
@@ -537,8 +325,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Ensure that the given number of solr instances are running. If less instances are found then new instances are
-   * started. If extra instances are found then they are stopped.
+   * Ensure that the given number of solr instances are running. If less instances are found then
+   * new instances are started. If extra instances are found then they are stopped.
    *
    * @param nodeCount the number of Solr instances that should be running at the end of this method
    * @throws Exception on error
@@ -575,8 +363,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         // info returned from the query doesn't. Oh well. We will include both, just in case
         replicaTypeMap.put(coreUrl, replica.getType().toString());
         if (coreUrl.endsWith("/")) {
-          replicaTypeMap.put(coreUrl.substring(0, coreUrl.length() - 1), replica.getType().toString());
-        }else {
+          replicaTypeMap.put(
+              coreUrl.substring(0, coreUrl.length() - 1), replica.getType().toString());
+        } else {
           replicaTypeMap.put(coreUrl + "/", replica.getType().toString());
         }
       }

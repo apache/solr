@@ -16,40 +16,37 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 
-/**
- * Search component used to add delay to each request.
- */
-public class DelayingSearchComponent extends SearchComponent{
+/** Search component used to add delay to each request. */
+public class DelayingSearchComponent extends SearchComponent {
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) {
     rb.rsp.addHttpHeader("Warning", "This is a test warning");
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException {
-    final long totalSleepMillis = rb.req.getParams().getLong("sleep",0);
+  public void process(ResponseBuilder rb) {
+    final long totalSleepMillis = rb.req.getParams().getLong("sleep", 0);
     if (totalSleepMillis > 0) {
-      final long totalSleepNanos = TimeUnit.NANOSECONDS.convert(totalSleepMillis, TimeUnit.MILLISECONDS);
+      final long totalSleepNanos =
+          TimeUnit.NANOSECONDS.convert(totalSleepMillis, TimeUnit.MILLISECONDS);
       final long startNanos = System.nanoTime();
       try {
-        // Thread.sleep() (and derivatives) are not garunteed to sleep the full amount:
+        // Thread.sleep() (and derivatives) are not guaranteed to sleep the full amount:
         //   "subject to the precision and accuracy of system timers and schedulers."
         // This is particularly problematic on Windows VMs, so we do a retry loop
         // to ensure we sleep a total of at least as long as requested
         //
-        // (Tests using this component do so explicitly to ensure 'timeAllowed'
+        // (Tests using this component are explicitly to ensure 'timeAllowed'
         // has exceeded in order to get their expected results, we would rather over-sleep
-        // then under sleep)
+        // than under sleep)
         for (long sleepNanos = totalSleepNanos;
-             0 < sleepNanos;
-             sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
+            0 < sleepNanos;
+            sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
           TimeUnit.NANOSECONDS.sleep(sleepNanos);
         }
       } catch (InterruptedException e) {
@@ -62,5 +59,4 @@ public class DelayingSearchComponent extends SearchComponent{
   public String getDescription() {
     return "SearchComponent used to add delay to each request";
   }
-
 }

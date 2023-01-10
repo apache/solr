@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
@@ -51,13 +50,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class implements exact caching of statistics. It requires an additional
- * round-trip to parse query at shard servers, and return term statistics for
- * query terms (and collection statistics for term fields).
- * <p>Global statistics are cached in the current request's context and discarded
- * once the processing of the current request is complete. There's no support for
- * longer-term caching, and each request needs to build the global statistics from scratch,
- * even for repeating queries.</p>
+ * This class implements exact caching of statistics. It requires an additional round-trip to parse
+ * query at shard servers, and return term statistics for query terms (and collection statistics for
+ * term fields).
+ *
+ * <p>Global statistics are cached in the current request's context and discarded once the
+ * processing of the current request is complete. There's no support for longer-term caching, and
+ * each request needs to build the global statistics from scratch, even for repeating queries.
  */
 public class ExactStatsCache extends StatsCache {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -70,11 +69,18 @@ public class ExactStatsCache extends StatsCache {
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
     @SuppressWarnings({"unchecked"})
-    Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Collections.emptyMap());
+    Map<String, CollectionStats> currentGlobalColStats =
+        (Map<String, CollectionStats>)
+            req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Collections.emptyMap());
     @SuppressWarnings({"unchecked"})
-    Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Collections.emptyMap());
+    Map<String, TermStats> currentGlobalTermStats =
+        (Map<String, TermStats>)
+            req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Collections.emptyMap());
     if (log.isDebugEnabled()) {
-      log.debug("Returning StatsSource. Collection stats={}, Term stats size= {}", currentGlobalColStats, currentGlobalTermStats.size());
+      log.debug(
+          "Returning StatsSource. Collection stats={}, Term stats size= {}",
+          currentGlobalColStats,
+          currentGlobalTermStats.size());
     }
     return new ExactStatsSource(statsCacheMetrics, currentGlobalTermStats, currentGlobalColStats);
   }
@@ -94,14 +100,18 @@ public class ExactStatsCache extends StatsCache {
   protected void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     Set<Term> allTerms = new HashSet<>();
     for (ShardResponse r : responses) {
-      if ("true".equalsIgnoreCase(req.getParams().get(ShardParams.SHARDS_TOLERANT)) && r.getException() != null) {
+      if ("true".equalsIgnoreCase(req.getParams().get(ShardParams.SHARDS_TOLERANT))
+          && r.getException() != null) {
         // Can't expect stats if there was an exception for this request on any shard
         // this should only happen when using shards.tolerant=true
         log.debug("Exception shard response={}", r);
         continue;
       }
       if (log.isDebugEnabled()) {
-        log.debug("Merging to global stats, shard={}, response={}", r.getShard(), r.getSolrResponse().getResponse());
+        log.debug(
+            "Merging to global stats, shard={}, response={}",
+            r.getShard(),
+            r.getSolrResponse().getResponse());
       }
       // response's "shard" is really a shardURL, or even a list of URLs
       String shard = r.getShard();
@@ -122,7 +132,7 @@ public class ExactStatsCache extends StatsCache {
       Set<Term> terms = StatsUtil.termsFromEncodedString((String) nl.get(TERMS_KEY));
       allTerms.addAll(terms);
       String colStatsString = (String) nl.get(COL_STATS_KEY);
-      Map<String,CollectionStats> colStats = StatsUtil.colStatsMapFromString(colStatsString);
+      Map<String, CollectionStats> colStats = StatsUtil.colStatsMapFromString(colStatsString);
       if (colStats != null) {
         addToPerShardColStats(req, shard, colStats);
       }
@@ -133,25 +143,35 @@ public class ExactStatsCache extends StatsCache {
     if (log.isDebugEnabled()) printStats(req);
   }
 
-  protected void addToPerShardColStats(SolrQueryRequest req, String shard, Map<String,CollectionStats> colStats) {
+  protected void addToPerShardColStats(
+      SolrQueryRequest req, String shard, Map<String, CollectionStats> colStats) {
     @SuppressWarnings({"unchecked"})
-    Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) req.getContext().computeIfAbsent(PER_SHARD_COL_STATS, o -> new HashMap<>());
+    Map<String, Map<String, CollectionStats>> perShardColStats =
+        (Map<String, Map<String, CollectionStats>>)
+            req.getContext().computeIfAbsent(PER_SHARD_COL_STATS, o -> new HashMap<>());
     perShardColStats.put(shard, colStats);
   }
 
   protected void printStats(SolrQueryRequest req) {
     @SuppressWarnings({"unchecked"})
-    Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
+    Map<String, Map<String, TermStats>> perShardTermStats =
+        (Map<String, Map<String, TermStats>>)
+            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
     @SuppressWarnings({"unchecked"})
-    Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
+    Map<String, Map<String, CollectionStats>> perShardColStats =
+        (Map<String, Map<String, CollectionStats>>)
+            req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
     log.debug("perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
   }
 
-  protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
-    Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
+  protected void addToPerShardTermStats(
+      SolrQueryRequest req, String shard, String termStatsString) {
+    Map<String, TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
       @SuppressWarnings({"unchecked"})
-      Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().computeIfAbsent(PER_SHARD_TERM_STATS, o -> new HashMap<>());
+      Map<String, Map<String, TermStats>> perShardTermStats =
+          (Map<String, Map<String, TermStats>>)
+              req.getContext().computeIfAbsent(PER_SHARD_TERM_STATS, o -> new HashMap<>());
       perShardTermStats.put(shard, termStats);
     }
   }
@@ -160,29 +180,32 @@ public class ExactStatsCache extends StatsCache {
   protected void doReturnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher) {
     Query q = rb.getQuery();
     try {
-      Set<Term> additionalTerms = StatsUtil.termsFromEncodedString(rb.req.getParams().get(TERMS_KEY));
+      Set<Term> additionalTerms =
+          StatsUtil.termsFromEncodedString(rb.req.getParams().get(TERMS_KEY));
       Set<String> additionalFields = StatsUtil.fieldsFromString(rb.req.getParams().get(FIELDS_KEY));
       HashSet<Term> terms = new HashSet<>();
-      HashMap<String,TermStats> statsMap = new HashMap<>();
-      HashMap<String,CollectionStats> colMap = new HashMap<>();
-      IndexSearcher statsCollectingSearcher = new IndexSearcher(searcher.getIndexReader()){
-        @Override
-        public CollectionStatistics collectionStatistics(String field) throws IOException {
-          CollectionStatistics cs = super.collectionStatistics(field);
-          if (cs != null) {
-            colMap.put(field, new CollectionStats(cs));
-          }
-          return cs;
-        }
+      HashMap<String, TermStats> statsMap = new HashMap<>();
+      HashMap<String, CollectionStats> colMap = new HashMap<>();
+      IndexSearcher statsCollectingSearcher =
+          new IndexSearcher(searcher.getIndexReader()) {
+            @Override
+            public CollectionStatistics collectionStatistics(String field) throws IOException {
+              CollectionStatistics cs = super.collectionStatistics(field);
+              if (cs != null) {
+                colMap.put(field, new CollectionStats(cs));
+              }
+              return cs;
+            }
 
-        @Override
-        public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
-          TermStatistics ts = super.termStatistics(term, docFreq, totalTermFreq);
-          terms.add(term);
-          statsMap.put(term.toString(), new TermStats(term.field(), ts));
-          return ts;
-        }
-      };
+            @Override
+            public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq)
+                throws IOException {
+              TermStatistics ts = super.termStatistics(term, docFreq, totalTermFreq);
+              terms.add(term);
+              statsMap.put(term.toString(), new TermStats(term.field(), ts));
+              return ts;
+            }
+          };
       statsCollectingSearcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
       for (String field : additionalFields) {
         if (colMap.containsKey(field)) {
@@ -191,7 +214,8 @@ public class ExactStatsCache extends StatsCache {
         statsCollectingSearcher.collectionStatistics(field);
       }
       for (Term term : additionalTerms) {
-        statsCollectingSearcher.createWeight(searcher.rewrite(new TermQuery(term)), ScoreMode.COMPLETE, 1);
+        statsCollectingSearcher.createWeight(
+            searcher.rewrite(new TermQuery(term)), ScoreMode.COMPLETE, 1);
       }
 
       CloudDescriptor cloudDescriptor = searcher.getCore().getCoreDescriptor().getCloudDescriptor();
@@ -201,18 +225,20 @@ public class ExactStatsCache extends StatsCache {
       if (!terms.isEmpty()) {
         rb.rsp.add(TERMS_KEY, StatsUtil.termsToEncodedString(terms));
       }
-      if (!statsMap.isEmpty()) { //Don't add empty keys
+      if (!statsMap.isEmpty()) { // Don't add empty keys
         String termStatsString = StatsUtil.termStatsMapToString(statsMap);
         rb.rsp.add(TERM_STATS_KEY, termStatsString);
         if (log.isDebugEnabled()) {
-          log.debug("termStats={}, terms={}, numDocs={}", termStatsString, terms, searcher.maxDoc());
+          log.debug(
+              "termStats={}, terms={}, numDocs={}", termStatsString, terms, searcher.maxDoc());
         }
       }
       if (!colMap.isEmpty()) {
         String colStatsString = StatsUtil.colStatsMapToString(colMap);
         rb.rsp.add(COL_STATS_KEY, colStatsString);
         if (log.isDebugEnabled()) {
-          log.debug("collectionStats={}, terms={}, numDocs={}", colStatsString, terms, searcher.maxDoc());
+          log.debug(
+              "collectionStats={}, terms={}, numDocs={}", colStatsString, terms, searcher.maxDoc());
         }
       }
     } catch (IOException e) {
@@ -227,8 +253,8 @@ public class ExactStatsCache extends StatsCache {
     Set<Term> terms = StatsUtil.termsFromEncodedString((String) rb.req.getContext().get(TERMS_KEY));
     if (!terms.isEmpty()) {
       Set<String> fields = terms.stream().map(t -> t.field()).collect(Collectors.toSet());
-      Map<String,TermStats> globalTermStats = new HashMap<>();
-      Map<String,CollectionStats> globalColStats = new HashMap<>();
+      Map<String, TermStats> globalTermStats = new HashMap<>();
+      Map<String, CollectionStats> globalColStats = new HashMap<>();
       // aggregate collection stats, only for the field in terms
       String collectionName = rb.req.getCore().getCoreDescriptor().getCollectionName();
       if (collectionName == null) {
@@ -238,18 +264,21 @@ public class ExactStatsCache extends StatsCache {
       for (String shardUrl : rb.shards) {
         String shard = StatsUtil.shardUrlToShard(collectionName, shardUrl);
         if (shard == null) {
-          log.warn("Can't determine shard from collectionName={} and shardUrl={}, skipping...", collectionName, shardUrl);
+          log.warn(
+              "Can't determine shard from collectionName={} and shardUrl={}, skipping...",
+              collectionName,
+              shardUrl);
           continue;
         } else {
           shards.add(shard);
         }
       }
       for (String shard : shards) {
-        Map<String,CollectionStats> s = getPerShardColStats(rb, shard);
+        Map<String, CollectionStats> s = getPerShardColStats(rb, shard);
         if (s == null) {
           continue;
         }
-        for (Entry<String,CollectionStats> e : s.entrySet()) {
+        for (Entry<String, CollectionStats> e : s.entrySet()) {
           if (!fields.contains(e.getKey())) { // skip non-relevant fields
             continue;
           }
@@ -285,17 +314,21 @@ public class ExactStatsCache extends StatsCache {
     }
   }
 
-  protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
+  protected Map<String, CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
     @SuppressWarnings({"unchecked"})
-    Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) rb.req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
+    Map<String, Map<String, CollectionStats>> perShardColStats =
+        (Map<String, Map<String, CollectionStats>>)
+            rb.req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
     return perShardColStats.get(shard);
   }
 
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
     @SuppressWarnings({"unchecked"})
-    Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
-    Map<String,TermStats> cache = perShardTermStats.get(shard);
-    return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard
+    Map<String, Map<String, TermStats>> perShardTermStats =
+        (Map<String, Map<String, TermStats>>)
+            req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
+    Map<String, TermStats> cache = perShardTermStats.get(shard);
+    return (cache != null) ? cache.get(t) : null; // Term doesn't exist in shard
   }
 
   @Override
@@ -303,49 +336,56 @@ public class ExactStatsCache extends StatsCache {
     String globalTermStats = req.getParams().get(TERM_STATS_KEY);
     String globalColStats = req.getParams().get(COL_STATS_KEY);
     if (globalColStats != null) {
-      Map<String,CollectionStats> colStats = StatsUtil.colStatsMapFromString(globalColStats);
+      Map<String, CollectionStats> colStats = StatsUtil.colStatsMapFromString(globalColStats);
       if (colStats != null) {
-        for (Entry<String,CollectionStats> e : colStats.entrySet()) {
+        for (Entry<String, CollectionStats> e : colStats.entrySet()) {
           addToGlobalColStats(req, e);
         }
       }
     }
     log.debug("Global collection stats={}", globalColStats);
     if (globalTermStats == null) return;
-    Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(globalTermStats);
+    Map<String, TermStats> termStats = StatsUtil.termStatsMapFromString(globalTermStats);
     if (termStats != null) {
-      for (Entry<String,TermStats> e : termStats.entrySet()) {
+      for (Entry<String, TermStats> e : termStats.entrySet()) {
         addToGlobalTermStats(req, e);
       }
     }
   }
 
-  protected void addToGlobalColStats(SolrQueryRequest req,
-                                     Entry<String,CollectionStats> e) {
+  protected void addToGlobalColStats(SolrQueryRequest req, Entry<String, CollectionStats> e) {
     @SuppressWarnings({"unchecked"})
-    Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_COL_STATS, o -> new HashMap<>());
+    Map<String, CollectionStats> currentGlobalColStats =
+        (Map<String, CollectionStats>)
+            req.getContext().computeIfAbsent(CURRENT_GLOBAL_COL_STATS, o -> new HashMap<>());
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
-  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String,TermStats> e) {
+  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String, TermStats> e) {
     @SuppressWarnings({"unchecked"})
-    Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_TERM_STATS, o -> new HashMap<>());
+    Map<String, TermStats> currentGlobalTermStats =
+        (Map<String, TermStats>)
+            req.getContext().computeIfAbsent(CURRENT_GLOBAL_TERM_STATS, o -> new HashMap<>());
     currentGlobalTermStats.put(e.getKey(), e.getValue());
   }
 
   protected static class ExactStatsSource extends StatsSource {
-    private final Map<String,TermStats> termStatsCache;
-    private final Map<String,CollectionStats> colStatsCache;
+    private final Map<String, TermStats> termStatsCache;
+    private final Map<String, CollectionStats> colStatsCache;
     private final StatsCacheMetrics metrics;
 
-    public ExactStatsSource(StatsCacheMetrics metrics, Map<String,TermStats> termStatsCache,
-                            Map<String,CollectionStats> colStatsCache) {
+    public ExactStatsSource(
+        StatsCacheMetrics metrics,
+        Map<String, TermStats> termStatsCache,
+        Map<String, CollectionStats> colStatsCache) {
       this.metrics = metrics;
       this.termStatsCache = termStatsCache;
       this.colStatsCache = colStatsCache;
     }
 
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
+    @Override
+    public TermStatistics termStatistics(
+        SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       // TermStats == null is also true if term has no docFreq anyway,
@@ -354,7 +394,9 @@ public class ExactStatsCache extends StatsCache {
       if (termStats == null) {
         log.debug("Missing global termStats info for term={}, using local stats", term);
         metrics.missingGlobalTermStats.increment();
-        return localSearcher != null ? localSearcher.localTermStatistics(term, docFreq, totalTermFreq) : null;
+        return localSearcher != null
+            ? localSearcher.localTermStatistics(term, docFreq, totalTermFreq)
+            : null;
       } else {
         return termStats.toTermStatistics();
       }

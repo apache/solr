@@ -21,16 +21,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test SOLR-59, echo of query parameters */
-
 public class EchoParamsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
+    initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
   private static final String HEADER_XPATH = "/response/lst[@name='responseHeader']";
-  
+
   @Test
   public void test() {
     defaultEchoParams();
@@ -39,42 +38,51 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
     allEchoParams();
   }
 
-  // the following test methods rely on their order, which is no longer guaranteed by Java 7, so call them directly above:
-  
+  // the following test methods rely on their order, which is no longer guaranteed by Java 7, so
+  // call them directly above:
+
   private void defaultEchoParams() {
     lrf.args.put("wt", "xml");
-    lrf.args.put(CommonParams.VERSION, "2.2");    
-    assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
-    assertQ(req("foo"),"not(//lst[@name='params'])");
+    lrf.args.put(CommonParams.VERSION, "2.2");
+    assertQ(req("foo"), HEADER_XPATH + "/int[@name='status']");
+    assertQ(req("foo"), "not(//lst[@name='params'])");
   }
 
   private void defaultEchoParamsDefaultVersion() {
     lrf.args.put("wt", "xml");
-    lrf.args.remove(CommonParams.VERSION);    
-    assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
-    assertQ(req("foo"),"not(//lst[@name='params'])");
+    lrf.args.remove(CommonParams.VERSION);
+    assertQ(req("foo"), HEADER_XPATH + "/int[@name='status']");
+    assertQ(req("foo"), "not(//lst[@name='params'])");
   }
 
   private void explicitEchoParams() {
     lrf.args.put("wt", "xml");
     lrf.args.put(CommonParams.VERSION, "2.2");
     lrf.args.put("echoParams", "explicit");
-    assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
-    assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']");
-    assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
+    assertQ(req("foo"), HEADER_XPATH + "/int[@name='status']");
+    assertQ(req("foo"), HEADER_XPATH + "/lst[@name='params']");
+    assertQ(req("foo"), HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
   }
 
   private void allEchoParams() {
-    lrf = h.getRequestFactory
-      ("/crazy_custom_qt", 0, 20,
-       CommonParams.VERSION,"2.2",
-       "wt","xml",
-       "echoParams", "all",
-       "echoHandler","true"
-       );
+    lrf =
+        h.getRequestFactory(
+            "/crazy_custom_qt",
+            0,
+            20,
+            CommonParams.VERSION,
+            "2.2",
+            "wt",
+            "xml",
+            "echoParams",
+            "all",
+            "echoHandler",
+            "true");
 
-    assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='fl'][.='implicit']");
-    assertQ(req("foo"),HEADER_XPATH + "/str[@name='handler'][.='org.apache.solr.handler.component.SearchHandler']");
+    assertQ(req("foo"), HEADER_XPATH + "/lst[@name='params']/str[@name='fl'][.='implicit']");
+    assertQ(
+        req("foo"),
+        HEADER_XPATH
+            + "/str[@name='handler'][.='org.apache.solr.handler.component.SearchHandler']");
   }
-
 }

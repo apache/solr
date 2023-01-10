@@ -17,18 +17,19 @@
 package org.apache.solr.util;
 
 /**
- * A <code>long</code>-based iterator.  This is not <i>is-a</i> {@link java.util.Iterator}
- * to prevent autoboxing between <code>Long</code> and <code>long</code>.
+ * A <code>long</code>-based iterator. This is not <i>is-a</i> {@link java.util.Iterator} to prevent
+ * autoboxing between <code>Long</code> and <code>long</code>.
  */
 public interface LongIterator {
-    /**
-     * @return <code>true</code> if and only if there are more elements to
-     *         iterate over.  <code>false</code> otherwise.
-     */
-    boolean hasNext();
+  /**
+   * @return <code>true</code> if and only if there are more elements to iterate over. <code>false
+   *     </code> otherwise.
+   */
+  boolean hasNext();
 
-    /**
-     * @return the next <code>long</code> in the collection.  Only valid after hasNext() has been called and returns true.
-     */
-    long next();
+  /**
+   * @return the next <code>long</code> in the collection. Only valid after hasNext() has been
+   *     called and returns true.
+   */
+  long next();
 }

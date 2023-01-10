@@ -19,10 +19,8 @@ package org.apache.solr.metrics;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 
-/**
- * A {@link FilteringSolrMetricReporter} that has access to its {@link SolrCore}.
- */
-abstract public class SolrCoreReporter extends FilteringSolrMetricReporter {
+/** A {@link FilteringSolrMetricReporter} that has access to its {@link SolrCore}. */
+public abstract class SolrCoreReporter extends FilteringSolrMetricReporter {
 
   protected SolrCore core;
 
@@ -31,8 +29,10 @@ abstract public class SolrCoreReporter extends FilteringSolrMetricReporter {
   }
 
   @Override
-  final public void init(PluginInfo pluginInfo) {
-    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,SolrCore) instead.");
+  public final void init(PluginInfo pluginInfo) {
+    throw new UnsupportedOperationException(
+        getClass().getCanonicalName()
+            + ".init(PluginInfo) is not supported, use init(PluginInfo,SolrCore) instead.");
   }
 
   public void init(PluginInfo pluginInfo, SolrCore core) {
@@ -43,5 +43,4 @@ abstract public class SolrCoreReporter extends FilteringSolrMetricReporter {
   public SolrCore getCore() {
     return core;
   }
-
 }

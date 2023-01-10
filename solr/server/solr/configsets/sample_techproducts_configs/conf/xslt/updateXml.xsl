@@ -21,9 +21,9 @@
   But you can also store a query response XML to disk and feed this XML to
   the XSLTUpdateRequestHandler to index the content. Provided as example only.
 
-  This is part of the Scripting contrib module.
+  This is part of the Scripting module.
 
-  See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
+  See more about this response writer at https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html#xslt-response-writer
 
  -->
 <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>

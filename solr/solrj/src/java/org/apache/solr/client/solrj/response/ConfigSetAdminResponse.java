@@ -18,15 +18,11 @@ package org.apache.solr.client.solrj.response;
 
 import org.apache.solr.common.util.NamedList;
 
-/**
- * No special handling at this time.
- */
-public class ConfigSetAdminResponse extends SolrResponseBase
-{
+/** No special handling at this time. */
+public class ConfigSetAdminResponse extends SolrResponseBase {
   @SuppressWarnings({"unchecked"})
-  public NamedList<String> getErrorMessages()
-  {
-     return (NamedList<String>) getResponse().get( "exceptions" );
+  public NamedList<String> getErrorMessages() {
+    return (NamedList<String>) getResponse().get("exceptions");
   }
 
   @SuppressWarnings({"unchecked"})

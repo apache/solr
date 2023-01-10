@@ -23,7 +23,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
 public class NoMergePolicyFactory extends SimpleMergePolicyFactory {
-  public NoMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public NoMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
 

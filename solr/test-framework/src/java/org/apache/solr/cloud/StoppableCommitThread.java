@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.StoppableThread;
 import org.slf4j.Logger;
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class StoppableCommitThread extends StoppableThread {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private final SolrClient cloudClient;
   private final long timeBetweenCommitsMs;
   private final boolean softCommits;
@@ -34,13 +33,14 @@ public class StoppableCommitThread extends StoppableThread {
   private final AtomicInteger numCommits = new AtomicInteger(0);
   private final AtomicInteger numFails = new AtomicInteger(0);
 
-  public StoppableCommitThread(SolrClient cloudClient, long timeBetweenCommitsMs, boolean softCommits) {
+  public StoppableCommitThread(
+      SolrClient cloudClient, long timeBetweenCommitsMs, boolean softCommits) {
     super("StoppableCommitThread");
     this.cloudClient = cloudClient;
     this.timeBetweenCommitsMs = timeBetweenCommitsMs;
     this.softCommits = softCommits;
   }
-  
+
   @Override
   public void run() {
     log.debug("StoppableCommitThread started");
@@ -59,7 +59,10 @@ public class StoppableCommitThread extends StoppableThread {
       }
     }
     if (log.isInfoEnabled()) {
-      log.info("StoppableCommitThread finished. Committed {} times. Failed {} times.", numCommits.get(), numFails.get());
+      log.info(
+          "StoppableCommitThread finished. Committed {} times. Failed {} times.",
+          numCommits.get(),
+          numFails.get());
     }
   }
 
@@ -67,5 +70,4 @@ public class StoppableCommitThread extends StoppableThread {
   public void safeStop() {
     this.stop = true;
   }
-
 }

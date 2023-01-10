@@ -40,7 +40,7 @@
       </subtitle>
       <author>
         <name>Apache Solr</name>
-        <email>solr-user@lucene.apache.org</email>
+        <email>users@solr.apache.org</email>
       </author>
       <link rel="self" type="application/atom+xml" 
             href="http://localhost:8983/solr/q={$query}&amp;wt=xslt&amp;tr=atom.xsl"/>

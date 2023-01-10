@@ -19,7 +19,6 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -33,35 +32,28 @@ import org.apache.solr.search.SolrIndexSearcher;
 /**
  * Add values from a ValueSource (function query etc)
  *
- * NOT really sure how or if this could work...
- *
+ * <p>NOT really sure how or if this could work...
  *
  * @since solr 4.0
  */
-public class ValueSourceAugmenter extends DocTransformer
-{
+public class ValueSourceAugmenter extends DocTransformer {
   public final String name;
   public final QParser qparser;
   public final ValueSource valueSource;
 
-
-
-  public ValueSourceAugmenter( String name, QParser qparser, ValueSource valueSource )
-  {
+  public ValueSourceAugmenter(String name, QParser qparser, ValueSource valueSource) {
     this.name = name;
     this.qparser = qparser;
     this.valueSource = valueSource;
   }
 
   @Override
-  public String getName()
-  {
+  public String getName() {
     return name;
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void setContext( ResultContext context ) {
+  public void setContext(ResultContext context) {
     super.setContext(context);
     try {
       searcher = context.getSearcher();
@@ -73,8 +65,7 @@ public class ValueSourceAugmenter extends DocTransformer
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  Map fcontext;
+  Map<Object, Object> fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
 
@@ -87,22 +78,26 @@ public class ValueSourceAugmenter extends DocTransformer
       // TODO: calculate this stuff just once across diff functions
       int idx = ReaderUtil.subIndex(docid, readerContexts);
       LeafReaderContext rcontext = readerContexts.get(idx);
-      @SuppressWarnings({"unchecked"})
       FunctionValues values = valueSource.getValues(fcontext, rcontext);
       int localId = docid - rcontext.docBase;
-      setValue(doc,values.objectVal(localId));
+      setValue(doc, values.objectVal(localId));
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception at docid " + docid + " for valuesource " + valueSource, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "exception at docid " + docid + " for valuesource " + valueSource,
+          e);
     }
   }
 
   /** Always returns true */
   @Override
-  public boolean needsSolrIndexSearcher() { return true; }
-  
+  public boolean needsSolrIndexSearcher() {
+    return true;
+  }
+
   protected void setValue(SolrDocument doc, Object val) {
-    if(val!=null) {
-      doc.setField( name, val );
+    if (val != null) {
+      doc.setField(name, val);
     }
   }
 }

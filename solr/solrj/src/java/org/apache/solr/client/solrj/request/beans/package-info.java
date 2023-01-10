@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Annotated Data objects used in V2 Requests
- */
+/** Annotated Data objects used in V2 Requests */
 package org.apache.solr.client.solrj.request.beans;
-
-

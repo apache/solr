@@ -18,23 +18,23 @@ package org.apache.solr.util;
 
 import java.util.Arrays;
 
-/** A native long priority queue.
- * 
+/**
+ * A native long priority queue.
+ *
  * @lucene.internal
-*/
+ */
 public class LongPriorityQueue {
-  protected int size;             // number of elements currently in the queue
-  protected int currentCapacity;  // number of elements the queue can hold w/o expanding
-  protected int maxSize;          // max number of elements allowed in the queue 
+  protected int size; // number of elements currently in the queue
+  protected int currentCapacity; // number of elements the queue can hold w/o expanding
+  protected int maxSize; // max number of elements allowed in the queue
   protected long[] heap;
-  protected final long sentinel;   // represents a null return value
+  protected final long sentinel; // represents a null return value
 
   public LongPriorityQueue(int initialSize, int maxSize, long sentinel) {
     this.maxSize = maxSize;
     this.sentinel = sentinel;
     initialize(initialSize);
   }
-
 
   protected void initialize(int sz) {
     int heapSize;
@@ -70,16 +70,15 @@ public class LongPriorityQueue {
   }
 
   /**
-   * Adds an object to a PriorityQueue in log(size) time. If one tries to add
-   * more objects than maxSize from initialize an
-   * {@link ArrayIndexOutOfBoundsException} is thrown.
-   * 
+   * Adds an object to a PriorityQueue in log(size) time. If one tries to add more objects than
+   * maxSize from initialize an {@link ArrayIndexOutOfBoundsException} is thrown.
+   *
    * @return the new 'top' element in the queue.
    */
   public long add(long element) {
     if (size >= currentCapacity) {
-      int newSize = Math.min(currentCapacity <<1, maxSize);
-      if (newSize < currentCapacity) newSize = Integer.MAX_VALUE;  // handle overflow
+      int newSize = Math.min(currentCapacity << 1, maxSize);
+      if (newSize < currentCapacity) newSize = Integer.MAX_VALUE; // handle overflow
       resize(newSize);
     }
     size++;
@@ -88,10 +87,9 @@ public class LongPriorityQueue {
     return heap[1];
   }
 
- /**
-   * Adds an object to a PriorityQueue in log(size) time. If one tries to add
-   * more objects than the current capacity, an
-   * {@link ArrayIndexOutOfBoundsException} is thrown.
+  /**
+   * Adds an object to a PriorityQueue in log(size) time. If one tries to add more objects than the
+   * current capacity, an {@link ArrayIndexOutOfBoundsException} is thrown.
    */
   public void addNoCheck(long element) {
     ++size;
@@ -100,17 +98,13 @@ public class LongPriorityQueue {
   }
 
   /**
-   * Adds an object to a PriorityQueue in log(size) time.
-   * It returns the smallest object (if any) that was
-   * dropped off the heap because it was full, or
-   * the sentinel value.
+   * Adds an object to a PriorityQueue in log(size) time. It returns the smallest object (if any)
+   * that was dropped off the heap because it was full, or the sentinel value.
    *
-   *  This can be
-   * the given parameter (in case it is smaller than the
-   * full heap's minimum, and couldn't be added), or another
-   * object that was previously the smallest value in the
-   * heap and now has been replaced by a larger one, or null
-   * if the queue wasn't yet full with maxSize elements.
+   * <p>This can be the given parameter (in case it is smaller than the full heap's minimum, and
+   * couldn't be added), or another object that was previously the smallest value in the heap and
+   * now has been replaced by a larger one, or null if the queue wasn't yet full with maxSize
+   * elements.
    */
   public long insertWithOverflow(long element) {
     if (size < maxSize) {
@@ -126,8 +120,10 @@ public class LongPriorityQueue {
     }
   }
 
-  /** inserts the element and returns true if this element caused another element
-   * to be dropped from the queue. */
+  /**
+   * inserts the element and returns true if this element caused another element to be dropped from
+   * the queue.
+   */
   public boolean insert(long element) {
     if (size < maxSize) {
       add(element);
@@ -147,19 +143,21 @@ public class LongPriorityQueue {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size)
-    time.  Only valid if size() &gt; 0.
+  /**
+   * Removes and returns the least element of the PriorityQueue in log(size) time. Only valid if
+   * size() &gt; 0.
    */
   public long pop() {
-    long result = heap[1];            // save first value
-    heap[1] = heap[size];            // move last to first
+    long result = heap[1]; // save first value
+    heap[1] = heap[size]; // move last to first
     size--;
-    downHeap();          // adjust heap
+    downHeap(); // adjust heap
     return result;
   }
-  
+
   /**
    * Should be called when the Object at top changes values.
+   *
    * @return the new 'top' element.
    */
   public long updateTop() {
@@ -172,25 +170,26 @@ public class LongPriorityQueue {
     return size;
   }
 
-  /** Returns the array used to hold the heap, with the smallest item at array[1]
-   *  and the last (but not necessarily largest) at array[size()].  This is *not*
-   *  fully sorted.
+  /**
+   * Returns the array used to hold the heap, with the smallest item at array[1] and the last (but
+   * not necessarily largest) at array[size()]. This is *not* fully sorted.
    */
   public long[] getInternalArray() {
     return heap;
   }
 
-  /** Pops the smallest n items from the heap, placing them in the internal array at
-   *  arr[size] through arr[size-(n-1)] with the smallest (first element popped)
-   *  being at arr[size].  The internal array is returned.
+  /**
+   * Pops the smallest n items from the heap, placing them in the internal array at arr[size]
+   * through arr[size-(n-1)] with the smallest (first element popped) being at arr[size]. The
+   * internal array is returned.
    */
   public long[] sort(int n) {
     while (--n >= 0) {
-      long result = heap[1];            // save first value
-      heap[1] = heap[size];            // move last to first
-      heap[size] = result;                  // place it last
+      long result = heap[1]; // save first value
+      heap[1] = heap[size]; // move last to first
+      heap[size] = result; // place it last
       size--;
-      downHeap();          // adjust heap
+      downHeap(); // adjust heap
     }
     return heap;
   }
@@ -202,26 +201,26 @@ public class LongPriorityQueue {
 
   private void upHeap() {
     int i = size;
-    long node = heap[i];        // save bottom node
+    long node = heap[i]; // save bottom node
     int j = i >>> 1;
     while (j > 0 && node < heap[j]) {
-      heap[i] = heap[j];        // shift parents down
+      heap[i] = heap[j]; // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;          // install saved node
+    heap[i] = node; // install saved node
   }
 
   private void downHeap() {
     int i = 1;
-    long node = heap[i];        // save top node
-    int j = i << 1;          // find smaller child
+    long node = heap[i]; // save top node
+    int j = i << 1; // find smaller child
     int k = j + 1;
     if (k <= size && heap[k] < heap[j]) {
       j = k;
     }
     while (j <= size && heap[j] < node) {
-      heap[i] = heap[j];        // shift up child
+      heap[i] = heap[j]; // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -229,6 +228,6 @@ public class LongPriorityQueue {
         j = k;
       }
     }
-    heap[i] = node;          // install saved node
+    heap[i] = node; // install saved node
   }
 }

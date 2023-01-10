@@ -16,20 +16,15 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
-/**
- * throws a {@link java.lang.Error} on init for testing purposes
- */
-public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
-{
+/** throws a {@link java.lang.Error} on init for testing purposes */
+public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     /* NOOP */
   }
 
@@ -41,11 +36,16 @@ public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     String errorMessage = (String) args.get("error");
     if (errorMessage != null) {
       throw new Error(errorMessage);
     }
     throw new Error("Doing my job, throwing a java.lang.Error");
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
   }
 }

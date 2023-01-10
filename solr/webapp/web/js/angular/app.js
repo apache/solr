@@ -135,6 +135,10 @@ solrAdminApp.config([
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
       }).
+      when('/:core/paramsets', {
+        templateUrl: 'partials/paramsets.html',
+        controller: 'ParamSetsController'
+      }).
       when('/:core/files', {
         templateUrl: 'partials/files.html',
         controller: 'FilesController'
@@ -172,6 +176,14 @@ solrAdminApp.config([
       when('/:core/segments', {
         templateUrl: 'partials/segments.html',
         controller: 'SegmentsController'
+      }).
+      when('/~schema-designer', {
+        templateUrl: 'partials/schema-designer.html',
+        controller: 'SchemaDesignerController'
+      }).
+      when('/~security', {
+        templateUrl: 'partials/security.html',
+        controller: 'SecurityController'
       }).
       otherwise({
         templateUrl: 'partials/unknown.html',
@@ -368,7 +380,9 @@ solrAdminApp.config([
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
     }
-    config.timeout = 10000;
+    if (!config.timeout) {
+      config.timeout = 10000;
+    }
     return config || $q.when(config);
   };
 
@@ -377,6 +391,7 @@ solrAdminApp.config([
     if (activeRequests == 0) {
       $rootScope.$broadcast('loadingStatusInactive');
     }
+    $rootScope.showAuthzFailures = false;
     if ($rootScope.retryCount>0) {
       $rootScope.connectionRecovered = true;
       $rootScope.retryCount=0;
@@ -401,6 +416,9 @@ solrAdminApp.config([
     if (rejection.config.headers.doNotIntercept) {
         return rejection;
     }
+
+    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -408,7 +426,7 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
-    } else if (rejection.status === 401) {
+    } else if (rejection.status === 401 && !isHandledBySchemaDesigner) {
       // Authentication redirect
       var headers = rejection.headers();
       var wwwAuthHeader = headers['www-authenticate'];
@@ -429,8 +447,14 @@ solrAdminApp.config([
         sessionStorage.setItem("auth.location", $location.path());
         $location.path('/login');
       }
+    } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
+      // No permission
+      $rootScope.showAuthzFailures = true;
     } else {
-      $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      // schema designer prefers to handle errors itself
+      if (!isHandledBySchemaDesigner) {
+        $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      }
     }
     return $q.reject(rejection);
   };
@@ -458,7 +482,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -472,6 +496,11 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.aliases = [];
   }
 
+  $scope.permissions = permissions;
+  $scope.isPermitted = function (permissions) {
+    return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
+  }
+
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
     Cores.list(function(data) {
@@ -480,6 +509,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       delete $scope.currentCore;
       for (key in data.status) {
         var core = data.status[key];
+        if (core.name.startsWith("._designer_")) {
+          continue;
+        }
         $scope.cores.push(core);
         if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
             $scope.currentCore = core;
@@ -491,6 +523,14 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+      $scope.usersPermissions = data.security.permissions;
+
+      $scope.isSchemaDesignerEnabled = $scope.isPermitted([
+        permissions.CONFIG_EDIT_PERM,
+        permissions.SCHEMA_EDIT_PERM,
+        permissions.READ_PERM,
+        permissions.UPDATE_PERM
+      ]);
 
       var currentCollectionName = $route.current.params.core;
       delete $scope.currentCollection;
@@ -511,6 +551,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             }
             $scope.collections = [];
             for (key in cdata.collections) {
+              if (cdata.collections[key].startsWith("._designer_")) {
+                continue; // ignore temp designer collections
+              }
               var collection = {name: cdata.collections[key], type: 'collection'};
               $scope.collections.push(collection);
               if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {

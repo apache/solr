@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.response.schema;
 
 import java.util.List;
-
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 
 public class FieldTypeRepresentation extends FieldTypeDefinition {
@@ -25,8 +24,7 @@ public class FieldTypeRepresentation extends FieldTypeDefinition {
 
   private List<String> dynamicFields;
 
-  public FieldTypeRepresentation() {
-  }
+  public FieldTypeRepresentation() {}
 
   public List<String> getFields() {
     return fields;

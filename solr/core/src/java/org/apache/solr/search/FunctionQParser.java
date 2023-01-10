@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
@@ -36,17 +35,23 @@ import org.apache.solr.search.function.FieldNameValueSource;
 
 public class FunctionQParser extends QParser {
 
-  public static final int FLAG_CONSUME_DELIMITER = 0x01;  // consume delimiter after parsing arg
+  public static final int FLAG_CONSUME_DELIMITER = 0x01; // consume delimiter after parsing arg
   public static final int FLAG_IS_AGG = 0x02;
-  public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04; // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving to a real ValueSource
+  // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving
+  // to a real ValueSource
+  public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04;
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
-  /** @lucene.internal */
+  /**
+   * @lucene.internal
+   */
   public StrParser sp;
+
   boolean parseMultipleSources = true;
   boolean parseToEnd = true;
 
-  public FunctionQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public FunctionQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
     setString(qstr);
   }
@@ -55,12 +60,12 @@ public class FunctionQParser extends QParser {
   public void setString(String s) {
     super.setString(s);
     if (s != null) {
-      sp = new StrParser( s );
+      sp = new StrParser(s);
     }
   }
 
   public void setParseMultipleSources(boolean parseMultipleSources) {
-    this.parseMultipleSources = parseMultipleSources;  
+    this.parseMultipleSources = parseMultipleSources;
   }
 
   /** parse multiple comma separated value sources */
@@ -78,15 +83,18 @@ public class FunctionQParser extends QParser {
   }
 
   @Override
+  @SuppressWarnings("ErroneousBitwiseExpression")
   public Query parse() throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
-    for(;;) {
+    for (; ; ) {
+      // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+      // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
       ValueSource valsource = parseValueSource(FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
       if (!parseMultipleSources) {
-        vs = valsource; 
+        vs = valsource;
         break;
       } else {
         if (lst != null) {
@@ -120,15 +128,15 @@ public class FunctionQParser extends QParser {
 
   /**
    * Are there more arguments in the argument list being parsed?
-   * 
+   *
    * @return whether more args exist
    */
   public boolean hasMoreArguments() throws SyntaxError {
     int ch = sp.peek();
     /* determine whether the function is ending with a paren or end of str */
-    return (! (ch == 0 || ch == ')') );
+    return (!(ch == 0 || ch == ')'));
   }
-  
+
   /*
    * TODO: Doc
    */
@@ -137,14 +145,14 @@ public class FunctionQParser extends QParser {
     if (argWasQuoted()) {
       throw new SyntaxError("Expected identifier instead of quoted string:" + value);
     } else if (value == null) {
-      throw new SyntaxError("Expected identifier instead of 'null' for function "  + sp);
+      throw new SyntaxError("Expected identifier instead of 'null' for function " + sp);
     }
     return value;
   }
-  
+
   /**
    * Parse a float.
-   * 
+   *
    * @return Float
    */
   public Float parseFloat() throws SyntaxError {
@@ -153,12 +161,13 @@ public class FunctionQParser extends QParser {
     try {
       return Float.parseFloat(str);
     } catch (NumberFormatException | NullPointerException e) {
-      throw new SyntaxError("Expected float instead of '" + str + "' for function "  + sp);
+      throw new SyntaxError("Expected float instead of '" + str + "' for function " + sp);
     }
   }
 
   /**
    * Parse a Double
+   *
    * @return double
    */
   public double parseDouble() throws SyntaxError {
@@ -173,6 +182,7 @@ public class FunctionQParser extends QParser {
 
   /**
    * Parse an integer
+   *
    * @return An int
    */
   public int parseInt() throws SyntaxError {
@@ -181,12 +191,12 @@ public class FunctionQParser extends QParser {
     try {
       return Integer.parseInt(str);
     } catch (NumberFormatException | NullPointerException e) {
-      throw new SyntaxError("Expected integer instead of '" + str + "' for function "  + sp);
+      throw new SyntaxError("Expected integer instead of '" + str + "' for function " + sp);
     }
   }
 
-
   private boolean argWasQuoted;
+
   public boolean argWasQuoted() {
     return argWasQuoted;
   }
@@ -198,7 +208,8 @@ public class FunctionQParser extends QParser {
     char ch = sp.peek();
     String val = null;
     switch (ch) {
-      case ')': return null;
+      case ')':
+        return null;
       case '$':
         sp.pos++;
         String param = sp.getId();
@@ -213,12 +224,13 @@ public class FunctionQParser extends QParser {
         // read unquoted literal ended by whitespace ',' or ')'
         // there is no escaping.
         int valStart = sp.pos;
-        for (;;) {
+        for (; ; ) {
           if (sp.pos >= sp.end) {
-            throw new SyntaxError("Missing end to unquoted value starting at " + valStart + " str='" + sp.val +"'");
+            throw new SyntaxError(
+                "Missing end to unquoted value starting at " + valStart + " str='" + sp.val + "'");
           }
           char c = sp.val.charAt(sp.pos);
-          if (c==')' || c==',' || Character.isWhitespace(c)) {
+          if (c == ')' || c == ',' || Character.isWhitespace(c)) {
             val = sp.val.substring(valStart, sp.pos);
             break;
           }
@@ -231,11 +243,9 @@ public class FunctionQParser extends QParser {
     return val;
   }
 
-  
   /**
-   * Parse a list of ValueSource.  Must be the final set of arguments
-   * to a ValueSource.
-   * 
+   * Parse a list of ValueSource. Must be the final set of arguments to a ValueSource.
+   *
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList() throws SyntaxError {
@@ -243,11 +253,9 @@ public class FunctionQParser extends QParser {
   }
 
   /**
-   * Parse a list of ValueSource.  Must be the final set of arguments
-   * to a ValueSource.
+   * Parse a list of ValueSource. Must be the final set of arguments to a ValueSource.
    *
    * @param flags - customize parsing behavior
-   *
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList(int flags) throws SyntaxError {
@@ -258,43 +266,41 @@ public class FunctionQParser extends QParser {
     return sources;
   }
 
-  /**
-   * Parse an individual ValueSource.
-   */
+  /** Parse an individual ValueSource. */
   public ValueSource parseValueSource() throws SyntaxError {
     /* consume the delimiter afterward for an external call to parseValueSource */
     return parseValueSource(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER);
   }
-  
+
   /*
    * TODO: Doc
    */
   public Query parseNestedQuery() throws SyntaxError {
     Query nestedQuery;
-    
+
     if (sp.opt("$")) {
       String param = sp.getId();
       String qstr = getParam(param);
-      qstr = qstr==null ? "" : qstr;
+      qstr = qstr == null ? "" : qstr;
       nestedQuery = subQuery(qstr, null).getQuery();
 
       // nestedQuery would be null when de-referenced query value is not specified
       // Ex: query($qq) in request with no qq param specified
       if (nestedQuery == null) {
-        throw new SyntaxError("Missing param " + param + " while parsing function '" + sp.val + "'");
+        throw new SyntaxError(
+            "Missing param " + param + " while parsing function '" + sp.val + "'");
       }
-    }
-    else {
+    } else {
       int start = sp.pos;
       String v = sp.val;
-  
+
       String qs = v;
       ModifiableSolrParams nestedLocalParams = new ModifiableSolrParams();
       int end = QueryParsing.parseLocalParams(qs, start, nestedLocalParams, getParams());
-  
+
       QParser sub;
-  
-      if (end>start) {
+
+      if (end > start) {
         if (nestedLocalParams.get(QueryParsing.V) != null) {
           // value specified directly in local params... so the end of the
           // query should be the end of the local params.
@@ -304,16 +310,19 @@ public class FunctionQParser extends QParser {
           sub = subQuery(qs, null);
           // int subEnd = sub.findEnd(')');
           // TODO.. implement functions to find the end of a nested query
-          throw new SyntaxError("Nested local params must have value in v parameter.  got '" + qs + "'");
+          throw new SyntaxError(
+              "Nested local params must have value in v parameter.  got '" + qs + "'");
         }
       } else {
-        throw new SyntaxError("Nested function query must use $param or {!v=value} forms. got '" + qs + "'");
+        throw new SyntaxError(
+            "Nested function query must use $param or {!v=value} forms. got '" + qs + "'");
       }
-  
-      sp.pos += end-start;  // advance past nested query
+
+      sp.pos += end - start; // advance past nested query
       nestedQuery = sub.getQuery();
       // handling null check on nestedQuery separately, so that proper error can be returned
-      // one case this would be possible when v is specified but v's value is empty or has only spaces
+      // one case this would be possible when v is specified but v's value is empty or has only
+      // spaces
       if (nestedQuery == null) {
         throw new SyntaxError("Nested function query returned null for '" + sp.val + "'");
       }
@@ -325,18 +334,24 @@ public class FunctionQParser extends QParser {
 
   /**
    * Parse an individual value source.
-   * 
-   * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource  
+   *
+   * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource
    */
-   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
-     return parseValueSource( doConsumeDelimiter ? (FLAG_DEFAULT | FLAG_CONSUME_DELIMITER) : (FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER) );
-   }
+  @SuppressWarnings("ErroneousBitwiseExpression")
+  protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
+    // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+    // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
+    return parseValueSource(
+        doConsumeDelimiter
+            ? (FLAG_DEFAULT | FLAG_CONSUME_DELIMITER)
+            : (FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER));
+  }
 
-   protected ValueSource parseValueSource(int flags) throws SyntaxError {
+  protected ValueSource parseValueSource(int flags) throws SyntaxError {
     ValueSource valueSource;
-    
+
     int ch = sp.peek();
-    if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
         valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());
@@ -346,14 +361,15 @@ public class FunctionQParser extends QParser {
         // shouldn't happen
         valueSource = new ConstValueSource(num.floatValue());
       }
-    } else if (ch == '"' || ch == '\''){
+    } else if (ch == '"' || ch == '\'') {
       valueSource = new LiteralValueSource(sp.getQuotedString());
     } else if (ch == '$') {
       sp.pos++;
       String param = sp.getId();
       String val = getParam(param);
       if (val == null) {
-        throw new SyntaxError("Missing param " + param + " while parsing function '" + sp.val + "'");
+        throw new SyntaxError(
+            "Missing param " + param + " while parsing function '" + sp.val + "'");
       }
 
       if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0 && req.getSchema().getFieldOrNull(val) != null) {
@@ -375,8 +391,8 @@ public class FunctionQParser extends QParser {
         }
       }
 
-      /***
-       // dereference *simple* argument (i.e., can't currently be a function)
+      /*
+      // dereference *simple* argument (i.e., can't currently be a function)
        // In the future we could support full function dereferencing via a stack of ValueSource (or StringParser) objects
       ch = val.length()==0 ? '\0' : val.charAt(0);
 
@@ -404,7 +420,7 @@ public class FunctionQParser extends QParser {
           valueSource = f.getType().getValueSource(f, this);
         }
       }
-       ***/
+      */
 
     } else {
 
@@ -412,7 +428,7 @@ public class FunctionQParser extends QParser {
       if (sp.opt("(")) {
         // a function... look it up.
         ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
-        if (argParser==null) {
+        if (argParser == null) {
           throw new SyntaxError("Unknown function " + id + " in FunctionQuery(" + sp + ")");
         }
         valueSource = argParser.parse(this);
@@ -432,17 +448,18 @@ public class FunctionQParser extends QParser {
           }
         }
       }
-
     }
-    
+
     if ((flags & FLAG_CONSUME_DELIMITER) != 0) {
       consumeArgumentDelimiter();
     }
-    
+
     return valueSource;
   }
 
-  /** @lucene.experimental */
+  /**
+   * @lucene.experimental
+   */
   public AggValueSource parseAgg(int flags) throws SyntaxError {
     String origId = sp.getId();
     AggValueSource vs = null;
@@ -453,7 +470,7 @@ public class FunctionQParser extends QParser {
       vs = parseAgg(flags | FLAG_IS_AGG);
     } else {
       // parse as an aggregation...
-      String id = origId.startsWith("agg_")? origId: "agg_" + origId;
+      String id = origId.startsWith("agg_") ? origId : "agg_" + origId;
       hasParen = sp.opt("(");
 
       ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
@@ -462,15 +479,25 @@ public class FunctionQParser extends QParser {
         if (argParser == null) {
           throw new SyntaxError("Unknown aggregation '" + origId + "' in input (" + sp + ")");
         } else {
-          throw new SyntaxError("Expected multi-doc aggregation from '" +  origId +
-              "' but got per-doc function in input (" + sp + ")");
+          throw new SyntaxError(
+              "Expected multi-doc aggregation from '"
+                  + origId
+                  + "' but got per-doc function in input ("
+                  + sp
+                  + ")");
         }
       }
 
       ValueSource vv = argParser.parse(this);
       if (!(vv instanceof AggValueSource)) {
-        throw new SyntaxError("Expected multi-doc aggregation from '" + origId +
-            "' but got (" + vv + ") in (" + sp + ")");
+        throw new SyntaxError(
+            "Expected multi-doc aggregation from '"
+                + origId
+                + "' but got ("
+                + vv
+                + ") in ("
+                + sp
+                + ")");
       }
       vs = (AggValueSource) vv;
     }
@@ -486,11 +513,10 @@ public class FunctionQParser extends QParser {
     return vs;
   }
 
-
   /**
-   * Consume an argument delimiter (a comma) from the token stream.
-   * Only consumes if more arguments should exist (no ending parens or end of string).
-   * 
+   * Consume an argument delimiter (a comma) from the token stream. Only consumes if more arguments
+   * should exist (no ending parens or end of string).
+   *
    * @return whether a delimiter was consumed
    */
   protected boolean consumeArgumentDelimiter() throws SyntaxError {
@@ -499,9 +525,7 @@ public class FunctionQParser extends QParser {
       sp.expect(",");
       return true;
     }
-   
+
     return false;
   }
-    
-
 }

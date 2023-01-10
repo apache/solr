@@ -16,17 +16,19 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -44,6 +46,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -51,14 +54,11 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   private static String tempDirProp;
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   /*
   @Override
@@ -91,17 +91,16 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setConfigSet("configset-2");
 
     CoreAdminResponse response = req.process(client);
-    assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
+    MatcherAssert.assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
 
     try (SolrCore core = cores.getCore("corewithconfigset")) {
-      assertThat(core, is(notNullValue()));
+      MatcherAssert.assertThat(core, is(notNullValue()));
     }
-
   }
 
   @Test
   public void testCustomUlogDir() throws Exception {
-    
+
     try (SolrClient client = getSolrAdmin()) {
 
       File dataDir = createTempDir("data").toFile();
@@ -111,8 +110,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores.getAllowPaths().add(newCoreInstanceDir.toPath()); // Allow the test dir
 
       File instanceDir = new File(cores.getSolrHome());
-      FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
-          "newcore"));
+      FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir, "newcore"));
 
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("newcore");
@@ -126,11 +124,11 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       req.setIsTransient(true);
       req.process(client);
 
-      // Show that the newly-created core has values for load on startup and transient different than defaults due to the
-      // above.
+      // Show that the newly-created core has values for load on startup and transient different
+      // than defaults due to the above.
       File logDir;
       try (SolrCore coreProveIt = cores.getCore("collection1");
-           SolrCore core = cores.getCore("newcore")) {
+          SolrCore core = cores.getCore("newcore")) {
 
         assertTrue(core.getCoreDescriptor().isTransient());
         assertFalse(coreProveIt.getCoreDescriptor().isTransient());
@@ -141,15 +139,15 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
         logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
       }
 
-      assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
-
+      assertEquals(
+          new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(),
+          logDir.getAbsolutePath());
     }
-    
   }
-  
+
   @Test
   public void testErrorCases() throws Exception {
-    
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "BADACTION");
     String collectionName = "badactioncollection";
@@ -158,25 +156,32 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     request.setPath("/admin/cores");
     expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
   }
-  
+
   @Test
   public void testInvalidCoreNamesAreRejectedWhenCreatingCore() {
     final Create createRequest = new Create();
-    SolrException e = expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
+    SolrException e =
+        expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid core"));
     assertTrue(exceptionMessage.contains("invalid$core@name"));
-    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
+    assertTrue(
+        exceptionMessage.contains(
+            "must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
-  
+
   @Test
   public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
-    SolrException e = expectThrows(SolrException.class,
-        () -> CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null));
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null));
     final String exceptionMessage = e.getMessage();
     assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
     assertTrue(exceptionMessage.contains("invalid$core@name"));
-    assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
+    assertTrue(
+        exceptionMessage.contains(
+            "must consist entirely of periods, underscores, hyphens, and alphanumerics"));
   }
 
   @Test
@@ -216,21 +221,25 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     QueryResponse rsp = cli0.query(q);
     SolrDocumentList docs = rsp.getResults();
     assertEquals(2, docs.size());
-    docs.forEach(doc -> {
-      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
-    });
+    docs.forEach(
+        doc -> {
+          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+        });
 
     rsp = cli1.query(q);
     docs = rsp.getResults();
     assertEquals(1, docs.size());
-    docs.forEach(doc -> {
-      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
-    });
+    docs.forEach(
+        doc -> {
+          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+        });
 
     // assert initial metrics
     SolrMetricManager metricManager = cores.getMetricManager();
-    String core0RegistryName = SolrCoreMetricManager.createRegistryName(false, null, null, null, "core0");
-    String core1RegistryName = SolrCoreMetricManager.createRegistryName(false, null, null,null, "core1");
+    String core0RegistryName =
+        SolrCoreMetricManager.createRegistryName(false, null, null, null, "core0");
+    String core1RegistryName =
+        SolrCoreMetricManager.createRegistryName(false, null, null, null, "core1");
     MetricRegistry core0Registry = metricManager.registry(core0RegistryName);
     MetricRegistry core1Registry = metricManager.registry(core1RegistryName);
 
@@ -249,16 +258,18 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     rsp = cli0.query(q);
     docs = rsp.getResults();
     assertEquals(1, docs.size());
-    docs.forEach(doc -> {
-      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
-    });
+    docs.forEach(
+        doc -> {
+          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core1-"));
+        });
 
     rsp = cli1.query(q);
     docs = rsp.getResults();
     assertEquals(2, docs.size());
-    docs.forEach(doc -> {
-      assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
-    });
+    docs.forEach(
+        doc -> {
+          assertTrue(doc.toString(), doc.getFieldValue("id").toString().startsWith("core0-"));
+        });
 
     core0Registry = metricManager.registry(core0RegistryName);
     core1Registry = metricManager.registry(core1RegistryName);
@@ -269,11 +280,11 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
   public void testInvalidRequestRecovery() throws SolrServerException, IOException {
-      RequestRecovery recoverRequestCmd = new RequestRecovery();
-      recoverRequestCmd.setCoreName("non_existing_core");
-      expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
+    RequestRecovery recoverRequestCmd = new RequestRecovery();
+    recoverRequestCmd.setCoreName("non_existing_core");
+    expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
   }
-  
+
   @Test
   public void testReloadCoreAfterFailure() throws Exception {
     cores.shutdown();
@@ -312,10 +323,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @BeforeClass
   public static void before() {
     // wtf?
-    if (System.getProperty("tempDir") != null)
-      tempDirProp = System.getProperty("tempDir");
+    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
   }
-  
+
   @After
   public void after() {
     // wtf?
@@ -324,8 +334,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     } else {
       System.clearProperty("tempDir");
     }
-    
+
     System.clearProperty("solr.solr.home");
   }
-  
 }

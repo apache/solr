@@ -16,28 +16,27 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.search.Query;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
+    String xml =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
     Document doc = getDocumentFromString(xml);
     try {
       filterBuilder.getQuery(doc.getDocumentElement());
@@ -47,11 +46,12 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     fail("Expected to throw " + ParserException.class);
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetFilterInt() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
+    String xml =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
     Document doc = getDocumentFromString(xml);
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
     assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
@@ -63,7 +63,8 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
+    String xml2 =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
     assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
@@ -76,11 +77,12 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetFilterLong() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
+    String xml =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
     Document doc = getDocumentFromString(xml);
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
     assertTrue(filter instanceof LegacyNumericRangeQuery<?>);
@@ -91,7 +93,8 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
+    String xml2 =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
     assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
@@ -104,11 +107,12 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetFilterDouble() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
+    String xml =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='double' lowerTerm='-23.21' upperTerm='60000.00023'/>";
     Document doc = getDocumentFromString(xml);
 
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
@@ -121,7 +125,8 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
+    String xml2 =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='double' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
     assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);
@@ -134,11 +139,12 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertFalse(numRangeFilter2.includesMax());
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetFilterFloat() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
-    String xml = "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
+    String xml =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
     Document doc = getDocumentFromString(xml);
 
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
@@ -151,7 +157,8 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertTrue(numRangeFilter.includesMin());
     assertTrue(numRangeFilter.includesMax());
 
-    String xml2 = "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
+    String xml2 =
+        "<LegacyNumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
     Document doc2 = getDocumentFromString(xml2);
 
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
@@ -175,5 +182,4 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     is.close();
     return doc;
   }
-
 }

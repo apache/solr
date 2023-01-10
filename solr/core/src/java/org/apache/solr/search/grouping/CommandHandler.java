@@ -21,12 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -49,8 +50,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Responsible for executing a search with a number of {@link Command} instances.
- * A typical search can have more then one {@link Command} instances.
+ * Responsible for executing a search with a number of {@link Command} instances. A typical search
+ * can have more then one {@link Command} instances.
  *
  * @lucene.experimental
  */
@@ -59,8 +60,7 @@ public class CommandHandler {
   public static class Builder {
 
     private QueryCommand queryCommand;
-    @SuppressWarnings({"rawtypes"})
-    private List<Command> commands = new ArrayList<>();
+    private List<Command<?>> commands = new ArrayList<>();
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
     private boolean truncateGroups = false;
@@ -72,7 +72,7 @@ public class CommandHandler {
       return this;
     }
 
-    public Builder addCommandField(@SuppressWarnings({"rawtypes"})Command commandField) {
+    public Builder addCommandField(Command<?> commandField) {
       commands.add(commandField);
       return this;
     }
@@ -83,8 +83,8 @@ public class CommandHandler {
     }
 
     /**
-     * Sets whether to compute a {@link DocSet}.
-     * May override the value set by {@link #setQueryCommand(org.apache.solr.search.QueryCommand)}.
+     * Sets whether to compute a {@link DocSet}. May override the value set by {@link
+     * #setQueryCommand(org.apache.solr.search.QueryCommand)}.
      *
      * @param needDocSet Whether to compute a {@link DocSet}
      * @return this
@@ -109,18 +109,17 @@ public class CommandHandler {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new CommandHandler(queryCommand, commands, searcher, needDocSet, truncateGroups, includeHitCount);
+      return new CommandHandler(
+          queryCommand, commands, searcher, needDocSet, truncateGroups, includeHitCount);
     }
-
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final QueryCommand queryCommand;
-  @SuppressWarnings({"rawtypes"})
-  private final List<Command> commands;
+  private final List<Command<?>> commands;
   private final SolrIndexSearcher searcher;
-  private final boolean needDocset;
+  private final boolean needDocSet;
   private final boolean truncateGroups;
   private final boolean includeHitCount;
   private boolean partialResults = false;
@@ -128,85 +127,100 @@ public class CommandHandler {
 
   private DocSet docSet;
 
-  private CommandHandler(QueryCommand queryCommand,
-                         @SuppressWarnings({"rawtypes"})List<Command> commands,
-                         SolrIndexSearcher searcher,
-                         boolean needDocset,
-                         boolean truncateGroups,
-                         boolean includeHitCount) {
+  private CommandHandler(
+      QueryCommand queryCommand,
+      List<Command<?>> commands,
+      SolrIndexSearcher searcher,
+      boolean needDocSet,
+      boolean truncateGroups,
+      boolean includeHitCount) {
     this.queryCommand = queryCommand;
     this.commands = commands;
     this.searcher = searcher;
-    this.needDocset = needDocset;
+    this.needDocSet = needDocSet;
     this.truncateGroups = truncateGroups;
     this.includeHitCount = includeHitCount;
   }
 
-  @SuppressWarnings("unchecked")
   public void execute() throws IOException {
     final int nrOfCommands = commands.size();
     List<Collector> collectors = new ArrayList<>(nrOfCommands);
-    for (@SuppressWarnings({"rawtypes"})Command command : commands) {
+    for (Command<?> command : commands) {
       collectors.addAll(command.create());
     }
 
-    ProcessedFilter filter = searcher.getProcessedFilter
-      (queryCommand.getFilter(), queryCommand.getFilterList());
+    ProcessedFilter filter = searcher.getProcessedFilter(queryCommand.getFilterList());
     Query query = QueryUtils.makeQueryable(queryCommand.getQuery());
 
     if (truncateGroups) {
       docSet = computeGroupedDocSet(query, filter, collectors);
-    } else if (needDocset) {
+    } else if (needDocSet) {
       docSet = computeDocSet(query, filter, collectors);
     } else if (!collectors.isEmpty()) {
-      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
+      searchWithTimeLimiter(
+          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
     } else {
-      searchWithTimeLimiter(query, filter, null);
+      searchWithTimeLimiter(query, filter, NO_OP_COLLECTOR);
     }
 
-    for (@SuppressWarnings({"rawtypes"})Command command : commands) {
+    for (Command<?> command : commands) {
       command.postCollect(searcher);
     }
   }
 
-  private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    Command firstCommand = commands.get(0);
+  private static Collector NO_OP_COLLECTOR =
+      new SimpleCollector() {
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {}
+      };
+
+  private DocSet computeGroupedDocSet(
+      Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
+    Command<?> firstCommand = commands.get(0);
     String field = firstCommand.getKey();
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType fieldType = sf.getType();
-    
-    @SuppressWarnings({"rawtypes"})
-    final AllGroupHeadsCollector allGroupHeadsCollector;
+
+    final AllGroupHeadsCollector<?> allGroupHeadsCollector;
     if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
-      allGroupHeadsCollector = AllGroupHeadsCollector.newCollector(new ValueSourceGroupSelector(vs, new HashMap<>()),
-          firstCommand.getWithinGroupSort());
+      allGroupHeadsCollector =
+          AllGroupHeadsCollector.newCollector(
+              new ValueSourceGroupSelector(vs, new HashMap<>()), firstCommand.getWithinGroupSort());
     } else {
-      allGroupHeadsCollector
-          = AllGroupHeadsCollector.newCollector(new TermGroupSelector(firstCommand.getKey()), firstCommand.getWithinGroupSort());
+      allGroupHeadsCollector =
+          AllGroupHeadsCollector.newCollector(
+              new TermGroupSelector(firstCommand.getKey()), firstCommand.getWithinGroupSort());
     }
     if (collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, allGroupHeadsCollector);
     } else {
       collectors.add(allGroupHeadsCollector);
-      searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
+      searchWithTimeLimiter(
+          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
     }
 
     return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
   }
 
-  private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
+  private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors)
+      throws IOException {
     int maxDoc = searcher.maxDoc();
     final DocSetCollector docSetCollector = new DocSetCollector(maxDoc);
     List<Collector> allCollectors = new ArrayList<>(collectors);
     allCollectors.add(docSetCollector);
     searchWithTimeLimiter(query, filter, MultiCollector.wrap(allCollectors));
-    return DocSetUtil.getDocSet( docSetCollector, searcher );
+    return DocSetUtil.getDocSet(docSetCollector, searcher);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public NamedList processResult(QueryResult queryResult, ShardResultTransformer transformer) throws IOException {
+  public NamedList<NamedList<Object>> processResult(
+      QueryResult queryResult, ShardResultTransformer<List<Command<?>>, ?> transformer)
+      throws IOException {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
@@ -215,14 +229,15 @@ public class CommandHandler {
   }
 
   /**
-   * Invokes search with the specified filter and collector.  
-   * If a time limit has been specified then wrap the collector in the TimeLimitingCollector
+   * Invokes search with the specified filter and collector. If a time limit has been specified then
+   * wrap the collector in the TimeLimitingCollector
    */
-  private void searchWithTimeLimiter(Query query, 
-                                     ProcessedFilter filter, 
-                                     Collector collector) throws IOException {
-    if (queryCommand.getTimeAllowed() > 0 ) {
-      collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
+  private void searchWithTimeLimiter(Query query, ProcessedFilter filter, Collector collector)
+      throws IOException {
+    if (queryCommand.getTimeAllowed() > 0) {
+      collector =
+          new TimeLimitingCollector(
+              collector, TimeLimitingCollector.getGlobalCounter(), queryCommand.getTimeAllowed());
     }
 
     TotalHitCountCollector hitCountCollector = new TotalHitCountCollector();
@@ -239,7 +254,8 @@ public class CommandHandler {
 
     try {
       searcher.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
+    } catch (TimeLimitingCollector.TimeExceededException
+        | ExitableDirectoryReader.ExitingReaderException x) {
       partialResults = true;
       log.warn("Query: {}; ", query, x);
     }

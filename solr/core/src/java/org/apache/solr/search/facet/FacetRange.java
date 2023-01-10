@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 
@@ -41,8 +40,7 @@ public class FacetRange extends FacetRequestSorted {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor<FacetRange> createFacetProcessor(FacetContext fcontext) {
     return new FacetRangeProcessor(fcontext, this);
   }
 

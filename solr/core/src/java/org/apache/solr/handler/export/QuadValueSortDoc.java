@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class QuadValueSortDoc extends TripleValueSortDoc {
@@ -48,7 +47,6 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     value3.setNextReader(context);
     value4.setNextReader(context);
   }
-
 
   @Override
   public void setGlobalValues(SortDoc previous) {
@@ -84,10 +82,10 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((QuadValueSortDoc)sortDoc).value1);
-    value2.setCurrentValue(((QuadValueSortDoc)sortDoc).value2);
-    value3.setCurrentValue(((QuadValueSortDoc)sortDoc).value3);
-    value4.setCurrentValue(((QuadValueSortDoc)sortDoc).value4);
+    value1.setCurrentValue(((QuadValueSortDoc) sortDoc).value1);
+    value2.setCurrentValue(((QuadValueSortDoc) sortDoc).value2);
+    value3.setCurrentValue(((QuadValueSortDoc) sortDoc).value3);
+    value4.setCurrentValue(((QuadValueSortDoc) sortDoc).value4);
   }
 
   public QuadValueSortDoc(SortValue value1, SortValue value2, SortValue value3, SortValue value4) {

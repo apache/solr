@@ -25,9 +25,7 @@ public class TestExclusionRuleCollectionAccess extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -35,13 +33,15 @@ public class TestExclusionRuleCollectionAccess extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("css33", "conf", 1, 1).process(cluster.getSolrClient());
 
-    new UpdateRequest()
-        .add("id", "1")
-        .commit(cluster.getSolrClient(), "css33");
+    new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), "css33");
 
-    assertEquals("Should have returned 1 result", 1,
-        cluster.getSolrClient().query("css33", params("q", "*:*", "collection", "css33")).getResults().getNumFound());
-
+    assertEquals(
+        "Should have returned 1 result",
+        1,
+        cluster
+            .getSolrClient()
+            .query("css33", params("q", "*:*", "collection", "css33"))
+            .getResults()
+            .getNumFound());
   }
-  
 }

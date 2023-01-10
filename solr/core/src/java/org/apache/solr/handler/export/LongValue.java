@@ -18,15 +18,14 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 
 public class LongValue implements SortValue {
 
-  final protected String field;
-  final protected LongComp comp;
+  protected final String field;
+  protected final LongComp comp;
   protected NumericDocValues vals;
   protected long currentValue;
   private int lastDocID;
@@ -39,31 +38,36 @@ public class LongValue implements SortValue {
     this.present = false;
   }
 
+  @Override
   public Object getCurrentValue() {
     assert present == true;
     return currentValue;
   }
 
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public LongValue copy() {
     return new LongValue(field, comp);
   }
 
-  public void toGlobalValue(SortValue previousValue) {
+  @Override
+  public void toGlobalValue(SortValue previousValue) {}
 
-  }
-
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
     lastDocID = docId;
     int curDocID = vals.docID();
@@ -84,17 +88,20 @@ public class LongValue implements SortValue {
     return present;
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
-    LongValue lv = (LongValue)sv;
+    LongValue lv = (LongValue) sv;
     this.currentValue = lv.currentValue;
     this.present = lv.present;
   }
 
+  @Override
   public int compareTo(SortValue o) {
-    LongValue l = (LongValue)o;
+    LongValue l = (LongValue) o;
     return comp.compare(currentValue, l.currentValue);
   }
 
+  @Override
   public void reset() {
     this.currentValue = comp.resetValue();
     this.present = false;

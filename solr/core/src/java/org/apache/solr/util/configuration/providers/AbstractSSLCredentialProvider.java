@@ -17,40 +17,36 @@
 
 package org.apache.solr.util.configuration.providers;
 
-import java.util.EnumMap;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import org.apache.solr.util.configuration.SSLCredentialProvider;
-
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_CLIENT_KEY_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_CLIENT_TRUST_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD;
 
-/**
- * Abstract provider with default implementation
- */
-abstract public class AbstractSSLCredentialProvider implements SSLCredentialProvider {
-  public static final EnumMap<CredentialType, String> DEFAULT_CREDENTIAL_KEY_MAP = Maps.newEnumMap(ImmutableMap.of(
-      SSL_KEY_STORE_PASSWORD, "solr.jetty.keystore.password",
-      SSL_TRUST_STORE_PASSWORD, "solr.jetty.truststore.password",
-      SSL_CLIENT_KEY_STORE_PASSWORD, "javax.net.ssl.keyStorePassword",
-      SSL_CLIENT_TRUST_STORE_PASSWORD, "javax.net.ssl.trustStorePassword"
-  ));
+import java.util.EnumMap;
+import java.util.Map;
+import org.apache.solr.util.configuration.SSLCredentialProvider;
+
+/** Abstract provider with default implementation */
+public abstract class AbstractSSLCredentialProvider implements SSLCredentialProvider {
+  public static final EnumMap<CredentialType, String> DEFAULT_CREDENTIAL_KEY_MAP =
+      new EnumMap<>(
+          Map.of(
+              SSL_KEY_STORE_PASSWORD, "solr.jetty.keystore.password",
+              SSL_TRUST_STORE_PASSWORD, "solr.jetty.truststore.password",
+              SSL_CLIENT_KEY_STORE_PASSWORD, "javax.net.ssl.keyStorePassword",
+              SSL_CLIENT_TRUST_STORE_PASSWORD, "javax.net.ssl.trustStorePassword"));
   private final EnumMap<CredentialType, String> credentialKeyMap;
 
   public AbstractSSLCredentialProvider() {
     credentialKeyMap = getCredentialKeyMap();
   }
 
-  abstract protected String getCredential(String key);
+  protected abstract String getCredential(String key);
 
-  abstract protected EnumMap<CredentialType, String> getCredentialKeyMap();
+  protected abstract EnumMap<CredentialType, String> getCredentialKeyMap();
 
   @Override
   public String getCredential(CredentialType type) {
     return getCredential(credentialKeyMap.get(type));
   }
-
 }

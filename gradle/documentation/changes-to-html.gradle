@@ -22,6 +22,18 @@ configure(project(':solr:documentation')) {
     siteDir = resources
     script = file("${resources}/changes2html.pl")
   }
+
+  // Make the rendered HTML of changes available as a separate
+  // artifact for the distribution.
+  configurations {
+    changesHtml
+  }
+
+  artifacts {
+    changesHtml changesToHtml.targetDir, {
+      builtBy changesToHtml
+    }
+  }
 }
 
 // compile changes.txt into an html file
@@ -44,7 +56,7 @@ class ChangesToHtmlTask extends DefaultTask {
 
   @OutputDirectory
   final DirectoryProperty targetDir = project.objects.directoryProperty()
-    .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
+      .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
 
   @Input
   def luceneDocUrl = "${-> project.luceneDocUrl }"
@@ -72,11 +84,11 @@ class ChangesToHtmlTask extends DefaultTask {
       ignoreExitValue = true
 
       args += [
-        "-CSD",
-        script,
-        "${productName}",
-        versionsFile.toString(),
-        luceneDocUrl.concat('/')   // slash required at end by perl script
+          "-CSD",
+          script,
+          "${productName}",
+          versionsFile.toString(),
+          luceneDocUrl.concat('/')   // slash required at end by perl script
       ]
     }
 

@@ -383,7 +383,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
           nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
+          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
           nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
           nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
@@ -421,53 +421,53 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
               nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
 
+              // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
               var docsTotal = 0;
               var graphData = [];
-              if (cores) {
-                for (coreId in cores) {
-                  var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
-                  var nodeMetric = m.metrics[keyName];
-                  var size = nodeMetric['INDEX.sizeInBytes'];
+              for (coreId in cores) {
+                var core = cores[coreId];
+                if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+                  // If core state is not active, display the real state, or if shard is inactive, display that
+                  var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+                  core['label'] += "_(" + labelState + ")";
+                }
+                var coreMetricName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
+                var coreMetric = m.metrics[coreMetricName];
+                // we may not actually get metrics back for every expected core (the core may be down)
+                if (coreMetric) {
+                  var size = coreMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
-                    // If core state is not active, display the real state, or if shard is inactive, display that
-                    var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
-                    core['label'] += "_(" + labelState + ")";
-                  }
                   indexSizeTotal += size;
-                  var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
+                  var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
                   core['numDocsHuman'] = numDocsHuman(numDocs);
                   core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
-                  var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  var deletedDocs = coreMetric['SEARCHER.searcher.deletedDocs'];
                   deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
                   core['deletedDocs'] = deletedDocs;
                   core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
-                  var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  var warmupTime = coreMetric['SEARCHER.searcher.warmupTime'];
                   warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
-                for (coreId in cores) {
-                  core = cores[coreId];
-                  var graphObj = {};
-                  graphObj['label'] = core['label'];
-                  graphObj['size'] = core['sizeInBytes'];
-                  graphObj['sizeHuman'] = core['size'];
-                  graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
-                  graphData.push(graphObj);
-                }
+
+                var graphObj = {};
+                graphObj['label'] = core['label'];
+                graphObj['size'] = core['sizeInBytes'];
+                graphObj['sizeHuman'] = core['size'];
+                graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                graphData.push(graphObj);
+              }
+              if (cores) {
                 cores.sort(function (a, b) {
                   return b.sizeInBytes - a.sizeInBytes
                 });
-              } else {
-                cores = {};
               }
               graphData.sort(function (a, b) {
                 return b.size - a.size
@@ -560,19 +560,23 @@ var treeSubController = function($scope, Zookeeper) {
 
     $scope.showTreeLink = function(link) {
         var path = decodeURIComponent(link.replace(/.*[\\?&]path=([^&#]*).*/, "$1"));
-        Zookeeper.detail({path: path}, function(data) {
-            $scope.znode = data.znode;
-            var path = data.znode.path.split( '.' );
-            if(path.length >1) {
-              $scope.lang = path.pop();
-            } else {
-              var lastPathElement = data.znode.path.split( '/' ).pop();
-              if (lastPathElement == "managed-schema") {
-                  $scope.lang = "xml";
+        if (path === '/security.json' && !$scope.isPermitted(permissions.SECURITY_READ_PERM)) {
+          // TODO: Set proper data here to display a warning in right panel "You lack the required role to see this file"
+          $scope.znode = {};
+          $scope.showData = false;
+        } else {
+          Zookeeper.detail({path: path}, function(data) {
+              $scope.znode = data.znode;
+              if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
+                $scope.lang = "xml";
+              } else {
+                var lastPathElement = data.znode.path.split( '/' ).pop();
+                var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
+                $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
               }
-            }
-            $scope.showData = true;
-        });
+              $scope.showData = true;
+          });
+        }
     };
 
     $scope.hideData = function() {

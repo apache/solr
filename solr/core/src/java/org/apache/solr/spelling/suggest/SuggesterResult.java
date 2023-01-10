@@ -22,19 +22,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 
-/** 
- * Encapsulates the results returned by the suggester in {@link SolrSuggester}
- * */
+/** Encapsulates the results returned by the suggester in {@link SolrSuggester} */
 public class SuggesterResult {
 
   public SuggesterResult() {}
-  
-  /** token -> lookup results mapping*/
-  private Map<String, Map<String, List<LookupResult>>> suggestionsMap = 
-      new HashMap<>();
+
+  /** token -> lookup results mapping */
+  private Map<String, Map<String, List<LookupResult>>> suggestionsMap = new HashMap<>();
 
   /** Add suggestion results for <code>token</code> */
   public void add(String suggesterName, String token, List<LookupResult> results) {
@@ -48,32 +44,25 @@ public class SuggesterResult {
       this.suggestionsMap.get(suggesterName).put(token, res);
     }
   }
-  
-  /** 
-   * Get a list of lookup result for a given <code>token</code>
-   * null can be returned, if there are no lookup results
-   * for the <code>token</code>
-   * */
+
+  /**
+   * Get a list of lookup result for a given <code>token</code> null can be returned, if there are
+   * no lookup results for the <code>token</code>
+   */
   public List<LookupResult> getLookupResult(String suggesterName, String token) {
     return (this.suggestionsMap.containsKey(suggesterName))
         ? this.suggestionsMap.get(suggesterName).get(token)
         : new ArrayList<LookupResult>();
   }
-  
-  /**
-   * Get the set of tokens that are present in the
-   * instance
-   */
+
+  /** Get the set of tokens that are present in the instance */
   public Set<String> getTokens(String suggesterName) {
     return (this.suggestionsMap.containsKey(suggesterName))
         ? this.suggestionsMap.get(suggesterName).keySet()
         : new HashSet<String>();
   }
-  
-  /**
-   * Get the set of suggesterNames for which this
-   * instance holds results
-   */
+
+  /** Get the set of suggesterNames for which this instance holds results */
   public Set<String> getSuggesterNames() {
     return this.suggestionsMap.keySet();
   }

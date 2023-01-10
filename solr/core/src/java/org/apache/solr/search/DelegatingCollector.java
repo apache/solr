@@ -16,16 +16,13 @@
  */
 package org.apache.solr.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
-
 
 /** A simple delegating collector where one can set the delegate after creation */
 public class DelegatingCollector extends SimpleCollector {
@@ -50,7 +47,10 @@ public class DelegatingCollector extends SimpleCollector {
   /** Sets the last delegate in a chain of DelegatingCollectors */
   public void setLastDelegate(Collector delegate) {
     DelegatingCollector ptr = this;
-    for(; ptr.getDelegate() instanceof DelegatingCollector; ptr = (DelegatingCollector)ptr.getDelegate());
+    for (;
+        ptr.getDelegate() instanceof DelegatingCollector;
+        ptr = (DelegatingCollector) ptr.getDelegate())
+      ;
     ptr.setDelegate(delegate);
     setLastDelegateCount++;
   }
@@ -81,9 +81,8 @@ public class DelegatingCollector extends SimpleCollector {
   }
 
   public void finish() throws IOException {
-    if(delegate instanceof DelegatingCollector) {
+    if (delegate instanceof DelegatingCollector) {
       ((DelegatingCollector) delegate).finish();
     }
   }
 }
-

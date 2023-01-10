@@ -22,7 +22,7 @@
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
     </Console>
@@ -33,9 +33,21 @@
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    
+    <RollingFile
+        name="RollingJsonFile"
+        fileName="${sys:solr.log.dir}/solr.json.log"
+        filePattern="${sys:solr.log.dir}/solr.json.log.%i" >
+      <JsonTemplateLayout eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json" /> <!-- provided by log4j-layout-template-json.jar -->
       <Policies>
         <OnStartupTriggeringPolicy />
         <SizeBasedTriggeringPolicy size="32 MB"/>
@@ -49,7 +61,7 @@
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
         </Pattern>
       </PatternLayout>
       <Policies>
@@ -70,6 +82,7 @@
 
     <Root level="debug">
       <AppenderRef ref="RollingFile"/>
+      <AppenderRef ref="RollingJsonFile"/>
       <AppenderRef ref="STDOUT"/>
     </Root>
   </Loggers>

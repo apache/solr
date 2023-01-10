@@ -17,6 +17,7 @@
 
 package org.apache.solr.packagemanager;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -24,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -34,17 +34,14 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 /**
- * This is a serializable bean (for the JSON that is stored in /repository.json) representing a repository of Solr packages.
- * Supports standard repositories based on a webservice.
+ * This is a serializable bean (for the JSON that is stored in /repository.json) representing a
+ * repository of Solr packages. Supports standard repositories based on a webservice.
  */
 public class DefaultPackageRepository extends PackageRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DefaultPackageRepository() { // this is needed for deserialization from JSON
-  
   }
 
   public DefaultPackageRepository(String repositoryName, String repositoryURL) {
@@ -57,8 +54,7 @@ public class DefaultPackageRepository extends PackageRepository {
     packages = null;
   }
 
-  @JsonIgnore
-  private Map<String, SolrPackage> packages;
+  @JsonIgnore private Map<String, SolrPackage> packages;
 
   @Override
   public Map<String, SolrPackage> getPackages() {
@@ -83,7 +79,10 @@ public class DefaultPackageRepository extends PackageRepository {
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
-    URL url = new URL(new URL(repositoryURL.endsWith("/")? repositoryURL: repositoryURL+"/"), artifactName);
+    URL url =
+        new URL(
+            new URL(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/"),
+            artifactName);
     String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);
 
@@ -94,15 +93,17 @@ public class DefaultPackageRepository extends PackageRepository {
         FileUtils.copyURLToFile(url, destination.toFile());
         break;
       default:
-        throw new SolrException(ErrorCode.BAD_REQUEST, "URL protocol " + url.getProtocol() + " not supported");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "URL protocol " + url.getProtocol() + " not supported");
     }
-    
+
     return destination;
   }
 
   private void initPackages() {
     try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-      SolrPackage[] items = PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
+      SolrPackage[] items =
+          PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
 
       packages = new HashMap<>(items.length);
       for (SolrPackage pkg : items) {

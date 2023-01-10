@@ -1,0 +1,50 @@
+= Apache Solr Reference Guide
+:page-show-toc: false
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+// This jumbotron is in a sidebar-style block instead of an open block because
+// an open block uses a different template that we rely on for other uses.
+// See also src/_templates/open.html.slim for the open block template.
+.Welcome to Apache Solr(TM)
+****
+Solr is the open source solution for search and analytics.
+
+A fast open source search platform built on Apache Lucene(TM), Solr provides scalable indexing and search, as well as faceting, hit highlighting and advanced analysis/tokenization capabilities.
+Solr is managed by the http://www.apache.org/[Apache Software Foundation].
+
+This Reference Guide is the official Solr documentation, written and published by Solr committers.
+****
+
+****
+[cols="1,1,1",frame=none,grid=none,stripes=none]
+|===
+^| xref:getting-started:introduction.adoc[Getting Started] ^| xref:deployment-guide:solr-control-script-reference.adoc[Deployment Guide] ^| xref:configuration-guide:configuration-files.adoc[Configuration Guide]
+
+| Introductory concepts and tutorials. | Installation, monitoring, scaling, and deploying to production. | Tuning Solr's configuration files for your use case.
+
+|===
+
+[.home-table,cols="1,1,1",frame=none,grid=none,stripes=none]
+|===
+^| xref:indexing-guide:schema-elements.adoc[Indexing Guide] ^| xref:query-guide:common-query-parameters.adoc[Query Guide] ^| xref:upgrade-notes:solr-upgrade-notes.adoc[Upgrade Notes]
+
+| Configuring Solr's schema and indexing documents. | All aspects of Solr queries. | Change notes for Solr releases.
+
+|===
+
+****

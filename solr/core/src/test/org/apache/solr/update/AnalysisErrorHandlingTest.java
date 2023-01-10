@@ -22,24 +22,29 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test that runtime exceptions thrown during analysis
- * result in Solr errors that contain the document ID.
+ * Test that runtime exceptions thrown during analysis result in Solr errors that contain the
+ * document ID.
  */
 public class AnalysisErrorHandlingTest extends SolrTestCaseJ4 {
 
-  public String getCoreName() { return "basic"; }
+  public String getCoreName() {
+    return "basic";
+  }
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig-basic.xml","solr/analysisconfs/analysis-err-schema.xml");
+    initCore("solrconfig-basic.xml", "solr/analysisconfs/analysis-err-schema.xml");
   }
 
   @Test
   public void testMultipleUpdatesPerAdd() {
     clearIndex();
-    SolrException se = expectThrows(SolrException.class,
-        () -> h.update("<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>")
-    );
+    SolrException se =
+        expectThrows(
+            SolrException.class,
+            () ->
+                h.update(
+                    "<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>"));
     assertTrue(se.getMessage().contains("Exception writing document id 1 to the index"));
   }
 }

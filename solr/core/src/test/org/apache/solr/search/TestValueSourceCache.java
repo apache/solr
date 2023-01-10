@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,9 +33,9 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   }
 
   static QParser _func;
-  
+
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     _func = null;
   }
 
@@ -44,40 +44,39 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     return _func.parse();
   }
 
-  // This is actually also tested by the tests for val_d1 below, but the bug was reported against geodist()...
+  // This is actually also tested by the tests for val_d1 below, but the bug was reported against
+  // geodist()...
   @Test
   public void testGeodistSource() throws SyntaxError {
-    Query q_home = getQuery("geodist(home_ll, 45.0, 43.0)");
-    Query q_work = getQuery("geodist(work_ll, 45.0, 43.0)");
-    Query q_home2 = getQuery("geodist(home_ll, 45.0, 43.0)");
+    Query q_home = getQuery("geodist(home, 45.0, 43.0)");
+    Query q_work = getQuery("geodist(work, 45.0, 43.0)");
+    Query q_home2 = getQuery("geodist(home, 45.0, 43.0)");
     QueryUtils.checkUnequal(q_work, q_home);
     QueryUtils.checkEqual(q_home, q_home2);
   }
 
   @Test
   public void testNumerics() throws SyntaxError {
-    String[] templates = new String[]{
-        "sum(#v0, #n0)",
-        "product(pow(#v0,#n0),#v1,#n1)",
-        "log(#v0)",
-        "log(sum(#n0,#v0,#v1,#n1))",
-        "scale(map(#v0,#n0,#n1,#n2),#n3,#n4)",
-    };
-    String[] numbers = new String[]{
-        "1,2,3,4,5",
-        "1.0,2.0,3.0,4.0,5.0",
-        "1,2.0,3,4.0,5",
-        "1.0,2,3.0,4,5.0",
-        "1000000,2000000,3000000,4000000,5000000"
-    };
-    String[] types = new String[]{
-        "val1_f1",
-        "val1_d1",
-        "val1_b1",
-        "val1_i1",
-        "val1_l1",
-        "val1_b1",
-    };
+    String[] templates =
+        new String[] {
+          "sum(#v0, #n0)",
+          "product(pow(#v0,#n0),#v1,#n1)",
+          "log(#v0)",
+          "log(sum(#n0,#v0,#v1,#n1))",
+          "scale(map(#v0,#n0,#n1,#n2),#n3,#n4)",
+        };
+    String[] numbers =
+        new String[] {
+          "1,2,3,4,5",
+          "1.0,2.0,3.0,4.0,5.0",
+          "1,2.0,3,4.0,5",
+          "1.0,2,3.0,4,5.0",
+          "1000000,2000000,3000000,4000000,5000000"
+        };
+    String[] types =
+        new String[] {
+          "val1_f1", "val1_d1", "val1_b1", "val1_i1", "val1_l1", "val1_b1",
+        };
     for (String template : templates) {
       for (String nums : numbers) {
         for (String type : types) {
@@ -88,7 +87,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     }
   }
 
-  // This test should will fail because q1 and q3 evaluate as equal unless
+  // This test should fail because q1 and q3 evaluate as equal unless
   // fixes for bug 2829 are in place.
   void tryQuerySameTypes(String template, String numbers, String type) throws SyntaxError {
     String s1 = template;
@@ -105,7 +104,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
       s3 = s3.replace(patV, type2).replace(patN, numParts[idx]);
     }
 
-    //SolrQueryRequest req1 = req( "q","*:*", "fq", s1);
+    // SolrQueryRequest req1 = req( "q","*:*", "fq", s1);
 
     Query q1 = getQuery(s1);
     Query q2 = getQuery(s2);
@@ -114,8 +113,8 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     QueryUtils.checkUnequal(q1, q3);
   }
 
-  // These should always and forever fail, and would have failed without the fixes for 2829, but why not make
-  // some more tests just in case???
+  // These should always and forever fail, and would have failed without the fixes for 2829, but why
+  // not make some more tests just in case???
   void tryQueryDiffTypes(String template, String numbers, String[] types) throws SyntaxError {
     String s1 = template;
     String s2 = template;

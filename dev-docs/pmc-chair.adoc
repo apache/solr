@@ -81,9 +81,9 @@ The standard process for handling vulnerability reports is defined at https://ww
 *All vulnerability reports must be handled with discretion and should not be discussed outside the Apache Security team and the PMC.* The reason for this is to prevent the vulnerability from being exploited before we have a chance to come up with proper mitigation steps and/or bug fixes.
 
 === How Vulnerabilities are Reported
-The mailing list security@lucene.apache.org has been set up to handle vulnerability reports. This list includes the Apache Security team, so they do not need to be cc'd on mails to that list. PMC members are unfortunately not automatically subscribed to this list, they must subscribe themselves.
+The mailing list security@solr.apache.org has been set up to handle vulnerability reports. This list includes the Apache Security team, so they do not need to be cc'd on mails to that list. PMC members are unfortunately not automatically subscribed to this list, they must subscribe themselves.
 
-The Apache Security team should be kept in the loop regarding how we decide to handle any vulnerability report. They are not cc'd on mails to private@lucene.apache.org, so if discussion happens there, security@apache.org should be copied where appropriate.
+The Apache Security team should be kept in the loop regarding how we decide to handle any vulnerability report. They are not cc'd on mails to private@solr.apache.org, so if discussion happens there, security@apache.org should be copied where appropriate.
 
 Vulnerabilities may also be reported via Jira. When this happens, the Security Level field in the issue must be set to "Private", which means it can only be viewed by members of the PMC.
 
@@ -138,40 +138,13 @@ Private PMC files: https://svn.apache.org/repos/private/pmc/lucene/
 The Lucene PMC traditionally rotates the Chair once a year.
 
 When it's time to change Chairs, think of a member of the PMC to replace you and ask if they will be willing to serve a term as Chair.
-If they agree, you can start a VOTE thread in private@lucene.apache.org nominating your successor.
+If they agree, you can start a VOTE thread in private@solr.apache.org nominating your successor.
 
 Assuming the vote passes, you can send a resolution to the Board for their approval to change the Chair. Include the vote thread in the resolution.
 You do not need to wait until the usual quarterly report is due to change the Chair.
 
-Resolution example/template:
-
-----
-A. Change the Apache Lucene Project Chair
-
-    WHEREAS, the Board of Directors heretofore appointed <old Chair>
-    (<apache id>) to the office of Vice President, Apache Lucene, and
-
-    WHEREAS, the Board of Directors is in receipt of the resignation
-    of Adrien Grand from the office of Vice President, Apache
-    Lucene, and
-
-    WHEREAS, the Project Management Committee of the Apache Lucene
-    project has chosen by vote to recommend <new Chair> (<apache id>)
-    as the successor to the post;
-
-    NOW, THEREFORE, BE IT RESOLVED, that <old Chair> is relieved
-    and discharged from the duties and responsibilities of the office
-    of Vice President, Apache Lucene, and
-
-    BE IT FURTHER RESOLVED, that <new Chair> be and hereby is
-    appointed to the office of Vice President, Apache Lucene, to serve
-    in accordance with and subject to the direction of the Board of
-    Directors and the Bylaws of the Foundation until death,
-    resignation, retirement, removal or disqualification, or until a
-    successor is appointed.
-
-    Thread: <link to vote thread>
-----
+Use the Whimsy Board agenda tool to add a "Change Chair" resolution to the next board agenda:
+https://whimsy.apache.org/board/agenda/ and include a link to the VOTE thread.
 
 The Board will vote to adopt the resolution in their next meeting.
 

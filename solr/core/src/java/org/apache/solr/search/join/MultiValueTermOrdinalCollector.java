@@ -18,16 +18,13 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.LongBitSet;
 
-/**
- * Populates a bitset of (top-level) ordinals based on field values in a multi-valued field.
- */
+/** Populates a bitset of (top-level) ordinals based on field values in a multi-valued field. */
 public class MultiValueTermOrdinalCollector extends SimpleCollector {
 
   private int docBase;
@@ -36,12 +33,14 @@ public class MultiValueTermOrdinalCollector extends SimpleCollector {
   // Records all ordinals found during collection
   private final LongBitSet topLevelDocValuesBitSet;
 
-  public MultiValueTermOrdinalCollector(String fieldName, SortedSetDocValues topLevelDocValues, LongBitSet topLevelDocValuesBitSet) {
+  public MultiValueTermOrdinalCollector(
+      String fieldName, SortedSetDocValues topLevelDocValues, LongBitSet topLevelDocValuesBitSet) {
     this.fieldName = fieldName;
     this.topLevelDocValues = topLevelDocValues;
     this.topLevelDocValuesBitSet = topLevelDocValuesBitSet;
   }
 
+  @Override
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE_NO_SCORES;
   }

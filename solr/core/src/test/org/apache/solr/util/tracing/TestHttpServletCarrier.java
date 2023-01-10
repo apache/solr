@@ -17,22 +17,20 @@
 
 package org.apache.solr.util.tracing;
 
-import javax.servlet.http.HttpServletRequest;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.collections4.IteratorUtils;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TestHttpServletCarrier extends SolrTestCaseJ4 {
 
@@ -40,7 +38,7 @@ public class TestHttpServletCarrier extends SolrTestCaseJ4 {
   public void test() {
     SolrTestCaseJ4.assumeWorkingMockito();
     HttpServletRequest req = mock(HttpServletRequest.class);
-    Multimap<String, String> headers = HashMultimap.create();
+    MultiValuedMap<String, String> headers = new HashSetValuedHashMap<>();
     headers.put("a", "a");
     headers.put("a", "b");
     headers.put("a", "c");
@@ -49,20 +47,21 @@ public class TestHttpServletCarrier extends SolrTestCaseJ4 {
     headers.put("c", "a");
 
     when(req.getHeaderNames()).thenReturn(IteratorUtils.asEnumeration(headers.keySet().iterator()));
-    when(req.getHeaders(anyString())).thenAnswer((Answer<Enumeration<String>>) inv -> {
-      String key = inv.getArgument(0);
-      return IteratorUtils.asEnumeration(headers.get(key).iterator());
-    });
+    when(req.getHeaders(anyString()))
+        .thenAnswer(
+            (Answer<Enumeration<String>>)
+                inv -> {
+                  String key = inv.getArgument(0);
+                  return IteratorUtils.asEnumeration(headers.get(key).iterator());
+                });
 
     HttpServletCarrier servletCarrier = new HttpServletCarrier(req);
     Iterator<Map.Entry<String, String>> it = servletCarrier.iterator();
-    Multimap<String, String> resultBack = HashMultimap.create();
-    while(it.hasNext()) {
+    MultiValuedMap<String, String> resultBack = new HashSetValuedHashMap<>();
+    while (it.hasNext()) {
       Map.Entry<String, String> entry = it.next();
       resultBack.put(entry.getKey(), entry.getValue());
     }
     assertEquals(headers, resultBack);
-
-
   }
 }

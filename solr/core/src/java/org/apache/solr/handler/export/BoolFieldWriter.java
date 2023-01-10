@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.schema.FieldType;
@@ -28,7 +27,9 @@ class BoolFieldWriter extends StringFieldWriter {
     super(field, fieldType);
   }
 
-  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {
+  @Override
+  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType)
+      throws IOException {
     fieldType.indexedToReadable(ref, cref);
     ew.put(this.field, "true".equals(cref.toString()));
   }

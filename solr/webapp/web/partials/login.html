@@ -62,11 +62,11 @@ limitations under the License.
 
   <div ng-show="authScheme === 'Negotiate'">
     <h1>Kerberos Authentication</h1>
-    <p>Your browser did not provide the required information to authenticate using Kerberos. 
-      Please check that your computer has a valid ticket for communicating with Solr, 
-      and that your browser is properly configured to provide that ticket when required. 
-      For more information, consult 
-      <a href="https://lucene.apache.org/solr/guide/kerberos-authentication-plugin.html">
+    <p>Your browser did not provide the required information to authenticate using Kerberos.
+      Please check that your computer has a valid ticket for communicating with Solr,
+      and that your browser is properly configured to provide that ticket when required.
+      For more information, consult
+      <a href="https://solr.apache.org/guide/solr/latest/deployment-guide/kerberos-authentication-plugin.html">
         Solr's Kerberos documentation
       </a>.
     </p>
@@ -83,7 +83,7 @@ WWW-Authenticate: {{wwwAuthHeader}}</pre>
       Please check that your computer has a valid PKI certificate for communicating with Solr,
       and that your browser is properly configured to provide that certificate when required.
       For more information, consult
-      <a href="https://lucene.apache.org/solr/guide/cert-authentication-plugin.html">
+      <a href="https://solr.apache.org/guide/solr/latest/deployment-guide/cert-authentication-plugin.html">
         Solr's Certificate Authentication documentation
       </a>.
     </p>
@@ -93,7 +93,7 @@ WWW-Authenticate: {{wwwAuthHeader}}</pre>
 WWW-Authenticate: {{wwwAuthHeader}}</pre>
     <hr/>
   </div>
-  
+
   <div ng-show="authScheme === 'Bearer'">
     <h1>OpenID Connect (JWT) authentication</h1>
     <div class="login-error" ng-show="statusText || authParamsError || error">
@@ -129,7 +129,7 @@ WWW-Authenticate: {{wwwAuthHeader}}</pre>
         <p>
           In order to log in to the identity provider, you need to load this page from the Solr node registered as callback node:<br/>
           {{jwtFindLoginNode()}}<br/>
-          After successful login you will be able to navigate to other nodes. 
+          After successful login you will be able to navigate to other nodes.
         </p>
         <p>
           <form name="form" ng-submit="jwtGotoLoginNode()" role="form">
@@ -157,14 +157,14 @@ WWW-Authenticate: {{wwwAuthHeader}}</pre>
     </div>
 
   </div>
-  
+
   <div ng-show="!authSchemeSupported">
     <h1>Authentication scheme not supported</h1>
 
     <div class="login-error">
       {{statusText}}
     </div>
-    
+
     <p>Some or all Solr operations are protected by an authentication scheme that is not yet supported by this Admin UI ({{authScheme}}).</p>
     <p>Solr returned an error response:
     <hr/>

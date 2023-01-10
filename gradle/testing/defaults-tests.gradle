@@ -46,9 +46,13 @@ allprojects {
            value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
            description: "Number of forked test JVMs"],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+          // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
-           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1") },
+           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
            description: "Arguments passed to each forked JVM."],
+          // Other settings.
+          [propName: 'tests.neverUpToDate', value: true,
+           description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
       ]
 
       // Resolves test option's value.
@@ -90,6 +94,11 @@ allprojects {
         testOutputsDir = file("${reports.junitXml.destination}/outputs")
       }
 
+      // LUCENE-9660: Make it possible to always rerun tests, even if they're incrementally up-to-date.
+      if (resolvedTestOption("tests.neverUpToDate").toBoolean()) {
+        outputs.upToDateWhen { false }
+      }
+
       maxParallelForks = resolvedTestOption("tests.jvms") as Integer
       if (verboseMode && maxParallelForks != 1) {
         logger.lifecycle("tests.jvm forced to 1 in verbose mode.")
@@ -105,7 +114,12 @@ allprojects {
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
-      jvmArgs '--illegal-access=deny'
+      
+      // Up to JDK-15 we have to enforce --illegal-access=deny, because we want no code to access
+      // JDK internals; JDK-16 and later will default to deny, see https://openjdk.java.net/jeps/396:
+      if (rootProject.runtimeJavaVersion < JavaVersion.VERSION_16) {
+        jvmArgs '--illegal-access=deny'
+      }
 
       systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
       systemProperty 'java.awt.headless', 'true'
@@ -135,7 +149,7 @@ allprojects {
       }
 
       // Disable HTML report generation. The reports are big and slow to generate.
-      reports.html.enabled = false
+      reports.html.required = false
 
       // Set up logging.
       testLogging {

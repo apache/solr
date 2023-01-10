@@ -19,10 +19,8 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -31,6 +29,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -44,63 +43,59 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   private final String fileName = this.getClass().getName() + ".server-enabled";
   private File healthcheckFile = null;
   private PingRequestHandler handler = null;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
 
   @Before
-  @SuppressWarnings({"unchecked"})
   public void before() throws IOException {
     // by default, use relative file in dataDir
     healthcheckFile = new File(initAndGetDataDir(), fileName);
     String fileNameParam = fileName;
 
-    // sometimes randomly use an absolute File path instead 
+    // sometimes randomly use an absolute File path instead
     if (random().nextBoolean()) {
       fileNameParam = healthcheckFile.getAbsolutePath();
-    } 
-      
+    }
+
     if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
 
     handler = new PingRequestHandler();
-    @SuppressWarnings({"rawtypes"})
-    NamedList initParams = new NamedList();
-    initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM,
-                   fileNameParam);
+    NamedList<String> initParams = new NamedList<>();
+    initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM, fileNameParam);
     handler.init(initParams);
     handler.inform(h.getCore());
   }
-  
-  @SuppressWarnings({"rawtypes"})
+
   public void testPingWithNoHealthCheck() throws Exception {
-    
+
     // for this test, we don't want any healthcheck file configured at all
     handler = new PingRequestHandler();
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     handler.inform(h.getCore());
 
     SolrQueryResponse rsp = null;
-    
+
     rsp = makeRequest(handler, req());
     assertEquals("OK", rsp.getValues().get("status"));
-    
-    rsp = makeRequest(handler, req("action","ping"));
-    assertEquals("OK", rsp.getValues().get("status")); 
 
+    rsp = makeRequest(handler, req("action", "ping"));
+    assertEquals("OK", rsp.getValues().get("status"));
   }
-  
+
   public void testEnablingServer() throws Exception {
 
-    assertTrue(!healthcheckFile.exists());
+    assertFalse(healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
     SolrException se = (SolrException) sqr.getException();
     assertEquals(
-      "Response should have been replaced with a 503 SolrException.",
-      se.code(), SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
+        "Response should have been replaced with a 503 SolrException.",
+        se.code(),
+        SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
 
     // now enable
 
@@ -117,12 +112,12 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     // enable when already enabled shouldn't cause any problems
     makeRequest(handler, req("action", "enable"));
     assertTrue(healthcheckFile.exists());
-
   }
+
   public void testDisablingServer() throws Exception {
 
-    assertTrue(! healthcheckFile.exists());
-        
+    assertFalse(healthcheckFile.exists());
+
     healthcheckFile.createNewFile();
 
     // first make sure that ping responds back that the service is enabled
@@ -131,48 +126,48 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("OK", rsp.getValues().get("status"));
 
     // now disable
-    
+
     makeRequest(handler, req("action", "disable"));
-    
+
     assertFalse(healthcheckFile.exists());
 
-    // now make sure that ping responds back that the service is disabled    
+    // now make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
     SolrException se = (SolrException) sqr.getException();
     assertEquals(
-      "Response should have been replaced with a 503 SolrException.",
-      se.code(), SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
-    
+        "Response should have been replaced with a 503 SolrException.",
+        se.code(),
+        SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
+
     // disable when already disabled shouldn't cause any problems
     makeRequest(handler, req("action", "disable"));
     assertFalse(healthcheckFile.exists());
-    
   }
 
-  
   public void testGettingStatus() throws Exception {
     SolrQueryResponse rsp = null;
 
     handler.handleEnable(true);
-    
+
     rsp = makeRequest(handler, req("action", "status"));
     assertEquals("enabled", rsp.getValues().get("status"));
- 
-    handler.handleEnable(false);   
-    
+
+    handler.handleEnable(false);
+
     rsp = makeRequest(handler, req("action", "status"));
     assertEquals("disabled", rsp.getValues().get("status"));
- 
-  }
-  
-  public void testBadActionRaisesException() throws Exception {
-    SolrException se = expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
   }
 
- public void testPingInClusterWithNoHealthCheck() throws Exception {
+  public void testBadActionRaisesException() {
+    SolrException se =
+        expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, se.code());
+  }
 
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+  public void testPingInClusterWithNoHealthCheck() throws Exception {
+
+    MiniSolrCloudCluster miniCluster =
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -187,8 +182,10 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
-      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+      miniCluster.uploadConfigSet(
+          SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
+      CollectionAdminRequest.createCollection(
+              collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
           .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
 
@@ -196,29 +193,25 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       SolrPingWithDistrib reqDistrib = new SolrPingWithDistrib();
       reqDistrib.setDistrib(true);
       SolrPingResponse rsp = reqDistrib.process(cloudSolrClient, collectionName);
-      assertEquals(0, rsp.getStatus()); 
+      assertEquals(0, rsp.getStatus());
       assertTrue(rsp.getResponseHeader().getBooleanArg(("zkConnected")));
 
-      
       SolrPing reqNonDistrib = new SolrPing();
       rsp = reqNonDistrib.process(cloudSolrClient, collectionName);
-      assertEquals(0, rsp.getStatus());   
+      assertEquals(0, rsp.getStatus());
       assertTrue(rsp.getResponseHeader().getBooleanArg(("zkConnected")));
 
-    }
-    finally {
+    } finally {
       miniCluster.shutdown();
-    } 
+    }
   }
 
-
   /**
-   * Helper Method: Executes the request against the handler, returns 
-   * the response, and closes the request.
+   * Helper Method: Executes the request against the handler, returns the response, and closes the
+   * request.
    */
-  private SolrQueryResponse makeRequest(PingRequestHandler handler,
-                                        SolrQueryRequest req) 
-    throws Exception {
+  private SolrQueryResponse makeRequest(PingRequestHandler handler, SolrQueryRequest req)
+      throws Exception {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     try {
@@ -230,11 +223,9 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   static class SolrPingWithDistrib extends SolrPing {
-    public SolrPing setDistrib(boolean distrib) {   
+    public SolrPing setDistrib(boolean distrib) {
       getParams().add("distrib", distrib ? "true" : "false");
-      return this;    
-    }      
+      return this;
+    }
   }
-  
-
 }

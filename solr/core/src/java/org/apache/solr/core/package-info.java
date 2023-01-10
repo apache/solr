@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Core classes implementing Solr internals and the management of {@link org.apache.solr.core.SolrCore}s
+
+/**
+ * Core classes implementing Solr internals and the management of {@link
+ * org.apache.solr.core.SolrCore}s
  */
 package org.apache.solr.core;
-
-

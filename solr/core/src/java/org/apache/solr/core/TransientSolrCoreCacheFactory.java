@@ -18,8 +18,7 @@ package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -41,11 +40,11 @@ public abstract class TransientSolrCoreCacheFactory {
    * Create a new TransientSolrCoreCacheFactory instance
    *
    * @param loader a SolrResourceLoader used to find the TransientSolrCacheFactory classes
-   * @param coreContainer CoreContainer that encloses all the Solr cores.              
+   * @param coreContainer CoreContainer that encloses all the Solr cores.
    * @return a new, initialized TransientSolrCoreCache instance
    */
-
-  public static TransientSolrCoreCacheFactory newInstance(SolrResourceLoader loader, CoreContainer coreContainer) {
+  public static TransientSolrCoreCacheFactory newInstance(
+      SolrResourceLoader loader, CoreContainer coreContainer) {
     PluginInfo info = coreContainer.getConfig().getTransientCachePluginInfo();
     if (info == null) { // definition not in our solr.xml file, use default
       info = DEFAULT_TRANSIENT_SOLR_CACHE_INFO;
@@ -53,8 +52,12 @@ public abstract class TransientSolrCoreCacheFactory {
 
     try {
       // According to the docs, this returns a TransientSolrCoreCacheFactory with the default c'tor
-      TransientSolrCoreCacheFactory tccf = loader.findClass(info.className, TransientSolrCoreCacheFactory.class).getConstructor().newInstance(); 
-      
+      TransientSolrCoreCacheFactory tccf =
+          loader
+              .findClass(info.className, TransientSolrCoreCacheFactory.class)
+              .getConstructor()
+              .newInstance();
+
       // OK, now we call its init method.
       if (PluginInfoInitialized.class.isAssignableFrom(tccf.getClass()))
         PluginInfoInitialized.class.cast(tccf).init(info);
@@ -63,20 +66,31 @@ public abstract class TransientSolrCoreCacheFactory {
     } catch (Exception e) {
       // Many things could cause this, bad solrconfig, mis-typed class name, whatever.
       // Throw an exception to stop loading here; never return null.
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error instantiating "
-              + TransientSolrCoreCacheFactory.class.getName() + " class [" + info.className + "]", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error instantiating "
+              + TransientSolrCoreCacheFactory.class.getName()
+              + " class ["
+              + info.className
+              + "]",
+          e);
     }
   }
 
   public static final PluginInfo DEFAULT_TRANSIENT_SOLR_CACHE_INFO =
-      new PluginInfo("transientSolrCoreCacheFactory",
-          ImmutableMap.of("class", TransientSolrCoreCacheFactoryDefault.class.getName(), 
-              "name", TransientSolrCoreCacheFactory.class.getName()),
-          null, Collections.<PluginInfo>emptyList());
+      new PluginInfo(
+          "transientSolrCoreCacheFactory",
+          Map.of(
+              "class",
+              TransientSolrCoreCacheFactoryDefault.class.getName(),
+              "name",
+              TransientSolrCoreCacheFactory.class.getName()),
+          null,
+          Collections.emptyList());
 
-
-  // Need this because the plugin framework doesn't require a PluginINfo in the init method, don't see a way to
-  // pass additional parameters and we need this when we create the transient core cache, it's _really_ important.
+  // Need this because the plugin framework doesn't require a PluginINfo in the init method, don't
+  // see a way to pass additional parameters and we need this when we create the transient core
+  // cache, it's _really_ important.
   public void setCoreContainer(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }

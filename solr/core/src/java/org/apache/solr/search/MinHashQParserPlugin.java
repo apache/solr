@@ -20,16 +20,14 @@ package org.apache.solr.search;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- * {@link QParserPlugin} based on {@link MinHashQParser}.
- */
+/** {@link QParserPlugin} based on {@link MinHashQParser}. */
 public class MinHashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "min_hash";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new MinHashQParser(qstr, localParams, params, req);
   }
-
 }

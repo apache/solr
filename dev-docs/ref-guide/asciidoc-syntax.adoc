@@ -1,0 +1,592 @@
+= AsciiDoc Syntax Cheatsheet
+:toc:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The definitive manual on AsciiDoc syntax is in the https://docs.asciidoctor.org/asciidoctor.js/latest[Asciidoctor.js documentation].
+To help people get started, however, here is a simpler cheat sheet.
+
+== AsciiDoc vs Asciidoctor Syntax
+We use tools from the Asciidoctor project to build the HTML version of the Ref Guide.
+Asciidoctor is a Ruby port of the original AsciiDoc project, which was mostly abandoned several years ago.
+
+While much of the syntax between the two is the same, there are many conventions supported by Asciidoctor that did not exist in AsciiDoc.
+While the Asciidoctor project has tried to provide back-compatibility with the older project, that may not be true forever.
+For this reason, it's strongly recommended to only use the Asciidoctor documentation as a reference for any syntax that's not described here.
+
+== Helpful Tools
+
+You can write AsciiDoc without any special tools.
+It's simply text, with familiar syntax for bold (`*`) and italics (`_`).
+
+Having some tools in your editor is helpful, though.
+
+=== Doc Preview
+
+This allows you to see your document in something close to what it might appear like when output to HTML.
+
+* Atom has AsciiDoc Preview plugin, which gives you a panel that updates as you type. There are also a couple of other plugins to support AsciiDoc format and auto-complete.
+* There is a Live Preview browser plugin for Chrome, Firefox and Opera which allow you to open your AsciiDoc page in the browser.
+It will also update as you type.
+* There is also an Intellij IDEA plugin to support AsciiDoc format.
+
+Full list of tools: https://docs.asciidoctor.org/asciidoctor/latest/tooling/
+
+== Basic AsciiDoc Syntax
+
+=== Bold
+
+Put asterisks around text to make it *bold*.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/text/bold
+
+
+=== Italics
+
+Use underlines on either side of a string to put text into _italics_.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/text/italic/
+
+=== Headings
+
+Equal signs (`=`) are used for heading levels.
+Each equal sign is a level.
+Each page can *only* have one top level (i.e., only one section with a single `=`).
+
+Levels should be appropriately nested.
+During the build, validation occurs to ensure that level 3s are preceded by level 2s, level 4s are preceded by level 3s, etc.
+Including out-of-sequence heading levels (such as a level 3 then a level 5) will not fail the build, but will produce an error.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/sections/titles-and-levels/
+
+== Code Examples
+
+Use backticks ``` for text that should be monospaced, such as code or a class name in the body of a paragraph.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/text/monospace/
+
+Longer code examples can be separated from text with `source` blocks.
+These allow defining the syntax being used so the code is properly highlighted.
+
+.Example Source Block
+[source]
+----
+[source,xml]
+<field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+----
+
+If your code block will include line breaks, put 4 hyphens (`----`) before and after the entire block.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/verbatim/source-blocks/
+
+=== Source Block Syntax Highlighting
+
+The HTML output uses Rouge to add syntax highlighting to code examples.
+This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
+
+Rouge has a long selection of lexers available.
+You can see the full list at https://github.com/rouge-ruby/rouge/wiki/List-of-supported-languages-and-lexers.
+Use one of the valid short names to get syntax highlighting for that language.
+
+Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible.
+When in doubt, choose `text`, or leave it blank.
+
+=== Importing Code Snippets from Other Files
+
+The build system has the ability to "include" snippets located in other files -- even non-AsciiDoc files such as `*.java` source code files.
+
+These files must reside under the `examples/` directory in the same module as the page that wants to use it.
+
+Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.
+Opening tags look like: `// tag::snippetName[]`.
+Closing tags follow the format: `// end::snippetName[]`.
+
+Snippets can be inserted into an `.adoc` file using an `include` directive, following the format: `include::<directory-under-module>$<file-name>[tag=snippetName]`.
+
+Note that when paths are provided in these directives, those paths are resolved relative to the module that the AsciiDoc page lives in.
+
+For example, `modules/deployment-guide/pages/solrj.adoc` uses the `UsingSolrJRefGuideExamplesTest.java` file located under `modules/deployment-guide/examples/`.
+
+[source]
+--
+[source,java,indent=0]
+----
+\include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
+----
+--
+
+For more information on the `include` directive, see the documentation at https://docs.antora.org/antora/latest/page/include-an-example/.
+
+=== Block Titles
+
+Titles can be added to most blocks (images, source blocks, tables, etc.) by simply prefacing the title with a period (`.`).
+For example, to add a title to the source block example above:
+
+[source]
+----
+.Example ID field
+[source,xml]
+<field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+----
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/blocks/add-title/
+
+== Links
+
+=== Link to Sites on the Internet
+When converting content to HTML, Asciidoctor will automatically render many link types (such as `http:` and `mailto:`) without any additional syntax.
+
+However, you can add a name to a link by adding the URI followed by square brackets:
+
+[source]
+http://solr.apache.org/[Solr Website]
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/
+
+=== Link to Other Pages/Sections of the Guide
+A warning up front, linking to other pages can be a little bit painful.
+There are slightly different rules depending on the type of link you want to create, and where you are linking from.
+
+The build process includes a validation for internal or inter-page links, so if you can build the docs locally, you can use that to verify you constructed your link properly (or pay attention to the Jenkins build after your commit).
+
+With all of the below examples, you can add text to display as the link title by putting the display text in brackets after the link, as in:
+
+[source]
+xref:indexing-guide:schema-api.adoc#modify-the-schema[Modify the Schema]
+
+You can also use the title of the Page or Section you are linking to by using an empty display text.
+This is useful in case the title of the page or section changes.
+In that case you won't need to change the display text for every link that refers to that page/section.
+See an example below:
+
+[source]
+xref:indexing-guide:schema-api.adoc#modify-the-schema[]
+
+==== Link to a Section on the Same Page
+
+To link to an anchor (or section title) on the _same page_, you can simply use double angle brackets (`<< >>`) around the anchor/heading/section title you want to link to.
+Any section title (a heading that starts with equal signs) automatically becomes an anchor during conversion and is available for deep linking.
+
+Example::
+If I have a section on a page that looks like this (from `defining-fields.adoc`):
++
+[source]
+----
+== Field Properties
+
+Field definitions can have the following properties:
+----
++
+To link to this section from another part of the same `defining-fields.adoc` page, I simply need to put the section title in double angle brackets, as in:
++
+[source]
+See also the <<Field Properties>> section.
++
+The section title will be used as the display text; to customize that add a comma after the the section title, then the text you want used for display.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/macros/xref/#internal-cross-references
+
+==== Link to a Section with an Anchor ID
+When linking to any section (on the same page or another one), you must also be aware of any pre-defined anchors that may be in use (these will be in double brackets, like `[[ ]]`).
+When the page is converted, those will be the references your link needs to point to.
+
+Example::
+Take this example from `configsets-api.adoc`:
++
+[source]
+----
+[[configsets-create]]
+== Create a ConfigSet
+----
++
+To link to this section, there are two approaches depending on where you are linking from:
+
+* From the same page, simply use the anchor name: `\<<configsets-create>>`.
+* From another page, use the page name and the anchor name: `\xref:configuration-guide:configsets-api.adoc#configsets-create[]`.
+
+==== Link to Another Page
+To link to _another page_ or a section on another page, you must refer to the full filename and refer to the section you want to link to.
+
+When you want to refer the reader to another page without deep-linking to a section, Asciidoctor allows this by merely ommiting the `#` and section id.
+
+Example::
+To construct a link to the `solr-upgrade-notes.adoc` page, we need to refer to the file name (`solr-upgrade-notes.adoc`), as well as the module that the file resides in (`upgrade-notes/`).
+You can determine the module that a page falls under by looking at the folder under `solr-ref-guide/modules` that it resides in.
++
+It's preferred to also always use the page name to give the reader better context for where the link goes.
+As in:
++
+[source]
+For more about upgrades, see xref:upgrade-notes:solr-upgrade-notes.adoc[Solr Upgrade Notes].
+
+==== Link to Another Page in the same Module
+
+If the page that contains the link and the page being linked to reside in the same module, there is no need to include the module name after `xref:`
+
+Example::
+To construct a link to the `major-changes-in-solr-9.adoc` page from `solr-upgrade-notes.adoc` page, we do not need to include the module name because they both reside in the `upgrade-notes` module.
++
+[source]
+For more information on upgrading to Solr 9, see the section xref:major-changes-in-solr-9.adoc[].
+
+==== Link to a Section on Another Page
+Linking to a section is the same conceptually as linking to the top of a page, you just need to take a little extra care to format the anchor ID in your link reference properly.
+
+When you link to a section on another page, you must make a simple conversion of the title into the format of the section ID that will be created during the conversion.
+These are the rules that transform the sections:
+
+* All characters are lower-cased.
+`Using security.json with Solr` becomes `using security.json with solr`.
+* All non-alpha characters are removed, with the exception of hyphens (so all periods, commas, ampersands, parentheses, etc., are stripped).
+`using security.json with solr` becomes `using security json with solr`.
+* All whitespaces are replaced with hyphens.
+`using security json with solr` becomes `using-security-json-with-solr`.
+
+Example::
+The file `schema-api.adoc` has a section "Modify the Schema" that looks like this:
++
+[source]
+----
+== Modify the Schema
+
+`POST /_collection_/schema`
+----
++
+To link from to this section from another page, you would create a link structured like this:
++
+--
+* the file name of the page with the section (`schema-api.adoc`),
+* then the hash symbol (`#`),
+* then the converted section title (`modify-the-schema`),
+* then a comma and any link title for display.
+--
++
+The link in context would look like this:
++
+[source]
+For more information, see the section xref:indexing-guide:schema-api.adoc#modify-the-schema[Modify the Schema].
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/macros/inter-document-xref/
+
+== Ordered and Unordered Lists
+
+AsciiDoc supports three types of lists:
+
+* Unordered lists
+* Ordered lists
+* Labeled lists
+
+Each type of list can be mixed with the other types.
+So, you could have an ordered list inside a labeled list if necessary.
+
+=== Unordered Lists
+Simple bulleted lists need each line to start with an asterisk (`*`).
+It should be the first character of the line, and be followed by a space.
+
+These lists also need to be separated from the
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/lists/unordered/
+
+=== Ordered Lists
+Numbered lists need each line to start with a period (`.`).
+It should be the first character of the line, and be followed by a space.
+
+This style is preferred over manually numbering your list.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/lists/ordered/
+
+=== Description Lists
+These are like question & answer lists or glossary definitions.
+Each line should start with the list item followed by double colons (`::`), then a space or new line.
+
+Labeled lists can be nested by adding an additional colon (such as `:::`, etc.).
+
+If your content will span multiple paragraphs or include source blocks, etc., you will want to add a plus sign (`+`) to keep the sections together for your reader.
+
+TIP: We prefer this style of list for parameters because it allows more freedom in how you present the details for each parameter.
+For example, it supports ordered or unordered lists inside it automatically, and you can include multiple paragraphs and source blocks without trying to cram them into a smaller table cell.
+
+https://docs.asciidoctor.org/asciidoc/latest/lists/description/
+
+== Images
+
+There are two ways to include an image: inline or as a block.
+
+Inline images are those where text will flow around the image.
+Block images are those that appear on their own line, set off from any other text on the page.
+
+Both approaches use the `image` tag before the image filename, but the number of colons after `image` define if it is inline or a block.
+Inline images use one colon (`image:`), while block images use two colons (`image::`).
+
+Block images automatically include a caption label and a number (such as `Figure 1`).
+If a block image includes a title, it will be included as the text of the caption.
+
+Optional attributes allow you to set the alt text, the size of the image, if it should be a link, float and alignment.
+
+Images must be placed in the `images/` directory under the module of the pages that wish to use that image.
+As you can see in the modules that exist now, the ref-guide generally includes sub-directories for each page in the module.
+This allows for better management of which pages are using which images.
+
+More info: https://docs.antora.org/antora/latest/page/images/
+
+== Tables
+
+Tables can be complex, but it is pretty easy to make a basic table that fits most needs.
+
+=== Basic Tables
+The basic structure of a table is similar to Markdown, with pipes (`|`) delimiting columns between rows:
+
+[source]
+----
+|===
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Note the use of `|===` at the start and end.
+For basic tables that's not exactly required, but it does help to delimit the start and end of the table in case you accidentally introduce (or maybe prefer) spaces between the rows.
+
+=== Header Rows
+To add a header to a table, you need only set the `header` attribute at the start of the table:
+
+[source]
+----
+[options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+=== Defining Column Styles
+If you need to define specific styles to all rows in a column, you can do so with the attributes.
+
+This example will center all content in all rows:
+
+[source]
+----
+[cols="2*^" options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Alignments or any other styles can be applied only to a specific column.
+For example, this would only center the last column of the table:
+
+[source]
+----
+[cols="2*,^" options="header"]
+|===
+| header col 1 | header col 2|
+| col 1 row 1 | col 2 row 1|
+| col 1 row 2 | col 2 row 2|
+|===
+----
+
+Many more examples of formatting:
+
+* Columns: https://docs.asciidoctor.org/asciidoc/latest/tables/add-columns/
+* Cells and rows: https://docs.asciidoctor.org/asciidoc/latest/tables/add-cells-and-rows/
+
+=== More Options
+
+Tables can also be given footer rows, borders, and captions.
+You can  determine the width of columns, or the width of the table as a whole.
+
+CSV or DSV can also be used instead of formatting the data in pipes.
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/tables/build-a-basic-table/
+
+== Admonitions (Notes, Warnings)
+
+AsciiDoc supports several types of callout boxes, called "admonitions":
+
+* NOTE
+* TIP
+* IMPORTANT
+* CAUTION
+* WARNING
+
+It is enough to start a paragraph with one of these words followed by a colon (such as `NOTE:`).
+When it is converted to HTML, those sections will be formatted properly - indented from the main text and showing an icon inline.
+
+You can add titles to admonitions by making it an admonition block.
+The structure of an admonition block is like this:
+
+[source]
+----
+.Title of Note
+[NOTE]
+====
+Text of note
+====
+----
+
+In this example, the type of admonition is included in square brackets (`[NOTE]`), and the title is prefixed with a period.
+Four equal signs give the start and end points of the note text (which can include new lines, lists, code examples, etc.).
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/blocks/admonitions/
+
+== STEM Notation Support
+
+We have set up the Ref Guide to be able to support STEM notation whenever it's needed.
+
+The http://asciimath.org/[AsciiMath] syntax is supported by default, but LaTeX syntax is also available.
+
+To insert a mathematical formula inline with your text, you can simply write:
+
+[source]
+----
+stem:[a//b]
+----
+
+MathJax.js will render the formula as proper mathematical notation when a user loads the page.
+When the above example is converted to HTML, it will look like this to a user: stem:[a//b]
+
+To insert LaTeX, preface the formula with `latexmath` instead of `stem`:
+
+[source]
+----
+latexmath:[tp \leq 1 - (1 - sim^{rows})^{bands}]
+----
+
+Long formulas, or formulas which should to be set off from the main text, can use the block syntax prefaced by `stem` or `latexmath`:
+
+[source]
+----
+[stem]
+++++
+sqrt(3x-1)+(1+x)^2 < y
+++++
+----
+
+or for LaTeX:
+
+[source]
+----
+[latexmath]
+++++
+[tp \leq 1 - (1 - sim^{rows})^{bands}]
+++++
+----
+
+More info: https://docs.asciidoctor.org/asciidoc/latest/stem/stem/
+
+== Asciidoctor Roles
+
+Asciidoctor helpfully provides a way to define custom `<div>` classes in `.adoc` files, as long as we understand how to use it.
+
+Asciidoctor does not call these "divs" or "classes", but instead "_roles_".
+We can give any content a role - to images, content blocks (such as `[source]` or `[NOTE]`, etc.), even a word in the middle of a sentence.
+
+Because roles are so flexible, they only apply to the thing - the word, content block, image, etc., - they are directly applied to.
+This means that if we want an entire section of content to be given a specific role in the HTML (i.e., enclosed in a `<div>`), then we need to put the content in a block.
+
+TIP: For more on Roles in Asciidoctor, see https://docs.asciidoctor.org/asciidoc/latest/attributes/roles/[Role Attribute] in the Asciidoctor User Guide.
+
+=== Creating Tabbed Sections
+Hopefully a little bit of background on roles is helpful to understanding the rest of what we'll do to create a tabbed section in a page.
+
+See the Bootstrap docs on https://getbootstrap.com/docs/4.1/components/navs/#tabs[nav tabs] for details on how to use tabs and pills with Bootstrap.
+As a quick overview, tabs in Bootstrap are defined like this:
+
+[source,html]
+----
+<ul class="nav nav-pills"> <--1-->
+  <li class="active"><a data-toggle="pill" href="#sec1">Section 1</a></li>
+  <li><a data-toggle="pill" href="#sect2">Section 2</a></li>
+</ul>
+
+<div class="tab-content"> <--2-->
+  <div id="sect1" class="tab-pane active"> <--3-->
+    <h3>Section 1</h3>
+    <p>Some content.</p>
+  </div>
+  <div id="sect2" class="tab-pane">
+    <h3>Section 2</h3>
+    <p>Some other content.</p>
+  </div>
+</div>
+----
+<1> This section creates an unordered list with a line item for each tab.
+The `data-toggle` and `class` parameters are what tell Bootstrap how to render the content.
+<2> Note the class defined here: `<div class="tab-content">`.
+This defines that what follows is the content that will make up the panes of our tabs.
+We will need to define these in our document.
+<3> In our document, we need to delineate the separate sections of content that will make up each pane.
+
+We have created some custom JavaScript that will do part of the above for us if we assign the proper roles to the blocks of content that we want to appear in the tab panes.
+To do this, we can use Asciidoctor's block delimiters to define the tabbed content, and the content between the tab.
+
+. Define an "open block" (an unformatted content block), and give it the role `.dynamic-tabs`.
+An open block is defined by two hyphens on a line before the content that goes in the block, and two hyphens on a line after the content to end the block.
+We give a block a role by adding a period before the role name, like this:
++
+[source,text]
+----
+[.dynamic-tabs]
+--
+The stuff we'll put in the tabs will go here.
+--
+----
+
+. Next we need to define the content for the tabs between the open block delimiters.
+.. We enclose each tab pane in another type of block, and "example" block.
+This allows us to include any kind of content in the block and be sure all of the various types of elements (heading, text, examples, etc.) are included in the pane.
+.. We give the example block another role, `tab-pane`, and we must make sure that each pane has a unique ID.
+We assign IDs with a hash mark (\#) followed by the ID value (`#sect1`).
+.. We also need to define a label for each tab.
+We do this by adding another role, `tab-label` to the content we want to appear as the name of the tab.
+.. In the end one pane will look like this:
++
+[source,text]
+----
+[example.tab-pane#sect1] <--1-->
+==== <--2-->
+[.tab-label]*Section 1*  <--3-->
+My content...
+====
+----
+<1> When we define the example block with `[example]`, it's followed by `.tab-pane#sect1` as the class (each class separated by a period `.`) and the ID defined in the tab definition earlier.
+Those will become the classes (`class="tab-pane active"`) and ID (`id="sect1"`) in the resulting HTML.
+<2> Example blocks are delimited by 4 equal signs (`====`) before and after the enclosed content.
+<3> The words "Section 1" will appear in the HTML page as the label for this tab.
+
+.. Create `[example.tab-pane#id]` sections for each tab, until you finally end up with something that looks like this:
++
+[source,text]
+----
+[.dynamic-tabs]
+--
+[example.tab-pane#sect1]
+====
+[.tab-label]*Section 1*
+My content...
+====
+
+[example.tab-pane#sect2]
+====
+[.tab-label]*Section 2*
+My content...
+====
+--
+----

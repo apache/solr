@@ -19,24 +19,11 @@ package org.apache.solr.core;
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUnsetSysProperty() throws Exception {
-    assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
+    assertConfigs("bad_solrconfig.xml", "schema.xml", "unset.sys.property");
   }
 
   public void testNRTModeProperty() throws Exception {
-    assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "nrtMode");
-  }
-
-  public void testMultipleDirectoryFactories() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
-                    "directoryFactory");
-  }
-  public void testMultipleIndexConfigs() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
-                    "indexConfig");
-  }
-  public void testMultipleCFS() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-cfs.xml", "schema12.xml",
-                    "useCompoundFile");
+    assertConfigs("bad-solrconfig-nrtmode.xml", "schema.xml", "nrtMode");
   }
 
   public void testUpdateLogButNoVersionField() throws Exception {
@@ -50,27 +37,34 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
   }
 
   public void testBogusMergePolicy() throws Exception {
-    assertConfigs("bad-mpf-solrconfig.xml", "schema-minimal.xml",
-                  "DummyMergePolicyFactory");
+    assertConfigs("bad-mpf-solrconfig.xml", "schema-minimal.xml", "DummyMergePolicyFactory");
   }
 
   public void testSchemaMutableButNotManaged() throws Exception {
-    assertConfigs("bad-solrconfig-schema-mutable-but-not-managed.xml",
-                  "schema-minimal.xml", "Unexpected arg(s): {mutable=false, managedSchemaResourceName=schema.xml}");
+    assertConfigs(
+        "bad-solrconfig-schema-mutable-but-not-managed.xml",
+        "schema-minimal.xml",
+        "Unexpected arg(s)"); // SOLR-15939
   }
 
   public void testManagedSchemaCannotBeNamedSchemaDotXml() throws Exception {
-    assertConfigs("bad-solrconfig-managed-schema-named-schema.xml.xml",
-                  "schema-minimal.xml", "managedSchemaResourceName can't be 'schema.xml'");
+    assertConfigs(
+        "bad-solrconfig-managed-schema-named-schema.xml.xml",
+        "schema-minimal.xml",
+        "managedSchemaResourceName can't be 'schema.xml'");
   }
 
   public void testUnknownSchemaAttribute() throws Exception {
-    assertConfigs("bad-solrconfig-unexpected-schema-attribute.xml", "schema-minimal.xml",
-                  "Unexpected arg(s): {bogusParam=bogusValue}");
+    assertConfigs(
+        "bad-solrconfig-unexpected-schema-attribute.xml",
+        "schema-minimal.xml",
+        "Unexpected arg(s): {bogusParam=bogusValue}");
   }
 
   public void testTolerantUpdateProcessorNoUniqueKey() throws Exception {
-    assertConfigs("solrconfig-tolerant-update-minimal.xml", "schema-minimal.xml",
-                  "requires a schema that includes a uniqueKey field");
+    assertConfigs(
+        "solrconfig-tolerant-update-minimal.xml",
+        "schema-minimal.xml",
+        "requires a schema that includes a uniqueKey field");
   }
 }

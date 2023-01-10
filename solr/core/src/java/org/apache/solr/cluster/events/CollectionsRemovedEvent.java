@@ -18,9 +18,7 @@ package org.apache.solr.cluster.events;
 
 import java.util.Iterator;
 
-/**
- * Event generated when some collections have been removed.
- */
+/** Event generated when some collections have been removed. */
 public interface CollectionsRemovedEvent extends ClusterEvent {
 
   @Override

@@ -18,35 +18,34 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
-public class V2StandaloneTest extends SolrTestCaseJ4{
+public class V2StandaloneTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWelcomeMessage() throws Exception {
     File solrHomeTmp = createTempDir().toFile().getAbsoluteFile();
-    FileUtils.copyDirectory(new File(TEST_HOME(), "configsets/minimal/conf"), new File(solrHomeTmp,"/conf"));
+    FileUtils.copyDirectory(
+        new File(TEST_HOME(), "configsets/minimal/conf"), new File(solrHomeTmp, "/conf"));
     FileUtils.copyFile(new File(TEST_HOME(), "solr.xml"), new File(solrHomeTmp, "solr.xml"));
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHomeTmp.getAbsolutePath(), buildJettyConfig("/solr"));
+    JettySolrRunner jetty =
+        new JettySolrRunner(solrHomeTmp.getAbsolutePath(), buildJettyConfig("/solr"));
     jetty.start();
 
-    try (HttpSolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(),"/solr/"))) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList res = client.request(new V2Request.Builder("/").build());
-      @SuppressWarnings({"rawtypes"})
-      NamedList header = (NamedList) res.get("responseHeader");
+    try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/"))) {
+      NamedList<?> res = client.request(new V2Request.Builder("/").build());
+      NamedList<?> header = (NamedList<?>) res.get("responseHeader");
       assertEquals(0, header.get("status"));
 
       res = client.request(new V2Request.Builder("/_introspect").build());
-      header = (NamedList) res.get("responseHeader");
+      header = (NamedList<?>) res.get("responseHeader");
       assertEquals(0, header.get("status"));
     }
 

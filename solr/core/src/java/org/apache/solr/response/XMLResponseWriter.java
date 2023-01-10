@@ -16,22 +16,13 @@
  */
 package org.apache.solr.response;
 
-import java.io.Writer;
 import java.io.IOException;
-
+import java.io.Writer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- *
- */
+/** */
 public class XMLResponseWriter implements QueryResponseWriter {
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
-    /* NOOP */
-  }
-
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter w = new XMLWriter(writer, req, rsp);

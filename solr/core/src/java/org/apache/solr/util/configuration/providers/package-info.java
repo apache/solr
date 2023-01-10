@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * TODO
- */
+
+/** TODO */
 package org.apache.solr.util.configuration.providers;
-
-

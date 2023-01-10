@@ -20,49 +20,47 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 
 /**
- * Create a single term query from the input value equivalent to readableToIndexed().
- * This is useful for generating filter queries from the external human readable terms returned by the
- * faceting or terms components.
+ * Create a single term query from the input value equivalent to readableToIndexed(). This is useful
+ * for generating filter queries from the external human readable terms returned by the faceting or
+ * terms components.
  *
- * <p>
- * For text fields, no analysis is done since raw terms are already returned from the faceting
- * and terms components, and not all text analysis is idempotent.
- * To apply analysis to text fields as well, see the {@link FieldQParserPlugin}.
- * <br>
- * If no analysis or transformation is desired for any type of field, see the {@link RawQParserPlugin}.
+ * <p>For text fields, no analysis is done since raw terms are already returned from the faceting
+ * and terms components, and not all text analysis is idempotent. To apply analysis to text fields
+ * as well, see the {@link FieldQParserPlugin}. <br>
+ * If no analysis or transformation is desired for any type of field, see the {@link
+ * RawQParserPlugin}.
  *
- * <p>Other parameters: <code>f</code>, the field
- * <br>Example: <code>{!term f=weight}1.5</code>
+ * <p>Other parameters: <code>f</code>, the field <br>
+ * Example: <code>{!term f=weight}1.5</code>
  */
 public class TermQParserPlugin extends QParserPlugin {
   public static final String NAME = "term";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {
         String fname = localParams.get(QueryParsing.F);
+        if (fname == null || fname.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing field to query");
+        }
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);
-        BytesRefBuilder term;
         if (ft != null) {
-          if (ft.isPointField()) {
-            return ft.getFieldQuery(this, req.getSchema().getField(fname), val);
-          } else {
-            term = new BytesRefBuilder();
-            ft.readableToIndexed(val, term);
-          }
+          return ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
         } else {
-          term = new BytesRefBuilder();
+          BytesRefBuilder term = new BytesRefBuilder();
           term.copyChars(val);
+          return new TermQuery(new Term(fname, term.get()));
         }
-        return new TermQuery(new Term(fname, term.get()));
       }
     };
   }

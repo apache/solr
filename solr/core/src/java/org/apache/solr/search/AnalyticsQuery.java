@@ -23,61 +23,63 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrRequestInfo;
 
 /**
- *  <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
- **/
-
+ * <b>Note: This API is experimental and may change in non backward-compatible ways in the
+ * future</b>
+ */
 public abstract class AnalyticsQuery extends ExtendedQueryBase implements PostFilter {
 
+  @Override
   public boolean getCache() {
     return false;
   }
 
+  @Override
   public int getCost() {
     return Math.max(super.getCost(), 100);
   }
 
+  @Override
   public boolean equals(Object o) {
-    return this == o ;
+    return this == o;
   }
 
+  @Override
   public int hashCode() {
     return System.identityHashCode(this);
   }
 
-  /**
-  *  Use this constructor for single node analytics.
-  * */
-  public AnalyticsQuery() {
-
-  }
+  /** Use this constructor for single node analytics. */
+  public AnalyticsQuery() {}
 
   /**
    * Use this constructor for distributed analytics.
+   *
    * @param mergeStrategy defines the distributed merge strategy for this AnalyticsQuery
-   **/
-
-  public AnalyticsQuery(MergeStrategy mergeStrategy){
+   */
+  public AnalyticsQuery(MergeStrategy mergeStrategy) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     ResponseBuilder rb = info.getResponseBuilder();
     rb.addMergeStrategy(mergeStrategy);
   }
 
+  @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     ResponseBuilder rb = null;
-    if(info != null) {
+    if (info != null) {
       rb = info.getResponseBuilder();
     }
 
-    if(rb == null) {
-      //This is the autowarming case.
+    if (rb == null) {
+      // This is the autowarming case.
       return new DelegatingCollector();
     } else {
       return getAnalyticsCollector(rb, searcher);
     }
   }
 
-  public abstract DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher);
+  public abstract DelegatingCollector getAnalyticsCollector(
+      ResponseBuilder rb, IndexSearcher searcher);
 
   @Override
   public void visit(QueryVisitor visitor) {

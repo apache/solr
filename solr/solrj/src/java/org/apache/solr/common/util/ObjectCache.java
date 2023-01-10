@@ -19,12 +19,9 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import org.apache.solr.common.SolrCloseable;
 
-/**
- * Simple object cache with a type-safe accessor.
- */
+/** Simple object cache with a type-safe accessor. */
 public class ObjectCache extends MapBackedCache<String, Object> implements SolrCloseable {
 
   private volatile boolean isClosed;
@@ -72,7 +69,8 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
     }
   }
 
-  public <T> T computeIfAbsent(String key, Class<T> clazz, Function<String, ? extends T> mappingFunction) {
+  public <T> T computeIfAbsent(
+      String key, Class<T> clazz, Function<String, ? extends T> mappingFunction) {
     ensureNotClosed();
     Object o = super.computeIfAbsent(key, mappingFunction);
     return clazz.cast(o);

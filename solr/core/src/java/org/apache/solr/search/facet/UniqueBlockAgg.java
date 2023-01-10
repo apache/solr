@@ -18,7 +18,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.solr.schema.SchemaField;
 
 public abstract class UniqueBlockAgg extends UniqueAgg {
@@ -29,25 +28,25 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     protected UniqueBlockSlotAcc(FacetContext fcontext, SchemaField field, int numSlots)
         throws IOException { //
-      super(fcontext, field, /*numSlots suppressing inherited accumulator */0, null);
+      super(fcontext, field, /*numSlots suppressing inherited accumulator */ 0, null);
       counts = new int[numSlots];
       lastSeenValuesPerSlot = new int[numSlots];
       Arrays.fill(lastSeenValuesPerSlot, Integer.MIN_VALUE);
     }
-    
+
     @Override
     protected void collectOrdToSlot(int slotNum, int ord) {
-      if (lastSeenValuesPerSlot[slotNum]!=ord) {
-        counts[slotNum]+=1;
+      if (lastSeenValuesPerSlot[slotNum] != ord) {
+        counts[slotNum] += 1;
         lastSeenValuesPerSlot[slotNum] = ord;
       }
     }
-    
+
     @Override
     public void calcCounts() {
       // noop already done
     }
-    
+
     @Override
     public void reset() throws IOException {
       Arrays.fill(counts, 0);
@@ -67,11 +66,11 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
 
     @Override
     public long getNonShardValue(int slot) {
-      return (long)counts[slot];
+      return (long) counts[slot];
     }
   }
 
-  private final static String uniqueBlock = "uniqueBlock";
+  private static final String uniqueBlock = "uniqueBlock";
 
   public UniqueBlockAgg(String field) {
     super(field);
@@ -79,10 +78,11 @@ public abstract class UniqueBlockAgg extends UniqueAgg {
   }
 
   @Override
-  public abstract SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException ;
-  
+  public abstract SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException;
+
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetModule.FacetLongMerger() ;
+    return new FacetModule.FacetLongMerger();
   }
 }

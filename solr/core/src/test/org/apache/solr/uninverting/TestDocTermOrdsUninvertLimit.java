@@ -18,19 +18,18 @@
 package org.apache.solr.uninverting;
 
 import java.io.IOException;
-
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
 public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
@@ -42,54 +41,65 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
   @SuppressWarnings({"ConstantConditions", "PointlessBooleanExpression"})
   @Nightly
   public void testTriggerUnInvertLimit() throws IOException {
-    final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
+    final boolean SHOULD_TRIGGER =
+        false; // Set this to true to use the test with the old implementation
 
-    // Ensure enough terms inside of a single UnInvert-pass-structure to trigger the limit
-    final int REF_LIMIT = (int) Math.pow(2, 24); // Maximum number of references within a single pass-structure
-    final int DOCS = (1<<16)-1;                  // The number of documents within a single pass (simplified)
-    final int TERMS = REF_LIMIT/DOCS;            // Each document must have this many references aka terms hit limit
+    // Ensure enough terms inside a single UnInvert-pass-structure to trigger the limit
+    final int REF_LIMIT =
+        (int) Math.pow(2, 24); // Maximum number of references within a single pass-structure
+    final int DOCS = (1 << 16) - 1; // The number of documents within a single pass (simplified)
+    final int TERMS =
+        REF_LIMIT / DOCS; // Each document must have this many references aka terms hit limit
 
     // disk based Directory and IWC settings to reduce risk of OOM
     Directory dir = newFSDirectory(createTempDir("TestDocTermOrdsUninvertLimit"));
-    final IndexWriter w = new IndexWriter(dir,
-                                          new IndexWriterConfig(new MockAnalyzer(random()))
-                                          .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-                                          .setRAMBufferSizeMB(256.0)
-                                          .setMergeScheduler(new ConcurrentMergeScheduler())
-                                          .setMergePolicy(newLogMergePolicy(false, 10))
-                                          .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-                                          .setCodec(TestUtil.getDefaultCodec()));
-    
+    final IndexWriter w =
+        new IndexWriter(
+            dir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setRAMBufferSizeMB(256.0)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                .setCodec(TestUtil.getDefaultCodec()));
+
     Document doc = new Document();
     Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
 
-    StringBuilder sb = new StringBuilder(TERMS*(Integer.toString(TERMS).length()+1));
-    for (int i = 0 ; i < TERMS ; i++) {
+    StringBuilder sb = new StringBuilder(TERMS * (Integer.toString(TERMS).length() + 1));
+    for (int i = 0; i < TERMS; i++) {
       sb.append(" ").append(Integer.toString(i));
     }
     field.setStringValue(sb.toString());
 
-    for (int i = 0 ; i < DOCS ; i++) {
+    for (int i = 0; i < DOCS; i++) {
       w.addDocument(doc);
     }
-    //System.out.println("\n Finished adding " + DOCS + " documents of " + TERMS + " unique terms");
+    // System.out.println("\n Finished adding " + DOCS + " documents of " + TERMS + " unique
+    // terms");
     w.close();
-    
+
     final IndexReader r = DirectoryReader.open(dir);
     try {
       final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
       TestUtil.checkReader(ar);
       final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field"); // bigTerms turned off
       if (SHOULD_TRIGGER) {
-        fail("DocTermOrds should have failed with a \"Too many values for UnInvertedField\" message");
+        fail(
+            "DocTermOrds should have failed with a \"Too many values for UnInvertedField\" message");
       }
     } catch (IllegalStateException e) {
       if (!SHOULD_TRIGGER) {
-        fail("DocTermsOrd should not have failed with this implementation, but got exception " +
-            e.getClass().getSimpleName() + " with message " + e.getMessage());
+        fail(
+            "DocTermsOrd should not have failed with this implementation, but got exception "
+                + e.getClass().getSimpleName()
+                + " with message "
+                + e.getMessage());
       }
-      // This is (hopefully) "Too many values for UnInvertedField faceting on field field", so all is as expected
+      // This is (hopefully) "Too many values for UnInvertedField faceting on field", so all
+      // is as expected
     } finally {
       r.close();
       dir.close();

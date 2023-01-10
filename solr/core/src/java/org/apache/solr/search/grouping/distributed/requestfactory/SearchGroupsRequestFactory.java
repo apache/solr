@@ -27,8 +27,8 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 
 /**
- * Concrete implementation of {@link ShardRequestFactory} that creates {@link ShardRequest} instances for getting the
- * search groups from all shards.
+ * Concrete implementation of {@link ShardRequestFactory} that creates {@link ShardRequest}
+ * instances for getting the search groups from all shards.
  */
 public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
@@ -50,9 +50,9 @@ public class SearchGroupsRequestFactory implements ShardRequestFactory {
 
     // set the start (offset) to 0 for each shard request so we can properly merge
     // results from the start.
-    if(rb.shards_start > -1) {
+    if (rb.shards_start > -1) {
       // if the client set shards.start set this explicitly
-      sreq.params.set(CommonParams.START,rb.shards_start);
+      sreq.params.set(CommonParams.START, rb.shards_start);
     } else {
       sreq.params.set(CommonParams.START, "0");
     }
@@ -60,23 +60,24 @@ public class SearchGroupsRequestFactory implements ShardRequestFactory {
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
-    if(rb.shards_rows > -1) {
+    if (rb.shards_rows > -1) {
       // if the client set shards.rows set this explicity
-      sreq.params.set(CommonParams.ROWS,rb.shards_rows);
+      sreq.params.set(CommonParams.ROWS, rb.shards_rows);
     } else {
-      sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+      sreq.params.set(
+          CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
     }
 
     // in this first phase, request only the unique key field
     // and any fields needed for merging.
     sreq.params.set(GroupParams.GROUP_DISTRIBUTED_FIRST, "true");
 
-    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
+    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+        || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
     } else {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
     }
     return new ShardRequest[] {sreq};
   }
-
 }

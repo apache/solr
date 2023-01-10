@@ -17,10 +17,9 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
-
-import java.util.Set;
 
 public class AttributeFetcherForTest implements AttributeFetcher {
 
@@ -41,7 +40,8 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames) {
+  public AttributeFetcher requestCollectionMetrics(
+      SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames) {
     return this;
   }
 

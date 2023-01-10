@@ -20,7 +20,7 @@
      loaded once at startup.  If it is found in Solr's data
      directory, it will be re-loaded every commit.
 
-   See http://wiki.apache.org/solr/QueryElevationComponent for more info
+   See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html for more info
 
 -->
 <elevate>
@@ -32,9 +32,9 @@
   </query>
 
 for use with techproducts example
- 
+
   <query text="ipod">
-    <doc id="MA147LL/A" />  put the actual ipod at the top 
+    <doc id="MA147LL/A" />  put the actual ipod at the top
     <doc id="IW-02" exclude="true" /> exclude this cable
   </query>
 -->

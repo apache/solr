@@ -17,6 +17,12 @@
 
 package org.apache.solr.api;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,15 +30,16 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Phaser;
 import java.util.function.Supplier;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -48,30 +55,28 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 /**
- * This class manages the container-level plugins and their Api-s. It is
- * responsible for adding / removing / replacing the plugins according to the updated
- * configuration obtained from {@link ContainerPluginsApi#plugins(Supplier)}.
- * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which
- * are then registered in the CoreContainer {@link ApiBag}. They may be also post-processed
- * for additional functionality by {@link PluginRegistryListener}-s registered with
- * this class.</p>
+ * This class manages the container-level plugins and their Api-s. It is responsible for adding /
+ * removing / replacing the plugins according to the updated configuration obtained from {@link
+ * ContainerPluginsApi#plugins(Supplier)}.
+ *
+ * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which are then
+ * registered in the CoreContainer {@link ApiBag}. They may be also post-processed for additional
+ * functionality by {@link PluginRegistryListener}-s registered with this class.
  */
 public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+  private static final ObjectMapper mapper =
+      SolrJacksonAnnotationInspector.createObjectMapper()
+          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
           .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
   private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
@@ -88,17 +93,15 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     refresh();
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
-      assert localPhaser.getRegisteredParties() == 1;
-      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+      localPhaser.arrive();
     }
     return false;
   }
 
   /**
-   * A phaser that will advance phases every time {@link #onChange(Map)} is called.
-   * Useful for allowing tests to know when a new configuration is finished getting set.
+   * A phaser that will advance phases every time {@link #onChange(Map)} is called. Useful for
+   * allowing tests to know when a new configuration is finished getting set.
    */
-
   @VisibleForTesting
   public void setPhaser(Phaser phaser) {
     phaser.register();
@@ -108,6 +111,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   public void registerListener(PluginRegistryListener listener) {
     listeners.add(listener);
   }
+
   public void unregisterListener(PluginRegistryListener listener) {
     listeners.remove(listener);
   }
@@ -124,11 +128,14 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   @Override
   public synchronized void close() throws IOException {
-    currentPlugins.values().forEach(apiInfo -> {
-      if (apiInfo.instance instanceof Closeable) {
-        IOUtils.closeQuietly((Closeable) apiInfo.instance);
-      }
-    });
+    currentPlugins
+        .values()
+        .forEach(
+            apiInfo -> {
+              if (apiInfo.instance instanceof Closeable) {
+                IOUtils.closeQuietly((Closeable) apiInfo.instance);
+              }
+            });
   }
 
   public synchronized ApiInfo getPlugin(String name) {
@@ -148,7 +155,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public boolean equals(Object obj) {
       if (obj instanceof PluginMetaHolder) {
         PluginMetaHolder that = (PluginMetaHolder) obj;
-        return Objects.equals(this.original,that.original);
+        return Objects.equals(this.original, that.original);
       }
       return false;
     }
@@ -158,6 +165,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       return original.hashCode();
     }
   }
+
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
     Map<String, Object> pluginInfos;
@@ -167,10 +175,10 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       log.error("Could not read plugins data", e);
       return;
     }
-    Map<String,PluginMetaHolder> newState = new HashMap<>(pluginInfos.size());
+    Map<String, PluginMetaHolder> newState = new HashMap<>(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       try {
-        newState.put(e.getKey(),new PluginMetaHolder((Map<String, Object>) e.getValue()));
+        newState.put(e.getKey(), new PluginMetaHolder((Map<String, Object>) e.getValue()));
       } catch (Exception exp) {
         log.error("Invalid apiInfo configuration :", exp);
       }
@@ -181,7 +189,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       currentState.put(e.getKey(), e.getValue().holder);
     }
     Map<String, Diff> diff = compareMaps(currentState, newState);
-    if (diff == null) return;//nothing has changed
+    if (diff == null) return; // nothing has changed
     for (Map.Entry<String, Diff> e : diff.entrySet()) {
       if (e.getValue() == Diff.UNCHANGED) continue;
       if (e.getValue() == Diff.REMOVED) {
@@ -189,17 +197,19 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         if (apiInfo == null) continue;
         listeners.forEach(listener -> listener.deleted(apiInfo));
         for (ApiHolder holder : apiInfo.holders) {
-          Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
-              getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
+          Api old =
+              containerApiBag.unregister(
+                  holder.api.getEndPoint().method()[0],
+                  getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
           if (old instanceof Closeable) {
             closeWhileHandlingException((Closeable) old);
           }
         }
       } else {
-        //ADDED or UPDATED
+        // ADDED or UPDATED
         PluginMetaHolder info = newState.get(e.getKey());
         List<String> errs = new ArrayList<>();
-        ApiInfo apiInfo = new ApiInfo(info,errs);
+        ApiInfo apiInfo = new ApiInfo(info, errs);
         if (!errs.isEmpty()) {
           log.error(StrUtils.join(errs, ','));
           continue;
@@ -219,31 +229,31 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           final ApiInfo apiInfoFinal = apiInfo;
           listeners.forEach(listener -> listener.added(apiInfoFinal));
         } else {
-          //this plugin is being updated
+          // this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
           for (ApiHolder holder : apiInfo.holders) {
-            //register all new paths
+            // register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           final ApiInfo apiInfoFinal = apiInfo;
           listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
           if (old != null) {
-            //this is an update of the plugin. But, it is possible that
+            // this is an update of the plugin. But, it is possible that
             // some paths are remved in the newer version of the plugin
             for (ApiHolder oldHolder : old.holders) {
-              if(apiInfo.get(oldHolder.api.getEndPoint()) == null) {
-                //there was a path in the old plugin which is not present in the new one
-                containerApiBag.unregister(oldHolder.getMethod(),getActualPath(old, oldHolder.getPath()));
+              if (apiInfo.get(oldHolder.api.getEndPoint()) == null) {
+                // there was a path in the old plugin which is not present in the new one
+                containerApiBag.unregister(
+                    oldHolder.getMethod(), getActualPath(old, oldHolder.getPath()));
               }
             }
             if (old instanceof Closeable) {
-              //close the old instance of the plugin
+              // close the old instance of the plugin
               closeWhileHandlingException((Closeable) old);
             }
           }
         }
       }
-
     }
   }
 
@@ -253,9 +263,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return path;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
-    return (Map) makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
+  private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
+    return Utils.makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
   }
 
   private static class ApiHolder extends Api {
@@ -271,37 +280,34 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       api.call(req, rsp);
     }
 
-    public String getPath(){
+    public String getPath() {
       return api.getEndPoint().path()[0];
     }
 
-    public SolrRequest.METHOD getMethod(){
+    public SolrRequest.METHOD getMethod() {
       return api.getEndPoint().method()[0];
-
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
 
     private final PluginMetaHolder holder;
 
-    @JsonProperty
-    private final PluginMeta info;
+    @JsonProperty private final PluginMeta info;
 
     @JsonProperty(value = "package")
     public final String pkg;
 
-    private PackageLoader.Package.Version pkgVersion;
-    private Class klas;
+    private SolrPackageLoader.SolrPackage.Version pkgVersion;
+    private Class<?> klas;
     Object instance;
 
     ApiHolder get(EndPoint endPoint) {
       for (ApiHolder holder : holders) {
         EndPoint e = holder.api.getEndPoint();
-        if(Objects.equals(endPoint.method()[0] , e.method()[0]) &&
-            Objects.equals(endPoint.path()[0], e.path()[0])) {
+        if (Objects.equals(endPoint.method()[0], e.method()[0])
+            && Objects.equals(endPoint.path()[0], e.path()[0])) {
           return holder;
         }
       }
@@ -315,26 +321,33 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     public PluginMeta getInfo() {
       return info.copy();
     }
-    @SuppressWarnings({"unchecked","rawtypes"})
+
     public ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
       this.holder = infoHolder;
       this.info = infoHolder.meta;
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
-        Optional<PackageLoader.Package.Version> ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
+        Optional<SolrPackageLoader.SolrPackage.Version> ver =
+            coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
-          //may be we are a bit early. Do a refresh and try again
-         coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
-         ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
+          // may be we are a bit early. Do a refresh and try again
+          coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
+          ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
         if (ver.isEmpty()) {
-          PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
+          SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(pkg);
           if (p == null) {
             errs.add("Invalid package " + klassInfo.pkg);
             return;
           } else {
-            errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
+            errs.add(
+                "No such package version:"
+                    + pkg
+                    + ":"
+                    + info.version
+                    + " . available versions :"
+                    + p.allVersions());
             return;
           }
         }
@@ -348,9 +361,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         }
       } else {
         try {
-          klas = Class.forName(klassInfo.className);
-        } catch (ClassNotFoundException e) {
-          errs.add("Error loading class " + e.toString());
+          klas = coreContainer.getResourceLoader().findClass(klassInfo.className, Object.class);
+        } catch (Exception e) {
+          errs.add(e.toString());
           return;
         }
         pkgVersion = null;
@@ -373,19 +386,20 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
           PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));
           if (V2HttpCall.knownPrefixes.contains(pathSegments.get(0))) {
-            errs.add("path must not have a prefix: "+pathSegments.get(0));
+            errs.add("path must not have a prefix: " + pathSegments.get(0));
           }
-
         }
       } catch (Exception e) {
         errs.add(e.toString());
       }
       if (!errs.isEmpty()) return;
 
-      Constructor constructor = klas.getConstructors()[0];
-      if (constructor.getParameterTypes().length > 1 ||
-          (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {
-        errs.add("Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
+      Constructor<?> constructor = klas.getConstructors()[0];
+      if (constructor.getParameterTypes().length > 1
+          || (constructor.getParameterTypes().length == 1
+              && constructor.getParameterTypes()[0] != CoreContainer.class)) {
+        errs.add(
+            "Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
         return;
       }
       if (!Modifier.isPublic(constructor.getModifiers())) {
@@ -394,24 +408,26 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
-      Constructor constructor = klas.getConstructors()[0];
+      Constructor<?> constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
         instance = constructor.newInstance();
-      } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
+      } else if (constructor.getParameterTypes().length == 1
+          && constructor.getParameterTypes()[0] == CoreContainer.class) {
         instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
       if (instance instanceof ConfigurablePlugin) {
-        Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
+        Class<? extends MapWriter> c =
+            getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
         if (c != null) {
-          Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+          Map<String, Object> original =
+              (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
           holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin) instance).configure(holder.meta.config);
-
+          ((ConfigurablePlugin<MapWriter>) instance).configure(holder.meta.config);
         }
       }
       if (instance instanceof ResourceLoaderAware) {
@@ -426,25 +442,25 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
-
   }
 
-  /**
-   * Get the generic type of a {@link ConfigurablePlugin}
-   */
-  @SuppressWarnings("rawtypes")
-  public static Class getConfigClass(ConfigurablePlugin<?> o) {
-    Class klas = o.getClass();
+  /** Get the generic type of a {@link ConfigurablePlugin} */
+  @SuppressWarnings("unchecked")
+  public static <T extends MapWriter> Class<T> getConfigClass(ConfigurablePlugin<T> o) {
+    Class<?> klas = o.getClass();
     do {
       Type[] interfaces = klas.getGenericInterfaces();
       for (Type type : interfaces) {
         if (type instanceof ParameterizedType) {
           ParameterizedType parameterizedType = (ParameterizedType) type;
           Type rawType = parameterizedType.getRawType();
-          if (rawType == ConfigurablePlugin.class ||
+          if (rawType == ConfigurablePlugin.class
+              ||
               // or if a super interface is a ConfigurablePlugin
-              ((rawType instanceof Class) && ConfigurablePlugin.class.isAssignableFrom((Class) rawType))) {
-            return (Class) parameterizedType.getActualTypeArguments()[0];
+              ((rawType instanceof Class<?>)
+                  && ConfigurablePlugin.class.isAssignableFrom((Class<?>) rawType))) {
+
+            return (Class<T>) parameterizedType.getActualTypeArguments()[0];
           }
         }
       }
@@ -453,32 +469,34 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return null;
   }
 
-  public ApiInfo createInfo(Map<String,Object> info, List<String> errs) throws IOException {
+  public ApiInfo createInfo(Map<String, Object> info, List<String> errs) throws IOException {
     return new ApiInfo(new PluginMetaHolder(info), errs);
-
   }
 
   public enum Diff {
-    ADDED, REMOVED, UNCHANGED, UPDATED
+    ADDED,
+    REMOVED,
+    UNCHANGED,
+    UPDATED
   }
 
   public static Map<String, Diff> compareMaps(Map<String, ?> a, Map<String, ?> b) {
-    if(a.isEmpty() && b.isEmpty()) return null;
+    if (a.isEmpty() && b.isEmpty()) return null;
     Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
-    a.forEach((k, v) -> {
-      Object newVal = b.get(k);
-      if (newVal == null) {
-        result.put(k, Diff.REMOVED);
-        return;
-      }
-      result.put(k, Objects.equals(v, newVal) ?
-          Diff.UNCHANGED :
-          Diff.UPDATED);
-    });
+    a.forEach(
+        (k, v) -> {
+          Object newVal = b.get(k);
+          if (newVal == null) {
+            result.put(k, Diff.REMOVED);
+            return;
+          }
+          result.put(k, Objects.equals(v, newVal) ? Diff.UNCHANGED : Diff.UPDATED);
+        });
 
-    b.forEach((k, v) -> {
-      if (a.get(k) == null) result.put(k, Diff.ADDED);
-    });
+    b.forEach(
+        (k, v) -> {
+          if (a.get(k) == null) result.put(k, Diff.ADDED);
+        });
 
     for (Diff value : result.values()) {
       if (value != Diff.UNCHANGED) return result;
@@ -487,9 +505,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return null;
   }
 
-  /**
-   * Listener for notifications about added / deleted / modified plugins.
-   */
+  /** Listener for notifications about added / deleted / modified plugins. */
   public interface PluginRegistryListener {
 
     /** Called when a new plugin is added. */
@@ -500,6 +516,5 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
     /** Called when an existing plugin is replaced. */
     void modified(ApiInfo old, ApiInfo replacement);
-
   }
 }

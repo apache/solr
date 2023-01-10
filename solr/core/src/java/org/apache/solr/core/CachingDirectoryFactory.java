@@ -30,7 +30,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
@@ -43,18 +42,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link DirectoryFactory} impl base class for caching Directory instances
- * per path. Most DirectoryFactory implementations will want to extend this
- * class and simply implement {@link DirectoryFactory#create(String, LockFactory, DirContext)}.
- * <p>
- * This is an expert class and these API's are subject to change.
+ * A {@link DirectoryFactory} impl base class for caching Directory instances per path. Most
+ * DirectoryFactory implementations will want to extend this class and simply implement {@link
+ * DirectoryFactory#create(String, LockFactory, DirContext)}.
+ *
+ * <p>This is an expert class and these API's are subject to change.
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected static class CacheValue {
-    final public String path;
-    final public Directory directory;
+    public final String path;
+    public final Directory directory;
     // for debug
-    //final Exception originTrace;
+    // final Exception originTrace;
     // use the setter!
     private boolean deleteOnClose = false;
 
@@ -92,7 +91,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected Map<String, CacheValue> byPathCache = new HashMap<>();
 
-  protected Map<Directory, CacheValue> byDirectoryCache = new IdentityHashMap<>();
+  protected IdentityHashMap<Directory, CacheValue> byDirectoryCache = new IdentityHashMap<>();
 
   protected Map<Directory, List<CloseListener>> closeListeners = new HashMap<>();
 
@@ -118,8 +117,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public void addCloseListener(Directory dir, CloseListener closeListener) {
     synchronized (this) {
       if (!byDirectoryCache.containsKey(dir)) {
-        throw new IllegalArgumentException("Unknown directory: " + dir
-            + " " + byDirectoryCache);
+        throw new IllegalArgumentException("Unknown directory: " + dir + " " + byDirectoryCache);
       }
       List<CloseListener> listeners = closeListeners.get(dir);
       if (listeners == null) {
@@ -137,8 +135,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
-        throw new IllegalArgumentException("Unknown directory: " + directory
-            + " " + byDirectoryCache);
+        throw new IllegalArgumentException(
+            "Unknown directory: " + directory + " " + byDirectoryCache);
       }
       cacheValue.doneWithDir = true;
       log.debug("Done with dir: {}", cacheValue);
@@ -160,7 +158,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public void close() throws IOException {
     synchronized (this) {
       if (log.isDebugEnabled()) {
-        log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
+        log.debug(
+            "Closing {} - {} directories currently being tracked",
+            this.getClass().getSimpleName(),
+            byDirectoryCache.size());
       }
       this.closed = true;
       Collection<CacheValue> values = byDirectoryCache.values();
@@ -177,7 +178,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
             wait(100);
 
             if (cnt++ >= 120) {
-              String msg = "Timeout waiting for all directory ref counts to be released - gave up waiting on " + val;
+              String msg =
+                  "Timeout waiting for all directory ref counts to be released - gave up waiting on "
+                      + val;
               log.error(msg);
               // debug
               // val.originTrace.printStackTrace();
@@ -250,7 +253,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       Collection<CacheValue> cacheValues = new ArrayList<>(values);
       cacheValues.remove(cacheValue);
       for (CacheValue otherCacheValue : cacheValues) {
-        // if we are a parent path and a sub path is not already closed, get a sub path to close us later
+        // if we are a parent path and a sub path is not already closed, get a sub path to close us
+        // later
         if (isSubPath(cacheValue, otherCacheValue) && !otherCacheValue.closeCacheValueCalled) {
           // we let the sub dir remove and close us
           if (!otherCacheValue.deleteAfterCoreClose && cacheValue.deleteAfterCoreClose) {
@@ -300,10 +304,14 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   private void close(CacheValue val) {
     if (log.isDebugEnabled()) {
-      log.debug("Closing directory, CoreContainer#isShutdown={}", coreContainer != null ? coreContainer.isShutDown() : "null");
+      log.debug(
+          "Closing directory, CoreContainer#isShutdown={}",
+          coreContainer != null ? coreContainer.isShutDown() : "null");
     }
     try {
-      if (coreContainer != null && coreContainer.isShutDown() && val.directory instanceof ShutdownAwareDirectory) {
+      if (coreContainer != null
+          && coreContainer.isShutDown()
+          && val.directory instanceof ShutdownAwareDirectory) {
         log.debug("Closing directory on shutdown: {}", val.path);
         ((ShutdownAwareDirectory) val.directory).closeOnShutdown();
       } else {
@@ -404,7 +412,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList<?> args) {
     maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
     maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
     maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
@@ -412,7 +420,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
-      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
+      dataHomePath =
+          Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
     }
     if (dataHomePath != null) {
       log.info("{} = {}", SolrXmlConfig.SOLR_DATA_HOME, dataHomePath);
@@ -437,11 +446,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
-        throw new IllegalArgumentException("Unknown directory: " + directory
-            + " " + byDirectoryCache);
+        throw new IllegalArgumentException(
+            "Unknown directory: " + directory + " " + byDirectoryCache);
       }
       if (log.isDebugEnabled()) {
-        log.debug("Releasing directory: {} {} {}", cacheValue.path, (cacheValue.refCnt - 1), cacheValue.doneWithDir);
+        log.debug(
+            "Releasing directory: {} {} {}",
+            cacheValue.path,
+            (cacheValue.refCnt - 1),
+            cacheValue.doneWithDir);
       }
 
       cacheValue.refCnt--;
@@ -526,7 +539,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
     Set<String> livePaths = getLivePaths();
     if (livePaths.contains(oldDirPath)) {
-      log.warn("Cannot delete directory {} as it is still being referenced in the cache!", oldDirPath);
+      log.warn(
+          "Cannot delete directory {} as it is still being referenced in the cache!", oldDirPath);
       return false;
     }
 

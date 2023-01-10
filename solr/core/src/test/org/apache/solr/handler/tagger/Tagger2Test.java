@@ -23,14 +23,11 @@
 package org.apache.solr.handler.tagger;
 
 import java.nio.charset.StandardCharsets;
-
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * Test the {@link TaggerRequestHandler}.
- */
+/** Test the {@link TaggerRequestHandler}. */
 public class Tagger2Test extends TaggerTestCase {
 
   @BeforeClass
@@ -47,25 +44,32 @@ public class Tagger2Test extends TaggerTestCase {
   /** whole matching, no sub-tags */
   @Test
   public void testLongestDominantRight() throws Exception {
-    buildNames("in", "San", "in San", "Francisco", "San Francisco",
-        "San Francisco State College", "College of California",
-        "Clayton", "Clayton North", "North Carolina");
+    buildNames(
+        "in",
+        "San",
+        "in San",
+        "Francisco",
+        "San Francisco",
+        "San Francisco State College",
+        "College of California",
+        "Clayton",
+        "Clayton North",
+        "North Carolina");
 
-    assertTags("He lived in San Francisco.",
-        "in", "San Francisco");
+    assertTags("He lived in San Francisco.", "in", "San Francisco");
 
-    assertTags("He enrolled in San Francisco State College of California",
-        "in", "San Francisco State College");
+    assertTags(
+        "He enrolled in San Francisco State College of California",
+        "in",
+        "San Francisco State College");
 
-    assertTags("He lived in Clayton North Carolina",
-        "in", "Clayton", "North Carolina");
-
+    assertTags("He lived in Clayton North Carolina", "in", "Clayton", "North Carolina");
   }
 
-  // As of Lucene/Solr 4.9, StandardTokenizer never does this anymore (reported to Lucene dev-list,
-  // Jan 26th 2015.  Honestly it's not particularly important to us but it renders this test
+  // As of Lucene/Solr 4.9, StandardTokenizer never does this (reported to Lucene dev-list,
+  // Jan 26th 2015).  Honestly it's not particularly important to us, but it renders this test
   // pointless.
-  /** Orig issue https://github.com/OpenSextant/SolrTextTagger/issues/2  related: #13 */
+  /** Orig issue https://github.com/OpenSextant/SolrTextTagger/issues/2 related: #13 */
   @Test
   @Ignore
   public void testVeryLongWord() throws Exception {
@@ -73,37 +77,41 @@ public class Tagger2Test extends TaggerTestCase {
     buildNames(SANFRAN);
 
     // exceeds default 255 max token length which means it in-effect becomes a stop-word
-    StringBuilder STOP = new StringBuilder(260);//>255
+    StringBuilder STOP = new StringBuilder(260); // >255
     for (int i = 0; i < STOP.capacity(); i++) {
       STOP.append((char) ('0' + (i % 10)));
     }
 
     String doc = "San " + STOP + " Francisco";
-    assertTags(doc);//no match due to default stop word handling
-    //and we find it when we ignore stop words
-    assertTags(reqDoc(doc, "ignoreStopwords", "true"), new TestTag(0, doc.length(), doc, lookupByName(SANFRAN)));
+    assertTags(doc); // no match due to default stop word handling
+    // and we find it when we ignore stop words
+    assertTags(
+        reqDoc(doc, "ignoreStopwords", "true"),
+        new TestTag(0, doc.length(), doc, lookupByName(SANFRAN)));
   }
 
-  /** Support for stopwords (posInc &gt; 1);
-   * discussion: https://github.com/OpenSextant/SolrTextTagger/issues/13 */
+  /**
+   * Support for stopwords (posInc &gt; 1); discussion:
+   * https://github.com/OpenSextant/SolrTextTagger/issues/13
+   */
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-8344")
   @Test
   public void testStopWords() throws Exception {
-    baseParams.set("field", "name_tagStop");//stop filter (pos inc enabled) index & query
+    baseParams.set("field", "name_tagStop"); // stop filter (pos inc enabled) index & query
 
-    String SOUTHOFWALES = "South of Wales";//'of' is stop word index time & query
+    String SOUTHOFWALES = "South of Wales"; // 'of' is stop word index time & query
     String ACITYA = "A City A";
 
     buildNames(SOUTHOFWALES, ACITYA);
 
-    //round-trip works
-    assertTags(reqDoc(SOUTHOFWALES), new TestTag(0, SOUTHOFWALES.length(), SOUTHOFWALES,
-            lookupByName(SOUTHOFWALES)));
+    // round-trip works
+    assertTags(
+        reqDoc(SOUTHOFWALES),
+        new TestTag(0, SOUTHOFWALES.length(), SOUTHOFWALES, lookupByName(SOUTHOFWALES)));
     //  but offsets doesn't include stopword when leading or trailing...
-    assertTags(reqDoc(ACITYA), new TestTag(2, 6, "City",
-            lookupByName(ACITYA)));
-    //break on stop words
-    assertTags(reqDoc(SOUTHOFWALES, "ignoreStopwords", "false"));//match nothing
+    assertTags(reqDoc(ACITYA), new TestTag(2, 6, "City", lookupByName(ACITYA)));
+    // break on stop words
+    assertTags(reqDoc(SOUTHOFWALES, "ignoreStopwords", "false")); // match nothing
   }
 
   /** Tests WordDelimiterGraphFilter, stacked/synonymous tokens at index time (catenate options) */
@@ -111,36 +119,37 @@ public class Tagger2Test extends TaggerTestCase {
   public void testWDF() throws Exception {
     baseParams.set("field", "name_tagWDF");
 
-    final String WINSTONSALEM = "City of Winston-Salem";//hyphen
-    final String BOSTONHARBOR = "Boston Harbor";//space
+    final String WINSTONSALEM = "City of Winston-Salem"; // hyphen
+    final String BOSTONHARBOR = "Boston Harbor"; // space
     buildNames(WINSTONSALEM, BOSTONHARBOR);
 
-    //round-trip works
-    assertTags(reqDoc(WINSTONSALEM), new TestTag(0, WINSTONSALEM.length(), WINSTONSALEM,
-        lookupByName(WINSTONSALEM)));
+    // round-trip works
+    assertTags(
+        reqDoc(WINSTONSALEM),
+        new TestTag(0, WINSTONSALEM.length(), WINSTONSALEM, lookupByName(WINSTONSALEM)));
 
     // space separated works
     final String WS_SPACE = WINSTONSALEM.replace('-', ' ');
-    assertTags(reqDoc(WS_SPACE),
-        new TestTag(0, WS_SPACE.length(), WS_SPACE,
-        lookupByName(WINSTONSALEM)));
+    assertTags(
+        reqDoc(WS_SPACE), new TestTag(0, WS_SPACE.length(), WS_SPACE, lookupByName(WINSTONSALEM)));
 
-    //must be full match
-    assertTags(reqDoc("Winston"));//match nothing
-    assertTags(reqDoc("Salem"));//match nothing
+    // must be full match
+    assertTags(reqDoc("Winston")); // match nothing
+    assertTags(reqDoc("Salem")); // match nothing
 
     // round-trip works
-    assertTags(reqDoc(BOSTONHARBOR), new TestTag(0, BOSTONHARBOR.length(), BOSTONHARBOR,
-        lookupByName(BOSTONHARBOR)));
+    assertTags(
+        reqDoc(BOSTONHARBOR),
+        new TestTag(0, BOSTONHARBOR.length(), BOSTONHARBOR, lookupByName(BOSTONHARBOR)));
 
     // hyphen separated works
     final String BH_HYPHEN = BOSTONHARBOR.replace(' ', '-');
-    assertTags(reqDoc(BH_HYPHEN),
-        new TestTag(0, BH_HYPHEN.length(), BH_HYPHEN,
-            lookupByName(BOSTONHARBOR)));
-    //must be full match
-    assertTags(reqDoc("Boston"));//match nothing
-    assertTags(reqDoc("Harbor"));//match nothing
+    assertTags(
+        reqDoc(BH_HYPHEN),
+        new TestTag(0, BH_HYPHEN.length(), BH_HYPHEN, lookupByName(BOSTONHARBOR)));
+    // must be full match
+    assertTags(reqDoc("Boston")); // match nothing
+    assertTags(reqDoc("Harbor")); // match nothing
   }
 
   /** Ensure character offsets work for multi-byte characters */
@@ -155,16 +164,15 @@ public class Tagger2Test extends TaggerTestCase {
     String QUOTE = TEXT.substring(14, 15);
     assertEquals(8217, QUOTE.codePointAt(0));
 
-    //UTF8
+    // UTF8
     assertEquals(3, QUOTE.getBytes(StandardCharsets.UTF_8).length);
     assertEquals(1, "a".getBytes(StandardCharsets.UTF_8).length);
-    assertEquals(40 + 2*2, TEXT.getBytes(StandardCharsets.UTF_8).length);
+    assertEquals(40 + 2 * 2, TEXT.getBytes(StandardCharsets.UTF_8).length);
 
-    //UTF16 big endian    (by specifying big/little endian, there is no "byte order mark")
+    // UTF16 big endian    (by specifying big/little endian, there is no "byte order mark")
     assertEquals(2, QUOTE.getBytes(StandardCharsets.UTF_16BE).length);
     assertEquals(2, "a".getBytes(StandardCharsets.UTF_16BE).length);
     assertEquals(40 * 2, TEXT.getBytes(StandardCharsets.UTF_16BE).length);
-
 
     buildNames("Obama");
 
@@ -172,5 +180,4 @@ public class Tagger2Test extends TaggerTestCase {
 
     // TODO test surrogate pairs (i.e. code points not in the BMP)
   }
-
 }

@@ -16,90 +16,88 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.handler.admin.api.ListActiveTasksAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
-
-/**
- * Handles request for listing all active cancellable tasks
- */
+/** Handles request for listing all active cancellable tasks */
 public class ActiveTasksListHandler extends TaskManagementHandler {
-    // This can be a parent level member but we keep it here to allow future handlers to have
-    // a custom list of components
-    private List<SearchComponent> components;
+  // This can be a parent level member but we keep it here to allow future handlers to have
+  // a custom list of components
+  private List<SearchComponent> components;
 
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        Map<String, String> extraParams = null;
-        ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
+  @Override
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    Map<String, String> extraParams = null;
+    ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
 
-        rb.setIsTaskListRequest(true);
+    rb.setIsTaskListRequest(true);
 
-        String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
+    String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
 
-        if (taskStatusCheckUUID != null) {
-            if (rb.isDistrib) {
-                extraParams = new HashMap<>();
+    if (taskStatusCheckUUID != null) {
+      if (rb.isDistrib) {
+        extraParams = new HashMap<>();
 
-                extraParams.put(TASK_CHECK_UUID, taskStatusCheckUUID);
-            }
+        extraParams.put(TASK_CHECK_UUID, taskStatusCheckUUID);
+      }
 
-            rb.setTaskStatusCheckUUID(taskStatusCheckUUID);
-        }
-
-        processRequest(req, rb, extraParams);
+      rb.setTaskStatusCheckUUID(taskStatusCheckUUID);
     }
 
-    @Override
-    public String getDescription() {
-        return "activetaskslist";
+    processRequest(req, rb, extraParams);
+  }
+
+  @Override
+  public String getDescription() {
+    return "activetaskslist";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    return PermissionNameProvider.Name.READ_PERM;
+  }
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    if (path.startsWith("/tasks/list")) {
+      return this;
     }
 
-    @Override
-    public Category getCategory() {
-        return Category.ADMIN;
+    return null;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new ListActiveTasksAPI(this));
+  }
+
+  private List<SearchComponent> getComponentsList() {
+    if (components == null) {
+      components = buildComponentsList();
     }
 
-    @Override
-    public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
-        return PermissionNameProvider.Name.READ_PERM;
-    }
-
-    @Override
-    public SolrRequestHandler getSubHandler(String path) {
-        if (path.startsWith("/tasks/list")) {
-            return this;
-        }
-
-        return null;
-    }
-
-    @Override
-    public Boolean registerV2() {
-        return Boolean.TRUE;
-    }
-
-    @Override
-    public Collection<Api> getApis() {
-        return ApiBag.wrapRequestHandlers(this, "core.tasks.list");
-    }
-
-    private List<SearchComponent> getComponentsList() {
-        if (components == null) {
-            components = buildComponentsList();
-        }
-
-        return components;
-    }
+    return components;
+  }
 }
