@@ -79,7 +79,7 @@ public class PluginBag<T> implements AutoCloseable {
       this.jerseyResources =
           (core == null)
               ? new JerseyApplications.CoreContainerApp(infoBeanByResource)
-              : new JerseyApplications.SolrCoreApp(core, infoBeanByResource);
+              : new JerseyApplications.SolrCoreApp(infoBeanByResource);
     } else {
       this.apiBag = null;
       this.jerseyResources = null;

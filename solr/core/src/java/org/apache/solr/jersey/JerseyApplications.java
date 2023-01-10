@@ -102,7 +102,7 @@ public class JerseyApplications {
 
   public static class SolrCoreApp extends CoreContainerApp {
 
-    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public SolrCoreApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
       super(beanRegistry);
 
       // Dependency Injection for Jersey resources
@@ -110,9 +110,9 @@ public class JerseyApplications {
           new AbstractBinder() {
             @Override
             protected void configure() {
-              bindFactory(new InjectionFactories.SingletonFactory<>(solrCore))
+              bindFactory(InjectionFactories.SolrCoreFactory.class)
                   .to(SolrCore.class)
-                  .in(Singleton.class);
+                  .in(RequestScoped.class);
             }
           });
     }
