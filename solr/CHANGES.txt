@@ -163,6 +163,8 @@ Bug Fixes
 
 * SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
 
+* SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
