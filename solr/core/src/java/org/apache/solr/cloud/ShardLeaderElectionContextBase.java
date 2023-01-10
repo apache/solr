@@ -146,21 +146,20 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   "Creating leader registration node {} after winning as {}",
                   leaderPath,
                   leaderSeqPath);
-              List<Op> ops = new ArrayList<>(2);
 
               // We use a multi operation to get the parent nodes version, which will
               // be used to make sure we only remove our own leader registration node.
               // The setData call used to get the parent version is also the trigger to
               // increment the version. We also do a sanity check that our leaderSeqPath exists.
-
-              ops.add(Op.check(leaderSeqPath, -1));
-              ops.add(
-                  Op.create(
-                      leaderPath,
-                      Utils.toJSON(leaderProps),
-                      zkClient.getZkACLProvider().getACLsToAdd(leaderPath),
-                      CreateMode.EPHEMERAL));
-              ops.add(Op.setData(parent, null, -1));
+              List<Op> ops =
+                  List.of(
+                      Op.check(leaderSeqPath, -1),
+                      Op.create(
+                          leaderPath,
+                          Utils.toJSON(leaderProps),
+                          zkClient.getZkACLProvider().getACLsToAdd(leaderPath),
+                          CreateMode.EPHEMERAL),
+                      Op.setData(parent, null, -1));
               List<OpResult> results;
 
               results = zkClient.multi(ops, true);

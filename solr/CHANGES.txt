@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
 
+* SOLR-13243: Correct the initial capacity of the ZK operations to run in ShardLeaderElectionContextBase#runLeaderProcess (Haythem Khiri)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
