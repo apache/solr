@@ -118,7 +118,9 @@ Improvements
   
 * SOLR-10470: Introduce Builder setter for parallelCacheRefreshes on cloud SolrClients.  Deprecated
   direct setter setParallelCacheRefreshes on cloud SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
-  
+
+* SOLR-16616: JWTAuthPlugin: Read trusted X509 certificates from multiple files (janhoy)
+
 Optimizations
 ---------------------
 
