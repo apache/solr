@@ -257,7 +257,8 @@ public class PluginBag<T> implements AutoCloseable {
                   log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
                 }
                 jerseyResources.register(jerseyClazz);
-                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
+                // See RequestMetricHandling javadocs for a better understanding of this
+                // resource->RH
                 // mapping
                 if (inst instanceof RequestHandlerBase) {
                   jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) inst);

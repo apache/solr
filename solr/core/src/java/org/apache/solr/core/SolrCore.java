@@ -1143,7 +1143,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
               .computeIfAbsent(
                   effectiveConfigsetId,
                   () -> {
-                    log.info("JEGERLOW About to create an AppHandler for {}", effectiveConfigsetId);
+                    log.debug(
+                        "Creating Jersey ApplicationHandler for 'effective configset' [{}]",
+                        effectiveConfigsetId);
                     return new ApplicationHandler(
                         reqHandlers.getRequestHandlers().getJerseyEndpoints());
                   });
