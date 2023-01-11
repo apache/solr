@@ -23,14 +23,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.core.ConfigSet;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO There's gotta be a generic Collection implementation that does reference-counting
-// TODO If I can't find an off-the-shelf replacement of this, revisit thread safety on refcount
-// modification
+/**
+ * Stores Jersey 'ApplicationHandler' instances by an ID or hash derived from their {@link
+ * ConfigSet}.
+ *
+ * <p>ApplicationHandler creation is expensive; caching these objects allows them to be shared by
+ * multiple cores with the same configuration.
+ */
 public class JerseyAppHandlerCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -41,6 +47,17 @@ public class JerseyAppHandlerCache {
     this.applicationByConfigSetId = new ConcurrentHashMap<>();
   }
 
+  /**
+   * Return the 'ApplicationHandler' associated with the provided ID, creating it first if
+   * necessary.
+   *
+   * <p>This method is thread-safe by virtue of its delegation to {@link
+   * ConcurrentHashMap#computeIfAbsent(Object, Function)} internally.
+   *
+   * @param effectiveConfigSetId an ID to associate the ApplicationHandler with. Usually created via
+   *     {@link #generateIdForConfigSet(ConfigSet)}.
+   * @param createApplicationHandler a Supplier producing an ApplicationHandler
+   */
   public RefCounted<ApplicationHandler> computeIfAbsent(
       String effectiveConfigSetId, Supplier<ApplicationHandler> createApplicationHandler) {
     final Function<String, RefCounted<ApplicationHandler>> wrapper =
@@ -48,7 +65,9 @@ public class JerseyAppHandlerCache {
           return new RefCounted<>(createApplicationHandler.get()) {
             @Override
             public void close() {
-              log.info("JEGERLOW: Removing AppHandler from cache for ID {}", effectiveConfigSetId);
+              log.info(
+                  "Removing AppHandler from cache for 'effective configset' [{}]",
+                  effectiveConfigSetId);
               applicationByConfigSetId.remove(effectiveConfigSetId);
             }
           };
@@ -60,6 +79,15 @@ public class JerseyAppHandlerCache {
     return fetched;
   }
 
+  /**
+   * Generates a String ID to represent the provided {@link ConfigSet}
+   *
+   * <p>Relies on {@link SolrConfig#hashCode()} to generate a different ID for each "unique"
+   * configset (where "uniqueness" considers various overlays that get applied to the {@link
+   * ConfigSet})
+   *
+   * @see SolrCore#hashCode()
+   */
   public static String generateIdForConfigSet(ConfigSet configSet) {
     return configSet.getName() + "-" + configSet.getSolrConfig().hashCode();
   }
