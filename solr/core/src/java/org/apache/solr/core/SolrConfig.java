@@ -55,7 +55,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -184,8 +183,7 @@ public class SolrConfig implements MapSerializable {
         this.fileName = zkin.fileName;
       }
       if (in instanceof SolrResourceLoader.SolrFileInputStream) {
-        SolrResourceLoader.SolrFileInputStream sfin =
-            (SolrResourceLoader.SolrFileInputStream) in;
+        SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
         zkVersion = (int) sfin.getLastModified();
         hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
       }
@@ -243,7 +241,8 @@ public class SolrConfig implements MapSerializable {
           }
         });
     try {
-      // This will hash the solrconfig.xml, user properties and overlay (all possible ways of modifying the resulting SolrConfig)
+      // This will hash the solrconfig.xml, user properties and overlay (all possible ways of
+      // modifying the resulting SolrConfig)
       hashCode = Objects.hash(this.root.txt(), overlay.getVersion());
 
       getRequestParams();
@@ -593,7 +592,8 @@ public class SolrConfig implements MapSerializable {
         log.debug("Config overlay loaded. version : {} ", version);
       }
       if (in instanceof SolrResourceLoader.SolrFileInputStream) {
-        // We should be ok, it is unlikely that a configOverlay is loaded decades apart and has the same version after casting to an int
+        // We should be ok, it is unlikely that a configOverlay is loaded decades apart and has the
+        // same version after casting to an int
         version = (int) ((SolrResourceLoader.SolrFileInputStream) in).getLastModified();
         log.debug("Config overlay loaded. version : {} ", version);
       }

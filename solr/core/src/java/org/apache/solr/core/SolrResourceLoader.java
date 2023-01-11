@@ -358,11 +358,14 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return new SolrFileInputStream(Files.newInputStream(inConfigDir), Files.getLastModifiedTime(inConfigDir).toMillis());
+        return new SolrFileInputStream(
+            Files.newInputStream(inConfigDir), Files.getLastModifiedTime(inConfigDir).toMillis());
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return new SolrFileInputStream(Files.newInputStream(inInstanceDir), Files.getLastModifiedTime(inInstanceDir).toMillis());
+        return new SolrFileInputStream(
+            Files.newInputStream(inInstanceDir),
+            Files.getLastModifiedTime(inInstanceDir).toMillis());
       }
     }
 
@@ -986,8 +989,8 @@ public class SolrResourceLoader
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
   public static class SolrFileInputStream extends InputStream {
-    final private InputStream delegate;
-    final private long lastModified;
+    private final InputStream delegate;
+    private final long lastModified;
 
     public SolrFileInputStream(InputStream delegate, long lastModified) {
       this.delegate = delegate;
@@ -1004,8 +1007,7 @@ public class SolrResourceLoader
     }
 
     @Override
-    public synchronized int read(byte[] bs, int off, int len) throws IOException
-    {
+    public synchronized int read(byte[] bs, int off, int len) throws IOException {
       return delegate.read(bs, off, len);
     }
 

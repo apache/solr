@@ -21,8 +21,10 @@ import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrCore;
 
 public class NoSharingConfigsetIdGenerator implements ConfigsetIdGenerator {
-    @Override
-    public String generate(SolrCore core, ConfigSet configSet) {
-        return core.uniqueId.toString(); // Using a core-unique identifier ensures that JerseyAppHandlerCache will never share an app across cores.
-    }
+  @Override
+  public String generate(SolrCore core, ConfigSet configSet) {
+    return core.uniqueId
+        .toString(); // Using a core-unique identifier ensures that JerseyAppHandlerCache will never
+    // share an app across cores.
+  }
 }

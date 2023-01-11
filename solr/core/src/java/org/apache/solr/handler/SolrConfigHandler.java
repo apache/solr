@@ -213,8 +213,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp.add(
                 ZNODEVER,
                 Map.of(
-                    ConfigOverlay.NAME,
-                        req.getCore().getSolrConfig().getOverlay().getVersion(),
+                    ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getVersion(),
                     RequestParams.NAME,
                         req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;

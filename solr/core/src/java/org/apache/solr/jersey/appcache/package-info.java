@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Placeholder javadocs for build.
- */
+/** Placeholder javadocs for build. */
 package org.apache.solr.jersey.appcache;
