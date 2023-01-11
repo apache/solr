@@ -153,7 +153,13 @@ allprojects {
 
       // Set up logging.
       testLogging {
-        events TestLogEvent.FAILED
+        if ("true".equalsIgnoreCase(System.getenv('CI'))) {
+          // print passed tests if running in CI; among other things, this
+          // prevents CI from timing out on sustained periods of no output
+          events TestLogEvent.FAILED, TestLogEvent.PASSED
+        } else {
+          events TestLogEvent.FAILED
+        }
         exceptionFormat TestExceptionFormat.FULL
         showExceptions true
         showCauses true
