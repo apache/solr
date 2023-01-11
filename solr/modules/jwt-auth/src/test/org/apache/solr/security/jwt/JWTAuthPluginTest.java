@@ -668,19 +668,19 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void readSslCertsFromFileOrList() {
-    String pemFilePath =
+    String pemWithTwoCerts =
         JWT_TEST_PATH()
             .resolve("security")
             .resolve("jwt_plugin_idp_cert.pem")
             .toAbsolutePath()
             .toString();
-    String p12FilePath =
+    String pemWithOneCert =
         JWT_TEST_PATH()
             .resolve("security")
             .resolve("jwt_plugin_idp_wrongcert.pem")
             .toAbsolutePath()
             .toString();
-    assertEquals(3, plugin.readSslCertsFromFileOrList(List.of(pemFilePath, p12FilePath)).size());
+    assertEquals(3, plugin.readSslCertsFromFileOrList(List.of(pemWithTwoCerts, pemWithOneCert)).size());
   }
 
   @Test(expected = SolrException.class)
