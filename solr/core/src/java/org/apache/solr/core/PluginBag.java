@@ -66,21 +66,28 @@ public class PluginBag<T> implements AutoCloseable {
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
 
-  public static class JerseyMetricsLookupRegistry
+  /**
+   * Allows JAX-RS 'filters' to find the requestHandler (if any) associated particular JAX-RS
+   * resource classes
+   *
+   * <p>Used primarily by JAX-RS when recording per-request metrics, which requires a {@link
+   * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} object from the relevant
+   * requestHandler.
+   */
+  public static class JaxrsResourceToHandlerMappings
       extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
 
-  private final JerseyMetricsLookupRegistry infoBeanByResource;
+  private final JaxrsResourceToHandlerMappings jaxrsResourceRegistry;
 
-  // NOCOMMIT - come up with a better name for the type, getter, and instance var here.
-  public JerseyMetricsLookupRegistry getJaxrsRegistry() {
-    return infoBeanByResource;
+  public JaxrsResourceToHandlerMappings getJaxrsRegistry() {
+    return jaxrsResourceRegistry;
   }
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class) {
       this.apiBag = new ApiBag(core != null);
-      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
+      this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
       this.jerseyResources =
           (core == null)
               ? new JerseyApplications.CoreContainerApp()
@@ -88,7 +95,7 @@ public class PluginBag<T> implements AutoCloseable {
     } else {
       this.apiBag = null;
       this.jerseyResources = null;
-      this.infoBeanByResource = null;
+      this.jaxrsResourceRegistry = null;
     }
     this.core = core;
     this.klass = klass;
@@ -253,7 +260,7 @@ public class PluginBag<T> implements AutoCloseable {
                 // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
                 // mapping
                 if (inst instanceof RequestHandlerBase) {
-                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
+                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) inst);
                 }
               }
             }

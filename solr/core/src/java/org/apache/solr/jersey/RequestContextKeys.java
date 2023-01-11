@@ -43,7 +43,7 @@ public interface RequestContextKeys {
   String SOLR_QUERY_REQUEST = SolrQueryRequest.class.getName();
   String SOLR_QUERY_RESPONSE = SolrQueryResponse.class.getName();
   String CORE_CONTAINER = CoreContainer.class.getName();
-  String RESOURCE_TO_RH_MAPPING = PluginBag.JerseyMetricsLookupRegistry.class.getName();
+  String RESOURCE_TO_RH_MAPPING = PluginBag.JaxrsResourceToHandlerMappings.class.getName();
   String SOLR_CORE = SolrCore.class.getName();
   String REQUEST_TYPE = AuthorizationContext.RequestType.class.getName();
   String SOLR_PARAMS = SolrParams.class.getName();

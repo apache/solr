@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
  * <p>Currently, Jersey resources that have a corresponding v1 API produce the same metrics as their
  * v1 equivalent and rely on the v1 requestHandler instance to do so. Solr facilitates this by
  * building a map of the JAX-RS resources to requestHandler mapping (a {@link
- * org.apache.solr.core.PluginBag.JerseyMetricsLookupRegistry}), and using that to look up the
- * associated request handler (if one exists) in pre- and post- filters
+ * PluginBag.JaxrsResourceToHandlerMappings}), and using that to look up the associated request
+ * handler (if one exists) in pre- and post- filters
  *
  * <p>This isn't ideal, as requestHandler's don't really "fit" conceptually here. But it's
  * unavoidable while we want our v2 APIs to exactly match the metrics produced by v1 calls, and
@@ -68,8 +68,8 @@ public class RequestMetricHandling {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-      final PluginBag.JerseyMetricsLookupRegistry requestHandlerByJerseyResource =
-          (PluginBag.JerseyMetricsLookupRegistry)
+      final PluginBag.JaxrsResourceToHandlerMappings requestHandlerByJerseyResource =
+          (PluginBag.JaxrsResourceToHandlerMappings)
               requestContext.getProperty(RequestContextKeys.RESOURCE_TO_RH_MAPPING);
       if (requestHandlerByJerseyResource == null) {
         log.debug("No jax-rs registry found for request {}", requestContext);
