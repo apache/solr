@@ -20,6 +20,8 @@ package org.apache.solr.jersey.appcache;
 import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrCore;
 
+// TODO This interface needs renamed, if not removed altogether.  Probably only valuable during the PR drafting process
+//  to allow perf-comparison of different strategies
 public interface ConfigsetIdGenerator {
     
     String generate(SolrCore core, ConfigSet configSet);

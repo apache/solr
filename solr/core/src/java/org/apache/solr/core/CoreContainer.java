@@ -92,7 +92,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.appcache.ConfigsetIdGenerator;
-import org.apache.solr.jersey.appcache.ConfigsetNameIdGenerator;
+import org.apache.solr.jersey.appcache.ConfigsetSharingIdGenerator;
 import org.apache.solr.jersey.appcache.JerseyAppHandlerCache;
 import org.apache.solr.jersey.appcache.NoSharingConfigsetIdGenerator;
 import org.apache.solr.logging.LogWatcher;
@@ -1089,7 +1089,7 @@ public class CoreContainer {
     jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
     final ConfigsetIdGenerator appReuseStrategy = System.getProperty("disableAppSharing") != null ?
             new NoSharingConfigsetIdGenerator() :
-            new ConfigsetNameIdGenerator();
+            new ConfigsetSharingIdGenerator();
     appHandlersByConfigSetId = new JerseyAppHandlerCache(appReuseStrategy);
 
     // Do Node setup logic after all handlers have been registered.

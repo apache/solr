@@ -20,9 +20,9 @@ package org.apache.solr.jersey.appcache;
 import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrCore;
 
-public class ConfigsetNameIdGenerator implements ConfigsetIdGenerator {
+public class ConfigsetSharingIdGenerator implements ConfigsetIdGenerator {
     @Override
     public String generate(SolrCore core, ConfigSet configSet) {
-        return configSet.getName();
+        return configSet.getName() + "-" + configSet.getSolrConfig().hashCode();
     }
 }
