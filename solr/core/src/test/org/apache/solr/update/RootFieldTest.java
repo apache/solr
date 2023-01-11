@@ -50,9 +50,14 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
+
     solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withSchemaFile(schema).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet("../collection1")
+        .withSchemaFile(schema)
+        .create();
   }
 
   @Test

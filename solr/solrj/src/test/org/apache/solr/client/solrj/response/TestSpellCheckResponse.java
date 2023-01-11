@@ -18,10 +18,9 @@ package org.apache.solr.client.solrj.response;
 
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
-import java.nio.file.Paths;
 import java.util.List;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,9 +43,12 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
 
     client = getSolrClient();
   }

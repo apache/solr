@@ -41,7 +41,10 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
     solrClientTestRule.startSolr(testHome.toPath());
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet("../collection1")
+        .create();
   }
 
   @Before

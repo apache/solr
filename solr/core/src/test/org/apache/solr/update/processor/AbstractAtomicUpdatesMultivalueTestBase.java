@@ -52,7 +52,10 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     SolrTestCaseJ4.newRandomConfig();
     solrClientTestRule.startSolr(Paths.get(SolrTestCaseJ4.TEST_HOME()));
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet("../collection1")
+        .create();
   }
 
   @Before

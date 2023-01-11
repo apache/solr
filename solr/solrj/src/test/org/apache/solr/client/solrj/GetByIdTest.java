@@ -20,14 +20,14 @@ import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 import static org.apache.solr.SolrTestCaseJ4.params;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,9 +36,12 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Before

@@ -18,9 +18,9 @@ package org.apache.solr.client.solrj.embedded;
 
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
-import java.nio.file.Paths;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
@@ -30,8 +30,11 @@ import org.junit.BeforeClass;
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome()));
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).create();
+    solrClientTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 }

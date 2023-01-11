@@ -74,14 +74,14 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
       props.store(writer, null);
     }
 
-    final String config =
-        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/solrconfig.xml";
-    final String schema =
-        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/managed-schema";
+//    final String config =
+//        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/solrconfig.xml";
+//    final String schema =
+//        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/managed-schema";
 
     solrClientTestRule.startSolr(tempSolrHome.toPath());
 
-    solrClientTestRule.newCollection(COLLECTION_NAME).create();
+    solrClientTestRule.newCollection(COLLECTION_NAME).withConfigSet(configSetDir.toString()).create();
 
     SolrClient client = solrClientTestRule.getSolrClient();
 

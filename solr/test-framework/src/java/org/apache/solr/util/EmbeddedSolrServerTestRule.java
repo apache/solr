@@ -18,9 +18,11 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -120,14 +122,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   }
 
   public void startSolr(NodeConfig nodeConfig) {
-    //    var coreLocator =
-    //        new ReadOnlyCoresLocator() {
-    //          @Override
-    //          public List<CoreDescriptor> discover(CoreContainer cc) {
-    //            return Collections.emptyList();
-    //          }
-    //        };
-
     container = new CoreContainer(nodeConfig);
     container.load();
     adminClient = new EmbeddedSolrServer(container, null);
@@ -146,6 +140,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString())
         .build();
   }
 
@@ -203,21 +198,21 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
     client = new EmbeddedSolrServer(container, b.getName());
 
-    //    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-    //    req.setCoreName(b.getName());
-    //    req.setInstanceDir(b.getName());
-    //
-    //    if (b.getConfigFile() != null) {
-    //      req.setConfigName(b.getConfigFile());
-    //    }
-    //    if (b.getSchemaFile() != null) {
-    //      req.setSchemaName(b.getSchemaFile());
-    //    }
-    //    if (b.getConfigSet() != null) {
-    //      req.setConfigSet(b.getConfigSet());
-    //    }
-    //
-    //    req.process(client);
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName(b.getName());
+    req.setInstanceDir(b.getName());
+
+    if (b.getConfigFile() != null) {
+      req.setConfigName(b.getConfigFile());
+    }
+    if (b.getSchemaFile() != null) {
+      req.setSchemaName(b.getSchemaFile());
+    }
+    if (b.getConfigSet() != null) {
+      req.setConfigSet(b.getConfigSet());
+    }
+
+    req.process(client);
   }
 
   //  private NodeConfig buildTestNodeConfig(Builder b) {
@@ -258,19 +253,21 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   @Override
   protected void after() {
-    if (adminClient == null) {
-      return;
-    }
+
     try {
+      if (adminClient != null)
       adminClient.close();
 
+      if (client != null)
       client.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
+      if (container != null)
       container.shutdown();
     }
-    client = null; // not necessary but why not; maybe for GC
+    client = null;// not necessary but why not; maybe for GC
+    adminClient = null;
   }
 
   @Override
@@ -284,7 +281,10 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   @Override
   public EmbeddedSolrServer getSolrClient(String name) {
-    assert client != null;
-    return new EmbeddedSolrServer(client.getCoreContainer(), name);
+    if (client == null) {
+      return new EmbeddedSolrServer(adminClient.getCoreContainer(), name);
+    } else {
+      return new EmbeddedSolrServer(client.getCoreContainer(), name);
+    }
   }
 }

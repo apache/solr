@@ -107,23 +107,12 @@ public class TestCoreAdmin extends SolrTestCase {
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     SolrTestCaseJ4.newRandomConfig();
 
-    var updateShardHandlerConfig =
-        new UpdateShardHandlerConfig(
-            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-            30000,
-            30000,
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-
     solrClientTestRule.startSolr(
         new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-            .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-            .setCoreRootDirectory(SOLR_HOME.toString())
             .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
             .build());
 
-    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
+//    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
 
     cores = solrClientTestRule.getSolrClient().getCoreContainer();
     // cores.setPersistent(false);
@@ -360,37 +349,19 @@ public class TestCoreAdmin extends SolrTestCase {
     useFactory(null); // use FS factory
 
     try {
-      var updateShardHandlerConfig =
-          new UpdateShardHandlerConfig(
-              HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-              HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-              30000,
-              30000,
-              UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-              UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-
       solrClientTestRule.startSolr(
           new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-              .setUpdateShardHandlerConfig(updateShardHandlerConfig)
               .setCoreRootDirectory(SOLR_HOME.toString())
-              .setConfigSetBaseDirectory(
-                  CONFIG_HOME.resolve("../configsets").normalize().toString())
+              .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
               .build());
-      ;
-      solrClientTestRule
-          .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-          .withConfigSet("shared")
-          .create();
 
       cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
-      String ddir =
-          CoreAdminRequest.getCoreStatus("core0", solrClientTestRule.getSolrClient("core0"))
-              .getDataDirectory();
+      String ddir = CoreAdminRequest.getCoreStatus("core0", new EmbeddedSolrServer(cores.getCore("core0"))).getDataDirectory();
       Path data = Paths.get(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
-      solrClientTestRule.getSolrClient("core0").add(new SolrInputDocument("id", "core0-1"));
+      new EmbeddedSolrServer(cores.getCore("core0")).add(new SolrInputDocument("id", "core0-1"));
       solrClientTestRule.getSolrClient("core0").commit();
 
       cores.shutdown();
@@ -400,37 +371,21 @@ public class TestCoreAdmin extends SolrTestCase {
 
       solrClientTestRule.startSolr(
           new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-              .setUpdateShardHandlerConfig(updateShardHandlerConfig)
               .setCoreRootDirectory(SOLR_HOME.toString())
-              .setConfigSetBaseDirectory(
-                  CONFIG_HOME.resolve("../configsets").normalize().toString())
+              .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
               .build());
-      ;
-      solrClientTestRule
-          .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-          .withConfigSet("shared")
-          .create();
+
       cores = solrClientTestRule.getSolrClient().getCoreContainer();
 
       // Need to run a query to confirm that the core couldn't load
-      expectThrows(
-          SolrException.class,
-          () -> solrClientTestRule.getSolrClient("core0").query(new SolrQuery("*:*")));
+      expectThrows(SolrException.class, () -> new EmbeddedSolrServer(cores.getCore("core0")).query(new SolrQuery("*:*")));
 
       // We didn't fix anything, so should still throw
-      expectThrows(
-          SolrException.class,
-          () -> CoreAdminRequest.reloadCore("core0", solrClientTestRule.getSolrClient("core0")));
+      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", new EmbeddedSolrServer(cores.getCore("core0"))));
 
       Files.move(data.resolve("backup"), data.resolve("_0.si"));
-      CoreAdminRequest.reloadCore("core0", solrClientTestRule.getSolrClient("core0"));
-      assertEquals(
-          1,
-          solrClientTestRule
-              .getSolrClient("core0")
-              .query(new SolrQuery("*:*"))
-              .getResults()
-              .getNumFound());
+      CoreAdminRequest.reloadCore("core0", new EmbeddedSolrServer(cores.getCore("core0")));
+      assertEquals(1, new EmbeddedSolrServer(cores.getCore("core0")).query(new SolrQuery("*:*")).getResults().getNumFound());
     } finally {
       resetFactory();
     }
