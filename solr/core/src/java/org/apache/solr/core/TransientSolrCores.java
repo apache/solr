@@ -18,9 +18,9 @@
 package org.apache.solr.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /** A {@link SolrCores} that supports {@link CoreDescriptor#isTransient()}. */
 public class TransientSolrCores extends SolrCores {
@@ -42,7 +42,7 @@ public class TransientSolrCores extends SolrCores {
   public void addCoreDescriptor(CoreDescriptor p) {
     if (p.isTransient()) {
       synchronized (modifyLock) {
-        getTransientCacheHandler().addTransientDescriptor(p.getName(), p);
+        transientSolrCoreCache.addTransientDescriptor(p.getName(), p);
       }
     } else {
       super.addCoreDescriptor(p);
@@ -53,7 +53,7 @@ public class TransientSolrCores extends SolrCores {
   public void removeCoreDescriptor(CoreDescriptor p) {
     if (p.isTransient()) {
       synchronized (modifyLock) {
-        getTransientCacheHandler().removeTransientDescriptor(p.getName());
+        transientSolrCoreCache.removeTransientDescriptor(p.getName());
       }
     } else {
       super.removeCoreDescriptor(p);
@@ -67,7 +67,7 @@ public class TransientSolrCores extends SolrCores {
     if (cd.isTransient()) {
       synchronized (modifyLock) {
         addCoreDescriptor(cd); // cd must always be registered if we register a core
-        return getTransientCacheHandler().addCore(cd.getName(), core);
+        return transientSolrCoreCache.addCore(cd.getName(), core);
       }
     } else {
       return super.putCore(cd, core);
@@ -77,49 +77,31 @@ public class TransientSolrCores extends SolrCores {
   @Override
   public List<String> getLoadedCoreNames() {
     synchronized (modifyLock) {
-      return distinctSetsUnion(
-          super.getLoadedCoreNames(), getTransientCacheHandler().getLoadedCoreNames());
+      List<String> coreNames = super.getLoadedCoreNames(); // mutable
+      coreNames.addAll(transientSolrCoreCache.getLoadedCoreNames());
+      assert isSet(coreNames);
+      return coreNames;
     }
   }
 
   @Override
   public List<String> getAllCoreNames() {
     synchronized (modifyLock) {
-      return distinctSetsUnion(
-          super.getAllCoreNames(), getTransientCacheHandler().getAllCoreNames());
+      List<String> coreNames = super.getAllCoreNames(); // mutable
+      coreNames.addAll(transientSolrCoreCache.getAllCoreNames());
+      assert isSet(coreNames);
+      return coreNames;
     }
   }
 
-  private List<String> distinctSetsUnion(List<String> listA, Set<String> setB) {
-    if (listA.isEmpty()) {
-      return new ArrayList<>(setB);
-    }
-    return distinctSetsUnion(new HashSet<>(listA), setB);
-  }
-
-  /**
-   * Makes the union of two distinct sets.
-   *
-   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it
-   *     can be sorted).
-   */
-  private static <T> List<T> distinctSetsUnion(Set<T> set1, Set<T> set2) {
-    assert areSetsDistinct(set1, set2);
-    List<T> union = new ArrayList<>(set1.size() + set2.size());
-    union.addAll(set1);
-    union.addAll(set2);
-    return union;
-  }
-
-  /** Indicates whether two sets are distinct (intersection is empty). */
-  private static <T> boolean areSetsDistinct(Set<T> set1, Set<T> set2) {
-    return set1.stream().noneMatch(set2::contains);
+  private static boolean isSet(Collection<?> collection) {
+    return collection.size() == new HashSet<>(collection).size();
   }
 
   @Override
   public int getNumLoadedTransientCores() {
     synchronized (modifyLock) {
-      return getTransientCacheHandler().getLoadedCoreNames().size();
+      return transientSolrCoreCache.getLoadedCoreNames().size();
     }
   }
 
@@ -127,15 +109,15 @@ public class TransientSolrCores extends SolrCores {
   public int getNumUnloadedCores() {
     synchronized (modifyLock) {
       return super.getNumUnloadedCores()
-          + getTransientCacheHandler().getAllCoreNames().size()
-          - getTransientCacheHandler().getLoadedCoreNames().size();
+          + transientSolrCoreCache.getAllCoreNames().size()
+          - transientSolrCoreCache.getLoadedCoreNames().size();
     }
   }
 
   @Override
   public int getNumAllCores() {
     synchronized (modifyLock) {
-      return super.getNumAllCores() + getTransientCacheHandler().getAllCoreNames().size();
+      return super.getNumAllCores() + transientSolrCoreCache.getAllCoreNames().size();
     }
   }
 
@@ -146,7 +128,7 @@ public class TransientSolrCores extends SolrCores {
       // It could have been a newly-created core. It could have been a transient core. The
       // newly-created cores in particular should be checked. It could have been a dynamic core.
       if (ret == null) {
-        ret = getTransientCacheHandler().removeCore(name);
+        ret = transientSolrCoreCache.removeCore(name);
       }
       return ret;
     }
@@ -156,14 +138,14 @@ public class TransientSolrCores extends SolrCores {
   protected SolrCore getLoadedCoreWithoutIncrement(String name) {
     synchronized (modifyLock) {
       final var core = super.getLoadedCoreWithoutIncrement(name);
-      return core != null ? core : getTransientCacheHandler().getCore(name);
+      return core != null ? core : transientSolrCoreCache.getCore(name);
     }
   }
 
   @Override
   public boolean isLoaded(String name) {
     synchronized (modifyLock) {
-      return super.isLoaded(name) || getTransientCacheHandler().containsCore(name);
+      return super.isLoaded(name) || transientSolrCoreCache.containsCore(name);
     }
   }
 
@@ -174,7 +156,7 @@ public class TransientSolrCores extends SolrCores {
       if (coreDescriptor != null) {
         return coreDescriptor;
       }
-      return getTransientCacheHandler().getTransientDescriptor(coreName);
+      return transientSolrCoreCache.getTransientDescriptor(coreName);
     }
   }
 
@@ -183,15 +165,8 @@ public class TransientSolrCores extends SolrCores {
     synchronized (modifyLock) {
       List<CoreDescriptor> coreDescriptors = new ArrayList<>(getNumAllCores());
       coreDescriptors.addAll(super.getCoreDescriptors());
-      coreDescriptors.addAll(getTransientCacheHandler().getTransientDescriptors());
+      coreDescriptors.addAll(transientSolrCoreCache.getTransientDescriptors());
       return coreDescriptors;
     }
-  }
-
-  /**
-   * @return the cache holding the transient cores; never null.
-   */
-  private TransientSolrCoreCache getTransientCacheHandler() {
-    return transientSolrCoreCache;
   }
 }

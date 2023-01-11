@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,21 +112,6 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       }
       solrCores.queueCoreToClose(core);
     }
-  }
-
-  private int getConfiguredCacheMaxSize(NamedList<?> initArgs) {
-    int configuredCacheMaxSize = DEFAULT_TRANSIENT_CACHE_SIZE;
-
-    NamedList<?> args = initArgs;
-    Object obj = args.get(TRANSIENT_CACHE_SIZE);
-    if (obj != null) {
-      configuredCacheMaxSize = (int) obj;
-    }
-
-    if (configuredCacheMaxSize < 0) { // Trap old flag
-      configuredCacheMaxSize = Integer.MAX_VALUE;
-    }
-    return configuredCacheMaxSize;
   }
 
   @Override

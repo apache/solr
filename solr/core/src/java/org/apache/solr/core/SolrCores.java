@@ -72,7 +72,7 @@ public class SolrCores {
     }
   }
 
-  public SolrCores(CoreContainer container) {
+  SolrCores(CoreContainer container) {
     this.container = container;
   }
 
