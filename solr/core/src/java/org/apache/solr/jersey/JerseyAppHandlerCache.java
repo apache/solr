@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey.appcache;
+package org.apache.solr.jersey;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.solr.core.ConfigSet;
 import org.apache.solr.util.RefCounted;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
@@ -34,11 +35,9 @@ public class JerseyAppHandlerCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final ConfigsetIdGenerator idGenerator;
   private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId;
 
-  public JerseyAppHandlerCache(ConfigsetIdGenerator idGenerator) {
-    this.idGenerator = idGenerator;
+  public JerseyAppHandlerCache() {
     this.applicationByConfigSetId = new ConcurrentHashMap<>();
   }
 
@@ -61,7 +60,7 @@ public class JerseyAppHandlerCache {
     return fetched;
   }
 
-  public ConfigsetIdGenerator getIdGenerator() {
-    return idGenerator;
+  public static String generateIdForConfigSet(ConfigSet configSet) {
+    return configSet.getName() + "-" + configSet.getSolrConfig().hashCode();
   }
 }

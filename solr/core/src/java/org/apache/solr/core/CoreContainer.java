@@ -128,10 +128,7 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
-import org.apache.solr.jersey.appcache.ConfigsetIdGenerator;
-import org.apache.solr.jersey.appcache.ConfigsetSharingIdGenerator;
-import org.apache.solr.jersey.appcache.JerseyAppHandlerCache;
-import org.apache.solr.jersey.appcache.NoSharingConfigsetIdGenerator;
+import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -1088,11 +1085,8 @@ public class CoreContainer {
               }
             });
     jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
-    final ConfigsetIdGenerator appReuseStrategy =
-        System.getProperty("disableAppSharing") != null
-            ? new NoSharingConfigsetIdGenerator()
-            : new ConfigsetSharingIdGenerator();
-    appHandlersByConfigSetId = new JerseyAppHandlerCache(appReuseStrategy);
+
+    appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {

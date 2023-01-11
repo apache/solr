@@ -109,6 +109,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -1135,8 +1136,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      final String effectiveConfigsetId =
-          coreContainer.getAppHandlerCache().getIdGenerator().generate(this, configSet);
+      final String effectiveConfigsetId = JerseyAppHandlerCache.generateIdForConfigSet(configSet);
       appHandlerForConfigSet =
           coreContainer
               .getAppHandlerCache()
