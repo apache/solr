@@ -20,7 +20,7 @@
 #   The SOLR_HOME directory will be cleared when the next test file is executed.
 # - "setup" should use "common_setup" if a Solr process is NOT being started in that same "setup" function.
 common_setup() {
-    bats_require_minimum_version 1.8.0
+    bats_require_minimum_version 1.8.2
 
     if [ -z ${BATS_LIB_PREFIX:-} ]; then
         # Debugging help, if you want to run bats directly, try to detect where libraries might be

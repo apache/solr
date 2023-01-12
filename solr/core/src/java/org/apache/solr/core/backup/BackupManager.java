@@ -17,6 +17,7 @@
 package org.apache.solr.core.backup;
 
 import com.google.common.base.Preconditions;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -35,6 +36,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -329,13 +331,23 @@ public class BackupManager {
   private void downloadConfigToRepo(ConfigSetService configSetService, String configName, URI dir)
       throws IOException {
     List<String> filePaths = configSetService.getAllConfigFiles(configName);
+    // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
-      URI uri = repository.resolve(dir, filePath);
+      // Replace '/' to ensure that propre file is resolved for writing.
+      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
+      // always separates file paths with '/'
       if (!filePath.endsWith("/")) {
-        log.debug("Writing file {}", filePath);
-        byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
-        try (OutputStream os = repository.createOutput(uri)) {
-          os.write(data);
+        if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+          log.warn(
+              "Not including zookeeper file in backup, as it is a forbidden type: {}", filePath);
+        } else {
+          log.debug("Writing file {}", filePath);
+          // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
+          byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
+          try (OutputStream os = repository.createOutput(uri)) {
+            os.write(data);
+          }
         }
       } else {
         if (!repository.exists(uri)) {
@@ -355,11 +367,16 @@ public class BackupManager {
       switch (t) {
         case FILE:
           {
-            try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
-              // probably ok since the config file should be small.
-              byte[] arr = new byte[(int) is.length()];
-              is.readBytes(arr, 0, (int) is.length());
-              configSetService.uploadFileToConfig(configName, filePath, arr, false);
+            if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+              log.warn(
+                  "Not including zookeeper file in restore, as it is a forbidden type: {}", file);
+            } else {
+              try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
+                // probably ok since the config file should be small.
+                byte[] arr = new byte[(int) is.length()];
+                is.readBytes(arr, 0, (int) is.length());
+                configSetService.uploadFileToConfig(configName, filePath, arr, false);
+              }
             }
             break;
           }

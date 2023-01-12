@@ -34,7 +34,11 @@ The configuration entry may also contain a `config` element if the plugin implem
 
 == Placement Plugins Included with Solr
 The following placement plugins are available out-of-the-box in Solr 9.0.
-If no placement plugin is defined, Solr will default to using the <<#simpleplacementfactory,SimplePlacementPlugin>>.
+If no placement plugin is defined in cluster properties, Solr will default to using
+the plugin configured in system property `solr.placementplugin.default` or environment
+variable `SOLR_PLACEMENTPLUGIN_DEFAULT`. Supported values are `simple`, `random`, `affinity`
+and `minimizecores`. If no such property or environment variable is set,
+the <<#simpleplacementfactory,SimplePlacementPlugin>> is used.
 
 In order to use a plugin its configuration must be added using the `/cluster/plugin` API.
 For example, in order to use the `AffinityPlacementFactory` plugin the following command should be executed:
