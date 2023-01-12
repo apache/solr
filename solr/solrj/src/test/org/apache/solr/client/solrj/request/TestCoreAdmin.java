@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 import static org.apache.solr.SolrTestCaseJ4.getFile;
 import static org.apache.solr.SolrTestCaseJ4.resetFactory;
 import static org.apache.solr.SolrTestCaseJ4.useFactory;
@@ -39,7 +38,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -53,7 +51,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -112,7 +109,8 @@ public class TestCoreAdmin extends SolrTestCase {
             .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
             .build());
 
-//    solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
+    //
+    // solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
 
     cores = solrClientTestRule.getSolrClient().getCoreContainer();
     // cores.setPersistent(false);
@@ -349,46 +347,38 @@ public class TestCoreAdmin extends SolrTestCase {
     useFactory(null); // use FS factory
 
     try {
-      solrClientTestRule.startSolr(
-          new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-              .setCoreRootDirectory(SOLR_HOME.toString())
-              .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
-              .build());
+      cores = CoreContainer.createAndLoad(SOLR_HOME);
 
-      cores = solrClientTestRule.getSolrClient().getCoreContainer();
-
-      String ddir = CoreAdminRequest.getCoreStatus("core0", new EmbeddedSolrServer(cores.getCore("core0"))).getDataDirectory();
+      String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
       Path data = Paths.get(ddir, "index");
       assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
-      new EmbeddedSolrServer(cores.getCore("core0")).add(new SolrInputDocument("id", "core0-1"));
-      solrClientTestRule.getSolrClient("core0").commit();
+      getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
+      getSolrCore0().commit();
 
       cores.shutdown();
 
       // destroy the index
       Files.move(data.resolve("_0.si"), data.resolve("backup"));
-
-      solrClientTestRule.startSolr(
-          new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-              .setCoreRootDirectory(SOLR_HOME.toString())
-              .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
-              .build());
-
-      cores = solrClientTestRule.getSolrClient().getCoreContainer();
+      cores = CoreContainer.createAndLoad(SOLR_HOME);
 
       // Need to run a query to confirm that the core couldn't load
-      expectThrows(SolrException.class, () -> new EmbeddedSolrServer(cores.getCore("core0")).query(new SolrQuery("*:*")));
+      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
 
       // We didn't fix anything, so should still throw
-      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", new EmbeddedSolrServer(cores.getCore("core0"))));
+      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
 
       Files.move(data.resolve("backup"), data.resolve("_0.si"));
-      CoreAdminRequest.reloadCore("core0", new EmbeddedSolrServer(cores.getCore("core0")));
-      assertEquals(1, new EmbeddedSolrServer(cores.getCore("core0")).query(new SolrQuery("*:*")).getResults().getNumFound());
+      CoreAdminRequest.reloadCore("core0", getSolrCore0());
+      assertEquals(1, getSolrCore0().query(new SolrQuery("*:*")).getResults().getNumFound());
     } finally {
+      cores.shutdown();
       resetFactory();
     }
+  }
+
+  private SolrClient getSolrCore0() {
+    return new EmbeddedSolrServer(cores, "core0"); // doesn't need to be closed
   }
 
   @After
