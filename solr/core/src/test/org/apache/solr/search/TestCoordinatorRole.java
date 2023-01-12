@@ -109,6 +109,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       cluster.shutdown();
     }
   }
+
   public void testNRTRestart() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
     useFactory(null);
