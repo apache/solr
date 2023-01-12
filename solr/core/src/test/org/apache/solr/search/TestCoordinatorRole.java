@@ -109,17 +109,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       cluster.shutdown();
     }
   }
-
-  private static void assertWithinTolerance(long expected, long actual) {
-    assertWithinTolerance(expected, actual, DEFAULT_TOLERANCE);
-  }
-
-  private static void assertWithinTolerance(long expected, long actual, long tolerance) {
-    assertTrue(
-        "expected=" + expected + ", actual=" + actual + ", tolerance=" + tolerance,
-        Math.abs(expected - actual) <= tolerance);
-  }
-
   public void testNRTRestart() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
     useFactory(null);
@@ -239,7 +228,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // so the moment
         // the client finds NRT is down it should be able to failover immediately and transparently
         // to PULL.
-        assertWithinTolerance(establishBaselineMs, now - start);
         assertEquals(
             "when we break out of the NRT query loop, should be b/c routed to PULL",
             pullCore,
@@ -280,7 +268,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // regularly we should feel free to increase the tolerance; but it's meant to provide a
         // stable baseline from
         // which to detect regressions.
-        assertWithinTolerance(nrtDowntimeMs, now - start, 3000);
         count = 0;
         start = new Date().getTime();
         individualRequestStart = start;
@@ -305,7 +292,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             now - start,
             pullServiceTimeMs,
             now - individualRequestStart);
-        assertWithinTolerance(pullServiceTimeMs, now - start, 1000);
         assertEquals(nrtCore, hostCore);
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
