@@ -79,6 +79,10 @@ public class JerseyAppHandlerCache {
     return fetched;
   }
 
+  public int size() {
+    return applicationByConfigSetId.size();
+  }
+
   /**
    * Generates a String ID to represent the provided {@link ConfigSet}
    *
