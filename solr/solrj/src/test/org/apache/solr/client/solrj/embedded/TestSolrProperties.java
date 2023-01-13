@@ -16,7 +16,14 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.lang.invoke.MethodHandles;
+import static org.apache.solr.SolrTestCaseJ4.getFile;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -26,18 +33,70 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 /**
  * @since solr 1.3
  */
-public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class TestSolrProperties extends SolrTestCase {
+  private static String tempDirProp;
+
+  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+
+  protected static Path SOLR_HOME;
+  protected static Path CONFIG_HOME;
+
+  protected CoreContainer cores = null;
+
+  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  @BeforeClass
+  public static void setUpHome() throws IOException {
+    // wtf?
+    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
+    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    SOLR_HOME = createTempDir("solrHome");
+    FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
+  }
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+
+    System.setProperty("solr.solr.home", SOLR_HOME.toString());
+    System.setProperty(
+        "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
+    System.out.println("Solr home: " + SOLR_HOME.toString());
+
+    // The index is always stored within a temporary directory
+    File tempDir = createTempDir().toFile();
+
+    File dataDir = new File(tempDir, "data1");
+    File dataDir2 = new File(tempDir, "data2");
+    System.setProperty("dataDir1", dataDir.getAbsolutePath());
+    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
+    System.setProperty("tempDir", tempDir.getAbsolutePath());
+    SolrTestCaseJ4.newRandomConfig();
+
+    solrClientTestRule.startSolr(
+        new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
+            .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
+            .build());
+
+    cores = solrClientTestRule.getSolrClient().getCoreContainer();
+  }
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, null);
+    return solrClientTestRule.getAdminClient();
   }
 
   @Test
@@ -46,8 +105,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     UpdateRequest up = new UpdateRequest();
     up.setAction(ACTION.COMMIT, true, true);
     up.deleteByQuery("*:*");
-    up.process(getSolrCore0());
-    up.process(getSolrCore1());
+    up.process(solrClientTestRule.getSolrClient("core0"));
+    up.process(solrClientTestRule.getSolrClient("core1"));
     up.clear();
 
     // Add something to each core
@@ -57,38 +116,58 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
     // Add to core0
     up.add(doc);
-    up.process(getSolrCore0());
+    up.process(solrClientTestRule.getSolrClient("core0"));
 
     SolrTestCaseJ4.ignoreException("unknown field");
 
     // You can't add it to core1
-    expectThrows(Exception.class, () -> up.process(getSolrCore1()));
+    expectThrows(Exception.class, () -> up.process(solrClientTestRule.getSolrClient("core1")));
 
     // Add to core1
     doc.setField("id", "BBB");
     doc.setField("core1", "yup stopfra stopfrb stopena stopenb");
     doc.removeField("core0");
     up.add(doc);
-    up.process(getSolrCore1());
+    up.process(solrClientTestRule.getSolrClient("core1"));
 
     // You can't add it to core1
     SolrTestCaseJ4.ignoreException("core0");
-    expectThrows(Exception.class, () -> up.process(getSolrCore0()));
+    expectThrows(Exception.class, () -> up.process(solrClientTestRule.getSolrClient("core0")));
     SolrTestCaseJ4.resetExceptionIgnores();
 
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();
     QueryRequest r = new QueryRequest(q);
     q.setQuery("id:AAA");
-    assertEquals(1, r.process(getSolrCore0()).getResults().size());
-    assertEquals(0, r.process(getSolrCore1()).getResults().size());
+    assertEquals(1, r.process(solrClientTestRule.getSolrClient("core0")).getResults().size());
+    assertEquals(0, r.process(solrClientTestRule.getSolrClient("core1")).getResults().size());
 
     // Now test Changing the default core
-    assertEquals(1, getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(0, getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(
+        1,
+        (solrClientTestRule.getSolrClient("core0"))
+            .query(new SolrQuery("id:AAA"))
+            .getResults()
+            .size());
+    assertEquals(
+        0,
+        (solrClientTestRule.getSolrClient("core0"))
+            .query(new SolrQuery("id:BBB"))
+            .getResults()
+            .size());
 
-    assertEquals(0, getSolrCore1().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(1, getSolrCore1().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(
+        0,
+        (solrClientTestRule.getSolrClient("core1"))
+            .query(new SolrQuery("id:AAA"))
+            .getResults()
+            .size());
+    assertEquals(
+        1,
+        (solrClientTestRule.getSolrClient("core1"))
+            .query(new SolrQuery("id:BBB"))
+            .getResults()
+            .size());
 
     // Now test reloading it should have a newer open time
     String name = "core0";

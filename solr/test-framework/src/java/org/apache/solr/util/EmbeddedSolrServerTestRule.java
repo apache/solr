@@ -35,86 +35,9 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   private CoreContainer container = null;
 
-  //  public Builder build() {
-  //    return new Builder();
-  //  }
-
-  //  public class Builder {
-  //    private Path solrHome; // mandatory
-  //    private Path dataDir;
-  //    private String coreRootDirectory;
-  //    private String configSetBaseDir;
-  //    private RequestWriterSupplier requestWriterSupplier = RequestWriterSupplier.JavaBin;
-  //
-  //    public Builder withSolrHome(Path solrHome) {
-  //      this.solrHome = solrHome;
-  //      return this;
-  //    }
-  //
-  //    public Builder withTempDataDir() {
-  //      this.dataDir = LuceneTestCase.createTempDir("data-dir");
-  //      return this;
-  //    }
-  //
-  //    public Builder withRequestWriterSupplier(RequestWriterSupplier requestWriterSupplier) {
-  //      this.requestWriterSupplier = requestWriterSupplier;
-  //      return this;
-  //    }
-  //
-  //    public Builder withCoreRootDirectory(String coreRootDirectory) {
-  //      this.coreRootDirectory = coreRootDirectory;
-  //      return this;
-  //    }
-  //
-  //    public Builder withConfigSetBaseDir(String configSetBaseDir) {
-  //      this.configSetBaseDir = configSetBaseDir;
-  //      return this;
-  //    }
-  //
-  //    public Path getSolrHome() {
-  //      return solrHome;
-  //    }
-  //
-  //    public Path getDataDir() {
-  //      return this.dataDir;
-  //    }
-  //
-  //    public String getCoreRootDirectory() {
-  //      return coreRootDirectory;
-  //    }
-  //
-  //    public String getConfigSetBaseDir() {
-  //      return configSetBaseDir;
-  //    }
-  //
-  //    public RequestWriterSupplier getRequestWriterSupplier() {
-  //      return requestWriterSupplier;
-  //    }
-  //
-  //    public void init() {
-  //      EmbeddedSolrServerTestRule.this.init(this);
-  //    }
-  //  }
-
-  //  private void init(Builder b) {
-  //
-  //    NodeConfig nodeConfig = buildTestNodeConfig(b);
-  //
-  //    // TODO nocommit
-  //    var coreLocator =
-  //        new ReadOnlyCoresLocator() {
-  //          @Override
-  //          public List<CoreDescriptor> discover(CoreContainer cc) {
-  //            return Collections.emptyList();
-  //          }
-  //        };
-  //
-  //    container = new CoreContainer(nodeConfig, coreLocator);
-  //
-  //    container.load();
-  //
-  //    adminClient = new EmbeddedSolrServer(container, null);
-  //  }
+  public EmbeddedSolrServer getAdminClient() {
+    return adminClient;
+  }
 
   public void startSolr(Path solrHome) {
     NodeConfig nodeConfig = newNodeConfigBuilder(solrHome);
@@ -215,59 +138,9 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     req.process(client);
   }
 
-  //  private NodeConfig buildTestNodeConfig(Builder b) {
-  //    // TODO nocommit dedupe this with TestHarness
-  //    var updateShardHandlerConfig =
-  //        new UpdateShardHandlerConfig(
-  //            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-  //            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-  //            30000,
-  //            30000,
-  //            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-  //            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-  //
-  //    return new NodeConfig.NodeConfigBuilder("testNode", b.getSolrHome())
-  //        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-  //        .setCoreRootDirectory(b.getCoreRootDirectory())
-  //        .setConfigSetBaseDirectory(b.getConfigSetBaseDir())
-  //        .build();
-  //  }
-
-  //  private CoreDescriptor buildCoreDesc(CoreContainer cc, Builder b) {
-  //    Map<String, String> coreProps = new HashMap<>();
-  //    if (b.configFile != null) {
-  //      coreProps.put(CoreDescriptor.CORE_CONFIG, b.configFile);
-  //    }
-  //    if (b.schemaFile != null) {
-  //      coreProps.put(CoreDescriptor.CORE_SCHEMA, b.schemaFile);
-  //    }
-  //    if (b.dataDir != null) {
-  //      coreProps.put(CoreDescriptor.CORE_DATADIR, b.dataDir.toString());
-  //    }
-  //
-  //    var coreName = b.collectionName;
-  //    var instanceDir = cc.getCoreRootDirectory().resolve(coreName);
-  //    return new CoreDescriptor(
-  //        coreName, instanceDir, coreProps, cc.getContainerProperties(), cc.getZkController());
-  //  }
-
   @Override
   protected void after() {
-
-    try {
-      if (adminClient != null)
-      adminClient.close();
-
-      if (client != null)
-      client.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
-      if (container != null)
-      container.shutdown();
-    }
-    client = null;// not necessary but why not; maybe for GC
-    adminClient = null;
+    if (container != null) container.shutdown();
   }
 
   @Override

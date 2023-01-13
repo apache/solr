@@ -91,7 +91,6 @@ public class TestCoreAdmin extends SolrTestCase {
     System.setProperty("solr.solr.home", SOLR_HOME.toString());
     System.setProperty(
         "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
-    System.out.println("Solr home: " + SOLR_HOME.toString());
 
     // The index is always stored within a temporary directory
     File tempDir = createTempDir().toFile();
@@ -101,7 +100,6 @@ public class TestCoreAdmin extends SolrTestCase {
     System.setProperty("dataDir1", dataDir.getAbsolutePath());
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
-    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     SolrTestCaseJ4.newRandomConfig();
 
     solrClientTestRule.startSolr(
@@ -109,28 +107,11 @@ public class TestCoreAdmin extends SolrTestCase {
             .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
             .build());
 
-    //
-    // solrClientTestRule.newCollection(DEFAULT_TEST_COLLECTION_NAME).withConfigSet("shared").create();
-
     cores = solrClientTestRule.getSolrClient().getCoreContainer();
-    // cores.setPersistent(false);
   }
-
-  /*
-  @Override
-  protected File getSolrXml() throws Exception {
-    // This test writes on the directory where the solr.xml is located. Better
-    // to copy the solr.xml to
-    // the temporary directory where we store the index
-    File origSolrXml = new File(SOLR_HOME, SOLR_XML);
-    File solrXml = new File(tempDir, SOLR_XML);
-    FileUtils.copyFile(origSolrXml, solrXml);
-    return solrXml;
-  }
-  */
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, null);
+    return solrClientTestRule.getAdminClient();
   }
 
   @Test
