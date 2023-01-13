@@ -40,28 +40,22 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-/**
- * @since solr 1.3
- */
+/** Test properties in configuration files. */
 public class TestSolrProperties extends SolrTestCase {
-  private static String tempDirProp;
-
-  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
   protected static Path SOLR_HOME;
   protected static Path CONFIG_HOME;
 
   protected CoreContainer cores = null;
 
-  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+
+  @Rule public TestRule testRule = new SystemPropertiesRestoreRule();
 
   @BeforeClass
   public static void setUpHome() throws IOException {
-    // wtf?
-    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
     CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
     SOLR_HOME = createTempDir("solrHome");
     FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
@@ -72,10 +66,8 @@ public class TestSolrProperties extends SolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    System.setProperty("solr.solr.home", SOLR_HOME.toString());
     System.setProperty(
         "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
-    System.out.println("Solr home: " + SOLR_HOME.toString());
 
     // The index is always stored within a temporary directory
     File tempDir = createTempDir().toFile();

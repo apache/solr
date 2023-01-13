@@ -53,31 +53,25 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 public class TestCoreAdmin extends SolrTestCase {
-
-  private static String tempDirProp;
-
-  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
   protected static Path SOLR_HOME;
   protected static Path CONFIG_HOME;
 
   protected CoreContainer cores = null;
 
-  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+
+  @Rule public TestRule testRule = new SystemPropertiesRestoreRule();
 
   @BeforeClass
   public static void setUpHome() throws IOException {
-    // wtf?
-    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
     CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
     SOLR_HOME = createTempDir("solrHome");
     FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
@@ -88,7 +82,6 @@ public class TestCoreAdmin extends SolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    System.setProperty("solr.solr.home", SOLR_HOME.toString());
     System.setProperty(
         "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
 
@@ -362,15 +355,4 @@ public class TestCoreAdmin extends SolrTestCase {
     return new EmbeddedSolrServer(cores, "core0"); // doesn't need to be closed
   }
 
-  @After
-  public void after() {
-    // wtf?
-    if (tempDirProp != null) {
-      System.setProperty("tempDir", tempDirProp);
-    } else {
-      System.clearProperty("tempDir");
-    }
-
-    System.clearProperty("solr.solr.home");
-  }
 }
