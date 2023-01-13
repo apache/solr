@@ -83,6 +83,7 @@ public class TestCoreAdmin extends SolrTestCase {
 
     System.setProperty(
         "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
+    System.setProperty("coreRootDirectory", "."); // relative to Solr home
 
     // The index is always stored within a temporary directory
     File tempDir = createTempDir().toFile();
