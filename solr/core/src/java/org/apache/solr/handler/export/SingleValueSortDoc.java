@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class SingleValueSortDoc extends SortDoc {
@@ -96,14 +95,14 @@ class SingleValueSortDoc extends SortDoc {
     SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
-      return  (sd.docId + sd.docBase) - (docId + docBase);
+      return (sd.docId + sd.docBase) - (docId + docBase);
     } else {
       return comp;
     }
   }
 
+  @Override
   public String toString() {
     return ord + ":" + docBase + ":" + docId + ":val=" + value1.toString();
   }
-
 }

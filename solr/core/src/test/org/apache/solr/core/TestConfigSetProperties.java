@@ -16,13 +16,12 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,9 +34,7 @@ import org.junit.rules.TestRule;
 
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
+  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @Test
   public void testNoConfigSetPropertiesFile() throws Exception {
@@ -45,18 +42,24 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testEmptyConfigSetProperties() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      createConfigSetProps("");
-    });
+  public void testEmptyConfigSetProperties() {
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              createConfigSetProps("");
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
-  public void testConfigSetPropertiesNotMap() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
-    });
+  public void testConfigSetPropertiesNotMap() {
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
+            });
     assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 

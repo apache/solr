@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.output.NullPrintStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -50,6 +49,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrTestNonSecureRandomProvider;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
@@ -130,9 +130,7 @@ public class MiniClusterState {
               benchmarkParams.id(),
               String.valueOf(runCnt++),
               benchmarkParams.getBenchmark() + ".txt");
-      if (!Files.exists(metricsResults.getParent())) {
-        Files.createDirectories(metricsResults.getParent());
-      }
+      Files.createDirectories(metricsResults.getParent());
 
       cluster.dumpMetrics(
           metricsResults.getParent().toFile(), metricsResults.getFileName().toString());

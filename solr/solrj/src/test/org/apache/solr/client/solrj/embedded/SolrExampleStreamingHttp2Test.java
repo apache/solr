@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
@@ -32,6 +31,10 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update
+ * client for communication.
+ */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @BeforeClass
@@ -40,19 +43,19 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   }
 
   @Override
-  public SolrClient createNewSolrClient()
-  {
-    // setup the server...
+  public SolrClient createNewSolrClient() {
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient = new Http2SolrClient.Builder()
-        .build();
-    solrClient.setParser(new XMLResponseParser());
-    solrClient.setRequestWriter(new RequestWriter());
-    ConcurrentUpdateHttp2SolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
-        .withQueueSize(2)
-        .withThreadCount(5)
-        .build();
+    Http2SolrClient solrClient =
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build();
+    ConcurrentUpdateHttp2SolrClient concurrentClient =
+        new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
+            .withQueueSize(2)
+            .withThreadCount(5)
+            .build();
     return concurrentClient;
   }
 
@@ -61,10 +64,11 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     final List<Throwable> failures = new ArrayList<>();
     final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-         ConcurrentUpdateHttp2SolrClient concurrentClient = new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)
-             .withQueueSize(2)
-             .withThreadCount(2)
-             .build()) {
+        ConcurrentUpdateHttp2SolrClient concurrentClient =
+            new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)
+                .withQueueSize(2)
+                .withThreadCount(2)
+                .build()) {
       int docId = 42;
       for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
@@ -83,8 +87,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     }
 
     if (0 != failures.size()) {
-      assertEquals(failures.size() + " Unexpected Exception, starting with...",
-          null, failures.get(0));
+      assertNull(failures.size() + " Unexpected Exception, starting with...", failures.get(0));
     }
   }
 
@@ -112,7 +115,8 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     }
   }
 
-  public static class ErrorTrackingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
+  public static class ErrorTrackingConcurrentUpdateSolrClient
+      extends ConcurrentUpdateHttp2SolrClient {
     public Throwable lastError = null;
 
     public ErrorTrackingConcurrentUpdateSolrClient(Builder builder) {

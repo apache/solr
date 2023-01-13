@@ -28,7 +28,7 @@
 
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">${managed.schema.mutable}</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">managed-schema.xml</str>
   </schemaFactory>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>

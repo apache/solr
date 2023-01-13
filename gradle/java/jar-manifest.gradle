@@ -22,12 +22,11 @@ subprojects {
     // per-project.
     def title = "Apache Solr Search Server: ${project.name}"
     def implementationTitle = "org.apache.solr"
-    def legaleseDir = project(":solr").projectDir
+    def legaleseDir = rootDir
 
     // Apply the manifest to any JAR or WAR file created by any project,
     // excluding those explicitly listed.
     tasks.withType(Jar)
-            .matching { t -> !["sourcesJar", "javadocJar"].contains(t.name) }
             .configureEach { task ->
                 // Compute git status once on the root project prior to assembling manifest.
                 dependsOn ":gitStatus"

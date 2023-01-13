@@ -17,19 +17,17 @@
 package org.apache.solr.search.grouping.distributed.command;
 
 import java.util.Collection;
-
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Encapsulates the result of a {@link SearchGroupsFieldCommand} command
- */
+/** Encapsulates the result of a {@link SearchGroupsFieldCommand} command */
 public class SearchGroupsFieldCommandResult {
 
   private final Integer groupCount;
   private final Collection<SearchGroup<BytesRef>> searchGroups;
 
-  public SearchGroupsFieldCommandResult(Integer groupCount, Collection<SearchGroup<BytesRef>> searchGroups) {
+  public SearchGroupsFieldCommandResult(
+      Integer groupCount, Collection<SearchGroup<BytesRef>> searchGroups) {
     this.groupCount = groupCount;
     this.searchGroups = searchGroups;
   }

@@ -16,28 +16,23 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
 /**
- * Keeps only the first value of fields matching the specified 
- * conditions.  Correct behavior assumes that the SolrInputFields being mutated 
- * are either single valued, or use an ordered Collection (ie: not a Set).
- * <p>
- * By default, this processor matches no fields.
- * </p>
- * 
- * <p>
- * For example, in the configuration below, if a field named 
- * <code>primary_author</code> contained multiple values (ie: 
- * <code>"Adam Doe", "Bob Smith", "Carla Jones"</code>) then only the first 
- * value (ie:  <code>"Adam Doe"</code>) will be kept
- * </p>
+ * Keeps only the first value of fields matching the specified conditions. Correct behavior assumes
+ * that the SolrInputFields being mutated are either single valued, or use an ordered Collection
+ * (ie: not a Set).
+ *
+ * <p>By default, this processor matches no fields.
+ *
+ * <p>For example, in the configuration below, if a field named <code>primary_author</code>
+ * contained multiple values (ie: <code>"Adam Doe", "Bob Smith", "Carla Jones"</code>) then only the
+ * first value (ie: <code>"Adam Doe"</code>) will be kept
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
@@ -48,7 +43,8 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  * @see LastFieldValueUpdateProcessorFactory
  * @since 4.0.0
  */
-public final class FirstFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
+public final class FirstFieldValueUpdateProcessorFactory
+    extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
   public <T> Collection<T> pickSubset(Collection<T> values) {
@@ -60,6 +56,4 @@ public final class FirstFieldValueUpdateProcessorFactory extends FieldValueSubse
   public FieldNameSelector getDefaultSelector(SolrCore core) {
     return SELECT_NO_FIELDS;
   }
-  
 }
-

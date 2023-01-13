@@ -39,7 +39,8 @@ class OldBackupDirectory implements Comparable<OldBackupDirectory> {
     Matcher m = dirNamePattern.matcher(dirName);
     if (m.find()) {
       try {
-        this.timestamp = Optional.of(new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).parse(m.group(1)));
+        this.timestamp =
+            Optional.of(new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).parse(m.group(1)));
       } catch (ParseException e) {
         this.timestamp = Optional.empty();
       }
@@ -60,7 +61,7 @@ class OldBackupDirectory implements Comparable<OldBackupDirectory> {
 
   @Override
   public int compareTo(OldBackupDirectory that) {
-    if(this.timestamp.isPresent() && that.timestamp.isPresent()) {
+    if (this.timestamp.isPresent() && that.timestamp.isPresent()) {
       return that.timestamp.get().compareTo(this.timestamp.get());
     }
     // Use absolute value of path in case the time-stamp is missing on either side.

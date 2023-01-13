@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
@@ -31,11 +30,14 @@ import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.protocol.HttpContext;
 
 /**
- * This HTTP request interceptor adds HTTP authentication credentials to every outgoing
- * request. This implementation is required since Solr client is not capable of performing
- * non preemptive authentication. By adding the Http authentication credentials to every request,
- * this interceptor enables "preemptive" authentication.
+ * This HTTP request interceptor adds HTTP authentication credentials to every outgoing request.
+ * This implementation is required since Solr client is not capable of performing non preemptive
+ * authentication. By adding the Http authentication credentials to every request, this interceptor
+ * enables "preemptive" authentication.
+ *
+ * @deprecated Please look into using Solr's new Http2 clients
  */
+@Deprecated(since = "9.0")
 public class PreemptiveAuth implements HttpRequestInterceptor {
   private AuthScheme authScheme = null;
 
@@ -44,14 +46,14 @@ public class PreemptiveAuth implements HttpRequestInterceptor {
   }
 
   @Override
-  public void process(final HttpRequest request, final HttpContext context) throws HttpException,
-      IOException {
+  public void process(final HttpRequest request, final HttpContext context)
+      throws HttpException, IOException {
 
     AuthState authState = (AuthState) context.getAttribute(ClientContext.TARGET_AUTH_STATE);
     // If no auth scheme available yet, try to initialize it preemptively
     if (authState.getAuthScheme() == null) {
-      CredentialsProvider credsProvider = (CredentialsProvider) context
-          .getAttribute(ClientContext.CREDS_PROVIDER);
+      CredentialsProvider credsProvider =
+          (CredentialsProvider) context.getAttribute(ClientContext.CREDS_PROVIDER);
       Credentials creds = credsProvider.getCredentials(AuthScope.ANY);
       authState.update(authScheme, creds);
     }

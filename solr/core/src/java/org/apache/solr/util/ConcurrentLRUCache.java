@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.TimeSource;
 
+import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
+
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,64 +32,69 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-//import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import java.lang.ref.WeakReference;
 import java.util.function.Function;
-
-import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
-import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.TimeSource;
 
 /**
- * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
- * contention and synchronization overhead to utilize multiple CPU cores more effectively.
- * <p>
- * Note that the implementation does not follow a true LRU (least-recently-used) eviction
- * strategy. Instead it strives to remove least recently used items but when the initial
- * cleanup does not remove enough items to reach the 'acceptableWaterMark' limit, it can
- * remove more items forcefully regardless of access order.
+ * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce contention
+ * and synchronization overhead to utilize multiple CPU cores more effectively.
  *
+ * <p>Note that the implementation does not follow a true LRU (least-recently-used) eviction
+ * strategy. Instead it strives to remove least recently used items but when the initial cleanup
+ * does not remove enough items to reach the 'acceptableWaterMark' limit, it can remove more items
+ * forcefully regardless of access order.
  *
  * @since solr 1.4
  */
-public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
+public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
 
   private static final long BASE_RAM_BYTES_USED =
-      RamUsageEstimator.shallowSizeOfInstance(ConcurrentLRUCache.class) +
-      new Stats().ramBytesUsed() +
-      RamUsageEstimator.primitiveSizes.get(long.class) +
-      RamUsageEstimator.shallowSizeOfInstance(ConcurrentHashMap.class);
+      RamUsageEstimator.shallowSizeOfInstance(ConcurrentLRUCache.class)
+          + new Stats().ramBytesUsed()
+          + RamUsageEstimator.primitiveSizes.get(long.class)
+          + RamUsageEstimator.shallowSizeOfInstance(ConcurrentHashMap.class);
 
-  private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
+  private final ConcurrentHashMap<Object, CacheEntry<K, V>> map;
   private int upperWaterMark, lowerWaterMark;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
-  private boolean isCleaning = false;  // not volatile... piggybacked on other volatile vars
+  private boolean isCleaning = false; // not volatile... piggybacked on other volatile vars
   private boolean newThreadForCleanup;
   private volatile boolean islive = true;
   private final Stats stats = new Stats();
   private int acceptableWaterMark;
-  private long oldestEntry = 0;  // not volatile, only accessed in the cleaning method
+  private long oldestEntry = 0; // not volatile, only accessed in the cleaning method
   private final TimeSource timeSource = TimeSource.NANO_TIME;
   private final AtomicLong oldestEntryNs = new AtomicLong(0);
   private long maxIdleTimeNs;
-  private final EvictionListener<K,V> evictionListener;
+  private final EvictionListener<K, V> evictionListener;
   private CleanupThread cleanupThread;
   private boolean runCleanupThread;
 
   private long ramLowerWatermark, ramUpperWatermark;
   private final LongAdder ramBytes = new LongAdder();
 
-  public ConcurrentLRUCache(long ramLowerWatermark, long ramUpperWatermark,
-                            boolean runCleanupThread, EvictionListener<K, V> evictionListener) {
+  public ConcurrentLRUCache(
+      long ramLowerWatermark,
+      long ramUpperWatermark,
+      boolean runCleanupThread,
+      EvictionListener<K, V> evictionListener) {
     this(ramLowerWatermark, ramUpperWatermark, runCleanupThread, evictionListener, -1);
   }
 
-  public ConcurrentLRUCache(long ramLowerWatermark, long ramUpperWatermark,
-                            boolean runCleanupThread, EvictionListener<K, V> evictionListener,
-                            int maxIdleTimeSec) {
+  public ConcurrentLRUCache(
+      long ramLowerWatermark,
+      long ramUpperWatermark,
+      boolean runCleanupThread,
+      EvictionListener<K, V> evictionListener,
+      int maxIdleTimeSec) {
     this.ramLowerWatermark = ramLowerWatermark;
     this.ramUpperWatermark = ramUpperWatermark;
 
@@ -106,16 +110,34 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     setRunCleanupThread(runCleanupThread);
   }
 
-  public ConcurrentLRUCache(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark,
-                            int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
-                            EvictionListener<K,V> evictionListener) {
-    this(upperWaterMark, lowerWaterMark, acceptableWatermark, initialSize, runCleanupThread,
-        runNewThreadForCleanup, evictionListener, -1);
+  public ConcurrentLRUCache(
+      int upperWaterMark,
+      final int lowerWaterMark,
+      int acceptableWaterMark,
+      int initialSize,
+      boolean runCleanupThread,
+      boolean runNewThreadForCleanup,
+      EvictionListener<K, V> evictionListener) {
+    this(
+        upperWaterMark,
+        lowerWaterMark,
+        acceptableWaterMark,
+        initialSize,
+        runCleanupThread,
+        runNewThreadForCleanup,
+        evictionListener,
+        -1);
   }
 
-  public ConcurrentLRUCache(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark,
-                            int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
-                            EvictionListener<K,V> evictionListener, int maxIdleTimeSec) {
+  public ConcurrentLRUCache(
+      int upperWaterMark,
+      final int lowerWaterMark,
+      int acceptableWaterMark,
+      int initialSize,
+      boolean runCleanupThread,
+      boolean runNewThreadForCleanup,
+      EvictionListener<K, V> evictionListener,
+      int maxIdleTimeSec) {
     if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
     if (lowerWaterMark >= upperWaterMark)
       throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
@@ -123,7 +145,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     newThreadForCleanup = runNewThreadForCleanup;
     this.upperWaterMark = upperWaterMark;
     this.lowerWaterMark = lowerWaterMark;
-    this.acceptableWaterMark = acceptableWatermark;
+    this.acceptableWaterMark = acceptableWaterMark;
     this.evictionListener = evictionListener;
     this.ramLowerWatermark = Long.MIN_VALUE;
     this.ramUpperWatermark = Long.MAX_VALUE;
@@ -131,9 +153,16 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     setRunCleanupThread(runCleanupThread);
   }
 
-  public ConcurrentLRUCache(int size, int lowerWatermark) {
-    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2),
-            (int) Math.ceil(0.75 * size), false, false, null, -1);
+  public ConcurrentLRUCache(int size, int lowerWaterMark) {
+    this(
+        size,
+        lowerWaterMark,
+        (int) Math.floor((lowerWaterMark + size) / 2.0),
+        (int) Math.ceil(0.75 * size),
+        false,
+        false,
+        null,
+        -1);
   }
 
   public void setAlive(boolean live) {
@@ -169,7 +198,10 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
   public void setMaxIdleTime(int maxIdleTime) {
     long oldMaxIdleTimeNs = maxIdleTimeNs;
-    maxIdleTimeNs = maxIdleTime > 0 ? TimeUnit.NANOSECONDS.convert(maxIdleTime, TimeUnit.SECONDS) : Long.MAX_VALUE;
+    maxIdleTimeNs =
+        maxIdleTime > 0
+            ? TimeUnit.NANOSECONDS.convert(maxIdleTime, TimeUnit.SECONDS)
+            : Long.MAX_VALUE;
     if (cleanupThread != null && maxIdleTimeNs < oldMaxIdleTimeNs) {
       cleanupThread.wakeThread();
     }
@@ -220,24 +252,33 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       return val;
     }
     AtomicBoolean newEntry = new AtomicBoolean();
-    CacheEntry<K, V> entry = map.computeIfAbsent(key, k -> {
-      V value = mappingFunction.apply(key);
-      // preserve the semantics of computeIfAbsent
-      if (value == null) {
-        return null;
-      }
-      CacheEntry<K, V> e = new CacheEntry<>(key, value, timeSource.getEpochTimeNs(), stats.accessCounter.incrementAndGet());
-      oldestEntryNs.updateAndGet(x -> x > e.createTime  || x == 0 ? e.createTime : x);
-      stats.size.increment();
-      ramBytes.add(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
-      if (islive) {
-        stats.putCounter.increment();
-      } else {
-        stats.nonLivePutCounter.increment();
-      }
-      newEntry.set(true);
-      return e;
-    });
+    CacheEntry<K, V> entry =
+        map.computeIfAbsent(
+            key,
+            k -> {
+              V value = mappingFunction.apply(key);
+              // preserve the semantics of computeIfAbsent
+              if (value == null) {
+                return null;
+              }
+              CacheEntry<K, V> e =
+                  new CacheEntry<>(
+                      key,
+                      value,
+                      timeSource.getEpochTimeNs(),
+                      stats.accessCounter.incrementAndGet());
+              oldestEntryNs.updateAndGet(x -> x > e.createTime || x == 0 ? e.createTime : x);
+              stats.size.increment();
+              ramBytes.add(
+                  e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
+              if (islive) {
+                stats.putCounter.increment();
+              } else {
+                stats.nonLivePutCounter.increment();
+              }
+              newEntry.set(true);
+              return e;
+            });
     if (newEntry.get()) {
       maybeMarkAndSweep();
     } else {
@@ -251,18 +292,21 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   @Override
   public V put(K key, V val) {
     if (val == null) return null;
-    CacheEntry<K, V> e = new CacheEntry<>(key, val, timeSource.getEpochTimeNs(), stats.accessCounter.incrementAndGet());
+    CacheEntry<K, V> e =
+        new CacheEntry<>(
+            key, val, timeSource.getEpochTimeNs(), stats.accessCounter.incrementAndGet());
     return putCacheEntry(e);
   }
 
   /**
    * Visible for testing to create synthetic cache entries.
+   *
    * @lucene.internal
    */
   public V putCacheEntry(CacheEntry<K, V> e) {
     // initialize oldestEntryNs
-    oldestEntryNs.updateAndGet(x -> x > e.createTime  || x == 0 ? e.createTime : x);
-    CacheEntry<K,V> oldCacheEntry = map.put(e.key, e);
+    oldestEntryNs.updateAndGet(x -> x > e.createTime || x == 0 ? e.createTime : x);
+    CacheEntry<K, V> oldCacheEntry = map.put(e.key, e);
     if (oldCacheEntry == null) {
       stats.size.increment();
       ramBytes.add(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
@@ -292,10 +336,13 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     // in this method.
     long idleCutoff = timeSource.getEpochTimeNs() - maxIdleTimeNs;
     int currentSize = stats.size.intValue();
-    if ((currentSize > upperWaterMark || ramBytes.sum() > ramUpperWatermark || oldestEntryNs.get() < idleCutoff) && !isCleaning) {
+    if ((currentSize > upperWaterMark
+            || ramBytes.sum() > ramUpperWatermark
+            || oldestEntryNs.get() < idleCutoff)
+        && !isCleaning) {
       if (newThreadForCleanup) {
         new Thread(this::markAndSweep, "CacheCleanupThread").start();
-      } else if (cleanupThread != null){
+      } else if (cleanupThread != null) {
         cleanupThread.wakeThread();
       } else {
         markAndSweep();
@@ -304,12 +351,13 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   /**
-   * Removes items from the cache to bring the size down
-   * to an acceptable value.
-   * <p>Visible for unit testing.</p>
+   * Removes items from the cache to bring the size down to an acceptable value.
+   *
+   * <p>Visible for unit testing.
+   *
    * @lucene.internal
    */
-   public void markAndSweep() {
+  public void markAndSweep() {
     // if we want to keep at least 1000 entries, then timestamps of
     // current through current-1000 are guaranteed not to be the oldest (but that does
     // not mean there are 1000 entries in that group... it's actually anywhere between
@@ -332,17 +380,18 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
         markAndSweepByRamSize();
       } else if (upperWaterMark == Integer.MAX_VALUE && ramUpperWatermark == Long.MAX_VALUE) {
         // should never happen
-        throw new AssertionError("ConcurrentLRUCache initialized with neither size limits nor ram limits");
+        throw new AssertionError(
+            "ConcurrentLRUCache initialized with neither size limits nor ram limits");
       }
     } finally {
-      isCleaning = false;  // set before markAndSweep.unlock() for visibility
+      isCleaning = false; // set before markAndSweep.unlock() for visibility
       markAndSweepLock.unlock();
     }
   }
 
   /*
-    Must be called after acquiring markAndSweepLock
-   */
+   Must be called after acquiring markAndSweepLock
+  */
   private void markAndSweepByIdleTime() {
     assert markAndSweepLock.isHeldByCurrentThread() : "markAndSweepLock held by another thread";
     Iterator<Map.Entry<Object, CacheEntry<K, V>>> iterator = map.entrySet().iterator();
@@ -366,15 +415,17 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   /*
-    Must be called after acquiring markAndSweepLock
-   */
+   Must be called after acquiring markAndSweepLock
+  */
   private void markAndSweepByRamSize() {
     assert markAndSweepLock.isHeldByCurrentThread() : "markAndSweepLock held by another thread";
     List<CacheEntry<K, V>> entriesInAccessOrder = new ArrayList<>(map.size());
-    map.forEach((o, kvCacheEntry) -> {
-      kvCacheEntry.lastAccessedCopy = kvCacheEntry.lastAccessed; // important because we want to avoid volatile read during comparisons
-      entriesInAccessOrder.add(kvCacheEntry);
-    });
+    map.forEach(
+        (o, kvCacheEntry) -> {
+          // important because we want to avoid volatile read during comparisons
+          kvCacheEntry.lastAccessedCopy = kvCacheEntry.lastAccessed;
+          entriesInAccessOrder.add(kvCacheEntry);
+        });
 
     Collections.sort(entriesInAccessOrder); // newer access is smaller, older access is bigger
 
@@ -382,7 +433,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     for (int i = entriesInAccessOrder.size() - 1; i >= 0; i--) {
       CacheEntry<K, V> kvCacheEntry = entriesInAccessOrder.get(i);
       evictEntry(kvCacheEntry.key);
-      if (ramBytes.sum() <= ramLowerWatermark)  {
+      if (ramBytes.sum() <= ramLowerWatermark) {
         break; // we are done!
       }
     }
@@ -404,7 +455,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     assert markAndSweepLock.isHeldByCurrentThread() : "markAndSweepLock held by another thread";
     long oldestEntry = this.oldestEntry;
     isCleaning = true;
-    this.oldestEntry = oldestEntry;     // volatile write to make isCleaning visible
+    this.oldestEntry = oldestEntry; // volatile write to make isCleaning visible
 
     long timeCurrent = stats.accessCounter.longValue();
     int sz = stats.size.intValue();
@@ -419,13 +470,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int wantToRemove = sz - lowerWaterMark;
 
     @SuppressWarnings("unchecked")
-    CacheEntry<K,V>[] eset = (CacheEntry<K, V>[]) Array.newInstance(CacheEntry.class, sz);
+    CacheEntry<K, V>[] eset = (CacheEntry<K, V>[]) Array.newInstance(CacheEntry.class, sz);
     int eSize = 0;
 
     // System.out.println("newestEntry="+newestEntry + " oldestEntry="+oldestEntry);
-    // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
+    // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize
+    // + " sz-numRemoved=" + (sz-numRemoved));
 
-    for (CacheEntry<K,V> ce : map.values()) {
+    for (CacheEntry<K, V> ce : map.values()) {
       // set lastAccessedCopy to avoid more volatile reads
       ce.lastAccessedCopy = ce.lastAccessed;
       long thisEntry = ce.lastAccessedCopy;
@@ -446,7 +498,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
         // Collect these entries to avoid another full pass... this is wasted
         // effort if enough entries are normally removed in this first pass.
         // An alternate impl could make a full second pass.
-        if (eSize < eset.length-1) {
+        if (eSize < eset.length - 1) {
           eset[eSize++] = ce;
           newNewestEntry = Math.max(thisEntry, newNewestEntry);
           newOldestEntry = Math.min(thisEntry, newOldestEntry);
@@ -454,13 +506,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       }
     }
 
-    // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
+    // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize
+    // + " sz-numRemoved=" + (sz-numRemoved));
     // TODO: allow this to be customized in the constructor?
-    int numPasses=1; // maximum number of linear passes over the data
+    int numPasses = 1; // maximum number of linear passes over the data
 
     // if we didn't remove enough entries, then make more passes
     // over the values we collected, with updated min and max values.
-    while (sz - numRemoved > acceptableWaterMark && --numPasses>=0) {
+    while (sz - numRemoved > acceptableWaterMark && --numPasses >= 0) {
 
       oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
       newOldestEntry = Long.MAX_VALUE;
@@ -470,8 +523,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       wantToRemove = sz - lowerWaterMark - numRemoved;
 
       // iterate backward to make it easy to remove items.
-      for (int i=eSize-1; i>=0; i--) {
-        CacheEntry<K,V> ce = eset[i];
+      for (int i = eSize - 1; i >= 0; i--) {
+        CacheEntry<K, V> ce = eset[i];
         long thisEntry = ce.lastAccessedCopy;
 
         if (thisEntry > newestEntry - wantToKeep) {
@@ -479,7 +532,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // group, so do nothing but remove it from the eset.
           numKept++;
           // remove the entry by moving the last element to its position
-          eset[i] = eset[eSize-1];
+          eset[i] = eset[eSize - 1];
           eSize--;
 
           newOldestEntry = Math.min(thisEntry, newOldestEntry);
@@ -492,7 +545,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           numRemoved++;
 
           // remove the entry by moving the last element to its position
-          eset[i] = eset[eSize-1];
+          eset[i] = eset[eSize - 1];
           eSize--;
         } else {
           // This entry *could* be in the bottom group, so keep it in the eset,
@@ -501,9 +554,9 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           newOldestEntry = Math.min(thisEntry, newOldestEntry);
         }
       }
-      // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+ eSize + " sz-numRemoved=" + (sz-numRemoved));
+      // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " esetSz="+
+      // eSize + " sz-numRemoved=" + (sz-numRemoved));
     }
-
 
     // if we still didn't remove enough entries, then make another pass while
     // inserting into a priority queue
@@ -516,10 +569,10 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       wantToKeep = lowerWaterMark - numKept;
       wantToRemove = sz - lowerWaterMark - numRemoved;
 
-      PQueue<K,V> queue = new PQueue<>(wantToRemove);
+      PQueue<K, V> queue = new PQueue<>(wantToRemove);
 
-      for (int i=eSize-1; i>=0; i--) {
-        CacheEntry<K,V> ce = eset[i];
+      for (int i = eSize - 1; i >= 0; i--) {
+        CacheEntry<K, V> ce = eset[i];
         long thisEntry = ce.lastAccessedCopy;
 
         if (thisEntry > newestEntry - wantToKeep) {
@@ -532,7 +585,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
           newOldestEntry = Math.min(thisEntry, newOldestEntry);
 
-        } else if (thisEntry < oldestEntry + wantToRemove) {  // entry in bottom group?
+        } else if (thisEntry < oldestEntry + wantToRemove) { // entry in bottom group?
           // this entry is guaranteed to be in the bottom group
           // so immediately remove it.
           evictEntry(ce.key);
@@ -567,23 +620,25 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
       // Now delete everything in the priority queue.
       // avoid using pop() since order doesn't matter anymore
-      for (CacheEntry<K,V> ce : queue.getValues()) {
-        if (ce==null) continue;
+      for (CacheEntry<K, V> ce : queue.getValues()) {
+        if (ce == null) continue;
         evictEntry(ce.key);
         numRemoved++;
       }
 
-      // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " initialQueueSize="+ wantToRemove + " finalQueueSize=" + queue.size() + " sz-numRemoved=" + (sz-numRemoved));
+      // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + "
+      // initialQueueSize="+ wantToRemove + " finalQueueSize=" + queue.size() + " sz-numRemoved=" +
+      // (sz-numRemoved));
     }
 
     oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
     this.oldestEntry = oldestEntry;
   }
 
-  private static class PQueue<K,V> extends PriorityQueue<CacheEntry<K,V>> {
+  private static class PQueue<K, V> extends PriorityQueue<CacheEntry<K, V>> {
     int myMaxSize;
     final Object[] heap;
-    
+
     PQueue(int maxSz) {
       super(maxSz);
       heap = getHeapArray();
@@ -591,25 +646,24 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @SuppressWarnings("unchecked")
-    Iterable<CacheEntry<K,V>> getValues() { 
+    Iterable<CacheEntry<K, V>> getValues() {
       return (Iterable) Collections.unmodifiableCollection(Arrays.asList(heap));
     }
 
     @Override
-    protected boolean lessThan(CacheEntry<K,V> a,
-                               CacheEntry<K,V> b) {
+    protected boolean lessThan(CacheEntry<K, V> a, CacheEntry<K, V> b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
     }
 
     // necessary because maxSize is private in base class
     @SuppressWarnings("unchecked")
-    public CacheEntry<K,V> myInsertWithOverflow(CacheEntry<K,V> element) {
+    public CacheEntry<K, V> myInsertWithOverflow(CacheEntry<K, V> element) {
       if (size() < myMaxSize) {
         add(element);
         return null;
-      } else if (size() > 0 && !lessThan(element, (CacheEntry<K,V>) heap[1])) {
-        CacheEntry<K,V> ret = (CacheEntry<K,V>) heap[1];
+      } else if (size() > 0 && !lessThan(element, (CacheEntry<K, V>) heap[1])) {
+        CacheEntry<K, V> ret = (CacheEntry<K, V>) heap[1];
         heap[1] = element;
         updateTop();
         return ret;
@@ -619,9 +673,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
   }
 
-
   private void evictEntry(K key) {
-    CacheEntry<K,V> o = map.remove(key);
+    CacheEntry<K, V> o = map.remove(key);
     postRemoveEntry(o);
   }
 
@@ -630,26 +683,26 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     ramBytes.add(-(o.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY));
     stats.size.decrement();
     stats.evictionCounter.increment();
-    if(evictionListener != null) evictionListener.evictedEntry(o.key,o.value);
+    if (evictionListener != null) evictionListener.evictedEntry(o.key, o.value);
   }
 
   /**
    * Returns 'n' number of oldest accessed entries present in this cache.
    *
-   * This uses a TreeSet to collect the 'n' oldest items ordered by ascending last access time
-   *  and returns a LinkedHashMap containing 'n' or less than 'n' entries.
+   * <p>This uses a TreeSet to collect the 'n' oldest items ordered by ascending last access time
+   * and returns a LinkedHashMap containing 'n' or less than 'n' entries.
+   *
    * @param n the number of oldest items needed
    * @return a LinkedHashMap containing 'n' or less than 'n' entries
    */
   public Map<K, V> getOldestAccessedItems(int n) {
     Map<K, V> result = new LinkedHashMap<>();
-    if (n <= 0)
-      return result;
-    TreeSet<CacheEntry<K,V>> tree = new TreeSet<>();
+    if (n <= 0) return result;
+    TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
     markAndSweepLock.lock();
     try {
-      for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
-        CacheEntry<K,V> ce = entry.getValue();
+      for (Map.Entry<Object, CacheEntry<K, V>> entry : map.entrySet()) {
+        CacheEntry<K, V> ce = entry.getValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -663,22 +716,21 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     } finally {
       markAndSweepLock.unlock();
     }
-    for (CacheEntry<K,V> e : tree) {
+    for (CacheEntry<K, V> e : tree) {
       result.put(e.key, e.value);
     }
     return result;
   }
 
-  public Map<K,V> getLatestAccessedItems(int n) {
-    Map<K,V> result = new LinkedHashMap<>();
-    if (n <= 0)
-      return result;
-    TreeSet<CacheEntry<K,V>> tree = new TreeSet<>();
+  public Map<K, V> getLatestAccessedItems(int n) {
+    Map<K, V> result = new LinkedHashMap<>();
+    if (n <= 0) return result;
+    TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
     // we need to grab the lock since we are changing lastAccessedCopy
     markAndSweepLock.lock();
     try {
-      for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
-        CacheEntry<K,V> ce = entry.getValue();
+      for (Map.Entry<Object, CacheEntry<K, V>> entry : map.entrySet()) {
+        CacheEntry<K, V> ce = entry.getValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -692,7 +744,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     } finally {
       markAndSweepLock.unlock();
     }
-    for (CacheEntry<K,V> e : tree) {
+    for (CacheEntry<K, V> e : tree) {
       result.put(e.key, e.value);
     }
     return result;
@@ -708,11 +760,11 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     ramBytes.reset();
   }
 
-  public Map<Object, CacheEntry<K,V>> getMap() {
+  public Map<Object, CacheEntry<K, V>> getMap() {
     return map;
   }
 
-  public static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>>, Accountable {
+  public static class CacheEntry<K, V> implements Comparable<CacheEntry<K, V>>, Accountable {
     public static long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOf(CacheEntry.class);
 
     final K key;
@@ -722,16 +774,15 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     volatile long lastAccessed = 0;
     long lastAccessedCopy = 0;
 
-
     public CacheEntry(K key, V value, long createTime, long lastAccessed) {
       this.key = key;
       this.value = value;
       this.createTime = createTime;
       this.lastAccessed = lastAccessed;
       this.ramBytesUsed =
-          BASE_RAM_BYTES_USED +
-          RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED) +
-          RamUsageEstimator.sizeOfObject(value, QUERY_DEFAULT_RAM_BYTES_USED);
+          BASE_RAM_BYTES_USED
+              + RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED)
+              + RamUsageEstimator.sizeOfObject(value, QUERY_DEFAULT_RAM_BYTES_USED);
     }
 
     public void setLastAccessed(long lastAccessed) {
@@ -739,7 +790,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @Override
-    public int compareTo(CacheEntry<K,V> that) {
+    public int compareTo(CacheEntry<K, V> that) {
       if (this.lastAccessedCopy == that.lastAccessedCopy) return 0;
       return this.lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;
     }
@@ -770,10 +821,11 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
   }
 
- private boolean isDestroyed =  false;
+  private boolean isDestroyed = false;
+
   public void destroy() {
     try {
-      if(cleanupThread != null){
+      if (cleanupThread != null) {
         cleanupThread.stopThread();
       }
     } finally {
@@ -785,17 +837,19 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     return stats;
   }
 
-
   public static class Stats implements Accountable {
     private static final long RAM_BYTES_USED =
         // accounts for field refs
-        RamUsageEstimator.shallowSizeOfInstance(Stats.class) +
+        RamUsageEstimator.shallowSizeOfInstance(Stats.class)
+            +
             // LongAdder
-            6 * (
-                RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-                RamUsageEstimator.primitiveSizes.get(long.class) +
-                2 * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.primitiveSizes.get(long.class))
-            ) +
+            6
+                * (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
+                    + RamUsageEstimator.primitiveSizes.get(long.class)
+                    + 2L
+                        * (RamUsageEstimator.NUM_BYTES_OBJECT_REF
+                            + RamUsageEstimator.primitiveSizes.get(long.class)))
+            +
             // AtomicLong
             RamUsageEstimator.primitiveSizes.get(long.class);
 
@@ -808,7 +862,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     private LongAdder evictionIdleCounter = new LongAdder();
 
     public long getCumulativeLookups() {
-      return (accessCounter.longValue() - putCounter.longValue() - nonLivePutCounter.longValue()) + missCounter.longValue();
+      return (accessCounter.longValue() - putCounter.longValue() - nonLivePutCounter.longValue())
+          + missCounter.longValue();
     }
 
     public long getCumulativeHits() {
@@ -856,16 +911,16 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
   }
 
-  public static interface EvictionListener<K,V>{
+  public static interface EvictionListener<K, V> {
     public void evictedEntry(K key, V value);
   }
 
   private static class CleanupThread extends Thread {
-    private final WeakReference<ConcurrentLRUCache<?,?>> cache;
+    private final WeakReference<ConcurrentLRUCache<?, ?>> cache;
 
     private boolean stop = false;
 
-    public CleanupThread(ConcurrentLRUCache<?,?> c) {
+    public CleanupThread(ConcurrentLRUCache<?, ?> c) {
       super("CacheCleanupThread");
       cache = new WeakReference<>(c);
     }
@@ -873,14 +928,18 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     @Override
     public void run() {
       while (true) {
-        ConcurrentLRUCache<?,?> c = cache.get();
-        if(c == null) break;
+        ConcurrentLRUCache<?, ?> c = cache.get();
+        if (c == null) break;
         synchronized (this) {
           if (stop) break;
-          long waitTimeMs =  c.maxIdleTimeNs != Long.MAX_VALUE ? TimeUnit.MILLISECONDS.convert(c.maxIdleTimeNs, TimeUnit.NANOSECONDS) : 0L;
+          long waitTimeMs =
+              c.maxIdleTimeNs != Long.MAX_VALUE
+                  ? TimeUnit.MILLISECONDS.convert(c.maxIdleTimeNs, TimeUnit.NANOSECONDS)
+                  : 0L;
           try {
             this.wait(waitTimeMs);
-          } catch (InterruptedException e) {}
+          } catch (InterruptedException e) {
+          }
         }
         if (stop) break;
         c = cache.get();
@@ -890,14 +949,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     void wakeThread() {
-      synchronized(this){
+      synchronized (this) {
         this.notify();
       }
     }
 
     void stopThread() {
-      synchronized(this){
-        stop=true;
+      synchronized (this) {
+        stop = true;
         this.notify();
       }
     }

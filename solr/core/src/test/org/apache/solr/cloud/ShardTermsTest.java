@@ -17,13 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.cloud.ShardTerms;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.cloud.ShardTerms;
+import org.junit.Test;
 
 public class ShardTermsTest extends SolrTestCase {
   @Test

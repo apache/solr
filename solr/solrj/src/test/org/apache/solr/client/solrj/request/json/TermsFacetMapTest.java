@@ -17,10 +17,11 @@
 
 package org.apache.solr.client.solrj.request.json;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
 
 public class TermsFacetMapTest extends SolrTestCaseJ4 {
   private static final String ANY_FIELD_NAME = "ANY_FIELD_NAME";
@@ -39,96 +40,100 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsNegativeBucketOffset() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setBucketOffset(-1);
-    });
-    assertThat(thrown.getMessage(), containsString("must be non-negative"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet =
+                  new TermsFacetMap(ANY_FIELD_NAME).setBucketOffset(-1);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
   public void testStoresBucketOffsetWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setBucketOffset(2);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setBucketOffset(2);
     assertEquals(2, termsFacet.get("offset"));
-
   }
 
   @Test
   public void testStoresBucketLimitWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setLimit(3);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setLimit(3);
     assertEquals(3, termsFacet.get("limit"));
   }
 
   @Test
   public void testRejectsInvalidSortString() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setSort(null);
-    });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setSort(null);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresSortWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setSort("price asc");
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setSort("price asc");
     assertEquals("price asc", termsFacet.get("sort"));
   }
 
   @Test
   public void testRejectInvalidOverRequestBuckets() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setOverRequest(-2);
-    });
-    assertThat(thrown.getMessage(), containsString("must be >= -1"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRequest(-2);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be >= -1"));
   }
 
   @Test
   public void testStoresOverRequestBucketsWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setOverRequest(4);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRequest(4);
     assertEquals(4, termsFacet.get("overrequest"));
   }
 
   @Test
   public void testStoresRefinementFlagWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .useDistributedFacetRefining(true);
+    final TermsFacetMap termsFacet =
+        new TermsFacetMap(ANY_FIELD_NAME).useDistributedFacetRefining(true);
     assertEquals(true, termsFacet.get("refine"));
   }
 
   @Test
   public void testRejectInvalidOverRefineBuckets() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setOverRefine(-2);
-    });
-    assertThat(thrown.getMessage(), containsString("must be >= -1"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRefine(-2);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be >= -1"));
   }
 
   @Test
   public void testStoresOverRefineBucketsWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setOverRefine(5);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRefine(5);
     assertEquals(5, termsFacet.get("overrefine"));
   }
 
   @Test
   public void testRejectInvalidMinCount() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setMinCount(-1);
-    });
-    assertThat(thrown.getMessage(), containsString("must be a non-negative integer"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setMinCount(-1);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be a non-negative integer"));
   }
 
   @Test
   public void testStoresMinCountWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setMinCount(6);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setMinCount(6);
     assertEquals(6, termsFacet.get("mincount"));
     termsFacet.setMinCount(0);
     assertEquals(0, termsFacet.get("mincount"));
@@ -136,47 +141,51 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStoresNumBucketsFlagWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .includeTotalNumBuckets(true);
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).includeTotalNumBuckets(true);
     assertEquals(true, termsFacet.get("numBuckets"));
   }
 
   @Test
   public void testStoresAllBucketsFlagWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .includeAllBucketsUnionBucket(true);
+    final TermsFacetMap termsFacet =
+        new TermsFacetMap(ANY_FIELD_NAME).includeAllBucketsUnionBucket(true);
     assertEquals(true, termsFacet.get("allBuckets"));
   }
 
   @Test
   public void testRejectInvalidTermPrefix() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setTermPrefix(null);
-    });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet =
+                  new TermsFacetMap(ANY_FIELD_NAME).setTermPrefix(null);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresTermPrefixWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setTermPrefix("ANY_PREF");
+    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setTermPrefix("ANY_PREF");
     assertEquals("ANY_PREF", termsFacet.get("prefix"));
   }
 
   @Test
   public void testRejectsInvalidMethod() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setFacetMethod(null);
-    });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              final TermsFacetMap termsFacet =
+                  new TermsFacetMap(ANY_FIELD_NAME).setFacetMethod(null);
+            });
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresMethodWithCorrectKey() {
-    final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-        .setFacetMethod(TermsFacetMap.FacetMethod.STREAM);
+    final TermsFacetMap termsFacet =
+        new TermsFacetMap(ANY_FIELD_NAME).setFacetMethod(TermsFacetMap.FacetMethod.STREAM);
     assertEquals("stream", termsFacet.get("method"));
   }
 }

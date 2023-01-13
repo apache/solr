@@ -17,31 +17,31 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-
 /**
  * V2 API for listing system properties for each node.
  *
- * This API (GET /v2/node/properties) is analogous to the v1 /admin/info/properties.
+ * <p>This API (GET /v2/node/properties) is analogous to the v1 /admin/info/properties.
  */
 public class NodePropertiesAPI {
-    private final PropertiesRequestHandler handler;
+  private final PropertiesRequestHandler handler;
 
-    public NodePropertiesAPI(PropertiesRequestHandler handler) {
-        this.handler = handler;
-    }
+  public NodePropertiesAPI(PropertiesRequestHandler handler) {
+    this.handler = handler;
+  }
 
-    @EndPoint(
-            path = {"/node/properties"},
-            method = GET,
-            permission = CONFIG_READ_PERM)
-    public void getRequestedProperties(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        handler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/node/properties"},
+      method = GET,
+      permission = CONFIG_READ_PERM)
+  public void getRequestedProperties(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    handler.handleRequestBody(req, rsp);
+  }
 }

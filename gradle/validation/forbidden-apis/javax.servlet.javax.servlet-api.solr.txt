@@ -15,10 +15,10 @@
 
 @defaultMessage Servlet API method is parsing request parameters without using the correct encoding if no extra configuration is given in the servlet container
 
-javax.servlet.ServletRequest#getParameter(java.lang.String) 
-javax.servlet.ServletRequest#getParameterMap() 
-javax.servlet.ServletRequest#getParameterNames() 
-javax.servlet.ServletRequest#getParameterValues(java.lang.String) 
+javax.servlet.ServletRequest#getParameter(**) 
+javax.servlet.ServletRequest#getParameterMap(**) 
+javax.servlet.ServletRequest#getParameterNames(**) 
+javax.servlet.ServletRequest#getParameterValues(**) 
 
 javax.servlet.http.HttpServletRequest#getSession() @ Servlet API getter has side effect of creating sessions
 
@@ -26,18 +26,6 @@ javax.servlet.http.HttpServletRequest#getSession() @ Servlet API getter has side
 
 javax.servlet.ServletRequest#getReader()
 javax.servlet.ServletResponse#getWriter()
-javax.servlet.ServletInputStream#readLine(byte[],int,int) 
-javax.servlet.ServletOutputStream#print(boolean)
-javax.servlet.ServletOutputStream#print(char)
-javax.servlet.ServletOutputStream#print(double)
-javax.servlet.ServletOutputStream#print(float)
-javax.servlet.ServletOutputStream#print(int)
-javax.servlet.ServletOutputStream#print(long)
-javax.servlet.ServletOutputStream#print(java.lang.String)
-javax.servlet.ServletOutputStream#println(boolean)
-javax.servlet.ServletOutputStream#println(char)
-javax.servlet.ServletOutputStream#println(double)
-javax.servlet.ServletOutputStream#println(float)
-javax.servlet.ServletOutputStream#println(int)
-javax.servlet.ServletOutputStream#println(long)
-javax.servlet.ServletOutputStream#println(java.lang.String)
+javax.servlet.ServletInputStream#readLine(**) 
+javax.servlet.ServletOutputStream#print(**)
+javax.servlet.ServletOutputStream#println(**)

@@ -19,52 +19,50 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.store.MockDirectoryWrapper;
+import org.apache.lucene.tests.util.LuceneTestCase;
 
-/**
- * Opens a directory with {@link LuceneTestCase#newFSDirectory(Path)}
- */
+/** Opens a directory with {@link LuceneTestCase#newFSDirectory(Path)} */
 public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  public Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
+  public Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+      throws IOException {
     Directory dir = LuceneTestCase.newFSDirectory(Path.of(path), lockFactory);
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating
     // or rolling back - the old directory is closed and the following
     // test assumes it can open an IndexWriter when that happens - we
-    // have a new Directory for the same dir and still an open IW at 
+    // have a new Directory for the same dir and still an open IW at
     // this point
-    
+
     Directory cdir = reduce(dir);
     cdir = reduce(cdir);
     cdir = reduce(cdir);
-    
+
     if (cdir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)cdir).setAssertNoUnrefencedFilesOnClose(false);
+      ((MockDirectoryWrapper) cdir).setAssertNoUnrefencedFilesOnClose(false);
     }
     return dir;
   }
-  
+
   @Override
   public boolean isAbsolute(String path) {
     // TODO: kind of a hack - we don't know what the delegate is, so
     // we treat it as file based since this works on most ephem impls
     return new File(path).isAbsolute();
   }
-  
+
   private Directory reduce(Directory dir) {
     Directory cdir = dir;
     if (dir instanceof NRTCachingDirectory) {
-      cdir = ((NRTCachingDirectory)dir).getDelegate();
+      cdir = ((NRTCachingDirectory) dir).getDelegate();
     } else if (dir instanceof TrackingDirectoryWrapper) {
-      cdir = ((TrackingDirectoryWrapper)dir).getDelegate();
+      cdir = ((TrackingDirectoryWrapper) dir).getDelegate();
     }
     return cdir;
   }

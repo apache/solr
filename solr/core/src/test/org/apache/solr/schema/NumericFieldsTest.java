@@ -21,14 +21,13 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class NumericFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml", "schema-numeric.xml");
   }
 
-  static String[] types = new String[]{"int", "long", "float", "double", "date"};
+  static String[] types = new String[] {"int", "long", "float", "double", "date"};
 
   public static SolrInputDocument getDoc(String id, Integer number, String date) {
     SolrInputDocument doc = new SolrInputDocument();
@@ -59,182 +58,179 @@ public class NumericFieldsTest extends SolrTestCaseJ4 {
     assertU(adoc(getDoc("-3", -3, "2011-01-01T00:00:00Z")));
     assertU(adoc("id", "M2"));
     assertU(commit());
-    
+
     // 'normal' sorting.  Missing Values are 0
     String suffix = "";
     for (String t : types) {
       if ("date".equals(t)) {
-        assertQ("Sorting Asc: " + t + suffix,
+        assertQ(
+            "Sorting Asc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][starts-with(.,'M')]",
             "//result/doc[2]/str[@name='id'][starts-with(.,'M')]",
             "//result/doc[3]/str[@name='id'][.='-3']",
             "//result/doc[4]/str[@name='id'][.='+4']",
-            "//result/doc[5]/str[@name='id'][.='+5']"
-        );
+            "//result/doc[5]/str[@name='id'][.='+5']");
 
-        assertQ("Sorting Desc: " + t + suffix,
+        assertQ(
+            "Sorting Desc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='+5']",
             "//result/doc[2]/str[@name='id'][.='+4']",
             "//result/doc[3]/str[@name='id'][.='-3']",
             "//result/doc[4]/str[@name='id'][starts-with(.,'M')]",
-            "//result/doc[5]/str[@name='id'][starts-with(.,'M')]"
-        );
-        
-        assertQ("Sorting Asc w/secondary on id desc: " + t + suffix,
+            "//result/doc[5]/str[@name='id'][starts-with(.,'M')]");
+
+        assertQ(
+            "Sorting Asc w/secondary on id desc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc, id desc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='M2']",
             "//result/doc[2]/str[@name='id'][.='M1']",
             "//result/doc[3]/str[@name='id'][.='-3']",
             "//result/doc[4]/str[@name='id'][.='+4']",
-            "//result/doc[5]/str[@name='id'][.='+5']"
-        );
+            "//result/doc[5]/str[@name='id'][.='+5']");
 
-        assertQ("Sorting Desc w/secondary on id asc: " + t + suffix,
+        assertQ(
+            "Sorting Desc w/secondary on id asc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc, id asc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='+5']",
             "//result/doc[2]/str[@name='id'][.='+4']",
             "//result/doc[3]/str[@name='id'][.='-3']",
             "//result/doc[4]/str[@name='id'][.='M1']",
-            "//result/doc[5]/str[@name='id'][.='M2']"
-        );
+            "//result/doc[5]/str[@name='id'][.='M2']");
       } else {
-        assertQ("Sorting Asc: " + t + suffix,
+        assertQ(
+            "Sorting Asc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='-3']",
             "//result/doc[2]/str[@name='id'][starts-with(.,'M')]",
             "//result/doc[3]/str[@name='id'][starts-with(.,'M')]",
             "//result/doc[4]/str[@name='id'][.='+4']",
-            "//result/doc[5]/str[@name='id'][.='+5']"
-        );
+            "//result/doc[5]/str[@name='id'][.='+5']");
 
-        assertQ("Sorting Desc: " + t + suffix,
+        assertQ(
+            "Sorting Desc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='+5']",
             "//result/doc[2]/str[@name='id'][.='+4']",
             "//result/doc[3]/str[@name='id'][starts-with(.,'M')]",
             "//result/doc[4]/str[@name='id'][starts-with(.,'M')]",
-            "//result/doc[5]/str[@name='id'][.='-3']"
-        );
-        
-        assertQ("Sorting Asc w/secondary on id desc: " + t + suffix,
+            "//result/doc[5]/str[@name='id'][.='-3']");
+
+        assertQ(
+            "Sorting Asc w/secondary on id desc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc, id desc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='-3']",
             "//result/doc[2]/str[@name='id'][.='M2']",
             "//result/doc[3]/str[@name='id'][.='M1']",
             "//result/doc[4]/str[@name='id'][.='+4']",
-            "//result/doc[5]/str[@name='id'][.='+5']"
-        );
+            "//result/doc[5]/str[@name='id'][.='+5']");
 
-        assertQ("Sorting Desc w/secondary on id asc: " + t + suffix,
+        assertQ(
+            "Sorting Desc w/secondary on id asc: " + t + suffix,
             req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc, id asc"),
             "//*[@numFound='5']",
             "//result/doc[1]/str[@name='id'][.='+5']",
             "//result/doc[2]/str[@name='id'][.='+4']",
             "//result/doc[3]/str[@name='id'][.='M1']",
             "//result/doc[4]/str[@name='id'][.='M2']",
-            "//result/doc[5]/str[@name='id'][.='-3']"
-        );
-
+            "//result/doc[5]/str[@name='id'][.='-3']");
       }
     }
-
 
     // sortMissingLast = true
     suffix = "_last";
     for (String t : types) {
-      assertQ("Sorting Asc: " + t + suffix,
+      assertQ(
+          "Sorting Asc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='-3']",
           "//result/doc[2]/str[@name='id'][.='+4']",
           "//result/doc[3]/str[@name='id'][.='+5']",
           "//result/doc[4]/str[@name='id'][starts-with(.,'M')]",
-          "//result/doc[5]/str[@name='id'][starts-with(.,'M')]"
-      );
+          "//result/doc[5]/str[@name='id'][starts-with(.,'M')]");
 
-      assertQ("Sorting Desc: " + t + suffix,
+      assertQ(
+          "Sorting Desc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='+5']",
           "//result/doc[2]/str[@name='id'][.='+4']",
           "//result/doc[3]/str[@name='id'][.='-3']",
           "//result/doc[4]/str[@name='id'][starts-with(.,'M')]",
-          "//result/doc[5]/str[@name='id'][starts-with(.,'M')]"
-      );
+          "//result/doc[5]/str[@name='id'][starts-with(.,'M')]");
 
-      assertQ("Sorting Asc w/secondary on id desc: " + t + suffix,
+      assertQ(
+          "Sorting Asc w/secondary on id desc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc, id desc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='-3']",
           "//result/doc[2]/str[@name='id'][.='+4']",
           "//result/doc[3]/str[@name='id'][.='+5']",
           "//result/doc[4]/str[@name='id'][.='M2']",
-          "//result/doc[5]/str[@name='id'][.='M1']"
-      );
+          "//result/doc[5]/str[@name='id'][.='M1']");
 
-      assertQ("Sorting Desc w/secondary on id asc: " + t + suffix,
+      assertQ(
+          "Sorting Desc w/secondary on id asc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc, id asc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='+5']",
           "//result/doc[2]/str[@name='id'][.='+4']",
           "//result/doc[3]/str[@name='id'][.='-3']",
           "//result/doc[4]/str[@name='id'][.='M1']",
-          "//result/doc[5]/str[@name='id'][.='M2']"
-      );
+          "//result/doc[5]/str[@name='id'][.='M2']");
     }
 
     // sortMissingFirst = true
     suffix = "_first";
     for (String t : types) {
-      assertQ("Sorting Asc: " + t + suffix,
+      assertQ(
+          "Sorting Asc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][starts-with(.,'M')]",
           "//result/doc[2]/str[@name='id'][starts-with(.,'M')]",
           "//result/doc[3]/str[@name='id'][.='-3']",
           "//result/doc[4]/str[@name='id'][.='+4']",
-          "//result/doc[5]/str[@name='id'][.='+5']"
-      );
+          "//result/doc[5]/str[@name='id'][.='+5']");
 
-      assertQ("Sorting Desc: " + t + suffix,
+      assertQ(
+          "Sorting Desc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][starts-with(.,'M')]",
           "//result/doc[2]/str[@name='id'][starts-with(.,'M')]",
           "//result/doc[3]/str[@name='id'][.='+5']",
           "//result/doc[4]/str[@name='id'][.='+4']",
-          "//result/doc[5]/str[@name='id'][.='-3']"
-      );
+          "//result/doc[5]/str[@name='id'][.='-3']");
 
-      assertQ("Sorting Asc w/secondary on id desc: " + t + suffix,
+      assertQ(
+          "Sorting Asc w/secondary on id desc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " asc, id desc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='M2']",
           "//result/doc[2]/str[@name='id'][.='M1']",
           "//result/doc[3]/str[@name='id'][.='-3']",
           "//result/doc[4]/str[@name='id'][.='+4']",
-          "//result/doc[5]/str[@name='id'][.='+5']"
-      );
+          "//result/doc[5]/str[@name='id'][.='+5']");
 
-      assertQ("Sorting Desc w/secondary on id asc: " + t + suffix,
+      assertQ(
+          "Sorting Desc w/secondary on id asc: " + t + suffix,
           req("fl", "id", "q", "*:*", "sort", (t + suffix) + " desc, id asc"),
           "//*[@numFound='5']",
           "//result/doc[1]/str[@name='id'][.='M1']",
           "//result/doc[2]/str[@name='id'][.='M2']",
           "//result/doc[3]/str[@name='id'][.='+5']",
           "//result/doc[4]/str[@name='id'][.='+4']",
-          "//result/doc[5]/str[@name='id'][.='-3']"
-      );
-
+          "//result/doc[5]/str[@name='id'][.='-3']");
     }
   }
 }

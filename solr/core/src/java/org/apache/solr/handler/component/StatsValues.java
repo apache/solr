@@ -16,16 +16,15 @@
  */
 package org.apache.solr.handler.component;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * StatsValue defines the interface for the collection of statistical values about fields and facets.
+ * StatsValue defines the interface for the collection of statistical values about fields and
+ * facets.
  */
 // TODO: should implement Collector?
 public interface StatsValues {
@@ -37,8 +36,11 @@ public interface StatsValues {
    */
   void accumulate(NamedList<?> stv);
 
-  /** Accumulate the value associated with <code>docID</code>.
-   *  @see #setNextReader(org.apache.lucene.index.LeafReaderContext) */
+  /**
+   * Accumulate the value associated with <code>docID</code>.
+   *
+   * @see #setNextReader(org.apache.lucene.index.LeafReaderContext)
+   */
   void accumulate(int docID) throws IOException;
 
   /**
@@ -49,9 +51,7 @@ public interface StatsValues {
    */
   void accumulate(BytesRef value, int count);
 
-  /**
-   * Updates the statistics when a document is missing a value
-   */
+  /** Updates the statistics when a document is missing a value */
   void missing();
 
   /**
@@ -61,7 +61,7 @@ public interface StatsValues {
    */
   void addMissing(int count);
 
-   /**
+  /**
    * Adds the facet statistics for the facet with the given name
    *
    * @param facetName Name of the facet

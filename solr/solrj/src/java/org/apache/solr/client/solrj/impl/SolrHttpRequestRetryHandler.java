@@ -26,9 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.net.ssl.SSLException;
-
 import org.apache.http.HttpRequest;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -38,29 +36,32 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Please look into using Solr's new Http2 clients
+ */
+@Deprecated(since = "9.0")
 public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
-  
+
   private static final String GET = "GET";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static final SolrHttpRequestRetryHandler INSTANCE = new SolrHttpRequestRetryHandler();
-  
+
   /** the number of times a method will be retried */
   private final int retryCount;
-  
+
   private final Set<Class<? extends IOException>> nonRetriableClasses;
-  
+
   /**
    * Create the request retry handler using the specified IOException classes
    *
-   * @param retryCount
-   *          how many times to retry; 0 means no retries
-   *          true if it's OK to retry requests that have been sent
-   * @param clazzes
-   *          the IOException types that should not be retried
+   * @param retryCount how many times to retry; 0 means no retries true if it's OK to retry requests
+   *     that have been sent
+   * @param clazzes the IOException types that should not be retried
    */
-  protected SolrHttpRequestRetryHandler(final int retryCount, final Collection<Class<? extends IOException>> clazzes) {
+  protected SolrHttpRequestRetryHandler(
+      final int retryCount, final Collection<Class<? extends IOException>> clazzes) {
     super();
     this.retryCount = retryCount;
     this.nonRetriableClasses = new HashSet<>();
@@ -68,41 +69,49 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       this.nonRetriableClasses.add(clazz);
     }
   }
-  
+
   /**
-   * Create the request retry handler using the following list of non-retriable IOException classes: <br>
+   * Create the request retry handler using the following list of non-retriable IOException classes:
+   * <br>
+   *
    * <ul>
-   * <li>InterruptedIOException</li>
-   * <li>UnknownHostException</li>
-   * <li>ConnectException</li>
-   * <li>SSLException</li>
+   *   <li>InterruptedIOException
+   *   <li>UnknownHostException
+   *   <li>ConnectException
+   *   <li>SSLException
    * </ul>
-   * 
-   * @param retryCount
-   *          how many times to retry; 0 means no retries
-   *          true if it's OK to retry non-idempotent requests that have been sent
+   *
+   * @param retryCount how many times to retry; 0 means no retries true if it's OK to retry
+   *     non-idempotent requests that have been sent
    */
   public SolrHttpRequestRetryHandler(final int retryCount) {
-    this(retryCount, Arrays.asList(InterruptedIOException.class, UnknownHostException.class,
-        ConnectException.class, SSLException.class));
+    this(
+        retryCount,
+        Arrays.asList(
+            InterruptedIOException.class,
+            UnknownHostException.class,
+            ConnectException.class,
+            SSLException.class));
   }
-  
+
   /**
-   * Create the request retry handler with a retry count of 3, requestSentRetryEnabled false and using the following
-   * list of non-retriable IOException classes: <br>
+   * Create the request retry handler with a retry count of 3, requestSentRetryEnabled false and
+   * using the following list of non-retriable IOException classes: <br>
+   *
    * <ul>
-   * <li>InterruptedIOException</li>
-   * <li>UnknownHostException</li>
-   * <li>ConnectException</li>
-   * <li>SSLException</li>
+   *   <li>InterruptedIOException
+   *   <li>UnknownHostException
+   *   <li>ConnectException
+   *   <li>SSLException
    * </ul>
    */
   public SolrHttpRequestRetryHandler() {
     this(3);
   }
-  
+
   @Override
-  public boolean retryRequest(final IOException exception, final int executionCount, final HttpContext context) {
+  public boolean retryRequest(
+      final IOException exception, final int executionCount, final HttpContext context) {
     log.debug("Retry http request {} out of {}", executionCount, this.retryCount);
     if (executionCount > this.retryCount) {
       log.debug("Do not retry, over max retry count");
@@ -118,12 +127,12 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
 
     final HttpClientContext clientContext = HttpClientContext.adapt(context);
     final HttpRequest request = clientContext.getRequest();
-    
+
     if (requestIsAborted(request)) {
       log.debug("Do not retry, request was aborted");
       return false;
     }
-    
+
     if (handleAsIdempotent(clientContext)) {
       log.debug("Retry, request should be idempotent");
       return true;
@@ -137,14 +146,15 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     // Workaround for "recv failed" issue on hard-aborted sockets on Windows
     // (and other operating systems, possibly).
     // https://issues.apache.org/jira/browse/SOLR-13778
-    if (exception instanceof SSLException &&
-        Arrays.stream(exception.getSuppressed()).anyMatch((t) -> t instanceof SocketException)) {
+    if (exception instanceof SSLException
+        && Arrays.stream(exception.getSuppressed()).anyMatch((t) -> t instanceof SocketException)) {
       return true;
     }
 
     // Fast check for exact class followed by slow-check with instanceof.
     if (nonRetriableClasses.contains(exception.getClass())
-        || nonRetriableClasses.stream().anyMatch(rejectException -> rejectException.isInstance(exception))) {
+        || nonRetriableClasses.stream()
+            .anyMatch(rejectException -> rejectException.isInstance(exception))) {
       return false;
     }
 
@@ -154,7 +164,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
   public int getRetryCount() {
     return retryCount;
   }
-  
+
   protected boolean handleAsIdempotent(final HttpClientContext context) {
     String method = context.getRequest().getRequestLine().getMethod();
     // do not retry admin requests, even if they are GET as they are not idempotent
@@ -164,7 +174,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     }
     return method.equals(GET);
   }
-  
+
   protected boolean requestIsAborted(final HttpRequest request) {
     HttpRequest req = request;
     if (request instanceof RequestWrapper) { // does not forward request to original
@@ -172,5 +182,4 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     }
     return (req instanceof HttpUriRequest && ((HttpUriRequest) req).isAborted());
   }
-  
 }

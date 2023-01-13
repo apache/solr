@@ -17,14 +17,15 @@
 package org.apache.solr.bench;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.openjdk.jmh.annotations.Level;
@@ -122,16 +123,16 @@ public class BaseBenchState {
 
       boolean dumpHeap = HEAP_DUMPED.compareAndExchange(false, true);
       if (dumpHeap) {
-        File file = new File(heapDump);
-        FileUtils.deleteDirectory(file);
-        file.mkdirs();
-        File dumpFile = new File(file, benchmarkParams.id() + ".hprof");
+        Path file = Path.of(heapDump);
+        PathUtils.deleteDirectory(file);
+        Files.createDirectories(file);
+        Path dumpFile = file.resolve(benchmarkParams.id() + ".hprof");
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         HotSpotDiagnosticMXBean mxBean =
             ManagementFactory.newPlatformMXBeanProxy(
                 server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-        mxBean.dumpHeap(dumpFile.getAbsolutePath(), true);
+        mxBean.dumpHeap(dumpFile.toAbsolutePath().toString(), true);
       }
     }
   }

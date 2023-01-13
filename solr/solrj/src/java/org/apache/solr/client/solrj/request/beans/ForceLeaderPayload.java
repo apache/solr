@@ -22,4 +22,4 @@ import org.apache.solr.common.util.ReflectMapWriter;
 /**
  * Empty payload for the POST /v2/collections/collName/shards/shardName {"force-leader": {}} API.
  */
-public class ForceLeaderPayload implements ReflectMapWriter { }
+public class ForceLeaderPayload implements ReflectMapWriter {}

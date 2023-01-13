@@ -18,10 +18,10 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
@@ -29,72 +29,79 @@ import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Spellchecker implementation that uses {@link DirectSpellChecker}
- * <p>
- * Requires no auxiliary index or data structure.
- * <p>
- * Supported options:
+ *
+ * <p>Requires no auxiliary index or data structure.
+ *
+ * <p>Supported options:
+ *
  * <ul>
  *   <li>field: Used as the source of terms.
- *   <li>distanceMeasure: Sets {@link DirectSpellChecker#setDistance(StringDistance)}. 
- *       Note: to set the default {@link DirectSpellChecker#INTERNAL_LEVENSHTEIN}, use "internal".
+ *   <li>distanceMeasure: Sets {@link DirectSpellChecker#setDistance(StringDistance)}. Note: to set
+ *       the default {@link DirectSpellChecker#INTERNAL_LEVENSHTEIN}, use "internal".
  *   <li>accuracy: Sets {@link DirectSpellChecker#setAccuracy(float)}.
  *   <li>maxEdits: Sets {@link DirectSpellChecker#setMaxEdits(int)}.
  *   <li>minPrefix: Sets {@link DirectSpellChecker#setMinPrefix(int)}.
  *   <li>maxInspections: Sets {@link DirectSpellChecker#setMaxInspections(int)}.
- *   <li>comparatorClass: Sets {@link DirectSpellChecker#setComparator(Comparator)}.
- *       Note: score-then-frequency can be specified as "score" and frequency-then-score
- *       can be specified as "freq".
+ *   <li>comparatorClass: Sets {@link DirectSpellChecker#setComparator(Comparator)}. Note:
+ *       score-then-frequency can be specified as "score" and frequency-then-score can be specified
+ *       as "freq".
  *   <li>thresholdTokenFrequency: sets {@link DirectSpellChecker#setThresholdFrequency(float)}.
  *   <li>minQueryLength: sets {@link DirectSpellChecker#setMinQueryLength(int)}.
  *   <li>maxQueryLength: sets {@link DirectSpellChecker#setMaxQueryLength(int)}.
  *   <li>maxQueryFrequency: sets {@link DirectSpellChecker#setMaxQueryFrequency(float)}.
  * </ul>
+ *
  * @see DirectSpellChecker
  */
 public class DirectSolrSpellChecker extends SolrSpellChecker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   // configuration params shared with other spellcheckers
   public static final String COMPARATOR_CLASS = AbstractLuceneSpellChecker.COMPARATOR_CLASS;
   public static final String SCORE_COMP = AbstractLuceneSpellChecker.SCORE_COMP;
   public static final String FREQ_COMP = AbstractLuceneSpellChecker.FREQ_COMP;
   public static final String STRING_DISTANCE = AbstractLuceneSpellChecker.STRING_DISTANCE;
   public static final String ACCURACY = AbstractLuceneSpellChecker.ACCURACY;
-  public static final String THRESHOLD_TOKEN_FREQUENCY = IndexBasedSpellChecker.THRESHOLD_TOKEN_FREQUENCY;
-  
+  public static final String THRESHOLD_TOKEN_FREQUENCY =
+      IndexBasedSpellChecker.THRESHOLD_TOKEN_FREQUENCY;
+
   public static final String INTERNAL_DISTANCE = "internal";
   public static final float DEFAULT_ACCURACY = 0.5f;
   public static final float DEFAULT_THRESHOLD_TOKEN_FREQUENCY = 0.0f;
 
   public static final String MAXEDITS = "maxEdits";
   public static final int DEFAULT_MAXEDITS = 2;
-  
+
   // params specific to this implementation
   public static final String MINPREFIX = "minPrefix";
   public static final int DEFAULT_MINPREFIX = 1;
-  
+
   public static final String MAXINSPECTIONS = "maxInspections";
   public static final int DEFAULT_MAXINSPECTIONS = 5;
 
   public static final String MINQUERYLENGTH = "minQueryLength";
   public static final int DEFAULT_MINQUERYLENGTH = 4;
-  
+
   public static final String MAXQUERYLENGTH = "maxQueryLength";
   public static final int DEFAULT_MAXQUERYLENGTH = Integer.MAX_VALUE;
 
   public static final String MAXQUERYFREQUENCY = "maxQueryFrequency";
   public static final float DEFAULT_MAXQUERYFREQUENCY = 0.01f;
-  
+
   private DirectSpellChecker checker = new DirectSpellChecker();
-  
+
   @Override
   public String init(NamedList<?> config, SolrCore core) {
 
@@ -102,66 +109,58 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
     log.info("init: {}", config);
     String name = super.init(config, core);
-    
+
     Comparator<SuggestWord> comp = SuggestWordQueue.DEFAULT_COMPARATOR;
-    String compClass = (String)config.get(COMPARATOR_CLASS);
+    String compClass = (String) config.get(COMPARATOR_CLASS);
     if (compClass != null) {
-      if (compClass.equalsIgnoreCase(SCORE_COMP))
-        comp = SuggestWordQueue.DEFAULT_COMPARATOR;
-      else if (compClass.equalsIgnoreCase(FREQ_COMP))
-        comp = new SuggestWordFrequencyComparator();
-      else { //must be a FQCN
+      if (compClass.equalsIgnoreCase(SCORE_COMP)) comp = SuggestWordQueue.DEFAULT_COMPARATOR;
+      else if (compClass.equalsIgnoreCase(FREQ_COMP)) comp = new SuggestWordFrequencyComparator();
+      else { // must be a FQCN
         @SuppressWarnings({"unchecked"})
-        Comparator<SuggestWord> temp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
+        Comparator<SuggestWord> temp =
+            (Comparator<SuggestWord>)
+                core.getResourceLoader().newInstance(compClass, Comparator.class);
         comp = temp;
       }
     }
-    
+
     StringDistance sd = DirectSpellChecker.INTERNAL_LEVENSHTEIN;
-    String distClass = (String)config.get(STRING_DISTANCE);
+    String distClass = (String) config.get(STRING_DISTANCE);
     if (distClass != null && !distClass.equalsIgnoreCase(INTERNAL_DISTANCE))
       sd = core.getResourceLoader().newInstance(distClass, StringDistance.class);
 
     float minAccuracy = DEFAULT_ACCURACY;
     Float accuracy = params.getFloat(ACCURACY);
-    if (accuracy != null)
-      minAccuracy = accuracy;
-    
+    if (accuracy != null) minAccuracy = accuracy;
+
     int maxEdits = DEFAULT_MAXEDITS;
     Integer edits = params.getInt(MAXEDITS);
-    if (edits != null)
-      maxEdits = edits;
-    
+    if (edits != null) maxEdits = edits;
+
     int minPrefix = DEFAULT_MINPREFIX;
     Integer prefix = params.getInt(MINPREFIX);
-    if (prefix != null)
-      minPrefix = prefix;
-    
+    if (prefix != null) minPrefix = prefix;
+
     int maxInspections = DEFAULT_MAXINSPECTIONS;
     Integer inspections = params.getInt(MAXINSPECTIONS);
-    if (inspections != null)
-      maxInspections = inspections;
-    
+    if (inspections != null) maxInspections = inspections;
+
     float minThreshold = DEFAULT_THRESHOLD_TOKEN_FREQUENCY;
     Float threshold = params.getFloat(THRESHOLD_TOKEN_FREQUENCY);
-    if (threshold != null)
-      minThreshold = threshold;
-    
+    if (threshold != null) minThreshold = threshold;
+
     int minQueryLength = DEFAULT_MINQUERYLENGTH;
     Integer queryLength = params.getInt(MINQUERYLENGTH);
-    if (queryLength != null)
-      minQueryLength = queryLength;
+    if (queryLength != null) minQueryLength = queryLength;
 
     int maxQueryLength = DEFAULT_MAXQUERYLENGTH;
     Integer overriddenMaxQueryLength = params.getInt(MAXQUERYLENGTH);
-    if (overriddenMaxQueryLength != null)
-      maxQueryLength = overriddenMaxQueryLength;
-    
+    if (overriddenMaxQueryLength != null) maxQueryLength = overriddenMaxQueryLength;
+
     float maxQueryFrequency = DEFAULT_MAXQUERYFREQUENCY;
     Float queryFreq = params.getFloat(MAXQUERYFREQUENCY);
-    if (queryFreq != null)
-      maxQueryFrequency = queryFreq;
-    
+    if (queryFreq != null) maxQueryFrequency = queryFreq;
+
     checker.setComparator(comp);
     checker.setDistance(sd);
     checker.setMaxEdits(maxEdits);
@@ -173,10 +172,10 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     checker.setMaxQueryLength(maxQueryLength);
     checker.setMaxQueryFrequency(maxQueryFrequency);
     checker.setLowerCaseTerms(false);
-    
+
     return name;
   }
-  
+
   @Override
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
@@ -184,21 +183,29 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
   @Override
-  public SpellingResult getSuggestions(SpellingOptions options)
-      throws IOException {
+  public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
     log.debug("getSuggestions: {}", options.tokens);
-        
+
     SpellingResult result = new SpellingResult();
-    float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
-    
+    float accuracy =
+        (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
+
     for (Token token : options.tokens) {
+      if (token.length() == 0) {
+        result.add(token, Collections.emptyList());
+        continue;
+      }
       String tokenText = token.toString();
       Term term = new Term(field, tokenText);
       int freq = options.reader.docFreq(term);
-      int count = (options.alternativeTermCount > 0 && freq > 0) ? options.alternativeTermCount: options.count;
-      SuggestWord[] suggestions = checker.suggestSimilar(term, count,options.reader, options.suggestMode, accuracy);
+      int count =
+          (options.alternativeTermCount > 0 && freq > 0)
+              ? options.alternativeTermCount
+              : options.count;
+      SuggestWord[] suggestions =
+          checker.suggestSimilar(term, count, options.reader, options.suggestMode, accuracy);
       result.addFrequency(token, freq);
-            
+
       // If considering alternatives to "correctly-spelled" terms, then add the
       // original as a viable suggestion.
       if (options.alternativeTermCount > 0 && freq > 0) {
@@ -218,11 +225,11 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
           suggestionsWithOrig[0] = orig;
           suggestions = suggestionsWithOrig;
         }
-      }      
-      if(suggestions.length==0 && freq==0) {
+      }
+      if (suggestions.length == 0 && freq == 0) {
         List<String> empty = Collections.emptyList();
         result.add(token, empty);
-      } else {        
+      } else {
         for (SuggestWord suggestion : suggestions) {
           result.add(token, suggestion.string, suggestion.freq);
         }
@@ -230,11 +237,57 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     }
     return result;
   }
-  
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    if (1.0F <= checker.getMaxQueryFrequency()) {
+      // we need extended results in order to prune things individual shards might think are below
+      // max freq
+      sreq.params.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
+      sreq.params.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
+    }
+  }
+
+  @Override
+  public SpellingResult mergeSuggestions(
+      SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
+
+    for (String original : new ArrayList<>(mergeData.origVsSuggested.keySet())) {
+      if (mergeData.origVsFreq.containsKey(original)) {
+        if (1.0F <= checker.getMaxQueryFrequency()) {
+          // absolute maxQueryFreq threshold
+          if (checker.getMaxQueryFrequency() < mergeData.origVsFreq.get(original)) {
+            // one or more shards thought the word needed suggestions because it's
+            // (per-shard) origFreq was too low, but the aggregate sum of origFreq
+            // is above our threshold, so ignore those suggestions.
+            mergeData.removeOriginal(original);
+          }
+        } else {
+          // percentage maxQueryFreq threshold
+
+          // This situation is also problematic, but in the reverse situation of
+          // the absolute maxQueryFreq threshold.
+          //
+          // An individual shard may have found that it's (per-shard) origFreq
+          // was higher then the computed max for that shard (relative to the
+          // per-shard maxDoc) and said it's "correctlySpelled" even though
+          // it's cumulative origFreq may not meet the computed max across the
+          // entire collection.
+          //
+          // But we don't have a straightforward way to determine that, so for
+          // now it's just a documented deficiency in the ref-guide.
+
+        }
+      }
+    }
+    return super.mergeSuggestions(mergeData, numSug, count, extendedResults);
+  }
+
   @Override
   public float getAccuracy() {
     return checker.getAccuracy();
   }
+
   @Override
   public StringDistance getStringDistance() {
     return checker.getDistance();

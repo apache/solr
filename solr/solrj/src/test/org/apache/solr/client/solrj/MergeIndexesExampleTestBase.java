@@ -16,6 +16,12 @@
  */
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -28,18 +34,10 @@ import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Properties;
-
 /**
  * Abstract base class for testing merge indexes command
  *
  * @since solr 1.4
- *
  */
 public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
@@ -57,9 +55,9 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
   protected void setupCoreContainer() {
     cores = new CoreContainer(getSolrHome(), new Properties());
     cores.load();
-    //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
+    // cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }
-  
+
   @Override
   public void setUp() throws Exception {
     saveProp = System.getProperty("solr.directoryFactory");
@@ -67,11 +65,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     super.setUp();
     File dataDir1 = createTempDir().toFile();
     // setup datadirs
-    System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() );
+    System.setProperty("solr.core0.data.dir", dataDir1.getCanonicalPath());
 
     dataDir2 = createTempDir().toFile();
 
-    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
+    System.setProperty("solr.core1.data.dir", this.dataDir2.getCanonicalPath());
 
     setupCoreContainer();
     if (log.isInfoEnabled()) {
@@ -86,7 +84,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     super.tearDown();
 
     cores.shutdown();
-    
+
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);
   }
@@ -131,15 +129,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     assertEquals(1, r.process(getSolrCore0()).getResults().size());
     assertEquals(0, r.process(getSolrCore1()).getResults().size());
 
-    assertEquals(1,
-        getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(0,
-        getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(1, getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
+    assertEquals(0, getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
 
-    assertEquals(0,
-        getSolrCore1().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(1,
-        getSolrCore1().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(0, getSolrCore1().query(new SolrQuery("id:AAA")).getResults().size());
+    assertEquals(1, getSolrCore1().query(new SolrQuery("id:BBB")).getResults().size());
 
     return up;
   }
@@ -148,16 +142,15 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     UpdateRequest up = setupCores();
 
     // Now get the index directory of core1 and merge with core0
-    CoreAdminRequest.mergeIndexes("core0", new String[] {getIndexDirCore1()}, new String[0], getSolrAdmin());
+    CoreAdminRequest.mergeIndexes(
+        "core0", new String[] {getIndexDirCore1()}, new String[0], getSolrAdmin());
 
     // Now commit the merged index
     up.clear(); // just do commit
     up.process(getSolrCore0());
 
-    assertEquals(1,
-        getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(1,
-        getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(1, getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
+    assertEquals(1, getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
   }
 
   public void testMergeIndexesByCoreName() throws Exception {
@@ -168,10 +161,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     up.clear(); // just do commit
     up.process(getSolrCore0());
 
-    assertEquals(1,
-        getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
-    assertEquals(1,
-        getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+    assertEquals(1, getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
+    assertEquals(1, getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
   }
 
   public void testMergeMultipleRequest() throws Exception {

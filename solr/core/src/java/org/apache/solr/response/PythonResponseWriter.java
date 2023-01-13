@@ -16,13 +16,12 @@
  */
 package org.apache.solr.response;
 
-import java.io.Writer;
 import java.io.IOException;
-
+import java.io.Writer;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class PythonResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";
+  static String CONTENT_TYPE_PYTHON_ASCII = "text/x-python;charset=US-ASCII";
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
@@ -42,9 +41,14 @@ public class PythonResponseWriter implements QueryResponseWriter {
 
 class PythonWriter extends JSONResponseWriter.NaNFloatWriter {
   @Override
-  protected String getNaN() { return "float('NaN')"; }
+  protected String getNaN() {
+    return "float('NaN')";
+  }
+
   @Override
-  protected String getInf() { return "float('Inf')"; }
+  protected String getInf() {
+    return "float('Inf')";
+  }
 
   public PythonWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
@@ -62,7 +66,7 @@ class PythonWriter extends JSONResponseWriter.NaNFloatWriter {
 
   @Override
   public void writeBool(String name, String val) throws IOException {
-    writeBool(name,val.charAt(0)=='t');
+    writeBool(name, val.charAt(0) == 't');
   }
 
   /* optionally use a unicode python string if necessary */
@@ -79,22 +83,31 @@ class PythonWriter extends JSONResponseWriter.NaNFloatWriter {
     // python doesn't tolerate newlines in strings in its eval(), so we must escape them.
 
     StringBuilder sb = new StringBuilder(val.length());
-    boolean needUnicode=false;
+    boolean needUnicode = false;
 
-    for (int i=0; i<val.length(); i++) {
+    for (int i = 0; i < val.length(); i++) {
       char ch = val.charAt(i);
-      switch(ch) {
+      switch (ch) {
         case '\'':
-        case '\\': sb.append('\\'); sb.append(ch); break;
-        case '\r': sb.append("\\r"); break;
-        case '\n': sb.append("\\n"); break;
-        case '\t': sb.append("\\t"); break;
+        case '\\':
+          sb.append('\\');
+          sb.append(ch);
+          break;
+        case '\r':
+          sb.append("\\r");
+          break;
+        case '\n':
+          sb.append("\\n");
+          break;
+        case '\t':
+          sb.append("\\t");
+          break;
         default:
           // we don't strictly have to escape these chars, but it will probably increase
           // portability to stick to visible ascii
-          if (ch<' ' || ch>127) {
+          if (ch < ' ' || ch > 127) {
             unicodeEscape(sb, ch);
-            needUnicode=true;
+            needUnicode = true;
           } else {
             sb.append(ch);
           }

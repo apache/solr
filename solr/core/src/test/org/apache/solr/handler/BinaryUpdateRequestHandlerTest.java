@@ -17,7 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.ByteArrayOutputStream;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -53,17 +52,19 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     BinaryRequestWriter brw = new BinaryRequestWriter();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    try (SolrQueryRequest req = req(); UpdateRequestHandler handler = new UpdateRequestHandler()) {
+    try (SolrQueryRequest req = req();
+        UpdateRequestHandler handler = new UpdateRequestHandler()) {
       handler.init(new NamedList<>());
       ContentStreamLoader csl = handler.newLoader(req, p);
       RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       cw.write(baos);
-      ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
+      ContentStreamBase.ByteArrayStream cs =
+          new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
       csl.load(req, rsp, cs, p);
       AddUpdateCommand add = p.addCommands.get(0);
       System.out.println(add.solrDoc);
-      assertEquals(false, add.overwrite);
+      assertFalse(add.overwrite);
       assertEquals(100, add.commitWithin);
     }
   }

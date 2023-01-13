@@ -17,46 +17,56 @@
 package org.apache.solr.common.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-
 
 public class TestRetryUtil extends SolrTestCaseJ4 {
 
   public void testRetryOnThrowable() throws Throwable {
     final AtomicInteger executes = new AtomicInteger();
-    RetryUtil.retryOnException(SolrException.class, 10000, 10, () -> {
-      int calls = executes.incrementAndGet();
-      if (calls <= 2) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
-      }
-    });
-    
+    RetryUtil.retryOnException(
+        SolrException.class,
+        10000,
+        10,
+        () -> {
+          int calls = executes.incrementAndGet();
+          if (calls <= 2) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
+          }
+        });
+
     assertEquals(3, executes.get());
 
     executes.set(0);
-    assertThrows(SolrException.class, () ->
-      RetryUtil.retryOnException(IllegalStateException.class, 10000, 10, () -> {
-        int calls = executes.incrementAndGet();
-        if (calls <= 2) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "Bad Stuff Happened");
-        }
-      })
-    );
+    assertThrows(
+        SolrException.class,
+        () ->
+            RetryUtil.retryOnException(
+                IllegalStateException.class,
+                10000,
+                10,
+                () -> {
+                  int calls = executes.incrementAndGet();
+                  if (calls <= 2) {
+                    throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
+                  }
+                }));
     assertEquals(1, executes.get());
 
     executes.set(0);
-    assertThrows(SolrException.class, () ->
-      RetryUtil.retryOnException(SolrException.class, 1000, 10, () -> {
-        executes.incrementAndGet();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
-      })
-    );
+    assertThrows(
+        SolrException.class,
+        () ->
+            RetryUtil.retryOnException(
+                SolrException.class,
+                1000,
+                10,
+                () -> {
+                  executes.incrementAndGet();
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
+                }));
 
     assertTrue(executes.get() > 1);
   }
-
 }

@@ -1,0 +1,402 @@
+= Caches and Query Warming
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr's caches provide an essential way to improve query performance.
+Caches can store documents, filters used in queries, and results from previous queries.
+
+Caches are cleared after a xref:commits-transaction-logs.adoc#commits[commit] and usually need to be re-populated before their benefit can be seen again.
+To counteract this, caches can be "warmed" before a new searcher is considered opened by automatically populating the new cache with values from the old cache.
+
+Cache management is critical to a successful Solr implementation, so it should be noted that caches will need to be fine-tuned as your application grows.
+
+== <query> in solrconfig.xml
+
+The settings in this section affect the way that Solr will process and respond to queries.
+
+These settings are all configured in child elements of the `<query>` element in `solrconfig.xml`.
+
+[source,xml]
+----
+<config>
+  <query>
+    ...
+  </query>
+</config>
+----
+
+== Caches
+
+Solr caches are associated with a specific instance of an Index Searcher, a specific view of an index that doesn't change during the lifetime of that searcher.
+As long as that Index Searcher is being used, any items in its cache will be valid and available for reuse.
+By default cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher.
+Idle time-based expiration can be enabled by using `maxIdleTime` option.
+
+When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache.
+The new searcher uses the current searcher's cache to pre-populate its own.
+When the new searcher is ready, it is registered as the current searcher and begins handling all new search requests.
+The old searcher will be closed once it has finished servicing all its requests.
+
+=== Cache Implementations
+
+Solr comes with a default `SolrCache` implementation that is used for different types of caches.
+
+The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library].
+By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint.
+Generally this cache usually offers lower memory footprint, higher hit ratio, and better multi-threaded performance over legacy caches.
+
+`CaffeineCache` uses an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
+
+The xref:deployment-guide:plugins-stats-screen.adoc[] in the Solr Admin UI will display information about the performance of all the active caches.
+This information can help you fine-tune the sizes of the various caches appropriately for your particular application.
+When a Searcher terminates, a summary of its cache usage is also written to the log.
+
+=== Cache Parameters
+
+Each cache has settings to define its initial size (`initialSize`), maximum size (`size`), and number of items to use for during warming (`autowarmCount`).
+For `autowarmCount` this can be also expressed as a percentage instead of an absolute value.
+
+A `maxIdleTime` attribute controls the automatic eviction of entries that haven't been used for a while.
+This attribute is expressed in seconds, with the default value of `0` meaning no entries are automatically evicted due to exceeded idle time.
+Smaller values of this attribute will cause older entries to be evicted quickly, which will reduce cache memory usage but may instead cause thrashing due to a repeating eviction-lookup-miss-insertion cycle of the same entries.
+Larger values will cause entries to stay around longer, waiting to be reused, at the cost of increased memory usage.
+Reasonable values, depending on the query volume and patterns, may lie somewhere between 60-3600.
+
+The `maxRamMB` attribute limits the maximum amount of memory a cache may consume.
+When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
+
+The `async` attribute determines whether the cache stores direct results (`async=false`, disabled) or whether it will store indirect references to the computation (`async=true`, enabled by default).
+If your queries include child documents or join queries, then async cache must be enabled to function properly.
+Disabling the async option may use slightly less memory per cache entry at the expense of increased CPU.
+The async cache provides most significant improvement with many concurrent queries requesting the same result set that has not yet been cached, as an alternative to larger cache sizes or increased auto-warming counts.
+However, the async cache will not prevent data races for time-limited queries, since those are expected to provide partial results.
+
+All caches can be disabled using the parameter `enabled` with a value of `false`.
+Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section xref:query-guide:common-query-parameters.adoc#cache-local-parameter[cache Local Parameter].
+
+Details of each cache are described below.
+
+=== Filter Cache
+
+This cache holds parsed queries paired with an unordered set of all documents that match it.
+Unless such a set is trivially small, the set implementation is a bitset.
+
+The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well.
+Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results.
+See xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[fq (Filter Query) Parameter] for a detailed discussion of `fq`.
+Use of this cache can be disabled for a `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
+
+Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
+
+Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`.
+For a discussion of faceting parameters, see xref:query-guide:faceting.adoc#field-value-faceting-parameters[Field-Value Faceting Parameters].
+
+[source,xml]
+----
+<filterCache class="solr.CaffeineCache"
+             size="512"
+             initialSize="512"
+             autowarmCount="128"/>
+----
+
+The cache supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache.
+The `CaffeineCache` only supports evictions by either heap usage or size, but not both.
+Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
+
+[source,xml]
+----
+<filterCache class="solr.CaffeineCache"
+             maxRamMB="1000"
+             autowarmCount="128"/>
+----
+
+The filter cache is a good candidate for enabling `async` computation.
+
+[source,xml]
+----
+<filterCache class="solr.CaffeineCache"
+             size="1024"
+             autowarmCount="0"
+             async="true"/>
+----
+
+
+=== Query Result Cache
+
+The `queryResultCache` holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.
+
+The `queryResultCache` has an optional setting to limit the maximum amount of RAM used (`maxRamMB`).
+This lets you specify the maximum heap size, in megabytes, used by the contents of this cache.
+When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit.
+If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
+
+Use of this cache can be disabled on a query-by-query basis in `q` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
+
+[source,xml]
+----
+<queryResultCache class="solr.CaffeineCache"
+                  size="512"
+                  initialSize="512"
+                  autowarmCount="128"/>
+----
+
+=== Document Cache
+
+The `documentCache` holds Lucene Document objects (the stored fields for each document).
+Since Lucene internal document IDs are transient, this cache is not auto-warmed.
+
+The size for the `documentCache` should always be greater than `max_results` times the `max_concurrent_queries`, to ensure that Solr does not need to refetch a document during a request.
+The more fields you store in your documents, the higher the memory usage of this cache will be.
+
+[source,xml]
+----
+<documentCache class="solr.CaffeineCache"
+               size="512"
+               initialSize="512"
+               autowarmCount="0"/>
+----
+
+=== User Defined Caches
+
+You can also define named caches for your own application code to use.
+You can locate and use your cache object by name by calling the `SolrIndexSearcher` methods `getCache()`, `cacheLookup()` and `cacheInsert()`.
+
+[source,xml]
+----
+<cache name="myUserCache" class="solr.CaffeineCache"
+                          size="4096"
+                          initialSize="1024"
+                          autowarmCount="1024"
+                          regenerator="org.mycompany.mypackage.MyRegenerator" />
+----
+
+If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements {solr-javadocs}/core/org/apache/solr/search/CacheRegenerator.html[`solr.search.CacheRegenerator`].
+You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items.
+Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator"`.
+
+=== Monitoring Cache Sizes and Usage
+
+The section xref:deployment-guide:performance-statistics-reference.adoc#cache-statistics[Cache Statistics] describes the metrics available for each cache.
+The metrics can be accessed in the xref:deployment-guide:plugins-stats-screen.adoc[] or with the xref:deployment-guide:metrics-reporting.adoc#metrics-api[Metrics API].
+
+The most important metrics to review when assessing caches are the size and the hit ratio.
+
+The size indicates how many items are in the cache.
+Some caches support setting the maximum cache size in MB of RAM.
+
+The hit ratio is a percentage of queries served by the cache, shown as a number between 0 and 1.
+Higher values indicate that the cache is being used often, while lower values would show that the cache isn't helping queries very much.
+Ideally, this number should be as close to 1 as possible.
+
+If you find that you have a low hit ratio but you've set your cache size high, you can optimize by reducing the cache size - there's no need to keep those objects in memory when they are not being used.
+
+Another useful metric is the cache evictions, which measures the objects removed from the cache.
+A high rate of evictions can indicate that your cache is too small and increasing it may show a higher hit ratio.
+Alternatively, if your hit ratio is high but your evictions are low, your cache might be too large and you may benefit from reducing the size.
+
+A low hit ratio is not always a sign of a specific cache problem.
+If your queries are not repeated often, a low hit ratio would be expected because it's less likely that cached objects will need to be reused.
+In these cases, a smaller cache size may be ideal for your system.
+
+== Query Sizing and Warming
+
+Several elements are available to control the size of queries and how caches are warmed.
+
+=== <maxBooleanClauses> Element
+
+Sets the maximum number of clauses allowed when parsing a boolean query string.
+
+This limit only impacts boolean queries specified by a user as part of a query string, and provides per-collection controls on how complex user specified boolean queries can be.
+Query strings that specify more clauses than this will result in an error.
+
+If this per-collection limit is greater than the xref:configuring-solr-xml.adoc#global-maxbooleanclauses[global `maxBooleanClauses` limit] specified in `solr.xml`, it will have no effect, as that setting also limits the size of user specified boolean queries.
+
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.
+This is the same system property used in the xref:configuring-solr-xml#global-maxbooleanclauses[global `maxBooleanClauses` setting] in the default `solr.xml` making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update the `solrconfig.xml` files in each collection.
+
+[source,xml]
+----
+<maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+----
+
+=== <enableLazyFieldLoading> Element
+
+When this parameter is set to `true`, fields that are not directly requested will be loaded only as needed.
+
+This can boost performance if the most common queries only need a small subset of fields, especially if infrequently accessed fields are large in size.
+
+[source,xml]
+----
+<enableLazyFieldLoading>true</enableLazyFieldLoading>
+----
+
+=== <useFilterForSortedQuery> Element
+
+This setting only affects queries where the requested sort does not include "score" (or for which score is irrelevant -- e.g., no docs requested, query outputs a constant score).
+In such cases, configuring this element to `true` causes the `filterCache` to be consulted for a filter matching the main query.
+This can be useful if the same search is issued repeatedly with different sort options or different pagination via `offset` or `cursorMark` (again, provided that "score" is not included or not relevant to the requested sort).
+If enabling this option, ensure that the `filterCache` has sufficient capacity to support expected use patterns.
+
+[source,xml]
+----
+<useFilterForSortedQuery>true</useFilterForSortedQuery>
+----
+
+=== <queryResultWindowSize> Element
+
+Used with the `queryResultCache`, this will cache a superset of the requested number of document IDs.
+
+For example, if a query requests documents 10 through 19, and `queryWindowSize` is 50, documents 0 through 49 will be cached.
+
+[source,xml]
+----
+<queryResultWindowSize>20</queryResultWindowSize>
+----
+
+=== <queryResultMaxDocsCached> Element
+
+This parameter sets the maximum number of documents to cache for any entry in the `queryResultCache`.
+
+[source,xml]
+----
+<queryResultMaxDocsCached>200</queryResultMaxDocsCached>
+----
+
+=== <useColdSearcher> Element
+
+This setting controls whether search requests for which there is not a currently registered searcher should wait for a new searcher to warm up (`false`) or proceed immediately (`true`).
+When set to "false`, requests will block until the searcher has warmed its caches.
+
+[source,xml]
+----
+<useColdSearcher>false</useColdSearcher>
+----
+
+=== <maxWarmingSearchers> Element
+
+This parameter sets the maximum number of searchers that may be warming up in the background at any given time.
+Exceeding this limit will raise an error.
+
+For read-only followers, a value of `2` is reasonable.
+Leaders should probably be set a little higher.
+
+[source,xml]
+----
+<maxWarmingSearchers>2</maxWarmingSearchers>
+----
+
+== Query-Related Listeners
+
+As described in the section on <<Caches>>, new Searchers are cached.
+It's possible to use the triggers for listeners to perform query-related tasks.
+The most common use of this is to define queries to further "warm" the Searchers while they are starting.
+One benefit of this approach is that field caches are pre-populated for faster sorting.
+
+Good query selection is key with this type of listener.
+It's best to choose your most common and/or heaviest queries and include not just the keywords used, but any other parameters such as sorting or filtering requests.
+
+There are two types of events that can trigger a listener.
+
+. A `firstSearcher` event occurs when a new searcher is being prepared but there is no current registered searcher to handle requests or to gain auto-warming data from (i.e., on Solr startup).
+. A `newSearcher` event is fired whenever a new searcher is being prepared, such as after a commit, and there is a current searcher handling requests.
+
+The (commented out) examples below can be found in the `solrconfig.xml` file of the `sample_techproducts_configs` xref:config-sets.adoc[configset] included with Solr, and demonstrate using the `solr.QuerySenderListener` class to warm a set of explicit queries:
+
+[source,xml]
+----
+<listener event="newSearcher" class="solr.QuerySenderListener">
+  <arr name="queries">
+  <!--
+    <lst><str name="q">solr</str><str name="sort">price asc</str></lst>
+    <lst><str name="q">rocks</str><str name="sort">weight asc</str></lst>
+   -->
+  </arr>
+</listener>
+
+<listener event="firstSearcher" class="solr.QuerySenderListener">
+  <arr name="queries">
+    <lst><str name="q">static firstSearcher warming in solrconfig.xml</str></lst>
+  </arr>
+</listener>
+----
+
+[IMPORTANT]
+====
+The above code comes from a _sample_ `solrconfig.xml`.
+
+A key best practice is to modify these defaults before taking your application to production, but please note: while the sample queries are commented out in the section for the "newSearcher", the sample query is not commented out for the "firstSearcher" event.
+
+There is no point in auto-warming your Searcher with the query string "static firstSearcher warming in solrconfig.xml" if that is not relevant to your search application.
+====
+
+### Managing warming queries with the Config API
+
+Warming queries may be managed using the xref:config-api.adoc[Config API] using commands such as the below.
+
+Multiple sets with different `name` attributes may be provided and any changes will take place immediately without a restart being necessary.
+
+#### adding warming query sets
+
+To add a set of warming queries, use the `add-listener` command. (You may wish to provide `firstSearcher` queries too with a separate command and `name`.)
+
+[source,json]
+----
+{
+  "add-listener": {
+    "name": "my-warming-queries",
+    "event": "newSearcher",
+    "class": "solr.QuerySenderListener",
+    "queries": [
+      { "q": "solr", "sort": "price asc" }
+    ]
+  }
+}
+----
+
+#### updating query sets
+
+To update a set, use the `update-listener` command. Note that the whole set will be replaced.
+
+[source,json]
+----
+{
+  "update-listener": {
+    "name": "my-warming-queries",
+    "event": "newSearcher",
+    "class": "solr.QuerySenderListener",
+    "queries": [
+      { "q": "solr", "sort": "price asc" },
+      { "q": "rocks", "sort": "weight asc" }
+    ]
+  }
+}
+----
+
+If warming queries are defined in `solrconfig.xml` they may be overridden using the Config API if a `name` attribute is added to each `<listener>` element.
+
+#### removing query sets
+
+To delete a set of queries, use `delete-listener`:
+
+[source,json]
+----
+{
+  "delete-listener": "my-warming-queries"
+}
+----
+
+Note that for warming query sets originally defined in `solrconfig.xml`, using the `delete-listener` command will revert to the `solrconfig.xml` set rather than removing the warming queries.

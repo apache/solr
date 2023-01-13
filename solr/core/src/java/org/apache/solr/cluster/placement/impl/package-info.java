@@ -16,7 +16,7 @@
  */
 
 /**
- * Implementation classes (not visible to plugins, subject to change at any time) for the interfaces in {@link org.apache.solr.cluster.placement}
- * and to make them work with the rest of Solr.
+ * Implementation classes (not visible to plugins, subject to change at any time) for the interfaces
+ * in {@link org.apache.solr.cluster.placement} and to make them work with the rest of Solr.
  */
 package org.apache.solr.cluster.placement.impl;

@@ -16,6 +16,12 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrDocumentList;
@@ -24,76 +30,56 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeLoggingAPI;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 
 /**
  * A request handler to show which loggers are registered and allows you to set them
  *
  * @since 4.0
  */
-public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
+public class LoggingHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private LogWatcher<?> watcher;
+  private final LogWatcher<?> watcher;
   private final CoreContainer cc;
-  
+
   public LoggingHandler(CoreContainer cc) {
     this.cc = cc;
     this.watcher = cc.getLogging();
-  }
-  
-  public LoggingHandler() {
-    this.cc = null;
-  }
-  
-  @Override
-  public void inform(SolrCore core) {
-    if (watcher == null) {
-      watcher = core.getCoreContainer().getLogging();
-    }
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Don't do anything if the framework is unknown
-    if (watcher==null) {
+    if (watcher == null) {
       rsp.add("error", "Logging Not Initialized");
       return;
     }
     rsp.add("watcher", watcher.getName());
-    
+
     SolrParams params = req.getParams();
-    if(params.get("threshold")!=null) {
+    if (params.get("threshold") != null) {
       watcher.setThreshold(params.get("threshold"));
     }
-    
+
     // Write something at each level
-    if(params.get("test")!=null) {
+    if (params.get("test") != null) {
       log.trace("trace message");
-      log.debug( "debug message");
+      log.debug("debug message");
       RuntimeException exc = new RuntimeException("test");
-      log.info("info (with exception) INFO", exc );
-      log.warn("warn (with exception) WARN", exc );
-      log.error("error (with exception) ERROR", exc );
+      log.info("info (with exception) INFO", exc);
+      log.warn("warn (with exception) WARN", exc);
+      log.error("error (with exception) ERROR", exc);
     }
-    
+
     String[] set = params.getParams("set");
     if (set != null) {
       for (String pair : set) {
@@ -109,45 +95,41 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
         watcher.setLogLevel(category, level);
       }
     }
-    
+
     String since = req.getParams().get("since");
-    if(since != null) {
+    if (since != null) {
       long time = -1;
       try {
         time = Long.parseLong(since);
-      }
-      catch(Exception ex) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "invalid timestamp: "+since);
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "invalid timestamp: " + since);
       }
       AtomicBoolean found = new AtomicBoolean(false);
       SolrDocumentList docs = watcher.getHistory(time, found);
-      if(docs==null) {
+      if (docs == null) {
         rsp.add("error", "History not enabled");
         return;
-      }
-      else {
+      } else {
         SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-        if(time>0) {
+        if (time > 0) {
           info.add("since", time);
           info.add("found", found.get());
-        }
-        else {
+        } else {
           info.add("levels", watcher.getAllLevels()); // show for the first request
         }
         info.add("last", watcher.getLastEvent());
         info.add("buffer", watcher.getHistorySize());
         info.add("threshold", watcher.getThreshold());
-        
+
         rsp.add("info", info);
         rsp.add("history", docs);
       }
-    }
-    else {
+    } else {
       rsp.add("levels", watcher.getAllLevels());
-  
+
       List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
-  
+
       List<SimpleOrderedMap<?>> info = new ArrayList<>();
       for (LoggerInfo wrap : loggers) {
         info.add(wrap.getInfo());
@@ -182,4 +164,12 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     return Boolean.TRUE;
   }
 
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    if (request.getParams().get("set") != null) {
+      return Name.CONFIG_EDIT_PERM; // Change log level
+    } else {
+      return Name.CONFIG_READ_PERM;
+    }
+  }
 }

@@ -19,10 +19,10 @@ package org.apache.solr.common;
 import java.io.Serializable;
 
 /**
- * Represents a Enum field value, which includes integer value (indicating the sort order) and string (displayed) value.
- * Note: this class has a natural ordering that is inconsistent with equals
+ * Represents a Enum field value, which includes integer value (indicating the sort order) and
+ * string (displayed) value. Note: this class has a natural ordering that is inconsistent with
+ * equals
  */
-
 public final class EnumFieldValue implements Serializable, Comparable<EnumFieldValue> {
   private final Integer intValue;
   private final String stringValue;
@@ -41,13 +41,12 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == null)
-      return false;
-    if (!(obj instanceof EnumFieldValue))
-      return false;
+    if (obj == null) return false;
+    if (!(obj instanceof EnumFieldValue)) return false;
 
     EnumFieldValue otherEnumFieldValue = (EnumFieldValue) obj;
-    return equalsIntegers(intValue, otherEnumFieldValue.intValue) && equalStrings(stringValue, otherEnumFieldValue.stringValue);
+    return equalsIntegers(intValue, otherEnumFieldValue.intValue)
+        && equalStrings(stringValue, otherEnumFieldValue.stringValue);
   }
 
   /**
@@ -67,49 +66,37 @@ public final class EnumFieldValue implements Serializable, Comparable<EnumFieldV
 
   @Override
   public int compareTo(EnumFieldValue o) {
-    if (o == null)
-      return 1;
+    if (o == null) return 1;
     return compareIntegers(intValue, o.intValue);
   }
 
   private boolean equalStrings(String str1, String str2) {
-    if ((str1 == null) && (str2 == null))
-      return true;
+    if ((str1 == null) && (str2 == null)) return true;
 
-    if (str1 == null)
-      return false;
+    if (str1 == null) return false;
 
-    if (str2 == null)
-      return false;
+    if (str2 == null) return false;
 
     return str1.equals(str2);
   }
 
   private boolean equalsIntegers(Integer int1, Integer int2) {
-    if ((int1 == null) && (int2 == null))
-      return true;
+    if ((int1 == null) && (int2 == null)) return true;
 
-    if (int1 == null)
-      return false;
+    if (int1 == null) return false;
 
-    if (int2 == null)
-      return false;
+    if (int2 == null) return false;
 
     return int1.equals(int2);
   }
 
   private int compareIntegers(Integer int1, Integer int2) {
-    if ((int1 == null) && (int2 == null))
-      return 0;
+    if ((int1 == null) && (int2 == null)) return 0;
 
-    if (int1 == null)
-      return -1;
+    if (int1 == null) return -1;
 
-    if (int2 == null)
-      return 1;
+    if (int2 == null) return 1;
 
     return int1.compareTo(int2);
   }
 }
-
-

@@ -17,15 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.google.common.collect.Maps;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonParams.ACTION;
@@ -33,31 +24,39 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import com.google.common.collect.Maps;
+import java.util.Map;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
 /**
  * V2 API for deleting a particular shard from its collection.
  *
- * This API (DELETE /v2/collections/collectionName/shards/shardName) is analogous to the v1
+ * <p>This API (DELETE /v2/collections/collectionName/shards/shardName) is analogous to the v1
  * /admin/collections?action=DELETESHARD command.
  */
 public class DeleteShardAPI {
-    private final CollectionsHandler collectionsHandler;
+  private final CollectionsHandler collectionsHandler;
 
-    public DeleteShardAPI(CollectionsHandler collectionsHandler) {
-        this.collectionsHandler = collectionsHandler;
-    }
+  public DeleteShardAPI(CollectionsHandler collectionsHandler) {
+    this.collectionsHandler = collectionsHandler;
+  }
 
-    @EndPoint(
-            path = {"/c/{collection}/shards/{shard}", "/collections/{collection}/shards/{shard}"},
-            method = DELETE,
-            permission = COLL_EDIT_PERM)
-    public void deleteShard(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        final Map<String, String> pathParams = req.getPathTemplateValues();
+  @EndPoint(
+      path = {"/c/{collection}/shards/{shard}", "/collections/{collection}/shards/{shard}"},
+      method = DELETE,
+      permission = COLL_EDIT_PERM)
+  public void deleteShard(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final Map<String, String> pathParams = req.getPathTemplateValues();
 
-        final Map<String, Object> addedV1Params = Maps.newHashMap();
-        addedV1Params.put(ACTION, CollectionParams.CollectionAction.DELETESHARD.toLower());
-        addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
-        addedV1Params.put(SHARD, pathParams.get(SHARD));
+    final Map<String, Object> addedV1Params = Maps.newHashMap();
+    addedV1Params.put(ACTION, CollectionParams.CollectionAction.DELETESHARD.toLower());
+    addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
+    addedV1Params.put(SHARD, pathParams.get(SHARD));
 
-        collectionsHandler.handleRequestBody(wrapParams(req, addedV1Params), rsp);
-    }
+    collectionsHandler.handleRequestBody(wrapParams(req, addedV1Params), rsp);
+  }
 }

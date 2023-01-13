@@ -16,6 +16,15 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -23,47 +32,32 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-
-import static org.apache.solr.common.params.CursorMarkParams.*;
-
 import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-import java.util.Base64;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-
 /**
- * An object that encapsulates the basic information about the current Mark Point of a 
- * "Cursor" based request.  <code>CursorMark</code> objects track the sort values of 
- * the last document returned to a user, so that {@link SolrIndexSearcher} can then 
- * be asked to find all documents "after" the values represented by this 
- * <code>CursorMark</code>.
- *
+ * An object that encapsulates the basic information about the current Mark Point of a "Cursor"
+ * based request. <code>CursorMark</code> objects track the sort values of the last document
+ * returned to a user, so that {@link SolrIndexSearcher} can then be asked to find all documents
+ * "after" the values represented by this <code>CursorMark</code>.
  */
 public final class CursorMark {
 
-  /**
-   * Used for validation and (un)marshalling of sort values
-   */
+  /** Used for validation and (un)marshalling of sort values */
   private final SortSpec sortSpec;
 
   /**
-   * The raw, unmarshalled, sort values (that corrispond with the SortField's in the 
-   * SortSpec) for knowing which docs this cursor should "search after".  If this 
-   * list is null, then we have no specific values to "search after" and we 
-   * should start from the very beginning of the sorted list of documents matching 
-   * the query.
+   * The raw, unmarshalled, sort values (that corrispond with the SortField's in the SortSpec) for
+   * knowing which docs this cursor should "search after". If this list is null, then we have no
+   * specific values to "search after" and we should start from the very beginning of the sorted
+   * list of documents matching the query.
    */
   private List<Object> values = null;
 
   /**
-   * Generates an empty CursorMark bound for use with the 
-   * specified schema and {@link SortSpec}.
+   * Generates an empty CursorMark bound for use with the specified schema and {@link SortSpec}.
    *
    * @param schema used for basic validation
    * @param sortSpec bound to this totem (un)marshalling serialized values
@@ -72,39 +66,44 @@ public final class CursorMark {
 
     final SchemaField uniqueKey = schema.getUniqueKeyField();
     if (null == uniqueKey) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
     }
 
     final Sort sort = sortSpec.getSort();
     if (null == sort) {
       // pure score, by definition we don't include the mandatyr uniqueKey tie breaker
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Cursor functionality requires a sort containing a uniqueKey field tie breaker");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Cursor functionality requires a sort containing a uniqueKey field tie breaker");
     }
-    
+
     if (!sortSpec.getSchemaFields().contains(uniqueKey)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Cursor functionality requires a sort containing a uniqueKey field tie breaker");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Cursor functionality requires a sort containing a uniqueKey field tie breaker");
     }
 
     if (0 != sortSpec.getOffset()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Cursor functionality requires start=0");
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Cursor functionality requires start=0");
     }
 
     for (SortField sf : sort.getSort()) {
       if (sf.getType().equals(SortField.Type.DOC)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-                                "Cursor functionality can not be used with internal doc ordering sort: _docid_");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Cursor functionality can not be used with internal doc ordering sort: _docid_");
       }
     }
 
     if (sort.getSort().length != sortSpec.getSchemaFields().size()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Cursor SortSpec failure: sort length != SchemaFields: " 
-                              + sort.getSort().length + " != " + 
-                              sortSpec.getSchemaFields().size());
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cursor SortSpec failure: sort length != SchemaFields: "
+              + sort.getSort().length
+              + " != "
+              + sortSpec.getSchemaFields().size());
     }
 
     this.sortSpec = sortSpec;
@@ -112,8 +111,8 @@ public final class CursorMark {
   }
 
   /**
-   * Generates an empty CursorMark bound for use with the same {@link SortSpec}
-   * as the specified existing CursorMark.
+   * Generates an empty CursorMark bound for use with the same {@link SortSpec} as the specified
+   * existing CursorMark.
    *
    * @param previous Existing CursorMark whose SortSpec will be reused in the new CursorMark.
    * @see #createNext
@@ -124,9 +123,8 @@ public final class CursorMark {
   }
 
   /**
-   * Generates an new CursorMark bound for use with the same {@link SortSpec}
-   * as the current CursorMark but using the new SortValues.
-   *
+   * Generates an new CursorMark bound for use with the same {@link SortSpec} as the current
+   * CursorMark but using the new SortValues.
    */
   public CursorMark createNext(List<Object> nextSortValues) {
     final CursorMark next = new CursorMark(this);
@@ -134,46 +132,46 @@ public final class CursorMark {
     return next;
   }
 
-
   /**
-   * Sets the (raw, unmarshalled) sort values (which must conform to the existing 
-   * sortSpec) to populate this object.  If null, then there is nothing to 
-   * "search after" and the "first page" of results should be returned.
+   * Sets the (raw, unmarshalled) sort values (which must conform to the existing sortSpec) to
+   * populate this object. If null, then there is nothing to "search after" and the "first page" of
+   * results should be returned.
    */
   public void setSortValues(List<Object> input) {
     if (null == input) {
       this.values = null;
     } else {
       if (input.size() != sortSpec.getSort().getSort().length) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-                                "Cursor SortSpec failure: sort values != sort length: "
-                                + input.size() + " != " + sortSpec.getSort().getSort().length);
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Cursor SortSpec failure: sort values != sort length: "
+                + input.size()
+                + " != "
+                + sortSpec.getSort().getSort().length);
       }
-      
+
       // defensive copy
       this.values = new ArrayList<>(input);
     }
   }
 
   /**
-   * Returns a copy of the (raw, unmarshalled) sort values used by this object, or 
-   * null if first page of docs should be returned (ie: no sort after)
+   * Returns a copy of the (raw, unmarshalled) sort values used by this object, or null if first
+   * page of docs should be returned (ie: no sort after)
    */
   public List<Object> getSortValues() {
     // defensive copy
     return null == this.values ? null : new ArrayList<>(this.values);
   }
 
-  /**
-   * Returns the SortSpec used by this object.
-   */
+  /** Returns the SortSpec used by this object. */
   public SortSpec getSortSpec() {
     return this.sortSpec;
   }
 
   /**
-   * Parses the serialized version of a CursorMark from a client 
-   * (which must conform to the existing sortSpec) and populates this object.
+   * Parses the serialized version of a CursorMark from a client (which must conform to the existing
+   * sortSpec) and populates this object.
    *
    * @see #getSerializedTotem
    */
@@ -189,12 +187,14 @@ public final class CursorMark {
     List<Object> pieces = null;
     try {
       final byte[] rawData = Base64.getDecoder().decode(serialized);
-      try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream in = new ByteArrayInputStream(rawData)){
+      try (JavaBinCodec jbc = new JavaBinCodec();
+          ByteArrayInputStream in = new ByteArrayInputStream(rawData)) {
         pieces = (List<Object>) jbc.unmarshal(in);
         boolean b = false;
         for (Object o : pieces) {
           if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
-            b = true; break;
+            b = true;
+            break;
           }
         }
         if (b) {
@@ -203,19 +203,27 @@ public final class CursorMark {
         }
       }
     } catch (Exception ex) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              "Unable to parse '"+CURSOR_MARK_PARAM+"' after totem: " + 
-                              "value must either be '"+CURSOR_MARK_START+"' or the " + 
-                              "'"+CURSOR_MARK_NEXT+"' returned by a previous search: "
-                              + serialized, ex);
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Unable to parse '"
+              + CURSOR_MARK_PARAM
+              + "' after totem: "
+              + "value must either be '"
+              + CURSOR_MARK_START
+              + "' or the "
+              + "'"
+              + CURSOR_MARK_NEXT
+              + "' returned by a previous search: "
+              + serialized,
+          ex);
     }
     assert null != pieces : "pieces wasn't parsed, nor exception thrown?";
 
     if (sortFields.length != pieces.size()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-                              CURSOR_MARK_PARAM+" does not work with current sort (wrong size): " + serialized);
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          CURSOR_MARK_PARAM + " does not work with current sort (wrong size): " + serialized);
     }
-
 
     this.values = new ArrayList<>(sortFields.length);
 
@@ -229,15 +237,15 @@ public final class CursorMark {
       if (null != curField) {
         FieldType curType = curField.getType();
         rawValue = curType.unmarshalSortValue(rawValue);
-      } 
+      }
 
       this.values.add(rawValue);
     }
   }
-  
+
   /**
-   * Generates a Base64 encoded serialized representation of the sort values 
-   * encapsulated by this object, for use in cursor requests.
+   * Generates a Base64 encoded serialized representation of the sort values encapsulated by this
+   * object, for use in cursor requests.
    *
    * @see #parseSerializedTotem
    */
@@ -247,7 +255,7 @@ public final class CursorMark {
     }
 
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-    final ArrayList<Object> marshalledValues = new ArrayList<>(values.size()+1);
+    final ArrayList<Object> marshalledValues = new ArrayList<>(values.size() + 1);
     for (int i = 0; i < schemaFields.size(); i++) {
       SchemaField fld = schemaFields.get(i);
       Object safeValue = values.get(i);
@@ -259,44 +267,40 @@ public final class CursorMark {
     }
 
     // TODO: we could also encode info about the SortSpec for error checking:
-    // the type/name/dir from the SortFields (or a hashCode to act as a checksum) 
+    // the type/name/dir from the SortFields (or a hashCode to act as a checksum)
     // could help provide more validation beyond just the number of clauses.
 
-    try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
+    try (JavaBinCodec jbc = new JavaBinCodec();
+        ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
       jbc.marshal(marshalledValues, out);
       byte[] rawData = out.toByteArray();
       return Base64.getEncoder().encodeToString(rawData);
     } catch (Exception ex) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Unable to format search after totem", ex);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to format search after totem", ex);
     }
   }
 
   /**
-   * Returns a synthetically constructed {@link FieldDoc} whose {@link FieldDoc#fields} 
-   * match the values of this object.  
-   * <p>
-   * Important Notes:
-   * </p>
+   * Returns a synthetically constructed {@link FieldDoc} whose {@link FieldDoc#fields} match the
+   * values of this object.
+   *
+   * <p>Important Notes:
+   *
    * <ul>
-   *  <li>{@link FieldDoc#doc} will always be set to {@link Integer#MAX_VALUE} so 
-   *    that the tie breaking logic used by <code>IndexSearcher</code> won't select 
-   *    the same doc again based on the internal lucene docId when the Solr 
-   *    <code>uniqueKey</code> value is the same.
-   *  </li>
-   *  <li>{@link FieldDoc#score} will always be set to 0.0F since it is not used
-   *    when applying <code>searchAfter</code> logic. (Even if the sort values themselves 
-   *    contain scores which are used in the sort)
-   *  </li>
+   *   <li>{@link FieldDoc#doc} will always be set to {@link Integer#MAX_VALUE} so that the tie
+   *       breaking logic used by <code>IndexSearcher</code> won't select the same doc again based
+   *       on the internal lucene docId when the Solr <code>uniqueKey</code> value is the same.
+   *   <li>{@link FieldDoc#score} will always be set to 0.0F since it is not used when applying
+   *       <code>searchAfter</code> logic. (Even if the sort values themselves contain scores which
+   *       are used in the sort)
    * </ul>
    *
-   * @return a {@link FieldDoc} to "search after" or null if the initial 
-   *         page of results is requested.
+   * @return a {@link FieldDoc} to "search after" or null if the initial page of results is
+   *     requested.
    */
   public FieldDoc getSearchAfterFieldDoc() {
     if (null == values) return null;
 
     return new FieldDoc(Integer.MAX_VALUE, 0.0F, values.toArray());
   }
-
 }

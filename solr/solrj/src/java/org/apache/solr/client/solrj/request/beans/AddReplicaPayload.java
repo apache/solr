@@ -17,57 +17,40 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.List;
-import java.util.Map;
-
 public class AddReplicaPayload implements ReflectMapWriter {
-  @JsonProperty
-  public String shard;
+  @JsonProperty public String shard;
 
-  @JsonProperty
-  public String _route_;
+  @JsonProperty public String _route_;
 
   // TODO Remove in favor of a createNodeSet/nodeSet param with size=1 (see SOLR-15542)
-  @JsonProperty
-  public String node;
+  @JsonProperty public String node;
 
   // TODO Rename to 'nodeSet' to match the name used by create-shard and other APIs (see SOLR-15542)
-  @JsonProperty
-  public List<String> createNodeSet;
+  @JsonProperty public List<String> createNodeSet;
 
-  @JsonProperty
-  public String name;
+  @JsonProperty public String name;
 
-  @JsonProperty
-  public String instanceDir;
+  @JsonProperty public String instanceDir;
 
-  @JsonProperty
-  public String dataDir;
+  @JsonProperty public String dataDir;
 
-  @JsonProperty
-  public String ulogDir;
+  @JsonProperty public String ulogDir;
 
-  @JsonProperty
-  public Map<String, Object> coreProperties;
+  @JsonProperty public Map<String, Object> coreProperties;
 
-  @JsonProperty
-  public String async;
+  @JsonProperty public String async;
 
-  @JsonProperty
-  public Boolean waitForFinalState;
+  @JsonProperty public Boolean waitForFinalState;
 
-  @JsonProperty
-  public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-  @JsonProperty
-  public Boolean skipNodeAssignment;
+  @JsonProperty public Boolean skipNodeAssignment;
 
   // TODO Make this an enum - see SOLR-15796
-  @JsonProperty
-  public String type;
+  @JsonProperty public String type;
 }
-
-

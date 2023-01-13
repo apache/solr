@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $route, $routeParams, $location, Query, Constants){
+  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
@@ -27,6 +27,31 @@ solrAdminApp.controller('QueryController',
     $scope.val['q.op'] = "OR";
     $scope.val['defType'] = "";
     $scope.val['indent'] = true;
+    $scope.useParams = [];
+
+    getParamsets();
+
+    function getParamsets() {
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
 
     // get list of ng-models that have a form element
     function setModels(argTagName){
@@ -68,7 +93,12 @@ solrAdminApp.controller('QueryController',
         $scope.val[argKey] = argValue;
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
         // parameters that will only be used to generate the admin link
-        $scope[argKey] = argValue;
+        if (argKey === 'useParams'){
+          $scope[argKey] = argValue.split(",")
+        }
+        else {
+          $scope[argKey] = argValue;
+        }
       } else {
         insertToRawParams(argKey, argValue);
       }
@@ -136,15 +166,23 @@ solrAdminApp.controller('QueryController',
               });
       }
 
-      copy(params, $scope.val);
+      var getHighlighterFieldsToPurge = function(hlMethod){
+          // first, select the fieldsets which ng-show includes val['hl.method'] but not val['hl.method']==${hlMethod}
+          // then, select their descendants that have ng-model
+          const selector = `div.fieldset[ng-show*="val['hl.method']"]:not([ng-show*="val['hl.method']=='${hlMethod}'"])
+                            [ng-model]`;
+          // return the field names
+          return Array.from(document.querySelectorAll(selector), x => x.name);
+      }
 
+      copy(params, $scope.val);
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
+      purgeParams(params, getHighlighterFieldsToPurge($scope.val["hl.method"]), true);
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
-      purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
+      purgeParams(params, ["spatial", "pt", "sfield", "d"], $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
-
       var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
@@ -173,17 +211,41 @@ solrAdminApp.controller('QueryController',
         params.handler = "select";
         set("qt", qt);
       }
+
+      // convert useParams to array to generate nice URL.
+      if (!Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.split(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
+
       // create rest result url
       var url = Query.url(params);
+
+      // convert useParams back to string
+      if (Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.join(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
 
       // create admin page url
       var adminParams = {...params};
       delete adminParams.handler;
       delete adminParams.core
+      if (!Array.isArray(adminParams.useParams)){
+        adminParams.useParams = adminParams.useParams.split(",");
+      }
       if( $scope.qt != null ) {
         adminParams.qt = [$scope.qt];
       }
       if (isPageReload) {
+        if (!Array.isArray(params.useParams)){
+          params.useParams = params.useParams.split(",");
+        }
+
         Query.query(params, function (data) {
           $scope.lang = $scope.val['wt'];
           if (!$scope.lang || $scope.lang === '') {

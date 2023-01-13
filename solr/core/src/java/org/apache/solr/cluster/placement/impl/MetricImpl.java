@@ -16,52 +16,50 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.Metric;
-
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.solr.cluster.placement.Metric;
 
-/**
- * Base class for {@link Metric} implementations.
- */
+/** Base class for {@link Metric} implementations. */
 public abstract class MetricImpl<T> implements Metric<T> {
 
   public static final double GB = 1024 * 1024 * 1024;
 
   /**
-   * Identity converter. It returns the raw value unchanged IFF
-   * the value's type can be cast to the generic type of this attribute,
-   * otherwise it returns null.
+   * Identity converter. It returns the raw value unchanged IFF the value's type can be cast to the
+   * generic type of this attribute, otherwise it returns null.
    */
   @SuppressWarnings("unchecked")
-  public final Function<Object, T> IDENTITY_CONVERTER = v -> {
-    try {
-      return (T) v;
-    } catch (ClassCastException cce) {
-      return null;
-    }
-  };
+  public final Function<Object, T> IDENTITY_CONVERTER =
+      v -> {
+        try {
+          return (T) v;
+        } catch (ClassCastException cce) {
+          return null;
+        }
+      };
 
   /**
-   * Bytes to gigabytes converter. Supports converting number or string
-   * representations of raw values expressed in bytes.
+   * Bytes to gigabytes converter. Supports converting number or string representations of raw
+   * values expressed in bytes.
    */
-  public static final Function<Object, Double> BYTES_TO_GB_CONVERTER = v -> {
-    double sizeInBytes;
-    if (!(v instanceof Number)) {
-      if (v == null) {
-        return null;
-      }
-      try {
-        sizeInBytes = Double.parseDouble(String.valueOf(v));
-      } catch (Exception nfe) {
-        return null;
-      }
-    } else {
-      sizeInBytes = ((Number) v).doubleValue();
-    }
-    return sizeInBytes / GB;
-  };
+  public static final Function<Object, Double> BYTES_TO_GB_CONVERTER =
+      v -> {
+        double sizeInBytes;
+        if (!(v instanceof Number)) {
+          if (v == null) {
+            return null;
+          }
+          try {
+            sizeInBytes = Double.parseDouble(String.valueOf(v));
+          } catch (Exception nfe) {
+            return null;
+          }
+        } else {
+          sizeInBytes = ((Number) v).doubleValue();
+        }
+        return sizeInBytes / GB;
+      };
 
   protected final String name;
   protected final String internalName;
@@ -69,6 +67,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
 
   /**
    * Create a metric attribute.
+   *
    * @param name short-hand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
    */
@@ -78,10 +77,11 @@ public abstract class MetricImpl<T> implements Metric<T> {
 
   /**
    * Create a metric attribute.
+   *
    * @param name short-hand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
-   * @param converter optional raw value converter. If null then
-   *                  {@link #IDENTITY_CONVERTER} will be used.
+   * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
+   *     used.
    */
   public MetricImpl(String name, String internalName, Function<Object, T> converter) {
     Objects.requireNonNull(name);
@@ -115,11 +115,13 @@ public abstract class MetricImpl<T> implements Metric<T> {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof MetricImpl)) {
       return false;
     }
     MetricImpl<?> that = (MetricImpl<?>) o;
-    return name.equals(that.getName()) && internalName.equals(that.getInternalName()) && converter.equals(that.converter);
+    return name.equals(that.getName())
+        && internalName.equals(that.getInternalName())
+        && converter.equals(that.converter);
   }
 
   @Override
@@ -129,9 +131,12 @@ public abstract class MetricImpl<T> implements Metric<T> {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "{" +
-        "name=" + name +
-        ", internalName=" + internalName +
-        "}";
+    return getClass().getSimpleName()
+        + "{"
+        + "name="
+        + name
+        + ", internalName="
+        + internalName
+        + "}";
   }
 }

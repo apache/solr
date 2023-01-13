@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,82 +42,90 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
 
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+  @Override
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new ExportQParser(qstr, localParams, params, request);
   }
 
-  public class ExportQParser extends QParser {
-    
-    public ExportQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+  public static class ExportQParser extends QParser {
+
+    public ExportQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(qstr, localParams, params, request);
     }
-    
+
+    @Override
     public Query parse() throws SyntaxError {
       try {
-          return new ExportQuery(localParams, params, req);
-        } catch (Exception e) {
-          throw new SyntaxError(e.getMessage(), e);
-        }
+        return new ExportQuery(localParams, params, req);
+      } catch (Exception e) {
+        throw new SyntaxError(e.getMessage(), e);
+      }
     }
   }
 
-  public class ExportQuery extends RankQuery {
+  public static class ExportQuery extends RankQuery {
     private Query mainQuery;
     private Object id;
 
+    @Override
     public RankQuery clone() {
       ExportQuery clone = new ExportQuery();
       clone.id = id;
       return clone;
     }
 
+    @Override
     public RankQuery wrap(Query mainQuery) {
       this.mainQuery = mainQuery;
       return this;
     }
 
+    @Override
     public MergeStrategy getMergeStrategy() {
       return null;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException{
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return mainQuery.createWeight(searcher, scoreMode, boost);
     }
 
+    @Override
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
-      if(q == mainQuery) {
+      if (q.equals(mainQuery)) {
         return super.rewrite(reader);
       } else {
         return clone().wrap(q);
       }
     }
 
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len,
-                                                QueryCommand cmd,
-                                                IndexSearcher searcher) throws IOException {
+    @Override
+    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+        int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
       FixedBitSet[] sets = new FixedBitSet[leafCount];
       return new ExportCollector(sets);
     }
 
+    @Override
     public int hashCode() {
-      return classHash() + 
-          31 * id.hashCode() +
-          31 * Objects.hash(mainQuery);
+      return classHash() + 31 * id.hashCode() + 31 * Objects.hash(mainQuery);
     }
 
+    @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
-    }
-    
-    private boolean equalsTo(ExportQuery other) {
-      return Objects.equals(id, other.id) &&
-             Objects.equals(mainQuery, other.mainQuery);
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
+    private boolean equalsTo(ExportQuery other) {
+      return Objects.equals(id, other.id) && Objects.equals(mainQuery, other.mainQuery);
+    }
+
+    @Override
     public String toString(String s) {
       return s;
     }
@@ -128,16 +135,15 @@ public class ExportQParserPlugin extends QParserPlugin {
       visitor.visitLeaf(this);
     }
 
-    public ExportQuery() {
+    public ExportQuery() {}
 
-    }
-    
-    public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
+    public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request)
+        throws IOException {
       id = new Object();
     }
   }
-  
-  private static class ExportCollector extends TopDocsCollector<ScoreDoc>  {
+
+  private static class ExportCollector extends TopDocsCollector<ScoreDoc> {
 
     private FixedBitSet[] sets;
 
@@ -151,12 +157,12 @@ public class ExportQParserPlugin extends QParserPlugin {
       final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       this.sets[context.ord] = set;
       return new LeafCollector() {
-        
+
         @Override
         public void setScorer(Scorable scorer) throws IOException {}
-        
+
         @Override
-        public void collect(int docId) throws IOException{
+        public void collect(int docId) throws IOException {
           ++totalHits;
           set.set(docId);
         }
@@ -165,22 +171,23 @@ public class ExportQParserPlugin extends QParserPlugin {
 
     private ScoreDoc[] getScoreDocs(int howMany) {
       ScoreDoc[] docs = new ScoreDoc[Math.min(totalHits, howMany)];
-      for(int i=0; i<docs.length; i++) {
-        docs[i] = new ScoreDoc(i,0);
+      for (int i = 0; i < docs.length; i++) {
+        docs[i] = new ScoreDoc(i, 0);
       }
 
       return docs;
     }
 
+    @Override
     public TopDocs topDocs(int start, int howMany) {
 
-      assert(sets != null);
+      assert (sets != null);
 
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
       SolrQueryRequest req = null;
-      if(info != null && ((req = info.getReq()) != null)) {
-        Map<Object,Object> context = req.getContext();
+      if (info != null && ((req = info.getReq()) != null)) {
+        Map<Object, Object> context = req.getContext();
         context.put("export", sets);
         context.put("totalHits", totalHits);
       }
@@ -195,5 +202,4 @@ public class ExportQParserPlugin extends QParserPlugin {
       return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
-
 }

@@ -134,6 +134,9 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.toggleOptions = function(logger) {
+      if (!$scope.isPermitted(permissions.CONFIG_EDIT_PERM)) {
+        return;
+      }
       if (logger.showOptions) {
         logger.showOptions = false;
         delete $scope.currentLogger;
@@ -147,6 +150,9 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.setLevel = function(logger, newLevel) {
+      if (!$scope.isPermitted(permissions.CONFIG_EDIT_PERM)) {
+        return;
+      }
       var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
       Logging.setLevel({set: setString}, function(data) {

@@ -16,32 +16,29 @@
  */
 package org.apache.solr.search;
 
+import com.carrotsearch.hppc.IntHashSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import com.carrotsearch.hppc.IntHashSet;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/**
- * A simple sorted int[] array implementation of {@link DocSet}, good for small sets.
- */
+/** A simple sorted int[] array implementation of {@link DocSet}, good for small sets. */
 public class SortedIntDocSet extends DocSet {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SortedIntDocSet.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(SortedIntDocSet.class)
+          + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   protected final int[] docs;
 
   /**
-   * @param docs  Sorted list of ids
+   * @param docs Sorted list of ids
    */
   public SortedIntDocSet(int[] docs) {
     this.docs = docs;
@@ -49,16 +46,20 @@ public class SortedIntDocSet extends DocSet {
 
   /**
    * @param docs Sorted list of ids
-   * @param len  Number of ids in the list
+   * @param len Number of ids in the list
    */
   public SortedIntDocSet(int[] docs, int len) {
-    this(shrink(docs,len));
+    this(shrink(docs, len));
   }
 
-  public int[] getDocs() { return docs; }
+  public int[] getDocs() {
+    return docs;
+  }
 
   @Override
-  public int size()      { return docs.length; }
+  public int size() {
+    return docs.length;
+  }
 
   public static int[] zeroInts = new int[0];
   public static SortedIntDocSet zero = new SortedIntDocSet(zeroInts);
@@ -77,11 +78,12 @@ public class SortedIntDocSet extends DocSet {
     // The next doc we are looking for will be much closer to the last position we tried
     // than it will be to the midpoint between last and high... so probe ahead using
     // a function of the ratio of the sizes of the sets.
-    int step = (b.length/a.length)+1;
+    int step = (b.length / a.length) + 1;
 
     // Since the majority of probes should be misses, we'll already be above the last probe
-    // and shouldn't need to move larger than the step size on average to step over our target (and thus lower
-    // the high upper bound a lot.)... but if we don't go over our target, it's a big miss... so double it.
+    // and shouldn't need to move larger than the step size on average to step over our target (and
+    // thus lower the high upper bound a lot.)... but if we don't go over our target, it's a big
+    // miss... so double it.
     step = step + step;
 
     // FUTURE: come up with a density such that target * density == likely position?
@@ -97,31 +99,31 @@ public class SortedIntDocSet extends DocSet {
 
     int icount = 0;
     int low = 0;
-    int max = b.length-1;
+    int max = b.length - 1;
 
-    for (int i=0; i<a.length; i++) {
+    for (int i = 0; i < a.length; i++) {
       int doca = a[i];
 
       int high = max;
 
-      int probe = low + step;     // 40% improvement!
+      int probe = low + step; // 40% improvement!
 
       // short linear probe to see if we can drop the high pointer in one big jump.
-      if (probe<high) {
-        if (b[probe]>=doca) {
+      if (probe < high) {
+        if (b[probe] >= doca) {
           // success!  we cut down the upper bound by a lot in one step!
-          high=probe;
+          high = probe;
         } else {
           // relative failure... we get to move the low pointer, but not my much
-          low=probe+1;
+          low = probe + 1;
 
           // reprobe worth it? it appears so!
           probe = low + step;
-          if (probe<high) {
-            if (b[probe]>=doca) {
-              high=probe;
+          if (probe < high) {
+            if (b[probe] >= doca) {
+              high = probe;
             } else {
-              low=probe+1;
+              low = probe + 1;
             }
           }
         }
@@ -129,18 +131,16 @@ public class SortedIntDocSet extends DocSet {
 
       // binary search the rest of the way
       while (low <= high) {
-        int mid = (low+high) >>> 1;
+        int mid = (low + high) >>> 1;
         int docb = b[mid];
 
         if (docb < doca) {
-          low = mid+1;
-        }
-        else if (docb > doca) {
-          high = mid-1;
-        }
-        else {
+          low = mid + 1;
+        } else if (docb > doca) {
+          high = mid - 1;
+        } else {
           icount++;
-          low = mid+1;  // found it, so start at next element
+          low = mid + 1; // found it, so start at next element
           break;
         }
       }
@@ -152,51 +152,48 @@ public class SortedIntDocSet extends DocSet {
     return icount;
   }
 
-
   public static boolean intersects(int[] smallerSortedList, int[] biggerSortedList) {
     // see intersectionSize for more in-depth comments of this algorithm
 
     final int a[] = smallerSortedList;
     final int b[] = biggerSortedList;
 
-    int step = (b.length/a.length)+1;
+    int step = (b.length / a.length) + 1;
 
     step = step + step;
 
     int low = 0;
-    int max = b.length-1;
+    int max = b.length - 1;
 
-    for (int i=0; i<a.length; i++) {
+    for (int i = 0; i < a.length; i++) {
       int doca = a[i];
       int high = max;
       int probe = low + step;
-      if (probe<high) {
-        if (b[probe]>=doca) {
-          high=probe;
+      if (probe < high) {
+        if (b[probe] >= doca) {
+          high = probe;
         } else {
-          low=probe+1;
+          low = probe + 1;
           probe = low + step;
-          if (probe<high) {
-            if (b[probe]>=doca) {
-              high=probe;
+          if (probe < high) {
+            if (b[probe] >= doca) {
+              high = probe;
             } else {
-              low=probe+1;
+              low = probe + 1;
             }
           }
         }
       }
 
       while (low <= high) {
-        int mid = (low+high) >>> 1;
+        int mid = (low + high) >>> 1;
         int docb = b[mid];
 
         if (docb < doca) {
-          low = mid+1;
-        }
-        else if (docb > doca) {
-          high = mid-1;
-        }
-        else {
+          low = mid + 1;
+        } else if (docb > doca) {
+          high = mid - 1;
+        } else {
           return true;
         }
       }
@@ -210,45 +207,45 @@ public class SortedIntDocSet extends DocSet {
     if (!(other instanceof SortedIntDocSet)) {
       // BitDocSet is  better at random access than we are
       int icount = 0;
-      for (int i=0; i<docs.length; i++) {
+      for (int i = 0; i < docs.length; i++) {
         if (other.exists(docs[i])) icount++;
       }
       return icount;
     }
 
     // make "a" the smaller set.
-    int[] otherDocs = ((SortedIntDocSet)other).docs;
+    int[] otherDocs = ((SortedIntDocSet) other).docs;
     final int[] a = docs.length < otherDocs.length ? docs : otherDocs;
     final int[] b = docs.length < otherDocs.length ? otherDocs : docs;
 
-    if (a.length==0) return 0;
+    if (a.length == 0) return 0;
 
     // if b is 8 times bigger than a, use the modified binary search.
-    if ((b.length>>3) >= a.length) {
+    if ((b.length >> 3) >= a.length) {
       return intersectionSize(a, b);
     }
 
     // if they are close in size, just do a linear walk of both.
-    int icount=0;
-    int i=0,j=0;
-    int doca=a[i],docb=b[j];
-    for(;;) {
+    int icount = 0;
+    int i = 0, j = 0;
+    int doca = a[i], docb = b[j];
+    for (; ; ) {
       // switch on the sign bit somehow? Hopefully JVM is smart enough to just test once.
 
       // Since set a is less dense then set b, doca is likely to be greater than docb so
       // check that case first.  This resulted in a 13% speedup.
       if (doca > docb) {
         if (++j >= b.length) break;
-        docb=b[j];
+        docb = b[j];
       } else if (doca < docb) {
         if (++i >= a.length) break;
-        doca=a[i];
+        doca = a[i];
       } else {
         icount++;
         if (++i >= a.length) break;
-        doca=a[i];
+        doca = a[i];
         if (++j >= b.length) break;
-        docb=b[j];
+        docb = b[j];
       }
     }
     return icount;
@@ -265,31 +262,31 @@ public class SortedIntDocSet extends DocSet {
     }
 
     // make "a" the smaller set.
-    int[] otherDocs = ((SortedIntDocSet)other).docs;
+    int[] otherDocs = ((SortedIntDocSet) other).docs;
     final int[] a = docs.length < otherDocs.length ? docs : otherDocs;
     final int[] b = docs.length < otherDocs.length ? otherDocs : docs;
 
-    if (a.length==0) return false;
+    if (a.length == 0) return false;
 
     // if b is 8 times bigger than a, use the modified binary search.
-    if ((b.length>>3) >= a.length) {
-      return intersects(a,b);
+    if ((b.length >> 3) >= a.length) {
+      return intersects(a, b);
     }
 
     // if they are close in size, just do a linear walk of both.
-    int i=0,j=0;
-    int doca=a[i],docb=b[j];
-    for(;;) {
+    int i = 0, j = 0;
+    int doca = a[i], docb = b[j];
+    for (; ; ) {
       // switch on the sign bit somehow?  Hopefull JVM is smart enough to just test once.
 
       // Since set a is less dense then set b, doca is likely to be greater than docb so
       // check that case first.  This resulted in a 13% speedup.
       if (doca > docb) {
         if (++j >= b.length) break;
-        docb=b[j];
+        docb = b[j];
       } else if (doca < docb) {
         if (++i >= a.length) break;
-        doca=a[i];
+        doca = a[i];
       } else {
         return true;
       }
@@ -300,93 +297,95 @@ public class SortedIntDocSet extends DocSet {
   /** puts the intersection of a and b into the target array and returns the size */
   public static int intersection(int a[], int lena, int b[], int lenb, int[] target) {
     if (lena > lenb) {
-      int ti=lena; lena=lenb; lenb=ti;
-      int[] ta=a; a=b; b=ta;
+      int ti = lena;
+      lena = lenb;
+      lenb = ti;
+      int[] ta = a;
+      a = b;
+      b = ta;
     }
 
-    if (lena==0) return 0;
-
+    if (lena == 0) return 0;
 
     // if b is 8 times bigger than a, use the modified binary search.
-    if ((lenb>>3) >= lena) {
+    if ((lenb >> 3) >= lena) {
       return intersectionBinarySearch(a, lena, b, lenb, target);
     }
 
-    int icount=0;
-    int i=0,j=0;
-    int doca=a[i],docb=b[j];
-    for(;;) {
+    int icount = 0;
+    int i = 0, j = 0;
+    int doca = a[i], docb = b[j];
+    for (; ; ) {
       if (doca > docb) {
         if (++j >= lenb) break;
-        docb=b[j];
+        docb = b[j];
       } else if (doca < docb) {
         if (++i >= lena) break;
-        doca=a[i];
+        doca = a[i];
       } else {
         target[icount++] = doca;
         if (++i >= lena) break;
-        doca=a[i];
+        doca = a[i];
         if (++j >= lenb) break;
-        docb=b[j];
+        docb = b[j];
       }
     }
     return icount;
   }
 
-  /** Puts the intersection of a and b into the target array and returns the size.
-   * lena should be smaller than lenb */
-  protected static int intersectionBinarySearch(int[] a, int lena, int[] b, int lenb, int[] target) {
-    int step = (lenb/lena)+1;
+  /**
+   * Puts the intersection of a and b into the target array and returns the size. lena should be
+   * smaller than lenb
+   */
+  protected static int intersectionBinarySearch(
+      int[] a, int lena, int[] b, int lenb, int[] target) {
+    int step = (lenb / lena) + 1;
     step = step + step;
-
 
     int icount = 0;
     int low = 0;
-    int max = lenb-1;
+    int max = lenb - 1;
 
-    for (int i=0; i<lena; i++) {
+    for (int i = 0; i < lena; i++) {
       int doca = a[i];
 
       int high = max;
 
-      int probe = low + step;     // 40% improvement!
+      int probe = low + step; // 40% improvement!
 
       // short linear probe to see if we can drop the high pointer in one big jump.
-      if (probe<high) {
-        if (b[probe]>=doca) {
+      if (probe < high) {
+        if (b[probe] >= doca) {
           // success!  we cut down the upper bound by a lot in one step!
-          high=probe;
+          high = probe;
         } else {
           // relative failure... we get to move the low pointer, but not my much
-          low=probe+1;
+          low = probe + 1;
 
           // reprobe worth it? it appears so!
           probe = low + step;
-          if (probe<high) {
-            if (b[probe]>=doca) {
-              high=probe;
+          if (probe < high) {
+            if (b[probe] >= doca) {
+              high = probe;
             } else {
-              low=probe+1;
+              low = probe + 1;
             }
           }
         }
       }
 
-
       // binary search
       while (low <= high) {
-        int mid = (low+high) >>> 1;
+        int mid = (low + high) >>> 1;
         int docb = b[mid];
 
         if (docb < doca) {
-          low = mid+1;
-        }
-        else if (docb > doca) {
-          high = mid-1;
-        }
-        else {
+          low = mid + 1;
+        } else if (docb > doca) {
+          high = mid - 1;
+        } else {
           target[icount++] = doca;
-          low = mid+1;  // found it, so start at next element
+          low = mid + 1; // found it, so start at next element
           break;
         }
       }
@@ -403,79 +402,74 @@ public class SortedIntDocSet extends DocSet {
     if (!(other instanceof SortedIntDocSet)) {
       int icount = 0;
       int arr[] = new int[docs.length];
-      for (int i=0; i<docs.length; i++) {
+      for (int i = 0; i < docs.length; i++) {
         int doc = docs[i];
         if (other.exists(doc)) arr[icount++] = doc;
       }
       if (icount == docs.length) {
         return this; // no change
       }
-      return new SortedIntDocSet(arr,icount);
+      return new SortedIntDocSet(arr, icount);
     }
 
-    int[] otherDocs = ((SortedIntDocSet)other).docs;
+    int[] otherDocs = ((SortedIntDocSet) other).docs;
     int maxsz = Math.min(docs.length, otherDocs.length);
     int[] arr = new int[maxsz];
     int sz = intersection(docs, docs.length, otherDocs, otherDocs.length, arr);
     if (sz == docs.length) {
       return this; // no change
     }
-    return new SortedIntDocSet(arr,sz);
+    return new SortedIntDocSet(arr, sz);
   }
 
-
   protected static int andNotBinarySearch(int a[], int lena, int b[], int lenb, int[] target) {
-   int step = (lenb/lena)+1;
+    int step = (lenb / lena) + 1;
     step = step + step;
-
 
     int count = 0;
     int low = 0;
-    int max = lenb-1;
+    int max = lenb - 1;
 
     outer:
-    for (int i=0; i<lena; i++) {
+    for (int i = 0; i < lena; i++) {
       int doca = a[i];
 
       int high = max;
 
-      int probe = low + step;     // 40% improvement!
+      int probe = low + step; // 40% improvement!
 
       // short linear probe to see if we can drop the high pointer in one big jump.
-      if (probe<high) {
-        if (b[probe]>=doca) {
+      if (probe < high) {
+        if (b[probe] >= doca) {
           // success!  we cut down the upper bound by a lot in one step!
-          high=probe;
+          high = probe;
         } else {
           // relative failure... we get to move the low pointer, but not my much
-          low=probe+1;
+          low = probe + 1;
 
           // reprobe worth it? it appears so!
           probe = low + step;
-          if (probe<high) {
-            if (b[probe]>=doca) {
-              high=probe;
+          if (probe < high) {
+            if (b[probe] >= doca) {
+              high = probe;
             } else {
-              low=probe+1;
+              low = probe + 1;
             }
           }
         }
       }
 
-
       // binary search
       while (low <= high) {
-        int mid = (low+high) >>> 1;
+        int mid = (low + high) >>> 1;
         int docb = b[mid];
 
         if (docb < doca) {
-          low = mid+1;
-        }
-        else if (docb > doca) {
-          high = mid-1;
-        }
-        else {
-          low = mid+1;  // found it, so start at next element
+          low = mid + 1;
+        } else if (docb > doca) {
+          high = mid - 1;
+        } else {
+          low = mid + 1; // found it, so start at next element
           continue outer;
         }
       }
@@ -488,42 +482,42 @@ public class SortedIntDocSet extends DocSet {
     return count;
   }
 
-    /** puts the intersection of a and not b into the target array and returns the size */
+  /** puts the intersection of a and not b into the target array and returns the size */
   public static int andNot(int a[], int lena, int b[], int lenb, int[] target) {
-    if (lena==0) return 0;
-    if (lenb==0) {
-      System.arraycopy(a,0,target,0,lena);
+    if (lena == 0) return 0;
+    if (lenb == 0) {
+      System.arraycopy(a, 0, target, 0, lena);
       return lena;
     }
 
     // if b is 8 times bigger than a, use the modified binary search.
-    if ((lenb>>3) >= lena) {
+    if ((lenb >> 3) >= lena) {
       return andNotBinarySearch(a, lena, b, lenb, target);
     }
 
-    int count=0;
-    int i=0,j=0;
-    int doca=a[i],docb=b[j];
-    for(;;) {
+    int count = 0;
+    int i = 0, j = 0;
+    int doca = a[i], docb = b[j];
+    for (; ; ) {
       if (doca > docb) {
         if (++j >= lenb) break;
-        docb=b[j];
+        docb = b[j];
       } else if (doca < docb) {
         target[count++] = doca;
         if (++i >= lena) break;
-        doca=a[i];
+        doca = a[i];
       } else {
         if (++i >= lena) break;
-        doca=a[i];
+        doca = a[i];
         if (++j >= lenb) break;
-        docb=b[j];
+        docb = b[j];
       }
     }
 
-    int leftover=lena - i;
+    int leftover = lena - i;
 
     if (leftover > 0) {
-      System.arraycopy(a,i,target,count,leftover);
+      System.arraycopy(a, i, target, count, leftover);
       count += leftover;
     }
 
@@ -532,28 +526,28 @@ public class SortedIntDocSet extends DocSet {
 
   @Override
   public DocSet andNot(DocSet other) {
-    if (other.size()==0) return this;
+    if (other.size() == 0) return this;
 
     if (!(other instanceof SortedIntDocSet)) {
       int count = 0;
       int arr[] = new int[docs.length];
-      for (int i=0; i<docs.length; i++) {
+      for (int i = 0; i < docs.length; i++) {
         int doc = docs[i];
         if (!other.exists(doc)) arr[count++] = doc;
       }
       if (count == docs.length) {
         return this; // no change
       }
-      return new SortedIntDocSet(arr,count);
+      return new SortedIntDocSet(arr, count);
     }
 
-    int[] otherDocs = ((SortedIntDocSet)other).docs;
+    int[] otherDocs = ((SortedIntDocSet) other).docs;
     int[] arr = new int[docs.length];
     int sz = andNot(docs, docs.length, otherDocs, otherDocs.length, arr);
     if (sz == docs.length) {
       return this; // no change
     }
-    return new SortedIntDocSet(arr,sz);
+    return new SortedIntDocSet(arr, sz);
   }
 
   @Override
@@ -568,19 +562,17 @@ public class SortedIntDocSet extends DocSet {
     // this could be faster by estimating where in the list the doc is likely to appear,
     // but we should get away from using exists() anyway.
     int low = 0;
-    int high = docs.length-1;
+    int high = docs.length - 1;
     // binary search
     while (low <= high) {
-      int mid = (low+high) >>> 1;
+      int mid = (low + high) >>> 1;
       int docb = docs[mid];
 
       if (docb < doc) {
-        low = mid+1;
-      }
-      else if (docb > doc) {
-        high = mid-1;
-      }
-      else {
+        low = mid + 1;
+      } else if (docb > doc) {
+        high = mid - 1;
+      } else {
         return true;
       }
     }
@@ -590,7 +582,8 @@ public class SortedIntDocSet extends DocSet {
   @Override
   public DocIterator iterator() {
     return new DocIterator() {
-      int pos=0;
+      int pos = 0;
+
       @Override
       public boolean hasNext() {
         return pos < docs.length;
@@ -601,12 +594,11 @@ public class SortedIntDocSet extends DocSet {
         return nextDoc();
       }
 
-      /**
-       * The remove  operation is not supported by this Iterator.
-       */
+      /** The remove operation is not supported by this Iterator. */
       @Override
       public void remove() {
-        throw new UnsupportedOperationException("The remove  operation is not supported by this Iterator.");
+        throw new UnsupportedOperationException(
+            "The remove  operation is not supported by this Iterator.");
       }
 
       @Override
@@ -620,7 +612,7 @@ public class SortedIntDocSet extends DocSet {
       }
     };
   }
-  
+
   @Override
   public Bits getBits() {
     IntHashSet hashSet = new IntHashSet(docs.length);
@@ -668,6 +660,7 @@ public class SortedIntDocSet extends DocSet {
   }
 
   private volatile int[] cachedOrdIdxMap; // idx of first doc _beyond_ the corresponding seg
+
   private int[] getOrdIdxMap(LeafReaderContext ctx) {
     final int[] cached = cachedOrdIdxMap;
     if (cached != null) {
@@ -678,10 +671,12 @@ public class SortedIntDocSet extends DocSet {
       int lastLimit = 0;
       int lastLimitDoc = docs[0]; // docs.length != 0
       for (LeafReaderContext lrc : leaves) {
-        // sanity check that initial `lastLimit*` values are valid (and consequently that our initial
-        // setting of `startIdx` for context.ord==0 won't inadvertently include invalid docs).
+        // sanity check that initial `lastLimit*` values are valid (and consequently that our
+        // initial setting of `startIdx` for context.ord==0 won't inadvertently include invalid
+        // docs).
         assert lrc.ord != 0 || lastLimitDoc >= lrc.docBase;
-        final int max = lrc.docBase + lrc.reader().maxDoc(); // one past the max doc in this segment.
+        final int max =
+            lrc.docBase + lrc.reader().maxDoc(); // one past the max doc in this segment.
         if (lastLimitDoc >= max) {
           ret[lrc.ord] = lastLimit;
           continue;
@@ -701,9 +696,9 @@ public class SortedIntDocSet extends DocSet {
 
     if (docs.length == 0 || context.reader().maxDoc() < 1) {
       // empty docset or entirely empty segment (verified that the latter actually happens)
-      // NOTE: wrt the "empty docset" case, this is not just an optimization; this shortcircuits also
-      // to prevent the static DocSet.EmptyLazyHolder.INSTANCE from having cachedOrdIdxMap initiated
-      // across different IndexReaders.
+      // NOTE: wrt the "empty docset" case, this is not just an optimization; this shortcircuits
+      // also to prevent the static DocSet.EmptyLazyHolder.INSTANCE from having cachedOrdIdxMap
+      // initiated across different IndexReaders.
       return null;
     }
 
@@ -739,12 +734,12 @@ public class SortedIntDocSet extends DocSet {
 
       @Override
       public int advance(int target) {
-        if (++idx >= limitIdx || target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
+        if (++idx >= limitIdx || target == NO_MORE_DOCS) return adjustedDoc = NO_MORE_DOCS;
         target += base;
 
         // probe next
         int rawDoc = docs[idx];
-        if (rawDoc >= target) return adjustedDoc=rawDoc-base;
+        if (rawDoc >= target) return adjustedDoc = rawDoc - base;
 
         // TODO: probe more before resorting to binary search?
 
@@ -755,56 +750,14 @@ public class SortedIntDocSet extends DocSet {
 
       @Override
       public long cost() {
-        return limitIdx - startIdx;
+        return (long) limitIdx - startIdx;
       }
     };
   }
 
   @Override
-  public Filter getTopFilter() {
-    return new Filter() {
-
-      @Override
-      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
-        // all Solr DocSets that are used as filters only include live docs
-        final Bits acceptDocs2 = acceptDocs == null ? null : (context.reader().getLiveDocs() == acceptDocs ? null : acceptDocs);
-
-        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return SortedIntDocSet.this.iterator(context);
-          }
-
-          @Override
-          public long ramBytesUsed() {
-            return RamUsageEstimator.sizeOf(docs);
-          }
-          
-          @Override
-          public Bits bits() {
-            // random access is expensive for this set
-            return null;
-          }
-
-        }, acceptDocs2);
-      }
-      @Override
-      public String toString(String field) {
-        return "SortedIntDocSetTopFilter";
-      }
-
-      // Equivalence should/could be based on docs here? How did it work previously?
-
-      @Override
-      public boolean equals(Object other) {
-        return other == this;
-      }
-
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    };
+  public DocSetQuery makeQuery() {
+    return new DocSetQuery(this);
   }
 
   @Override
@@ -824,9 +777,12 @@ public class SortedIntDocSet extends DocSet {
 
   @Override
   public String toString() {
-    return "SortedIntDocSet{" +
-        "size=" + size() + "," +
-        "ramUsed=" + RamUsageEstimator.humanReadableUnits(ramBytesUsed())+
-        '}';
+    return "SortedIntDocSet{"
+        + "size="
+        + size()
+        + ","
+        + "ramUsed="
+        + RamUsageEstimator.humanReadableUnits(ramBytesUsed())
+        + '}';
   }
 }

@@ -22,15 +22,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Represents the response to a "query" JSON facet.
  *
- * Relies on several other types to represent the variety of JSON facet responses.  The parsing of these responses
- * relies partially on the JSON property names.  When naming your facets in your request, avoid choosing names that
- * match existing values in the JSON faceting response schema, such as "count", "val", "minX", etc.
+ * <p>Relies on several other types to represent the variety of JSON facet responses. The parsing of
+ * these responses relies partially on the JSON property names. When naming your facets in your
+ * request, avoid choosing names that match existing values in the JSON faceting response schema,
+ * such as "count", "val", "minX", etc.
  */
 public class NestableJsonFacet {
   private long domainCount;
@@ -51,11 +51,12 @@ public class NestableJsonFacet {
         continue;
       } else if ("count".equals(key)) {
         domainCount = ((Number) entry.getValue()).longValue();
-      } else  if (entry.getValue() instanceof Number || entry.getValue() instanceof String ||
-          entry.getValue() instanceof Date) {
+      } else if (entry.getValue() instanceof Number
+          || entry.getValue() instanceof String
+          || entry.getValue() instanceof Date) {
         // Stat/agg facet value
         statsByName.put(key, entry.getValue());
-      } else if(entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet
+      } else if (entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet
         final NamedList<?> facet = (NamedList<?>) entry.getValue();
         final boolean isBucketBased = facet.get("buckets") != null;
         final boolean isHeatmap = HeatmapJsonFacet.isHeatmapFacet(facet);
@@ -70,16 +71,12 @@ public class NestableJsonFacet {
     }
   }
 
-  /**
-   * The number of records matching the domain of this facet.
-   */
+  /** The number of records matching the domain of this facet. */
   public long getCount() {
     return domainCount;
   }
 
-  /**
-   * Retrieve a nested "query" facet by its name
-   */
+  /** Retrieve a nested "query" facet by its name */
   public NestableJsonFacet getQueryFacet(String name) {
     return queryFacetsByName.get(name);
   }
@@ -91,9 +88,7 @@ public class NestableJsonFacet {
     return queryFacetsByName.keySet();
   }
 
-  /**
-   * Retrieve a nested "terms" or "range" facet by its name.
-   */
+  /** Retrieve a nested "terms" or "range" facet by its name. */
   public BucketBasedJsonFacet getBucketBasedFacets(String name) {
     return bucketBasedFacetByName.get(name);
   }
@@ -105,9 +100,7 @@ public class NestableJsonFacet {
     return bucketBasedFacetByName.keySet();
   }
 
-  /**
-   * Retrieve the value for a stat or agg with the provided name
-   */
+  /** Retrieve the value for a stat or agg with the provided name */
   public Object getStatValue(String name) {
     return statsByName.get(name);
   }
@@ -119,9 +112,7 @@ public class NestableJsonFacet {
     return statsByName.keySet();
   }
 
-  /**
-   * Retrieve a "heatmap" facet by its name
-   */
+  /** Retrieve a "heatmap" facet by its name */
   public HeatmapJsonFacet getHeatmapFacetByName(String name) {
     return heatmapFacetsByName.get(name);
   }

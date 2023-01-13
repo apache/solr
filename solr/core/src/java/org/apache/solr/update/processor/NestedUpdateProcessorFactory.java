@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -29,20 +28,21 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 
 /**
- * Adds fields to nested documents to support some nested search requirements.
- * It can even generate uniqueKey fields for nested docs.
+ * Adds fields to nested documents to support some nested search requirements. It can even generate
+ * uniqueKey fields for nested docs.
  *
  * @see IndexSchema#NEST_PARENT_FIELD_NAME
  * @see IndexSchema#NEST_PATH_FIELD_NAME
- *
  * @since 7.5.0
  */
 public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next ) {
+  @Override
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     boolean storeParent = shouldStoreDocParent(req.getSchema());
     boolean storePath = shouldStoreDocPath(req.getSchema());
-    if(!(storeParent || storePath)) {
+    if (!(storeParent || storePath)) {
       return next;
     }
     return new NestedUpdateProcessor(req, storeParent, storePath, next);
@@ -64,8 +64,8 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     private boolean storeParent;
     private String uniqueKeyFieldName;
 
-
-    NestedUpdateProcessor(SolrQueryRequest req, boolean storeParent, boolean storePath, UpdateRequestProcessor next) {
+    NestedUpdateProcessor(
+        SolrQueryRequest req, boolean storeParent, boolean storePath, UpdateRequestProcessor next) {
       super(next);
       this.storeParent = storeParent;
       this.storePath = storePath;
@@ -81,10 +81,10 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
     private boolean processDocChildren(SolrInputDocument doc, String fullPath) {
       boolean isNested = false;
-      for(SolrInputField field: doc.values()) {
+      for (SolrInputField field : doc.values()) {
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
-        for(Object val: field) {
+        for (Object val : field) {
           if (!(val instanceof SolrInputDocument)) {
             // either all collection items are child docs or none are.
             break;
@@ -92,14 +92,20 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
           final String fieldName = field.getName();
 
           if (fieldName.contains(PATH_SEP_CHAR)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + fieldName
-                + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Field name: '"
+                    + fieldName
+                    + "' contains: '"
+                    + PATH_SEP_CHAR
+                    + "' , which is reserved for the nested URP");
           }
           final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
           SolrInputDocument cDoc = (SolrInputDocument) val;
           if (!cDoc.containsKey(uniqueKeyFieldName)) {
             String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
-            cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
+            cDoc.setField(
+                uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
           }
           if (!isNested) {
             isNested = true;
@@ -114,8 +120,9 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       return isNested;
     }
 
-    private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
-      if(storePath) {
+    private void processChildDoc(
+        SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+      if (storePath) {
         setPathField(sdoc, fullPath);
       }
       if (storeParent) {
@@ -136,7 +143,5 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     private void setPathField(SolrInputDocument sdoc, String fullPath) {
       sdoc.setField(IndexSchema.NEST_PATH_FIELD_NAME, fullPath);
     }
-
   }
-
 }

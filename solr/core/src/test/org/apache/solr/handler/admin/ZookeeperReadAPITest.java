@@ -17,10 +17,12 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.util.StrUtils.split;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
@@ -32,17 +34,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.StrUtils.split;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
 public class ZookeeperReadAPITest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Before
@@ -64,29 +61,30 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/ls";
 
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      Object o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/security.json",
-          Utils.JSONCONSUMER);
+      Object o =
+          Utils.executeGET(client.getHttpClient(), basezk + "/security.json", Utils.JSONCONSUMER);
       assertNotNull(o);
-      o = Utils.executeGET(client.getHttpClient(),
-          basezkls + "/configs",
-          Utils.JSONCONSUMER);
-      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
-      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
+      o = Utils.executeGET(client.getHttpClient(), basezkls + "/configs", Utils.JSONCONSUMER);
+      assertEquals(
+          "0",
+          String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
+      assertEquals(
+          "0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split("/stat/version", '/'))));
 
-      o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/configs",
-          Utils.JSONCONSUMER);
-      assertTrue(((Map)o).containsKey("/configs"));
-      assertNull(((Map)o).get("/configs"));
+      o = Utils.executeGET(client.getHttpClient(), basezk + "/configs", Utils.JSONCONSUMER);
+      assertTrue(((Map) o).containsKey("/configs"));
+      assertNull(((Map) o).get("/configs"));
 
       byte[] bytes = new byte[1024 * 5];
       for (int i = 0; i < bytes.length; i++) {
         bytes[i] = (byte) random().nextInt(128);
       }
-      cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
-      Utils.executeGET(client.getHttpClient(),
+      cluster
+          .getZkClient()
+          .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
+      Utils.executeGET(
+          client.getHttpClient(),
           basezk + "/configs/_default/testdata",
           is -> {
             byte[] newBytes = new byte[bytes.length];
@@ -98,5 +96,4 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
           });
     }
   }
-
 }

@@ -17,57 +17,60 @@
 package org.apache.solr.core;
 
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.DOMUtilTestBase;
 import org.junit.Test;
 import org.w3c.dom.Node;
 
 /**
- * TestCase  for PluginInfo.
- * Extends DOMUtilTestBase because PluginInfo heavily depends on DOMUtil 
- * and the convinient {@link #getNode(String, String)} method.
+ * TestCase for PluginInfo. Extends DOMUtilTestBase because PluginInfo heavily depends on DOMUtil
+ * and the convenient {@link #getNode(String, String)} method.
  */
 public class PluginInfoTest extends DOMUtilTestBase {
 
-  private final static String configWithNoChildren = "" +
-    "<plugin name=\"aplug\">" +
-    "<str name=\"stringer\">aString</str>" +
-    "<int name=\"inter\">1</int>" +
-    "<bool name=\"booler\">true</bool>" +
-    "<float name=\"floater\">1.1f</float>" +
-    "<double name=\"doubler\">2.2d</double>" +
-    "<long name=\"longer\">2</long>" +
-    "<lst name=\"lister\">" +
-    "</lst>" +
-    "<arr name=\"arrer\">" +
-    "<str name=\"stringer\">aString</str>" +
-    "</arr>" +
-    "</plugin>";
-  private final static String configWith2Children = "" +
-    "<plugin name=\"aplug\">" +
-    "<int name=\"inter\">1</int>" +
-    "<child name=\"child1\"><int name=\"index\">0</int></child>" +
-    "<child name=\"child2\"><int name=\"index\">1</int></child>" +
-    "<float name=\"floater\">1.1f</float>" +
-    "<double name=\"doubler\">2.2d</double>" +
-    "<long name=\"longer\">2</long>" +
-    "<lst name=\"lister\">" +
-    "</lst>" +
-    "<arr name=\"arrer\">" +
-    "<str name=\"stringer\">aString</str>" +
-    "</arr>" +
-    "</plugin>";
+  private static final String configWithNoChildren =
+      ""
+          + "<plugin name=\"aplug\">"
+          + "<str name=\"stringer\">aString</str>"
+          + "<int name=\"inter\">1</int>"
+          + "<bool name=\"booler\">true</bool>"
+          + "<float name=\"floater\">1.1f</float>"
+          + "<double name=\"doubler\">2.2d</double>"
+          + "<long name=\"longer\">2</long>"
+          + "<lst name=\"lister\">"
+          + "</lst>"
+          + "<arr name=\"arrer\">"
+          + "<str name=\"stringer\">aString</str>"
+          + "</arr>"
+          + "</plugin>";
+  private static final String configWith2Children =
+      ""
+          + "<plugin name=\"aplug\">"
+          + "<int name=\"inter\">1</int>"
+          + "<child name=\"child1\"><int name=\"index\">0</int></child>"
+          + "<child name=\"child2\"><int name=\"index\">1</int></child>"
+          + "<float name=\"floater\">1.1f</float>"
+          + "<double name=\"doubler\">2.2d</double>"
+          + "<long name=\"longer\">2</long>"
+          + "<lst name=\"lister\">"
+          + "</lst>"
+          + "<arr name=\"arrer\">"
+          + "<str name=\"stringer\">aString</str>"
+          + "</arr>"
+          + "</plugin>";
 
-  // This is in fact a DOMUtil test, but it is here for completeness  
+  // This is in fact a DOMUtil test, but it is here for completeness
   @Test
   public void testNameRequired() throws Exception {
     Node nodeWithNoName = getNode("<plugin></plugin>", "plugin");
     try {
       SolrTestCaseJ4.ignoreException("missing mandatory attribute");
-      RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
-        PluginInfo pi = new PluginInfo(nodeWithNoName, "Node with No name", true, false);
-      });
+      RuntimeException thrown =
+          expectThrows(
+              RuntimeException.class,
+              () -> {
+                PluginInfo pi = new PluginInfo(nodeWithNoName, "Node with No name", true, false);
+              });
       assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
     } finally {
       SolrTestCaseJ4.resetExceptionIgnores();
@@ -75,17 +78,20 @@ public class PluginInfoTest extends DOMUtilTestBase {
 
     Node nodeWithAName = getNode("<plugin name=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAName, "Node with a Name", true, false);
-    assertTrue(pi2.name.equals("myName"));
+    assertEquals("myName", pi2.name);
   }
-  
+
   @Test
   public void testClassRequired() throws Exception {
     Node nodeWithNoClass = getNode("<plugin></plugin>", "plugin");
     try {
       SolrTestCaseJ4.ignoreException("missing mandatory attribute");
-      RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
-        PluginInfo pi = new PluginInfo(nodeWithNoClass, "Node with No Class", false, true);
-      });
+      RuntimeException thrown =
+          expectThrows(
+              RuntimeException.class,
+              () -> {
+                PluginInfo pi = new PluginInfo(nodeWithNoClass, "Node with No Class", false, true);
+              });
       assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
     } finally {
       SolrTestCaseJ4.resetExceptionIgnores();
@@ -93,7 +99,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
 
     Node nodeWithAClass = getNode("<plugin class=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAClass, "Node with a Class", false, true);
-    assertTrue(pi2.className.equals("myName"));
+    assertEquals("myName", pi2.className);
   }
 
   @Test
@@ -104,7 +110,6 @@ public class PluginInfoTest extends DOMUtilTestBase {
     node = getNode("<plugin enable=\"false\" />", "plugin");
     pi = new PluginInfo(node, "not enabled", false, false);
     assertFalse(pi.isEnabled());
-    
   }
 
   @Test
@@ -115,11 +120,10 @@ public class PluginInfoTest extends DOMUtilTestBase {
     node = getNode("<plugin default=\"false\" />", "plugin");
     pi = new PluginInfo(node, "not default", false, false);
     assertFalse(pi.isDefault());
-    
   }
 
   @Test
-  public void testNoChildren() throws Exception{
+  public void testNoChildren() throws Exception {
     Node node = getNode(configWithNoChildren, "/plugin");
     PluginInfo pi = new PluginInfo(node, "from static", false, false);
     assertTrue(pi.children.isEmpty());
@@ -129,7 +133,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
   public void testHasChildren() throws Exception {
     Node node = getNode(configWith2Children, "plugin");
     PluginInfo pi = new PluginInfo(node, "node with 2 Children", false, false);
-    assertTrue( pi.children.size() == 2 );
+    assertEquals(2, pi.children.size());
   }
 
   @Test
@@ -140,8 +144,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertNotNull(childInfo);
     PluginInfo notExistent = pi.getChild("doesnotExist");
     assertNull(notExistent);
-    assertTrue( childInfo instanceof PluginInfo );
-    assertTrue((Integer) childInfo.initArgs.get("index") == 0);
+    assertEquals(0, (int) (Integer) childInfo.initArgs.get("index"));
     Node node2 = getNode(configWithNoChildren, "plugin");
     PluginInfo pi2 = new PluginInfo(node2, "with No Children", false, false);
     PluginInfo noChild = pi2.getChild("long");
@@ -153,10 +156,9 @@ public class PluginInfoTest extends DOMUtilTestBase {
     Node node = getNode(configWith2Children, "plugin");
     PluginInfo pi = new PluginInfo(node, "with children", false, false);
     List<PluginInfo> children = pi.getChildren("child");
-    assertTrue(children.size() == 2);
-    for ( PluginInfo childInfo : children ) {
+    assertEquals(2, children.size());
+    for (PluginInfo childInfo : children) {
       assertNotNull(childInfo);
-      assertTrue( childInfo instanceof PluginInfo );
     }
   }
 
@@ -164,6 +166,6 @@ public class PluginInfoTest extends DOMUtilTestBase {
   public void testInitArgsCount() throws Exception {
     Node node = getNode(configWithNoChildren, "plugin");
     PluginInfo pi = new PluginInfo(node, "from static", true, false);
-    assertTrue( pi.initArgs.size() == node.getChildNodes().getLength() );
+    assertEquals(pi.initArgs.size(), node.getChildNodes().getLength());
   }
 }

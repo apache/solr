@@ -16,13 +16,16 @@
  */
 
 /**
- * <p>This package contains the interfaces giving access to cluster state, including nodes, collections and the
- * structure of the collections (shards and replicas). These interfaces allow separating external code contribution
- * from the internal Solr implementations of these concepts to make usage simpler and to not require changes to
- * external contributed code every time the internal abstractions are modified.</p>
+ * This package contains the interfaces giving access to cluster state, including nodes, collections
+ * and the structure of the collections (shards and replicas). These interfaces allow separating
+ * external code contribution from the internal Solr implementations of these concepts to make usage
+ * simpler and to not require changes to external contributed code every time the internal
+ * abstractions are modified.
  *
- * <p>The top level abstraction is {@link org.apache.solr.cluster.Cluster}. The cluster is composed of {@link org.apache.solr.cluster.Node}s.
- * Indexes are stored in {@link org.apache.solr.cluster.SolrCollection}s, composed of {@link org.apache.solr.cluster.Shard}s
- * whose actual copies on {@link org.apache.solr.cluster.Node}s are called {@link org.apache.solr.cluster.Replica}s.</p>
+ * <p>The top level abstraction is {@link org.apache.solr.cluster.Cluster}. The cluster is composed
+ * of {@link org.apache.solr.cluster.Node}s. Indexes are stored in {@link
+ * org.apache.solr.cluster.SolrCollection}s, composed of {@link org.apache.solr.cluster.Shard}s
+ * whose actual copies on {@link org.apache.solr.cluster.Node}s are called {@link
+ * org.apache.solr.cluster.Replica}s.
  */
 package org.apache.solr.cluster;

@@ -23,15 +23,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
-/**
- *
- */
+/** */
 public class DeleteUpdateCommand extends UpdateCommand {
-  public String id;    // external (printable) id, for delete-by-id
+  public String id; // external (printable) id, for delete-by-id
   public String query; // query string for delete-by-query
   public BytesRef indexedId;
   public int commitWithin = -1;
-
 
   public DeleteUpdateCommand(SolrQueryRequest req) {
     super(req);
@@ -53,7 +50,10 @@ public class DeleteUpdateCommand extends UpdateCommand {
     version = 0;
   }
 
-  /** Returns the indexed ID for this delete.  The returned BytesRef is retained across multiple calls, and should not be modified. */
+  /**
+   * Returns the indexed ID for this delete. The returned BytesRef is retained across multiple
+   * calls, and should not be modified.
+   */
   public BytesRef getIndexedId() {
     if (indexedId == null) {
       IndexSchema schema = req.getSchema();
@@ -101,14 +101,12 @@ public class DeleteUpdateCommand extends UpdateCommand {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(super.toString());
-    if (id!=null) sb.append(",id=").append(getId());
-    if (indexedId!=null) sb.append(",indexedId=").append(getId());
+    if (id != null) sb.append(",id=").append(getId());
+    if (indexedId != null) sb.append(",indexedId=").append(getId());
     if (query != null) sb.append(",query=`").append(query).append('`');
     sb.append(",commitWithin=").append(commitWithin);
-    if (route != null)
-      sb.append(",_route_=").append(route);
-     sb.append('}');
-     return sb.toString();
+    if (route != null) sb.append(",_route_=").append(route);
+    sb.append('}');
+    return sb.toString();
   }
-
 }

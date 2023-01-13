@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -32,7 +31,6 @@ public class SortedDateStatsValues implements StatsValues {
   private final StatsValuesFactory.DateStatsValues dsv;
   private final String fieldName;
   private SortedNumericDocValues sndv;
-
 
   public SortedDateStatsValues(StatsValuesFactory.DateStatsValues dsv, StatsField field) {
     this.dsv = dsv;
@@ -53,7 +51,6 @@ public class SortedDateStatsValues implements StatsValues {
         dsv.accumulate(new Date(sndv.nextValue()), 1);
       }
     }
-
   }
 
   @Override
@@ -72,7 +69,7 @@ public class SortedDateStatsValues implements StatsValues {
   }
 
   @Override
-  public void addFacet(String facetName, Map<String,StatsValues> facetValues) {
+  public void addFacet(String facetName, Map<String, StatsValues> facetValues) {
     dsv.addFacet(facetName, facetValues);
   }
 

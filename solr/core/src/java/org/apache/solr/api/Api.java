@@ -17,18 +17,17 @@
 
 package org.apache.solr.api;
 
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.JsonSchemaValidator;
 
-/** Every version 2 API must extend the this class. It's mostly like a request handler
- * but it has extra methods to provide the json schema of the end point
- *
+/**
+ * Every version 2 API must extend the this class. It's mostly like a request handler but it has
+ * extra methods to provide the json schema of the end point
  */
 public abstract class Api implements SpecProvider {
   protected SpecProvider spec;
@@ -38,31 +37,28 @@ public abstract class Api implements SpecProvider {
     this.spec = spec;
   }
 
-  /**This method helps to cache the schema validator object
-   */
+  /** This method helps to cache the schema validator object */
   public Map<String, JsonSchemaValidator> getCommandSchema() {
     if (commandSchema == null) {
       synchronized (this) {
-        if(commandSchema == null) {
+        if (commandSchema == null) {
           ValidatingJsonMap commands = getSpec().getMap("commands", null);
-          commandSchema = commands != null ?
-              ImmutableMap.copyOf(ApiBag.getParsedSchema(commands)) :
-              ImmutableMap.of();
+          commandSchema =
+              commands != null
+                  ? ImmutableMap.copyOf(ApiBag.getParsedSchema(commands))
+                  : ImmutableMap.of();
         }
       }
     }
     return commandSchema;
   }
 
-  /** The method that gets called for each request
-   */
-  public abstract void call(SolrQueryRequest req , SolrQueryResponse rsp);
+  /** The method that gets called for each request */
+  public abstract void call(SolrQueryRequest req, SolrQueryResponse rsp);
 
-  /**Get the specification of the API as a Map
-   */
+  /** Get the specification of the API as a Map */
   @Override
   public ValidatingJsonMap getSpec() {
     return spec.getSpec();
   }
-
 }

@@ -20,13 +20,13 @@ package org.apache.solr.client.solrj.response.json;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Represents the top-level response for a bucket-based JSON facet (i.e. "terms" or "range")
  *
- * Allows access to JSON like:
+ * <p>Allows access to JSON like:
+ *
  * <pre>
  *   {
  *     "numBuckets": 2,
@@ -36,9 +36,9 @@ import org.apache.solr.common.util.NamedList;
  *     ]
  *   }
  * </pre>
- * <p>
- * Allows access to all top-level "terms" and "range" response properties (e.g. {@code allBuckets}, {@code numBuckets},
- * {@code before}, etc.)
+ *
+ * <p>Allows access to all top-level "terms" and "range" response properties (e.g. {@code
+ * allBuckets}, {@code numBuckets}, {@code before}, etc.)
  */
 public class BucketBasedJsonFacet {
   public static final int UNSET_FLAG = -1;
@@ -63,33 +63,33 @@ public class BucketBasedJsonFacet {
       } else if ("numBuckets".equals(key)) {
         numBuckets = ((Number) value).longValue();
       } else if ("allBuckets".equals(key)) {
-        allBuckets = ((Number) ((NamedList)value).get("count")).longValue();
+        allBuckets = ((Number) ((NamedList) value).get("count")).longValue();
       } else if ("before".equals(key)) {
-        beforeFirstBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
+        beforeFirstBucketCount = ((Number) ((NamedList) value).get("count")).longValue();
       } else if ("after".equals(key)) {
-        afterLastBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
+        afterLastBucketCount = ((Number) ((NamedList) value).get("count")).longValue();
       } else if ("between".equals(key)) {
-        betweenAllBucketsCount = ((Number) ((NamedList)value).get("count")).longValue();
+        betweenAllBucketsCount = ((Number) ((NamedList) value).get("count")).longValue();
       } else {
-        // We don't recognize the key.  Possible JSON faceting schema has changed without updating client.
-        // Silently ignore for now, though we may want to consider throwing an error if this proves problematic.
+        // We don't recognize the key.  Possible JSON faceting schema has changed without updating
+        // client. Silently ignore for now, though we may want to consider throwing an error if this
+        // proves problematic.
       }
     }
   }
 
-  /**
-   * Retrieves the facet buckets returned by the server.
-   */
+  /** Retrieves the facet buckets returned by the server. */
   public List<BucketJsonFacet> getBuckets() {
     return buckets;
   }
 
   /**
-   * The total number of buckets found in the domain (of which the returned buckets are only a part).
+   * The total number of buckets found in the domain (of which the returned buckets are only a
+   * part).
    *
-   * This value can only be computed on "terms" facets where the user has specifically requested it with the
-   * {@code numBuckets} option.  {@link #UNSET_FLAG} is returned if this is a "range" facet or {@code numBuckets}
-   * computation was not requested in the intiial request.
+   * <p>This value can only be computed on "terms" facets where the user has specifically requested
+   * it with the {@code numBuckets} option. {@link #UNSET_FLAG} is returned if this is a "range"
+   * facet or {@code numBuckets} computation was not requested in the intiial request.
    */
   public long getNumBuckets() {
     return numBuckets;
@@ -98,11 +98,12 @@ public class BucketBasedJsonFacet {
   /**
    * The sum cardinality of all buckets in the "terms" facet.
    *
-   * Note that for facets on multi-valued fields, documents may belong to multiple buckets, making {@link #getAllBuckets()}
-   * return a result greater than the number of documents in the domain.
-   * <p>
-   * This value is only present if the user has specifically requested it with the {@code allBuckets} option.
-   * {@link #UNSET_FLAG} is returned if this is not the case.
+   * <p>Note that for facets on multi-valued fields, documents may belong to multiple buckets,
+   * making {@link #getAllBuckets()} return a result greater than the number of documents in the
+   * domain.
+   *
+   * <p>This value is only present if the user has specifically requested it with the {@code
+   * allBuckets} option. {@link #UNSET_FLAG} is returned if this is not the case.
    */
   public long getAllBuckets() {
     return allBuckets;
@@ -111,8 +112,8 @@ public class BucketBasedJsonFacet {
   /**
    * The count of all records whose field value precedes the {@code start} of this "range" facet
    *
-   * This value is only present if the user has specifically requested it with the {@code other} option.
-   * {@link #UNSET_FLAG} is returned if this is not the case.
+   * <p>This value is only present if the user has specifically requested it with the {@code other}
+   * option. {@link #UNSET_FLAG} is returned if this is not the case.
    */
   public long getBefore() {
     return beforeFirstBucketCount;
@@ -121,8 +122,8 @@ public class BucketBasedJsonFacet {
   /**
    * The count of all records whose field value follows the {@code end} of this "range" facet
    *
-   * This value is only present if the user has specifically requested it with the {@code other} option.
-   * {@link #UNSET_FLAG} is returned if this is not the case.
+   * <p>This value is only present if the user has specifically requested it with the {@code other}
+   * option. {@link #UNSET_FLAG} is returned if this is not the case.
    */
   public long getAfter() {
     return afterLastBucketCount;
@@ -131,8 +132,8 @@ public class BucketBasedJsonFacet {
   /**
    * The count of all records whose field value falls between {@code start} and {@code end}.
    *
-   * This value is only present if the user has specifically requested it with the {@code other} option.
-   * {@link #UNSET_FLAG} is returned if this is not the case.
+   * <p>This value is only present if the user has specifically requested it with the {@code other}
+   * option. {@link #UNSET_FLAG} is returned if this is not the case.
    */
   public long getBetween() {
     return betweenAllBucketsCount;

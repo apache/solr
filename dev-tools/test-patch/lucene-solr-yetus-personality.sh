@@ -117,7 +117,7 @@ function personality_modules
           if [[ "${module}" =~ ^(lucene/(analysis/[^/]+|[^/]+)) ]]; then
             local lucene_module=${BASH_REMATCH[0]}
             personality_enqueue_module "${lucene_module}" "${extra}"
-          elif [[ "${module}" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|contrib/[^.]+) ]]; then # allow solr/ modules
+          elif [[ "${module}" =~ ^solr/(core|solrj|test-framework|solr-ref-guide|modules/[^.]+) ]]; then # allow solr/ modules
             local solr_module=${BASH_REMATCH[0]}
             # In solr-ref-guide module, do not execute "compile" or "unit" plugins
             if [[ ! "${solr_module}" == solr/solr-ref-guide || ! ${testtype} =~ ^(compile|unit)$ ]]; then
@@ -200,10 +200,10 @@ function testoutput_process_tests
     JUNIT_TEST_OUTPUT_DIR="../../build/${module#*/}"
   elif [[ "${module}" =~ ^lucene/ ]]; then
     JUNIT_TEST_OUTPUT_DIR="../build/${module#*/}"
-  elif [[ "${module}" =~ ^solr/contrib/extraction ]]; then
-    JUNIT_TEST_OUTPUT_DIR="../../build/contrib/solr-extraction"
-  elif [[ "${module}" =~ ^solr/contrib/(.*) ]]; then
-    JUNIT_TEST_OUTPUT_DIR="../../build/contrib/solr-${BASH_REMATCH[1]}"
+  elif [[ "${module}" =~ ^solr/modules/extraction ]]; then
+    JUNIT_TEST_OUTPUT_DIR="../../build/modules/solr-extraction"
+  elif [[ "${module}" =~ ^solr/modules/(.*) ]]; then
+    JUNIT_TEST_OUTPUT_DIR="../../build/modules/solr-${BASH_REMATCH[1]}"
   elif [[ "${module}" =~ ^solr/(.*) ]]; then
     JUNIT_TEST_OUTPUT_DIR="../build/solr-${BASH_REMATCH[1]}"
   fi

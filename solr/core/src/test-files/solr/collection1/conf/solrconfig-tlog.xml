@@ -18,10 +18,9 @@
 -->
 
 <config>
-  <jmx />
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  
+
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
     <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
     <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
@@ -34,7 +33,7 @@
   <requestDispatcher>
     <requestParsers enableStreamBody="true" />
   </requestDispatcher>
-  
+
   <dataDir>${solr.data.dir:}</dataDir>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -48,7 +47,7 @@
  </updateRequestProcessorChain>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
-  
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <!-- autocommit pending docs if certain criteria are met -->
     <autoCommit>
@@ -60,14 +59,14 @@
       <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
       <int name="tlogDfsReplication">${solr.ulog.tlogDfsReplication:2}</int>
     </updateLog>
-    
-      
-    <autoCommit> 
+
+
+    <autoCommit>
       <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
-      <openSearcher>false</openSearcher> 
+      <openSearcher>false</openSearcher>
     </autoCommit>
 
-    <autoSoftCommit> 
+    <autoSoftCommit>
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
@@ -86,7 +85,7 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
     <!-- implicit test w/o distrib declared-->

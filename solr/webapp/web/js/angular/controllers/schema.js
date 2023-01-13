@@ -92,6 +92,18 @@ solrAdminApp.controller('SchemaController',
         };
         $scope.refresh();
 
+        $scope.selectFieldTypeManipulationOption = function() {
+            $scope.fieldTypeObj = $scope.fieldTypeManipulationOption.template;
+        }
+
+        $scope.showHelp = function (id) {
+            if ($scope.helpId && ($scope.helpId === id || id === '')) {
+                delete $scope.helpId;
+            } else {
+                $scope.helpId = id;
+            }
+        };
+
         $scope.selectFieldOrType = function() {
             $location.search($scope.fieldOrType);
         }
@@ -138,6 +150,7 @@ solrAdminApp.controller('SchemaController',
             $scope.showAddField = false;
             $scope.showAddDynamicField = false;
             $scope.showAddCopyField = false;
+            $scope.showManipulateFieldType = false;
         }
 
         $scope.toggleAddField = function() {
@@ -287,6 +300,42 @@ solrAdminApp.controller('SchemaController',
                    field.deleted = true;
                    $timeout($scope.refresh, 1500);
                }
+            });
+        }
+        $scope.toggleManipulateFieldType = function() {
+            if ($scope.showManipulateFieldType) {
+                $scope.hideAll();
+            } else {
+                $scope.hideAll();
+                $scope.showManipulateFieldType = true;
+
+                $scope.adding = "fieldType";
+
+                $scope.fieldTypeObj = ""
+                delete $scope.addErrors;
+            }
+            $scope.fieldTypeManipulationOptions = getFieldTypeManipulationOptions();
+            $scope.fieldTypeManipulationOption = $scope.fieldTypeManipulationOptions[0];
+            $scope.selectFieldTypeManipulationOption();
+        }
+
+        $scope.manipulateFieldType = function() {
+            delete $scope.manipulateFieldTypeErrors;
+            var data = JSON.parse($scope.fieldTypeObj);
+            Schema.post({core: $routeParams.core}, data, function(data) {
+                if (data.errors) {
+                    $scope.manipulateFieldTypeErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.manipulateFieldTypeErrors === "string") {
+                        $scope.manipulateFieldTypeErrors = [$scope.manipulateFieldTypeErrors];
+                    }
+                } else {
+                    $scope.added = true;
+                    $timeout(function() {
+                        $scope.showManipulateFieldType = false;
+                        $scope.added = false;
+                        $scope.refresh();
+                    }, 1500);
+                }
             });
         }
     }
@@ -596,6 +645,59 @@ var getTermInfo = function(data) {
         }
     }
     return termInfo;
+};
+
+var getFieldTypeManipulationOptions = function() {
+    return [
+        {
+            value: "Add FieldType Template",
+            label: "Add FieldType",
+            template: "{\n" +
+                "  \"add-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\",\n" +
+                "    \"class\": \"solr.TextField\",\n" +
+                "    \"positionIncrementGap\": \"100\",\n" +
+                "    \"analyzer\": {\n" +
+                "      \"charFilters\": [\n" +
+                "        {\n" +
+                "          \"class\": \"solr.PatternReplaceCharFilterFactory\",\n" +
+                "          \"replacement\": \"$1$1\",\n" +
+                "          \"pattern\": \"([a-zA-Z])\\\\\\\\1+\"\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"tokenizer\": {\n" +
+                "        \"class\": \"solr.WhitespaceTokenizerFactory\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}"
+        },
+        {
+            value: "Delete FieldType Template",
+            label: "Delete FieldType",
+            template: "{\n" +
+                "  \"delete-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\"\n" +
+                "  }\n" +
+                "}"
+        },
+        {
+            value: "Replace FieldType Template",
+            label: "Replace FieldType",
+            template: "{\n" +
+                "  \"replace-field-type\": {\n" +
+                "    \"name\": \"myNewTxtField\",\n" +
+                "    \"class\": \"solr.TextField\",\n" +
+                "    \"positionIncrementGap\": \"100\",\n" +
+                "    \"analyzer\": {\n" +
+                "      \"tokenizer\": {\n" +
+                "        \"class\": \"solr.StandardTokenizerFactory\"\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}"
+        }
+    ];
 };
 
 var sortedObjectArray = function(list) {

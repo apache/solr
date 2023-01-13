@@ -16,8 +16,8 @@
  */
 package org.apache.solr.util;
 
-import com.github.zafarkhaja.semver.ParseException;
 import org.apache.solr.SolrTestCase;
+import org.semver4j.SemverException;
 
 public class TestSolrVersion extends SolrTestCase {
   private static final SolrVersion SOLR_9_0_1 = SolrVersion.valueOf("9.0.1");
@@ -27,12 +27,12 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testVersionComponents() {
-    SolrVersion v9_0_1_rc1 = SolrVersion.valueOf("9.0.1-rc1");
-    assertEquals("9.0.1-rc1", v9_0_1_rc1.toString());
+    SolrVersion v9_0_1_rc1 = SolrVersion.valueOf("9.0.1-rc1.0+b123");
+    assertEquals("9.0.1-rc1.0+b123", v9_0_1_rc1.toString());
     assertEquals(9, v9_0_1_rc1.getMajorVersion());
     assertEquals(0, v9_0_1_rc1.getMinorVersion());
     assertEquals(1, v9_0_1_rc1.getPatchVersion());
-    assertEquals("rc1", v9_0_1_rc1.getPrereleaseVersion());
+    assertEquals("rc1.0", v9_0_1_rc1.getPrereleaseVersion());
   }
 
   public void testLatestInitialized() {
@@ -40,26 +40,22 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testForwardsCompatibility() {
-    assertTrue(SolrVersion.valueOf("9.10.20").greaterThanOrEqualTo(SolrVersion.forIntegers(9, 0, 0)));
+    assertTrue(
+        SolrVersion.valueOf("9.10.20").greaterThanOrEqualTo(SolrVersion.forIntegers(9, 0, 0)));
   }
 
   public void testParseExceptions() {
-    expectThrows(
-        ParseException.class,
-        () -> SolrVersion.valueOf("SOLR_7_0_0"));
+    expectThrows(SemverException.class, () -> SolrVersion.valueOf("SOLR_7_0_0"));
   }
 
   public void testSatisfies() {
     assertTrue(SOLR_9_0_1.satisfies("~9.0"));
     assertTrue(SOLR_9_0_1.satisfies("9.x"));
     assertTrue(SOLR_9_0_1.satisfies("9"));
+    assertTrue(SOLR_9_0_1.satisfies("<=9"));
     assertTrue(SOLR_9_0_1.satisfies("<9.1"));
-    assertTrue(SOLR_9_0_1.satisfies(">9.0"));
+    assertFalse(SOLR_9_0_1.satisfies(">9.0"));
     assertFalse(SOLR_9_0_1.satisfies("8.x"));
-  }
-
-  public void testSatisfiesParseFailure() {
-    assertThrows(SolrVersion.InvalidSemVerExpressionException.class, () ->
-        SOLR_9_0_1.satisfies(":"));
+    assertTrue(SOLR_9_0_1.satisfies("8 - 9"));
   }
 }

@@ -24,21 +24,15 @@ public class DeleteBackupPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
 
-  @JsonProperty
-  public String location;
+  @JsonProperty public String location;
 
-  @JsonProperty
-  public String repository;
+  @JsonProperty public String repository;
 
-  @JsonProperty
-  public Integer backupId;
+  @JsonProperty public Integer backupId;
 
-  @JsonProperty
-  public Integer maxNumBackupPoints;
+  @JsonProperty public Integer maxNumBackupPoints;
 
-  @JsonProperty
-  public Boolean purgeUnused;
+  @JsonProperty public Boolean purgeUnused;
 
-  @JsonProperty
-  public String async;
+  @JsonProperty public String async;
 }

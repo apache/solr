@@ -17,23 +17,21 @@
 
 package org.apache.solr.cluster.api;
 
-/**A shard of a collection */
+/** A shard of a collection */
 public interface Shard {
 
-  /**name of the shard */
+  /** name of the shard */
   String name();
 
-  /**collection this shard belongs to */
+  /** collection this shard belongs to */
   String collection();
 
-  /**hash range of this shard. null if this is not using hash based router */
+  /** hash range of this shard. null if this is not using hash based router */
   HashRange range();
 
-  /**  replicas of the shard */
+  /** replicas of the shard */
   SimpleMap<ShardReplica> replicas();
 
-  /**
-   * Name of the replica that is acting as the leader at the moment
-   */
+  /** Name of the replica that is acting as the leader at the moment */
   String leader();
 }

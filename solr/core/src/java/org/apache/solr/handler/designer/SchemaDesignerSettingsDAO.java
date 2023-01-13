@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.designer;
 
+import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -41,8 +42,6 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
-
 class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,7 +54,8 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
 
   SchemaDesignerSettings getSettings(String configSet) {
     SolrConfig solrConfig =
-        SolrConfig.readFromResourceLoader(zkLoaderForConfigSet(configSet), SOLR_CONFIG_XML, true, null);
+        SolrConfig.readFromResourceLoader(
+            zkLoaderForConfigSet(configSet), SOLR_CONFIG_XML, true, null);
     return getSettings(solrConfig);
   }
 
@@ -84,7 +84,8 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     boolean changed = false;
 
     ConfigOverlay overlay = getConfigOverlay(configSet);
-    Map<String, Object> storedUserProps = overlay != null ? overlay.getUserProps() : Collections.emptyMap();
+    Map<String, Object> storedUserProps =
+        overlay != null ? overlay.getUserProps() : Collections.emptyMap();
     for (Map.Entry<String, Object> e : settings.toMap().entrySet()) {
       String key = e.getKey();
       Object propValue = e.getValue();
@@ -96,8 +97,12 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
 
     if (changed) {
-      ZkController.persistConfigResourceToZooKeeper(zkLoaderForConfigSet(configSet), overlay.getZnodeVersion(),
-          ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
+      ZkController.persistConfigResourceToZooKeeper(
+          zkLoaderForConfigSet(configSet),
+          overlay.getZnodeVersion(),
+          ConfigOverlay.RESOURCE_NAME,
+          overlay.toByteArray(),
+          true);
     }
 
     return changed;
@@ -112,7 +117,8 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     } catch (IOException exc) {
       log.error("Failed to get config overlay for {}", configSet, exc);
     }
-    Map<String, Object> userProps = overlay != null ? overlay.getUserProps() : Collections.emptyMap();
+    Map<String, Object> userProps =
+        overlay != null ? overlay.getUserProps() : Collections.emptyMap();
     return SchemaDesignerSettings.getSettingAsBool(userProps, DESIGNER_KEY + DISABLED, false);
   }
 
@@ -131,7 +137,8 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
     if (data != null && data.length > 0) {
       Map<String, Object> json =
-          (Map<String, Object>) ObjectBuilder.getVal(new JSONParser(new String(data, StandardCharsets.UTF_8)));
+          (Map<String, Object>)
+              ObjectBuilder.getVal(new JSONParser(new String(data, StandardCharsets.UTF_8)));
       overlay = new ConfigOverlay(json, stat.getVersion());
     }
     return overlay;
@@ -143,12 +150,15 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
 
     ConfigOverlay overlay = solrConfig.getOverlay();
-    return overlay == null || SchemaDesignerSettings.getSettingAsBool(overlay.getUserProps(), AUTO_CREATE_FIELDS, true);
+    return overlay == null
+        || SchemaDesignerSettings.getSettingAsBool(
+            overlay.getUserProps(), AUTO_CREATE_FIELDS, true);
   }
 
   private boolean hasFieldGuessingURPChain(final SolrConfig solrConfig) {
     boolean hasPlugin = false;
-    List<PluginInfo> plugins = solrConfig.getPluginInfos(UpdateRequestProcessorChain.class.getName());
+    List<PluginInfo> plugins =
+        solrConfig.getPluginInfos(UpdateRequestProcessorChain.class.getName());
     if (plugins != null) {
       for (PluginInfo next : plugins) {
         if ("add-unknown-fields-to-the-schema".equals(next.name)) {
@@ -162,6 +172,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
 
   private ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
     SolrResourceLoader loader = cc.getResourceLoader();
-    return new ZkSolrResourceLoader(loader.getInstancePath(), configSet, loader.getClassLoader(), cc.getZkController());
+    return new ZkSolrResourceLoader(
+        loader.getInstancePath(), configSet, loader.getClassLoader(), cc.getZkController());
   }
 }

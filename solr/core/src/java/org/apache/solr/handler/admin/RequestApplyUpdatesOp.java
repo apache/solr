@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.util.concurrent.Future;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -36,10 +35,12 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
     CoreContainer coreContainer = it.handler.coreContainer;
     try (SolrCore core = coreContainer.getCore(cname)) {
       if (core == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
       if (updateLog.getState() != UpdateLog.State.BUFFERING) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core " + cname + " not in buffering state");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Core " + cname + " not in buffering state");
       }
       Future<UpdateLog.RecoveryInfo> future = updateLog.applyBufferedUpdates();
       if (future == null) {
@@ -60,10 +61,10 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       Thread.currentThread().interrupt();
       CoreAdminOperation.log().warn("Recovery was interrupted", e);
     } catch (Exception e) {
-      if (e instanceof SolrException)
-        throw (SolrException) e;
+      if (e instanceof SolrException) throw (SolrException) e;
       else
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {
       if (it.req != null) it.req.close();
     }

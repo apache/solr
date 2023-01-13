@@ -19,7 +19,6 @@ package org.apache.solr.request.json;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 
 /**
@@ -38,31 +37,41 @@ class JsonQueryConverter {
   }
 
   private String putParam(String val, Map<String, String[]> additionalParams) {
-    String name = "_tt"+(numParams++);
-    additionalParams.put(name, new String[]{val});
+    String name = "_tt" + (numParams++);
+    additionalParams.put(name, new String[] {val});
     return name;
   }
 
-  // when isQParser==true, "val" is a query object of the form {query_type:{param1:val1, param2:val2}}
-  // when isQParser==false, "val" is a parameter on an existing qparser (which could be a simple parameter like 42, or a sub-query)
+  // when isQParser==true, "val" is a query object of the form {query_type:{param1:val1,
+  // param2:val2}}
+  // when isQParser==false, "val" is a parameter on an existing qparser (which could be a simple
+  // parameter like 42, or a sub-query)
   @SuppressWarnings({"unchecked"})
-  private void buildLocalParams(StringBuilder builder, Object val, boolean isQParser, Map<String, String[]> additionalParams) {
+  private void buildLocalParams(
+      StringBuilder builder,
+      Object val,
+      boolean isQParser,
+      Map<String, String[]> additionalParams) {
     if (!isQParser && !(val instanceof Map)) {
       // val is value of a query parser, and it is not a map
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Error when parsing json query, expect a json object here, but found : "+val);
-      // NOTE: a top-level query *can* be a String, so we should really allow it here.  This currently only works because
-      // we special-case String in toLocalParams() and don't call this method.
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Error when parsing json query, expect a json object here, but found : " + val);
+      // NOTE: a top-level query *can* be a String, so we should really allow it here.  This
+      // currently only works because we special-case String in toLocalParams() and don't call this
+      // method.
     }
     // We don't want to introduce unnecessary variable at root level
     boolean useSubBuilder = builder.length() > 0;
 
     if (val instanceof String) {
       if (!useSubBuilder) {
-        // Top level, so just use the value.  NOTE: this case is also short-circuited in toLocalParams() for performance.
+        // Top level, so just use the value.  NOTE: this case is also short-circuited in
+        // toLocalParams() for performance.
         builder.append(val.toString());
       } else {
-        // val is a parameter in a qparser, so use param deref and skip escaping: ...=$param1}&param1=<val>
+        // val is a parameter in a qparser, so use param deref and skip escaping:
+        // ...=$param1}&param1=<val>
         builder.append('$').append(putParam(val.toString(), additionalParams));
       }
       return;
@@ -72,15 +81,18 @@ class JsonQueryConverter {
       return;
     }
     if (!(val instanceof Map)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Error when parsing json query, expect a json object here, but found : "+val);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Error when parsing json query, expect a json object here, but found : " + val);
     }
 
-    Map<String,Object> map = (Map<String, Object>) val;
+    Map<String, Object> map = (Map<String, Object>) val;
     if (isQParser) {
       if (map.size() != 1) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Error when parsing json query, expect only one query parser here, but found : "+map.keySet());
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Error when parsing json query, expect only one query parser here, but found : "
+                + map.keySet());
       }
 
       String qtype = map.keySet().iterator().next();
@@ -97,13 +109,14 @@ class JsonQueryConverter {
         } else if (taggedQueryObject instanceof Map) {
           map = (Map<String, Object>) taggedQueryObject;
           qtype = map.keySet().iterator().next();
-          // FUTURE: might want to recurse here instead to handle nested tags (and add tagName as a parameter?)
+          // FUTURE: might want to recurse here instead to handle nested tags (and add tagName as a
+          // parameter?)
         }
       } else {
         if (qtype.equals("param")) {
-          boolean toplevel;
-          if (toplevel=(builder.length() == 0)) {
-            builder.append("{!v=");  
+          boolean toplevel = builder.length() == 0;
+          if (toplevel) {
+            builder.append("{!v=");
           }
           builder.append("$").append(map.get("param"));
           if (toplevel) {
@@ -127,15 +140,17 @@ class JsonQueryConverter {
         builder.append('$').append(putParam(subBuilder.toString(), additionalParams));
       }
     } else {
-      if(map.size()==1 && map.keySet().iterator().next().equals("param")) {
+      if (map.size() == 1 && map.keySet().iterator().next().equals("param")) {
         builder.append("v").append("=$").append(map.get("param")).append(" ");
       } else {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
           String key = entry.getKey();
           if (entry.getValue() instanceof List) {
             if (key.equals("query")) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "Error when parsing json query, value of query field should not be a list, found : " + entry.getValue());
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Error when parsing json query, value of query field should not be a list, found : "
+                      + entry.getValue());
             }
             List<?> l = (List<?>) entry.getValue();
             for (Object subVal : l) {

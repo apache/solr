@@ -24,21 +24,24 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Create a nested query, with the ability of that query to redefine its type via
- * local parameters.  This is useful in specifying defaults in configuration and
- * letting clients indirectly reference them.
- * <br>Example: <code>{!query defType=func v=$q1}</code>
- * <br> if the q1 parameter is <code>price</code> then the query would be a function query on the price field.
- * <br> if the q1 parameter is <code>{!lucene}inStock:true</code> then a term query is
- *     created from the lucene syntax string that matches documents with inStock=true.
+ * Create a nested query, with the ability of that query to redefine its type via local parameters.
+ * This is useful in specifying defaults in configuration and letting clients indirectly reference
+ * them. <br>
+ * Example: <code>{!query defType=func v=$q1}</code> <br>
+ * if the q1 parameter is <code>price</code> then the query would be a function query on the price
+ * field. <br>
+ * if the q1 parameter is <code>{!lucene}inStock:true</code> then a term query is created from the
+ * lucene syntax string that matches documents with inStock=true.
  */
 public class NestedQParserPlugin extends QParserPlugin {
   public static final String NAME = "query";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     if (localParams == null) { // avoid an NPE later
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "the 'query' QParser must be invoked with local-params, e.g. {!query defType=...}");
     }
     return new QParser(qstr, localParams, params, req) {
@@ -69,5 +72,4 @@ public class NestedQParserPlugin extends QParserPlugin {
       }
     };
   }
-
 }

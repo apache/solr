@@ -16,13 +16,14 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
@@ -36,21 +37,20 @@ import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-
 /**
  * @lucene.internal
  */
 public class XMLWriter extends TextResponseWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static float CURRENT_VERSION=2.2f;
+  public static float CURRENT_VERSION = 2.2f;
 
-  private static final char[] XML_START1="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
+  private static final char[] XML_START1 =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
 
-  private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"".toCharArray();
-  private static final char[] XML_STYLESHEET_END="\"?>\n".toCharArray();
+  private static final char[] XML_STYLESHEET =
+      "<?xml-stylesheet type=\"text/xsl\" href=\"".toCharArray();
+  private static final char[] XML_STYLESHEET_END = "\"?>\n".toCharArray();
 
   /*
   private static final char[] XML_START2_SCHEMA=(
@@ -59,11 +59,12 @@ public class XMLWriter extends TextResponseWriter {
           ).toCharArray();
   ***/
 
-  private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
+  private static final char[] XML_START2_NOSCHEMA = ("<response>\n").toCharArray();
 
   final int version;
 
-  public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     XMLWriter xmlWriter = null;
     try {
       xmlWriter = new XMLWriter(writer, req, rsp);
@@ -77,15 +78,13 @@ public class XMLWriter extends TextResponseWriter {
     super(writer, req, rsp);
 
     String version = req.getParams().get(CommonParams.VERSION);
-    float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
-    this.version = (int)(ver*1000);
-    if( this.version < 2200 ) {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "XMLWriter does not support version: "+version );
+    float ver = version == null ? CURRENT_VERSION : Float.parseFloat(version);
+    this.version = (int) (ver * 1000);
+    if (this.version < 2200) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "XMLWriter does not support version: " + version);
     }
   }
-
-
 
   public void writeResponse() throws IOException {
     writer.write(XML_START1);
@@ -109,33 +108,29 @@ public class XMLWriter extends TextResponseWriter {
 
     // dump response values
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if(omitHeader != null && omitHeader) rsp.removeResponseHeader();
+    if (omitHeader != null && omitHeader) rsp.removeResponseHeader();
     final NamedList<?> lst = rsp.getValues();
     int sz = lst.size();
-    int start=0;
+    int start = 0;
 
-    for (int i=start; i<sz; i++) {
-      writeVal(lst.getName(i),lst.getVal(i));
+    for (int i = start; i < sz; i++) {
+      writeVal(lst.getName(i), lst.getVal(i));
     }
 
     writer.write("\n</response>\n");
   }
-
-
-
-
 
   /** Writes the XML attribute name/val. A null val means that the attribute is missing. */
   private void writeAttr(String name, String val) throws IOException {
     writeAttr(name, val, true);
   }
 
-  public void writeAttr(String name, String val, boolean escape) throws IOException{
+  public void writeAttr(String name, String val, boolean escape) throws IOException {
     if (val != null) {
       writer.write(' ');
       writer.write(name);
       writer.write("=\"");
-      if(escape){
+      if (escape) {
         XML.escapeAttributeValue(val, writer);
       } else {
         writer.write(val);
@@ -149,7 +144,7 @@ public class XMLWriter extends TextResponseWriter {
 
     writer.write('<');
     writer.write(tag);
-    if (name!=null) {
+    if (name != null) {
       writeAttr(NAME, name);
       if (closeTag) {
         writer.write("/>");
@@ -165,19 +160,18 @@ public class XMLWriter extends TextResponseWriter {
     }
   }
 
-
   @Override
-  public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
-  {
+  public void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException {
     if (doIndent) indent();
 
     writer.write("<result");
     writeAttr(NAME, name);
-    writeAttr("numFound",Long.toString(numFound));
-    writeAttr("start",Long.toString(start));
+    writeAttr("numFound", Long.toString(numFound));
+    writeAttr("start", Long.toString(start));
     if (maxScore != null) {
-      writeAttr("maxScore",Float.toString(maxScore));
+      writeAttr("maxScore", Float.toString(maxScore));
     }
     if (numFoundExact != null) {
       writeAttr("numFoundExact", numFoundExact.toString());
@@ -188,30 +182,31 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   /**
-   * The SolrDocument should already have multivalued fields implemented as
-   * Collections -- this will not rewrite to &lt;arr&gt;
+   * The SolrDocument should already have multivalued fields implemented as Collections -- this will
+   * not rewrite to &lt;arr&gt;
    */
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+      throws IOException {
     startTag("doc", name, false);
     incLevel();
 
     for (String fname : doc.getFieldNames()) {
-      if (returnFields!= null && !returnFields.wantsField(fname)) {
+      if (returnFields != null && !returnFields.wantsField(fname)) {
         continue;
       }
 
       Object val = doc.getFieldValue(fname);
-      if( "_explain_".equals( fname ) ) {
+      if ("_explain_".equals(fname)) {
         if (log.isDebugEnabled()) {
           log.debug(String.valueOf(val));
         }
       }
-      writeVal(fname, val);
+      writeVal(fname, val, shouldWriteRaw(fname, returnFields));
     }
 
-    if(doc.hasChildDocuments()) {
-      for(SolrDocument childDoc : doc.getChildDocuments()) {
+    if (doc.hasChildDocuments()) {
+      for (SolrDocument childDoc : doc.getChildDocuments()) {
         writeSolrDocument(null, childDoc, new SolrReturnFields(), idx);
       }
     }
@@ -221,14 +216,11 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeEndDocumentList() throws IOException
-  {
+  public void writeEndDocumentList() throws IOException {
     decLevel();
     if (doIndent) indent();
     writer.write("</result>");
   }
-
-
 
   //
   // Generic compound types
@@ -237,11 +229,11 @@ public class XMLWriter extends TextResponseWriter {
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
-    startTag("lst", name, sz<=0);
+    startTag("lst", name, sz <= 0);
 
     incLevel();
-    for (int i=0; i<sz; i++) {
-      writeVal(val.getName(i),val.getVal(i));
+    for (int i = 0; i < sz; i++) {
+      writeVal(val.getName(i), val.getVal(i));
     }
     decLevel();
 
@@ -258,13 +250,14 @@ public class XMLWriter extends TextResponseWriter {
     startTag("lst", name, false);
     incLevel();
 
-    val.writeMap(new MapWriter.EntryWriter() {
-      @Override
-      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
-        writeVal( null == k ? null : k.toString(), v);
-        return this;
-      }
-    });
+    val.writeMap(
+        new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
+            writeVal(null == k ? null : k.toString(), v);
+            return this;
+          }
+        });
 
     decLevel();
     if (doIndent) {
@@ -274,19 +267,20 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeMap(String name, Map<?, ?> map, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, Map<?, ?> map, boolean excludeOuter, boolean isFirstVal)
+      throws IOException {
     int sz = map.size();
 
     if (!excludeOuter) {
-      startTag("lst", name, sz<=0);
+      startTag("lst", name, sz <= 0);
       incLevel();
     }
 
-    for (Map.Entry<?,?> entry : map.entrySet()) {
+    for (Map.Entry<?, ?> entry : map.entrySet()) {
       Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
-      writeVal( null == k ? null : k.toString(), v);
+      writeVal(null == k ? null : k.toString(), v);
     }
 
     if (!excludeOuter) {
@@ -299,41 +293,41 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val).iterator(), raw);
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> iter) throws IOException {
-    if( iter.hasNext() ) {
-      startTag("arr", name, false );
+  public void writeArray(String name, Iterator<?> iter, boolean raw) throws IOException {
+    if (iter.hasNext()) {
+      startTag("arr", name, false);
       incLevel();
-      while( iter.hasNext() ) {
-        writeVal(null, iter.next());
+      while (iter.hasNext()) {
+        writeVal(null, iter.next(), raw);
       }
       decLevel();
       if (doIndent) indent();
       writer.write("</arr>");
-    }
-    else {
-      startTag("arr", name, true );
+    } else {
+      startTag("arr", name, true);
     }
   }
 
   @Override
-  public void writeIterator(String name, IteratorWriter val) throws IOException {
+  public void writeIterator(String name, IteratorWriter val, boolean raw) throws IOException {
     // As the size is not known. So, always both startTag and endTag is written
     // irrespective of number of entries in IteratorWriter
-    startTag("arr", name, false );
+    startTag("arr", name, false);
     incLevel();
 
-    val.writeIter(new IteratorWriter.ItemWriter() {
-      @Override
-      public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        writeVal(null, o);
-        return this;
-      }
-    });
+    val.writeIter(
+        new IteratorWriter.ItemWriter() {
+          @Override
+          public IteratorWriter.ItemWriter add(Object o) throws IOException {
+            writeVal(null, o, raw);
+            return this;
+          }
+        });
 
     decLevel();
     if (doIndent) {
@@ -348,70 +342,77 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeNull(String name) throws IOException {
-    writePrim("null",name,"",false);
+    writePrim("null", name, "", false);
+  }
+
+  @Override
+  public void writeStrRaw(String name, String val) throws IOException {
+    int contentLen = val == null ? 0 : val.length();
+    startTag("raw", name, contentLen == 0);
+    if (contentLen == 0) return;
+    writer.write(val, 0, contentLen);
+    writer.write("</raw>");
   }
 
   @Override
   public void writeStr(String name, String val, boolean escape) throws IOException {
-    writePrim("str",name,val,escape);
+    writePrim("str", name, val, escape);
   }
 
   @Override
   public void writeInt(String name, String val) throws IOException {
-    writePrim("int",name,val,false);
+    writePrim("int", name, val, false);
   }
 
   @Override
   public void writeLong(String name, String val) throws IOException {
-    writePrim("long",name,val,false);
+    writePrim("long", name, val, false);
   }
 
   @Override
   public void writeBool(String name, String val) throws IOException {
-    writePrim("bool",name,val,false);
+    writePrim("bool", name, val, false);
   }
 
   @Override
   public void writeFloat(String name, String val) throws IOException {
-    writePrim("float",name,val,false);
+    writePrim("float", name, val, false);
   }
 
   @Override
   public void writeFloat(String name, float val) throws IOException {
-    writeFloat(name,Float.toString(val));
+    writeFloat(name, Float.toString(val));
   }
 
   @Override
   public void writeDouble(String name, String val) throws IOException {
-    writePrim("double",name,val,false);
+    writePrim("double", name, val, false);
   }
 
   @Override
   public void writeDouble(String name, double val) throws IOException {
-    writeDouble(name,Double.toString(val));
+    writeDouble(name, Double.toString(val));
   }
-
 
   @Override
   public void writeDate(String name, String val) throws IOException {
-    writePrim("date",name,val,false);
+    writePrim("date", name, val, false);
   }
-
 
   //
   // OPT - specific writeInt, writeFloat, methods might be faster since
   // there would be less write calls (write("<int name=\"" + name + ... + </int>)
   //
   private void writePrim(String tag, String name, String val, boolean escape) throws IOException {
-    int contentLen = val==null ? 0 : val.length();
+    int contentLen = val == null ? 0 : val.length();
 
-    startTag(tag, name, contentLen==0);
-    if (contentLen==0) return;
+    startTag(tag, name, contentLen == 0);
+    if (contentLen == 0) return;
 
     if (escape) {
-      XML.escapeCharData(val,writer);
+      XML.escapeCharData(val, writer);
     } else {
-      writer.write(val,0,contentLen);
+      writer.write(val, 0, contentLen);
     }
 
     writer.write('<');
@@ -419,5 +420,4 @@ public class XMLWriter extends TextResponseWriter {
     writer.write(tag);
     writer.write('>');
   }
-
 }

@@ -126,6 +126,13 @@ solrAdminServices.factory('System',
       "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
+.factory('ParamSet',
+  ['$resource', function($resource) {
+    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
+      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
+      "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
+    });
+  }])
 .service('FileUpload', function ($http) {
     this.upload = function(params, file, success, error){
         var url = "" + params.core + "/" + params.handler + "?";

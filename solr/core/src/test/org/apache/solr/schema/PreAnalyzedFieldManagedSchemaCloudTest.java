@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -41,8 +40,13 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
     configureCluster(2).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, 2, 1)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 
   @Test
@@ -51,22 +55,22 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
     addField(keyValueArrayToMap("name", "field2", "type", "string"));
   }
 
-  private void addField(Map<String,Object> field) throws Exception {
+  private void addField(Map<String, Object> field) throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     UpdateResponse addFieldResponse = new SchemaRequest.AddField(field).process(client, COLLECTION);
     assertNotNull(addFieldResponse);
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
-    FieldResponse fieldResponse = new SchemaRequest.Field(field.get("name").toString()).process(client, COLLECTION);
+    FieldResponse fieldResponse =
+        new SchemaRequest.Field(field.get("name").toString()).process(client, COLLECTION);
     assertNotNull(fieldResponse);
     assertEquals(0, fieldResponse.getStatus());
   }
 
-  private Map<String,Object> keyValueArrayToMap(String... alternatingKeysAndValues) {
-    Map<String,Object> map = new HashMap<>();
-    for (int i = 0 ; i < alternatingKeysAndValues.length ; i += 2)
+  private Map<String, Object> keyValueArrayToMap(String... alternatingKeysAndValues) {
+    Map<String, Object> map = new HashMap<>();
+    for (int i = 0; i < alternatingKeysAndValues.length; i += 2)
       map.put(alternatingKeysAndValues[i], alternatingKeysAndValues[i + 1]);
     return map;
   }
 }
-

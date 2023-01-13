@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -31,40 +30,40 @@ import org.junit.Test;
 
 public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
-    @Test
-    public void testPathIsAddedToContext() throws IOException, SolrServerException {
+  @Test
+  public void testPathIsAddedToContext() throws IOException, SolrServerException {
 
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
-                .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
-                .build();
+    final NodeConfig config =
+        new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
+            .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
+            .build();
 
-        try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {
-            final SystemInfoRequest info = new SystemInfoRequest();
-            final NamedList<?> response = server.request(info);
-            assertTrue(response.size() > 0);
-        }
+    try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {
+      final SystemInfoRequest info = new SystemInfoRequest();
+      final NamedList<?> response = server.request(info);
+      assertTrue(response.size() > 0);
+    }
+  }
+
+  private static class SystemInfoRequest extends SolrRequest<QueryResponse> {
+
+    public SystemInfoRequest() {
+      super(METHOD.GET, "/admin/info/system");
     }
 
-    private static class SystemInfoRequest extends SolrRequest<QueryResponse> {
-
-        public SystemInfoRequest() {
-            super(METHOD.GET, "/admin/info/system");
-        }
-
-        @Override
-        public SolrParams getParams() {
-            return new ModifiableSolrParams();
-        }
-
-        @Override
-        protected QueryResponse createResponse(final SolrClient client) {
-            return new QueryResponse();
-        }
-
-        @Override
-        public String getRequestType() {
-            return SolrRequest.SolrRequestType.ADMIN.toString();
-        }
+    @Override
+    public SolrParams getParams() {
+      return new ModifiableSolrParams();
     }
 
+    @Override
+    protected QueryResponse createResponse(final SolrClient client) {
+      return new QueryResponse();
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
+    }
+  }
 }

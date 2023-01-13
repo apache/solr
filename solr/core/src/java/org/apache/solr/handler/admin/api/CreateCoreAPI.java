@@ -17,16 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateCorePayload;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
@@ -36,43 +26,54 @@ import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenToCommaDelimitedString;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.solrj.request.beans.CreateCorePayload;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+
 /**
  * V2 API for creating a new core on the receiving node.
  *
- * This API (POST /v2/cores {'create': {...}}) is analogous to the v1 /admin/cores?action=CREATE command.
+ * <p>This API (POST /v2/cores {'create': {...}}) is analogous to the v1 /admin/cores?action=CREATE
+ * command.
  *
  * @see CreateCorePayload
  */
-@EndPoint(path = {"/cores"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+@EndPoint(
+    path = {"/cores"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class CreateCoreAPI {
-    public static final String V2_CREATE_CORE_CMD = "create";
+  public static final String V2_CREATE_CORE_CMD = "create";
 
-    private final CoreAdminHandler coreAdminHandler;
+  private final CoreAdminHandler coreAdminHandler;
 
-    public CreateCoreAPI(CoreAdminHandler coreAdminHandler) {
-        this.coreAdminHandler = coreAdminHandler;
+  public CreateCoreAPI(CoreAdminHandler coreAdminHandler) {
+    this.coreAdminHandler = coreAdminHandler;
+  }
+
+  @Command(name = V2_CREATE_CORE_CMD)
+  public void createCore(PayloadObj<CreateCorePayload> obj) throws Exception {
+    final CreateCorePayload v2Body = obj.get();
+    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    v1Params.put(ACTION, CREATE.name().toLowerCase(Locale.ROOT));
+
+    if (v2Body.isTransient != null) {
+      v1Params.put("transient", v1Params.remove("isTransient"));
+    }
+    if (v2Body.properties != null) {
+      v1Params.remove("properties");
+      flattenMapWithPrefix(v2Body.properties, v1Params, PROPERTY_PREFIX);
+    }
+    if (v2Body.roles != null && !v2Body.roles.isEmpty()) {
+      v1Params.remove("roles"); // Not strictly needed, since the method below would overwrite it.
+      flattenToCommaDelimitedString(v1Params, v2Body.roles, "roles");
     }
 
-    @Command(name = V2_CREATE_CORE_CMD)
-    public void createCore(PayloadObj<CreateCorePayload> obj) throws Exception {
-        final CreateCorePayload v2Body = obj.get();
-        final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-        v1Params.put(ACTION, CREATE.name().toLowerCase(Locale.ROOT));
-
-        if (v2Body.isTransient != null) {
-            v1Params.put("transient", v1Params.remove("isTransient"));
-        }
-        if (v2Body.properties != null) {
-             v1Params.remove("properties");
-            flattenMapWithPrefix(v2Body.properties, v1Params, PROPERTY_PREFIX);
-        }
-        if (v2Body.roles != null && !v2Body.roles.isEmpty()) {
-            v1Params.remove("roles"); // Not strictly needed, since the method below would overwrite it.
-            flattenToCommaDelimitedString(v1Params, v2Body.roles, "roles");
-        }
-
-        coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
+    coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
 }

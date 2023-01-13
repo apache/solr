@@ -16,17 +16,16 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
+import java.io.IOException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementPlanFactory;
 
-import java.io.IOException;
-
 /**
- * Implementation of {@link PlacementContext} that uses {@link SimpleClusterAbstractionsImpl}
- * to create components necessary for the placement plugins to use.
+ * Implementation of {@link PlacementContext} that uses {@link SimpleClusterAbstractionsImpl} to
+ * create components necessary for the placement plugins to use.
  */
 public class SimplePlacementContextImpl implements PlacementContext {
 

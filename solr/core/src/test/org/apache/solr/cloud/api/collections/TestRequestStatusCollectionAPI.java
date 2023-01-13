@@ -17,11 +17,11 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Map;
-
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -30,17 +30,21 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int MAX_WAIT_TIMEOUT_SECONDS = 90;
 
   public TestRequestStatusCollectionAPI() {
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
   }
 
+  @Override
   @Test
-  public void test() throws Exception {
+  public void test() {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
@@ -54,7 +58,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     try {
       sendRequest(params);
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     // Check for the request to be completed.
@@ -68,18 +72,20 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
     params.set(CollectionHandlingUtils.REQUESTID, "1000");
 
-    NamedList<Object> createResponse =null;
+    NamedList<Object> createResponse = null;
     try {
       createResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) createResponse.findRecursive("status","msg");
+      message = (String) createResponse.findRecursive("status", "msg");
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
-    assertEquals("found [1000] in completed tasks", message); 
-    assertEquals("expecting "+numShards+" shard responses at "+createResponse,
-        numShards, numResponsesCompleted(createResponse));
-    
+    assertEquals("found [1000] in completed tasks", message);
+    assertEquals(
+        "expecting " + numShards + " shard responses at " + createResponse,
+        numShards,
+        numResponsesCompleted(createResponse));
+
     // Check for a random (hopefully non-existent request id
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.REQUESTSTATUS.toString());
@@ -89,7 +95,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       status = (NamedList<?>) r.get("status");
       message = (String) status.get("msg");
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     assertEquals("Did not find [9999999] in any tasks queue", message);
@@ -102,25 +108,27 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     try {
       sendRequest(params);
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     // Check for the request to be completed.
     params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
     params.set(CollectionHandlingUtils.REQUESTID, "1001");
-    NamedList<Object> splitResponse=null;
+    NamedList<Object> splitResponse = null;
     try {
       splitResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) splitResponse.findRecursive("status","msg");
+      message = (String) splitResponse.findRecursive("status", "msg");
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     assertEquals("found [1001] in completed tasks", message);
-    // create * 2 + preprecovery *2 + split + req_apply_upd * 2 =7 
-    assertEquals("expecting "+(2+2+1+2)+" shard responses at "+splitResponse,
-        (2+2+1+2), numResponsesCompleted(splitResponse));
+    // create * 2 + preprecovery * 2 + split + req_apply_upd * 2 = 7
+    assertEquals(
+        "expecting " + (2 + 2 + 1 + 2) + " shard responses at " + splitResponse,
+        (2 + 2 + 1 + 2),
+        numResponsesCompleted(splitResponse));
 
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
@@ -132,7 +140,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     try {
       sendRequest(params);
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     params = new ModifiableSolrParams();
@@ -142,9 +150,9 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     try {
       NamedList<Object> response = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
-      message = (String) response.findRecursive("status","msg");
+      message = (String) response.findRecursive("status", "msg");
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     assertEquals("found [1002] in failed tasks", message);
@@ -159,7 +167,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     try {
       r = sendRequest(params);
     } catch (SolrServerException | IOException e) {
-      e.printStackTrace();
+      log.error("error sending request", e);
     }
 
     assertEquals("Task with the same requestid already exists. (1002)", r.get("error"));
@@ -167,14 +175,14 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
   @SuppressWarnings("unchecked")
   private int numResponsesCompleted(NamedList<Object> response) {
-    int sum=0;
-    for (String key: Arrays.asList("success","failure")) {
-      NamedList<Object> allStatuses = (NamedList<Object>)response.get(key);
-      if (allStatuses!=null) {
-        for (Map.Entry<String, Object> tuple: allStatuses) {
+    int sum = 0;
+    for (String key : Arrays.asList("success", "failure")) {
+      NamedList<Object> allStatuses = (NamedList<Object>) response.get(key);
+      if (allStatuses != null) {
+        for (Map.Entry<String, Object> tuple : allStatuses) {
           NamedList<Object> statusResponse = (NamedList<Object>) tuple.getValue();
-          if (statusResponse.indexOf("STATUS",0)>=0) {
-            sum+=1;
+          if (statusResponse.indexOf("STATUS", 0) >= 0) {
+            sum += 1;
           }
         }
       }
@@ -183,11 +191,11 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
   }
 
   /**
-   * Helper method to send a status request with specific retry limit and return
-   * the message/null from the success response.
+   * Helper method to send a status request with specific retry limit and return the message/null
+   * from the success response.
    */
   private NamedList<Object> sendStatusRequestWithRetry(ModifiableSolrParams params, int maxCounter)
-      throws SolrServerException, IOException{
+      throws SolrServerException, IOException {
     NamedList<Object> r = null;
     while (maxCounter-- > 0) {
       r = sendRequest(params);
@@ -203,22 +211,20 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
       }
-
     }
     // Return last state?
     return r;
   }
 
-  protected NamedList<Object> sendRequest(ModifiableSolrParams params) throws SolrServerException, IOException {
+  protected NamedList<Object> sendRequest(ModifiableSolrParams params)
+      throws SolrServerException, IOException {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
+    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
       return baseServer.request(request);
     }
-
   }
 }

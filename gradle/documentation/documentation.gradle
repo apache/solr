@@ -38,7 +38,7 @@ configure(rootProject) {
       }
     }())
 
-    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://solr.apache.org/guide/${refguideUrlVersion}")
+    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://solr.apache.org/guide/solr/${refguideUrlVersion}")
   }
 
   task documentation() {

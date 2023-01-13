@@ -22,23 +22,27 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Lookup;
 import org.apache.http.cookie.CookieSpecProvider;
 
+/**
+ * @deprecated Please look into using Solr's new Http2 clients
+ */
+@Deprecated(since = "9.0")
 public class SolrHttpClientContextBuilder {
   public static SolrHttpClientContextBuilder create() {
     return new SolrHttpClientContextBuilder();
   }
-  
-  public static abstract class CredentialsProviderProvider {
+
+  public abstract static class CredentialsProviderProvider {
     public abstract CredentialsProvider getCredentialsProvider();
   }
-  
-  public static abstract class AuthSchemeRegistryProvider {
+
+  public abstract static class AuthSchemeRegistryProvider {
     public abstract Lookup<AuthSchemeProvider> getAuthSchemeRegistry();
   }
-  
-  public static abstract class CookieSpecRegistryProvider {
+
+  public abstract static class CookieSpecRegistryProvider {
     public abstract Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
-  
+
   private CookieSpecRegistryProvider cookieSpecRegistryProvider;
   private AuthSchemeRegistryProvider authSchemeRegistryProvider;
   private CredentialsProviderProvider credentialsProviderProvider;
@@ -52,13 +56,13 @@ public class SolrHttpClientContextBuilder {
     this.cookieSpecRegistryProvider = cookieSpecRegistryProvider;
     return this;
   }
-  
+
   public final SolrHttpClientContextBuilder setDefaultCredentialsProvider(
       final CredentialsProviderProvider credentialsProviderProvider) {
     this.credentialsProviderProvider = credentialsProviderProvider;
     return this;
   }
-  
+
   public final SolrHttpClientContextBuilder setAuthSchemeRegistryProvider(
       final AuthSchemeRegistryProvider authSchemeRegistryProvider) {
     this.authSchemeRegistryProvider = authSchemeRegistryProvider;
@@ -83,16 +87,15 @@ public class SolrHttpClientContextBuilder {
       context.setCredentialsProvider(getCredentialsProviderProvider().getCredentialsProvider());
     }
     if (getAuthSchemeRegistryProvider() != null) {
-      context.setAuthSchemeRegistry( getAuthSchemeRegistryProvider().getAuthSchemeRegistry());
+      context.setAuthSchemeRegistry(getAuthSchemeRegistryProvider().getAuthSchemeRegistry());
     }
-    
+
     if (getCookieSpecRegistryProvider() != null) {
       context.setCookieSpecRegistry(getCookieSpecRegistryProvider().getCookieSpecRegistry());
     }
 
     context.setUserToken(userToken);
-    
+
     return context;
   }
-
 }

@@ -24,9 +24,7 @@ import java.security.Security;
 public class SolrTestNonSecureRandomProvider extends Provider {
 
   public SolrTestNonSecureRandomProvider() {
-    super("SolrTestNonSecure",
-        "1.0",
-        "A Test only, non secure provider");
+    super("SolrTestNonSecure", "1.0", "A Test only, non secure provider");
     put("SecureRandom.SHA1PRNG", NotSecurePseudoRandomSpi.class.getName());
     put("SecureRandom.NativePRNG", NotSecurePseudoRandomSpi.class.getName());
     put("SecureRandom.DRBG", NotSecurePseudoRandomSpi.class.getName());
@@ -41,39 +39,36 @@ public class SolrTestNonSecureRandomProvider extends Provider {
   }
 
   public static void injectProvider() {
-      // Install our non secure solr test secure random provider
-      Provider[] secureRandomProviders =
-          Security.getProviders("SecureRandom.SHA1PRNG");
-      if ((secureRandomProviders == null)
-          || (secureRandomProviders.length < 1)
-          || (!SolrTestNonSecureRandomProvider.class.equals(
-          secureRandomProviders[0].getClass()))) {
-          Security.insertProviderAt(new SolrTestNonSecureRandomProvider(), 1);
-      }
+    // Install our non secure solr test secure random provider
+    Provider[] secureRandomProviders = Security.getProviders("SecureRandom.SHA1PRNG");
+    if ((secureRandomProviders == null)
+        || (secureRandomProviders.length < 1)
+        || (!SolrTestNonSecureRandomProvider.class.equals(secureRandomProviders[0].getClass()))) {
+      Security.insertProviderAt(new SolrTestNonSecureRandomProvider(), 1);
+    }
 
-      // Assert that new SecureRandom() and
-      // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
-      // by our non secure test provider.
-      SecureRandom rng1 = new SecureRandom();
-      if (!SolrTestNonSecureRandomProvider.class.equals(
-          rng1.getProvider().getClass())) {
-          throw new SecurityException(
-              "new SecureRandom() backed by wrong Provider: "
-                  + rng1.getProvider().getClass());
-      }
+    // Assert that new SecureRandom() and
+    // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
+    // by our non secure test provider.
+    SecureRandom rng1 = new SecureRandom();
+    if (!SolrTestNonSecureRandomProvider.class.equals(rng1.getProvider().getClass())) {
+      throw new SecurityException(
+          "new SecureRandom() backed by wrong Provider: " + rng1.getProvider().getClass());
+    }
 
-      boolean skipCheck = false;
-      SecureRandom rng2 = null;
-      try {
-          rng2 = SecureRandom.getInstance("SHA1PRNG");
-      } catch (NoSuchAlgorithmException e) {
-          skipCheck = true;
-      }
-      if (!skipCheck && !SolrTestNonSecureRandomProvider.class.equals(
-          rng2.getProvider().getClass())) {
-          throw new SecurityException(
-              "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong"
-                  + " Provider: " + rng2.getProvider().getClass());
-      }
+    boolean skipCheck = false;
+    SecureRandom rng2 = null;
+    try {
+      rng2 = SecureRandom.getInstance("SHA1PRNG");
+    } catch (NoSuchAlgorithmException e) {
+      skipCheck = true;
+    }
+    if (!skipCheck
+        && !SolrTestNonSecureRandomProvider.class.equals(rng2.getProvider().getClass())) {
+      throw new SecurityException(
+          "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong"
+              + " Provider: "
+              + rng2.getProvider().getClass());
+    }
   }
 }

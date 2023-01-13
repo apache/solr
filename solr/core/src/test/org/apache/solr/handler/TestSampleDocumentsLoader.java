@@ -20,7 +20,7 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,13 +35,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.solr.handler.designer.DefaultSampleDocumentsLoader.CSV_MULTI_VALUE_DELIM_PARAM;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-public class TestSampleDocumentsLoader {
+public class TestSampleDocumentsLoader extends SolrTestCase {
 
   SampleDocumentsLoader loader;
   File exampleDir;
@@ -51,7 +45,9 @@ public class TestSampleDocumentsLoader {
     loader = new DefaultSampleDocumentsLoader();
     loader.init(new NamedList<>());
     exampleDir = new File(ExternalPaths.SOURCE_HOME, "example");
-    assertTrue("Required test data directory " + exampleDir.getCanonicalPath() + " not found!", exampleDir.isDirectory());
+    assertTrue(
+        "Required test data directory " + exampleDir.getCanonicalPath() + " not found!",
+        exampleDir.isDirectory());
   }
 
   @Test
@@ -62,8 +58,9 @@ public class TestSampleDocumentsLoader {
   @Test
   public void testCsv() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CSV_MULTI_VALUE_DELIM_PARAM, "\\|");
-    List<SolrInputDocument> docs = loadTestDocs(params, new File(exampleDir, "films/films.csv"), -1, 1100);
+    params.set(DefaultSampleDocumentsLoader.CSV_MULTI_VALUE_DELIM_PARAM, "\\|");
+    List<SolrInputDocument> docs =
+        loadTestDocs(params, new File(exampleDir, "films/films.csv"), -1, 1100);
     boolean foundIt = false;
     for (SolrInputDocument next : docs) {
       if (".45".equals(next.getFieldValue("name"))) {
@@ -84,7 +81,8 @@ public class TestSampleDocumentsLoader {
     loadTestDocs(null, new File(exampleDir, "films/films.xml"), 1000, 1000);
   }
 
-  protected List<SolrInputDocument> loadTestDocs(SolrParams params, File inputDocs, int maxDocsToLoad, int expectedDocs) throws IOException {
+  protected List<SolrInputDocument> loadTestDocs(
+      SolrParams params, File inputDocs, int maxDocsToLoad, int expectedDocs) throws IOException {
     assertTrue(inputDocs.getCanonicalPath() + " not found", inputDocs.isFile());
     ContentStream stream = getContentStream(inputDocs);
     SampleDocuments sampleDocs = loader.parseDocsFromStream(params, stream, maxDocsToLoad);

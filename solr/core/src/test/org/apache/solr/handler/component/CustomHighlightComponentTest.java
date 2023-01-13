@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -52,11 +51,11 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     @Override
     protected Object convertHighlights(NamedList<Object> hl) {
       final ArrayList<SimpleOrderedMap<Object>> hlMaps = new ArrayList<>();
-      for (int i=0; i<hl.size(); ++i) {
-          SimpleOrderedMap<Object> hlMap = new SimpleOrderedMap<>();
-          hlMap.add(id_key, hl.getName(i));
-          hlMap.add(snippets_key, hl.getVal(i));
-          hlMaps.add(hlMap);
+      for (int i = 0; i < hl.size(); ++i) {
+        SimpleOrderedMap<Object> hlMap = new SimpleOrderedMap<>();
+        hlMap.add(id_key, hl.getName(i));
+        hlMap.add(snippets_key, hl.getVal(i));
+        hlMaps.add(hlMap);
       }
       return hlMaps;
     }
@@ -68,11 +67,11 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
     @Override
     protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
-      SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[])objArr;
+      SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[]) objArr;
       @SuppressWarnings("unchecked")
-      final ArrayList<SimpleOrderedMap<?>> hlMaps = (ArrayList<SimpleOrderedMap<?>>)obj;
+      final ArrayList<SimpleOrderedMap<?>> hlMaps = (ArrayList<SimpleOrderedMap<?>>) obj;
       for (SimpleOrderedMap<?> hlMap : hlMaps) {
-        String id = (String)hlMap.get(id_key);
+        String id = (String) hlMap.get(id_key);
         ShardDoc sdoc = resultIds.get(id);
         int idx = sdoc.positionInResponse;
         mapArr[idx] = hlMap;
@@ -81,7 +80,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
     @Override
     protected Object getAllHighlights(Object[] objArr) {
-      final SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[])objArr;
+      final SimpleOrderedMap<?>[] mapArr = (SimpleOrderedMap<?>[]) objArr;
       // remove nulls in case not all docs were able to be retrieved
       ArrayList<SimpleOrderedMap<?>> mapList = new ArrayList<>();
       for (SimpleOrderedMap<?> map : mapArr) {
@@ -91,7 +90,6 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       }
       return mapList;
     }
-
   }
 
   protected String customHighlightComponentClassName() {
@@ -107,30 +105,27 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
 
     // decide collection name ...
-    COLLECTION = "collection"+(1+random().nextInt(100)) ;
+    COLLECTION = "collection" + (1 + random().nextInt(100));
     // ... and shard/replica/node numbers
     final int numShards = 3;
     final int numReplicas = 2;
-    final int nodeCount = numShards*numReplicas;
+    final int nodeCount = numShards * numReplicas;
 
     // create and configure cluster
-    configureCluster(nodeCount)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
+    configureCluster(nodeCount).addConfig("conf", configset("cloud-dynamic")).configure();
 
     // create an empty collection
-    CollectionAdminRequest
-    .createCollection(COLLECTION, "conf", numShards, numReplicas)
-    .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
+        .process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
 
     // determine custom search handler name (the exact name should not matter)
-    final String customSearchHandlerName = "/custom_select"+random().nextInt();
+    final String customSearchHandlerName = "/custom_select" + random().nextInt();
 
     final String defaultHighlightComponentName = HighlightComponent.COMPONENT_NAME;
     final String highlightComponentName;
@@ -142,28 +137,42 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
         highlightComponentName = defaultHighlightComponentName;
       } else {
         // custom component
-        highlightComponentName = "customhighlight"+random().nextInt();
-        cluster.getSolrClient().request(
-            new ConfigRequest(
-                "{\n" +
-                "  'add-searchcomponent': {\n" +
-                "    'name': '"+highlightComponentName+"',\n" +
-                "    'class': '"+customHighlightComponentClassName()+"'\n" +
-                "  }\n" +
-                "}"),
-            COLLECTION);
+        highlightComponentName = "customhighlight" + random().nextInt();
+        cluster
+            .getSolrClient()
+            .request(
+                new ConfigRequest(
+                    "{\n"
+                        + "  'add-searchcomponent': {\n"
+                        + "    'name': '"
+                        + highlightComponentName
+                        + "',\n"
+                        + "    'class': '"
+                        + customHighlightComponentClassName()
+                        + "'\n"
+                        + "  }\n"
+                        + "}"),
+                COLLECTION);
       }
       // handler
-      cluster.getSolrClient().request(
-          new ConfigRequest(
-              "{\n" +
-              "  'add-requesthandler': {\n" +
-              "    'name' : '"+customSearchHandlerName+"',\n" +
-              "    'class' : 'org.apache.solr.handler.component.SearchHandler',\n" +
-              "    'components' : [ '"+QueryComponent.COMPONENT_NAME+"', '"+highlightComponentName+"' ]\n" +
-              "  }\n" +
-              "}"),
-          COLLECTION);
+      cluster
+          .getSolrClient()
+          .request(
+              new ConfigRequest(
+                  "{\n"
+                      + "  'add-requesthandler': {\n"
+                      + "    'name' : '"
+                      + customSearchHandlerName
+                      + "',\n"
+                      + "    'class' : 'org.apache.solr.handler.component.SearchHandler',\n"
+                      + "    'components' : [ '"
+                      + QueryComponent.COMPONENT_NAME
+                      + "', '"
+                      + highlightComponentName
+                      + "' ]\n"
+                      + "  }\n"
+                      + "}"),
+              COLLECTION);
     }
 
     // add some documents
@@ -181,7 +190,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     // search for the documents
     {
       // compose the query
-      final SolrQuery solrQuery =  new SolrQuery(t1+":bee");
+      final SolrQuery solrQuery = new SolrQuery(t1 + ":bee");
       solrQuery.setRequestHandler(customSearchHandlerName);
       solrQuery.setHighlight(true);
       final boolean t1Highlights = random().nextBoolean();
@@ -194,14 +203,15 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       }
 
       // make the query
-      final QueryResponse queryResponse = new QueryRequest(solrQuery)
-          .process(cluster.getSolrClient(), COLLECTION);
+      final QueryResponse queryResponse =
+          new QueryRequest(solrQuery).process(cluster.getSolrClient(), COLLECTION);
 
       // analyse the response
       final Map<String, Map<String, List<String>>> highlighting = queryResponse.getHighlighting();
       @SuppressWarnings({"unchecked"})
       final ArrayList<SimpleOrderedMap<Object>> custom_highlighting =
-          (ArrayList<SimpleOrderedMap<Object>>)queryResponse.getResponse().get("custom_highlighting");
+          (ArrayList<SimpleOrderedMap<Object>>)
+              queryResponse.getResponse().get("custom_highlighting");
 
       if (defaultHighlightComponentName.equals(highlightComponentName)) {
         // regular 'highlighting' ...
@@ -234,33 +244,41 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
   }
 
-  protected void checkHighlightingResponseMap(Map<String, Map<String, List<String>>> highlightingMap,
-      String highlightedField) throws Exception {
-    assertEquals("too few or too many keys: "+highlightingMap.keySet(),
-        3, highlightingMap.size());
-    checkHighlightingResponseMapElement(highlightingMap.get("1"), highlightedField, "bumble ", "bee");
-    checkHighlightingResponseMapElement(highlightingMap.get("2"), highlightedField, "honey ", "bee");
-    checkHighlightingResponseMapElement(highlightingMap.get("3"), highlightedField, "solitary ", "bee");
+  protected void checkHighlightingResponseMap(
+      Map<String, Map<String, List<String>>> highlightingMap, String highlightedField) {
+    assertEquals(
+        "too few or too many keys: " + highlightingMap.keySet(), 3, highlightingMap.size());
+    checkHighlightingResponseMapElement(
+        highlightingMap.get("1"), highlightedField, "bumble ", "bee");
+    checkHighlightingResponseMapElement(
+        highlightingMap.get("2"), highlightedField, "honey ", "bee");
+    checkHighlightingResponseMapElement(
+        highlightingMap.get("3"), highlightedField, "solitary ", "bee");
   }
 
-  protected void checkHighlightingResponseMapElement(Map<String, List<String>> docHighlights,
-      String highlightedField, String preHighlightText, String highlightedText) throws Exception {
+  protected void checkHighlightingResponseMapElement(
+      Map<String, List<String>> docHighlights,
+      String highlightedField,
+      String preHighlightText,
+      String highlightedText) {
     if (highlightedField == null) {
       assertEquals(0, docHighlights.size());
     } else {
       List<String> docHighlightsList = docHighlights.get(highlightedField);
       assertEquals(1, docHighlightsList.size());
-      assertEquals(preHighlightText
-          + SolrFragmentsBuilder.DEFAULT_PRE_TAGS
-          + highlightedText
-          + SolrFragmentsBuilder.DEFAULT_POST_TAGS, docHighlightsList.get(0));
+      assertEquals(
+          preHighlightText
+              + SolrFragmentsBuilder.DEFAULT_PRE_TAGS
+              + highlightedText
+              + SolrFragmentsBuilder.DEFAULT_POST_TAGS,
+          docHighlightsList.get(0));
     }
   }
 
-  protected void checkHighlightingResponseList(ArrayList<SimpleOrderedMap<Object>> highlightingList,
-      String highlightedField) throws Exception {
-    assertEquals("too few or too many elements: "+highlightingList.size(),
-        3, highlightingList.size());
+  protected void checkHighlightingResponseList(
+      ArrayList<SimpleOrderedMap<Object>> highlightingList, String highlightedField) {
+    assertEquals(
+        "too few or too many elements: " + highlightingList.size(), 3, highlightingList.size());
     final Set<String> seenDocIds = new HashSet<>();
     for (SimpleOrderedMap<Object> highlightingListElementMap : highlightingList) {
       final String expectedHighlightText;
@@ -269,7 +287,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
       assertEquals(highlightingList.toString(), 2, highlightingListElementMap.size());
       // id element
       {
-        final String docId = (String)highlightingListElementMap.get(id_key);
+        final String docId = (String) highlightingListElementMap.get(id_key);
         seenDocIds.add(docId);
         final String preHighlightText;
         final String highlightedText = "bee";
@@ -279,24 +297,26 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
           preHighlightText = "honey ";
         } else if ("3".equals(docId)) {
           preHighlightText = "solitary ";
-        } else  {
+        } else {
           preHighlightText = null;
-          fail("unknown docId "+docId);
+          fail("unknown docId " + docId);
         }
-        expectedHighlightText = preHighlightText
-            + SolrFragmentsBuilder.DEFAULT_PRE_TAGS
-            + highlightedText
-            + SolrFragmentsBuilder.DEFAULT_POST_TAGS;
+        expectedHighlightText =
+            preHighlightText
+                + SolrFragmentsBuilder.DEFAULT_PRE_TAGS
+                + highlightedText
+                + SolrFragmentsBuilder.DEFAULT_POST_TAGS;
       }
       // snippets element
       {
         @SuppressWarnings({"unchecked"})
-        SimpleOrderedMap<Object> snippets = (SimpleOrderedMap<Object>)highlightingListElementMap.get(snippets_key);
+        SimpleOrderedMap<Object> snippets =
+            (SimpleOrderedMap<Object>) highlightingListElementMap.get(snippets_key);
         if (highlightedField == null) {
           assertEquals(0, snippets.size());
         } else {
           @SuppressWarnings({"unchecked"})
-          ArrayList<String> docHighlights = (ArrayList<String>)(snippets).get(highlightedField);
+          ArrayList<String> docHighlights = (ArrayList<String>) (snippets).get(highlightedField);
           assertEquals(1, docHighlights.size());
           actualHighlightText = docHighlights.get(0);
           assertEquals(expectedHighlightText, actualHighlightText);
@@ -305,5 +325,4 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     }
     assertEquals(3, seenDocIds.size());
   }
-
 }

@@ -1,0 +1,6 @@
+@defaultMessage Use InputStream.transferTo(OutputStream) or Reader.transferTo(Writer) instead
+org.apache.commons.io.IOUtils#copy(**)
+org.apache.commons.io.IOUtils#copyLarge(**)
+
+@defaultMessage Use org.apache.commons.io.file.PathUtils#deleteDirectory(java.nio.file.Path) instead
+org.apache.commons.io.FileUtils#deleteDirectory(java.io.File)

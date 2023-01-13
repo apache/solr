@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -29,18 +28,16 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Tests for SegmentsInfoRequestHandler. Plugin entry, returning data of created segment.
- */
+/** Tests for SegmentsInfoRequestHandler. Plugin entry, returning data of created segment. */
 public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   private static final int DOC_COUNT = 5;
-  
+
   private static final int DEL_COUNT = 1;
-  
+
   private static final int NUM_SEGMENTS = 2;
 
   private static int initialRefCount;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
 
@@ -51,35 +48,41 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     // Also prevent flushes
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
     System.setProperty("solr.tests.ramBufferSizeMB", "5000");
-    
+
     System.setProperty("enable.update.log", "false"); // no _version_ in our schema
-    initCore("solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
-    
+    // segments API shouldn't depend on _version_ or ulog
+    initCore("solrconfig.xml", "schema12.xml");
+
     // build up an index with at least 2 segments and some deletes
     for (int i = 0; i < DOC_COUNT; i++) {
-      assertU(adoc("id","SOLR100" + i, "name","Apache Solr:" + i));
+      assertU(adoc("id", "SOLR100" + i, "name", "Apache Solr:" + i));
     }
     for (int i = 0; i < DEL_COUNT; i++) {
       assertU(delI("SOLR100" + i));
     }
     assertU(commit());
     for (int i = 0; i < DOC_COUNT; i++) {
-      assertU(adoc("id","SOLR200" + i, "name","Apache Solr:" + i));
+      assertU(adoc("id", "SOLR200" + i, "name", "Apache Solr:" + i));
     }
     assertU(commit());
-    h.getCore().withSearcher((searcher) -> {
-      int numSegments = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory()).size();
-      // if this is not NUM_SEGMENTS, there was some unexpected flush or merge
-      assertEquals("Unexpected number of segment in the index: " + numSegments, 
-          NUM_SEGMENTS, numSegments);
-      return null;
-    });
+    h.getCore()
+        .withSearcher(
+            (searcher) -> {
+              int numSegments =
+                  SegmentInfos.readLatestCommit(searcher.getIndexReader().directory()).size();
+              // if this is not NUM_SEGMENTS, there was some unexpected flush or merge
+              assertEquals(
+                  "Unexpected number of segment in the index: " + numSegments,
+                  NUM_SEGMENTS,
+                  numSegments);
+              return null;
+            });
     // see SOLR-14431
     RefCounted<IndexWriter> iwRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
     initialRefCount = iwRef.getRefcount();
     iwRef.decref();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     RefCounted<IndexWriter> iwRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
@@ -92,50 +95,59 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSegmentInfos() {   
-    assertQ("Unexpected number of segments returned",
-        req("qt","/admin/segments"),
+  public void testSegmentInfos() {
+    assertQ(
+        "Unexpected number of segments returned",
+        req("qt", "/admin/segments"),
         NUM_SEGMENTS + "=count(//lst[@name='segments']/lst)");
   }
 
   @Test
   public void testSegmentInfosVersion() {
-    assertQ("Unexpected number of segments returned",
-        req("qt","/admin/segments"),
-        NUM_SEGMENTS + "=count(//lst[@name='segments']/lst/str[@name='version'][.='" + Version.LATEST + "'])");
+    assertQ(
+        "Unexpected number of segments returned",
+        req("qt", "/admin/segments"),
+        NUM_SEGMENTS
+            + "=count(//lst[@name='segments']/lst/str[@name='version'][.='"
+            + Version.LATEST
+            + "'])");
   }
-  
+
   @Test
   public void testSegmentNames() throws IOException {
     String[] segmentNamePatterns = new String[NUM_SEGMENTS];
-    h.getCore().withSearcher((searcher) -> {
-      int i = 0;
-      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
-        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
-        segmentNamePatterns[i] = "//lst[@name='segments']/lst/str[@name='name'][.='" + sInfo.info.name + "']";
-        i++;
-      }
-      
-      return null;
-    });
-    assertQ("Unexpected segment names returned",
-        req("qt","/admin/segments"),
-        segmentNamePatterns);
+    h.getCore()
+        .withSearcher(
+            (searcher) -> {
+              int i = 0;
+              for (SegmentCommitInfo sInfo :
+                  SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+                assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+                segmentNamePatterns[i] =
+                    "//lst[@name='segments']/lst/str[@name='name'][.='" + sInfo.info.name + "']";
+                i++;
+              }
+
+              return null;
+            });
+    assertQ("Unexpected segment names returned", req("qt", "/admin/segments"), segmentNamePatterns);
   }
-  
+
   @Test
   public void testSegmentInfosData() {
-    assertQ("Unexpected document counts in result",
-        req("qt","/admin/segments"),
-          //#Document
-          (DOC_COUNT*2)+"=sum(//lst[@name='segments']/lst/int[@name='size'])",
-          //#Deletes
-          DEL_COUNT+"=sum(//lst[@name='segments']/lst/int[@name='delCount'])");
+    assertQ(
+        "Unexpected document counts in result",
+        req("qt", "/admin/segments"),
+        // #Document
+        (DOC_COUNT * 2) + "=sum(//lst[@name='segments']/lst/int[@name='size'])",
+        // #Deletes
+        DEL_COUNT + "=sum(//lst[@name='segments']/lst/int[@name='delCount'])");
   }
 
   @Test
   public void testCoreInfo() {
-    assertQ("Missing core info",
+    assertQ(
+        "Missing core info",
         req("qt", "/admin/segments", "coreInfo", "true"),
         "boolean(//lst[@name='info']/lst[@name='core'])");
   }
@@ -143,20 +155,25 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testFieldInfo() throws Exception {
     String[] segmentNamePatterns = new String[NUM_SEGMENTS];
-    h.getCore().withSearcher((searcher) -> {
-      int i = 0;
-      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
-        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
-        segmentNamePatterns[i] = "boolean(//lst[@name='segments']/lst[@name='" + sInfo.info.name + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
-        i++;
-      }
+    h.getCore()
+        .withSearcher(
+            (searcher) -> {
+              int i = 0;
+              for (SegmentCommitInfo sInfo :
+                  SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+                assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+                segmentNamePatterns[i] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
+                i++;
+              }
 
-      return null;
-    });
-    assertQ("Unexpected field infos returned",
-        req("qt","/admin/segments", "fieldInfo", "true"),
+              return null;
+            });
+    assertQ(
+        "Unexpected field infos returned",
+        req("qt", "/admin/segments", "fieldInfo", "true"),
         segmentNamePatterns);
   }
-
-
 }

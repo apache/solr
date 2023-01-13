@@ -126,7 +126,7 @@
 #SOLR_LOGS_DIR=logs
 
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=false
+#SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
@@ -199,11 +199,23 @@
 #SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL
-#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \
-#  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider \
+#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
+#  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider \
+#  -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector \
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+# optionally, you can use using a a Java properties file 'zkDigestCredentialsFile'
+#...
+#   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
+#...
+
+# Use a custom injector to inject ZK credentials into DigestZkACLProvider
+# -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
+# ...
+#   -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName"
+# ...
 
 # Jetty GZIP module enabled by default
 #SOLR_GZIP_ENABLED=true
@@ -259,6 +271,17 @@
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
+# Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
+# To restore the old behaviour, set the variable below to true
+#SOLR_SOLRXML_REQUIRED=false
+
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 # then enable the following setting to address CVE-2021-44228
 # SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
+
+# The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
+# SOLR_MODULES=extraction,ltr
+
+# Configure the default replica placement plugin to use if one is not configured in cluster properties
+# See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+#SOLR_PLACEMENTPLUGIN_DEFAULT=simple

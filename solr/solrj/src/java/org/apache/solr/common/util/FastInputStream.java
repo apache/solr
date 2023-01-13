@@ -21,9 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-/** Single threaded buffered InputStream
- *  Internal Solr use only, subject to change.
- */
+/** Single threaded buffered InputStream Internal Solr use only, subject to change. */
 public class FastInputStream extends DataInputInputStream {
   protected final InputStream in;
   protected final byte[] buf;
@@ -32,8 +30,8 @@ public class FastInputStream extends DataInputInputStream {
   protected long readFromStream; // number of bytes read from the underlying inputstream
 
   public FastInputStream(InputStream in) {
-  // use default BUFSIZE of BufferedOutputStream so if we wrap that
-  // it won't cause double buffering.
+    // use default BUFSIZE of BufferedOutputStream so if we wrap that
+    // it won't cause double buffering.
     this(in, new byte[8192], 0, 0);
   }
 
@@ -53,7 +51,7 @@ public class FastInputStream extends DataInputInputStream {
   }
 
   public static FastInputStream wrap(InputStream in) {
-    return (in instanceof FastInputStream) ? (FastInputStream)in : new FastInputStream(in);
+    return (in instanceof FastInputStream) ? (FastInputStream) in : new FastInputStream(in);
   }
 
   @Override
@@ -62,7 +60,7 @@ public class FastInputStream extends DataInputInputStream {
       refill();
       if (pos >= end) return -1;
     }
-    return buf[pos++] & 0xff;     
+    return buf[pos++] & 0xff;
   }
 
   public int peek() throws IOException {
@@ -72,7 +70,6 @@ public class FastInputStream extends DataInputInputStream {
     }
     return buf[pos] & 0xff;
   }
-
 
   @Override
   public int readUnsignedByte() throws IOException {
@@ -86,7 +83,7 @@ public class FastInputStream extends DataInputInputStream {
   }
 
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    if(in == null) return -1;
+    if (in == null) return -1;
     return in.read(target, offset, len);
   }
 
@@ -116,18 +113,20 @@ public class FastInputStream extends DataInputInputStream {
     return pos;
   }
 
-  /** Current end-of-data position within the internal buffer.  This is one past the last valid byte. */
+  /**
+   * Current end-of-data position within the internal buffer. This is one past the last valid byte.
+   */
   public int getEndInBuffer() {
     return end;
   }
 
   @Override
   public int read(byte b[], int off, int len) throws IOException {
-    int r=0;  // number of bytes we have read
+    int r = 0; // number of bytes we have read
 
     // first read from our buffer;
-    if (end-pos > 0) {
-      r = Math.min(end-pos, len);
+    if (end - pos > 0) {
+      r = Math.min(end - pos, len);
       System.arraycopy(buf, pos, b, off, r);
       pos += r;
     }
@@ -135,8 +134,8 @@ public class FastInputStream extends DataInputInputStream {
     if (r == len) return r;
 
     // amount left to read is >= buffer size
-    if (len-r >= buf.length) {
-      int ret = readWrappedStream(b, off+r, len-r);
+    if (len - r >= buf.length) {
+      int ret = readWrappedStream(b, off + r, len - r);
       if (ret >= 0) {
         readFromStream += ret;
         r += ret;
@@ -150,9 +149,9 @@ public class FastInputStream extends DataInputInputStream {
     refill();
 
     // read rest from our buffer
-    if (end-pos > 0) {
-      int toRead = Math.min(end-pos, len-r);
-      System.arraycopy(buf, pos, b, off+r, toRead);
+    if (end - pos > 0) {
+      int toRead = Math.min(end - pos, len - r);
+      System.arraycopy(buf, pos, b, off + r, toRead);
       pos += toRead;
       r += toRead;
       return r;
@@ -173,9 +172,9 @@ public class FastInputStream extends DataInputInputStream {
 
   @Override
   public void readFully(byte b[], int off, int len) throws IOException {
-    while (len>0) {
+    while (len > 0) {
       int ret = read(b, off, len);
-      if (ret==-1) {
+      if (ret == -1) {
         throw new EOFException();
       }
       off += ret;
@@ -185,20 +184,20 @@ public class FastInputStream extends DataInputInputStream {
 
   @Override
   public int skipBytes(int n) throws IOException {
-    if (end-pos >= n) {
+    if (end - pos >= n) {
       pos += n;
       return n;
     }
 
-    if (end-pos<0) return -1;
-    
-    int r = end-pos;
+    if (end - pos < 0) return -1;
+
+    int r = end - pos;
     pos = end;
 
     while (r < n) {
       refill();
-      if (end-pos <= 0) return r;
-      int toRead = Math.min(end-pos, n-r);
+      if (end - pos <= 0) return r;
+      int toRead = Math.min(end - pos, n - r);
       r += toRead;
       pos += toRead;
     }
@@ -208,7 +207,7 @@ public class FastInputStream extends DataInputInputStream {
 
   @Override
   public boolean readBoolean() throws IOException {
-    return readByte()==1;
+    return readByte() == 1;
   }
 
   @Override
@@ -220,10 +219,9 @@ public class FastInputStream extends DataInputInputStream {
     return buf[pos++];
   }
 
-
   @Override
   public short readShort() throws IOException {
-    return (short)((readUnsignedByte() << 8) | readUnsignedByte());
+    return (short) ((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
   @Override
@@ -233,37 +231,37 @@ public class FastInputStream extends DataInputInputStream {
 
   @Override
   public char readChar() throws IOException {
-    return (char)((readUnsignedByte() << 8) | readUnsignedByte());
+    return (char) ((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
   @Override
   public int readInt() throws IOException {
-    return  ((readUnsignedByte() << 24)
-            |(readUnsignedByte() << 16)
-            |(readUnsignedByte() << 8)
-            | readUnsignedByte());
+    return ((readUnsignedByte() << 24)
+        | (readUnsignedByte() << 16)
+        | (readUnsignedByte() << 8)
+        | readUnsignedByte());
   }
 
   @Override
   public long readLong() throws IOException {
-    return  (((long)readUnsignedByte()) << 56)
-            | (((long)readUnsignedByte()) << 48)
-            | (((long)readUnsignedByte()) << 40)
-            | (((long)readUnsignedByte()) << 32)
-            | (((long)readUnsignedByte()) << 24)
-            | (readUnsignedByte() << 16)
-            | (readUnsignedByte() << 8)
-            | (readUnsignedByte());
+    return (((long) readUnsignedByte()) << 56)
+        | (((long) readUnsignedByte()) << 48)
+        | (((long) readUnsignedByte()) << 40)
+        | (((long) readUnsignedByte()) << 32)
+        | (((long) readUnsignedByte()) << 24)
+        | (readUnsignedByte() << 16)
+        | (readUnsignedByte() << 8)
+        | (readUnsignedByte());
   }
 
   @Override
   public float readFloat() throws IOException {
-    return Float.intBitsToFloat(readInt());    
+    return Float.intBitsToFloat(readInt());
   }
 
   @Override
   public double readDouble() throws IOException {
-    return Double.longBitsToDouble(readLong());    
+    return Double.longBitsToDouble(readLong());
   }
 
   @Override

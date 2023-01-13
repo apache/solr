@@ -26,7 +26,6 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -37,8 +36,10 @@ public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testCommitWithin() throws Exception {
     String csvString = "id;name\n123;hello";
-    SolrQueryRequest req = req("separator", ";",
-                               "commitWithin", "200");
+    SolrQueryRequest req =
+        req(
+            "separator", ";",
+            "commitWithin", "200");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 

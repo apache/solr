@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Classes related to joins.
- */
+
+/** Classes related to joins. */
 package org.apache.solr.search.join;
-
-

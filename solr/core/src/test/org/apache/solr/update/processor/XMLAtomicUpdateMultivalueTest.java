@@ -24,5 +24,4 @@ public class XMLAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMultival
   RequestWriterSupplier getRequestWriterSupplier() {
     return RequestWriterSupplier.XML;
   }
-
 }

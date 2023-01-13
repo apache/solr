@@ -18,8 +18,6 @@
 package org.apache.solr.schema;
 
 /**
- * Marker interface for field types that have an implicit (non-user-configurable)
- * index-time schema.
+ * Marker interface for field types that have an implicit (non-user-configurable) index-time schema.
  */
-public interface HasImplicitIndexAnalyzer {
-}
+public interface HasImplicitIndexAnalyzer {}

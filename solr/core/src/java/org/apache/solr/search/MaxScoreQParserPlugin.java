@@ -20,17 +20,17 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Parses a query like Lucene query parser, but scoring with max score, not sum
- * <br>Accepts the "tie" request parameter as with dismax. 0.0=max, 1.0=sum
- * <br>All other parameters are as with Lucene parser
- * <br>Example: <code>q=foo {!maxscore v=$myq}&amp;myq=A OR B OR C</code>
+ * Parses a query like Lucene query parser, but scoring with max score, not sum <br>
+ * Accepts the "tie" request parameter as with dismax. 0.0=max, 1.0=sum <br>
+ * All other parameters are as with Lucene parser <br>
+ * Example: <code>q=foo {!maxscore v=$myq}&amp;myq=A OR B OR C</code>
  */
 public class MaxScoreQParserPlugin extends LuceneQParserPlugin {
   public static final String NAME = "maxscore";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new MaxScoreQParser(qstr, localParams, params, req);
   }
 }
-

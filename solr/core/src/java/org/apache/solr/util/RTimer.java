@@ -18,12 +18,12 @@ package org.apache.solr.util;
 
 import java.util.concurrent.TimeUnit;
 
-/** A simple timer.
- * 
- * RTimers are started automatically when instantiated.
+/**
+ * A simple timer.
+ *
+ * <p>RTimers are started automatically when instantiated.
  *
  * @since solr 1.3
- *
  */
 public class RTimer {
 
@@ -38,14 +38,19 @@ public class RTimer {
 
   protected interface TimerImpl {
     void start();
+
     double elapsed();
   }
 
   private static class NanoTimeTimerImpl implements TimerImpl {
     private long start;
+
+    @Override
     public void start() {
       start = System.nanoTime();
     }
+
+    @Override
     public double elapsed() {
       return TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
     }
@@ -67,8 +72,7 @@ public class RTimer {
   public double stop() {
     assert state == STARTED || state == PAUSED;
     time = culmTime;
-    if(state == STARTED) 
-      time += timerImpl.elapsed();
+    if (state == STARTED) time += timerImpl.elapsed();
     state = STOPPED;
     return time;
   }
@@ -78,10 +82,9 @@ public class RTimer {
     culmTime += timerImpl.elapsed();
     state = PAUSED;
   }
-  
+
   public void resume() {
-    if(state == STARTED)
-      return;
+    if (state == STARTED) return;
     assert state == PAUSED;
     state = STARTED;
     timerImpl.start();
@@ -95,5 +98,5 @@ public class RTimer {
       assert state == STARTED;
       return culmTime + timerImpl.elapsed();
     }
- }
+  }
 }

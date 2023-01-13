@@ -38,7 +38,8 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
     try (SolrCore core = cc.getCore(cname)) {
       if (core == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
 
       final String indexDirPath = core.getIndexDir();
@@ -46,8 +47,8 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
       final IndexCommit ic = delPol.getAndSaveLatestCommit();
       try {
         if (null == ic) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "No index commits to snapshot in core " + cname);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "No index commits to snapshot in core " + cname);
         }
         final SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
         mgr.snapshot(commitName, indexDirPath, ic.getGeneration());

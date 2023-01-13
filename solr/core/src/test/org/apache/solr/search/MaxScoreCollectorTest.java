@@ -17,23 +17,22 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.Scorable;
 import org.apache.solr.SolrTestCase;
 
 public class MaxScoreCollectorTest extends SolrTestCase {
-  
+
   public void test() throws IOException {
     MaxScoreCollector collector = new MaxScoreCollector();
     DummyScorer scorer = new DummyScorer();
     collector.setScorer(scorer);
     assertEquals(Float.NaN, collector.getMaxScore(), 0f);
     assertEquals(0f, scorer.minCompetitiveScore, 0f);
-    
+
     collector.collect(0);
     assertEquals(Float.MIN_VALUE, collector.getMaxScore(), 0f);
     assertEquals(0f, scorer.minCompetitiveScore, 0f);
-    
+
     scorer.nextScore = 1f;
     collector.collect(0);
     assertEquals(1f, collector.getMaxScore(), 0f);
@@ -43,36 +42,35 @@ public class MaxScoreCollectorTest extends SolrTestCase {
     collector.collect(0);
     assertEquals(1f, collector.getMaxScore(), 0f);
     assertEquals(Math.nextUp(1f), scorer.minCompetitiveScore, 0f);
-    
+
     scorer.nextScore = -1f;
     collector.collect(0);
     assertEquals(1f, collector.getMaxScore(), 0f);
     assertEquals(Math.nextUp(1f), scorer.minCompetitiveScore, 0f);
-    
+
     scorer.nextScore = Float.MAX_VALUE;
     collector.collect(0);
     assertEquals(Float.MAX_VALUE, collector.getMaxScore(), 0f);
     assertEquals(Float.POSITIVE_INFINITY, scorer.minCompetitiveScore, 0f);
-    
+
     scorer.nextScore = Float.POSITIVE_INFINITY;
     collector.collect(0);
     assertEquals(Float.POSITIVE_INFINITY, collector.getMaxScore(), 0f);
     assertEquals(Float.POSITIVE_INFINITY, scorer.minCompetitiveScore, 0f);
-    
-    
+
     scorer.nextScore = Float.NaN;
     collector.collect(0);
     assertEquals(Float.NaN, collector.getMaxScore(), 0f);
     assertEquals(Float.NaN, scorer.minCompetitiveScore, 0f);
   }
-  
-  private final static class DummyScorer extends Scorable {
-    
+
+  private static final class DummyScorer extends Scorable {
+
     float nextScore = 0f;
     float minCompetitiveScore = 0f;
-    
+
     @Override
-    public float score() throws IOException {
+    public float score() {
       return nextScore;
     }
 
@@ -80,12 +78,10 @@ public class MaxScoreCollectorTest extends SolrTestCase {
     public int docID() {
       return 0;
     }
-    
+
     @Override
-    public void setMinCompetitiveScore(float minScore) throws IOException {
+    public void setMinCompetitiveScore(float minScore) {
       this.minCompetitiveScore = minScore;
     }
-    
   }
-
 }

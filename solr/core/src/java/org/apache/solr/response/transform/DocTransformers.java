@@ -18,81 +18,81 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.ResultContext;
 
-/**
- * Transform a document before it gets sent out
- *
- *
- */
-public class DocTransformers extends DocTransformer
-{
+/** Transform a document before it gets sent out */
+public class DocTransformers extends DocTransformer {
   final List<DocTransformer> children = new ArrayList<>();
 
   @Override
-  public String getName()
-  {
+  public String getName() {
     StringBuilder str = new StringBuilder();
-    str.append( "Transformers[" );
+    str.append("Transformers[");
     Iterator<DocTransformer> iter = children.iterator();
-    while( iter.hasNext() ) {
-      str.append( iter.next().getName() );
-      if( iter.hasNext() ) {
-        str.append( "," );
+    while (iter.hasNext()) {
+      str.append(iter.next().getName());
+      if (iter.hasNext()) {
+        str.append(",");
       }
     }
-    str.append( "]" );
+    str.append("]");
     return str.toString();
   }
 
-  public void addTransformer( DocTransformer a ) {
-    children.add( a );
+  @Override
+  public Collection<String> getRawFields() {
+    return children.stream()
+        .map(DocTransformer::getRawFields)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
   }
 
-  public int size()
-  {
+  public void addTransformer(DocTransformer a) {
+    children.add(a);
+  }
+
+  public int size() {
     return children.size();
   }
 
-  public DocTransformer getTransformer( int idx )
-  {
-    return children.get( idx );
+  public DocTransformer getTransformer(int idx) {
+    return children.get(idx);
   }
 
   @Override
-  public void setContext( ResultContext context ) {
-    for( DocTransformer a : children ) {
-      a.setContext( context );
+  public void setContext(ResultContext context) {
+    for (DocTransformer a : children) {
+      a.setContext(context);
     }
   }
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) throws IOException {
-    for( DocTransformer a : children ) {
-      a.transform( doc, docid, score);
+    for (DocTransformer a : children) {
+      a.transform(doc, docid, score);
     }
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) throws IOException {
-    for( DocTransformer a : children ) {
-      a.transform( doc, docid);
+    for (DocTransformer a : children) {
+      a.transform(doc, docid);
     }
   }
 
   /** Returns true if and only if at least 1 child transformer returns true */
   @Override
   public boolean needsSolrIndexSearcher() {
-    for( DocTransformer kid : children ) {
+    for (DocTransformer kid : children) {
       if (kid.needsSolrIndexSearcher()) {
         return true;
       }
     }
     return false;
   }
-
 }

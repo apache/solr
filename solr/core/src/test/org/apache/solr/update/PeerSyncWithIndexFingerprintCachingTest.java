@@ -20,7 +20,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -30,25 +29,21 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.junit.Assert;
 import org.junit.Test;
 
-
 /**
- * This test is deliberately kept in different class as we don't want segment merging to kick in after deleting documents.
- * This ensures that first check the cached IndexFingerprint and 
- * recompute it only if any documents in the segment were deleted since caching the fingerprint first time around  
- *   
- *  
+ * This test is deliberately kept in different class as we don't want segment merging to kick in
+ * after deleting documents. This ensures that first check the cached IndexFingerprint and recompute
+ * it only if any documents in the segment were deleted since caching the fingerprint first time
+ * around
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSearchTestCase {
-  private static int numVersions = 100;  // number of versions to use when syncing
+  private static int numVersions = 100; // number of versions to use when syncing
   private final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
-  private ModifiableSolrParams seenLeader = 
-    params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
-  
+  private ModifiableSolrParams seenLeader = params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
+
   public PeerSyncWithIndexFingerprintCachingTest() {
     stress = 0;
 
@@ -68,41 +63,52 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
 
-    long v =1;
-    for(; v < 8; ++v) {
-      add(client0, seenLeader, sdoc("id", ""+v,"_version_",v));
-      add(client1, seenLeader, sdoc("id",""+v,"_version_",v));
-      
+    long v = 1;
+    for (; v < 8; ++v) {
+      add(client0, seenLeader, sdoc("id", "" + v, "_version_", v));
+      add(client1, seenLeader, sdoc("id", "" + v, "_version_", v));
     }
-    client0.commit(); client1.commit();
-    
-    IndexFingerprint before = getFingerprint(client0, Long.MAX_VALUE);
-    
-    del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2");
-    client0.commit(); 
-    
-    IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);
-   
-    // make sure fingerprint before and after deleting are not the same
-    Assert.assertTrue(IndexFingerprint.compare(before, after) != 0);
-    
-    // replica which missed the delete should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit();  
+    client0.commit();
+    client1.commit();
 
-    queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
+    IndexFingerprint before = getFingerprint(client0, Long.MAX_VALUE);
+
+    del(client0, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", Long.toString(- ++v)), "2");
+    client0.commit();
+
+    IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);
+
+    // make sure fingerprint before and after deleting are not the same
+    assertTrue(IndexFingerprint.compare(before, after) != 0);
+
+    // replica which missed the delete operation should be able to sync
+    assertSync(client1, numVersions, shardsArr[0]);
+    client0.commit();
+    client1.commit();
+
+    queryAndCompare(params("q", "*:*", "sort", "_version_ desc"), client0, client1);
   }
 
-  IndexFingerprint getFingerprint(SolrClient client, long maxVersion) throws IOException, SolrServerException {
-    QueryRequest qr = new QueryRequest(params("qt","/get", "getFingerprint",Long.toString(maxVersion)));
+  IndexFingerprint getFingerprint(SolrClient client, long maxVersion)
+      throws IOException, SolrServerException {
+    QueryRequest qr =
+        new QueryRequest(params("qt", "/get", "getFingerprint", Long.toString(maxVersion)));
     NamedList<?> rsp = client.request(qr);
     return IndexFingerprint.fromObject(rsp.get("fingerprint"));
   }
 
-  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
-    QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
+  void assertSync(SolrClient client, int numVersions, String... syncWith)
+      throws IOException, SolrServerException {
+    QueryRequest qr =
+        new QueryRequest(
+            params(
+                "qt",
+                "/get",
+                "getVersions",
+                Integer.toString(numVersions),
+                "sync",
+                StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList<?> rsp = client.request(qr);
-    assertEquals(expectedResult, rsp.get("sync"));
+    assertEquals(true, rsp.get("sync"));
   }
-
 }

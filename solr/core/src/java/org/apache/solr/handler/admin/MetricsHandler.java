@@ -17,6 +17,14 @@
 
 package org.apache.solr.handler.admin;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,15 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -56,9 +55,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.stats.MetricUtils;
 
-/**
- * Request handler to return metrics
- */
+/** Request handler to return metrics */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
   final SolrMetricManager metricManager;
 
@@ -74,7 +71,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   public static final String ALL = "all";
 
-  private static final Pattern KEY_SPLIT_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
+  private static final Pattern KEY_SPLIT_REGEX =
+      Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private final CoreContainer cc;
   private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
   private final boolean enabled;
@@ -103,7 +101,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (metricManager == null) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
     if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
@@ -116,8 +115,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       SolrRequestInfo.clearRequestInfo();
     }
   }
-  
-  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
+
+  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
+      throws Exception {
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
       return;
@@ -136,15 +136,24 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
-    List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    List<MetricFilter> metricFilters =
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     Set<String> requestedRegistries = parseRegistries(params);
 
     NamedList<Object> response = new SimpleOrderedMap<>();
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-      MetricUtils.toMaps(registry, metricFilters, mustMatchFilter, propertyFilter, false,
-          false, compact, false, (k, v) -> result.add(k, v));
+      MetricUtils.toMaps(
+          registry,
+          metricFilters,
+          mustMatchFilter,
+          propertyFilter,
+          false,
+          false,
+          compact,
+          false,
+          (k, v) -> result.add(k, v));
       if (result.size() > 0) {
         response.add(registryName, result);
       }
@@ -179,44 +188,60 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       if (propertyPart == null) {
         me.propertyFilter = name -> true;
       } else {
-        me.propertyFilter = new Predicate<>() {
-          final Pattern pattern = Pattern.compile(propertyPart);
-          @Override
-          public boolean test(CharSequence charSequence) {
-            return pattern.matcher(charSequence).matches();
-          }
-        };
+        me.propertyFilter =
+            new Predicate<>() {
+              final Pattern pattern = Pattern.compile(propertyPart);
+
+              @Override
+              public boolean test(CharSequence charSequence) {
+                return pattern.matcher(charSequence).matches();
+              }
+            };
       }
       metricsExprs.add(me);
     }
     // find matching registries first, to avoid scanning non-matching registries
     Set<String> matchingRegistries = new TreeSet<>();
-    metricsExprs.forEach(me -> {
-      metricManager.registryNames().forEach(name -> {
-        if (me.registryRegex.matcher(name).matches()) {
-          matchingRegistries.add(name);
-        }
-      });
-    });
+    metricsExprs.forEach(
+        me -> {
+          metricManager
+              .registryNames()
+              .forEach(
+                  name -> {
+                    if (me.registryRegex.matcher(name).matches()) {
+                      matchingRegistries.add(name);
+                    }
+                  });
+        });
     for (String registryName : matchingRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       for (MetricsExpr me : metricsExprs) {
         @SuppressWarnings("unchecked")
-        SimpleOrderedMap<Object> perRegistryResult = (SimpleOrderedMap<Object>) result.get(registryName);
+        SimpleOrderedMap<Object> perRegistryResult =
+            (SimpleOrderedMap<Object>) result.get(registryName);
         final SimpleOrderedMap<Object> perRegistryTemp = new SimpleOrderedMap<>();
         // skip processing if not a matching registry
         if (!me.registryRegex.matcher(registryName).matches()) {
           continue;
         }
-        MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), me.metricFilter,
-            me.propertyFilter, false, false, true, false, (k, v) -> perRegistryTemp.add(k, v));
+        MetricUtils.toMaps(
+            registry,
+            Collections.singletonList(MetricFilter.ALL),
+            me.metricFilter,
+            me.propertyFilter,
+            false,
+            false,
+            true,
+            false,
+            (k, v) -> perRegistryTemp.add(k, v));
         // extracted some metrics and there's no entry for this registry yet
         if (perRegistryTemp.size() > 0) {
           if (perRegistryResult == null) { // new results for this registry
             result.add(registryName, perRegistryTemp);
           } else {
             // merge if needed
-            for (Iterator<Map.Entry<String, Object>> it = perRegistryTemp.iterator(); it.hasNext(); ) {
+            for (Iterator<Map.Entry<String, Object>> it = perRegistryTemp.iterator();
+                it.hasNext(); ) {
               Map.Entry<String, Object> entry = it.next();
               Object existing = perRegistryResult.get(entry.getKey());
               if (existing == null) {
@@ -260,25 +285,37 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
       Predicate<CharSequence> propertyFilter = MetricUtils.ALL_PROPERTIES;
       if (propertyName != null) {
-        propertyFilter = (name) -> name.equals(propertyName);
+        propertyFilter = propertyName::contentEquals;
         // use escaped versions
         key = parts[0] + ":" + parts[1];
       }
       if (injectedSysProps != null
           && SolrMetricManager.JVM_REGISTRY.equals(registryName)
-          && "system.properties".equals(metricName) && injectedSysProps.containsKey(propertyName)) {
-        result.add(registryName+":"+metricName+":"+propertyName, injectedSysProps.get(propertyName));
+          && "system.properties".equals(metricName)
+          && injectedSysProps.containsKey(propertyName)) {
+        result.add(
+            registryName + ":" + metricName + ":" + propertyName,
+            injectedSysProps.get(propertyName));
         continue;
       }
-      MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
-        if ((v instanceof Map) && propertyName != null) {
-          ((Map<?, ?>)v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
-        } else if ((v instanceof MapWriter) && propertyName != null) {
-          ((MapWriter) v)._forEachEntry((k1, v1) -> result.add(k + ":" + k1, v1));
-        } else {
-          result.add(k, v);
-        }
-      });
+      MetricUtils.convertMetric(
+          key,
+          m,
+          propertyFilter,
+          false,
+          true,
+          true,
+          false,
+          ":",
+          (k, v) -> {
+            if ((v instanceof Map) && propertyName != null) {
+              ((Map<?, ?>) v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
+            } else if ((v instanceof MapWriter) && propertyName != null) {
+              ((MapWriter) v)._forEachEntry((k1, v1) -> result.add(k + ":" + k1, v1));
+            } else {
+              result.add(k, v);
+            }
+          });
     }
     consumer.accept("metrics", result);
     if (errors.size() > 0) {
@@ -347,7 +384,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     if (filter.isEmpty()) {
       return MetricUtils.ALL_PROPERTIES;
     } else {
-      return (name) -> filter.contains(name);
+      return (name) -> filter.contains(name.toString());
     }
   }
 
@@ -358,7 +395,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   public Set<String> parseRegistries(String[] groupStr, String[] registryStr) {
-    if ((groupStr == null || groupStr.length == 0) && (registryStr == null || registryStr.length == 0)) {
+    if ((groupStr == null || groupStr.length == 0)
+        && (registryStr == null || registryStr.length == 0)) {
       // return all registries
       return metricManager.registryNames();
     }
@@ -414,21 +452,28 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   private List<MetricType> parseMetricTypes(SolrParams params) {
     String[] typeStr = params.getParams(TYPE_PARAM);
     List<String> types = Collections.emptyList();
-    if (typeStr != null && typeStr.length > 0)  {
+    if (typeStr != null && typeStr.length > 0) {
       types = new ArrayList<>();
       for (String type : typeStr) {
         types.addAll(StrUtils.splitSmart(type, ','));
       }
     }
 
-    List<MetricType> metricTypes = Collections.singletonList(MetricType.all); // include all metrics by default
+    // include all metrics by default
+    List<MetricType> metricTypes = Collections.singletonList(MetricType.all);
     try {
       if (types.size() > 0) {
-        metricTypes = types.stream().map(String::trim).map(MetricType::valueOf).collect(Collectors.toList());
+        metricTypes =
+            types.stream().map(String::trim).map(MetricType::valueOf).collect(Collectors.toList());
       }
     } catch (IllegalArgumentException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid metric type in: " + types +
-          " specified. Must be one of " + MetricType.SUPPORTED_TYPES_MSG, e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid metric type in: "
+              + types
+              + " specified. Must be one of "
+              + MetricType.SUPPORTED_TYPES_MSG,
+          e);
     }
     return metricTypes;
   }

@@ -25,11 +25,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Command {
-  /**if this is not a json command , leave it empty.
-   * Keep in mind that you cannot have duplicates.
+  /**
+   * if this is not a json command , leave it empty. Keep in mind that you cannot have duplicates.
    * Only one method per name
-   *
    */
   String name() default "";
-
 }

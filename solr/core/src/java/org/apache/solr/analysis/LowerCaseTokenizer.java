@@ -17,7 +17,6 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
@@ -26,46 +25,41 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * LowerCaseTokenizer performs the function of LetterTokenizer
- * and LowerCaseFilter together.  It divides text at non-letters and converts
- * them to lower case.  While it is functionally equivalent to the combination
- * of LetterTokenizer and LowerCaseFilter, there is a performance advantage
- * to doing the two tasks at once, hence this (redundant) implementation.
- * <P>
- * Note: this does a decent job for most European languages, but does a terrible
- * job for some Asian languages, where words are not separated by spaces.
- * </p>
+ * LowerCaseTokenizer performs the function of LetterTokenizer and LowerCaseFilter together. It
+ * divides text at non-letters and converts them to lower case. While it is functionally equivalent
+ * to the combination of LetterTokenizer and LowerCaseFilter, there is a performance advantage to
+ * doing the two tasks at once, hence this (redundant) implementation.
+ *
+ * <p>Note: this does a decent job for most European languages, but does a terrible job for some
+ * Asian languages, where words are not separated by spaces.
  *
  * @deprecated Use {@link LetterTokenizer} and {@link org.apache.lucene.analysis.LowerCaseFilter}
  */
 @Deprecated
 public final class LowerCaseTokenizer extends Tokenizer {
 
-  /**
-   * Construct a new LowerCaseTokenizer.
-   */
+  /** Construct a new LowerCaseTokenizer. */
   public LowerCaseTokenizer() {
     this.maxTokenLen = DEFAULT_MAX_WORD_LEN;
   }
 
   /**
-   * Construct a new LowerCaseTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeFactory}.
+   * Construct a new LowerCaseTokenizer using a given {@link
+   * org.apache.lucene.util.AttributeFactory}.
    *
-   * @param factory
-   *          the attribute factory to use for this {@link Tokenizer}
+   * @param factory the attribute factory to use for this {@link Tokenizer}
    */
   public LowerCaseTokenizer(AttributeFactory factory) {
     this(factory, DEFAULT_MAX_WORD_LEN);
   }
 
   /**
-   * Construct a new LowerCaseTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeFactory}.
+   * Construct a new LowerCaseTokenizer using a given {@link
+   * org.apache.lucene.util.AttributeFactory}.
    *
    * @param factory the attribute factory to use for this {@link Tokenizer}
-   * @param maxTokenLen maximum token length the tokenizer will emit.
-   *        Must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
+   * @param maxTokenLen maximum token length the tokenizer will emit. Must be greater than 0 and
+   *     less than MAX_TOKEN_LENGTH_LIMIT (1024*1024)
    * @throws IllegalArgumentException if maxTokenLen is invalid.
    */
   public LowerCaseTokenizer(AttributeFactory factory, int maxTokenLen) {
@@ -81,7 +75,8 @@ public final class LowerCaseTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-  private final CharacterUtils.CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
+  private final CharacterUtils.CharacterBuffer ioBuffer =
+      CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
 
   @Override
   public final boolean incrementToken() throws IOException {
@@ -106,26 +101,30 @@ public final class LowerCaseTokenizer extends Tokenizer {
         dataLen = ioBuffer.getLength();
         bufferIndex = 0;
       }
-      // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
+      // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based
+      // methods are gone
       final int c = Character.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
       final int charCount = Character.charCount(c);
       bufferIndex += charCount;
 
-      if (Character.isLetter(c)) {               // if it's a token char
-        if (length == 0) {                // start of token
+      if (Character.isLetter(c)) { // if it's a token char
+        if (length == 0) { // start of token
           assert start == -1;
           start = offset + bufferIndex - charCount;
           end = start;
-        } else if (length >= buffer.length-1) { // check if a supplementary could run out of bounds
-          buffer = termAtt.resizeBuffer(2+length); // make sure a supplementary fits in the buffer
+        } else if (length
+            >= buffer.length - 1) { // check if a supplementary could run out of bounds
+          buffer = termAtt.resizeBuffer(2 + length); // make sure a supplementary fits in the buffer
         }
         end += charCount;
-        length += Character.toChars(Character.toLowerCase(c), buffer, length); // buffer it, normalized
-        if (length >= maxTokenLen) { // buffer overflow! make sure to check for >= surrogate pair could break == test
+        // buffer it, normalized
+        length += Character.toChars(Character.toLowerCase(c), buffer, length);
+        // buffer overflow! make sure to check for >= surrogate pair could break == test
+        if (length >= maxTokenLen) {
           break;
         }
-      } else if (length > 0) {           // at non-Letter w/ chars
-        break;                           // return 'em
+      } else if (length > 0) { // at non-Letter w/ chars
+        break; // return 'em
       }
     }
 
@@ -133,7 +132,6 @@ public final class LowerCaseTokenizer extends Tokenizer {
     assert start != -1;
     offsetAtt.setOffset(correctOffset(start), finalOffset = correctOffset(end));
     return true;
-
   }
 
   @Override
@@ -152,5 +150,4 @@ public final class LowerCaseTokenizer extends Tokenizer {
     finalOffset = 0;
     ioBuffer.reset(); // make sure to reset the IO buffer!!
   }
-
 }

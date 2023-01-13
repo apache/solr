@@ -16,7 +16,7 @@
  */
 
 /**
- * This package houses 'pluggable' metric reporters that
- * inherit from the {@link org.apache.solr.metrics.SolrMetricReporter} class.
+ * This package houses 'pluggable' metric reporters that inherit from the {@link
+ * org.apache.solr.metrics.SolrMetricReporter} class.
  */
 package org.apache.solr.metrics.reporters;

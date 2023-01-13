@@ -16,11 +16,10 @@
  */
 package org.apache.solr.util.tracing;
 
-import java.util.function.Consumer;
-
 import io.opentracing.Span;
 import io.opentracing.noop.NoopSpan;
 import io.opentracing.tag.Tags;
+import java.util.function.Consumer;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** Utilities for distributed tracing. */

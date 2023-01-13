@@ -102,7 +102,7 @@ REM Location where Solr should write logs to. Absolute or relative to solr start
 REM set SOLR_LOGS_DIR=logs
 
 REM Enables jetty request log for all requests
-REM set SOLR_REQUESTLOG_ENABLED=false
+REM set SOLR_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983
@@ -175,11 +175,23 @@ REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
 
 REM Settings for ZK ACL
-REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
-REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector ^
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM optionally, you can use using a a Java properties file 'zkDigestCredentialsFile'
+REM ...
+REM   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
+REM ...
+
+REM Use a custom injector to inject ZK credentials into DigestZkACLProvider
+REM -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
+REM  ...
+REM  -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName
+REM ...
 
 REM Jetty GZIP module enabled by default
 REM set SOLR_GZIP_ENABLED=true
@@ -215,6 +227,17 @@ REM Sometimes it may be necessary to place a core or a backup on a different loc
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
 
+REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
+REM To restore the old behaviour, set the variable below to true
+REM set SOLR_SOLRXML_REQUIRED=false
+
 REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 REM then enable the following setting to address CVE-2021-44228
 REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
+
+REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
+REM set SOLR_MODULES=extraction,ltr
+
+REM Configure the default replica placement plugin to use if one is not configured in cluster properties
+REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
