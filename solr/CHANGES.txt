@@ -118,7 +118,9 @@ Improvements
   
 * SOLR-10470: Introduce Builder setter for parallelCacheRefreshes on cloud SolrClients.  Deprecated
   direct setter setParallelCacheRefreshes on cloud SolrClients. (Eric Pugh, David Smiley, Alex Deparvu)
-  
+
+* SOLR-16616: JWTAuthPlugin: Read trusted X509 certificates from multiple files (janhoy)
+
 Optimizations
 ---------------------
 
@@ -162,6 +164,8 @@ Bug Fixes
 * SOLR-16605: CPU percent calculation incorrect in admin UI cloud->nodes tab (Shawn Heisey)
 
 * SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
+
+* SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
 
 Build
 ---------------------
@@ -214,6 +218,8 @@ Other Changes
 
 * SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
 
+* SOLR-13243: Correct the initial capacity of the ZK operations to run in ShardLeaderElectionContextBase#runLeaderProcess (Haythem Khiri)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
@@ -227,6 +233,8 @@ Bug Fixes
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
 * SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
+
+* SOLR-16480: ConfigSets now have an overridable allow-list for filetypes. (Houston Putman)
 
 ==================  9.1.0 ==================
 

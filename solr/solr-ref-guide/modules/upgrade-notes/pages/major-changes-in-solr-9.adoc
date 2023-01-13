@@ -75,6 +75,9 @@ The `server/contexts/solr-jetty-context.xml` now explicitly removes these restri
   At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
   Users should start migrating to the new module to prepare for a smooth transition.
 
+== Solr 9.1.1
+* Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
+
 == Solr 9.1
 === Querying and Indexing
 * Added Lucene91HnswVectorsFormat codec for DenseVectorField. In order to use the new codec, reindex is necessary.

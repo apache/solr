@@ -133,7 +133,8 @@ public class SolrIndexSplitter {
     if (cmd.splitKey == null) {
       splitKey = null;
     } else {
-      splitKey = getRouteKey(cmd.splitKey);
+      checkRouterSupportsSplitKey(hashRouter, cmd.splitKey);
+      splitKey = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(cmd.splitKey);
     }
     if (cmd.cores == null) {
       this.splitMethod = SplitMethod.REWRITE;
@@ -647,6 +648,7 @@ public class SolrIndexSplitter {
       AtomicInteger currentPartition,
       boolean delete)
       throws IOException {
+    checkRouterSupportsSplitKey(hashRouter, splitKey);
     LeafReader reader = readerContext.reader();
     FixedBitSet[] docSets = new FixedBitSet[numPieces];
     for (int i = 0; i < docSets.length; i++) {
@@ -689,8 +691,7 @@ public class SolrIndexSplitter {
       String idString = idRef.toString();
 
       if (splitKey != null) {
-        // todo have composite routers support these kind of things instead
-        String part1 = getRouteKey(idString);
+        String part1 = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(idString);
         if (part1 == null) continue;
         if (!splitKey.equals(part1)) {
           continue;
@@ -765,18 +766,11 @@ public class SolrIndexSplitter {
     return docSets;
   }
 
-  public static String getRouteKey(String idString) {
-    int idx = idString.indexOf(CompositeIdRouter.SEPARATOR);
-    if (idx <= 0) return null;
-    String part1 = idString.substring(0, idx);
-    int commaIdx = part1.indexOf(CompositeIdRouter.bitsSeparator);
-    if (commaIdx > 0 && commaIdx + 1 < part1.length()) {
-      char ch = part1.charAt(commaIdx + 1);
-      if (ch >= '0' && ch <= '9') {
-        part1 = part1.substring(0, commaIdx);
-      }
+  private static void checkRouterSupportsSplitKey(HashBasedRouter hashRouter, String splitKey) {
+    if (splitKey != null && !(hashRouter instanceof CompositeIdRouter)) {
+      throw new IllegalStateException(
+          "splitKey isn't supported for router " + hashRouter.getClass());
     }
-    return part1;
   }
 
   // change livedocs on the reader to delete those docs we don't want

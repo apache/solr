@@ -125,6 +125,7 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
@@ -717,6 +718,14 @@ public class CoreContainer {
     return objectCache;
   }
 
+  private void registerV2ApiIfEnabled(Object apiObject) {
+    if (containerHandlers.getApiBag() == null) {
+      return;
+    }
+
+    containerHandlers.getApiBag().registerObject(apiObject);
+  }
+
   // -------------------------------------------------------------------
   // Initialization / Cleanup
   // -------------------------------------------------------------------
@@ -782,14 +791,15 @@ public class CoreContainer {
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
       packageStoreAPI = new PackageStoreAPI(this);
-      containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
-      containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
+      registerV2ApiIfEnabled(packageStoreAPI.readAPI);
+      registerV2ApiIfEnabled(packageStoreAPI.writeAPI);
 
       packageLoader = new SolrPackageLoader(this);
-      containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
-      containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().readAPI);
+      registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
+      registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
+
       ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
-      containerHandlers.getApiBag().registerObject(zookeeperReadAPI);
+      registerV2ApiIfEnabled(zookeeperReadAPI);
     }
 
     MDCLoggingContext.setNode(this);
@@ -821,19 +831,19 @@ public class CoreContainer {
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-    containerHandlers.getApiBag().registerObject(collectionsAPI);
-    containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
+    registerV2ApiIfEnabled(collectionsAPI);
+    registerV2ApiIfEnabled(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
-    containerHandlers.getApiBag().registerObject(collectionBackupsAPI);
+    registerV2ApiIfEnabled(collectionBackupsAPI);
     configSetsHandler =
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
-    containerHandlers.getApiBag().registerObject(clusterAPI);
-    containerHandlers.getApiBag().registerObject(clusterAPI.commands);
+    registerV2ApiIfEnabled(clusterAPI);
+    registerV2ApiIfEnabled(clusterAPI.commands);
 
     if (isZooKeeperAware()) {
-      containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
+      registerV2ApiIfEnabled(new SchemaDesignerAPI(this));
     } // else Schema Designer not available in standalone (non-cloud) mode
 
     /*
@@ -1037,8 +1047,8 @@ public class CoreContainer {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
-      containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
-      containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+      registerV2ApiIfEnabled(containerPluginsApi.readAPI);
+      registerV2ApiIfEnabled(containerPluginsApi.editAPI);
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1062,29 +1072,31 @@ public class CoreContainer {
               });
     }
 
-    final CoreContainer thisCCRef = this;
-    // Init the Jersey app once all CC endpoints have been registered
-    containerHandlers
-        .getJerseyEndpoints()
-        .register(
-            new AbstractBinder() {
-              @Override
-              protected void configure() {
-                bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
-                    .to(CoreContainer.class)
-                    .in(Singleton.class);
-              }
-            })
-        .register(
-            new AbstractBinder() {
-              @Override
-              protected void configure() {
-                bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
-                    .to(SolrNodeKeyPair.class)
-                    .in(Singleton.class);
-              }
-            });
-    jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+    if (V2ApiUtils.isEnabled()) {
+      final CoreContainer thisCCRef = this;
+      // Init the Jersey app once all CC endpoints have been registered
+      containerHandlers
+          .getJerseyEndpoints()
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(new InjectionFactories.SingletonFactory<>(thisCCRef))
+                      .to(CoreContainer.class)
+                      .in(Singleton.class);
+                }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
+                      .to(SolrNodeKeyPair.class)
+                      .in(Singleton.class);
+                }
+              });
+      jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
+    }
 
     appHandlersByConfigSetId = new JerseyAppHandlerCache();
 

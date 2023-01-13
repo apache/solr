@@ -107,6 +107,7 @@ import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
@@ -1136,19 +1137,23 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      final String effectiveConfigsetId = JerseyAppHandlerCache.generateIdForConfigSet(configSet);
-      appHandlerForConfigSet =
-          coreContainer
-              .getAppHandlerCache()
-              .computeIfAbsent(
-                  effectiveConfigsetId,
-                  () -> {
-                    log.debug(
-                        "Creating Jersey ApplicationHandler for 'effective configset' [{}]",
-                        effectiveConfigsetId);
-                    return new ApplicationHandler(
-                        reqHandlers.getRequestHandlers().getJerseyEndpoints());
-                  });
+      if (V2ApiUtils.isEnabled()) {
+        final String effectiveConfigsetId = JerseyAppHandlerCache.generateIdForConfigSet(configSet);
+        appHandlerForConfigSet =
+            coreContainer
+                .getAppHandlerCache()
+                .computeIfAbsent(
+                    effectiveConfigsetId,
+                    () -> {
+                      log.debug(
+                          "Creating Jersey ApplicationHandler for 'effective configset' [{}]",
+                          effectiveConfigsetId);
+                      return new ApplicationHandler(
+                          reqHandlers.getRequestHandlers().getJerseyEndpoints());
+                    });
+      } else {
+        appHandlerForConfigSet = null;
+      }
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1784,7 +1789,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     if (reqHandlers != null) reqHandlers.close();
-    appHandlerForConfigSet.decref();
+    if (V2ApiUtils.isEnabled()) {
+      appHandlerForConfigSet.decref();
+    }
     responseWriters.close();
     searchComponents.close();
     qParserPlugins.close();

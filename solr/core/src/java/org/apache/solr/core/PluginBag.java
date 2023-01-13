@@ -42,6 +42,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
@@ -63,6 +64,8 @@ public class PluginBag<T> implements AutoCloseable {
   private final Class<T> klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
+
+  private final boolean loadV2ApisIfPresent;
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
 
@@ -85,7 +88,8 @@ public class PluginBag<T> implements AutoCloseable {
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    if (klass == SolrRequestHandler.class) {
+    if (klass == SolrRequestHandler.class && V2ApiUtils.isEnabled()) {
+      this.loadV2ApisIfPresent = true;
       this.apiBag = new ApiBag(core != null);
       this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
       this.jerseyResources =
@@ -93,6 +97,7 @@ public class PluginBag<T> implements AutoCloseable {
               ? new JerseyApplications.CoreContainerApp()
               : new JerseyApplications.SolrCoreApp();
     } else {
+      this.loadV2ApisIfPresent = false;
       this.apiBag = null;
       this.jerseyResources = null;
       this.jaxrsResourceRegistry = null;
@@ -230,7 +235,7 @@ public class PluginBag<T> implements AutoCloseable {
       }
     }
 
-    if (apiBag != null) {
+    if (loadV2ApisIfPresent) {
       if (plugin.isLoaded()) {
         T inst = plugin.get();
         if (inst instanceof ApiSupport) {
@@ -238,7 +243,7 @@ public class PluginBag<T> implements AutoCloseable {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
-          if (registerApi) {
+          if (registerApi && V2ApiUtils.isEnabled()) {
             Collection<Api> apis = apiSupport.getApis();
             if (apis != null) {
               Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
