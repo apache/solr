@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,10 +78,7 @@ public class TestSolrProperties extends SolrTestCase {
     System.setProperty("tempDir", tempDir.getAbsolutePath());
     SolrTestCaseJ4.newRandomConfig();
 
-    solrClientTestRule.startSolr(
-        new NodeConfig.NodeConfigBuilder("testNode", SOLR_HOME)
-            .setConfigSetBaseDirectory(CONFIG_HOME.resolve("../configsets").normalize().toString())
-            .build());
+    solrClientTestRule.startSolr(SOLR_HOME);
 
     cores = solrClientTestRule.getSolrClient().getCoreContainer();
   }

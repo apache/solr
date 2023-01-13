@@ -18,8 +18,6 @@ package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
-import java.io.File;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -34,13 +32,9 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(SolrTestCaseJ4.getFile("solrj/solr"), testHome);
+    solrClientTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr").toPath());
 
     SolrTestCaseJ4.newRandomConfig();
-
-    solrClientTestRule.startSolr(testHome.toPath());
-
     solrClientTestRule
         .newCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConfigSet("../collection1")

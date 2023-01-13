@@ -19,12 +19,7 @@ package org.apache.solr.client.solrj.request.json;
 
 import static org.apache.solr.SolrTestCaseJ4.getFile;
 
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.List;
-import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -55,30 +50,12 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    final String sourceHome = ExternalPaths.SOURCE_HOME;
 
-    final File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-    FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-    final File collectionDir = new File(tempSolrHome, COLLECTION_NAME);
-    FileUtils.forceMkdir(collectionDir);
-    final File configSetDir =
-        new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-    FileUtils.copyDirectoryToDirectory(configSetDir, collectionDir);
-
-    final Properties props = new Properties();
-    props.setProperty("name", COLLECTION_NAME);
-
-    try (Writer writer =
-        new OutputStreamWriter(
-            FileUtils.openOutputStream(new File(collectionDir, "core.properties")), "UTF-8"); ) {
-      props.store(writer, null);
-    }
-
-    solrClientTestRule.startSolr(tempSolrHome.toPath());
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
 
     solrClientTestRule
         .newCollection(COLLECTION_NAME)
-        .withConfigSet(configSetDir.toString())
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
 
     SolrClient client = solrClientTestRule.getSolrClient();

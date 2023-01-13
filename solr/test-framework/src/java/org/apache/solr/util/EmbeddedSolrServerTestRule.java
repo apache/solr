@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -25,22 +26,44 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /** TODO NOCOMMIT document */
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
+  private static final String CORE_DIR_PROP = "coreRootDirectory";
   private EmbeddedSolrServer adminClient = null;
   private EmbeddedSolrServer client = null;
-
   private CoreContainer container = null;
+
+  private boolean clearCoreDirSysProp = false;
 
   public EmbeddedSolrServer getAdminClient() {
     return adminClient;
   }
 
   public void startSolr(Path solrHome) {
-    NodeConfig nodeConfig = newNodeConfigBuilder(solrHome);
+    NodeConfig nodeConfig;
+    if (Files.exists(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE))) {
+      // existing solr.xml; perhaps not recommended for new/most tests
+
+      // solr.xml coreRootDirectory is best set to a temp directory in a test so that
+      //  (a) we don't load existing cores
+      //      Because it's better for tests to explicitly create cores.
+      //  (b) we don't write data in the test to a likely template directory
+      //  But a test can insist on something if it sets the property.
+      if (System.getProperty(CORE_DIR_PROP) == null) {
+        clearCoreDirSysProp = true;
+        System.setProperty(CORE_DIR_PROP, LuceneTestCase.createTempDir("cores").toString());
+      }
+
+      nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, null);
+    } else {
+      // test oriented config (preferred)
+      nodeConfig = newNodeConfigBuilder(solrHome).build();
+    }
+
     startSolr(nodeConfig);
   }
 
@@ -50,7 +73,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     adminClient = new EmbeddedSolrServer(container, null);
   }
 
-  public NodeConfig newNodeConfigBuilder(Path solrHome) {
+  public NodeConfig.NodeConfigBuilder newNodeConfigBuilder(Path solrHome) {
     // TODO nocommit dedupe this with TestHarness
     var updateShardHandlerConfig =
         new UpdateShardHandlerConfig(
@@ -63,8 +86,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString())
-        .build();
+        .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
   public NewCollectionBuilder newCollection(String name) {
@@ -141,6 +163,10 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   @Override
   protected void after() {
     if (container != null) container.shutdown();
+
+    if (clearCoreDirSysProp) {
+      System.clearProperty(CORE_DIR_PROP);
+    }
   }
 
   @Override
