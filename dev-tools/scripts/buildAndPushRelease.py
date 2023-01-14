@@ -91,7 +91,7 @@ def getGitRev():
   return os.popen('git rev-parse HEAD').read().strip()
 
 
-def prepare(root, version, mf_username, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=False):
+def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=False):
   print()
   print('Prepare release...')
   if os.path.exists(LOG):
@@ -116,6 +116,9 @@ def prepare(root, version, mf_username, gpg_key_id, gpg_password, gpg_home=None,
     run('./gradlew --no-daemon -Dtests.badapples=false clean check')
   else:
     print('  skipping precommit check due to dev-mode')
+
+  if pause_before_sign:
+    str(input("Tests complete! Please press ENTER to proceed to assembleRelease: "))
 
   print('  prepare-release')
   cmd = './gradlew --no-daemon assembleRelease' \
@@ -256,6 +259,8 @@ def parse_config():
                       help='Push the release to the local path')
   parser.add_argument('--mf-username', metavar='ID',
                       help='Use the specified username in the Implementation-Version for jar MANIFEST.MF files (e.g., Apache ID).')
+  parser.add_argument('--pause-before-sign', default=False, action='store_true',
+                      help='Pause for user confirmation before the assembleRelease step (to prevent timeout on gpg pinentry')
   parser.add_argument('--sign', metavar='FINGERPRINT',
                       help='Sign the release with the given gpg key. This must be the full GPG fingerprint, not just the last 8 characters.')
   parser.add_argument('--sign-method-gradle', dest='sign_method_gradle', default=False, action='store_true',
@@ -398,7 +403,7 @@ def main():
     c.key_password = None
 
   if c.prepare:
-    prepare(c.root, c.version, c.mf_username, c.key_id, c.key_password, gpg_home=gpg_home, sign_gradle=c.sign_method_gradle)
+    prepare(c.root, c.version, c.pause_before_sign, c.mf_username, c.key_id, c.key_password, gpg_home=gpg_home, sign_gradle=c.sign_method_gradle)
   else:
     os.chdir(c.root)
 
