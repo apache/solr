@@ -351,5 +351,4 @@ public class TestCoreAdmin extends SolrTestCase {
   private SolrClient getSolrCore0() {
     return new EmbeddedSolrServer(cores, "core0"); // doesn't need to be closed
   }
-
 }
