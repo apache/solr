@@ -194,6 +194,8 @@ Other Changes
 
 * SOLR-13243: Correct the initial capacity of the ZK operations to run in ShardLeaderElectionContextBase#runLeaderProcess (Haythem Khiri)
 
+* SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
