@@ -395,8 +395,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
       writer
           .put(ReplicaStateProps.CORE_NAME, core, p)
-          .put(ReplicaStateProps.SHARD_ID, shard, p)
-          .put(ReplicaStateProps.COLLECTION, collection, p)
           .put(ReplicaStateProps.NODE_NAME, node, p)
           .put(ReplicaStateProps.TYPE, type.toString(), p)
           .put(ReplicaStateProps.STATE, state.toString(), p);
