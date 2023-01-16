@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -161,7 +161,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   private LBHttp2SolrClient getLBHttp2SolrClient(Http2SolrClient httpClient, String... s) {
-    return new LBHttp2SolrClient(httpClient, s);
+    return new LBHttp2SolrClient.Builder(httpClient, s).build();
   }
 
   public void testTwoServers() throws Exception {

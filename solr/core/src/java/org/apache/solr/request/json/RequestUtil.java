@@ -76,6 +76,11 @@ public class RequestUtil {
       String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
+        // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
+        // adjusted the content without updating the content type
+        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // node query (HttpSolrCall's request proxy)
+
         String contentType = cs.getContentType();
         if (contentType == null || !contentType.contains("/json")) {
           throw new SolrException(

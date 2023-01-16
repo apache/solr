@@ -58,12 +58,8 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     var solrClient =
         new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    solrClient.setParser(responseParser);
 
     solrClient.connect();
 

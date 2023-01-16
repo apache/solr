@@ -178,11 +178,10 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
       lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
     }
-    final LBHttpSolrClient lbClient = lbBuilder.build();
-    lbClient.setRequestWriter(new BinaryRequestWriter());
-    lbClient.setParser(new BinaryResponseParser());
+    lbBuilder.withRequestWriter(new BinaryRequestWriter());
+    lbBuilder.withResponseParser(new BinaryResponseParser());
 
-    return lbClient;
+    return lbBuilder.build();
   }
 
   /** Constructs {@link CloudLegacySolrClient} instances from provided configuration. */

@@ -253,13 +253,13 @@ public class NodeConfig {
   /**
    * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
    *
-   * @return path to install dir
-   * @throws SolrException if property 'solr.install.dir' has not been initialized
+   * @return path to install dir or null if solr.install.dir not set.
    */
   public Path getSolrInstallDir() {
     String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (prop == null || prop.isBlank()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "solr.install.dir property not initialized");
+      log.debug("solr.install.dir property not initialized.");
+      return null;
     }
     return Paths.get(prop);
   }
@@ -436,8 +436,15 @@ public class NodeConfig {
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
-    // Always add $SOLR_TIP/lib to the shared resource loader
-    libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+    Path solrInstallDir = getSolrInstallDir();
+    if (solrInstallDir == null) {
+      log.warn(
+          "Unable to add $SOLR_HOME/lib for shared lib since {} was not set.",
+          SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    } else {
+      // Always add $SOLR_TIP/lib to the shared resource loader
+      libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
+    }
 
     if (!StringUtils.isBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
@@ -478,16 +485,30 @@ public class NodeConfig {
   private void initModules() {
     var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
     boolean modified = false;
+
+    Path solrInstallDir = getSolrInstallDir();
+    if (solrInstallDir == null) {
+      if (!moduleNames.isEmpty()) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Unable to setup modules "
+                + moduleNames
+                + " because "
+                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE
+                + " was not set.");
+      }
+      return;
+    }
     for (String m : moduleNames) {
-      if (!ModuleUtils.moduleExists(getSolrInstallDir(), m)) {
+      if (!ModuleUtils.moduleExists(solrInstallDir, m)) {
         log.error(
             "No module with name {}, available modules are {}",
             m,
-            ModuleUtils.listAvailableModules(getSolrInstallDir()));
+            ModuleUtils.listAvailableModules(solrInstallDir));
         // Fail-fast if user requests a non-existing module
         throw new SolrException(ErrorCode.SERVER_ERROR, "No module with name " + m);
       }
-      Path moduleLibPath = ModuleUtils.getModuleLibPath(getSolrInstallDir(), m);
+      Path moduleLibPath = ModuleUtils.getModuleLibPath(solrInstallDir, m);
       if (Files.exists(moduleLibPath)) {
         try {
           List<URL> urls = SolrResourceLoader.getURLs(moduleLibPath);

@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
@@ -29,6 +28,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 

@@ -166,22 +166,24 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    final String clientUrl = ((HttpSolrClient) clients.get(0)).getBaseURL();
-    SolrClient client = getHttpSolrClient(clientUrl);
-    ((HttpSolrClient) client).setParser(new BinaryResponseParser());
-    SolrQuery solrQuery =
-        new SolrQuery("XXXX")
-            .setParam("qt", "/elevate")
-            .setParam("shards.qt", "/elevate")
-            .setRows(500)
-            .setFields("id,[elevated]")
-            .setParam("enableElevation", "true")
-            .setParam("forceElevation", "true")
-            .setParam("elevateIds", "6", "wt", "javabin")
-            .setSort("id", SolrQuery.ORDER.desc);
-    setDistributedParams(solrQuery);
-    response = client.query(solrQuery);
-    client.close();
+    final String clientUrl = jettys.get(0).getBaseUrl() + "/" + "collection1";
+    try (SolrClient client =
+        new HttpSolrClient.Builder(clientUrl)
+            .withResponseParser(new BinaryResponseParser())
+            .build(); ) {
+      SolrQuery solrQuery =
+          new SolrQuery("XXXX")
+              .setParam("qt", "/elevate")
+              .setParam("shards.qt", "/elevate")
+              .setRows(500)
+              .setFields("id,[elevated]")
+              .setParam("enableElevation", "true")
+              .setParam("forceElevation", "true")
+              .setParam("elevateIds", "6", "wt", "javabin")
+              .setSort("id", SolrQuery.ORDER.desc);
+      setDistributedParams(solrQuery);
+      response = client.query(solrQuery);
+    }
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);

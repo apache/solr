@@ -38,7 +38,6 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -61,6 +60,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -808,7 +808,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
-              + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
+              + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
           new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
@@ -821,7 +821,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
-              + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
+              + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());

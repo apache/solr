@@ -37,6 +37,10 @@ New Features
 
 * SOLR-16500: Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory (Kevin Risden)
 
+* SOLR-16496: QueryElevationComponent now supports fq exclusions (Rudi Seitz via David Smiley)
+
+* SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -47,6 +51,7 @@ Improvements
 
 * SOLR-16392: A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive.
   ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}`
+  DELETEREPLICAPROP is now `DELETE /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop`
 
 * SOLR-11657: Deprecate ContentStream in favour of RequestWriter.ContentWriter.   (Joshua Ouma via Eric Pugh)
 
@@ -62,9 +67,38 @@ Improvements
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
+* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
+
+* SOLR-11028: A v2 equivalent of the `/admin/collections?action= REPLACE` command is now available at
+  `POST /api/cluster/nodes/nodeName/replace`. (Joshua Ouma via Jason Gerlowski)
+
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. (Mikhail Khludnev)
+
+* SOLR-16158: Certain Jetty "server" jars (jetty-util, jetty-io, etc.) are no longer duplicated between server/lib and WEB-INF/lib. All shared jars now live in server/lib/ext.
+  By default, Jetty does not allow these jars to be shared by the Jetty server and the web-app (Solr).
+  In order to accomplish this, explicit exclusions have been added to server/contexts/solr-jetty-context.xml that allow these "server" jars to be shared.
+  Solr Core also no longer contains the JettySolrRunner (now living in the testing framework), removing the need for Jetty Server dependencies in solr-core.
+  (Houston Putman)
+
+* SOLR-16565: posting the same file to the package store should not throw an error (noble)
+
+* SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
+  Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
+
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
+
+* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16515: Remove synchronized access to cachedOrdMaps in SlowCompositeReaderWrapper (Dennis Berger, Torsten Bøgh Köster, Marco Petris)
+
+* SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
+* SOLR-15732: queries to missing collection are slow (noble)
+
 
 Bug Fixes
 ---------------------
@@ -88,7 +122,16 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
-* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+* SOLR-16528: Jaegertracer module must include okhttp3 dependency (janhoy)
+
+* SOLR-16420: Default for cloud mode was fixed to `{!mlt mindf=5}` to comply with Reference Guide (Mikhail Khludnev)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16473: Fix race condition in shard split when a sub-shard is put in recovery state. (Andy Vuong via Bruno Roustant)
+
+* SOLR-10458: Fix followRedirect property on HttpSolrClient not set when using Builder pattern. (Eric Pugh)
+
 
 Build
 ---------------------
@@ -98,10 +141,18 @@ Build
 
 * SOLR-16476: Remove commons-text dependency from solr-core (Kevin Risden)
 
-* SOLR-16442: Upgrade to Lucene 9.4.1 (Christine Poerschke)
+* SOLR-16442: Upgrade to Lucene 9.4.2 (Christine Poerschke)
+
+* SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
+
+* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+
+* SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
 Other Changes
 ---------------------
+* SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
+
 * SOLR-16150: Embedded ZK Server used for zkRun should advertise itself on specific bound interfaces instead of
   generically on localhost. (Mike Drob)
 
@@ -113,7 +164,33 @@ Other Changes
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
+* SOLR-16529: Upgrade jaeger-client to 1.8.1 (janhoy)
+
+* SOLR-16541: Eliminate the 'numShards' system property (noble)
+
+* SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
+
+* SOLR-16575: splitshard should honour createNodeSet (noble)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
+* SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
+
+* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+
+* SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
+
+* SOLR-16574: Demonstrate Dense Vectors and KNN as part of the Films example (Gabriel Magno via Eric Pugh)
+
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
+
+==================  9.1.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
+
+* SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
 ==================  9.1.0 ==================
 
@@ -222,8 +299,6 @@ Bug Fixes
 
 * SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
 
-* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
-
 * SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
 
 * SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui)
@@ -287,6 +362,10 @@ Bug Fixes
 * SOLR-16416: OverseerPrioritizer now runs after all handlers are registered, and retries on failures. (Houston Putman)
 
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16502: Multiple CopyField should not limit to first maxChars (Fredrik Rodland, Kevin Risden)
+
+* SOLR-16527: RuleBasedAuthorizationPluginBase NPE (Alex Deparvu)
 
 Other Changes
 ---------------------

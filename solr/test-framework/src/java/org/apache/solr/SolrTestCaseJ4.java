@@ -92,8 +92,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -133,6 +131,8 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -2562,20 +2562,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} that will
    * randomize some internal settings.
    */
-  public static class CloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
+  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
 
-    public CloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
+    public RandomizingCloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
       randomizeCloudSolrClient();
     }
 
-    public CloudHttp2SolrClientBuilder(ClusterStateProvider stateProvider) {
+    public RandomizingCloudHttp2SolrClientBuilder(ClusterStateProvider stateProvider) {
       super(new ArrayList<>());
       this.stateProvider = stateProvider;
       randomizeCloudSolrClient();
     }
 
-    public CloudHttp2SolrClientBuilder(MiniSolrCloudCluster cluster) {
+    public RandomizingCloudHttp2SolrClientBuilder(MiniSolrCloudCluster cluster) {
       super(new ArrayList<>());
       if (random().nextBoolean()) {
         this.zkHosts.add(cluster.getZkServer().getZkAddress());
@@ -2610,7 +2610,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
    */
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(MiniSolrCloudCluster cluster) {
-    return new CloudHttp2SolrClientBuilder(cluster).build();
+    return new RandomizingCloudHttp2SolrClientBuilder(cluster).build();
   }
 
   /**
@@ -2871,10 +2871,31 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new LBHttpSolrClient.Builder().withBaseSolrUrls(solrUrls).build();
   }
 
+  /** This method creates a HttpClient from a URL. */
+  @Deprecated // We are migrating away from Apache HttpClient.
+  public static HttpClient getHttpClient(String url) {
+    return new HttpSolrClient.Builder(url).build().getHttpClient();
+  }
+
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */
+  public static HttpSolrClient getHttp1SolrClient(String url) {
+    return new HttpSolrClient.Builder(url).build();
+  }
+
+  /**
+   * This method creates a basic Http2SolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   */
+  public static Http2SolrClient getHttp2SolrClient(String url) {
+    return new Http2SolrClient.Builder(url).build();
+  }
+
+  /**
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(
       String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
@@ -2886,9 +2907,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(
       String url, HttpClient httpClient, ResponseParser responseParser) {
@@ -2896,18 +2916,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
     return new Builder(url).withHttpClient(httpClient).build();
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(
       String url, HttpClient httpClient, int connectionTimeoutMillis) {
@@ -2918,27 +2936,24 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
-    return new Builder(url).build();
+    return new HttpSolrClient.Builder(url).build();
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
     return new Builder(url).withConnectionTimeout(connectionTimeoutMillis).build();
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(
       String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
