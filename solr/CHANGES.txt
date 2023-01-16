@@ -113,6 +113,8 @@ Other Changes
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
 
+* SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
+
 ==================  9.1.0 ==================
 
 New Features
