@@ -239,7 +239,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
 
     String prefixField = "id_prefix_s";
     String idField = "id";
-    DocRouter router = new CompositeIdRouter();
+    CompositeIdRouter router = new CompositeIdRouter();
 
     for (int i = 0; i < 100; i++) {
       SolrQueryRequest req = req("myquery");

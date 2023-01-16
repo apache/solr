@@ -94,7 +94,7 @@ public class TestPackages extends SolrCloudTestCase {
     System.setProperty("enable.packages", "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("conf2"))
+        .addConfig("conf", configset("conf3"))
         .addConfig("conf1", configset("schema-package"))
         .configure();
   }
