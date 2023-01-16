@@ -1,15 +1,15 @@
-IntelliJ IDEA
-=============
+# IDEs
+
+## IntelliJ IDEA
 
 Importing the project as a gradle project should just run out of the box.
 
 
-Eclipse
-=======
+## Eclipse
 
 Run the following to set up Eclipse project files:
 
-./gradlew eclipse
+`./gradlew eclipse`
 
 then import the project into Eclipse with:
 
