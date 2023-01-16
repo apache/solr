@@ -281,3 +281,7 @@
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 # SOLR_MODULES=extraction,ltr
+
+# Configure the default replica placement plugin to use if one is not configured in cluster properties
+# See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+#SOLR_PLACEMENTPLUGIN_DEFAULT=simple
