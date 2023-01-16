@@ -53,3 +53,6 @@ Information on JVMs can be found in the [JVMs developer documentation](dev-docs/
 
 Frequently asked questions can be found in the [FAQ developer documentation](dev-docs/FAQ.adoc)
 
+## Additional information
+
+Even more hits and tips are to be found in the [Solr Wiki](https://cwiki.apache.org/confluence/display/solr/HowToContribute). 
