@@ -2937,40 +2937,28 @@ public class ZkController implements Closeable {
     } else {
       try {
         // Create a concurrently accessible set to avoid repeating collections
-        Set<String> collectionsInThisNode = new HashSet<>();
+        Set<String> processedCollections = new HashSet<>();
         for (CoreDescriptor cd : cc.getCoreDescriptors()) {
-          if (cd.getCloudDescriptor() != null
-              && cd.getCloudDescriptor().getCollectionName() != null) {
-            collectionsInThisNode.add(cd.getCloudDescriptor().getCollectionName());
+          String collName = cd.getCollectionName();
+          DocCollection coll;
+          if (collName != null
+              && processedCollections.add(collName)
+              && (coll = zkStateReader.getCollection(collName)) != null
+              && coll.isPerReplicaState()) {
+            final List<String> replicasToDown = new ArrayList<>();
+            coll.forEachReplica(
+                (s, replica) -> {
+                  if (replica.getNodeName().equals(nodeName)) {
+                    replicasToDown.add(replica.getName());
+                  }
+                });
+            PerReplicaStatesOps.downReplicas(
+                    replicasToDown,
+                    PerReplicaStatesFetcher.fetch(
+                        coll.getZNode(), zkClient, coll.getPerReplicaStates()))
+                .persist(coll.getZNode(), zkClient);
           }
         }
-        collectionsInThisNode.forEach(
-            c -> {
-              final List<String> replicasToDown = new ArrayList<>();
-              DocCollection coll = zkStateReader.getCollection(c);
-              if (coll == null) {
-                // may be the collection no more exists
-                return;
-              }
-              coll.forEachReplica(
-                  (s, r) -> {
-                    if (r.getNodeName().equals(nodeName)) {
-                      replicasToDown.add(r.getName());
-                    }
-                  });
-
-              if (!replicasToDown.isEmpty()) {
-                try {
-                  PerReplicaStatesOps.downReplicas(
-                          replicasToDown,
-                          PerReplicaStatesFetcher.fetch(
-                              coll.getZNode(), zkClient, coll.getPerReplicaStates()))
-                      .persist(coll.getZNode(), zkClient);
-                } catch (KeeperException | InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-            });
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
