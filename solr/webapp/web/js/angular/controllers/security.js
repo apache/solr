@@ -332,8 +332,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
       // use the current user's roles (obtained from System.get) to check if they have the security permissions
       // Note: the backend will check too so this is only for display purposes
-      $scope.hasSecurityEditPerm = $scope.isPermitted("security-edit");
-      $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.isPermitted("security-read");
+      $scope.hasSecurityEditPerm = $scope.isPermitted(permissions.SECURITY_EDIT_PERM);
+      $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.isPermitted(permissions.SECURITY_READ_PERM);
 
       // authentication
       if ($scope.authenticationPlugin === "org.apache.solr.security.BasicAuthPlugin" || $scope.authenticationPlugin === "org.apache.solr.security.MultiAuthPlugin") {
