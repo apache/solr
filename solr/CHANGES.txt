@@ -121,6 +121,8 @@ Improvements
 
 * SOLR-16616: JWTAuthPlugin: Read trusted X509 certificates from multiple files (janhoy)
 
+* SOLR-15772: More visible security warnings in Admin UI (janhoy)
+
 Optimizations
 ---------------------
 
