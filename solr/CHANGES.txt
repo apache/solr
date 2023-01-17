@@ -15,6 +15,8 @@ Bug Fixes
 
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
 
+* SOLR-16622: Replicas don't come up active after node restart (noble, Ishan Chattopadhyaya)
+
 Other Changes
 ---------------------
 
