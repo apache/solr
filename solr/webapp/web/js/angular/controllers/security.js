@@ -255,7 +255,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       $scope.tls = data.security ? data.security["tls"] : false;
       $scope.authenticationPlugin = data.security ? data.security["authenticationPlugin"] : null;
       $scope.authorizationPlugin = data.security ? data.security["authorizationPlugin"] : null;
-      $scope.myRoles = data.security ? data.security["roles"] : [];
       $scope.isSecurityAdminEnabled = $scope.authenticationPlugin != null;
       $scope.isCloudMode = data.mode.match( /solrcloud/i ) != null;
       $scope.zkHost = $scope.isCloudMode ? data["zkHost"] : "";
@@ -276,19 +275,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.showUserDialog = false;
     $scope.showPermDialog = false;
     delete $scope.helpId;
-  };
-
-  $scope.getCurrentUserRoles = function() {
-    return $scope.myRoles;
-  };
-
-  $scope.hasPermission = function(permissionName) {
-    var matched = $scope.permissionsTable.filter(p => permissionName === p.name);
-    if (matched.length === 0 && permissionName !== "all") {
-      // this permission is not explicitly defined, but "all" will apply if it is defined
-      matched = $scope.permissionsTable.filter(p => "all" === p.name);
-    }
-    return matched.length > 0 && roleMatch(matched.flatMap(p => p.roles), $scope.getCurrentUserRoles());
   };
 
   $scope.refreshSecurityPanel = function() {
@@ -346,8 +332,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
       // use the current user's roles (obtained from System.get) to check if they have the security permissions
       // Note: the backend will check too so this is only for display purposes
-      $scope.hasSecurityEditPerm = $scope.hasPermission("security-edit");
-      $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.hasPermission("security-read");
+      $scope.hasSecurityEditPerm = $scope.isPermitted("security-edit");
+      $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.isPermitted("security-read");
 
       // authentication
       if ($scope.authenticationPlugin === "org.apache.solr.security.BasicAuthPlugin" || $scope.authenticationPlugin === "org.apache.solr.security.MultiAuthPlugin") {
