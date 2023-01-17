@@ -320,10 +320,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         $scope.roleNames = [];
       }
 
-      $scope.permissions = data.authorization["permissions"];
+      $scope.permissionsConfig = data.authorization["permissions"];
       $scope.permissionsTable = [];
-      for (p in $scope.permissions) {
-        $scope.permissionsTable.push(permRow($scope.permissions[p], parseInt(p)+1));
+      for (p in $scope.permissionsConfig) {
+        $scope.permissionsTable.push(permRow($scope.permissionsConfig[p], parseInt(p)+1));
       }
       $scope.filteredPerms = $scope.permissionsTable;
 
@@ -575,7 +575,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
     $scope.params = [{"name":"", "value":""}];
 
-    var permissionNames = $scope.permissions.map(p => p.name);
+    var permissionNames = $scope.permissionsConfig.map(p => p.name);
     $scope.filteredPredefinedPermissions = $scope.predefinedPermissions.filter(p => !permissionNames.includes(p));
 
     $scope.togglePermDialog();
@@ -642,7 +642,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         $scope.validationError = "Either select a predefined permission or provide a name for a custom permission";
         return;
       }
-      var permissionNames = $scope.permissions.map(p => p.name);
+      var permissionNames = $scope.permissionsConfig.map(p => p.name);
       if (permissionNames.includes(name)) {
         $scope.validationError = "Permission '"+name+"' already exists!";
         return;
@@ -726,7 +726,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       var indexOrBefore = isAdd ? "before" : "index";
       var indexInt = parseInt($scope.upsertPerm.index);
       if (indexInt < 1) indexInt = 1;
-      if (indexInt >= $scope.permissions.length) indexInt = null;
+      if (indexInt >= $scope.permissionsConfig.length) indexInt = null;
       if (indexInt != null) {
         setPermJson[indexOrBefore] = indexInt;
       }
@@ -795,7 +795,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     } else if ($scope.userFilter === "role") {
       $scope.userFilterOptions = $scope.roleNames;
     } else if ($scope.userFilter === "perm") {
-      $scope.userFilterOptions = $scope.permissions.map(p => p.name).sort();
+      $scope.userFilterOptions = $scope.permissionsConfig.map(p => p.name).sort();
     } else {
       $scope.userFilter = "";
     }
@@ -1005,7 +1005,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     } else if ($scope.roleFilter === "user") {
       $scope.roleFilterOptions = Array.from(new Set($scope.roles.flatMap(r => r.users))).sort();
     } else if ($scope.roleFilter === "perm") {
-      $scope.roleFilterOptions = $scope.permissions.map(p => p.name).sort();
+      $scope.roleFilterOptions = $scope.permissionsConfig.map(p => p.name).sort();
     } else {
       $scope.roleFilter = "";
     }
@@ -1053,7 +1053,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.roleDialogAction = "Add Role";
     $scope.upsertRole = {};
     $scope.userNames = $scope.users.map(u => u.username);
-    $scope.grantPermissionNames = Array.from(new Set($scope.predefinedPermissions.concat($scope.permissions.map(p => p.name)))).sort();
+    $scope.grantPermissionNames = Array.from(new Set($scope.predefinedPermissions.concat($scope.permissionsConfig.map(p => p.name)))).sort();
     $scope.toggleRoleDialog();
   };
 
@@ -1203,7 +1203,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     var perms = $scope.permissionsTable.filter(p => p.roles.includes(roleName)).map(p => p.name);
     $scope.upsertRole = { name: roleName, selectedUsers: role.users, grantedPerms: perms };
     $scope.userNames = $scope.users.map(u => u.username);
-    $scope.grantPermissionNames = Array.from(new Set($scope.predefinedPermissions.concat($scope.permissions.map(p => p.name)))).sort();
+    $scope.grantPermissionNames = Array.from(new Set($scope.predefinedPermissions.concat($scope.permissionsConfig.map(p => p.name)))).sort();
     $scope.toggleRoleDialog();
   };
 
