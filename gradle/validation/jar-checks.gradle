@@ -200,9 +200,12 @@ subprojects {
     description = "Validate license and notice files of dependencies"
     dependsOn collectJarInfos
 
-    def outputFileName = "validateJarLicenses"
-    inputs.dir(file(project.rootDir.path + "/solr/licenses"))
+    def outputFileName = 'validateJarLicenses'
+    inputs.dir(file(project.rootDir.path + '/solr/licenses'))
+        .withPropertyName('licenses')
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.file(layout.buildDirectory.file(outputFileName))
+        .withPropertyName('validateJarLicensesResult')
 
     doLast {
       def errors = []

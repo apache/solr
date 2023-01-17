@@ -34,7 +34,7 @@ allprojects {
           // asserts, debug output.
           [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
           [propName: 'tests.workDir',
-           value: { -> file("${buildDir}/tmp/tests-tmp") },
+           value: { -> project.relativePath(file("${buildDir}/tmp/tests-tmp")) },
            description: "Working directory for forked test JVMs",
            includeInReproLine: false
           ],
