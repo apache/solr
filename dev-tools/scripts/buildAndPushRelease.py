@@ -118,7 +118,7 @@ def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_passw
     print('  skipping precommit check due to dev-mode')
 
   if pause_before_sign:
-    str(input("Tests complete! Please press ENTER to proceed to assembleRelease: "))
+    input("Tests complete! Please press ENTER to proceed to assembleRelease: ")
 
   print('  prepare-release')
   cmd = './gradlew --no-daemon assembleRelease' \
