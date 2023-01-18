@@ -21,33 +21,64 @@ solrAdminApp.controller('AnalysisController',
 
       $scope.refresh = function() {
         Luke.schema({core: $routeParams.core}, function(data) {
-          $scope.fieldsAndTypes = [];
-          for (var field in data.schema.fields) {
-            $scope.fieldsAndTypes.push({
-              group: "Fields",
-              value: "fieldname=" + field,
-              label: field});
-          }
-          for (var type in data.schema.types) {
-            $scope.fieldsAndTypes.push({
-              group: "Types",
-              value: "fieldtype=" + type,
-              label: type});
-          }
+          $scope.fieldsAndTypes = getFieldsAndTypes(data.schema);
           $scope.core = $routeParams.core;
+          $scope.parseQueryString(data.schema);
+          // @todo - set defaultSearchField either to context["analysis.fieldname"] or context["analysis.fieldtype"]
         });
-
-        $scope.parseQueryString();
-        // @todo - set defaultSearchField either to context["analysis.fieldname"] or context["analysis.fieldtype"]
-
       };
       $scope.verbose = true;
+
+      var getFieldsAndTypes = function(schema) {
+        var aggregatedFields = schema.fields;
+        for (var field in schema.fields) {
+          var copy_dests = schema.fields[field].copyDests;
+          for (var i in copy_dests) {
+            var copy_dest = copy_dests[i];
+            if (!aggregatedFields[copy_dest]) {
+              aggregatedFields[copy_dest] = {};
+            }
+          }
+        }
+
+        var fieldsAndTypes = [];
+        var fields = Object.keys(aggregatedFields).sort();
+        for (var i in fields) {
+          fieldsAndTypes.push({
+            group: "Fields",
+            value: "fieldname=" + fields[i],
+            label: fields[i]
+          });
+        }
+        var dynamic_fields = Object.keys(schema.dynamicFields).sort();
+        for (var i in dynamic_fields) {
+          fieldsAndTypes.push({
+            group: "Dynamic Fields",
+            value: "dynamicfield=" + dynamic_fields[i],
+            label: dynamic_fields[i]
+          });
+        }
+        var types = Object.keys(schema.types).sort();
+        for (var i in types) {
+          fieldsAndTypes.push({
+            group: "Types",
+            value: "fieldtype=" + types[i],
+            label: types[i]
+          });
+        }
+        return fieldsAndTypes;
+      };
 
       var getShortComponentName = function(longname) {
         var short = -1 !== longname.indexOf( '$' )
                          ? longname.split( '$' )[1]
                          : longname.split( '.' ).pop();
-        return short.match( /[A-Z]/g ).join( '' );
+        var match = short.match( /[A-Z]/g );
+          if(match != undefined) {
+            return match.join( '' );
+          } else {
+            return "?";
+          }
       };
 
       var getCaptionsForComponent = function(data) {
@@ -137,16 +168,24 @@ solrAdminApp.controller('AnalysisController',
         }
 
         if (fieldOrType == "fieldname") {
-          $location.search("analysis.fieldname", name);
-          $location.search("analysis.fieldtype", null);
+            $location.search("analysis.fieldname", name);
+            $location.search("analysis.dynamicfield", null);
+            $location.search("analysis.fieldtype", null);
+
+        } else if (fieldOrType == "dynamicfield") {
+            $location.search("analysis.fieldname", null);
+            $location.search("analysis.dynamicfield", name);
+            $location.search("analysis.fieldtype", null);
+
         } else {
-          $location.search("analysis.fieldtype", name);
-          $location.search("analysis.fieldname", null);
+            $location.search("analysis.fieldname", null);
+            $location.search("analysis.dynamicfield", null);
+            $location.search("analysis.fieldtype", name);
         }
         $location.search("verbose_output", $scope.verbose ? "1" : "0");
       };
 
-      $scope.parseQueryString = function () {
+      $scope.parseQueryString = function (schema) {
           var params = {};
           var search = $location.search();
 
@@ -161,6 +200,10 @@ solrAdminApp.controller('AnalysisController',
           if (search["analysis.fieldname"]) {
               $scope.fieldOrType = "fieldname=" + search["analysis.fieldname"];
               $scope.schemaBrowserUrl = "field=" + search["analysis.fieldname"];
+          } else if (search["analysis.dynamicfield"]) {
+              params["analysis.fieldtype"] = schema.dynamicFields[search["analysis.dynamicfield"]].type;
+              $scope.fieldOrType = "dynamicfield=" + search["analysis.dynamicfield"];
+              $scope.schemaBrowserUrl = "dynamic-field=" + search["analysis.dynamicfield"];
           } else {
               $scope.fieldOrType = "fieldtype=" + search["analysis.fieldtype"];
               $scope.schemaBrowserUrl = "type=" + search["analysis.fieldtype"];
@@ -186,6 +229,8 @@ solrAdminApp.controller('AnalysisController',
         var parts = $scope.fieldOrType.split("=");
         if (parts[0]=='fieldname') {
           $scope.schemaBrowserUrl = "field=" + parts[1];
+        } else if (parts[0]=='dynamicfield') {
+          $scope.schemaBrowserUrl = "dynamic-field=" + parts[1];
         } else {
           $scope.schemaBrowserUrl = "type=" + parts[1];
         }
