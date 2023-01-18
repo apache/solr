@@ -17,6 +17,7 @@
 
 package org.apache.solr.search;
 
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
@@ -24,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +38,6 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private static final String BIG_FIELD = "bigField";
 
   @BeforeClass
-  @SuppressWarnings({"unchecked"})
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
@@ -85,7 +86,10 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   @Test
   public void test() throws Exception {
     // add just one document (docid 0)
-    assertU(adoc(ID_FLD, "101", LAZY_FIELD, "lzy", BIG_FIELD, "big document field one"));
+    StringWriter w = new StringWriter();
+    XML.escapeCharData(randomXmlUsableUnicodeString(), w);
+    String bigFieldValue = w.toString();
+    assertU(adoc(ID_FLD, "101", LAZY_FIELD, "lzy", BIG_FIELD, bigFieldValue));
     assertU(commit());
 
     // trigger the ID_FLD to get into the doc cache; don't reference other fields
@@ -109,6 +113,8 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertEager(d, ID_FLD);
     assertLazyLoaded(d, LAZY_FIELD);
     assertLazyLoaded(d, BIG_FIELD); // loaded now
+
+    assertEquals(bigFieldValue, d.getField(BIG_FIELD).stringValue());
   }
 
   private void assertEager(Document d, String fieldName) {

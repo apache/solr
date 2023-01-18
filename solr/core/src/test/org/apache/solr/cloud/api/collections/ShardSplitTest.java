@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -52,6 +53,7 @@ import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
@@ -711,7 +713,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         trySplit(collectionName, null, SHARD1, 1);
         fail("expected to fail due to locking but succeeded");
       } catch (Exception e) {
-        log.info("Expected failure: {}", e);
+        // Verify the exception caught.
+        // If the split command sets the preferred leader, that checks that the exception is not a
+        // TimeoutException because we don't want the split combined operation to wait for the split
+        // completion if the split fails.
+        assertTrue("Unexpected exception " + e, e instanceof SolrException);
+        assertEquals(SolrException.ErrorCode.INVALID_STATE.code, ((SolrException) e).code());
+        log.info("Expected failure:", e);
       }
 
       // make sure the lock still exists
@@ -1252,6 +1260,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     if (splitKey != null) {
       params.set("split.key", splitKey);
+    }
+    if (random().nextBoolean()) {
+      params.set(SPLIT_SET_PREFERRED_LEADERS, true);
     }
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
