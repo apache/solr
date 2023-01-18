@@ -222,6 +222,8 @@ Other Changes
 
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
 
+* SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
