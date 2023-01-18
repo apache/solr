@@ -49,7 +49,6 @@ when the container is not running, and later easily run new containers against t
 This is indeed possible, but there are a few gotchas.
 
 Solr stores its core data in the `var/solr/data` directory, in sub-directories for each core.
-The `var/solr/data` directory also contains configuration files that are part of the Solr distribution.
 Now, if we mounted volumes for each core individually, then that would interfere with Solr trying to create those directories.
 If instead we make the whole directory a volume, then we need to provide those configuration files in our volume, which we can do by copying them from a temporary container.
 For example:
