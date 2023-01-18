@@ -222,6 +222,10 @@ Other Changes
 
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
 
+* SOLR-16591: The "Transient Cores" feature is now deprecated.  In solr.xml "<transientCoreCacheFactory>"
+  no longer works; it wasn't documented either.  Some internals were changed as well to simplify
+  the standard case of having no transient cores.  (David Smiley)
+
 ==================  9.1.1 ==================
 
 Bug Fixes

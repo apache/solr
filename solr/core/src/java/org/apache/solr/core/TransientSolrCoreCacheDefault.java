@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * Cache of the most frequently accessed transient cores. Keeps track of all the registered
  * transient cores descriptors, including the cores in the cache as well as all the others.
  */
+@Deprecated(since = "9.2")
 public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   // TODO move into TransientSolrCores; remove TransientSolrCoreCache base/abstraction.
 

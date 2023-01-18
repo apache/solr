@@ -54,6 +54,7 @@ import java.util.Set;
  * <p>In particular, DO NOT reach into the transientCores structure from a method called to
  * manipulate core descriptors or vice-versa.
  */
+@Deprecated(since = "9.2")
 public abstract class TransientSolrCoreCache {
 
   /** Adds the newly-opened core to the list of open cores. */

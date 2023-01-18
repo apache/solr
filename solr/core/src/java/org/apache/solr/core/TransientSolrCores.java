@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /** A {@link SolrCores} that supports {@link CoreDescriptor#isTransient()}. */
+@Deprecated(since = "9.2")
 public class TransientSolrCores extends SolrCores {
 
   protected final TransientSolrCoreCache transientSolrCoreCache;
