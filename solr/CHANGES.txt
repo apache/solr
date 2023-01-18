@@ -183,6 +183,8 @@ Build
 
 * SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
+* SOLR-16624: Remove Gradle Groovy version override (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
@@ -221,6 +223,8 @@ Other Changes
 * SOLR-13243: Correct the initial capacity of the ZK operations to run in ShardLeaderElectionContextBase#runLeaderProcess (Haythem Khiri)
 
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
+
+* SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 

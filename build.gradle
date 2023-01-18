@@ -102,15 +102,6 @@ ext {
   }
 }
 
-configurations {
-  groovy
-}
-
-dependencies {
-  // Use a newer groovy that doesn't have illegal reflective accesses.
-  groovy "org.codehaus.groovy:groovy-all:3.0.12"
-}
-
 apply from: file('buildSrc/scriptDepVersions.gradle')
 
 // Include smaller chunks configuring dedicated build areas.
