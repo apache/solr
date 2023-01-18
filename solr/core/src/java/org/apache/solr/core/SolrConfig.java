@@ -172,8 +172,8 @@ public class SolrConfig implements MapSerializable {
     InputStream in;
     String fileName;
 
-    ResourceProvider(SolrResourceLoader loader, String res) throws IOException {
-      this.in = loader.openResource(res);
+    ResourceProvider(InputStream in) throws IOException {
+      this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
@@ -393,14 +393,22 @@ public class SolrConfig implements MapSerializable {
   }
 
   private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
+    InputStream in = null;
     try {
-      ResourceProvider rp = new ResourceProvider(loader, name);
+      in = loader.openResource(name);
+      ResourceProvider rp = new ResourceProvider(in);
       XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
       return new IndexSchemaFactory.VersionedConfig(
           rp.zkVersion,
           new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } finally {
+      // according to spec, XML parser should close InputStream when parsing is complete.
+      // But in the event that this doesn't happen (either because an exception is
+      // thrown or because of an error in parser implementation, here we ensure that it
+      // is closed.
+      IOUtils.closeQuietly(in);
     }
   }
 
