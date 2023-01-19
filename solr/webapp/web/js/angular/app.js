@@ -524,6 +524,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
       $scope.usersPermissions = data.security.permissions;
+      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
 
       $scope.isSchemaDesignerEnabled = $scope.isPermitted([
         permissions.CONFIG_EDIT_PERM,
