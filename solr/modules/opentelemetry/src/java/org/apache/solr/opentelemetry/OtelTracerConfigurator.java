@@ -47,13 +47,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
 
-    final String currentConfig =
-        String.join(
-            "; ",
-            getCurrentOtelConfig().entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.toSet()));
-
+    final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
 
     // Need to disable the exporters for metrics and logs
@@ -70,6 +64,14 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
     Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
     return new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
+  }
+
+  /** Prepares a string with all configuration K/V pairs sorted and semicolon separated */
+  String getCurrentOtelConfigAsString() {
+    return getCurrentOtelConfig().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .map(e -> e.getKey() + "=" + e.getValue())
+        .collect(Collectors.joining("; "));
   }
 
   /**
