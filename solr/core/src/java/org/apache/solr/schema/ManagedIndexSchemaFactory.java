@@ -76,7 +76,6 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private SolrCore core;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
-  private String loadedResource;
   private boolean shouldUpgrade = false;
 
   @Override
@@ -197,6 +196,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.config = config;
     this.loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
+    String loadedResource = null;
 
     try {
       if (null == resourceName) {
@@ -205,7 +205,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
       int schemaZkVersion = -1;
       if (!(loader instanceof ZkSolrResourceLoader)) {
-        schemaInputStream = readSchemaLocally();
+        String[] loadedResourceRef = new String[1];
+        schemaInputStream = readSchemaLocally(loadedResourceRef);
+        loadedResource = loadedResourceRef[0];
       } else { // ZooKeeper
         final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
@@ -265,6 +267,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           }
         }
       }
+      assert loadedResource != null;
       InputSource inputSource = new InputSource(schemaInputStream);
       inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
       try {
@@ -296,8 +299,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     return schema;
   }
 
-  private InputStream readSchemaLocally() {
+  private InputStream readSchemaLocally(String[] loadedResourceRef) {
     InputStream schemaInputStream = null;
+    String loadedResource = null;
     try {
       // Attempt to load the managed schema
       final Path managedSchemaPath = lookupLocalManagedSchemaPath();
@@ -329,6 +333,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
       }
     }
+    assert loadedResource != null;
+    loadedResourceRef[0] = loadedResource;
     return schemaInputStream;
   }
 
