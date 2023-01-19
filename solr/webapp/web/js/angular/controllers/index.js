@@ -21,7 +21,7 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
     System.get(function(data) {
       $scope.system = data;
       const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
-      $scope.releaseDaysOld = (new Date() - releaseDate)/60/60/1000/24;
+      $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
       if ("username" in data.security) {
         // Needed for Kerberos, since this is the only place from where
