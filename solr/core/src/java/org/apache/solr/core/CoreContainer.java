@@ -1206,8 +1206,11 @@ public class CoreContainer {
 
       // First wake up the closer thread, it'll terminate almost immediately since it checks
       // isShutDown.
-      synchronized (solrCores.getModifyLock()) {
-        solrCores.getModifyLock().notifyAll(); // wake up anyone waiting
+      solrCores.getWriteLock().lock();
+      try {
+        solrCores.getWriteLockCondition().signalAll(); // wake up anyone waiting
+      } finally {
+        solrCores.getWriteLock().unlock();
       }
       if (backgroundCloser
           != null) { // Doesn't seem right, but tests get in here without initializing the core.
@@ -1215,8 +1218,13 @@ public class CoreContainer {
           while (true) {
             backgroundCloser.join(15000);
             if (backgroundCloser.isAlive()) {
-              synchronized (solrCores.getModifyLock()) {
-                solrCores.getModifyLock().notifyAll(); // there is a race we have to protect against
+              solrCores.getWriteLock().lock();
+              try {
+                solrCores
+                    .getWriteLockCondition()
+                    .signalAll(); // there is a race we have to protect against
+              } finally {
+                solrCores.getWriteLock().unlock();
               }
             } else {
               break;
@@ -1237,8 +1245,11 @@ public class CoreContainer {
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be
       // nothing to do.
-      synchronized (solrCores.getModifyLock()) {
-        solrCores.getModifyLock().notifyAll(); // wake up the thread
+      solrCores.getWriteLock().lock();
+      try {
+        solrCores.getWriteLockCondition().signalAll(); // wake up the thread
+      } finally {
+        solrCores.getWriteLock().unlock();
       }
 
       customThreadPool.submit(
@@ -2524,13 +2535,16 @@ class CloserThread extends Thread {
   @Override
   public void run() {
     while (!container.isShutDown()) {
-      synchronized (solrCores.getModifyLock()) { // need this so we can wait and be awoken.
+      solrCores.getWriteLock().lock();
+      try { // need this so we can wait and be awoken.
         try {
-          solrCores.getModifyLock().wait();
+          solrCores.getWriteLockCondition().await();
         } catch (InterruptedException e) {
           // Well, if we've been told to stop, we will. Otherwise, continue on and check to see if
           // there are any cores to close.
         }
+      } finally {
+        solrCores.getWriteLock().unlock();
       }
 
       SolrCore core;

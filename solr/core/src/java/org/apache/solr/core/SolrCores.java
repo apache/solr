@@ -29,6 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -38,8 +40,10 @@ import org.slf4j.LoggerFactory;
 
 class SolrCores {
 
-  private static final Object modifyLock =
-      new Object(); // for locking around manipulating any of the core maps.
+  // for locking around manipulating any of the core maps.
+  private static final ReentrantReadWriteLock READ_WRITE_LOCK = new ReentrantReadWriteLock();
+  private static final Condition WRITE_LOCK_CONDITION = READ_WRITE_LOCK.writeLock().newCondition();
+
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
@@ -68,28 +72,43 @@ class SolrCores {
   }
 
   protected void addCoreDescriptor(CoreDescriptor p) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       if (p.isTransient()) {
-        getTransientCacheHandler().addTransientDescriptor(p.getName(), p);
+        getInternalTransientCacheHandler().addTransientDescriptor(p.getName(), p);
       } else {
         residentDescriptors.put(p.getName(), p);
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
   protected void removeCoreDescriptor(CoreDescriptor p) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       if (p.isTransient()) {
-        getTransientCacheHandler().removeTransientDescriptor(p.getName());
+        getInternalTransientCacheHandler().removeTransientDescriptor(p.getName());
       } else {
         residentDescriptors.remove(p.getName());
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
   public void load(SolrResourceLoader loader) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       transientSolrCoreCacheFactory = TransientSolrCoreCacheFactory.newInstance(loader, container);
+
+      // as we now allow access to multiple read threads, we need to
+      // ensure that only a single transient cache handler is created.
+      // We do this by calling the getInternalTransientCacheHandler() method
+      // initially inside this write lock
+      getInternalTransientCacheHandler();
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -100,10 +119,13 @@ class SolrCores {
     Collection<SolrCore> coreList = new ArrayList<>();
 
     // Release transient core cache.
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       if (transientSolrCoreCacheFactory != null) {
-        getTransientCacheHandler().close();
+        getInternalTransientCacheHandler().close();
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
 
     // It might be possible for one of the cores to move from one list to another while we're
@@ -111,17 +133,21 @@ class SolrCores {
     // could have moved from the transient list to the pendingCloses list.
     do {
       coreList.clear();
-      synchronized (modifyLock) {
+      READ_WRITE_LOCK.writeLock().lock();
+      try {
+
         // make a copy of the cores then clear the map so the core isn't handed out to a request
         // again
         coreList.addAll(cores.values());
         cores.clear();
         if (transientSolrCoreCacheFactory != null) {
-          coreList.addAll(getTransientCacheHandler().prepareForShutdown());
+          coreList.addAll(getInternalTransientCacheHandler().prepareForShutdown());
         }
 
         coreList.addAll(pendingCloses);
         pendingCloses.clear();
+      } finally {
+        READ_WRITE_LOCK.writeLock().unlock();
       }
 
       ExecutorService coreCloseExecutor =
@@ -155,14 +181,17 @@ class SolrCores {
   // Returns the old core if there was a core of the same name.
   // WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       addCoreDescriptor(cd); // cd must always be registered if we register a core
 
       if (cd.isTransient()) {
-        return getTransientCacheHandler().addCore(cd.getName(), core);
+        return getInternalTransientCacheHandler().addCore(cd.getName(), core);
       } else {
         return cores.put(cd.getName(), core);
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -177,8 +206,11 @@ class SolrCores {
    */
   List<SolrCore> getCores() {
 
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       return new ArrayList<>(cores.values());
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -194,8 +226,12 @@ class SolrCores {
    *     can be sorted).
    */
   List<String> getLoadedCoreNames() {
-    synchronized (modifyLock) {
-      return distinctSetsUnion(cores.keySet(), getTransientCacheHandler().getLoadedCoreNames());
+    READ_WRITE_LOCK.readLock().lock();
+    try {
+      return distinctSetsUnion(
+          cores.keySet(), getInternalTransientCacheHandler().getLoadedCoreNames());
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -208,9 +244,12 @@ class SolrCores {
    *     can be sorted).
    */
   public List<String> getAllCoreNames() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       return distinctSetsUnion(
-          residentDescriptors.keySet(), getTransientCacheHandler().getAllCoreNames());
+          residentDescriptors.keySet(), getInternalTransientCacheHandler().getAllCoreNames());
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -238,27 +277,36 @@ class SolrCores {
    * {@link #getCores()}.size().
    */
   int getNumLoadedPermanentCores() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       return cores.size();
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   /** Gets the number of currently loaded transient cores. */
   int getNumLoadedTransientCores() {
-    synchronized (modifyLock) {
-      return getTransientCacheHandler().getLoadedCoreNames().size();
+    READ_WRITE_LOCK.readLock().lock();
+    try {
+      return getInternalTransientCacheHandler().getLoadedCoreNames().size();
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   /** Gets the number of unloaded cores, including permanent and transient cores. */
   int getNumUnloadedCores() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       assert areSetsDistinct(
-          residentDescriptors.keySet(), getTransientCacheHandler().getAllCoreNames());
-      return getTransientCacheHandler().getAllCoreNames().size()
-          - getTransientCacheHandler().getLoadedCoreNames().size()
+          residentDescriptors.keySet(), getInternalTransientCacheHandler().getAllCoreNames());
+      return getInternalTransientCacheHandler().getAllCoreNames().size()
+          - getInternalTransientCacheHandler().getLoadedCoreNames().size()
           + residentDescriptors.size()
           - cores.size();
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -267,16 +315,21 @@ class SolrCores {
    * cores. Faster equivalent for {@link #getAllCoreNames()}.size().
    */
   public int getNumAllCores() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       assert areSetsDistinct(
-          residentDescriptors.keySet(), getTransientCacheHandler().getAllCoreNames());
-      return residentDescriptors.size() + getTransientCacheHandler().getAllCoreNames().size();
+          residentDescriptors.keySet(), getInternalTransientCacheHandler().getAllCoreNames());
+      return residentDescriptors.size()
+          + getInternalTransientCacheHandler().getAllCoreNames().size();
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   protected void swap(String n0, String n1) {
 
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       SolrCore c0 = cores.get(n0);
       SolrCore c1 = cores.get(n1);
       if (c0 == null) { // Might be an unloaded transient core
@@ -306,19 +359,23 @@ class SolrCores {
           .swapRegistries(
               c0.getCoreMetricManager().getRegistryName(),
               c1.getCoreMetricManager().getRegistryName());
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
   protected SolrCore remove(String name) {
-
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       SolrCore ret = cores.remove(name);
       // It could have been a newly-created core. It could have been a transient core. The
       // newly-created cores in particular should be checked. It could have been a dynamic core.
       if (ret == null) {
-        ret = getTransientCacheHandler().removeCore(name);
+        ret = getInternalTransientCacheHandler().removeCore(name);
       }
       return ret;
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -328,11 +385,12 @@ class SolrCores {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name, boolean incRefCount, UUID coreId) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       SolrCore core = cores.get(name);
 
       if (core == null) {
-        core = getTransientCacheHandler().getCore(name);
+        core = getInternalTransientCacheHandler().getCore(name);
       }
       if (core != null && coreId != null && !coreId.equals(core.uniqueId)) return null;
 
@@ -341,6 +399,8 @@ class SolrCores {
       }
 
       return core;
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -349,11 +409,12 @@ class SolrCores {
   // be in the pending "to close" queue, we should NOT close it in unload core.
   protected boolean isLoadedNotPendingClose(String name) {
     // Just all be synchronized
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       if (cores.containsKey(name)) {
         return true;
       }
-      if (getTransientCacheHandler().containsCore(name)) {
+      if (getInternalTransientCacheHandler().containsCore(name)) {
         // Check pending
         for (SolrCore core : pendingCloses) {
           if (core.getName().equals(name)) {
@@ -363,33 +424,44 @@ class SolrCores {
 
         return true;
       }
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
     return false;
   }
 
   protected boolean isLoaded(String name) {
-    synchronized (modifyLock) {
-      return cores.containsKey(name) || getTransientCacheHandler().containsCore(name);
+    READ_WRITE_LOCK.readLock().lock();
+    try {
+      return cores.containsKey(name) || getInternalTransientCacheHandler().containsCore(name);
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   protected CoreDescriptor getUnloadedCoreDescriptor(String cname) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       CoreDescriptor desc = residentDescriptors.get(cname);
       if (desc == null) {
-        desc = getTransientCacheHandler().getTransientDescriptor(cname);
+        desc = getInternalTransientCacheHandler().getTransientDescriptor(cname);
         if (desc == null) {
           return null;
         }
       }
       return new CoreDescriptor(cname, desc);
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   /** The core is currently loading, unloading, or reloading. */
   boolean hasPendingCoreOps(String name) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       return pendingCoreOps.contains(name);
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -397,7 +469,8 @@ class SolrCores {
   protected SolrCore waitAddPendingCoreOps(String name) {
 
     // Keep multiple threads from operating on a core at one time.
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       boolean pending;
       do { // Are we currently doing anything to this core? Loading, unloading, reloading?
         pending = pendingCoreOps.contains(name); // wait for the core to be done being operated upon
@@ -413,7 +486,7 @@ class SolrCores {
 
         if (pending) {
           try {
-            modifyLock.wait();
+            WRITE_LOCK_CONDITION.await();
           } catch (InterruptedException e) {
             return null; // Seems best not to do anything at all if the thread is interrupted
           }
@@ -427,6 +500,8 @@ class SolrCores {
         // we might have been _unloading_ the core, so return the core if it was loaded.
         return getCoreFromAnyList(name, false);
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
     return null;
   }
@@ -434,16 +509,23 @@ class SolrCores {
   // We should always be removing the first thing in the list with our name! The idea here is to NOT
   // do anything on any core while some other operation is working on that core.
   protected void removeFromPendingOps(String name) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       if (!pendingCoreOps.remove(name)) {
         log.warn("Tried to remove core {} from pendingCoreOps and it wasn't there. ", name);
       }
-      modifyLock.notifyAll();
+      WRITE_LOCK_CONDITION.signalAll();
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
-  protected Object getModifyLock() {
-    return modifyLock;
+  protected ReentrantReadWriteLock.WriteLock getWriteLock() {
+    return READ_WRITE_LOCK.writeLock();
+  }
+
+  protected Condition getWriteLockCondition() {
+    return WRITE_LOCK_CONDITION;
   }
 
   // Be a little careful. We don't want to either open or close a core unless it's _not_ being
@@ -451,7 +533,8 @@ class SolrCores {
   // closes until we find something NOT in the list of threads currently being loaded or reloaded.
   // The "usual" case will probably return the very first one anyway.
   protected SolrCore getCoreToClose() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       for (SolrCore core : pendingCloses) {
         if (!pendingCoreOps.contains(core.getName())) {
           pendingCoreOps.add(core.getName());
@@ -459,6 +542,8 @@ class SolrCores {
           return core;
         }
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
     return null;
   }
@@ -471,12 +556,15 @@ class SolrCores {
    * @return the CoreDescriptor
    */
   public CoreDescriptor getCoreDescriptor(String coreName) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       CoreDescriptor coreDescriptor = residentDescriptors.get(coreName);
       if (coreDescriptor != null) {
         return coreDescriptor;
       }
-      return getTransientCacheHandler().getTransientDescriptor(coreName);
+      return getInternalTransientCacheHandler().getTransientDescriptor(coreName);
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
@@ -487,28 +575,37 @@ class SolrCores {
    * @return An unordered list copy. This list can be modified by the caller (e.g. sorted).
    */
   public List<CoreDescriptor> getCoreDescriptors() {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.readLock().lock();
+    try {
       Collection<CoreDescriptor> transientCoreDescriptors =
-          getTransientCacheHandler().getTransientDescriptors();
+          getInternalTransientCacheHandler().getTransientDescriptors();
       List<CoreDescriptor> coreDescriptors =
           new ArrayList<>(residentDescriptors.size() + transientCoreDescriptors.size());
       coreDescriptors.addAll(residentDescriptors.values());
       coreDescriptors.addAll(transientCoreDescriptors);
       return coreDescriptors;
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
   }
 
   // cores marked as loading will block on getCore
   public void markCoreAsLoading(CoreDescriptor cd) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       currentlyLoadingCores.add(cd.getName());
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
   // cores marked as loading will block on getCore
   public void markCoreAsNotLoading(CoreDescriptor cd) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       currentlyLoadingCores.remove(cd.getName());
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -516,10 +613,11 @@ class SolrCores {
   public void waitForLoadingCoresToFinish(long timeoutMs) {
     long time = System.nanoTime();
     long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       while (!currentlyLoadingCores.isEmpty()) {
         try {
-          modifyLock.wait(500);
+          WRITE_LOCK_CONDITION.await(500, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -528,6 +626,8 @@ class SolrCores {
           break;
         }
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -535,10 +635,11 @@ class SolrCores {
   public void waitForLoadingCoreToFinish(String core, long timeoutMs) {
     long time = System.nanoTime();
     long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       while (isCoreLoading(core)) {
         try {
-          modifyLock.wait(500);
+          WRITE_LOCK_CONDITION.await(500, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -547,6 +648,8 @@ class SolrCores {
           break;
         }
       }
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
@@ -555,23 +658,43 @@ class SolrCores {
   }
 
   public void queueCoreToClose(SolrCore coreToClose) {
-    synchronized (modifyLock) {
+    READ_WRITE_LOCK.writeLock().lock();
+    try {
       pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
-      modifyLock.notifyAll(); // Wakes up closer thread too
+      WRITE_LOCK_CONDITION.signalAll(); // Wakes up closer thread too
+    } finally {
+      READ_WRITE_LOCK.writeLock().unlock();
     }
   }
 
   /**
+   * Holds the <b>read-lock</b> while retrieving the cache holding the transient cores.
+   *
    * @return the cache holding the transient cores; never null.
    */
   public TransientSolrCoreCache getTransientCacheHandler() {
-    synchronized (modifyLock) {
-      if (transientSolrCoreCacheFactory == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            getClass().getName() + " not loaded; call load() before using it");
-      }
-      return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
+    READ_WRITE_LOCK.readLock().lock();
+    try {
+      return getInternalTransientCacheHandler();
+    } finally {
+      READ_WRITE_LOCK.readLock().unlock();
     }
+  }
+
+  /**
+   * Explicitly does not use a lock to provide the flexibility to choose between a read-lock and a
+   * write-lock before calling this method. Choosing a lock and locking before calling this method
+   * is mandatory. Note: Using always a write-lock would be costly. Using always a read-lock would
+   * block all calls which already hold a write-lock.
+   *
+   * @return the cache holding the transient cores; never null.
+   */
+  private TransientSolrCoreCache getInternalTransientCacheHandler() {
+    if (transientSolrCoreCacheFactory == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          getClass().getName() + " not loaded; call load() before using it");
+    }
+    return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
   }
 }

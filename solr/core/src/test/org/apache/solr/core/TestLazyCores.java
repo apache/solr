@@ -27,7 +27,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -786,32 +789,35 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  public static void checkCoresNotLoaded(CoreContainer cc, String... coreNames) {
+  public static void checkCoresNotLoaded(CoreContainer cc, String... coreNames)
+      throws InterruptedException {
     checkSomeCoresNotLoaded(cc, coreNames.length, coreNames);
   }
 
   public static void checkSomeCoresNotLoaded(
-      CoreContainer cc, int numNotLoaded, String... coreNames) {
-    Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
-    List<String> notLoadedCoreNames = new ArrayList<>();
-    for (String coreName : coreNames) {
-      if (!loadedCoreNames.contains(coreName)) {
-        notLoadedCoreNames.add(coreName);
-      }
-    }
-    assertEquals(
+      CoreContainer cc, int numNotLoaded, String... coreNames) throws InterruptedException {
+    // the condition may take a while to become true, as we need to wait for the cache maintenance
+    // task to be run
+    RetryUtil.retryUntil(
         "Expected "
             + numNotLoaded
-            + " not loaded cores but found "
-            + notLoadedCoreNames.size()
+            + " not loaded cores "
+            + "but found "
+            + Stream.of(coreNames)
+                .filter(coreName -> !cc.getLoadedCoreNames().contains(coreName))
+                .count()
             + ", coreNames="
             + Arrays.asList(coreNames)
-            + ", notLoadedCoreNames="
-            + notLoadedCoreNames
             + ", loadedCoreNames="
-            + loadedCoreNames,
-        numNotLoaded,
-        notLoadedCoreNames.size());
+            + cc.getLoadedCoreNames(),
+        5,
+        100,
+        TimeUnit.MILLISECONDS,
+        () ->
+            Stream.of(coreNames)
+                    .filter(coreName -> !cc.getLoadedCoreNames().contains(coreName))
+                    .count()
+                == numNotLoaded);
 
     // All transient cores are listed in allCoreNames.
     Collection<String> allCoreNames = cc.getAllCoreNames();
@@ -859,31 +865,33 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  public static void checkLoadedCores(CoreContainer cc, String... coreNames) {
+  public static void checkLoadedCores(CoreContainer cc, String... coreNames)
+      throws InterruptedException {
     checkSomeLoadedCores(cc, coreNames.length, coreNames);
   }
 
-  public static void checkSomeLoadedCores(CoreContainer cc, int numLoaded, String... coreNames) {
-    Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
-    List<String> loadedListedCoreNames = new ArrayList<>();
-    for (String coreName : coreNames) {
-      if (loadedCoreNames.contains(coreName)) {
-        loadedListedCoreNames.add(coreName);
-      }
-    }
-    assertEquals(
+  public static void checkSomeLoadedCores(CoreContainer cc, int numLoaded, String... coreNames)
+      throws InterruptedException {
+    // the condition may take a while to become true, as we need to wait for the cache maintenance
+    // task to be run
+    RetryUtil.retryUntil(
         "Expected "
             + numLoaded
-            + " loaded cores but found "
-            + loadedListedCoreNames.size()
+            + " loaded cores "
+            + "but found "
+            + cc.getLoadedCoreNames().size()
             + ", coreNames="
             + Arrays.asList(coreNames)
-            + ", loadedListedCoreNames="
-            + loadedListedCoreNames
             + ", loadedCoreNames="
-            + loadedCoreNames,
-        numLoaded,
-        loadedListedCoreNames.size());
+            + cc.getLoadedCoreNames(),
+        5,
+        100,
+        TimeUnit.MILLISECONDS,
+        () ->
+            Stream.of(coreNames)
+                    .filter(coreName -> cc.getLoadedCoreNames().contains(coreName))
+                    .count()
+                == numLoaded);
   }
 
   private void addLazy(SolrCore core, String... fieldValues) throws IOException {

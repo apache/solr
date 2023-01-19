@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.common.collect.Sets;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,14 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    * core is evicted to make room for a new core.
    */
   protected final Cache<String, SolrCore> transientCores;
+
+  /**
+   * This explicitly models capacity overflow of transientCores with cores that are still in use. A
+   * cores cache which holds cores evicted from transientCores because of limited size but which
+   * shall remain cached because they are still referenced or because they are part of an ongoing
+   * operation (pending ops).
+   */
+  protected final Cache<String, SolrCore> overflowCores;
 
   /**
    * Unlimited map of all the descriptors for all the registered transient cores, including the
@@ -70,10 +80,15 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     Caffeine<String, SolrCore> transientCoresCacheBuilder =
         Caffeine.newBuilder()
             .initialCapacity(initialCapacity)
-            // Use the current thread to queue evicted cores for closing. This ensures the
-            // cache max size is respected (with a different thread the max size would be
-            // respected asynchronously only eventually).
-            .executor(Runnable::run)
+            // Do NOT use the current thread to queue evicted cores for closing. Although this
+            // ensures the cache max size is respected only eventually, it should be a very
+            // short period of time until the cache maintenance task kicks in.
+            // The onEvict method needs the writeLock from SolrCores to operate safely.
+            // However, the current thread most probably has acquired a read-lock already
+            // somewhere up the call stack and would deadlock.
+            // Note that Caffeine cache has an internal maintenance task rescheduling logic which
+            // explicitly checks on the common pool.
+            .executor(ForkJoinPool.commonPool())
             .removalListener(
                 (coreName, core, cause) -> {
                   if (core != null && cause.wasEvicted()) {
@@ -85,37 +100,58 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     transientCores = transientCoresCacheBuilder.build();
 
+    overflowCores = Caffeine.newBuilder().initialCapacity(initialCapacity / 2).build();
+
     transientDescriptors = new LinkedHashMap<>(initialCapacity);
   }
 
   private void onEvict(SolrCore core) {
     final SolrCores solrCores = coreContainer.solrCores;
-    assert Thread.holdsLock(solrCores.getModifyLock());
-    // note: the cache's maximum size isn't strictly enforced; it can grow some if we un-evict
-    if (solrCores.hasPendingCoreOps(core.getName())) {
-      // core is loading, unloading, or reloading
-      if (log.isInfoEnabled()) {
-        log.info(
-            "NOT evicting transient core [{}]; it's loading or something else.  Size: {}",
-            core.getName(),
-            transientCores.estimatedSize());
+
+    solrCores.getWriteLock().lock();
+    try {
+      // note: the cache's maximum size isn't strictly enforced; it can grow some if we un-evict
+      if (solrCores.hasPendingCoreOps(core.getName())) {
+        // core is loading, unloading, or reloading
+        if (log.isInfoEnabled()) {
+          log.info(
+              "NOT evicting transient core [{}]; it's loading or something else.  transientCores size: {} overflowCores size: {}",
+              core.getName(),
+              transientCores.estimatedSize(),
+              overflowCores.estimatedSize());
+        }
+
+        // we want to get informed when this core closes to do the maintenance of our overflow cache
+        core.addCloseHook(new OverflowCacheMaintenanceHook());
+        // add core to overflow cache as it still has pending ops
+        overflowCores.put(core.getName(), core);
+
+      } else if (core.getOpenCount() > 1) {
+
+        // maybe a *long* running operation is happening or intense load
+        if (log.isInfoEnabled()) {
+          log.info(
+              "NOT evicting transient core [{}]; it's still in use.  transientCores size: {} overflowCores size: {}",
+              core.getName(),
+              transientCores.estimatedSize(),
+              overflowCores.estimatedSize());
+        }
+
+        // we want to get informed when this core closes to do the maintenance of our overflow cache
+        core.addCloseHook(new OverflowCacheMaintenanceHook());
+        // add core to overflow cache as it still has references to it
+        overflowCores.put(core.getName(), core);
+
+      } else {
+        // common case -- can evict it
+        if (log.isInfoEnabled()) {
+          log.info("Closing transient core [{}] evicted from the cache", core.getName());
+        }
+        solrCores.queueCoreToClose(core);
       }
-      transientCores.put(core.getName(), core); // put back
-    } else if (core.getOpenCount() > 1) {
-      // maybe a *long* running operation is happening or intense load
-      if (log.isInfoEnabled()) {
-        log.info(
-            "NOT evicting transient core [{}]; it's still in use.  Size: {}",
-            core.getName(),
-            transientCores.estimatedSize());
-      }
-      transientCores.put(core.getName(), core); // put back
-    } else {
-      // common case -- can evict it
-      if (log.isInfoEnabled()) {
-        log.info("Closing transient core [{}] evicted from the cache", core.getName());
-      }
-      solrCores.queueCoreToClose(core);
+    } finally {
+      solrCores.getWriteLock().unlock();
+      ;
     }
   }
 
@@ -143,8 +179,14 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   public Collection<SolrCore> prepareForShutdown() {
     // Return a copy of the values.
     List<SolrCore> ret = new ArrayList<>(transientCores.asMap().values());
+    ret.addAll(overflowCores.asMap().values());
+
     transientCores.invalidateAll();
     transientCores.cleanUp();
+
+    overflowCores.invalidateAll();
+    overflowCores.cleanUp();
+
     return ret;
   }
 
@@ -165,22 +207,40 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   @Override
   public Set<String> getLoadedCoreNames() {
-    return Collections.unmodifiableSet(transientCores.asMap().keySet());
+    return Collections.unmodifiableSet(
+        Sets.union(transientCores.asMap().keySet(), overflowCores.asMap().keySet()));
   }
 
   @Override
   public SolrCore removeCore(String name) {
-    return transientCores.asMap().remove(name);
+    SolrCore core = transientCores.asMap().remove(name);
+    SolrCore overflowCore = overflowCores.asMap().remove(name);
+    if (core == null) {
+      return overflowCore;
+    }
+
+    return core;
   }
 
   @Override
   public SolrCore getCore(String name) {
-    return name == null ? null : transientCores.getIfPresent(name);
+    if (name == null) {
+      return null;
+    }
+
+    SolrCore core = transientCores.getIfPresent(name);
+
+    if (core == null) {
+      return overflowCores.getIfPresent(name);
+    }
+
+    return core;
   }
 
   @Override
   public boolean containsCore(String name) {
-    return name != null && transientCores.asMap().containsKey(name);
+    return name != null
+        && (transientCores.asMap().containsKey(name) || overflowCores.asMap().containsKey(name));
   }
 
   @Override
@@ -212,5 +272,12 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   @Override
   public void setStatus(String coreName, int status) {
     // no_op for default handler.
+  }
+
+  private class OverflowCacheMaintenanceHook implements CloseHook {
+    @Override
+    public void postClose(SolrCore core) {
+      overflowCores.invalidate(core.getName());
+    }
   }
 }
