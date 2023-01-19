@@ -185,6 +185,8 @@ Build
 
 * SOLR-16624: Remove Gradle Groovy version override (Kevin Risden)
 
+* SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
