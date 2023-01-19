@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
