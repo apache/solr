@@ -198,88 +198,94 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
 
-    if (null == resourceName) {
-      resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
-    }
-
-    int schemaZkVersion = -1;
-    if (!(loader instanceof ZkSolrResourceLoader)) {
-      schemaInputStream = readSchemaLocally();
-    } else { // ZooKeeper
-      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-      final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
-      final String managedSchemaPath = lookupZKManagedSchemaPath();
-      managedSchemaResourceName =
-          managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1); // not loving this
-      Stat stat = new Stat();
-      try {
-        // Attempt to load the managed schema
-        byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
-        schemaZkVersion = stat.getVersion();
-        schemaInputStream =
-            new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
-        loadedResource = managedSchemaResourceName;
-        warnIfNonManagedSchemaExists();
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("", e);
-      } catch (KeeperException.NoNodeException e) {
-        log.info(
-            "The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead",
-            managedSchemaResourceName,
-            resourceName);
-      } catch (KeeperException e) {
-        String msg = "Error attempting to access " + managedSchemaPath;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    try {
+      if (null == resourceName) {
+        resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
       }
-      if (null == schemaInputStream) {
-        // The managed schema file could not be found - load the non-managed schema
+
+      int schemaZkVersion = -1;
+      if (!(loader instanceof ZkSolrResourceLoader)) {
+        schemaInputStream = readSchemaLocally();
+      } else { // ZooKeeper
+        final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+        final String managedSchemaPath = lookupZKManagedSchemaPath();
+        managedSchemaResourceName =
+            managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1); // not loving this
+        Stat stat = new Stat();
         try {
-          schemaInputStream = loader.openResource(resourceName);
-          loadedResource = resourceName;
-          shouldUpgrade = true;
-        } catch (IOException e) {
+          // Attempt to load the managed schema
+          byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+          schemaZkVersion = stat.getVersion();
+          schemaInputStream =
+              new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
+          loadedResource = managedSchemaResourceName;
+          warnIfNonManagedSchemaExists();
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          log.warn("", e);
+        } catch (KeeperException.NoNodeException e) {
+          log.info(
+              "The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead",
+              managedSchemaResourceName,
+              resourceName);
+        } catch (KeeperException e) {
+          String msg = "Error attempting to access " + managedSchemaPath;
+          log.error(msg, e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+        }
+        if (null == schemaInputStream) {
+          // The managed schema file could not be found - load the non-managed schema
           try {
-            // Retry to load the managed schema, in case it was created since the first attempt
-            byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
-            schemaZkVersion = stat.getVersion();
-            schemaInputStream = new ByteArrayInputStream(data);
-            loadedResource = managedSchemaPath;
-            warnIfNonManagedSchemaExists();
-          } catch (Exception e1) {
-            if (e1 instanceof InterruptedException) {
-              Thread.currentThread().interrupt(); // Restore the interrupted status
+            schemaInputStream = loader.openResource(resourceName);
+            loadedResource = resourceName;
+            shouldUpgrade = true;
+          } catch (IOException e) {
+            try {
+              // Retry to load the managed schema, in case it was created since the first attempt
+              byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+              schemaZkVersion = stat.getVersion();
+              schemaInputStream = new ByteArrayInputStream(data);
+              loadedResource = managedSchemaPath;
+              warnIfNonManagedSchemaExists();
+            } catch (Exception e1) {
+              if (e1 instanceof InterruptedException) {
+                Thread.currentThread().interrupt(); // Restore the interrupted status
+              }
+              final String msg =
+                  "Error loading both non-managed schema '"
+                      + resourceName
+                      + "' and managed schema '"
+                      + managedSchemaResourceName
+                      + "'";
+              log.error(msg, e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
             }
-            final String msg =
-                "Error loading both non-managed schema '"
-                    + resourceName
-                    + "' and managed schema '"
-                    + managedSchemaResourceName
-                    + "'";
-            log.error(msg, e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
           }
         }
       }
+      InputSource inputSource = new InputSource(schemaInputStream);
+      inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
+      try {
+        schema =
+            new ManagedIndexSchema(
+                config,
+                loadedResource,
+                IndexSchemaFactory.getConfigResource(
+                    configSetService, schemaInputStream, loader, managedSchemaResourceName),
+                isMutable,
+                managedSchemaResourceName,
+                schemaZkVersion,
+                getSchemaUpdateLock());
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading parsing schema", e);
+      }
+    } finally {
+      // XML Parser should close but in exceptional cases might not; so let's be safe
+      IOUtils.closeQuietly(schemaInputStream);
     }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    try {
-      schema =
-          new ManagedIndexSchema(
-              config,
-              loadedResource,
-              IndexSchemaFactory.getConfigResource(
-                  configSetService, schemaInputStream, loader, managedSchemaResourceName),
-              isMutable,
-              managedSchemaResourceName,
-              schemaZkVersion,
-              getSchemaUpdateLock());
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading parsing schema", e);
-    }
+
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
       synchronized (schema.getSchemaUpdateLock()) {
