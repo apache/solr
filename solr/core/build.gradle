@@ -115,6 +115,8 @@ dependencies {
 
   implementation 'commons-cli:commons-cli'
 
+  implementation 'net.jcip:jcip-annotations'
+
   implementation 'org.locationtech.spatial4j:spatial4j'
 
   implementation 'com.fasterxml.jackson.core:jackson-annotations'

@@ -24,6 +24,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -48,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 /** Factory for ManagedIndexSchema */
+@NotThreadSafe
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String UPGRADED_SCHEMA_EXTENSION = ".bak";
