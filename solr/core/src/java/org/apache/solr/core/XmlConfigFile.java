@@ -141,10 +141,7 @@ public class XmlConfigFile { // formerly simply "Config"
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
-      // according to spec, XML parser should close InputStream when parsing is complete.
-      // But in the event that this doesn't happen (either because an exception is
-      // thrown or because of an error in parser implementation, here we ensure that it
-      // is closed.
+      // XML Parser should close but in exceptional cases might not; so let's be safe
       IOUtils.closeQuietly(in);
     }
     if (substituteProps != null) {
