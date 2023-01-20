@@ -159,4 +159,15 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse>
     this.commitWithin = commitWithin;
     return this;
   }
+
+  private boolean sendToLeaders = true;
+
+  public boolean isSendToLeaders() {
+    return sendToLeaders;
+  }
+
+  public AbstractUpdateRequest setSendToLeaders(final boolean sendToLeaders) {
+    this.sendToLeaders = sendToLeaders;
+    return this;
+  }
 }

@@ -123,6 +123,10 @@ Improvements
 
 * SOLR-15772: More visible security warnings in Admin UI (janhoy)
 
+* SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
+  configured per AbstractUpdateRequest instance.  (hossman)
+
+
 Optimizations
 ---------------------
 
