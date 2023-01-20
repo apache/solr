@@ -169,6 +169,8 @@ Bug Fixes
 
 * SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
 
+* SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)

@@ -52,8 +52,16 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return roles.sort((a, b) => (a.name > b.name) ? 1 : -1);
   }
 
+  /**
+   * Check if user's roles are compatible with permission's roles
+   * @param roles list of roles for a permission, where at least one is required
+   * @param rolesForUser list of roles for user
+   * @return true if user has one of the required roles, or permission has a wildcard role
+   */
   function roleMatch(roles, rolesForUser) {
-    for (r in rolesForUser) {
+    if (roles.includes("*"))
+      return true
+    for (let r in rolesForUser) {
       if (roles.includes(rolesForUser[r]))
         return true;
     }
