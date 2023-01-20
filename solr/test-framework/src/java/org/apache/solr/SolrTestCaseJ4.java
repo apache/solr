@@ -2704,7 +2704,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
@@ -2729,7 +2729,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .withSocketTimeout(socketTimeoutMillis)
         .build();
   }
@@ -2754,7 +2754,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();
@@ -2777,7 +2777,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
@@ -2804,7 +2804,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();

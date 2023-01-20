@@ -283,9 +283,11 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients should send updates only to shard leaders.
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>true</code>.
      *
-     * <p>WARNING: This method currently has no effect. See SOLR-6312 for more information.
+     * @see #sendUpdatesToAnyReplica
+     * @see CloudSolrClient#isUpdatesToLeaders
      */
     public Builder sendUpdatesOnlyToShardLeaders() {
       shardLeadersOnly = true;
@@ -293,12 +295,34 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients should send updates to all replicas for a shard.
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>false</code>.
      *
-     * <p>WARNING: This method currently has no effect. See SOLR-6312 for more information.
+     * @see #sendUpdatesOnlyToShardLeaders
+     * @see CloudSolrClient#isUpdatesToLeaders
      */
-    public Builder sendUpdatesToAllReplicasInShard() {
+    public Builder sendUpdatesToAnyReplica() {
       shardLeadersOnly = false;
+      return this;
+    }
+
+    /**
+     * This method has no effect.
+     *
+     * <p>In older versions of Solr, this method was an incorrectly named equivilent to {@link
+     * #sendUpdatesToAnyReplica}, which had no effect because that setting was ignored in the
+     * created clients. When the underlying {@link CloudSolrClient} behavior was fixed, this method
+     * was modified to be an explicit No-Op, since the implied behavior of sending updates to
+     * <em>all</em> replicas has never been supported, and was never intended to be supported.
+     *
+     * @see #sendUpdatesOnlyToShardLeaders
+     * @see #sendUpdatesToAnyReplica
+     * @see CloudSolrClient#isUpdatesToLeaders
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-6312">SOLR-6312</a>
+     * @deprecated Never supported
+     */
+    @Deprecated
+    public Builder sendUpdatesToAllReplicasInShard() {
       return this;
     }
 
@@ -307,6 +331,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      *
      * <p>UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a
      * {@link SolrException}
+     *
+     * @see #sendDirectUpdatesToAnyShardReplica
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
@@ -319,6 +346,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      *
      * <p>Shard leaders are still preferred, but the created clients will fallback to using other
      * replicas if a leader cannot be found.
+     *
+     * @see #sendDirectUpdatesToShardLeadersOnly
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;

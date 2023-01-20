@@ -97,6 +97,9 @@ Improvements
 * SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
   for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
 
+* SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
+  configured per AbstractUpdateRequest instance.  (hossman)
+
 Optimizations
 ---------------------
 
