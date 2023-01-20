@@ -108,6 +108,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16630")
   public void testNRTRestart() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
     useFactory(null);
