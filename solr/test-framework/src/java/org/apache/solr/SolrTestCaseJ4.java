@@ -931,7 +931,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // If the test case set up Zk, it should still have it as available,
       // otherwise the core close will just be unnecessarily delayed.
       CoreContainer cc = h.getCoreContainer();
-      if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+      if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
           cc.getZkController().getZkClient().exists("/", false);
         } catch (KeeperException e) {

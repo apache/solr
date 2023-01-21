@@ -146,10 +146,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
     assertNotNull(gauge.getValue());
-    h.getCore().close();
+    deleteCore(); // closes TestHarness which closes CoreContainer which closes SolrCore
     assertEquals(metricManager.nullString(), gauge.getValue());
-
-    deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
       SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
