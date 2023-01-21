@@ -121,6 +121,12 @@ Improvements
 
 * SOLR-16616: JWTAuthPlugin: Read trusted X509 certificates from multiple files (janhoy)
 
+* SOLR-15772: More visible security warnings in Admin UI (janhoy)
+
+* SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
+  configured per AbstractUpdateRequest instance.  (hossman)
+
+
 Optimizations
 ---------------------
 
@@ -167,6 +173,8 @@ Bug Fixes
 
 * SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
 
+* SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -182,6 +190,10 @@ Build
 * SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
 
 * SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
+
+* SOLR-16624: Remove Gradle Groovy version override (Kevin Risden)
+
+* SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -218,6 +230,8 @@ Other Changes
 
 * SOLR-16534: Jaegertracer-Configurator is now deprecated. From v10.0 we'll only support OpenTelemetry (janhoy)
 
+* SOLR-14336: Warning about potentially old Solr version in Admin UI dashboard (janhoy)
+
 * SOLR-13243: Correct the initial capacity of the ZK operations to run in ShardLeaderElectionContextBase#runLeaderProcess (Haythem Khiri)
 
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
@@ -225,6 +239,10 @@ Other Changes
 * SOLR-16591: The "Transient Cores" feature is now deprecated.  In solr.xml "<transientCoreCacheFactory>"
   no longer works; it wasn't documented either.  Some internals were changed as well to simplify
   the standard case of having no transient cores.  (David Smiley)
+
+* SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
+
+* SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 
 ==================  9.1.1 ==================
 
