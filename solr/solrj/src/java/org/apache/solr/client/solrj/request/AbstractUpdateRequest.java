@@ -162,6 +162,7 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse>
 
   private boolean sendToLeaders = true;
 
+  @Override
   public boolean isSendToLeaders() {
     return sendToLeaders;
   }
