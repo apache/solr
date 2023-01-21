@@ -123,7 +123,7 @@ Improvements
 
 * SOLR-15772: More visible security warnings in Admin UI (janhoy)
 
-* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu)
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
 
 Optimizations
 ---------------------
