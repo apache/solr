@@ -32,11 +32,11 @@ solrAdminApp.controller('AnalysisController',
       var getFieldsAndTypes = function(schema) {
         var aggregatedFields = schema.fields;
         for (var field in schema.fields) {
-          var copy_dests = schema.fields[field].copyDests;
-          for (var i in copy_dests) {
-            var copy_dest = copy_dests[i];
-            if (!aggregatedFields[copy_dest]) {
-              aggregatedFields[copy_dest] = {};
+          var copyDests = schema.fields[field].copyDests;
+          for (var i in copyDests) {
+            var copyDest = copyDests[i];
+            if (!aggregatedFields[copyDest]) {
+              aggregatedFields[copyDest] = {};
             }
           }
         }
@@ -50,12 +50,12 @@ solrAdminApp.controller('AnalysisController',
             label: fields[i]
           });
         }
-        var dynamic_fields = Object.keys(schema.dynamicFields).sort();
-        for (var i in dynamic_fields) {
+        var dynamicFields = Object.keys(schema.dynamicFields).sort();
+        for (var i in dynamicFields) {
           fieldsAndTypes.push({
             group: "Dynamic Fields",
-            value: "dynamicfield=" + dynamic_fields[i],
-            label: dynamic_fields[i]
+            value: "dynamicfield=" + dynamicFields[i],
+            label: dynamicFields[i]
           });
         }
         var types = Object.keys(schema.types).sort();
@@ -168,19 +168,19 @@ solrAdminApp.controller('AnalysisController',
         }
 
         if (fieldOrType == "fieldname") {
-            $location.search("analysis.fieldname", name);
-            $location.search("analysis.dynamicfield", null);
-            $location.search("analysis.fieldtype", null);
+          $location.search("analysis.fieldname", name);
+          $location.search("analysis.dynamicfield", null);
+          $location.search("analysis.fieldtype", null);
 
         } else if (fieldOrType == "dynamicfield") {
-            $location.search("analysis.fieldname", null);
-            $location.search("analysis.dynamicfield", name);
-            $location.search("analysis.fieldtype", null);
+          $location.search("analysis.fieldname", null);
+          $location.search("analysis.dynamicfield", name);
+          $location.search("analysis.fieldtype", null);
 
         } else {
-            $location.search("analysis.fieldname", null);
-            $location.search("analysis.dynamicfield", null);
-            $location.search("analysis.fieldtype", name);
+          $location.search("analysis.fieldname", null);
+          $location.search("analysis.dynamicfield", null);
+          $location.search("analysis.fieldtype", name);
         }
         $location.search("verbose_output", $scope.verbose ? "1" : "0");
       };
