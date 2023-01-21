@@ -236,6 +236,10 @@ Other Changes
 
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
 
+* SOLR-16591: The "Transient Cores" feature is now deprecated.  In solr.xml "<transientCoreCacheFactory>"
+  no longer works; it wasn't documented either.  Some internals were changed as well to simplify
+  the standard case of having no transient cores.  (David Smiley)
+
 * SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)

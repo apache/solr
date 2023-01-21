@@ -168,8 +168,6 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setSolrCoreCacheFactoryConfig(
-        getPluginInfo(root.get("transientCoreCacheFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -380,6 +378,7 @@ public class SolrXmlConfig {
                 builder.setReplayUpdatesThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
+                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));
                 break;
               case "allowUrls":
