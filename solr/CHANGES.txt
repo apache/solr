@@ -123,8 +123,12 @@ Improvements
 
 * SOLR-15772: More visible security warnings in Admin UI (janhoy)
 
+* SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
+  configured per AbstractUpdateRequest instance.  (hossman)
+
 * SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
 
+>>>>>>> apache/main
 Optimizations
 ---------------------
 
@@ -170,6 +174,8 @@ Bug Fixes
 * SOLR-16611: NullPointerException occus when there are no segments in `{!collapse hint=top_fc}` (Minami Takuya via Mikhail Khludnev)
 
 * SOLR-16613: CryptoKeys should handle RSA padding for OpenJ9 (Kevin Risden)
+
+* SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
 
 Build
 ---------------------
@@ -233,6 +239,8 @@ Other Changes
 * SOLR-16544: Improve documentation on how to contribute to Solr (Justin Sweeney)
 
 * SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
+
+* SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 
 ==================  9.1.1 ==================
 
