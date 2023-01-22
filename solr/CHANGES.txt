@@ -244,6 +244,8 @@ Other Changes
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 
+* SOLR-16629: Replace Solr thread safety annotations with JCIP. (David Smiley)
+
 ==================  9.1.1 ==================
 
 Bug Fixes

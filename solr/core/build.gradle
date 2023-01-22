@@ -30,16 +30,8 @@ resolve {
 }
 
 dependencies {
-  // Spotbugs Annotations are only needed for old findbugs
-  // annotation usage like in Zookeeper during compilation time.
-  // It is not included in the release so exclude from checks.
-  compileOnly 'com.github.spotbugs:spotbugs-annotations'
-  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
-  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
-  // Exclude these from jar validation and license checks.
-  configurations.jarValidation {
-    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
-  }
+
+  // -- API Dependencies --
 
   implementation 'io.swagger.core.v3:swagger-annotations'
 
@@ -80,7 +72,7 @@ dependencies {
   implementation 'org.glassfish.hk2.external:jakarta.inject'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
 
-  // Non-API below; although there are exceptions
+  // -- Non-API below; although there are exceptions
 
   runtimeOnly "org.apache.lucene:lucene-analysis-kuromoji"
   runtimeOnly "org.apache.lucene:lucene-analysis-nori"
@@ -99,7 +91,6 @@ dependencies {
   implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
-
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'
@@ -167,9 +158,27 @@ dependencies {
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
+
+  // -- Compile-Only Dependencies
+
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
   compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
   compileOnly 'org.osgi:osgi.annotation'
+
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
+  // -- Test Dependencies
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
