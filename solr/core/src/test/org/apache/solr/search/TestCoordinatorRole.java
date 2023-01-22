@@ -418,7 +418,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       Thread.sleep(100);
     }
     assertTrue(found);
-    log.info("HELLO: "+docs);
     return (String) docs.get(0).getFieldValue("_core_");
   }
 }
