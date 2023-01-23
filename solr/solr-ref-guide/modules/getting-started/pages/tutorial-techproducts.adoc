@@ -68,7 +68,7 @@ Starting up 2 Solr nodes for your example SolrCloud cluster.
 
 Creating Solr home directory /solr-{solr-full-version}/example/cloud/node1/solr
 Cloning /solr-{solr-full-version}/example/cloud/node1 into
-/solr-{solr-full-version}/example/cloud/node2
+   /solr-{solr-full-version}/example/cloud/node2
 
 Starting up Solr on port 8983 using command:
 "bin/solr" start -cloud -p 8983 -s "example/cloud/node1/solr"
@@ -147,20 +147,20 @@ Creating new collection 'techproducts' using command:
 http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
 
 {
-"responseHeader":{
-  "status":0,
-  "QTime":5460},
-"success":{
-  "192.168.0.110:7574_solr":{
-    "responseHeader":{
-      "status":0,
-      "QTime":4056},
-    "core":"techproducts_shard1_replica_n1"},
-  "192.168.0.110:8983_solr":{
-    "responseHeader":{
-      "status":0,
-      "QTime":4056},
-    "core":"techproducts_shard2_replica_n2"}}}
+  "responseHeader":{
+    "status":0,
+    "QTime":5460},
+  "success":{
+    "192.168.0.110:7574_solr":{
+      "responseHeader":{
+        "status":0,
+        "QTime":4056},
+      "core":"techproducts_shard1_replica_n1"},
+    "192.168.0.110:8983_solr":{
+      "responseHeader":{
+        "status":0,
+        "QTime":4056},
+      "core":"techproducts_shard2_replica_n2"}}}
 
 Enabling auto soft-commits with maxTime 3 secs using the Config API
 
@@ -265,7 +265,7 @@ To use curl, give the same URL shown in your browser in quotes on the command li
 
 [,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?indent=on&q=*:*"
+$ curl "http://localhost:8983/solr/techproducts/select?indent=on&q=*:*"
 ----
 
 
