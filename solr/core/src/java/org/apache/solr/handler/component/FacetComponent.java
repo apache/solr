@@ -277,7 +277,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (!ArrayUtils.isEmpty(pivots)) {
+      if (ArrayUtils.isNotEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
