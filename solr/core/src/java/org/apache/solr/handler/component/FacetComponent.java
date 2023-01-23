@@ -163,7 +163,7 @@ public class FacetComponent extends SearchComponent {
 
       String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
       if (queries != null) {
-        facetQueries = new ArrayList<>();
+        facetQueries = new ArrayList<>(queries.length);
         for (String query : queries) {
           facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
         }
@@ -277,7 +277,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (!ArrayUtils.isEmpty(pivots)) {
+      if (ArrayUtils.isNotEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
