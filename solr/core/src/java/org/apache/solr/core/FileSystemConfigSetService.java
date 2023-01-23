@@ -282,7 +282,12 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   protected Path locateInstanceDir(CoreDescriptor cd) {
     String configSet = cd.getConfigSet();
+
     if (configSet == null) return cd.getInstanceDir();
+
+    if (configSet != null && configSet.endsWith("/conf")) {
+      configSet = configSet.substring(0, configSet.length() - "/conf".length());
+    }
     Path configSetDirectory = configSetBase.resolve(configSet);
     if (!Files.isDirectory(configSetDirectory))
       throw new SolrException(

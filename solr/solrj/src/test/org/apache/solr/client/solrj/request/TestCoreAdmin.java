@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.SolrTestCaseJ4.getFile;
 import static org.apache.solr.SolrTestCaseJ4.resetFactory;
 import static org.apache.solr.SolrTestCaseJ4.useFactory;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -32,11 +31,10 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
@@ -50,59 +48,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.hamcrest.MatcherAssert;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class TestCoreAdmin extends SolrTestCase {
-
-  protected static Path SOLR_HOME;
-  protected static Path CONFIG_HOME;
-
-  protected CoreContainer cores = null;
-
-  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
-
-  @Rule public TestRule testRule = new SystemPropertiesRestoreRule();
-
-  @BeforeClass
-  public static void setUpHome() throws IOException {
-    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
-    SOLR_HOME = createTempDir("solrHome");
-    FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
-    System.setProperty(
-        "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
-    System.setProperty("coreRootDirectory", "."); // relative to Solr home
-
-    // The index is always stored within a temporary directory
-    File tempDir = createTempDir().toFile();
-
-    File dataDir = new File(tempDir, "data1");
-    File dataDir2 = new File(tempDir, "data2");
-    System.setProperty("dataDir1", dataDir.getAbsolutePath());
-    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
-    System.setProperty("tempDir", tempDir.getAbsolutePath());
-    SolrTestCaseJ4.newRandomConfig();
-
-    solrClientTestRule.startSolr(SOLR_HOME);
-
-    cores = solrClientTestRule.getSolrClient().getCoreContainer();
-  }
-
-  protected SolrClient getSolrAdmin() {
-    return solrClientTestRule.getAdminClient();
-  }
+public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
   public void testConfigSet() throws Exception {
@@ -348,7 +299,4 @@ public class TestCoreAdmin extends SolrTestCase {
     }
   }
 
-  private SolrClient getSolrCore0() {
-    return new EmbeddedSolrServer(cores, "core0"); // doesn't need to be closed
-  }
 }

@@ -89,7 +89,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private UpdateShardHandler updateShardHandler;
 
   public SolrCmdDistributorTest() {
-    updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    updateShardHandler =
+        new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
 
     stress = 0;
   }

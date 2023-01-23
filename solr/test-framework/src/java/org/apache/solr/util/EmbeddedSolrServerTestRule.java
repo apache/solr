@@ -16,33 +16,41 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.update.UpdateShardHandlerConfig.DEFAULT;
+import static org.apache.solr.update.UpdateShardHandlerConfig.UPDATE_SHARD_HANDLER_CONFIG;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.update.UpdateShardHandlerConfig;
 
-/** TODO NOCOMMIT document */
+/**
+ * Provides an EmbeddedSolrServer for tests. It starts and stops the server and provides methods for
+ * creating collections and interacting with the server.
+ */
 public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   private static final String CORE_DIR_PROP = "coreRootDirectory";
   private EmbeddedSolrServer adminClient = null;
-  private EmbeddedSolrServer client = null;
   private CoreContainer container = null;
-
   private boolean clearCoreDirSysProp = false;
 
+  /** Provides an EmbeddedSolrServer instance for administration actions */
   public EmbeddedSolrServer getAdminClient() {
     return adminClient;
   }
 
+  /**
+   * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
+   * used to configure the server. If not, a new NodeConfig is built with default settings
+   * for configuration.
+   */
   public void startSolr(Path solrHome) {
     NodeConfig nodeConfig;
     if (Files.exists(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE))) {
@@ -67,91 +75,22 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     startSolr(nodeConfig);
   }
 
+  /** Starts Solr with the given NodeConfig */
   public void startSolr(NodeConfig nodeConfig) {
     container = new CoreContainer(nodeConfig);
     container.load();
     adminClient = new EmbeddedSolrServer(container, null);
   }
 
+  /** Returns a NodeConfigBuilder with default settings for test configuration */
   public NodeConfig.NodeConfigBuilder newNodeConfigBuilder(Path solrHome) {
-    // TODO nocommit dedupe this with TestHarness
-    var updateShardHandlerConfig =
-        new UpdateShardHandlerConfig(
-            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-            30000,
-            30000,
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setUpdateShardHandlerConfig(UPDATE_SHARD_HANDLER_CONFIG)
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
-  public NewCollectionBuilder newCollection(String name) {
-    return new NewCollectionBuilder(name);
-  }
-
-  public class NewCollectionBuilder {
-    private String name;
-    private String configSet;
-    private String configFile;
-    private String schemaFile;
-
-    public NewCollectionBuilder(String name) {
-      this.name = name;
-    }
-
-    public NewCollectionBuilder withConfigSet(String configSet) {
-      // Chop off "/conf" if found -- configSet can be a path.
-      // This is a hack so that we can continue to use ExternalPaths.DEFAULT_CONFIGSET etc. as-is.
-      // TODO FileSystemConfigSetService.locateInstanceDir should have this logic.
-      // Without this, managed resources might be written to
-      // conf/conf/_schema_analysis_stopwords_english.json because SolrResourceLoader points to the
-      // wrong dir.
-      if (configSet != null && configSet.endsWith("/conf")) {
-        configSet = configSet.substring(0, configSet.length() - "/conf".length());
-      }
-
-      this.configSet = configSet;
-      return this;
-    }
-
-    public NewCollectionBuilder withConfigFile(String configFile) {
-      this.configFile = configFile;
-      return this;
-    }
-
-    public NewCollectionBuilder withSchemaFile(String schemaFile) {
-      this.schemaFile = schemaFile;
-      return this;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getConfigSet() {
-      return configSet;
-    }
-
-    public String getConfigFile() {
-      return configFile;
-    }
-
-    public String getSchemaFile() {
-      return schemaFile;
-    }
-
-    public void create() throws SolrServerException, IOException {
-      EmbeddedSolrServerTestRule.this.create(this);
-    }
-  }
-
-  private void create(NewCollectionBuilder b) throws SolrServerException, IOException {
-
-    client = new EmbeddedSolrServer(container, b.getName());
+  protected void create(NewCollectionBuilder b) throws SolrServerException, IOException {
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName(b.getName());
@@ -167,9 +106,12 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       req.setSchemaName(b.getSchemaFile());
     }
 
-    req.process(client);
+    req.process(adminClient);
   }
 
+  /** Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property
+   * if necessary
+   */
   @Override
   protected void after() {
     if (container != null) container.shutdown();
@@ -179,21 +121,14 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     }
   }
 
+  /** Returns EmbeddedSolrServer instance for the collection named "collection1" */
   @Override
   public EmbeddedSolrServer getSolrClient() {
-    if (client == null) {
-      return adminClient;
-    } else {
-      return client;
-    }
+    return getSolrClient("collection1");
   }
 
   @Override
   public EmbeddedSolrServer getSolrClient(String name) {
-    if (client == null) {
-      return new EmbeddedSolrServer(adminClient.getCoreContainer(), name);
-    } else {
-      return new EmbeddedSolrServer(client.getCoreContainer(), name);
-    }
+    return new EmbeddedSolrServer(adminClient.getCoreContainer(), name);
   }
 }
