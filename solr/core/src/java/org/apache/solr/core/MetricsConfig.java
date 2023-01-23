@@ -244,7 +244,7 @@ public class MetricsConfig {
   public static class CacheConfig {
     public Integer threadsIntervalSeconds; // intervals for which the threads metrics are cached
 
-    public CacheConfig (Integer threadsIntervalSeconds) {
+    public CacheConfig(Integer threadsIntervalSeconds) {
       this.threadsIntervalSeconds = threadsIntervalSeconds;
     }
   }

@@ -429,13 +429,25 @@ public class CoreContainerProvider implements ServletContextListener {
       metricManager.registerAll(
           registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
 
-      if (config.getCacheConfig() != null && config.getCacheConfig().threadsIntervalSeconds != null) {
-         if (log.isInfoEnabled()) {
-           log.info("Threads metrics will be cached for {} seconds", config.getCacheConfig().threadsIntervalSeconds);
-         }
-         metricManager.registerAll(registryName, new CachedThreadStatesGaugeSet(config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS), SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+      if (config.getCacheConfig() != null
+          && config.getCacheConfig().threadsIntervalSeconds != null) {
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Threads metrics will be cached for {} seconds",
+              config.getCacheConfig().threadsIntervalSeconds);
+        }
+        metricManager.registerAll(
+            registryName,
+            new CachedThreadStatesGaugeSet(
+                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
       } else {
-         metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+        metricManager.registerAll(
+            registryName,
+            new ThreadStatesGaugeSet(),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
       }
 
       MetricsMap sysprops =
