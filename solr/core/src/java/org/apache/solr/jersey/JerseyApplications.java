@@ -20,8 +20,6 @@ package org.apache.solr.jersey;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
-import javax.inject.Singleton;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,7 +42,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 public class JerseyApplications {
 
   public static class CoreContainerApp extends ResourceConfig {
-    public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public CoreContainerApp() {
       super();
 
       // Authentication and authorization
@@ -63,15 +61,6 @@ public class JerseyApplications {
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
-      register(
-          new AbstractBinder() {
-            @Override
-            protected void configure() {
-              bindFactory(new MetricBeanFactory(beanRegistry))
-                  .to(PluginBag.JerseyMetricsLookupRegistry.class)
-                  .in(Singleton.class);
-            }
-          });
       register(
           new AbstractBinder() {
             @Override
@@ -102,17 +91,17 @@ public class JerseyApplications {
 
   public static class SolrCoreApp extends CoreContainerApp {
 
-    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
-      super(beanRegistry);
+    public SolrCoreApp() {
+      super();
 
       // Dependency Injection for Jersey resources
       register(
           new AbstractBinder() {
             @Override
             protected void configure() {
-              bindFactory(new InjectionFactories.SingletonFactory<>(solrCore))
+              bindFactory(InjectionFactories.SolrCoreFactory.class)
                   .to(SolrCore.class)
-                  .in(Singleton.class);
+                  .in(RequestScoped.class);
             }
           });
     }
