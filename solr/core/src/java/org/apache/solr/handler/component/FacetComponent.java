@@ -163,7 +163,7 @@ public class FacetComponent extends SearchComponent {
 
       String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
       if (queries != null) {
-        facetQueries = new ArrayList<>();
+        facetQueries = new ArrayList<>(queries.length);
         for (String query : queries) {
           facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
         }
