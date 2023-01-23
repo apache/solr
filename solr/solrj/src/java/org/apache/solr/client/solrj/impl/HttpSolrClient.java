@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -148,7 +149,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private volatile Set<String> queryParams = Collections.emptySet();
+  private volatile Set<String> urlParamNames = Set.of();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
 
@@ -187,26 +188,36 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
-    this.queryParams = builder.queryParams;
+    this.urlParamNames = builder.urlParamNames;
   }
 
+  /**
+   * @deprecated use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return queryParams;
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys to only send via the query string Note that the param will
-   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   * @param urlParamNames set of param keys to only send via the query string Note that the param
+   *     will be sent as a query string if the key is part of this Set or the SolrRequest's query
+   *     params.
    *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   *     multiple threads simultaneously. To avoid this, use {@link Builder#withQueryParams(Set)}.
+   *     multiple threads simultaneously. To avoid this, use {@link
+   *     Builder#withTheseParamNamesInTheUrl(Set)}.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Builder#withQueryParams(Set)} instead
+   * @deprecated use {@link Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
   @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public void setQueryParams(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
   }
 
   /**
@@ -435,7 +446,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
-        ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
         String fullQueryUrl = url + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
@@ -1041,6 +1052,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
         return new HttpSolrClient(this);
       } else {
+        urlParamNames =
+            urlParamNames == null
+                ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
+                : urlParamNames;
+        if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
+          urlParamNames = new HashSet<>(urlParamNames);
+          urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
+        }
+        urlParamNames = Set.copyOf(urlParamNames);
         return new DelegationTokenHttpSolrClient(this);
       }
     }
