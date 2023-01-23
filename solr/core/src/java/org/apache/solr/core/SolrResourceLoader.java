@@ -358,11 +358,14 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return Files.newInputStream(inConfigDir);
+        return new SolrFileInputStream(
+            Files.newInputStream(inConfigDir), Files.getLastModifiedTime(inConfigDir).toMillis());
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return Files.newInputStream(inInstanceDir);
+        return new SolrFileInputStream(
+            Files.newInputStream(inInstanceDir),
+            Files.getLastModifiedTime(inInstanceDir).toMillis());
       }
     }
 
@@ -984,4 +987,43 @@ public class SolrResourceLoader
   // This is to verify if this requires to use the schema classloader for classes loaded from
   // packages
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+
+  public static class SolrFileInputStream extends InputStream {
+    private final InputStream delegate;
+    private final long lastModified;
+
+    public SolrFileInputStream(InputStream delegate, long lastModified) {
+      this.delegate = delegate;
+      this.lastModified = lastModified;
+    }
+
+    public long getLastModified() {
+      return lastModified;
+    }
+
+    @Override
+    public synchronized int read() throws IOException {
+      return delegate.read();
+    }
+
+    @Override
+    public synchronized int read(byte[] bs, int off, int len) throws IOException {
+      return delegate.read(bs, off, len);
+    }
+
+    @Override
+    public int available() throws IOException {
+      return delegate.available();
+    }
+
+    @Override
+    public synchronized long skip(long n) throws IOException {
+      return delegate.skip(n);
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+  }
 }
