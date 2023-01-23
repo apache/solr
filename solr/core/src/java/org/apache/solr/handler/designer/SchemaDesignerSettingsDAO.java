@@ -99,7 +99,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     if (changed) {
       ZkController.persistConfigResourceToZooKeeper(
           zkLoaderForConfigSet(configSet),
-          overlay.getVersion(),
+          overlay.getZnodeVersion(),
           ConfigOverlay.RESOURCE_NAME,
           overlay.toByteArray(),
           true);

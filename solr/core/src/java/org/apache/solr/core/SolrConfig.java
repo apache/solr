@@ -108,7 +108,6 @@ public class SolrConfig implements MapSerializable {
 
   private int znodeVersion;
   ConfigNode root;
-  int hashCode;
   private final SolrResourceLoader resourceLoader;
   private Properties substituteProperties;
 
@@ -179,13 +178,8 @@ public class SolrConfig implements MapSerializable {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
         this.fileName = zkin.fileName;
-      }
-      if (in instanceof SolrResourceLoader.SolrFileInputStream) {
-        SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
-        zkVersion = (int) sfin.getLastModified();
-        hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
       }
     }
 
@@ -241,10 +235,6 @@ public class SolrConfig implements MapSerializable {
           }
         });
     try {
-      // This will hash the solrconfig.xml, user properties and overlay (all possible ways of
-      // modifying the resulting SolrConfig)
-      hashCode = Objects.hash(this.root.txt(), overlay.getVersion());
-
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
       String val =
@@ -586,15 +576,9 @@ public class SolrConfig implements MapSerializable {
         return new ConfigOverlay(Collections.emptyMap(), -1);
       }
 
-      int version = 0;
+      int version = 0; // will be always 0 for file based resourceLoader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.debug("Config overlay loaded. version : {} ", version);
-      }
-      if (in instanceof SolrResourceLoader.SolrFileInputStream) {
-        // We should be ok, it is unlikely that a configOverlay is loaded decades apart and has the
-        // same version after casting to an int
-        version = (int) ((SolrResourceLoader.SolrFileInputStream) in).getLastModified();
         log.debug("Config overlay loaded. version : {} ", version);
       }
       @SuppressWarnings("unchecked")
@@ -1177,10 +1161,5 @@ public class SolrConfig implements MapSerializable {
 
   public ConfigNode get(String name, Predicate<ConfigNode> test) {
     return root.get(name, test);
-  }
-
-  @Override
-  public int hashCode() {
-    return hashCode;
   }
 }
