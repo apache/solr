@@ -34,15 +34,15 @@ import org.apache.solr.common.util.Utils;
  * performed on tbhis gives a new copy of the object with the changed value
  */
 public class ConfigOverlay implements MapSerializable {
-  private final int version;
+  private final int znodeVersion;
   private final Map<String, Object> data;
   private Map<String, Object> props;
   private Map<String, Object> userProps;
 
   @SuppressWarnings({"unchecked"})
-  public ConfigOverlay(Map<String, Object> jsonObj, int version) {
+  public ConfigOverlay(Map<String, Object> jsonObj, int znodeVersion) {
     if (jsonObj == null) jsonObj = Collections.emptyMap();
-    this.version = version;
+    this.znodeVersion = znodeVersion;
     data = Collections.unmodifiableMap(jsonObj);
     props = (Map<String, Object>) data.get("props");
     if (props == null) props = Collections.emptyMap();
@@ -71,7 +71,7 @@ public class ConfigOverlay implements MapSerializable {
     copy.put(key, val);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
-    return new ConfigOverlay(jsonObj, version);
+    return new ConfigOverlay(jsonObj, znodeVersion);
   }
 
   public ConfigOverlay unsetUserProperty(String key) {
@@ -80,7 +80,7 @@ public class ConfigOverlay implements MapSerializable {
     copy.remove(key);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
-    return new ConfigOverlay(jsonObj, version);
+    return new ConfigOverlay(jsonObj, znodeVersion);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -103,7 +103,7 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("props", deepCopy);
 
-    return new ConfigOverlay(jsonObj, version);
+    return new ConfigOverlay(jsonObj, znodeVersion);
   }
 
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
@@ -139,15 +139,15 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("props", deepCopy);
 
-    return new ConfigOverlay(jsonObj, version);
+    return new ConfigOverlay(jsonObj, znodeVersion);
   }
 
   public byte[] toByteArray() {
     return Utils.toJSON(data);
   }
 
-  public int getVersion() {
-    return version;
+  public int getZnodeVersion() {
+    return znodeVersion;
   }
 
   @Override
@@ -236,7 +236,7 @@ public class ConfigOverlay implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put(ZNODEVER, version);
+    map.put(ZNODEVER, znodeVersion);
     map.putAll(data);
     return map;
   }
@@ -258,7 +258,7 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Object> existing = (Map<String, Object>) dataCopy.get(typ);
     if (existing == null) dataCopy.put(typ, existing = new LinkedHashMap<>());
     existing.put(info.get(CoreAdminParams.NAME).toString(), info);
-    return new ConfigOverlay(dataCopy, this.version);
+    return new ConfigOverlay(dataCopy, this.znodeVersion);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -267,14 +267,9 @@ public class ConfigOverlay implements MapSerializable {
     Map<?, ?> reqHandler = (Map<?, ?>) dataCopy.get(typ);
     if (reqHandler == null) return this;
     reqHandler.remove(name);
-    return new ConfigOverlay(dataCopy, this.version);
+    return new ConfigOverlay(dataCopy, this.znodeVersion);
   }
 
   public static final String ZNODEVER = "znodeVersion";
   public static final String NAME = "overlay";
-
-  @Override
-  public int hashCode() {
-    return data.hashCode();
-  }
 }

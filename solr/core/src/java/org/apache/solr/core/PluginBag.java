@@ -69,38 +69,26 @@ public class PluginBag<T> implements AutoCloseable {
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
 
-  /**
-   * Allows JAX-RS 'filters' to find the requestHandler (if any) associated particular JAX-RS
-   * resource classes
-   *
-   * <p>Used primarily by JAX-RS when recording per-request metrics, which requires a {@link
-   * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} object from the relevant
-   * requestHandler.
-   */
-  public static class JaxrsResourceToHandlerMappings
+  public static class JerseyMetricsLookupRegistry
       extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
 
-  private final JaxrsResourceToHandlerMappings jaxrsResourceRegistry;
-
-  public JaxrsResourceToHandlerMappings getJaxrsRegistry() {
-    return jaxrsResourceRegistry;
-  }
+  private final JerseyMetricsLookupRegistry infoBeanByResource;
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
     if (klass == SolrRequestHandler.class && V2ApiUtils.isEnabled()) {
       this.loadV2ApisIfPresent = true;
       this.apiBag = new ApiBag(core != null);
-      this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
+      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
       this.jerseyResources =
           (core == null)
-              ? new JerseyApplications.CoreContainerApp()
-              : new JerseyApplications.SolrCoreApp();
+              ? new JerseyApplications.CoreContainerApp(infoBeanByResource)
+              : new JerseyApplications.SolrCoreApp(core, infoBeanByResource);
     } else {
       this.loadV2ApisIfPresent = false;
       this.apiBag = null;
       this.jerseyResources = null;
-      this.jaxrsResourceRegistry = null;
+      this.infoBeanByResource = null;
     }
     this.core = core;
     this.klass = klass;
@@ -262,11 +250,10 @@ public class PluginBag<T> implements AutoCloseable {
                   log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
                 }
                 jerseyResources.register(jerseyClazz);
-                // See RequestMetricHandling javadocs for a better understanding of this
-                // resource->RH
+                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
                 // mapping
                 if (inst instanceof RequestHandlerBase) {
-                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) inst);
+                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
                 }
               }
             }
