@@ -109,6 +109,7 @@ Optimizations
 
 * SOLR-15732: queries to missing collection are slow (noble)
 
+* SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
 
 Bug Fixes
 ---------------------

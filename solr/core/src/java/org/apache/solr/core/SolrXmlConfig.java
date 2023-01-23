@@ -657,6 +657,12 @@ public class SolrXmlConfig {
       builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
     }
 
+    ConfigNode caching = metrics.get("solr/metrics/caching");
+    if (caching != null) {
+      Object threadsCachingIntervalSeconds = DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+      builder.setCacheConfig(new MetricsConfig.CacheConfig(threadsCachingIntervalSeconds == null? null: Integer.parseInt(threadsCachingIntervalSeconds.toString())));
+    }
+
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
     Set<String> hiddenSysProps = getHiddenSysProps(metrics);
     return builder
