@@ -237,3 +237,7 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
 
 REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 REM set SOLR_MODULES=extraction,ltr
+
+REM Configure the default replica placement plugin to use if one is not configured in cluster properties
+REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple

@@ -41,6 +41,9 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -63,6 +66,7 @@ import org.slf4j.LoggerFactory;
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String SYSTEM_COLL_PREFIX = ".sys.";
+  public static final String PLACEMENTPLUGIN_DEFAULT_SYSPROP = "solr.placementplugin.default";
 
   public static String getCounterNodePath(String collection) {
     return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/counter";
@@ -562,8 +566,37 @@ public class Assign {
         coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin == null) {
       // Otherwise use the default
-      // TODO: Replace this with a better options, such as the AffinityPlacementFactory
-      placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+      String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
+      if (defaultPluginId != null) {
+        switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
+          case "simple":
+            placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+            break;
+          case "affinity":
+            placementPlugin = (new AffinityPlacementFactory()).createPluginInstance();
+            break;
+          case "minimizecores":
+            placementPlugin = (new MinimizeCoresPlacementFactory()).createPluginInstance();
+            break;
+          case "random":
+            placementPlugin = (new RandomPlacementFactory()).createPluginInstance();
+            break;
+          default:
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid value for system property '"
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+        }
+        log.info(
+            "Default replica placement plugin set in {} to {}",
+            PLACEMENTPLUGIN_DEFAULT_SYSPROP,
+            defaultPluginId);
+      } else {
+        // TODO: Consider making the ootb default AffinityPlacementFactory, see
+        // https://issues.apache.org/jira/browse/SOLR-16492
+        placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+      }
     }
     return new PlacementPluginAssignStrategy(placementPlugin);
   }

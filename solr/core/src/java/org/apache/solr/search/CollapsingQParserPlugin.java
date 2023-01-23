@@ -2090,7 +2090,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new EmptyDocValuesProducer() {
                 @Override
                 public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  return uninvertingReader.getSortedDocValues(collapseField);
+                  SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
+                  if (values != null) {
+                    return values;
+                  } else {
+                    return DocValues.emptySorted();
+                  }
                 }
               };
         } else {
