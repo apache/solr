@@ -129,6 +129,7 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
+import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -192,9 +193,14 @@ public class CoreContainer {
       new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile ApplicationHandler jerseyAppHandler;
+  private volatile JerseyAppHandlerCache appHandlersByConfigSetId;
 
   public ApplicationHandler getJerseyApplicationHandler() {
     return jerseyAppHandler;
+  }
+
+  public JerseyAppHandlerCache getAppHandlerCache() {
+    return appHandlersByConfigSetId;
   }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
@@ -1091,6 +1097,8 @@ public class CoreContainer {
               });
       jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
     }
+
+    appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
     // Do Node setup logic after all handlers have been registered.
     if (isZooKeeperAware()) {
