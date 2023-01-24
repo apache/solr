@@ -1,4 +1,4 @@
-name: SolrJ Tests
+name: Solr Tests
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Run SolrJ Tests
+    name: Run Solr Tests using Crave.io resources
 
     runs-on: ubuntu-latest
 
@@ -37,5 +37,5 @@ jobs:
       run: curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
     - name: Initialize gradle settings
       run: ./crave run -- ./gradlew localSettings
-    - name: Test the SolrJ Package
+    - name: Test the Solr Package
       run: ./crave run -- './gradlew --max-workers=`nproc` test'
