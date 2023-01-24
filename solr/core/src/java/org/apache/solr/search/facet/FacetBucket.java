@@ -28,9 +28,10 @@ public class FacetBucket {
 
   @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
-
-  // this is just for internal correlation (the first bucket created is bucket 0,
-  // the next bucket 1, across all field buckets)
+  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1,
+  // across all field buckets)
+  // bucketNumber is only supplied for buckets that could be part of a refinement chain, otherwise
+  // the value is -1 signifying no refinement
   final int bucketNumber;
 
   long count;
@@ -42,8 +43,10 @@ public class FacetBucket {
       FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
-    // TODO: we don't need bucket numbers for all buckets...
-    this.bucketNumber = mcontext.getNewBucketNumber();
+    boolean refineEnabled =
+        parent.freq.doRefine() || !mcontext.getSubsWithRefinement(parent.freq).isEmpty();
+    // only need a bucketNumber where refinement is enabled (either at our level or in a sub)
+    this.bucketNumber = refineEnabled ? mcontext.getNewBucketNumber() : -1;
   }
 
   public long getCount() {
@@ -78,7 +81,9 @@ public class FacetBucket {
   public void mergeBucket(SimpleOrderedMap<?> bucket, FacetMerger.Context mcontext) {
     // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
 
-    mcontext.setShardFlag(bucketNumber);
+    if (bucketNumber >= 0) {
+      mcontext.setShardFlag(bucketNumber);
+    }
 
     // drive merging off the received bucket?
     for (int i = 0; i < bucket.size(); i++) {
