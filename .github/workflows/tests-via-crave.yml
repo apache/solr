@@ -38,4 +38,4 @@ jobs:
     - name: Initialize gradle settings
       run: ./crave run -- ./gradlew localSettings
     - name: Test the SolrJ Package
-      run: ./crave run -- ./gradlew test
+      run: ./crave run -- './gradlew --max-workers=`nproc` test'
