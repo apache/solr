@@ -21,7 +21,6 @@ import static org.apache.solr.SolrTestCaseJ4.useFactory;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +34,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -49,9 +47,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
@@ -298,5 +294,4 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       resetFactory();
     }
   }
-
 }

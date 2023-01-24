@@ -32,7 +32,8 @@ public class UpdateShardHandlerConfig {
           DEFAULT_METRICNAMESTRATEGY,
           DEFAULT_MAXRECOVERYTHREADS);
 
-    public static final UpdateShardHandlerConfig UPDATE_SHARD_HANDLER_CONFIG =
+  /** Test rule default */
+  public static final UpdateShardHandlerConfig TEST_DEFAULT =
       new UpdateShardHandlerConfig(
           HttpClientUtil.DEFAULT_MAXCONNECTIONS,
           HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
@@ -40,7 +41,6 @@ public class UpdateShardHandlerConfig {
           30000,
           UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
           UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-
 
   private final int maxUpdateConnections;
 

@@ -16,8 +16,7 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.update.UpdateShardHandlerConfig.DEFAULT;
-import static org.apache.solr.update.UpdateShardHandlerConfig.UPDATE_SHARD_HANDLER_CONFIG;
+import static org.apache.solr.update.UpdateShardHandlerConfig.TEST_DEFAULT;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,8 +47,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
-   * used to configure the server. If not, a new NodeConfig is built with default settings
-   * for configuration.
+   * used to configure the server. If not, a new NodeConfig is built with default settings for
+   * configuration.
    */
   public void startSolr(Path solrHome) {
     NodeConfig nodeConfig;
@@ -75,7 +74,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     startSolr(nodeConfig);
   }
 
-  /** Starts Solr with the given NodeConfig */
+  /** Starts Solr with custom NodeConfig */
   public void startSolr(NodeConfig nodeConfig) {
     container = new CoreContainer(nodeConfig);
     container.load();
@@ -86,7 +85,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   public NodeConfig.NodeConfigBuilder newNodeConfigBuilder(Path solrHome) {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUpdateShardHandlerConfig(UPDATE_SHARD_HANDLER_CONFIG)
+        .setUpdateShardHandlerConfig(TEST_DEFAULT)
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
@@ -99,9 +98,13 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     if (b.getConfigSet() != null) {
       req.setConfigSet(b.getConfigSet());
     }
+
+    /** Setting config.xml */
     if (b.getConfigFile() != null) {
       req.setConfigName(b.getConfigFile());
     }
+
+    /** Setting schema.xml */
     if (b.getSchemaFile() != null) {
       req.setSchemaName(b.getSchemaFile());
     }
@@ -109,8 +112,9 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     req.process(adminClient);
   }
 
-  /** Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property
-   * if necessary
+  /**
+   * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
+   * necessary
    */
   @Override
   protected void after() {

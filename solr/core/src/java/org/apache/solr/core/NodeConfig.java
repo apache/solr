@@ -544,8 +544,7 @@ public class NodeConfig {
     private String sharedLibDirectory;
     private String modules;
     private PluginInfo shardHandlerFactoryConfig;
-    private UpdateShardHandlerConfig updateShardHandlerConfig =
-        UpdateShardHandlerConfig.DEFAULT;
+    private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();

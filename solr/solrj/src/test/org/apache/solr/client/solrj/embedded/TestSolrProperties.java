@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -26,9 +25,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 /** Test properties in configuration files. */
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
