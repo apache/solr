@@ -203,7 +203,20 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   private void setupCluster(int nodeCount) throws Exception {
-    configureCluster(nodeCount).addConfig("conf", configset("cloud-minimal")).configure();
+    setupCluster(nodeCount, null, null);
+  }
+
+  private void setupCluster(int nodeCount, Integer connectionTimeout, Integer socketTimeout)
+      throws Exception {
+    MiniSolrCloudCluster.Builder builder =
+        configureCluster(nodeCount).addConfig("conf", configset("cloud-minimal"));
+    if (connectionTimeout != null) {
+      builder.withConnectionTimeout(connectionTimeout);
+    }
+    if (socketTimeout != null) {
+      builder.withSocketTimeout(socketTimeout);
+    }
+    builder.configure();
   }
 
   private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
@@ -270,7 +283,10 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @Test
   public void testConcurrentSplitThreeHostsRepFactorTwo() throws Exception {
-    setupCluster(3);
+    // Increase the default mini-cluster timeouts (see MiniSolrCloudCluster.buildSolrClient)
+    // because this split test on three hosts takes quite some time during the split
+    // on some test envs.
+    setupCluster(3, 30000, 120000);
     splitWithConcurrentUpdates("livesplit-3-2", 2, 4, true);
   }
 
