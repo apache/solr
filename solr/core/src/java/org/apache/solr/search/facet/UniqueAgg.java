@@ -32,12 +32,16 @@ import org.apache.solr.util.LongSet;
 
 public class UniqueAgg extends StrAggValueSource {
   public static final String UNIQUE = "unique";
+  public static final int DEFAULT_NUM_VALS_EXPLICIT = 100;
 
   // internal constants used for aggregating values from multiple shards
   static final String VALS = "vals";
 
-  public UniqueAgg(String field) {
+  final int numValsExplicit;
+
+  public UniqueAgg(String field, int numValsExplicit) {
     super(UNIQUE, field);
+    this.numValsExplicit = numValsExplicit;
   }
 
   @Override
@@ -46,17 +50,17 @@ public class UniqueAgg extends StrAggValueSource {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.getType().isPointField()) {
-        return new SortedNumericAcc(fcontext, getArg(), numSlots);
+        return new SortedNumericAcc(fcontext, getArg(), numSlots, numValsExplicit);
       } else if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, null);
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, numValsExplicit, null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, numValsExplicit, null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
-        return new NumericAcc(fcontext, getArg(), numSlots);
+        return new NumericAcc(fcontext, getArg(), numSlots, numValsExplicit);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, numValsExplicit, null);
       }
     }
   }
@@ -127,10 +131,13 @@ public class UniqueAgg extends StrAggValueSource {
 
   abstract static class BaseNumericAcc extends DocValuesAcc {
     LongSet[] sets;
+    private final int numValsExplicit;
 
-    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots, int numValsExplicit)
+        throws IOException {
       super(fcontext, fcontext.qcontext.searcher().getSchema().getField(field));
       sets = new LongSet[numSlots];
+      this.numValsExplicit = numValsExplicit;
     }
 
     @Override
@@ -183,11 +190,9 @@ public class UniqueAgg extends StrAggValueSource {
       SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
       map.add(UNIQUE, unique);
 
-      int maxExplicit = 100;
-      // TODO: make configurable
       // TODO: share values across buckets
-      if (unique <= maxExplicit) {
-        List<Long> lst = new ArrayList<>(Math.min(unique, maxExplicit));
+      if (unique <= numValsExplicit && numValsExplicit > 0) {
+        List<Long> lst = new ArrayList<>(Math.min(unique, numValsExplicit));
         if (set != null) {
           LongIterator iter = set.iterator();
           while (iter.hasNext()) {
@@ -209,8 +214,9 @@ public class UniqueAgg extends StrAggValueSource {
   static class NumericAcc extends BaseNumericAcc {
     NumericDocValues values;
 
-    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
-      super(fcontext, field, numSlots);
+    public NumericAcc(FacetContext fcontext, String field, int numSlots, int numValsExplicit)
+        throws IOException {
+      super(fcontext, field, numSlots, numValsExplicit);
     }
 
     @Override
@@ -232,8 +238,9 @@ public class UniqueAgg extends StrAggValueSource {
   static class SortedNumericAcc extends BaseNumericAcc {
     SortedNumericDocValues values;
 
-    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
-      super(fcontext, field, numSlots);
+    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots, int numValsExplicit)
+        throws IOException {
+      super(fcontext, field, numSlots, numValsExplicit);
     }
 
     @Override

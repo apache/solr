@@ -79,10 +79,10 @@ public class HLLAgg extends StrAggValueSource {
         return new SortedNumericAcc(fcontext, getArg(), numSlots);
       } else if (sf.hasDocValues()) {
         return new UniqueMultiDvSlotAcc(
-            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+            fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       } else {
         return new UniqueMultivaluedSlotAcc(
-            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+            fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
@@ -90,7 +90,7 @@ public class HLLAgg extends StrAggValueSource {
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
         return new UniqueSinglevaluedSlotAcc(
-            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+            fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     }
   }

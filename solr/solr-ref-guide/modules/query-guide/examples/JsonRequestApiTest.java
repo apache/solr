@@ -456,6 +456,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
             .withStatFacet("avg_price", "avg(price)")
             .withStatFacet("min_manufacturedate_dt", "min(manufacturedate_dt)")
             .withStatFacet("num_suppliers", "unique(manu_exact)")
+            .withStatFacet("num_suppliers_10", "unique(manu_exact,10)")
+            .withStatFacet("num_suppliers_0", "unique(manu_exact,0)")
             .withStatFacet("median_weight", "percentile(weight,50)");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
     // end::solrj-json-metrics-facet-1[]
@@ -466,6 +468,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(146.66, (double) topLevelFacetingData.getStatValue("avg_price"), 0.5);
     assertEquals(3L, topLevelFacetingData.getStatValue("num_suppliers"));
+    assertEquals(3L, topLevelFacetingData.getStatValue("num_suppliers_10"));
+    assertEquals(3L, topLevelFacetingData.getStatValue("num_suppliers_0"));
     assertEquals(352.0, (double) topLevelFacetingData.getStatValue("median_weight"), 0.5);
 
     Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");

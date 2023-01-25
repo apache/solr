@@ -29,9 +29,13 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
   private UnInvertedField.DocToTerm docToTerm;
 
   public UniqueMultivaluedSlotAcc(
-      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      FacetContext fcontext,
+      SchemaField field,
+      int numSlots,
+      int numValsExplicit,
+      HLLAgg.HLLFactory factory)
       throws IOException {
-    super(fcontext, field, numSlots, factory);
+    super(fcontext, field, numSlots, numValsExplicit, factory);
     SolrIndexSearcher searcher = fcontext.qcontext.searcher();
     uif = UnInvertedField.getUnInvertedField(field.getName(), searcher);
     docToTerm = uif.new DocToTerm();

@@ -33,9 +33,10 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
     private Query query;
     private BitSet parentBitSet;
 
-    private UniqueBlockQuerySlotAcc(FacetContext fcontext, Query query, int numSlots)
+    private UniqueBlockQuerySlotAcc(
+        FacetContext fcontext, Query query, int numSlots, int numValsExplicit)
         throws IOException { //
-      super(fcontext, null, numSlots);
+      super(fcontext, null, numSlots, numValsExplicit);
       this.query = query;
     }
 
@@ -57,8 +58,8 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
 
   private final Query query;
 
-  public UniqueBlockQueryAgg(Query query) {
-    super(null);
+  public UniqueBlockQueryAgg(Query query, int numValsExplicit) {
+    super(null, numValsExplicit);
     this.query = query;
     arg = query.toString();
   }
@@ -66,6 +67,6 @@ public class UniqueBlockQueryAgg extends UniqueBlockAgg {
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
       throws IOException {
-    return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots);
+    return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots, numValsExplicit);
   }
 }

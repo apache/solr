@@ -1159,7 +1159,12 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new UniqueAgg(fp.parseArg());
+            String field = fp.parseArg();
+            int numValsExplicit = UniqueAgg.DEFAULT_NUM_VALS_EXPLICIT;
+            if (fp.hasMoreArguments()) {
+              numValsExplicit = fp.parseInt();
+            }
+            return new UniqueAgg(field, numValsExplicit);
           }
         });
 
@@ -1169,9 +1174,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             if (fp.sp.peek() == QueryParsing.LOCALPARAM_START.charAt(0)) {
-              return new UniqueBlockQueryAgg(fp.parseNestedQuery());
+              return new UniqueBlockQueryAgg(
+                  fp.parseNestedQuery(), UniqueAgg.DEFAULT_NUM_VALS_EXPLICIT);
             }
-            return new UniqueBlockFieldAgg(fp.parseArg());
+            return new UniqueBlockFieldAgg(fp.parseArg(), UniqueAgg.DEFAULT_NUM_VALS_EXPLICIT);
           }
         });
 

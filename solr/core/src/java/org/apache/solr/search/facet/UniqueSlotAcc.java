@@ -33,14 +33,20 @@ abstract class UniqueSlotAcc extends SlotAcc {
   FixedBitSet[] arr;
   int[] counts; // populated with the cardinality once
   int nTerms;
+  final int numValsExplicit;
 
   public UniqueSlotAcc(
-      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      FacetContext fcontext,
+      SchemaField field,
+      int numSlots,
+      int numValsExplicit,
+      HLLAgg.HLLFactory factory)
       throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
     this.field = field;
+    this.numValsExplicit = numValsExplicit;
   }
 
   @Override
@@ -109,16 +115,14 @@ abstract class UniqueSlotAcc extends SlotAcc {
     map.add("unique", unique);
     map.add("nTerms", nTerms);
 
-    int maxExplicit = 100;
-    // TODO: make configurable
     // TODO: share values across buckets
-    if (unique > 0) {
+    if (unique > 0 && numValsExplicit > 0) {
 
-      List<Object> lst = new ArrayList<>(Math.min(unique, maxExplicit));
+      List<Object> lst = new ArrayList<>(Math.min(unique, numValsExplicit));
 
       int maxOrd = ords.length();
       if (maxOrd > 0) {
-        for (int ord = 0; lst.size() < maxExplicit; ) {
+        for (int ord = 0; lst.size() < numValsExplicit; ) {
           ord = ords.nextSetBit(ord);
           if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
           BytesRef val = lookupOrd(ord);
