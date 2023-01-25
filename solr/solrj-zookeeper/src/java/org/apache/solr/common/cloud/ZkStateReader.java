@@ -1702,6 +1702,21 @@ public class ZkStateReader implements SolrCloseable {
             }
           });
       try {
+        DocCollection c = getCollection(coll);
+        if(c != null) {
+          Stat stat = zkClient.exists(collectionPath, null, true);
+          if (stat != null) {
+            if (!c.isModified(stat.getVersion(), stat.getCversion())) {
+              //we have the latest collection state. no need to fetch again
+              return c;
+            }
+            if(c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()){
+              // only PRS is modified. just fetch it and return the new collection
+              return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
+            }
+          }
+
+        }
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
 
@@ -1887,6 +1902,12 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    try {
+      DocCollection c = fetchCollectionState(collection, null);
+      if(predicate.matches(liveNodes, c)) return;
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1938,6 +1959,12 @@ public class ZkStateReader implements SolrCloseable {
     }
     if (closed) {
       throw new AlreadyClosedException();
+    }
+    try {
+      DocCollection c = fetchCollectionState(collection, null);
+      if(predicate.test(c)) return c;
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
     final CountDownLatch latch = new CountDownLatch(1);
