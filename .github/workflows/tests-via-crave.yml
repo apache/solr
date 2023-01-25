@@ -17,7 +17,5 @@ jobs:
         fetch-depth: 0
     - name: Get the Crave binary
       run: curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
-    - name: Initialize gradle settings
-      run: ./crave run -- ./gradlew localSettings
-    - name: Test the Solr Package
-      run: ./crave run -- './gradlew --max-workers=`nproc` -Ptests.jvms=48 test'
+    - name: Initialize, build, test
+      run: ./crave run -- './gradlew localSettings && ./gradlew --max-workers=`nproc` -Ptests.jvms=48 test'
