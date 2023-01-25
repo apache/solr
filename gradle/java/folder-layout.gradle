@@ -25,7 +25,7 @@ allprojects {
       test.resources.srcDirs = ['src/test-files']
     }
 
-    processTestResources {
+    tasks.named('processTestResources').configure {
       from('src/test') {
         exclude '**/*.java'
       }

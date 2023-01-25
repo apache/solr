@@ -195,7 +195,7 @@ subprojects {
   // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
   // So for 'commons-io' it can be 'commons-io-LICENSE-foo.txt' or
   // 'commons-LICENSE.txt'
-  task validateJarLicenses() {
+  tasks.register('validateJarLicenses') {
     group = 'Dependency validation'
     description = "Validate license and notice files of dependencies"
     dependsOn collectJarInfos
