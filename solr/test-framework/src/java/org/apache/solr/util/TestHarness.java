@@ -197,14 +197,7 @@ public class TestHarness extends BaseTestHarness {
                 .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
-    UpdateShardHandlerConfig updateShardHandlerConfig =
-        new UpdateShardHandlerConfig(
-            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-            30000,
-            30000,
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+
     // universal default metric reporter
     Map<String, Object> attributes = new HashMap<>();
     attributes.put("name", "default");
@@ -218,7 +211,7 @@ public class TestHarness extends BaseTestHarness {
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setUpdateShardHandlerConfig(UpdateShardHandlerConfig.TEST_DEFAULT)
         .setMetricsConfig(metricsConfig)
         .build();
   }

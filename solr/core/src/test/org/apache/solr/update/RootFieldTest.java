@@ -54,7 +54,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
 
     solrClientTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .newCollection("collection1")
         .withConfigSet("../collection1")
         .withSchemaFile(schema)
         .create();

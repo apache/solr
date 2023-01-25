@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.update.UpdateShardHandlerConfig.TEST_DEFAULT;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +26,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
  * Provides an EmbeddedSolrServer for tests. It starts and stops the server and provides methods for
@@ -85,7 +84,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   public NodeConfig.NodeConfigBuilder newNodeConfigBuilder(Path solrHome) {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUpdateShardHandlerConfig(TEST_DEFAULT)
+        .setUpdateShardHandlerConfig(UpdateShardHandlerConfig.TEST_DEFAULT)
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
