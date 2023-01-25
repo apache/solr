@@ -1791,7 +1791,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     if (reqHandlers != null) reqHandlers.close();
     if (V2ApiUtils.isEnabled()) {
-      // App Handler may not have been set if 'close' was called by a SolrCore that ran into an exception in its ctor
+      // App Handler may not have been set if 'close' was called by a SolrCore that ran into an
+      // exception in its ctor
       if (appHandlerForConfigSet != null) {
         appHandlerForConfigSet.decref();
       }
