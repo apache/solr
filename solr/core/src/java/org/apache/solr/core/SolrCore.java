@@ -226,7 +226,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
-  private final RefCounted<ApplicationHandler> appHandlerForConfigSet;
+  // RefCounted because multiple cores using the same configset may share an AppHandler
+  private final RefCounted<ApplicationHandler> jerseyAppHandler;
   private final PluginBag<SearchComponent> searchComponents =
       new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors =
@@ -1139,7 +1140,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       reqHandlers.initHandlersFromConfig(solrConfig);
       if (V2ApiUtils.isEnabled()) {
         final String effectiveConfigsetId = JerseyAppHandlerCache.generateIdForConfigSet(configSet);
-        appHandlerForConfigSet =
+        jerseyAppHandler =
             coreContainer
                 .getAppHandlerCache()
                 .computeIfAbsent(
@@ -1152,7 +1153,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                           reqHandlers.getRequestHandlers().getJerseyEndpoints());
                     });
       } else {
-        appHandlerForConfigSet = null;
+        jerseyAppHandler = null;
       }
 
       // cause the executor to stall so firstSearcher events won't fire
@@ -1792,8 +1793,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     if (V2ApiUtils.isEnabled()) {
       // App Handler may not have been set if 'close' was called by a SolrCore that ran into an
       // exception in its ctor
-      if (appHandlerForConfigSet != null) {
-        appHandlerForConfigSet.decref();
+      if (jerseyAppHandler != null) {
+        jerseyAppHandler.decref();
       }
     }
     responseWriters.close();
@@ -1983,7 +1984,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public ApplicationHandler getJerseyApplicationHandler() {
-    return appHandlerForConfigSet.get();
+    return jerseyAppHandler.get();
   }
 
   /**

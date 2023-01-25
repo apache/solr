@@ -41,18 +41,17 @@ public class JerseyAppHandlerCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId;
-
-  public JerseyAppHandlerCache() {
-    this.applicationByConfigSetId = new ConcurrentHashMap<>();
-  }
+  private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId =
+      new ConcurrentHashMap<>();
 
   /**
    * Return the 'ApplicationHandler' associated with the provided ID, creating it first if
    * necessary.
    *
    * <p>This method is thread-safe by virtue of its delegation to {@link
-   * ConcurrentHashMap#computeIfAbsent(Object, Function)} internally.
+   * ConcurrentHashMap#computeIfAbsent(Object, Function)} internally. Callers are responsible for
+   * invoking {@link RefCounted#decref()} on the value returned by this method when they no longer
+   * need it.
    *
    * @param effectiveConfigSetId an ID to associate the ApplicationHandler with. Usually created via
    *     {@link #generateIdForConfigSet(ConfigSet)}.
@@ -65,7 +64,7 @@ public class JerseyAppHandlerCache {
           return new RefCounted<>(createApplicationHandler.get()) {
             @Override
             public void close() {
-              log.info(
+              log.debug(
                   "Removing AppHandler from cache for 'effective configset' [{}]",
                   effectiveConfigSetId);
               applicationByConfigSetId.remove(effectiveConfigSetId);
