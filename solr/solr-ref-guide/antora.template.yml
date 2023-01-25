@@ -31,6 +31,7 @@ nav:
 - modules/indexing-guide/indexing-nav.adoc
 - modules/query-guide/querying-nav.adoc
 - modules/upgrade-notes/upgrade-nav.adoc
+- modules/how-to-contribute/how-to-contribute-nav.adoc
 
 # The asciidoc attributes must be the last entry in this file
 asciidoc:
@@ -53,3 +54,4 @@ asciidoc:
     dep-version-tika: '${dep_version_tika}'
     dep-version-zookeeper: '${dep_version_zookeeper}'
     dep-version-lucene: '${dep_version_lucene}'
+    dep-version-opentelemetry: '${dep_version_opentelemetry}'

@@ -17,7 +17,6 @@
 package org.apache.solr.security.jwt;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -78,7 +77,7 @@ import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Authenticaion plugin that finds logged in user by validating the signature of a JWT token */
+/** Authentication plugin that finds logged in user by validating the signature of a JWT token */
 public class JWTAuthPlugin extends AuthenticationPlugin
     implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -211,11 +210,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 
-    // Parse custom IDP SSL Cert from either path or string
-    InputStream trustedCertsStream = null;
-    String trustedCertsFile = (String) pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
+    // Parse custom IDP SSL Cert from either path, list of paths or plaintext string
+    Object trustedCertsFileObj = pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
     String trustedCerts = (String) pluginConfig.get(PARAM_TRUSTED_CERTS);
-    if (trustedCertsFile != null && trustedCerts != null) {
+    if (trustedCertsFileObj != null && trustedCerts != null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Found both "
@@ -224,25 +222,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               + PARAM_TRUSTED_CERTS
               + ", please use only one");
     }
-    if (trustedCertsFile != null) {
-      try {
-        Path trustedCertsPath = Paths.get(trustedCertsFile);
-        if (coreContainer != null) {
-          coreContainer.assertPathAllowed(trustedCertsPath);
-        }
-        trustedCertsStream = Files.newInputStream(trustedCertsPath);
-        log.info("Reading trustedCerts from file {}", trustedCertsFile);
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + trustedCertsFile, e);
-      }
+    if (trustedCertsFileObj != null) {
+      trustedSslCerts = readSslCertsFromFileOrList(trustedCertsFileObj);
     }
     if (trustedCerts != null) {
       log.info("Reading trustedCerts PEM from configuration string");
-      trustedCertsStream = IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8);
-    }
-    if (trustedCertsStream != null) {
-      trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);
+      trustedSslCerts =
+          CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8));
     }
 
     long jwkCacheDuration =
@@ -295,6 +281,48 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     initConsumer();
 
     lastInitTime = Instant.now();
+  }
+
+  /**
+   * Given a configuration object of a file name or list of file names, read X509 certificates from
+   * each file
+   */
+  @SuppressWarnings("unchecked")
+  Collection<X509Certificate> readSslCertsFromFileOrList(Object trustedCertsFileObj) {
+    Collection<X509Certificate> certs = new HashSet<>();
+    List<String> trustedCertsFileList;
+    if (trustedCertsFileObj instanceof String) {
+      trustedCertsFileList = List.of((String) trustedCertsFileObj);
+    } else if (trustedCertsFileObj instanceof List) {
+      trustedCertsFileList = (List<String>) trustedCertsFileObj;
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "trustedCertsFile is neither a String or List");
+    }
+    log.info("Reading trustedCerts from file(s) {}", trustedCertsFileList);
+    trustedCertsFileList.forEach(
+        f -> {
+          try {
+            certs.addAll(parseCertsFromFile(f));
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + f, e);
+          }
+        });
+    return certs;
+  }
+
+  /**
+   * Given a filename string, validate the file and then read any X509 certificates from it
+   *
+   * @return list of certificates found in file
+   */
+  Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
+    Path certFilePath = Paths.get(certFileName);
+    if (coreContainer != null) {
+      coreContainer.assertPathAllowed(certFilePath);
+    }
+    return CryptoKeys.parseX509Certs(Files.newInputStream(certFilePath));
   }
 
   @SuppressWarnings("unchecked")

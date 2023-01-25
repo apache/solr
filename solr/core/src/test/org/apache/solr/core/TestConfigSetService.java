@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,18 +38,15 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
 
   private final ConfigSetService configSetService;
   private static ZkTestServer zkServer;
-  private static SolrZkClient zkClient;
 
   @BeforeClass
   public static void startZkServer() throws Exception {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
-    zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000);
   }
 
   @AfterClass
   public static void shutdownZkServer() throws IOException, InterruptedException {
-    zkClient.close();
     if (null != zkServer) {
       zkServer.shutdown();
     }
@@ -62,11 +58,10 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
   }
 
   @ParametersFactory
-  @SuppressWarnings("rawtypes")
-  public static Iterable<Supplier[]> parameters() {
+  public static Iterable<Supplier<?>[]> parameters() {
     return Arrays.asList(
-        new Supplier[][] {
-          {() -> new ZkConfigSetService(zkClient)},
+        new Supplier<?>[][] {
+          {() -> new ZkConfigSetService(zkServer.getZkClient())},
           {() -> new FileSystemConfigSetService(createTempDir("configsets"))}
         });
   }
@@ -109,15 +104,15 @@ public class TestConfigSetService extends SolrTestCaseJ4 {
 
     List<String> configFiles = configSetService.getAllConfigFiles(configName);
     assertEquals(
-        configFiles.toString(),
-        "[file1, file2, solrconfig.xml, subdir/, subdir/file3, subdir/file4]");
+        configFiles,
+        List.of("file1", "file2", "solrconfig.xml", "subdir/", "subdir/file3", "subdir/file4"));
 
     List<String> configs = configSetService.listConfigs();
-    assertEquals(configs.toString(), "[testconfig]");
+    assertEquals(configs, List.of("testconfig"));
 
     configSetService.copyConfig(configName, "testconfig.AUTOCREATED");
     List<String> copiedConfigFiles = configSetService.getAllConfigFiles("testconfig.AUTOCREATED");
-    assertEquals(configFiles.toString(), (copiedConfigFiles.toString()));
+    assertEquals(configFiles, copiedConfigFiles);
 
     assertEquals(2, configSetService.listConfigs().size());
 
