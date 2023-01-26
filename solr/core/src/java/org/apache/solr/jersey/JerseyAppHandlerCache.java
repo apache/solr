@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,13 +52,13 @@ public class JerseyAppHandlerCache {
    * <p>This method is thread-safe by virtue of its delegation to {@link Cache#get(Object,
    * Function)} internally.
    *
-   * @param effectiveConfigSetId an ID to associate the ApplicationHandler with. Usually created via
-   *     {@link SolrConfig#generateIdForConfigSet(ConfigSet)}.
+   * @param effectiveSolrConfigId an ID to associate the ApplicationHandler with. Usually created
+   *     via {@link SolrConfig#effectiveId(String)}.
    * @param createApplicationHandler a Supplier producing an ApplicationHandler
    */
   public ApplicationHandler computeIfAbsent(
-      String effectiveConfigSetId, Supplier<ApplicationHandler> createApplicationHandler) {
-    return applicationByConfigSetId.get(effectiveConfigSetId, k -> createApplicationHandler.get());
+      String effectiveSolrConfigId, Supplier<ApplicationHandler> createApplicationHandler) {
+    return applicationByConfigSetId.get(effectiveSolrConfigId, k -> createApplicationHandler.get());
   }
 
   public int size() {

@@ -1180,12 +1180,15 @@ public class SolrConfig implements MapSerializable {
   /**
    * Generates a String ID to represent the {@link ConfigSet}
    *
-   * <p>Relies on the name of the SolrConfig, the {@link String#hashCode()} to generate a "unique" id for the
-   * solr.xml data (including substitutions), and the version of the overlay. These 3 peices of data should
-   * combine to make a "unique" identifier for SolrConfigs, since those are ultimately all inputs to modifying the
-   * solr.xml result.
+   * <p>Relies on the name of the ConfigSet, the name of the SolrConfig, the {@link
+   * String#hashCode()} to generate a "unique" id for the solr.xml data (including substitutions),
+   * and the version of the overlay. These 3 peices of data should combine to make a "unique"
+   * identifier for SolrConfigs, since those are ultimately all inputs to modifying the solr.xml
+   * result.
+   *
+   * @param configSetName the name of the configSet that this SolrConfig belongs to.
    */
-  public String effectiveId() {
-    return getName() + "-" + znodeVersion + "-" + rootDataHashCode;
+  public String effectiveId(String configSetName) {
+    return configSetName + "-" + getName() + "-" + znodeVersion + "-" + rootDataHashCode;
   }
 }
