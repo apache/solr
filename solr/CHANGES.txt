@@ -41,6 +41,8 @@ New Features
 
 * SOLR-16409: Admin UI - Expose all highlighting parameters in the Query UI (Jeanie Lam via Eric Pugh)
 
+* SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
+
 Improvements
 ---------------------
 

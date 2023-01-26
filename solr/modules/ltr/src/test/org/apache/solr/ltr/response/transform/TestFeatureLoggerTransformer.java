@@ -168,9 +168,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query2.add("fl", "*, score,features:[fv format=sparse]");
     query2.add("rows", "10");
     query2.add("debugQuery", "true");
-    query2.add(
-        "rq",
-        "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+    query2.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     expectedFeatureVectors =
         new String[] {
@@ -378,9 +376,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add(
-        "rq",
-        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
