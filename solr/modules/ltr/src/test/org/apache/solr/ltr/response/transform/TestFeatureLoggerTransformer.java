@@ -137,7 +137,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fl", "*, score,features:[fv format=sparse]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {
@@ -170,7 +170,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query2.add("debugQuery", "true");
     query2.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+        "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
 
     expectedFeatureVectors =
         new String[] {
@@ -205,7 +205,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fl", "*, score,features:[fv format=dense]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
-    query.add("rq", "{!ltr model=multipleadditivetreesmodel reRankDocs=10 efi.user_query=w3}");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
 
     String[] expectedFeatureVectors =
         new String[] {
@@ -333,16 +333,16 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
+        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
 
     /*
-    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
-    multipleadditivetreesmodelRerankedList = [7,1,3,4,8]
-    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
 
     Random Boolean Choices Generation from Seed: [0,0,1]
     */
@@ -380,16 +380,16 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add(
         "rq",
-        "{!ltr model=multipleadditivetreesmodel model=multipleadditivetreesmodelinterleaving reRankDocs=10 efi.user_query='w5'}");
+        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
-    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-20)
-    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreMultipleadditivetreesmodel(30), ScoreMultipleadditivetreesmodelinterleaving(-45)
-    multipleadditivetreesmodelRerankedList = [7,1,3,4,8]
-    MultipleadditivetreesmodelinterleavingRerankedList = [1,3,4,8,7]
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
 
     Random Boolean Choices Generation from Seed: [0,0,1]
     */

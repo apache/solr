@@ -1,6 +1,6 @@
 {
     "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
-    "name":"multipleadditivetreesmodelinterleaving",
+    "name":"modelB",
     "features":[
         { "name": "matchedTitle"},
         { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"},

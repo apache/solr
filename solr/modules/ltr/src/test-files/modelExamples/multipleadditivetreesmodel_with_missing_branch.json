@@ -1,6 +1,6 @@
 {
     "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
-    "name":"multipleadditivetreesmodel",
+    "name":"modelA",
     "features":[
         { "name": "matchedTitle"},
         { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"},
