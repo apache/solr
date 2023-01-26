@@ -103,15 +103,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StateCompressionProvider;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibStateCompressionProvider;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -373,12 +373,11 @@ public class ZkController implements Closeable {
     strat.setZkCredentialsToAddAutomatically(zkCredentialsProvider);
     addOnReconnectListener(getConfigDirListener());
 
-    String stateCompressionProviderClass = cloudConfig.getStateCompressionProviderClass();
-    StateCompressionProvider stateCompressionProvider =
+    String stateCompressionProviderClass = cloudConfig.getStateCompressorClass();
+    Compressor compressor =
         StringUtils.isEmpty(stateCompressionProviderClass)
-            ? new ZLibStateCompressionProvider()
-            : cc.getResourceLoader()
-                .newInstance(stateCompressionProviderClass, StateCompressionProvider.class);
+            ? new ZLibCompressor()
+            : cc.getResourceLoader().newInstance(stateCompressionProviderClass, Compressor.class);
 
     zkClient =
         new SolrZkClient(
@@ -398,7 +397,7 @@ public class ZkController implements Closeable {
             },
             zkACLProvider,
             cc::isShutDown,
-            stateCompressionProvider);
+            compressor);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);

@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-public class ZLibStateCompressionProvider implements StateCompressionProvider {
+public class ZLibCompressor implements Compressor {
 
   private static final byte[] ZLIB_MAGIC = new byte[] {0x78, 0x1};
   private static final int COMPRESSED_SIZE_MAGIC_NUMBER = 2018370979;

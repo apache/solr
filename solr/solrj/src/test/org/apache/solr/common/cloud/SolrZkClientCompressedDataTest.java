@@ -25,7 +25,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibStateCompressionProvider;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
 
     SolrZkClient zkClient = null;
 
-    ZLibStateCompressionProvider zLibStateCompression = new ZLibStateCompressionProvider();
+    ZLibCompressor zLibStateCompression = new ZLibCompressor();
 
     try {
       server.run();

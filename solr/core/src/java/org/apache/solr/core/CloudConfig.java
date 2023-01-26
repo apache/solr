@@ -56,7 +56,7 @@ public class CloudConfig {
 
   private final int minimumStateSizeForCompression;
 
-  private final String stateCompressionProviderClass;
+  private final String stateCompressorClass;
 
   CloudConfig(
       String zkHost,
@@ -77,7 +77,7 @@ public class CloudConfig {
       boolean useDistributedClusterStateUpdates,
       boolean useDistributedCollectionConfigSetExecution,
       int minimumStateSizeForCompression,
-      String stateCompressionProviderClass) {
+      String stateCompressorClass) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -96,7 +96,7 @@ public class CloudConfig {
     this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
     this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
     this.minimumStateSizeForCompression = minimumStateSizeForCompression;
-    this.stateCompressionProviderClass = stateCompressionProviderClass;
+    this.stateCompressorClass = stateCompressorClass;
 
     if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
       throw new SolrException(
@@ -185,8 +185,8 @@ public class CloudConfig {
     return minimumStateSizeForCompression;
   }
 
-  public String getStateCompressionProviderClass() {
-    return stateCompressionProviderClass;
+  public String getStateCompressorClass() {
+    return stateCompressorClass;
   }
 
   public static class CloudConfigBuilder {
@@ -219,7 +219,7 @@ public class CloudConfig {
     private boolean useDistributedCollectionConfigSetExecution = false;
     private int minimumStateSizeForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
 
-    private String stateCompressionProviderClass;
+    private String stateCompressorClass;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -313,9 +313,8 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setStateCompressionProviderClass(
-        String stateCompressionProviderClass) {
-      this.stateCompressionProviderClass = stateCompressionProviderClass;
+    public CloudConfigBuilder setStateCompressorClass(String stateCompressorClass) {
+      this.stateCompressorClass = stateCompressorClass;
       return this;
     }
 
@@ -339,7 +338,7 @@ public class CloudConfig {
           useDistributedClusterStateUpdates,
           useDistributedCollectionConfigSetExecution,
           minimumStateSizeForCompression,
-          stateCompressionProviderClass);
+          stateCompressorClass);
     }
   }
 }

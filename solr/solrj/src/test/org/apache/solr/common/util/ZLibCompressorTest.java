@@ -24,9 +24,9 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class ZLibStateCompressionTest extends SolrTestCase {
+public class ZLibCompressorTest extends SolrTestCase {
 
-  private ZLibStateCompressionProvider stateCompression = new ZLibStateCompressionProvider();
+  private ZLibCompressor stateCompression = new ZLibCompressor();
 
   @Test
   public void isCompressedBytes() {

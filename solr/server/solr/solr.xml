@@ -51,7 +51,7 @@
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
     <int name="minimumStateSizeForCompression">${minimumStateSizeForCompression:-1}</int>
-    <str name="stateCompressionProvider">${stateCompressionProvider:org.apache.solr.common.util.ZLibStateCompressionProvider}</str>
+    <str name="stateCompressor">${stateCompressor:org.apache.solr.common.util.ZLibCompressor}</str>
 
   </solrcloud>
 

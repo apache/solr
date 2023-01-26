@@ -38,12 +38,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StateCompressionProvider;
-import org.apache.solr.common.util.ZLibStateCompressionProvider;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -81,7 +81,7 @@ public class SolrZkClient implements Closeable {
 
   private final ZkMetrics metrics = new ZkMetrics();
 
-  private StateCompressionProvider stateCompressionProvider;
+  private Compressor compressor;
 
   public MapWriter getMetrics() {
     return metrics::writeMap;
@@ -180,7 +180,7 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed,
-      StateCompressionProvider stateCompressionProvider) {
+      Compressor compressor) {
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
@@ -258,10 +258,10 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = zkACLProvider;
     }
 
-    if (stateCompressionProvider == null) {
-      this.stateCompressionProvider = new ZLibStateCompressionProvider();
+    if (compressor == null) {
+      this.compressor = new ZLibCompressor();
     } else {
-      this.stateCompressionProvider = stateCompressionProvider;
+      this.compressor = compressor;
     }
   }
 
@@ -466,10 +466,10 @@ public class SolrZkClient implements Closeable {
     } else {
       result = keeper.getData(path, wrapWatcher(watcher), stat);
     }
-    if (stateCompressionProvider.isCompressedBytes(result)) {
+    if (compressor.isCompressedBytes(result)) {
       log.debug("Zookeeper data at path {} is compressed", path);
       try {
-        result = stateCompressionProvider.decompressBytes(result);
+        result = compressor.decompressBytes(result);
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

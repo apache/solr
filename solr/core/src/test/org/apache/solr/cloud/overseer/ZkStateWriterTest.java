@@ -36,9 +36,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.StateCompressionProvider;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ZLibStateCompressionProvider;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
@@ -52,8 +52,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   private static final ZkStateWriter.ZkWriteCallback FAIL_ON_WRITE =
       () -> fail("Got unexpected flush");
 
-  private static final StateCompressionProvider STATE_COMPRESSION_PROVIDER =
-      new ZLibStateCompressionProvider();
+  private static final Compressor STATE_COMPRESSION_PROVIDER = new ZLibCompressor();
 
   @BeforeClass
   public static void setup() {
@@ -426,7 +425,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient = null;
 
-    StateCompressionProvider stateCompressionProvider = new ZLibStateCompressionProvider();
+    Compressor compressor = new ZLibCompressor();
 
     try {
       server.run();
@@ -437,8 +436,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer =
-            new ZkStateWriter(reader, new Stats(), 500000, stateCompressionProvider);
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), 500000, compressor);
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -467,8 +465,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer =
-            new ZkStateWriter(reader, new Stats(), 500000, stateCompressionProvider);
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), 500000, compressor);
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
 
@@ -497,8 +494,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             zkClient
                 .getZooKeeper()
                 .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json", null, null);
-        assertTrue(stateCompressionProvider.isCompressedBytes(data));
-        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(stateCompressionProvider.decompressBytes(data));
+        assertTrue(compressor.isCompressedBytes(data));
+        Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(data));
         assertNotNull(map.get("c2"));
       }
 

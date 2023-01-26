@@ -17,7 +17,8 @@
 
 package org.apache.solr.common.util;
 
-public interface StateCompressionProvider {
+// Interface for compression implementations, providing methods to compress and decompress data
+public interface Compressor {
 
   /**
    * Check to determine if the data is compressed in the expected compression implementation
