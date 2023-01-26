@@ -53,7 +53,7 @@ import org.junit.Test;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
-  /** Transient core cache max size defined in the test solr.xml */
+  /** Transient core cache max size defined in the test solr-transientCores.xml */
   private static final int TRANSIENT_CORE_CACHE_MAX_SIZE = 4;
 
   private File solrHomeDirectory;
@@ -97,7 +97,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
 
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
@@ -108,7 +108,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private CoreContainer initEmpty() throws IOException {
     solrHomeDirectory = createTempDir().toFile();
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(
         cfg,
