@@ -24,8 +24,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZLibStateCompressionProvider;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
 
@@ -38,6 +38,8 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
     ZkTestServer server = new ZkTestServer(zkDir);
 
     SolrZkClient zkClient = null;
+
+    ZLibStateCompressionProvider zLibStateCompression = new ZLibStateCompressionProvider();
 
     try {
       server.run();
@@ -67,7 +69,7 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
               + "\"force_set_state\":\"false\",\n"
               + "\"leader\":\"true\"}}}}}}";
       byte[] arr = state.getBytes(StandardCharsets.UTF_8);
-      byte[] compressedData = CompressionUtil.compressBytes(arr);
+      byte[] compressedData = zLibStateCompression.compressBytes(arr);
       ZkACLProvider aclProvider = new DefaultZkACLProvider();
       String path = ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json";
       zkClient
@@ -77,6 +79,7 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
       byte[] data =
           zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
       Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
+      assertEquals(arr.length, data.length);
       assertNotNull(map.get("c1"));
     } finally {
       IOUtils.close(zkClient);

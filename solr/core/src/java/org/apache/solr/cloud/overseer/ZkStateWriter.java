@@ -33,7 +33,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.CompressionUtil;
+import org.apache.solr.common.util.StateCompressionProvider;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -83,14 +83,20 @@ public class ZkStateWriter {
   // the data will be compressed
   protected int minimumStateSizeForCompression;
 
+  protected StateCompressionProvider stateCompressionProvider;
+
   public ZkStateWriter(
-      ZkStateReader zkStateReader, Stats stats, int minimumStateSizeForCompression) {
+      ZkStateReader zkStateReader,
+      Stats stats,
+      int minimumStateSizeForCompression,
+      StateCompressionProvider stateCompressionProvider) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;
     this.stats = stats;
     this.clusterState = zkStateReader.getClusterState();
     this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+    this.stateCompressionProvider = stateCompressionProvider;
   }
 
   /**
@@ -282,7 +288,7 @@ public class ZkStateWriter {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (minimumStateSizeForCompression > -1
                 && data.length > minimumStateSizeForCompression) {
-              data = CompressionUtil.compressBytes(data);
+              data = stateCompressionProvider.compressBytes(data);
             }
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {

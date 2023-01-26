@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
@@ -31,18 +32,18 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
-import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StateCompressionProvider;
+import org.apache.solr.common.util.ZLibStateCompressionProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -79,6 +80,8 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   private final ZkMetrics metrics = new ZkMetrics();
+
+  private StateCompressionProvider stateCompressionProvider;
 
   public MapWriter getMetrics() {
     return metrics::writeMap;
@@ -156,6 +159,28 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed) {
+    this(
+        zkServerAddress,
+        zkClientTimeout,
+        clientConnectTimeout,
+        strat,
+        onReconnect,
+        beforeReconnect,
+        zkACLProvider,
+        higherLevelIsClosed,
+        null);
+  }
+
+  public SolrZkClient(
+      String zkServerAddress,
+      int zkClientTimeout,
+      int clientConnectTimeout,
+      ZkClientConnectionStrategy strat,
+      final OnReconnect onReconnect,
+      BeforeReconnect beforeReconnect,
+      ZkACLProvider zkACLProvider,
+      IsClosed higherLevelIsClosed,
+      StateCompressionProvider stateCompressionProvider) {
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
@@ -231,6 +256,12 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = createZkACLProvider();
     } else {
       this.zkACLProvider = zkACLProvider;
+    }
+
+    if (stateCompressionProvider == null) {
+      this.stateCompressionProvider = new ZLibStateCompressionProvider();
+    } else {
+      this.stateCompressionProvider = stateCompressionProvider;
     }
   }
 
@@ -435,12 +466,16 @@ public class SolrZkClient implements Closeable {
     } else {
       result = keeper.getData(path, wrapWatcher(watcher), stat);
     }
-    if (CompressionUtil.isCompressedBytes(result)) {
+    if (stateCompressionProvider.isCompressedBytes(result)) {
       log.debug("Zookeeper data at path {} is compressed", path);
       try {
-        result = CompressionUtil.decompressBytes(result);
-      } catch (DataFormatException e) {
-        throw new RuntimeException(e);
+        result = stateCompressionProvider.decompressBytes(result);
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            String.format(
+                Locale.ROOT, "Unable to decompress data at path: %s from zookeeper", path),
+            e);
       }
     }
     metrics.reads.increment();

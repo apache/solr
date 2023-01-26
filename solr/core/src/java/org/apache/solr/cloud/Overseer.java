@@ -53,6 +53,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
@@ -65,7 +66,9 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StateCompressionProvider;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZLibStateCompressionProvider;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -201,13 +204,16 @@ public class Overseer implements SolrCloseable {
 
     private final int minimumStateSizeForCompression;
 
+    private final StateCompressionProvider stateCompressionProvider;
+
     private boolean isClosed = false;
 
     public ClusterStateUpdater(
         final ZkStateReader reader,
         final String myId,
         Stats zkStats,
-        int minimumStateSizeForCompression) {
+        int minimumStateSizeForCompression,
+        StateCompressionProvider stateCompressionProvider) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
       this.stateUpdateQueue = getStateUpdateQueue(zkStats);
@@ -218,6 +224,7 @@ public class Overseer implements SolrCloseable {
       this.myId = myId;
       this.reader = reader;
       this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+      this.stateCompressionProvider = stateCompressionProvider;
 
       clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
       clusterStateUpdaterMetricContext.gauge(
@@ -270,7 +277,9 @@ public class Overseer implements SolrCloseable {
             try {
               reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
-              zkStateWriter = new ZkStateWriter(reader, stats, minimumStateSizeForCompression);
+              zkStateWriter =
+                  new ZkStateWriter(
+                      reader, stats, minimumStateSizeForCompression, stateCompressionProvider);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -735,10 +744,23 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
+    String stateCompressionProviderClass = config.getStateCompressionProviderClass();
+    StateCompressionProvider stateCompressionProvider =
+        StringUtils.isEmpty(stateCompressionProviderClass)
+            ? new ZLibStateCompressionProvider()
+            : zkController
+                .getCoreContainer()
+                .getResourceLoader()
+                .newInstance(stateCompressionProviderClass, StateCompressionProvider.class);
     updaterThread =
         new OverseerThread(
             tg,
-            new ClusterStateUpdater(reader, id, stats, config.getMinimumStateSizeForCompression()),
+            new ClusterStateUpdater(
+                reader,
+                id,
+                stats,
+                config.getMinimumStateSizeForCompression(),
+                stateCompressionProvider),
             "OverseerStateUpdate-" + id);
     updaterThread.setDaemon(true);
 

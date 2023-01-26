@@ -19,38 +19,27 @@ package org.apache.solr.common.util;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-/**
- * Utility class for dealing with LZ4 compressed data, such as state.json in Zookeeper if configured
- * to be compressed
- */
-public class CompressionUtil {
+public class ZLibStateCompressionProvider implements StateCompressionProvider {
 
   private static final byte[] ZLIB_MAGIC = new byte[] {0x78, 0x1};
   private static final int COMPRESSED_SIZE_MAGIC_NUMBER = 2018370979;
 
   /**
-   * Uses the hex magic number for zlib compression '78 01' to check if the bytes are compressed
+   * {@inheritDoc}
    *
-   * @param data - the bytes to check for compression
-   * @return true if the data is zlib compressed based on the first 2 bytes, false otherwise
+   * <p>Uses the hex magic number for zlib compression '78 01' to check if the bytes are compressed
    */
-  public static boolean isCompressedBytes(byte[] data) {
+  @Override
+  public boolean isCompressedBytes(byte[] data) {
     if (data == null || data.length < 2) return false;
     return ZLIB_MAGIC[0] == data[0] && ZLIB_MAGIC[1] == data[1];
   }
 
-  /**
-   * Decompresses zlib compressed bytes, returning the uncompressed data as a byte[]
-   *
-   * @param data the input zlib compressed data to decompress
-   * @return the decompressed bytes
-   * @throws DataFormatException - The data is not zlib compressed data
-   */
-  public static byte[] decompressBytes(byte[] data) throws DataFormatException {
+  @Override
+  public byte[] decompressBytes(byte[] data) throws Exception {
     if (data == null) return null;
     Inflater inflater = new Inflater();
     try {
@@ -82,13 +71,8 @@ public class CompressionUtil {
     }
   }
 
-  /**
-   * Compresses bytes into zlib compressed bytes using java native compression
-   *
-   * @param data the input uncompressed data to be compressed
-   * @return zlib compressed bytes
-   */
-  public static byte[] compressBytes(byte[] data) {
+  @Override
+  public byte[] compressBytes(byte[] data) {
     Deflater compressor = new Deflater(Deflater.BEST_SPEED);
     try {
       compressor.setInput(data);

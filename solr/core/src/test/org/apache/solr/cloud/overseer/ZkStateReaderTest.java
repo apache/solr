@@ -50,6 +50,7 @@ import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.ZLibStateCompressionProvider;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -116,7 +117,12 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ZkStateReader reader = new ZkStateReader(zkClient);
     reader.createClusterStateWatchersAndUpdate();
 
-    ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), minimumStateSizeForCompression);
+    ZkStateWriter writer =
+        new ZkStateWriter(
+            reader,
+            new Stats(),
+            minimumStateSizeForCompression,
+            new ZLibStateCompressionProvider());
 
     return new TestFixture(server, zkClient, reader, writer);
   }

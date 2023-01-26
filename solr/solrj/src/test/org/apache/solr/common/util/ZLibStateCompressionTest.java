@@ -20,39 +20,40 @@ package org.apache.solr.common.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
-import java.util.zip.DataFormatException;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class CompressionUtilTest extends SolrTestCase {
+public class ZLibStateCompressionTest extends SolrTestCase {
+
+  private ZLibStateCompressionProvider stateCompression = new ZLibStateCompressionProvider();
 
   @Test
   public void isCompressedBytes() {
-    assertFalse(CompressionUtil.isCompressedBytes(null));
-    assertFalse(CompressionUtil.isCompressedBytes(new byte[0]));
-    assertFalse(CompressionUtil.isCompressedBytes(new byte[1]));
-    assertFalse(CompressionUtil.isCompressedBytes(new byte[2]));
-    assertFalse(CompressionUtil.isCompressedBytes(new byte[3]));
+    assertFalse(stateCompression.isCompressedBytes(null));
+    assertFalse(stateCompression.isCompressedBytes(new byte[0]));
+    assertFalse(stateCompression.isCompressedBytes(new byte[1]));
+    assertFalse(stateCompression.isCompressedBytes(new byte[2]));
+    assertFalse(stateCompression.isCompressedBytes(new byte[3]));
 
     Random rd = random();
     byte[] arr = new byte[500];
     rd.nextBytes(arr);
 
-    byte[] compressedBytes = CompressionUtil.compressBytes(arr);
-    assertFalse(CompressionUtil.isCompressedBytes(arr));
-    assertTrue(CompressionUtil.isCompressedBytes(compressedBytes));
+    byte[] compressedBytes = stateCompression.compressBytes(arr);
+    assertFalse(stateCompression.isCompressedBytes(arr));
+    assertTrue(stateCompression.isCompressedBytes(compressedBytes));
   }
 
   @Test
-  public void decompressCompressedBytes() throws DataFormatException {
+  public void decompressCompressedBytes() throws Exception {
     // "Some test data\n" as compressed bytes
     byte[] testBytes =
         new byte[] {
           120, 1, 11, -50, -49, 77, 85, 40, 73, 45, 46, 81, 72, 73, 44, 73, -28, 2, 0, 43, -36, 5,
           57
         };
-    byte[] decompressedBytes = CompressionUtil.decompressBytes(testBytes);
+    byte[] decompressedBytes = stateCompression.decompressBytes(testBytes);
     assertEquals("Some test data\n", new String(decompressedBytes, StandardCharsets.UTF_8));
   }
 
@@ -65,7 +66,7 @@ public class CompressionUtilTest extends SolrTestCase {
           57
         };
     byte[] compressedBytes =
-        CompressionUtil.compressBytes("Some test data\n".getBytes(StandardCharsets.UTF_8));
+        stateCompression.compressBytes("Some test data\n".getBytes(StandardCharsets.UTF_8));
     int decompressedSize = ByteBuffer.wrap(compressedBytes, compressedBytes.length - 8, 4).getInt();
     int xoredSize = ByteBuffer.wrap(compressedBytes, compressedBytes.length - 4, 4).getInt();
     assertEquals(xoredSize, decompressedSize ^ 2018370979);

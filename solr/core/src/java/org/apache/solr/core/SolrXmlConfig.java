@@ -562,6 +562,9 @@ public class SolrXmlConfig {
         case "minimumStateSizeForCompression":
           builder.setMinimumStateSizeForCompression(parseInt(name, value));
           break;
+        case "stateCompressionProvider":
+          builder.setStateCompressionProviderClass(value);
+          break;
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,

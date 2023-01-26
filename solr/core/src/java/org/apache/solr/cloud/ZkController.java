@@ -107,9 +107,11 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StateCompressionProvider;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZLibStateCompressionProvider;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -371,6 +373,13 @@ public class ZkController implements Closeable {
     strat.setZkCredentialsToAddAutomatically(zkCredentialsProvider);
     addOnReconnectListener(getConfigDirListener());
 
+    String stateCompressionProviderClass = cloudConfig.getStateCompressionProviderClass();
+    StateCompressionProvider stateCompressionProvider =
+        StringUtils.isEmpty(stateCompressionProviderClass)
+            ? new ZLibStateCompressionProvider()
+            : cc.getResourceLoader()
+                .newInstance(stateCompressionProviderClass, StateCompressionProvider.class);
+
     zkClient =
         new SolrZkClient(
             zkServerAddress,
@@ -388,7 +397,8 @@ public class ZkController implements Closeable {
               markAllAsNotLeader(descriptorsSupplier);
             },
             zkACLProvider,
-            cc::isShutDown);
+            cc::isShutDown,
+            stateCompressionProvider);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
