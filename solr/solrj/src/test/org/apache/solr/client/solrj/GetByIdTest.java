@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 import static org.apache.solr.SolrTestCaseJ4.params;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
@@ -38,10 +37,7 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   public static void beforeClass() throws Exception {
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
 
-    solrClientTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Before

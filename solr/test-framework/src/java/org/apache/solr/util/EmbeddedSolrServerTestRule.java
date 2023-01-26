@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -59,12 +60,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       //      Because it's better for tests to explicitly create cores.
       //  (b) we don't write data in the test to a likely template directory
       //  But a test can insist on something if it sets the property.
-      if (System.getProperty(CORE_DIR_PROP) == null) {
-        clearCoreDirSysProp = true;
-        System.setProperty(CORE_DIR_PROP, LuceneTestCase.createTempDir("cores").toString());
-      }
 
-      nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, null);
+      nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     } else {
       // test oriented config (preferred)
       nodeConfig = newNodeConfigBuilder(solrHome).build();

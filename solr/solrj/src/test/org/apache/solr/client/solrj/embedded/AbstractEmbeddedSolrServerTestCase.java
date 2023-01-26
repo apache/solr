@@ -104,6 +104,10 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     return getSolrCore("core0");
   }
 
+  protected SolrClient getSolrCore1() {
+    return getSolrCore("core1");
+  }
+
   protected SolrClient getSolrCore(String name) {
     return new EmbeddedSolrServer(cores, name);
   }

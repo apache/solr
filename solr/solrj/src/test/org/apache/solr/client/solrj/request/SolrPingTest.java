@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
-
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -35,10 +33,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     solrClientTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr").toPath());
 
     SolrTestCaseJ4.newRandomConfig();
-    solrClientTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet("../collection1")
-        .create();
+    solrClientTestRule.newCollection().withConfigSet("../collection1").create();
   }
 
   @Before

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
+
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,6 +39,10 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
   public NewCollectionBuilder newCollection(String name) {
     return new NewCollectionBuilder(name);
+  }
+
+  public NewCollectionBuilder newCollection() {
+    return new NewCollectionBuilder(DEFAULT_TEST_COLLECTION_NAME);
   }
 
   public class NewCollectionBuilder {

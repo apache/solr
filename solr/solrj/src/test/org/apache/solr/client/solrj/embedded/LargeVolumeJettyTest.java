@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.apache.solr.util.ExternalPaths;
@@ -29,9 +27,6 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
     // TODO
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
 
-    solrClientTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 }
