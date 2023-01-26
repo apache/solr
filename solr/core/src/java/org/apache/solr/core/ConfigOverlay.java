@@ -272,9 +272,4 @@ public class ConfigOverlay implements MapSerializable {
 
   public static final String ZNODEVER = "znodeVersion";
   public static final String NAME = "overlay";
-
-  @Override
-  public int hashCode() {
-    return data.hashCode();
-  }
 }

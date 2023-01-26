@@ -1139,16 +1139,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
       if (V2ApiUtils.isEnabled()) {
-        final String effectiveConfigsetId = JerseyAppHandlerCache.generateIdForConfigSet(configSet);
+        final String effectiveSolrConfigId = configSet.getName() + "-" + solrConfig.effectiveId();
         jerseyAppHandler =
             coreContainer
                 .getAppHandlerCache()
                 .computeIfAbsent(
-                    effectiveConfigsetId,
+                    effectiveSolrConfigId,
                     () -> {
                       log.debug(
-                          "Creating Jersey ApplicationHandler for 'effective configset' [{}]",
-                          effectiveConfigsetId);
+                          "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
+                          effectiveSolrConfigId);
                       return new ApplicationHandler(
                           reqHandlers.getRequestHandlers().getJerseyEndpoints());
                     });

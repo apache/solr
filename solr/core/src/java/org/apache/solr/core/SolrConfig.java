@@ -108,7 +108,7 @@ public class SolrConfig implements MapSerializable {
 
   private int znodeVersion;
   ConfigNode root;
-  int hashCode;
+  int rootDataHashCode;
   private final SolrResourceLoader resourceLoader;
   private Properties substituteProperties;
 
@@ -241,9 +241,8 @@ public class SolrConfig implements MapSerializable {
           }
         });
     try {
-      // This will hash the solrconfig.xml, user properties and overlay (all possible ways of
-      // modifying the resulting SolrConfig)
-      hashCode = Objects.hash(this.root.txt(), overlay.getVersion());
+      // This will hash the solrconfig.xml and user properties.
+      rootDataHashCode = this.root.txt().hashCode();
 
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
@@ -1179,8 +1178,15 @@ public class SolrConfig implements MapSerializable {
     return root.get(name, test);
   }
 
-  @Override
-  public int hashCode() {
-    return hashCode;
+  /**
+   * Generates a String ID to represent the {@link ConfigSet}
+   *
+   * <p>Relies on the name of the SolrConfig, the {@link String#hashCode()} to generate a "unique" id for the
+   * solr.xml data (including substitutions), and the version of the overlay. These 3 peices of data should
+   * combine to make a "unique" identifier for SolrConfigs, since those are ultimately all inputs to modifying the
+   * solr.xml result.
+   */
+  public String effectiveId() {
+    return getName() + "-" + znodeVersion + "-" + rootDataHashCode;
   }
 }

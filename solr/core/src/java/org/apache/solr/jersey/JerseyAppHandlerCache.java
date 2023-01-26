@@ -54,7 +54,7 @@ public class JerseyAppHandlerCache {
    * Function)} internally.
    *
    * @param effectiveConfigSetId an ID to associate the ApplicationHandler with. Usually created via
-   *     {@link #generateIdForConfigSet(ConfigSet)}.
+   *     {@link SolrConfig#generateIdForConfigSet(ConfigSet)}.
    * @param createApplicationHandler a Supplier producing an ApplicationHandler
    */
   public ApplicationHandler computeIfAbsent(
@@ -64,18 +64,5 @@ public class JerseyAppHandlerCache {
 
   public int size() {
     return applicationByConfigSetId.asMap().size();
-  }
-
-  /**
-   * Generates a String ID to represent the provided {@link ConfigSet}
-   *
-   * <p>Relies on {@link SolrConfig#hashCode()} to generate a different ID for each "unique"
-   * configset (where "uniqueness" considers various overlays that get applied to the {@link
-   * ConfigSet})
-   *
-   * @see SolrCore#hashCode()
-   */
-  public static String generateIdForConfigSet(ConfigSet configSet) {
-    return configSet.getName() + "-" + configSet.getSolrConfig().hashCode();
   }
 }
