@@ -313,7 +313,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rows", "3");
     query.add("fl", "*,score");
 
-    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
@@ -328,7 +328,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("fl", "*,score,[fv]");
     query.add("rows", "3");
 
-    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -342,7 +342,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     MatcherAssert.assertThat(qryResult, containsString("\"explain\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("explain"));
 
-    MatcherAssert.assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    MatcherAssert.assertThat(qryResult, containsString("modelA"));
     MatcherAssert.assertThat(
         qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
 
