@@ -17,15 +17,14 @@
 
 package org.apache.solr.jersey;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.RefCounted;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,45 +40,30 @@ public class JerseyAppHandlerCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId =
-      new ConcurrentHashMap<>();
+  // private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId =
+  // new ConcurrentHashMap<>();
+
+  private final Cache<String, ApplicationHandler> applicationByConfigSetId =
+      Caffeine.newBuilder().weakValues().build();
 
   /**
    * Return the 'ApplicationHandler' associated with the provided ID, creating it first if
    * necessary.
    *
-   * <p>This method is thread-safe by virtue of its delegation to {@link
-   * ConcurrentHashMap#computeIfAbsent(Object, Function)} internally. Callers are responsible for
-   * invoking {@link RefCounted#decref()} on the value returned by this method when they no longer
-   * need it.
+   * <p>This method is thread-safe by virtue of its delegation to {@link Cache#get(Object,
+   * Function)} internally.
    *
    * @param effectiveConfigSetId an ID to associate the ApplicationHandler with. Usually created via
    *     {@link #generateIdForConfigSet(ConfigSet)}.
    * @param createApplicationHandler a Supplier producing an ApplicationHandler
    */
-  public RefCounted<ApplicationHandler> computeIfAbsent(
+  public ApplicationHandler computeIfAbsent(
       String effectiveConfigSetId, Supplier<ApplicationHandler> createApplicationHandler) {
-    final Function<String, RefCounted<ApplicationHandler>> wrapper =
-        s -> {
-          return new RefCounted<>(createApplicationHandler.get()) {
-            @Override
-            public void close() {
-              log.debug(
-                  "Removing AppHandler from cache for 'effective configset' [{}]",
-                  effectiveConfigSetId);
-              applicationByConfigSetId.remove(effectiveConfigSetId);
-            }
-          };
-        };
-
-    final RefCounted<ApplicationHandler> fetched =
-        applicationByConfigSetId.computeIfAbsent(effectiveConfigSetId, wrapper);
-    fetched.incref();
-    return fetched;
+    return applicationByConfigSetId.get(effectiveConfigSetId, k -> createApplicationHandler.get());
   }
 
   public int size() {
-    return applicationByConfigSetId.size();
+    return applicationByConfigSetId.asMap().size();
   }
 
   /**

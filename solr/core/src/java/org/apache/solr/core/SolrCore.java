@@ -227,7 +227,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
   // RefCounted because multiple cores using the same configset may share an AppHandler
-  private final RefCounted<ApplicationHandler> jerseyAppHandler;
+  private final ApplicationHandler jerseyAppHandler;
   private final PluginBag<SearchComponent> searchComponents =
       new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors =
@@ -1790,13 +1790,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     if (reqHandlers != null) reqHandlers.close();
-    if (V2ApiUtils.isEnabled()) {
-      // App Handler may not have been set if 'close' was called by a SolrCore that ran into an
-      // exception in its ctor
-      if (jerseyAppHandler != null) {
-        jerseyAppHandler.decref();
-      }
-    }
     responseWriters.close();
     searchComponents.close();
     qParserPlugins.close();
@@ -1984,7 +1977,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public ApplicationHandler getJerseyApplicationHandler() {
-    return jerseyAppHandler.get();
+    return jerseyAppHandler;
   }
 
   /**

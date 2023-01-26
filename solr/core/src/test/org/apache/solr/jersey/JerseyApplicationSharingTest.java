@@ -82,13 +82,6 @@ public class JerseyApplicationSharingTest extends SolrCloudTestCase {
             "false")); // Set any collection property used in the cloud-minimal configset
     assertEquals(0, coll4Create.process(solrClient).getStatus());
     assertJerseyAppCacheHasSize(3);
-
-    // Deleting the only cores that used given ApplicationHandler will remove it from the cache
-    // (total cache-count = 2)
-    final CollectionAdminRequest.Delete deleteColl3 =
-        CollectionAdminRequest.deleteCollection("coll3");
-    assertEquals(0, deleteColl3.process(solrClient).getStatus());
-    assertJerseyAppCacheHasSize(2);
   }
 
   private void assertJerseyAppCacheHasSize(int expectedSize) {
