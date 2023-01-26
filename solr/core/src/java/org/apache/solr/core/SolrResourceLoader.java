@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -358,14 +359,11 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return new SolrFileInputStream(
-            Files.newInputStream(inConfigDir), Files.getLastModifiedTime(inConfigDir).toMillis());
+        return new SolrFileInputStream(inConfigDir);
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return new SolrFileInputStream(
-            Files.newInputStream(inInstanceDir),
-            Files.getLastModifiedTime(inInstanceDir).toMillis());
+        return new SolrFileInputStream(inInstanceDir);
       }
     }
 
@@ -988,42 +986,20 @@ public class SolrResourceLoader
   // packages
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
-  public static class SolrFileInputStream extends InputStream {
-    private final InputStream delegate;
+  public static class SolrFileInputStream extends FilterInputStream {
     private final long lastModified;
 
+    public SolrFileInputStream(Path filePath) throws IOException {
+      this(Files.newInputStream(filePath), Files.getLastModifiedTime(filePath).toMillis());
+    }
+
     public SolrFileInputStream(InputStream delegate, long lastModified) {
-      this.delegate = delegate;
+      super(delegate);
       this.lastModified = lastModified;
     }
 
     public long getLastModified() {
       return lastModified;
-    }
-
-    @Override
-    public synchronized int read() throws IOException {
-      return delegate.read();
-    }
-
-    @Override
-    public synchronized int read(byte[] bs, int off, int len) throws IOException {
-      return delegate.read(bs, off, len);
-    }
-
-    @Override
-    public int available() throws IOException {
-      return delegate.available();
-    }
-
-    @Override
-    public synchronized long skip(long n) throws IOException {
-      return delegate.skip(n);
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
     }
   }
 }

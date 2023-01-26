@@ -181,8 +181,7 @@ public class SolrConfig implements MapSerializable {
         zkVersion = zkin.getStat().getVersion();
         hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
         this.fileName = zkin.fileName;
-      }
-      if (in instanceof SolrResourceLoader.SolrFileInputStream) {
+      } else if (in instanceof SolrResourceLoader.SolrFileInputStream) {
         SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
         zkVersion = (int) sfin.getLastModified();
         hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
