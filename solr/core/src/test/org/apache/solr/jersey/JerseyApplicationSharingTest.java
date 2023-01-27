@@ -87,6 +87,6 @@ public class JerseyApplicationSharingTest extends SolrCloudTestCase {
   private void assertJerseyAppCacheHasSize(int expectedSize) {
     assertEquals(
         expectedSize,
-        cluster.getJettySolrRunners().get(0).getCoreContainer().getAppHandlerCache().size());
+        cluster.getJettySolrRunners().get(0).getCoreContainer().getJerseyAppHandlerCache().size());
   }
 }

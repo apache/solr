@@ -19,14 +19,11 @@ package org.apache.solr.jersey;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.lang.invoke.MethodHandles;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.solr.core.ConfigSet;
 import org.apache.solr.core.SolrConfig;
 import org.glassfish.jersey.server.ApplicationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Stores Jersey 'ApplicationHandler' instances by an ID or hash derived from their {@link
@@ -36,11 +33,6 @@ import org.slf4j.LoggerFactory;
  * multiple cores with the same configuration.
  */
 public class JerseyAppHandlerCache {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  // private final Map<String, RefCounted<ApplicationHandler>> applicationByConfigSetId =
-  // new ConcurrentHashMap<>();
 
   private final Cache<String, ApplicationHandler> applicationByConfigSetId =
       Caffeine.newBuilder().weakValues().build();
@@ -53,7 +45,7 @@ public class JerseyAppHandlerCache {
    * Function)} internally.
    *
    * @param effectiveSolrConfigId an ID to associate the ApplicationHandler with. Usually created
-   *     via {@link SolrConfig#effectiveId(String)}.
+   *     via {@link SolrConfig#effectiveId()}.
    * @param createApplicationHandler a Supplier producing an ApplicationHandler
    */
   public ApplicationHandler computeIfAbsent(

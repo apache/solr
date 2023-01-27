@@ -199,7 +199,7 @@ public class CoreContainer {
     return jerseyAppHandler;
   }
 
-  public JerseyAppHandlerCache getAppHandlerCache() {
+  public JerseyAppHandlerCache getJerseyAppHandlerCache() {
     return appHandlersByConfigSetId;
   }
 

@@ -66,12 +66,12 @@ public class InjectionFactories {
   }
 
   /** Fetch the (existing) SolrCore from the request context */
-  public static class SolrCoreFactory implements Factory<SolrCore> {
+  public static class ReuseFromContextSolrCoreFactory implements Factory<SolrCore> {
 
     private final ContainerRequestContext containerRequestContext;
 
     @Inject
-    public SolrCoreFactory(ContainerRequestContext containerRequestContext) {
+    public ReuseFromContextSolrCoreFactory(ContainerRequestContext containerRequestContext) {
       this.containerRequestContext = containerRequestContext;
     }
 

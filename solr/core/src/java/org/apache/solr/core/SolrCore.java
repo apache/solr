@@ -225,7 +225,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
-  // RefCounted because multiple cores using the same configset may share an AppHandler
   private final ApplicationHandler jerseyAppHandler;
   private final PluginBag<SearchComponent> searchComponents =
       new PluginBag<>(SearchComponent.class, this);
@@ -1138,16 +1137,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
       if (V2ApiUtils.isEnabled()) {
-        final String effectiveSolrConfigId = solrConfig.effectiveId(configSet.getName());
+        final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
         jerseyAppHandler =
             coreContainer
-                .getAppHandlerCache()
+                .getJerseyAppHandlerCache()
                 .computeIfAbsent(
-                    effectiveSolrConfigId,
+                    effectiveConfigSetId,
                     () -> {
                       log.debug(
                           "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
-                          effectiveSolrConfigId);
+                          effectiveConfigSetId);
                       return new ApplicationHandler(
                           reqHandlers.getRequestHandlers().getJerseyEndpoints());
                     });

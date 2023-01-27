@@ -99,7 +99,7 @@ public class JerseyApplications {
           new AbstractBinder() {
             @Override
             protected void configure() {
-              bindFactory(InjectionFactories.SolrCoreFactory.class)
+              bindFactory(InjectionFactories.ReuseFromContextSolrCoreFactory.class)
                   .to(SolrCore.class)
                   .in(RequestScoped.class);
             }
