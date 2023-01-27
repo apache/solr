@@ -24,6 +24,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Map.Entry;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
@@ -207,9 +209,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
       int schemaZkVersion = -1;
       if (!(loader instanceof ZkSolrResourceLoader)) {
-        String[] loadedResourceRef = new String[1];
-        schemaInputStream = readSchemaLocally(loadedResourceRef);
-        loadedResource = loadedResourceRef[0];
+        Entry<String, InputStream> localSchemaInput = readSchemaLocally();
+        loadedResource = localSchemaInput.getKey();
+        schemaInputStream = localSchemaInput.getValue();
       } else { // ZooKeeper
         final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
@@ -301,7 +303,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     return schema;
   }
 
-  private InputStream readSchemaLocally(String[] loadedResourceRef) {
+  private Entry<String, InputStream> readSchemaLocally() {
     InputStream schemaInputStream = null;
     String loadedResource = null;
     try {
@@ -336,8 +338,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
     }
     assert loadedResource != null;
-    loadedResourceRef[0] = loadedResource;
-    return schemaInputStream;
+    return new SimpleImmutableEntry<>(loadedResource, schemaInputStream);
   }
 
   /** Return whether a non-managed schema exists, either in local storage or on ZooKeeper. */
