@@ -1687,6 +1687,35 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  /**
+   * fetch the collection that is already cached. This may return a null if it is not already cached
+   */
+  private DocCollection fetchCachedCollection(String coll) throws InterruptedException {
+    String collectionPath = DocCollection.getCollectionPath(coll);
+    DocCollection c = null;
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(coll);
+    if (ref != null) c = ref.getOrNull();
+    if (c != null) {
+      Stat stat = null;
+      try {
+        stat = zkClient.exists(collectionPath, null, true);
+      } catch (KeeperException e) {
+        return null;
+      }
+      if (stat != null) {
+        if (!c.isModified(stat.getVersion(), stat.getCversion())) {
+          // we have the latest collection state. no need to fetch again
+          return c;
+        }
+        if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
+          // only PRS is modified. just fetch it and return the new collection
+          return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
+        }
+      }
+    }
+    return null;
+  }
+
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
@@ -1707,22 +1736,6 @@ public class ZkStateReader implements SolrCloseable {
             }
           });
       try {
-        DocCollection c = null;
-        ClusterState.CollectionRef ref = clusterState.getCollectionRef(coll);
-        if (ref != null) c = ref.getOrNull();
-        if (c != null) {
-          Stat stat = zkClient.exists(collectionPath, null, true);
-          if (stat != null) {
-            if (!c.isModified(stat.getVersion(), stat.getCversion())) {
-              // we have the latest collection state. no need to fetch again
-              return c;
-            }
-            if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
-              // only PRS is modified. just fetch it and return the new collection
-              return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
-            }
-          }
-        }
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
 
@@ -1907,13 +1920,9 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
+    DocCollection coll = fetchCachedCollection(collection);
+    if (coll != null && predicate.matches(liveNodes, coll)) return;
 
-    try {
-      DocCollection c = fetchCollectionState(collection, null);
-      if (c != null && predicate.matches(liveNodes, c)) return;
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1966,13 +1975,8 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
-    try {
-      DocCollection c = fetchCollectionState(collection, null);
-      if (predicate.test(c)) return c;
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-
+    DocCollection coll = fetchCachedCollection(collection);
+    if (predicate.test(coll)) return coll;
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
