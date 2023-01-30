@@ -61,6 +61,9 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       //  (b) we don't write data in the test to a likely template directory
       //  But a test can insist on something if it sets the property.
 
+      if (System.getProperty(CORE_DIR_PROP) == null) {
+        clearCoreDirSysProp = true;
+      }
       nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     } else {
       // test oriented config (preferred)
