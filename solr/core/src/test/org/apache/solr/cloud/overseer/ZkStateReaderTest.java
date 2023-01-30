@@ -105,7 +105,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  private static TestFixture setupTestFixture(String testPrefix, int minimumStateSizeForCompression)
+  private static TestFixture setupTestFixture(String testPrefix, int minStateByteLenForCompression)
       throws Exception {
     Path zkDir = createTempDir(testPrefix);
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -119,7 +119,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     ZkStateWriter writer =
         new ZkStateWriter(
-            reader, new Stats(), minimumStateSizeForCompression, new ZLibCompressor());
+            reader, new Stats(), minStateByteLenForCompression, new ZLibCompressor());
 
     return new TestFixture(server, zkClient, reader, writer);
   }

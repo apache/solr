@@ -81,21 +81,21 @@ public class ZkStateWriter {
 
   // If the state.json is greater than this many bytes and compression is enabled in solr.xml, then
   // the data will be compressed
-  protected int minimumStateSizeForCompression;
+  protected int minStateByteLenForCompression;
 
   protected Compressor compressor;
 
   public ZkStateWriter(
       ZkStateReader zkStateReader,
       Stats stats,
-      int minimumStateSizeForCompression,
+      int minStateByteLenForCompression,
       Compressor compressor) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;
     this.stats = stats;
     this.clusterState = zkStateReader.getClusterState();
-    this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
     this.compressor = compressor;
   }
 
@@ -286,8 +286,8 @@ public class ZkStateWriter {
             reader.getZkClient().clean(path);
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
-            if (minimumStateSizeForCompression > -1
-                && data.length > minimumStateSizeForCompression) {
+            if (minStateByteLenForCompression > -1
+                && data.length > minStateByteLenForCompression) {
               data = compressor.compressBytes(data);
             }
             if (reader.getZkClient().exists(path, true)) {

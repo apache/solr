@@ -202,7 +202,7 @@ public class Overseer implements SolrCloseable {
 
     private SolrMetricsContext clusterStateUpdaterMetricContext;
 
-    private final int minimumStateSizeForCompression;
+    private final int minStateByteLenForCompression;
 
     private final Compressor compressor;
 
@@ -212,7 +212,7 @@ public class Overseer implements SolrCloseable {
         final ZkStateReader reader,
         final String myId,
         Stats zkStats,
-        int minimumStateSizeForCompression,
+        int minStateByteLenForCompression,
         Compressor compressor) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
@@ -223,7 +223,7 @@ public class Overseer implements SolrCloseable {
       this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
-      this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
 
       clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
@@ -278,7 +278,7 @@ public class Overseer implements SolrCloseable {
               reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
               zkStateWriter =
-                  new ZkStateWriter(reader, stats, minimumStateSizeForCompression, compressor);
+                  new ZkStateWriter(reader, stats, minStateByteLenForCompression, compressor);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -755,7 +755,7 @@ public class Overseer implements SolrCloseable {
         new OverseerThread(
             tg,
             new ClusterStateUpdater(
-                reader, id, stats, config.getMinimumStateSizeForCompression(), compressor),
+                reader, id, stats, config.getMinStateByteLenForCompression(), compressor),
             "OverseerStateUpdate-" + id);
     updaterThread.setDaemon(true);
 

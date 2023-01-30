@@ -54,7 +54,7 @@ public class CloudConfig {
 
   private final boolean useDistributedCollectionConfigSetExecution;
 
-  private final int minimumStateSizeForCompression;
+  private final int minStateByteLenForCompression;
 
   private final String stateCompressorClass;
 
@@ -76,7 +76,7 @@ public class CloudConfig {
       String pkiHandlerPublicKeyPath,
       boolean useDistributedClusterStateUpdates,
       boolean useDistributedCollectionConfigSetExecution,
-      int minimumStateSizeForCompression,
+      int minStateByteLenForCompression,
       String stateCompressorClass) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
@@ -95,7 +95,7 @@ public class CloudConfig {
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
     this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
     this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
-    this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
     this.stateCompressorClass = stateCompressorClass;
 
     if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
@@ -181,8 +181,8 @@ public class CloudConfig {
     return useDistributedCollectionConfigSetExecution;
   }
 
-  public int getMinimumStateSizeForCompression() {
-    return minimumStateSizeForCompression;
+  public int getMinStateByteLenForCompression() {
+    return minStateByteLenForCompression;
   }
 
   public String getStateCompressorClass() {
@@ -217,7 +217,7 @@ public class CloudConfig {
     private String pkiHandlerPublicKeyPath;
     private boolean useDistributedClusterStateUpdates = false;
     private boolean useDistributedCollectionConfigSetExecution = false;
-    private int minimumStateSizeForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
+    private int minStateByteLenForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
 
     private String stateCompressorClass;
 
@@ -307,9 +307,9 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setMinimumStateSizeForCompression(
-        int minimumStateSizeForCompression) {
-      this.minimumStateSizeForCompression = minimumStateSizeForCompression;
+    public CloudConfigBuilder setMinStateByteLenForCompression(
+        int minStateByteLenForCompression) {
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
       return this;
     }
 
@@ -337,7 +337,7 @@ public class CloudConfig {
           pkiHandlerPublicKeyPath,
           useDistributedClusterStateUpdates,
           useDistributedCollectionConfigSetExecution,
-          minimumStateSizeForCompression,
+              minStateByteLenForCompression,
           stateCompressorClass);
     }
   }
