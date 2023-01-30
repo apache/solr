@@ -1689,28 +1689,33 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * fetch the collection that is already cached. This may return a null if it is not already cached
+   * This is an optimization to avoid fetching state if it is not modified. this is particularly
+   * true for PRS collections where state is rarely modified
    */
-  private DocCollection fetchCachedCollection(String coll) throws InterruptedException {
+  private DocCollection fetchCachedCollection(String coll) {
     String collectionPath = DocCollection.getCollectionPath(coll);
     DocCollection c = null;
     ClusterState.CollectionRef ref = clusterState.getCollectionRef(coll);
-    if (ref != null) c = ref.getOrNull();
-    if (c != null) {
-      Stat stat = null;
-      try {
-        stat = zkClient.exists(collectionPath, null, true);
-      } catch (KeeperException e) {
-        return null;
+    if (ref == null) return null;
+    c = ref.getOrNull();
+    if (c == null) return null;
+    Stat stat = null;
+    try {
+      stat = zkClient.exists(collectionPath, null, false);
+    } catch (KeeperException e) {
+      return null;
+    } catch (Exception e) {
+      log.error("Unknown error ", e);
+      return null;
+    }
+    if (stat != null) {
+      if (!c.isModified(stat.getVersion(), stat.getCversion())) {
+        // we have the latest collection state
+        return c;
       }
-      if (stat != null) {
-        if (!c.isModified(stat.getVersion(), stat.getCversion())) {
-          // we have the latest collection state. no need to fetch again
-          return c;
-        }
-        if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
-          // only PRS is modified. just fetch it and return the new collection
-          return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
-        }
+      if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
+        // only PRS is modified. just fetch it and return the new collection
+        return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
       }
     }
     return null;
@@ -1976,7 +1981,7 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
     DocCollection coll = fetchCachedCollection(collection);
-    if (predicate.test(coll)) return coll;
+    if (coll != null && predicate.test(coll)) return coll;
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
