@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -359,11 +360,11 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return Files.newInputStream(inConfigDir);
+        return new SolrFileInputStream(inConfigDir);
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return Files.newInputStream(inInstanceDir);
+        return new SolrFileInputStream(inInstanceDir);
       }
     }
 
@@ -985,4 +986,21 @@ public class SolrResourceLoader
   // This is to verify if this requires to use the schema classloader for classes loaded from
   // packages
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+
+  public static class SolrFileInputStream extends FilterInputStream {
+    private final long lastModified;
+
+    public SolrFileInputStream(Path filePath) throws IOException {
+      this(Files.newInputStream(filePath), Files.getLastModifiedTime(filePath).toMillis());
+    }
+
+    public SolrFileInputStream(InputStream delegate, long lastModified) {
+      super(delegate);
+      this.lastModified = lastModified;
+    }
+
+    public long getLastModified() {
+      return lastModified;
+    }
+  }
 }
