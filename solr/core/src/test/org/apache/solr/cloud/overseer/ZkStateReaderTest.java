@@ -118,8 +118,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     reader.createClusterStateWatchersAndUpdate();
 
     ZkStateWriter writer =
-        new ZkStateWriter(
-            reader, new Stats(), minStateByteLenForCompression, new ZLibCompressor());
+        new ZkStateWriter(reader, new Stats(), minStateByteLenForCompression, new ZLibCompressor());
 
     return new TestFixture(server, zkClient, reader, writer);
   }

@@ -286,8 +286,7 @@ public class ZkStateWriter {
             reader.getZkClient().clean(path);
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
-            if (minStateByteLenForCompression > -1
-                && data.length > minStateByteLenForCompression) {
+            if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
               data = compressor.compressBytes(data);
             }
             if (reader.getZkClient().exists(path, true)) {

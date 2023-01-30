@@ -307,8 +307,7 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setMinStateByteLenForCompression(
-        int minStateByteLenForCompression) {
+    public CloudConfigBuilder setMinStateByteLenForCompression(int minStateByteLenForCompression) {
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       return this;
     }
@@ -337,7 +336,7 @@ public class CloudConfig {
           pkiHandlerPublicKeyPath,
           useDistributedClusterStateUpdates,
           useDistributedCollectionConfigSetExecution,
-              minStateByteLenForCompression,
+          minStateByteLenForCompression,
           stateCompressorClass);
     }
   }
