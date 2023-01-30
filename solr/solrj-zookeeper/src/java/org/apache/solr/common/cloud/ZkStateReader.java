@@ -1702,10 +1702,7 @@ public class ZkStateReader implements SolrCloseable {
     Stat stat = null;
     try {
       stat = zkClient.exists(collectionPath, null, false);
-    } catch (KeeperException e) {
-      return null;
     } catch (Exception e) {
-      log.error("Unknown error ", e);
       return null;
     }
     if (stat != null) {
