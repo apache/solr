@@ -19,6 +19,8 @@ New Features
 
 * SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
+* SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
