@@ -134,7 +134,9 @@ public class MiniSolrCloudCluster {
               : "")
           + "}</str> \n"
           + "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:"
-          + (PRE_GENERATED_PUBLIC_KEY_URL != null ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm() : "")
+          + (PRE_GENERATED_PUBLIC_KEY_URL != null
+              ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm()
+              : "")
           + "}</str> \n"
           + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
           + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
