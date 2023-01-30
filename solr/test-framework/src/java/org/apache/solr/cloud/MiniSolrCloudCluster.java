@@ -90,9 +90,9 @@ import org.slf4j.LoggerFactory;
 public class MiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final URL PRE_GENERATED_PRIVATE_K_URL =
+  private static final URL PRE_GENERATED_PRIVATE_KEY_URL =
       MiniSolrCloudCluster.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem");
-  private static final URL PRE_GENERATED_PUBLIC_K_URL =
+  private static final URL PRE_GENERATED_PUBLIC_KEY_URL =
       MiniSolrCloudCluster.class.getClassLoader().getResource("cryptokeys/pub_key512.der");
 
   public static final String TEST_URL_ALLOW_LIST = SolrTestCaseJ4.TEST_URL_ALLOW_LIST;
@@ -129,12 +129,12 @@ public class MiniSolrCloudCluster {
           + "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n"
           + "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n"
           + "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:"
-          + (PRE_GENERATED_PRIVATE_K_URL != null
-              ? PRE_GENERATED_PRIVATE_K_URL.toExternalForm()
+          + (PRE_GENERATED_PRIVATE_KEY_URL != null
+              ? PRE_GENERATED_PRIVATE_KEY_URL.toExternalForm()
               : "")
           + "}</str> \n"
           + "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:"
-          + (PRE_GENERATED_PUBLIC_K_URL != null ? PRE_GENERATED_PUBLIC_K_URL.toExternalForm() : "")
+          + (PRE_GENERATED_PUBLIC_KEY_URL != null ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm() : "")
           + "}</str> \n"
           + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
           + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
