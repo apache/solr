@@ -138,6 +138,8 @@ Optimizations
 
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
 
+* SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
+
 Bug Fixes
 ---------------------
 
