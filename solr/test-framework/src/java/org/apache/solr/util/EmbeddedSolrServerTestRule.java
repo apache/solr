@@ -61,10 +61,14 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       //  (b) we don't write data in the test to a likely template directory
       //  But a test can insist on something if it sets the property.
 
-      if (System.getProperty(CORE_DIR_PROP) == null) {
+      Properties props = new Properties();
+      if (props.getProperty(CORE_DIR_PROP) == null) {
         clearCoreDirSysProp = true;
+        //nocommit Results to error No such core: core0
+        props.setProperty(CORE_DIR_PROP, LuceneTestCase.createTempDir("cores").toString());
       }
-      nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
+
+      nodeConfig = SolrXmlConfig.fromSolrHome(solrHome, props);
     } else {
       // test oriented config (preferred)
       nodeConfig = newNodeConfigBuilder(solrHome).build();
