@@ -665,4 +665,39 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals(
         2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
   }
+
+  @Test
+  public void readSslCertsFromFileOrList() {
+    String pemWithTwoCerts =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_cert.pem")
+            .toAbsolutePath()
+            .toString();
+    String pemWithOneCert =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_wrongcert.pem")
+            .toAbsolutePath()
+            .toString();
+    assertEquals(
+        3, plugin.readSslCertsFromFileOrList(List.of(pemWithTwoCerts, pemWithOneCert)).size());
+  }
+
+  @Test(expected = SolrException.class)
+  public void readSslCertsFromFileNotFound() {
+    String pemFilePath = JWT_TEST_PATH().resolve("not_exist.pem").toAbsolutePath().toString();
+    plugin.readSslCertsFromFileOrList(pemFilePath);
+  }
+
+  @Test
+  public void parseCertsFromFile() throws IOException {
+    String pemFilePath =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_cert.pem")
+            .toAbsolutePath()
+            .toString();
+    assertEquals(2, plugin.parseCertsFromFile(pemFilePath).size());
+  }
 }

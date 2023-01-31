@@ -259,7 +259,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
     assertFalse(ref.isLazilyLoaded());
     assertEquals(0, ref.get().getZNodeVersion());
-    assertEquals(-1, ref.get().getChildNodesVersion());
+    assertEquals(0, ref.get().getChildNodesVersion());
 
     DocCollection collection = ref.get();
     PerReplicaStates prs =
@@ -317,7 +317,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ref = reader.getClusterState().getCollectionRef("c1");
     assertFalse(ref.isLazilyLoaded());
     assertEquals(0, ref.get().getZNodeVersion());
-    assertEquals(-1, ref.get().getChildNodesVersion()); // child node version is reset
+    assertEquals(0, ref.get().getChildNodesVersion()); // child node version is reset
 
     // re-add PRS
     collection = ref.get();

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -89,7 +88,7 @@ public class StreamHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
+  private Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {

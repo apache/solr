@@ -35,7 +35,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET).withSecureConnection(false).build();
 
   private S3Client s3;
 

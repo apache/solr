@@ -43,7 +43,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -78,6 +77,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TestInjection.Hook;
 import org.junit.BeforeClass;
@@ -1707,28 +1707,19 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    try {
-      // setup the server...
-      SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+
+    return client;
   }
 
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    try {
-      // setup the server...
-      SolrClient client =
-          getHttpSolrClient(
-              baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client =
+        getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
+
+    return client;
   }
 
   @Override

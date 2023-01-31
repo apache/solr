@@ -423,7 +423,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
-      if (!tpe.isShutdown()) {
+      if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }

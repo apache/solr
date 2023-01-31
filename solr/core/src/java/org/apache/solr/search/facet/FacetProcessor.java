@@ -18,12 +18,11 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.LeafReaderContext;
@@ -40,6 +39,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
@@ -197,50 +197,29 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       return;
     }
 
-    Map<?, ?> tagMap = (Map<?, ?>) fcontext.req.getContext().get("tags");
-    if (tagMap == null) {
-      // no filters were tagged
+    Set<Query> excludeSet = QueryUtils.getTaggedQueries(fcontext.req, excludeTags);
+
+    if (excludeSet.isEmpty()) {
       return;
     }
 
-    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
-    for (String excludeTag : excludeTags) {
-      Object olst = tagMap.get(excludeTag);
-      // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
-      if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
-        try {
-          excludeSet.put(qp.getQuery(), Boolean.TRUE);
-        } catch (SyntaxError syntaxError) {
-          // This should not happen since we should only be retrieving a previously parsed query
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-        }
-      }
-    }
-    if (excludeSet.size() == 0) return;
-
-    // recompute the base domain
-    fcontext.base =
-        fcontext.searcher.getDocSet(
-            getContextQueries().stream()
-                .filter(q -> !excludeSet.containsKey(q))
-                .collect(Collectors.toList()));
-  }
-
-  protected List<Query> getContextQueries() {
     List<Query> qlist = new ArrayList<>();
 
     // TODO: somehow remove responsebuilder dependency
     ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
 
     // add the base query
-    qlist.add(rb.getQuery());
+    if (!excludeSet.contains(rb.getQuery())) {
+      qlist.add(rb.getQuery());
+    }
 
     // add the filters
     if (rb.getFilters() != null) {
-      qlist.addAll(rb.getFilters());
+      for (Query q : rb.getFilters()) {
+        if (!excludeSet.contains(q)) {
+          qlist.add(q);
+        }
+      }
     }
 
     // now walk back up the context tree

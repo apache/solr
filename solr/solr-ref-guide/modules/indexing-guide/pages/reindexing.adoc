@@ -41,7 +41,7 @@ This is because many of the available options are only applied during the indexi
 Solr has no way to implement the desired change without reindexing the data.
 
 To understand the general reason why reindexing is ever required, it's helpful to understand the relationship between Solr's schema and the underlying Lucene index.
-Lucene does not use a schema, schemas are a Solr-only concept.
+Lucene does not use a schema, schema is a Solr-only concept.
 When you change Solr's schema, the Lucene index is not modified in any way.
 
 This means that there are many types of schema changes that cannot be reflected in the index simply by modifying Solr's schema.

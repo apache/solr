@@ -476,7 +476,15 @@ public class HttpSolrCall {
     } else {
       if (!retry) {
         // we couldn't find a core to work with, try reloading aliases & this collection
-        cores.getZkController().getZkStateReader().aliasesManager.update();
+        if (!cores.getZkController().getZkStateReader().aliasesManager.update()
+            && !cores
+                .getZkController()
+                .zkStateReader
+                .getZkClient()
+                .exists(DocCollection.getCollectionPath(collectionName), true)) {
+          // no change and such a collection does not exist. go back
+          return;
+        }
         cores.getZkController().zkStateReader.forceUpdateCollection(collectionName);
         action = RETRY;
       }

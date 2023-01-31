@@ -956,21 +956,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return getLiveDocSet();
     }
 
+    DocSet answer;
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly
       // wait for the query to finish in parallel with our own results and if they complete first
       // use that instead, but we'll leave that to implement later.
-      DocSet answer = filterCache.get(query);
-      if (answer != null) {
-        return answer;
+      answer = filterCache.get(query);
+
+      // Not found in the cache so compute and put in the cache
+      if (answer == null) {
+        answer = getDocSetNC(query, null);
+        filterCache.put(query, answer);
       }
-      answer = getDocSetNC(query, null);
-      filterCache.put(query, answer);
-      return answer;
+    } else {
+      answer = filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
     }
-    return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
+
+    assert !(answer instanceof MutableBitDocSet) : "should not be mutable";
+    return answer;
   }
 
   private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
@@ -1153,20 +1158,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // This might become pf.answer but not if there are any non-cached filters
     DocSet answer = null;
 
-    boolean[] neg = new boolean[queries.size() + 1];
-    DocSet[] sets = new DocSet[queries.size() + 1];
+    boolean[] neg = new boolean[queries.size()];
+    DocSet[] sets = new DocSet[queries.size()];
     List<ExtendedQuery> notCached = null;
     List<PostFilter> postFilters = null;
 
-    int end = 0;
-    int smallestIndex = -1;
+    int end = 0; // size of "sets" and "neg"; parallel arrays
 
     if (setFilter != null) {
-      answer = sets[end++] = setFilter;
-      smallestIndex = end;
+      answer = setFilter;
     } // we are done with setFilter at this point
 
-    int smallestCount = Integer.MAX_VALUE;
     for (Query q : queries) {
       if (q instanceof ExtendedQuery) {
         ExtendedQuery eq = (ExtendedQuery) q;
@@ -1192,38 +1194,52 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
 
       Query posQuery = QueryUtils.getAbs(q);
-      sets[end] = getPositiveDocSet(posQuery);
+      DocSet docSet = getPositiveDocSet(posQuery);
       // Negative query if absolute value different from original
       if (Objects.equals(q, posQuery)) {
-        neg[end] = false;
-        // keep track of the smallest positive set.
-        // This optimization is only worth it if size() is cached, which it would
-        // be if we don't do any set operations.
-        int sz = sets[end].size();
-        if (sz < smallestCount) {
-          smallestCount = sz;
-          smallestIndex = end;
-          answer = sets[end];
+        // keep track of the smallest positive set; use "answer" for this.
+        if (answer == null) {
+          answer = docSet;
+          continue;
         }
+        // note: assume that size() is cached.  It generally comes from the cache, so should be.
+        if (docSet.size() < answer.size()) {
+          // swap answer & docSet so that answer is smallest
+          DocSet tmp = answer;
+          answer = docSet;
+          docSet = tmp;
+        }
+        neg[end] = false;
       } else {
         neg[end] = true;
       }
+      sets[end++] = docSet;
+    } // end of queries
 
-      end++;
-    }
+    if (end > 0) {
+      // Are all of our normal cached filters negative?
+      if (answer == null) {
+        answer = getLiveDocSet();
+      }
 
-    // Are all of our normal cached filters negative?
-    if (end > 0 && answer == null) {
-      answer = getLiveDocSet();
-    }
+      // This optimizes for the case where we have more than 2 filters and instead
+      // of copying the bitsets we make one mutable bitset. We should only do this
+      // for BitDocSet since it clones the backing bitset for andNot and intersection.
+      if (end > 1 && answer instanceof BitDocSet) {
+        answer = MutableBitDocSet.fromBitDocSet((BitDocSet) answer);
+      }
 
-    // do negative queries first to shrink set size
-    for (int i = 0; i < end; i++) {
-      if (neg[i]) answer = answer.andNot(sets[i]);
-    }
+      // do negative queries first to shrink set size
+      for (int i = 0; i < end; i++) {
+        if (neg[i]) answer = answer.andNot(sets[i]);
+      }
 
-    for (int i = 0; i < end; i++) {
-      if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
+      for (int i = 0; i < end; i++) {
+        if (!neg[i]) answer = answer.intersection(sets[i]);
+      }
+
+      // Make sure to keep answer as an immutable DocSet if we made it mutable
+      answer = MutableBitDocSet.unwrapIfMutable(answer);
     }
 
     // ignore "answer" if it simply matches all docs
@@ -2243,15 +2259,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {
     final int size = docs.size();
-    if (length == 0 || size <= offset) {
-      return new DocSlice(0, 0, new int[0], null, size, 0f, TotalHits.Relation.EQUAL_TO);
-    }
-    final DocIterator iter = docs.iterator();
-    for (int i = offset; i > 0; i--) {
-      iter.nextDoc(); // discard
-    }
-    final int returnSize = Math.min(length, size - offset);
+
+    // NOTE: it would be possible to special-case `length == 0 || size <= offset` here
+    // (returning a DocList backed by an empty array) -- but the cases that would practically
+    // benefit from doing so would be extremely unusual, and likely pathological:
+    //   1. length==0 in conjunction with offset>0 (why?)
+    //   2. specifying offset>size (paging beyond end of results)
+    // This would require special consideration in dealing with cache handling (and generation
+    // of the final DocList via `DocSlice.subset(int, int)`), and it's just not worth it.
+
+    final int returnSize = Math.min(offset + length, size);
     final int[] docIds = new int[returnSize];
+
+    final DocIterator iter = docs.iterator();
     for (int i = 0; i < returnSize; i++) {
       docIds[i] = iter.nextDoc();
     }

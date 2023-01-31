@@ -2252,7 +2252,7 @@ public class ZkStateReader implements SolrCloseable {
           try {
             final Stat stat =
                 getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
-            setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
+            setIfNewer(new SolrZkClient.NodeData(stat, modAliasesJson));
             return;
           } catch (KeeperException.BadVersionException e) {
             log.debug("{}", e, e);
@@ -2289,12 +2289,12 @@ public class ZkStateReader implements SolrCloseable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
-      log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      if (log.isDebugEnabled()) {
+        log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      }
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getZooKeeper().sync(ALIASES, null, null);
-      Stat stat = new Stat();
-      final byte[] data = zkClient.getData(ALIASES, null, stat, true);
-      return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+      return setIfNewer(zkClient.getNode(ALIASES, null, true));
     }
 
     // ZK Watcher interface
@@ -2308,11 +2308,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Aliases: updating");
 
         // re-register the watch
-        Stat stat = new Stat();
-        final byte[] data = zkClient.getData(ALIASES, this, stat, true);
-        // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but
-        // not a big deal
-        setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+        setIfNewer(zkClient.getNode(ALIASES, this, true));
       } catch (NoNodeException e) {
         // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException
@@ -2333,22 +2329,29 @@ public class ZkStateReader implements SolrCloseable {
      * Update the internal aliases reference with a new one, provided that its ZK version has
      * increased.
      *
-     * @param newAliases the potentially newer version of Aliases
+     * @param n the node data
      * @return true if aliases have been updated to a new version, false otherwise
      */
-    private boolean setIfNewer(Aliases newAliases) {
-      assert newAliases.getZNodeVersion() >= 0;
+    private boolean setIfNewer(SolrZkClient.NodeData n) {
+      assert n.stat.getVersion() >= 0;
       synchronized (this) {
-        int cmp = Integer.compare(aliases.getZNodeVersion(), newAliases.getZNodeVersion());
+        int cmp = Integer.compare(aliases.getZNodeVersion(), n.stat.getVersion());
         if (cmp < 0) {
-          log.debug("Aliases: cmp={}, new definition is: {}", cmp, newAliases);
-          aliases = newAliases;
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Aliases: cmp={}, new definition is: {}",
+                cmp,
+                Aliases.fromJSON(n.data, n.stat.getVersion()));
+          }
+          aliases = Aliases.fromJSON(n.data, n.stat.getVersion());
           this.notifyAll();
           return true;
         } else {
-          log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
-          assert cmp != 0 || Arrays.equals(aliases.toJSON(), newAliases.toJSON())
-              : aliases + " != " + newAliases;
+          if (log.isDebugEnabled()) {
+            log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
+          }
+          assert cmp != 0 || Arrays.equals(aliases.toJSON(), n.data)
+              : aliases + " != " + Aliases.fromJSON(n.data, n.stat.getVersion());
           return false;
         }
       }

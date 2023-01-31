@@ -107,6 +107,7 @@ import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -1142,7 +1143,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
       jerseyAppHandler =
-          new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
+          (V2ApiUtils.isEnabled())
+              ? new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints())
+              : null;
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.

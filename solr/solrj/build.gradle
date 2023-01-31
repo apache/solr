@@ -25,13 +25,12 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  implementation 'org.apache.commons:commons-math3'
-
   api 'org.eclipse.jetty.http2:http2-client'
   implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-util'
+  implementation 'org.eclipse.jetty:jetty-io'
   runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
 
   api('org.apache.httpcomponents:httpmime', {
@@ -42,12 +41,12 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpcore'
 
   // In 9.x, ending in 10, we depend on SolrJ modules.  Users can opt-out.
+  runtimeOnly project(':solr:solrj-streaming')
   runtimeOnly project(':solr:solrj-zookeeper')
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
-  testRuntimeOnly project(':solr:modules:sql')
 
   // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
   testImplementation project(':solr:solrj-zookeeper')
@@ -66,7 +65,7 @@ dependencies {
 
   testImplementation 'commons-io:commons-io'
 
-  testImplementation 'javax.servlet:javax.servlet-api'
+  testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
   testImplementation 'org.eclipse.jetty:jetty-servlet'
@@ -77,10 +76,9 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl", {
+  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-  testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'com.google.guava:guava'
   testImplementation 'io.dropwizard.metrics:metrics-core'

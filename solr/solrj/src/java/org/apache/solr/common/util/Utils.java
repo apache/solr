@@ -1037,7 +1037,54 @@ public class Utils {
     }
   }
 
-  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
+    try {
+      m.writeMap(
+          new MapWriter.EntryWriter() {
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              return writeEntry(k, v);
+            }
+
+            private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
+              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+              if (v instanceof Iterable) {
+                List lst = new ArrayList();
+                for (Object vv : (Iterable) v) {
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  lst.add(vv);
+                }
+                v = lst;
+              }
+              if (v instanceof Map) {
+                Map map = new LinkedHashMap();
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
+                  Object vv = entry.getValue();
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  map.put(entry.getKey(), vv);
+                }
+                v = map;
+              }
+              map.put(k == null ? null : k.toString(), v);
+              // note: It'd be nice to assert that there is no previous value at 'k' but it's
+              // possible the passed map is already populated and the intention is to overwrite.
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return map;
+  }
+
+  private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
+      new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;

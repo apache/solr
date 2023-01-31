@@ -555,6 +555,93 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 </transformer>
 ----
 
+==== Models handling features' null values
+This feature is available only for {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel].
+
+In some scenarios a null value for a feature has a different meaning than a zero value. There are models that are trained to distinguish the two (e.g. https://xgboost.readthedocs.io/en/stable/faq.html#how-to-deal-with-missing-values), in Solr an additional `"missing"` branch parameter has been introduced to support this feature. 
+
+This defines the branch to follow when the corresponding feature value is null. With the default configuration a null and a zero value have the same meaning.
+
+To handle null values, the `"myFeatures.json"` file needs to be modified. A `"defaultValue"` parameter with a `"NaN"` value needs to be added to each feature that can assume a null value.
+
+.Example: /path/myFeatures.json
+[source,json]
+----
+[
+  {
+    "name": "matchedTitle",
+    "class": "org.apache.solr.ltr.feature.SolrFeature",
+    "params": {
+      "q": "{!terms f=title}${user_query}"
+    }
+  },
+  {
+    "name": "productReviewScore",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+      "field": "product_review_score",
+      "defaultValue": "NaN"
+    }
+  }
+]
+----
+
+Also, the model configuration needs two additional parameter:
+
+* `"isNullSameAsZero"` needs to be defined in the model `"params"` and set to `"false"`;
+
+*  the `"missing"` parameter needs to be added to each branch where the corresponding feature supports null values. This can assume one value between `"left"` and `"right"`.
+
+.Example: /path/myModel.json
+[source,json]
+----
+{
+  "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+  "name":"multipleadditivetreesmodel",
+  "features":[
+    { "name": "matchedTitle"},
+    { "name": "productReviewScore"}
+  ],
+  "params":{
+    "isNullSameAsZero": "false",
+    "trees": [
+      {
+        "weight" : "1f",
+        "root": {
+          "feature": "matchedTitle",
+          "threshold": "0.5f",
+          "left" : {
+            "value" : "-100"
+          },
+          "right": {
+            "feature" : "productReviewScore",
+            "threshold": "0f",
+            "missing": "left",
+            "left" : {
+              "value" : "50"
+            },
+            "right" : {
+              "value" : "65"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+
+----
+
+When isNullSameAsZero is `"false"` for your model, the feature vector changes.
+
+* dense format: all features values are shown, also the default values which can be zero or null values.
+* sparse format: only non default values are shown.
+
+e.g.
+
+given the features defined in <<models-handling-features-null-values>>.
+If their values are `matchedTitle=0` and `productReviewScore=0`, the sparse format will return `productReviewScore:0` (0 is the default value of `matchedTitle=0` and therefore it is not returned, 0 is not the default value of `productReviewScore=0` and therefore it is returned).
+
 ==== Implementation and Contributions
 
 How does Solr Learning-To-Rank work under the hood?::
