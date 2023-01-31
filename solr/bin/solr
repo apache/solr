@@ -2185,6 +2185,10 @@ function start_solr() {
     SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
   fi
 
+  if [ "$SOLR_PRESERVE_UNKNOWN_CORES" == "true" ]; then
+    SOLR_OPTS+=("-DpreserveUnknownCores=true")
+  fi
+
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
