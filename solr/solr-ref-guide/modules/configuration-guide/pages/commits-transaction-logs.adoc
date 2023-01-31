@@ -289,6 +289,7 @@ This requires `(8 bytes (long) * numVersionBuckets)` of heap space per Solr core
 The sync level of the transaction log files. Can be NONE, FLUSH or FSYNC, if nothing is set FLUSH is the default.
 
 These configuration options work in the following way:
+
 * FSYNC: Solr internal FastOutputStream buffer is explicitly flushed to the OutputStream and also the OutputStream buffer is flushed to the tlog file. This is a more expensive operation but safer since the content is written to the tlog file.
 * FLUSH: We only flush explicitly the Solr internal FastOutputStream buffer to the OutputStream, but OutputStream is not explicitly flushed to the tlog file. This is less expensive but also less safe since if we have a crash before the OutputStream is also flushed, data from the buffer is lost.
 * NONE: There is no explicit flush of the buffers. This is the least expensive but the least safe as well.
