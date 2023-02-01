@@ -671,8 +671,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetSuffix = "testOverwriteWithForbiddenFiles-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
-        new SolrZkClient(
-            cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
+        new SolrZkClient.Builder()
+            .url(cluster.getZkServer().getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
+            .connTimeOut(45000)
+            .build()) {
       String configPath = "/configs/" + configsetName + configsetSuffix;
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true));
       for (String fileEnding : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
@@ -1098,8 +1101,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetSuffix = "testSingleFileForbiddenType-1-" + v2;
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
     try (SolrZkClient zkClient =
-        new SolrZkClient(
-            cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
+        new SolrZkClient.Builder()
+            .url(cluster.getZkServer().getZkAddress())
+            .timeout(AbstractZkTestCase.TIMEOUT)
+            .connTimeOut(45000)
+            .build()) {
       for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
         ignoreException("is forbidden for use in configSets");
         assertEquals(
