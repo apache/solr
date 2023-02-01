@@ -202,6 +202,18 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       return;
     }
 
+    List<Query> qlist = getContextQueriesWithExclusions(excludeSet);
+
+    // recompute the base domain
+    fcontext.base = fcontext.searcher.getDocSet(qlist);
+  }
+
+  protected List<Query> getContextQueries() {
+    Set<Query> excludeSet = QueryUtils.getTaggedQueries(fcontext.req, freq.domain.excludeTags);
+    return getContextQueriesWithExclusions(excludeSet);
+  }
+
+  private List<Query> getContextQueriesWithExclusions(Set<Query> excludeSet) {
     List<Query> qlist = new ArrayList<>();
 
     // TODO: somehow remove responsebuilder dependency
@@ -229,8 +241,7 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       }
     }
 
-    // recompute the base domain
-    fcontext.base = fcontext.searcher.getDocSet(qlist);
+    return qlist;
   }
 
   /** modifies the context base if there is a join field domain change */
