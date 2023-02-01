@@ -163,19 +163,16 @@ fi
 
 CLASSPATH=$GRADLE_WRAPPER_JAR
 
+# START OF SOLR CUSTOMIZATION
 # Generate gradle.properties if they don't exist
 if [ ! -e "$APP_HOME/gradle.properties" ]; then
-    echo "Populating gradle.properties from gradle.properties.template."
-    # Do the copy first. If the next steps fail, the gradle.properties will still be usable
-    cp gradle.properties.template gradle.properties
-    NUM_CORES=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
-    if [ $NUM_CORES -ge 12 ]; then
-      NUM_CORES=12
+    "$JAVACMD" $JAVA_OPTS --source 11 "$APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "$APP_HOME/gradle/template.gradle.properties" "$APP_HOME/gradle.properties"
+    GENERATOR_STATUS=$?
+    if [ "$WRAPPER_STATUS" -ne 0 ]; then
+        exit $WRAPPER_STATUS
     fi
-    sed -i "s/org.gradle.workers.max=[[:digit:]]\+/org.gradle.workers.max=${NUM_CORES}/g;s/tests.jvms=[[:digit:]]\+/tests.jvms=${NUM_CORES}/g" gradle.properties
-    echo "Set org.gradle.workers.max and tests.jvm to $NUM_CORES"
-    echo "You can configure gradle.properties as required. See './gradlew :helpLocalSettings' for more information"
 fi
+# END OF SOLR CUSTOMIZATION
 
 # Increase the maximum file descriptors if we can.
 if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then

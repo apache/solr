@@ -80,12 +80,16 @@ IF %ERRORLEVEL% NEQ 0 goto fail
 @rem Setup the command line
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
+@rem START OF SOLR CUSTOMIZATION
 @rem Generate gradle.properties if they don't exist
-IF NOT EXIST "%DIRNAME%\gradle.properties" (
-  echo Copying gradle.properties.template to gradle.properties
-  copy gradle.properties.template gradle.properties > NUL
-  echo You can configure gradle.properties as required. See "gradlew :helpLocalSettings" for more information
+IF NOT EXIST "%APP_HOME%\gradle.properties" (
+  @rem local expansion is needed to check ERRORLEVEL inside control blocks.
+  setlocal enableDelayedExpansion
+  "%JAVA_EXE%" --source 11 "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "%APP_HOME%\gradle\template.gradle.properties" "%APP_HOME%\gradle.properties"
+  IF %ERRORLEVEL% NEQ 0 goto fail
+  endlocal
 )
+@rem END OF SOLR CUSTOMIZATION
 
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
