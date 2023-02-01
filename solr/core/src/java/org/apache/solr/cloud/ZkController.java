@@ -372,24 +372,15 @@ public class ZkController implements Closeable {
     addOnReconnectListener(getConfigDirListener());
 
     zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            clientTimeout,
-            zkClientConnectTimeout,
-            strat,
-            () -> onReconnect(descriptorsSupplier),
-            () -> {
-              try {
-                this.overseer.close();
-              } catch (Exception e) {
-                log.error("Error trying to stop any Overseer threads", e);
-              }
-              closeOutstandingElections(descriptorsSupplier);
-              markAllAsNotLeader(descriptorsSupplier);
-            },
-            zkACLProvider,
-            cc::isShutDown);
-
+        new SolrZkClient.Builder()
+            .url(zkServerAddress)
+            .timeout(clientTimeout)
+            .connTimeOut(zkClientConnectTimeout)
+            .connStrategy(strat)
+            .beforeConnect(() -> beforeReconnect(descriptorsSupplier))
+            .aclProvider(zkACLProvider)
+            .closedCheck(cc::isShutDown)
+            .build();
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
 
@@ -419,6 +410,16 @@ public class ZkController implements Closeable {
             ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
             zkStateReader);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void beforeReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+    try {
+      this.overseer.close();
+    } catch (Exception e) {
+      log.error("Error trying to stop any Overseer threads", e);
+    }
+    closeOutstandingElections(descriptorsSupplier);
+    markAllAsNotLeader(descriptorsSupplier);
   }
 
   private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier)

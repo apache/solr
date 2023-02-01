@@ -66,8 +66,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.setTheTickTime(1000);
     server.run();
 
-    zkClient =
-        new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build();
+    zkClient = new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
     zkClient.makePath("/collections/collection1", true);

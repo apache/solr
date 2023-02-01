@@ -442,19 +442,11 @@ public class ZkTestServer {
   private void init(boolean solrFormat) throws Exception {
     try {
       rootClient =
-          new SolrZkClient.Builder()
-              .url(getZkHost())
-              .timeout(TIMEOUT)
-              .connTimeOut(30000)
-              .build();
+          new SolrZkClient.Builder().url(getZkHost()).timeout(TIMEOUT).connTimeOut(30000).build();
     } catch (Exception e) {
       log.error("error making rootClient, trying one more time", e);
       rootClient =
-          new SolrZkClient.Builder()
-              .url(getZkHost())
-              .timeout(TIMEOUT)
-              .connTimeOut(30000)
-              .build();
+          new SolrZkClient.Builder().url(getZkHost()).timeout(TIMEOUT).connTimeOut(30000).build();
     }
 
     if (solrFormat) {
@@ -499,8 +491,7 @@ public class ZkTestServer {
    * @throws IOException if an IO exception occurs
    */
   public void ensurePathExists(String path) throws IOException {
-    try (SolrZkClient client =
-        new SolrZkClient.Builder().url(getZkHost()).timeout(10000).build()) {
+    try (SolrZkClient client = new SolrZkClient.Builder().url(getZkHost()).timeout(10000).build()) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
       log.error("Error checking path {}", path, e);

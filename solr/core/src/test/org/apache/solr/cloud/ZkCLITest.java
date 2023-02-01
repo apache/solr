@@ -420,8 +420,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () ->
-                new SolrZkClient.Builder().url("----------:33332").timeout(100).build());
+            () -> new SolrZkClient.Builder().url("----------:33332").timeout(100).build());
     zkClient.close();
   }
 

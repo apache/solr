@@ -1829,8 +1829,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private SolrZkClient electNewOverseer(String address)
       throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
           IllegalAccessException {
-    SolrZkClient zkClient =
-        new SolrZkClient.Builder().url(address).timeout(TIMEOUT).build();
+    SolrZkClient zkClient = new SolrZkClient.Builder().url(address).timeout(TIMEOUT).build();
     zkClients.add(zkClient);
     ZkStateReader reader = new ZkStateReader(zkClient);
     readers.add(reader);

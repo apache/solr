@@ -122,8 +122,8 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed) {
-    if(zkServerAddress == null) {
-      //only tests should create one without server address
+    if (zkServerAddress == null) {
+      // only tests should create one without server address
       return;
     }
     this.zkServerAddress = zkServerAddress;
@@ -1069,6 +1069,17 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public static class NodeData {
+
+    public final Stat stat;
+    public final byte[] data;
+
+    public NodeData(Stat stat, byte[] data) {
+      this.stat = stat;
+      this.data = data;
+    }
+  }
+
   public static class Builder {
     public String zkServerAddress;
     public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
@@ -1121,16 +1132,6 @@ public class SolrZkClient implements Closeable {
 
     public SolrZkClient build() {
       return new SolrZkClient(this);
-
-  public static class NodeData {
-
-    public final Stat stat;
-    public final byte[] data;
-
-    public NodeData(Stat stat, byte[] data) {
-      this.stat = stat;
-      this.data = data;
-
     }
   }
 }

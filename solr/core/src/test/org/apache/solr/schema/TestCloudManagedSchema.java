@@ -55,7 +55,6 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
 
-
     // create a client that does not have the /collection1 as part of the URL.
     try (SolrClient rootClient =
         new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
@@ -70,7 +69,8 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
           collectionSchema);
     }
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().url(zkServer.getZkHost() + ":30000)").build()) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
       String fileContent =
           getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
