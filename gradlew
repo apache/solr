@@ -168,8 +168,8 @@ CLASSPATH=$GRADLE_WRAPPER_JAR
 if [ ! -e "$APP_HOME/gradle.properties" ]; then
     "$JAVACMD" $JAVA_OPTS --source 11 "$APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "$APP_HOME/gradle/template.gradle.properties" "$APP_HOME/gradle.properties"
     GENERATOR_STATUS=$?
-    if [ "$WRAPPER_STATUS" -ne 0 ]; then
-        exit $WRAPPER_STATUS
+    if [ "$GENERATOR_STATUS" -ne 0 ]; then
+        exit $GENERATOR_STATUS
     fi
 fi
 # END OF SOLR CUSTOMIZATION
