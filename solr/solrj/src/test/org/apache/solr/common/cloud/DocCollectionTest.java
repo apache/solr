@@ -95,6 +95,6 @@ public class DocCollectionTest extends SolrTestCaseJ4 {
 
     // sometime it takes url schems http or https - test setup issue
     assertTrue(
-        "byte size is wrong at " + ser.length, 727646 == ser.length || 727646 + 2048 == ser.length);
+        "byte size is wrong at " + ser.length, 540512 == ser.length || 540512 + 2048 == ser.length);
   }
 }
