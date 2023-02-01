@@ -32,7 +32,7 @@ def configuringSettings = (rootProject instanceof org.gradle.api.initialization.
 // Accessor for -P properties from settings or at build time.
 BiFunction<String, String, String> resolvePropertyValue = { propertyName, defValue ->
   if (configuringSettings) {
-    return settings.startParameter.projectProperties.getOrDefault(propertyName, defValue)
+    return settings.ext.properties.getOrDefault(propertyName, defValue)
   } else {
     return project.properties.getOrDefault(propertyName, defValue)
   }
