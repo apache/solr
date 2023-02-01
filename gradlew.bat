@@ -80,12 +80,15 @@ IF %ERRORLEVEL% NEQ 0 goto fail
 @rem Setup the command line
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
-@rem Don't fork a daemon mode on initial run that generates local defaults.
-SET GRADLE_DAEMON_CTRL=
-IF NOT EXIST "%DIRNAME%\gradle.properties" SET GRADLE_DAEMON_CTRL=--no-daemon
+@rem Generate gradle.properties if they don't exist
+IF NOT EXIST "%DIRNAME%\gradle.properties" (
+  echo Copying gradle.properties.template to gradle.properties
+  copy gradle.properties.template gradle.properties > NUL
+  echo You can configure gradle.properties as required. See "gradlew :helpLocalSettings" for more information
+)
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %GRADLE_DAEMON_CTRL% %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 
 :end
 @rem End local scope for the variables with windows NT shell

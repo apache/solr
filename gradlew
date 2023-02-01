@@ -163,10 +163,18 @@ fi
 
 CLASSPATH=$GRADLE_WRAPPER_JAR
 
-# Don't fork a daemon mode on initial run that generates local defaults.
-GRADLE_DAEMON_CTRL=
+# Generate gradle.properties if they don't exist
 if [ ! -e "$APP_HOME/gradle.properties" ]; then
-    GRADLE_DAEMON_CTRL=--no-daemon
+    echo "Populating gradle.properties from gradle.properties.template."
+    # Do the copy first. If the next steps fail, the gradle.properties will still be usable
+    cp gradle.properties.template gradle.properties
+    NUM_CORES=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+    if [ $NUM_CORES -ge 12 ]; then
+      NUM_CORES=12
+    fi
+    sed -i "s/org.gradle.workers.max=[[:digit:]]\+/org.gradle.workers.max=${NUM_CORES}/g;s/tests.jvms=[[:digit:]]\+/tests.jvms=${NUM_CORES}/g" gradle.properties
+    echo "Set org.gradle.workers.max and tests.jvm to $NUM_CORES"
+    echo "You can configure gradle.properties as required. See './gradlew :helpLocalSettings' for more information"
 fi
 
 # Increase the maximum file descriptors if we can.
@@ -237,7 +245,6 @@ set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -classpath "$CLASSPATH" \
         org.gradle.wrapper.GradleWrapperMain \
-        $GRADLE_DAEMON_CTRL  \
         "$@"
 
 # Stop when "xargs" is not available.
