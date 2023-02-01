@@ -1163,7 +1163,7 @@ IF "%SOLR_MODE%"=="solrcloud" (
   )
 
   IF "%SOLR_PRESERVE_UNKNOWN_CORES%"=="true" (
-    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DpreserveUnknownCores=true"
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.preserveUnknownCores=true"
   )
 
   IF NOT "%ZK_HOST%"=="" (

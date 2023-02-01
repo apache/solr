@@ -2186,7 +2186,7 @@ function start_solr() {
   fi
 
   if [ "$SOLR_PRESERVE_UNKNOWN_CORES" == "true" ]; then
-    SOLR_OPTS+=("-DpreserveUnknownCores=true")
+    SOLR_OPTS+=("-Dsolr.preserveUnknownCores=true")
   fi
 
   # If SSL-related system props are set, add them to SOLR_OPTS

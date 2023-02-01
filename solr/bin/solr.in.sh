@@ -87,7 +87,7 @@
 # set to "true" to disable that behavior and preserve unknown cores so that you can
 # delete them manually. This may protect against misconfiguration (e.g. connecting
 # to the wrong Zookeeper instance or chroot).
-#SOLR_PRESERVE_UNKNOWN_CORES="true"
+#SOLR_PRESERVE_UNKNOWN_CORES="false"
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"

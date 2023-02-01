@@ -72,7 +72,7 @@ REM By default Solr will delete cores that are not registered in Zookeeper at st
 REM set to "true" to disable that behavior and preserve unknown cores so that you can
 REM delete them manually. This may protect against misconfiguration (e.g. connecting
 REM to the wrong Zookeeper instance or chroot).
-REM set SOLR_PRESERVE_UNKNOWN_CORES=true
+REM set SOLR_PRESERVE_UNKNOWN_CORES=false
 
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
