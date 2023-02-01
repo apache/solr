@@ -241,6 +241,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             1,
             new SolrNamedThreadFactory("autoExpireDocs"),
             new RejectedExecutionHandler() {
+              @Override
               public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
                 log.warn("Skipping execution of '{}' using '{}'", r, e);
               }
@@ -248,6 +249,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
 
     core.addCloseHook(
         new CloseHook() {
+          @Override
           public void postClose(SolrCore core) {
             // update handler is gone, terminate anything that's left.
 
@@ -257,6 +259,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             }
           }
 
+          @Override
           public void preClose(SolrCore core) {
             log.info("Triggering Graceful close of DocExpiration Executor");
             executor.shutdown();
@@ -358,6 +361,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
       this.expireField = factory.expireField;
     }
 
+    @Override
     public void run() {
       // setup the request context early so the logging (including any from
       // shouldWeDoPeriodicDelete() ) includes the core context info
@@ -461,7 +465,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
       return false;
     }
     List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
-    Collections.sort(slices, COMPARE_SLICES_BY_NAME);
+    slices.sort(COMPARE_SLICES_BY_NAME);
     Replica firstSliceLeader = slices.get(0).getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader", col);

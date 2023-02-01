@@ -771,7 +771,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     Number[] values = new Number[2];
     FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
     if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
+      assertTrue(ft instanceof StrField);
       values[0] = randomInt(max);
       values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
@@ -958,7 +958,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   private static <X extends Comparable<? super X>, Y> X randomKey(Map<X, Y> map) {
-    assert !map.isEmpty();
+    assertFalse(map.isEmpty());
     List<X> sortedKeys = new ArrayList<>(map.keySet());
     Collections.sort(sortedKeys);
     return sortedKeys.get(random().nextInt(sortedKeys.size()));

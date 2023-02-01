@@ -45,10 +45,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
@@ -181,6 +184,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // This code directly updates Zookeeper by creating the collection state.json. It is
         // compatible with both distributed cluster state updates and Overseer based cluster state
         // updates.
+
+        // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
@@ -190,15 +195,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
-        // When cluster state updates are handled by Overseer, ask it to load that collection it
-        // doesn't know about. When cluster state updates are distributed, ZK is the source of truth
-        // for all nodes so no reload needed.
-        if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-          // If cluster state update is not distributed and we execute here, the Collection API is
-          // not distributed either and this execution happens on the Overseer node, so direct
-          // memory access as done below is ok.
-          ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
-        }
+        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
@@ -333,9 +330,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // update strategies
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
-          byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
-          zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -376,11 +370,13 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         coresToCreate.put(coreName, sreq);
       }
 
-      // PRS collections updated ZK state.json in the loop above. When Overseer is managing cluster
-      // state updates, need to tell it to refresh itself to know about the replicas and be able to
-      // execute nodes shard requests regarding the replicas.
-      if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
+      // Update the state.json for PRS collection in a single operation
+      if (isPRS) {
+        byte[] data =
+            Utils.toJSON(
+                Collections.singletonMap(
+                    collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
       }
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
@@ -399,6 +395,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .flatMap(slice -> slice.getReplicas().stream())
             .filter(r -> coresToCreate.containsKey(r.getCoreName()))
             .forEach(r -> replicas.putIfAbsent(r.getCoreName(), r)); // ...get added to the map
+        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       } else {
         // wait for all replica entries to be created and visible in local cluster state (updated by
         // ZK watches)
@@ -442,26 +439,18 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         } else {
           failure = true;
         }
-        // When cluster state updates are distributed, Overseer state updater is not used and
-        // doesn't have to be notified of a new collection created elsewhere (which is how all
-        // collections are created). Note it is likely possibly to skip the the whole if (isPRS)
-        // bloc, but keeping distributed state updates as close in behavior to Overseer state
-        // updates for now.
-        if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-          // Now ask Overseer to fetch the latest state of collection from ZK
-          ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
-        }
       }
       if (failure) {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
         // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<Object>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Underlying core creation failed while creating collection: " + collectionName);
       } else {
+        ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
         log.debug("Finished create command on all shards for collection: {}", collectionName);
         // Emit a warning about production use of data driven functionality
         // Note: isAutoGeneratedConfigSet is always a clone of the _default configset
@@ -511,6 +500,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
     int numSlices = shardNames.size();
+    cloudManager = wrapCloudManager(clusterState, cloudManager);
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -552,6 +542,34 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;
+  }
+  // the cloud manager should reflect the latest internal cluster state
+  private static SolrCloudManager wrapCloudManager(
+      ClusterState clusterState, SolrCloudManager solrCloudManager) {
+    final ClusterStateProvider csp =
+        new DelegatingClusterStateProvider(solrCloudManager.getClusterStateProvider()) {
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
+
+          @Override
+          public ClusterState getClusterState() {
+            return clusterState;
+          }
+
+          @Override
+          public DocCollection getCollection(String name) throws IOException {
+            return clusterState.getCollection(name);
+          }
+        };
+
+    return new DelegatingCloudManager(solrCloudManager) {
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return csp;
+      }
+    };
   }
 
   public static void checkReplicaTypes(ZkNodeProps message) {

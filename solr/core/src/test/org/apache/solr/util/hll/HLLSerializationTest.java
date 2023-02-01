@@ -46,7 +46,7 @@ public class HLLSerializationTest extends SolrTestCase {
   public void serializationSmokeTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -71,7 +71,7 @@ public class HLLSerializationTest extends SolrTestCase {
   public void monsterHLLSerializationTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
-    final List<Long> randoms = new ArrayList<Long>(randomCount);
+    final List<Long> randoms = new ArrayList<>(randomCount);
     for (int i = 0; i < randomCount; i++) {
       randoms.add(random.nextLong());
     }
@@ -111,7 +111,7 @@ public class HLLSerializationTest extends SolrTestCase {
     final long NUM_VALS = TestUtil.nextLong(random(), 150000, 1000000);
     final long MIN_VAL = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - NUM_VALS);
     final long MAX_VAL = MIN_VAL + NUM_VALS;
-    assert MIN_VAL < MAX_VAL;
+    assertTrue(MIN_VAL < MAX_VAL);
 
     for (long val = MIN_VAL; val < MAX_VAL; val++) {
       hll.addRaw(val);
@@ -152,7 +152,7 @@ public class HLLSerializationTest extends SolrTestCase {
     final long NUM_VALS = TestUtil.nextLong(random(), 150000, 1000000);
     final long MIN_VAL = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - NUM_VALS);
     final long MAX_VAL = MIN_VAL + NUM_VALS;
-    assert MIN_VAL < MAX_VAL;
+    assertTrue(MIN_VAL < MAX_VAL);
 
     for (long val = MIN_VAL; val < MAX_VAL; val++) {
       hll.addRaw(val);
@@ -209,13 +209,13 @@ public class HLLSerializationTest extends SolrTestCase {
     HLL copy = HLL.fromBytes(hllBytes);
     assertEquals(copy.cardinality(), hllCardinality);
     assertEquals(copy.getType(), hllType);
-    assertTrue(Arrays.equals(copy.toBytes(), hllBytes));
+    assertArrayEquals(copy.toBytes(), hllBytes);
 
     HLL clone = copy.clone();
     copy = null; // allow some GC
 
     assertEquals(clone.cardinality(), hllCardinality);
     assertEquals(clone.getType(), hllType);
-    assertTrue(Arrays.equals(clone.toBytes(), hllBytes));
+    assertArrayEquals(clone.toBytes(), hllBytes);
   }
 }

@@ -96,7 +96,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setValues();
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // One exists
@@ -104,14 +104,14 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setValues("def");
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     val1.setValue("abc").setExists(true);
     val2.setValues();
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Both exist
@@ -142,7 +142,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setValues();
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // One exists
@@ -150,14 +150,14 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setValues("def");
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     val1.setValue("abc").setExists(true);
     val2.setValues();
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Both exist
@@ -187,7 +187,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // One exists
@@ -195,14 +195,14 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     val1.setValues();
     val2.setValue("abc").setExists(true);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Both exist
@@ -233,7 +233,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // One exists
@@ -241,14 +241,14 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     val1.setValues();
     val2.setValue("abc").setExists(true);
     func.streamStrings(
         value -> {
-          assertTrue("There should be no values to stream", false);
+          fail("There should be no values to stream");
         });
 
     // Both exist

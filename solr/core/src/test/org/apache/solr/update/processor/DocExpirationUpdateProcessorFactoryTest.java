@@ -45,7 +45,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -56,7 +58,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             doc(f("id", "1111")));
 
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
   }
 
   public void testTTLFieldConversion() throws Exception {
@@ -68,7 +72,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_field_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -76,7 +82,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "2222"), f("_ttl_field_", "+27MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -84,7 +92,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "3333"), f("_ttl_field_", "+1YEAR")));
     assertNotNull(d);
-    assertEquals(new Date(1425595630042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1425595630042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -92,7 +102,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_field_", "/DAY+1YEAR")));
     assertNotNull(d);
-    assertEquals(new Date(1425513600000L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1425513600000L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlParamName is disabled, this should not convert...
     d =
@@ -118,7 +130,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             doc(f("id", "1111")));
 
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -128,7 +142,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+27MINUTES"),
             doc(f("id", "2222")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlFieldName is disabled, param should be used...
     d =
@@ -139,7 +155,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+5MINUTES"),
             doc(f("id", "1111"), f("_ttl_field_", "+999MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlFieldName is disabled, this should not convert...
     d =
@@ -160,7 +178,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+999MINUTES"),
             doc(f("id", "1111"), f("_ttl_field_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -170,7 +190,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+27MINUTES"),
             doc(f("id", "2222")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
   }
 
   public void testAutomaticDeletes() throws Exception {

@@ -4914,7 +4914,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                   (random().nextDouble()
                       * (new Date().getTime())
                       * (random().nextBoolean() ? -1 : 1)));
-    } while (dates[0].equals(dates[1]));
+    } while (dates[0].toInstant().equals(dates[1].toInstant()));
     Arrays.sort(dates);
     long dateDiff = (dates[1].getTime() - dates[0].getTime()) / 1000;
     String gapUnit;

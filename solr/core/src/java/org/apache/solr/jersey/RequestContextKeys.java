@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,6 +43,7 @@ public interface RequestContextKeys {
   String SOLR_QUERY_REQUEST = SolrQueryRequest.class.getName();
   String SOLR_QUERY_RESPONSE = SolrQueryResponse.class.getName();
   String CORE_CONTAINER = CoreContainer.class.getName();
+  String RESOURCE_TO_RH_MAPPING = PluginBag.JaxrsResourceToHandlerMappings.class.getName();
   String SOLR_CORE = SolrCore.class.getName();
   String REQUEST_TYPE = AuthorizationContext.RequestType.class.getName();
   String SOLR_PARAMS = SolrParams.class.getName();
@@ -49,4 +51,23 @@ public interface RequestContextKeys {
   String HANDLER_METRICS = RequestHandlerBase.HandlerMetrics.class.getName();
   String TIMER = Timer.Context.class.getName();
   String SOLR_JERSEY_RESPONSE = SolrJerseyResponse.class.getName();
+
+  /**
+   * A flag read by {@link NotFoundExceptionMapper} to suppress its normal error response
+   *
+   * <p>Used primarily to allow Solr to lookup certain APIs in multiple JAX-RS applications.
+   *
+   * @see NotFoundExceptionMapper
+   */
+  String SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION = "ERROR_IF_RESOURCE_NOT_FOUND";
+
+  /**
+   * A flag set by {@link NotFoundExceptionMapper} indicating that a 404 error response was
+   * suppressed.
+   *
+   * <p>Used primarily to allow Solr to lookup certian APIs in multiple JAX-RS applications.
+   *
+   * @see NotFoundExceptionMapper
+   */
+  String NOT_FOUND_FLAG = "RESOURCE_NOT_FOUND";
 }

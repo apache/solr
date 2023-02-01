@@ -19,8 +19,8 @@ package org.apache.solr.security.hadoop;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -273,7 +273,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
         throws IOException, ServletException {
       // remove the filter-specific authentication information, so it doesn't get accidentally
       // forwarded.
-      List<NameValuePair> newPairs = new LinkedList<NameValuePair>();
+      List<NameValuePair> newPairs = new ArrayList<>();
       List<NameValuePair> pairs =
           URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
       for (NameValuePair nvp : pairs) {

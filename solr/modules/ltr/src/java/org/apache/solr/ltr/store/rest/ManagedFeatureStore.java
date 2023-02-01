@@ -171,7 +171,7 @@ public class ManagedFeatureStore extends ManagedResource
 
   private static List<Object> featuresAsManagedResources(FeatureStore store) {
     final List<Feature> storedFeatures = store.getFeatures();
-    final List<Object> features = new ArrayList<Object>(storedFeatures.size());
+    final List<Object> features = new ArrayList<>(storedFeatures.size());
     for (final Feature f : storedFeatures) {
       final LinkedHashMap<String, Object> m = toFeatureMap(f);
       m.put(FEATURE_STORE_NAME_KEY, store.getName());

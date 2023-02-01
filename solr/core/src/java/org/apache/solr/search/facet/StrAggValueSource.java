@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import java.util.Objects;
+
 public abstract class StrAggValueSource extends AggValueSource {
   protected String arg;
 
@@ -32,8 +34,7 @@ public abstract class StrAggValueSource extends AggValueSource {
   public boolean equals(Object o) {
     if (!super.equals(o)) return false;
     String otherArg = ((StrAggValueSource) o).arg;
-    if (arg == otherArg) return true;
-    return (arg != null && arg.equals(otherArg));
+    return Objects.equals(arg, otherArg);
   }
 
   @Override

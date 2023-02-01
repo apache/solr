@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,7 +47,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -107,6 +107,7 @@ import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -114,8 +115,8 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
@@ -179,6 +180,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
 
 /**
  * SolrCore got its name because it represents the "core" of Solr -- one index and everything needed
@@ -313,8 +315,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     if (pkg == null) {
       return resourceLoader;
     }
-    PackageLoader.Package aPackage = coreContainer.getPackageLoader().getPackage(pkg);
-    PackageLoader.Package.Version latest = aPackage.getLatest();
+    SolrPackageLoader.SolrPackage aSolrPackage = coreContainer.getPackageLoader().getPackage(pkg);
+    SolrPackageLoader.SolrPackage.Version latest = aSolrPackage.getLatest();
     return latest.getLoader();
   }
 
@@ -1008,8 +1010,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  public <T extends Object> T createInitInstance(
-      PluginInfo info, Class<T> cast, String msg, String defClassName) {
+  public <T> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
     T o =
         createInstance(
@@ -1021,7 +1022,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return initPlugin(info, o);
   }
 
-  public static <T extends Object> T initPlugin(PluginInfo info, T o) {
+  public static <T> T initPlugin(PluginInfo info, T o) {
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -1135,8 +1136,23 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      jerseyAppHandler =
-          new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
+      if (V2ApiUtils.isEnabled()) {
+        final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
+        jerseyAppHandler =
+            coreContainer
+                .getJerseyAppHandlerCache()
+                .computeIfAbsent(
+                    effectiveConfigSetId,
+                    () -> {
+                      log.debug(
+                          "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
+                          effectiveConfigSetId);
+                      return new ApplicationHandler(
+                          reqHandlers.getRequestHandlers().getJerseyEndpoints());
+                    });
+      } else {
+        jerseyAppHandler = null;
+      }
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1285,9 +1301,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } else {
       newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
     }
-    if (newUpdateHandler instanceof SolrMetricProducer) {
-      coreMetricManager.registerMetricProducer(
-          "updateHandler", (SolrMetricProducer) newUpdateHandler);
+    if (newUpdateHandler != null) {
+      coreMetricManager.registerMetricProducer("updateHandler", newUpdateHandler);
     }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
@@ -2046,8 +2061,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   // All of the normal open searchers.  Don't access this directly.
   // protected by synchronizing on searcherLock.
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
+  private final ArrayDeque<RefCounted<SolrIndexSearcher>> _searchers = new ArrayDeque<>();
+  private final ArrayDeque<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new ArrayDeque<>();
 
   final ExecutorService searcherExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("searcherExecutor"));
@@ -2404,7 +2419,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-      List<RefCounted<SolrIndexSearcher>> searcherList = realtime ? _realtimeSearchers : _searchers;
+      ArrayDeque<RefCounted<SolrIndexSearcher>> searcherList =
+          realtime ? _realtimeSearchers : _searchers;
       RefCounted<SolrIndexSearcher> newSearcher = newHolder(tmp, searcherList); // refcount now at 1
 
       // Increment reference again for "realtimeSearcher" variable.  It should be at 2 after.
@@ -2735,7 +2751,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private RefCounted<SolrIndexSearcher> newHolder(
-      SolrIndexSearcher newSearcher, final List<RefCounted<SolrIndexSearcher>> searcherList) {
+      SolrIndexSearcher newSearcher, final ArrayDeque<RefCounted<SolrIndexSearcher>> searcherList) {
     RefCounted<SolrIndexSearcher> holder =
         new RefCounted<SolrIndexSearcher>(newSearcher) {
           @Override
@@ -2876,7 +2892,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     if (rsp.getToLog().size() > 0) {
       if (requestLog.isInfoEnabled()) {
-        requestLog.info(rsp.getToLogAsString());
+        Object path = rsp.getToLog().get("path");
+        if (path instanceof String) {
+          requestLog.info(MarkerFactory.getMarker((String) path), rsp.getToLogAsString());
+        } else {
+          requestLog.info(rsp.getToLogAsString());
+        }
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
@@ -2939,6 +2960,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
+    if (responseHeader == null) return;
     final int qtime = (int) (req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
@@ -3381,8 +3403,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown())
           return;
         cfg = solrCore.getSolrConfig();
-        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
+        solrConfigversion = solrCore.getSolrConfig().getZnodeVersion();
+        overlayVersion = solrCore.getSolrConfig().getOverlay().getVersion();
         if (managedSchmaResourcePath != null) {
           managedSchemaVersion =
               ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
@@ -3391,8 +3413,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (cfg != null) {
         cfg.refreshRequestParams();
       }
-      if (checkStale(zkClient, overlayPath, solrConfigversion)
-          || checkStale(zkClient, solrConfigPath, overlayVersion)
+      if (checkStale(zkClient, overlayPath, overlayVersion)
+          || checkStale(zkClient, solrConfigPath, solrConfigversion)
           || checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
         SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));
@@ -3428,9 +3450,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
   public void registerInfoBean(String name, SolrInfoBean solrInfoBean) {
     infoRegistry.put(name, solrInfoBean);
 
-    if (solrInfoBean instanceof SolrMetricProducer) {
-      SolrMetricProducer producer = (SolrMetricProducer) solrInfoBean;
-      coreMetricManager.registerMetricProducer(name, producer);
+    if (solrInfoBean != null) {
+      coreMetricManager.registerMetricProducer(name, solrInfoBean);
     }
   }
 

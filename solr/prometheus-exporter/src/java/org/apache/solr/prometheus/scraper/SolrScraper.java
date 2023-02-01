@@ -37,7 +37,7 @@ import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -124,8 +124,8 @@ public abstract class SolrScraper implements Closeable {
 
     String baseUrlLabelValue = "";
     String zkHostLabelValue = "";
-    if (client instanceof HttpSolrClient) {
-      baseUrlLabelValue = ((HttpSolrClient) client).getBaseURL();
+    if (client instanceof Http2SolrClient) {
+      baseUrlLabelValue = ((Http2SolrClient) client).getBaseURL();
     } else if (client instanceof CloudSolrClient) {
       zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
     }
@@ -170,12 +170,10 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof HttpSolrClient) {
+          if (!baseUrlLabelValue.isEmpty()) {
             labelNames.add(BASE_URL_LABEL);
             labelValues.add(baseUrlLabelValue);
-          }
-
-          if (client instanceof CloudSolrClient) {
+          } else if (!zkHostLabelValue.isEmpty()) {
             labelNames.add(ZK_HOST_LABEL);
             labelValues.add(zkHostLabelValue);
           }

@@ -227,6 +227,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   List<CommandOperation> parsedCommands;
 
+  @Override
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = getContentStreams();

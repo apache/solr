@@ -136,7 +136,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             .timeout(AbstractZkTestCase.TIMEOUT)
             .build();
     try {
-      List<String> verifiedList = new ArrayList<String>();
+      List<String> verifiedList = new ArrayList<>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);
       assertTrue(verifiedList.contains("/solr"));
       assertTrue(verifiedList.contains("/solr/unprotectedCreateNode"));

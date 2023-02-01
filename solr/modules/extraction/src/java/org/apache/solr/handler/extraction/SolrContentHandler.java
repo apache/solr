@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -212,7 +213,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // you?
     if (sf == null
         && unknownFieldPrefix.length() == 0
-        && name == TikaMetadataKeys.RESOURCE_NAME_KEY) {
+        && Objects.equals(name, TikaMetadataKeys.RESOURCE_NAME_KEY)) {
       return;
     }
 

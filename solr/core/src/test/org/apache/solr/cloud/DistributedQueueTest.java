@@ -317,6 +317,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       this.waitBeforeOfferMs = waitBeforeOfferMs;
     }
 
+    @Override
     public void run() {
       try {
         Thread.sleep(waitBeforeOfferMs);

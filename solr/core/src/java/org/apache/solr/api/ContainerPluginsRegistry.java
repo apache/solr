@@ -55,7 +55,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
@@ -299,7 +299,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     @JsonProperty(value = "package")
     public final String pkg;
 
-    private PackageLoader.Package.Version pkgVersion;
+    private SolrPackageLoader.SolrPackage.Version pkgVersion;
     private Class<?> klas;
     Object instance;
 
@@ -328,7 +328,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
-        Optional<PackageLoader.Package.Version> ver =
+        Optional<SolrPackageLoader.SolrPackage.Version> ver =
             coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
           // may be we are a bit early. Do a refresh and try again
@@ -336,7 +336,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
         if (ver.isEmpty()) {
-          PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
+          SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(pkg);
           if (p == null) {
             errs.add("Invalid package " + klassInfo.pkg);
             return;

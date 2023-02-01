@@ -17,8 +17,6 @@
 
 package org.apache.solr.prometheus.collector;
 
-import static org.junit.Assert.assertEquals;
-
 import io.prometheus.client.Collector;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,9 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class MetricSamplesTest {
+public class MetricSamplesTest extends SolrTestCase {
 
   private Collector.MetricFamilySamples.Sample sample(String name, Double value) {
     return new Collector.MetricFamilySamples.Sample(

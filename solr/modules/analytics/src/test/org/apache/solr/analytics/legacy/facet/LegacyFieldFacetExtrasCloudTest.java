@@ -236,29 +236,25 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
 
-    Collection<Double> lon = getValueList(response, "sr", "fieldFacets", "long_ld", "mean", false);
-    ArrayList<Double> longTest = calculateFacetedNumberStat(intLongTestStart, "mean");
+    List<Double> lon = getValueList(response, "sr", "fieldFacets", "long_ld", "mean", false);
+    List<Double> longTest = calculateFacetedNumberStat(intLongTestStart, "mean");
     Collections.sort(longTest);
     assertEquals(responseStr, longTest, lon);
 
-    Collection<Double> flo =
-        getValueList(response, "sr", "fieldFacets", "float_fd", "median", false);
-    ArrayList<Double> floatTest = calculateFacetedNumberStat(intFloatTestStart, "median");
-    Collections.sort(floatTest, Collections.reverseOrder());
+    List<Double> flo = getValueList(response, "sr", "fieldFacets", "float_fd", "median", false);
+    List<Double> floatTest = calculateFacetedNumberStat(intFloatTestStart, "median");
+    floatTest.sort(Collections.reverseOrder());
     assertEquals(responseStr, floatTest, flo);
 
-    Collection<Long> doub =
-        getValueList(response, "sr", "fieldFacets", "double_dd", "count", false);
-    ArrayList<Long> doubleTest =
-        (ArrayList<Long>) calculateFacetedStat(intDoubleTestStart, "count");
+    List<Long> doub = getValueList(response, "sr", "fieldFacets", "double_dd", "count", false);
+    List<Long> doubleTest = (List<Long>) calculateFacetedStat(intDoubleTestStart, "count");
     Collections.sort(doubleTest);
     assertEquals(responseStr, doubleTest, doub);
 
-    Collection<Integer> string =
+    List<Integer> string =
         getValueList(response, "sr", "fieldFacets", "string_sd", "percentile_20", false);
-    ArrayList<Integer> stringTest =
-        (ArrayList<Integer>) calculateFacetedStat(intStringTestStart, "perc_20");
-    Collections.sort(stringTest, Collections.reverseOrder());
+    List<Integer> stringTest = (List<Integer>) calculateFacetedStat(intStringTestStart, "perc_20");
+    stringTest.sort(Collections.reverseOrder());
     assertEquals(responseStr, stringTest, string);
   }
 }

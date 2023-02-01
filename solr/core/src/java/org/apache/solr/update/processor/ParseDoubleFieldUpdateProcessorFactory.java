@@ -71,7 +71,7 @@ public class ParseDoubleFieldUpdateProcessorFactory
     private final Locale locale;
     // NumberFormat instances are not thread safe
     private final ThreadLocal<NumberFormat> numberFormat =
-        new ThreadLocal<NumberFormat>() {
+        new ThreadLocal<>() {
           @Override
           protected NumberFormat initialValue() {
             NumberFormat format = NumberFormat.getInstance(locale);

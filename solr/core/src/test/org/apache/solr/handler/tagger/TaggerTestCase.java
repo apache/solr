@@ -112,7 +112,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     int substringIndex = 0;
     for (int i = 0; i <= substringIndex; i++) {
       startOffset = doc.indexOf(substring, ++startOffset);
-      assert startOffset >= 0 : "The test itself is broken";
+      assertTrue("The test itself is broken", startOffset >= 0);
     }
     endOffset = startOffset + substring.length(); // 1 greater (exclusive)
     return new TestTag(startOffset, endOffset, substring, lookupByName(substring));
@@ -211,7 +211,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  class TestTag implements Comparable<TestTag> {
+  static class TestTag implements Comparable<TestTag> {
     final int startOffset, endOffset;
     final String substring;
     final String docName;
@@ -242,6 +242,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object obj) {
+      if (!(obj instanceof TestTag)) return false;
       TestTag that = (TestTag) obj;
       return new EqualsBuilder()
           .append(this.startOffset, that.startOffset)

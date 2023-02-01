@@ -134,7 +134,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static SolrMetricsContext solrMetricsContextMock;
 
   private static ObjectCache objectCache;
-  private Map<String, byte[]> zkClientData = new HashMap<>();
+  private final Map<String, byte[]> zkClientData = new HashMap<>();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
   private final List<ZkNodeProps> replicas = new ArrayList<>();
   private SolrResponse lastProcessMessageResult;
@@ -142,7 +142,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private OverseerCollectionConfigSetProcessorToBeTested underTest;
 
   private Thread thread;
-  private Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
+  private final Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
 
   private static class OverseerCollectionConfigSetProcessorToBeTested
       extends OverseerCollectionConfigSetProcessor {
@@ -239,6 +239,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     solrMetricsContextMock = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -276,13 +277,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     replicas.clear();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     stopComponentUnderTest();
     super.tearDown();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"DirectInvocationOnMock", "unchecked"})
   protected Set<String> commonMocks(int liveNodesCount, boolean distributedClusterStateUpdates)
       throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
@@ -297,7 +299,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                 if (count > 1) return null;
               }
 
-              return Arrays.asList(result);
+              return List.of(result);
             });
 
     when(workQueueMock.getTailId())
@@ -459,6 +461,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
+              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
@@ -505,8 +508,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
+              @Override
               public Void answer(InvocationOnMock invocation) {
-                System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+                System.out.println(
+                    "set data: " + invocation.getArgument(0) + " " + Arrays.toString(new byte[0]));
                 zkClientData.put(invocation.getArgument(0), new byte[0]);
                 return null;
               }
@@ -545,6 +550,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // 1. Single line recording and executing a command
       Mockito.doAnswer(
               new Answer<Void>() {
+                @Override
                 public Void answer(InvocationOnMock invocation) {
                   handleCreateCollMessageProps(invocation.getArgument(1));
                   return null;
@@ -556,6 +562,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // 2. Recording a command to be executed as part of a batch of commands
       Mockito.doAnswer(
               new Answer<Void>() {
+                @Override
                 public Void answer(InvocationOnMock invocation) {
                   handleCreateCollMessageProps(invocation.getArgument(1));
                   return null;
@@ -567,20 +574,23 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       // Mocking for state change via the Overseer queue
       Mockito.doAnswer(
               new Answer<Void>() {
+                @Override
                 public Void answer(InvocationOnMock invocation) {
                   try {
                     handleCreateCollMessage(invocation.getArgument(0));
-                    stateUpdateQueueMock.offer(invocation.getArgument(0));
+                    verify(stateUpdateQueueMock, Mockito.atLeast(0))
+                        .offer((byte[]) invocation.getArgument(0));
                   } catch (KeeperException e) {
                     throw new RuntimeException(e);
                   } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                   }
                   return null;
                 }
               })
           .when(overseerMock)
-          .offerStateUpdate(any());
+          .offerStateUpdate((byte[]) any());
     }
 
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
@@ -589,6 +599,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
+              @Override
               public Void answer(InvocationOnMock invocation) {
                 System.out.println(
                     "set data: " + invocation.getArgument(0) + " " + invocation.getArgument(1));
@@ -635,8 +646,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     Mockito.doAnswer(
             new Answer<Void>() {
+              @Override
               public Void answer(InvocationOnMock invocation) {
-                System.out.println("set data: " + invocation.getArgument(0) + " " + new byte[0]);
+                System.out.println(
+                    "set data: " + invocation.getArgument(0) + " " + Arrays.toString(new byte[0]));
                 zkClientData.put(invocation.getArgument(0), new byte[0]);
                 return null;
               }
@@ -678,6 +691,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         replicas.add(props);
       }
     } catch (Exception e) {
+      log.error("Ignored exception", e);
     }
   }
 
@@ -788,7 +802,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           "Shard " + coreName + " created on wrong node " + shardRequest.shards[0],
           nodeUrlWithoutProtocolPartForLiveNodes.contains(shardRequest.shards[0]));
       coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.put(coreName, shardRequest.shards[0]);
-      assertEquals(shardRequest.shards, shardRequest.actualShards);
+      assertArrayEquals(shardRequest.shards, shardRequest.actualShards);
 
       String sliceName = shardRequest.params.get(CoreAdminParams.SHARD);
       if (!sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.containsKey(sliceName)) {
@@ -831,9 +845,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         numberOfSlices.intValue(),
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.size());
     for (int i = 1; i <= numberOfSlices; i++) {
-      sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap
-          .keySet()
-          .contains("shard" + i);
+      assertTrue(
+          sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.containsKey("shard" + i));
     }
     int minShardsPerSlicePerNode = numberOfReplica / createNodes.size();
     int numberOfNodesSupposedToRunMaxShards = numberOfReplica % createNodes.size();
@@ -905,6 +918,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     SEND_NULL
   }
 
+  @SuppressWarnings("DirectInvocationOnMock")
   protected void testTemplate(
       Integer numberOfNodes,
       Integer numberOfNodesToCreateOn,

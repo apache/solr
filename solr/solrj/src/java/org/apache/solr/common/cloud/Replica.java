@@ -104,21 +104,27 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * support NRT (soft commits) and RTG. Any {@link Type#NRT} replica can become a leader. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    NRT,
+    NRT(true),
     /**
      * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica
      * can become leader (by first applying all local transaction log elements). If a replica is of
      * type {@link Type#TLOG} but is also the leader, it will behave as a {@link Type#NRT}. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    TLOG,
+    TLOG(true),
     /**
      * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
      * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL;
+    PULL(false);
+
+    public final boolean leaderEligible;
+
+    Type(boolean b) {
+      this.leaderEligible = b;
+    }
 
     public static Type get(String name) {
       return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
@@ -234,9 +240,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(baseUrl, "'base_url' must not be null");
 
     // make sure all declared props are in the propMap
-    propMap.put(ReplicaStateProps.COLLECTION, collection);
-    propMap.put(ReplicaStateProps.SHARD_ID, shard);
-    propMap.put(ReplicaStateProps.CORE_NODE_NAME, name);
     propMap.put(ReplicaStateProps.NODE_NAME, node);
     propMap.put(ReplicaStateProps.CORE_NAME, core);
     propMap.put(ReplicaStateProps.TYPE, type.toString());
@@ -259,7 +262,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof Replica)) return false;
     if (!super.equals(o)) return false;
 
     Replica other = (Replica) o;
@@ -356,6 +359,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return replicaState;
   }
 
+  @Override
   public Object clone() {
     return new Replica(name, node, collection, shard, core, state, type, propMap);
   }
@@ -391,8 +395,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
       writer
           .put(ReplicaStateProps.CORE_NAME, core, p)
-          .put(ReplicaStateProps.SHARD_ID, shard, p)
-          .put(ReplicaStateProps.COLLECTION, collection, p)
           .put(ReplicaStateProps.NODE_NAME, node, p)
           .put(ReplicaStateProps.TYPE, type.toString(), p)
           .put(ReplicaStateProps.STATE, state.toString(), p);

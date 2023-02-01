@@ -16,9 +16,9 @@
  */
 package org.apache.solr.prometheus.exporter;
 
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
-public class SolrExporterTest extends TestCase {
+public class SolrExporterTest extends SolrTestCase {
   public void testDefaultClusterIdHash() {
     assertEquals(
         "a2542cfcee",

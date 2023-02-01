@@ -34,7 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.CoreContainerFactory;
+import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -67,7 +67,7 @@ public class ListConfigSetsAPITest extends JerseyTest {
         new AbstractBinder() {
           @Override
           protected void configure() {
-            bindFactory(new CoreContainerFactory(mockCoreContainer))
+            bindFactory(new InjectionFactories.SingletonFactory<>(mockCoreContainer))
                 .to(CoreContainer.class)
                 .in(Singleton.class);
           }

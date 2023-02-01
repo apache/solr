@@ -248,7 +248,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>();
     doTestParamsToMap(OriginalScoreFeature.class.getName(), params);
   }
 }

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class SkipExistingDocumentsProcessorFactoryTest {
+public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
 
   private BytesRef docId = new BytesRef();
 

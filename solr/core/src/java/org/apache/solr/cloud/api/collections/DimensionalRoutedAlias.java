@@ -332,7 +332,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         // dimensions with an implicit order need to start from their initial configuration
         // and count up to maintain order in the alias collection list with respect to that
         // dimension
-        if (matchesAllHigherDims && !ordered || matchesAllHigherDims && matchesAllLowerDims) {
+        if ((matchesAllHigherDims && !ordered) || (matchesAllHigherDims && matchesAllLowerDims)) {
           view.add("" + getSeparatorPrefix(dimensions.get(index)) + split[index + 1]);
         }
       }

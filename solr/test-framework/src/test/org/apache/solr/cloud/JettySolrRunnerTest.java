@@ -24,8 +24,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class JettySolrRunnerTest extends SolrTestCaseJ4 {
@@ -56,7 +57,7 @@ public class JettySolrRunnerTest extends SolrTestCaseJ4 {
       jetty.stop();
       jetty.start(false);
 
-      assertThat(
+      MatcherAssert.assertThat(
           "After restart, jetty port should be different",
           jetty.getBaseUrl().getPort(),
           not(usedPort));

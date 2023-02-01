@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
@@ -52,6 +51,8 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -135,7 +136,7 @@ public class ClusterAPI {
   @SuppressWarnings("unchecked")
   public void rolesForNode(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String node = req.getPathTemplateValues().get("node");
-    Map<String, String> ret = new HashMap<String, String>();
+    Map<String, String> ret = new HashMap<>();
     Map<String, Map<String, Set<String>>> roles =
         (Map<String, Map<String, Set<String>>>)
             readRecursive(
@@ -209,11 +210,6 @@ public class ClusterAPI {
     collectionsHandler.handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.lowerName), rsp);
   }
 
-  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
-  public void getCluster(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    collectionsHandler.handleRequestBody(wrapParams(req, "action", LIST.lowerName), rsp);
-  }
-
   @EndPoint(method = DELETE, path = "/cluster/command-status/{id}", permission = COLL_EDIT_PERM)
   public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, Object> v1Params = Maps.newHashMap();
@@ -259,6 +255,13 @@ public class ClusterAPI {
   @EndPoint(method = GET, path = "/cluster/nodes", permission = COLL_READ_PERM)
   public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
     rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
+  }
+
+  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
+  public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final Map<String, Object> v1Params = Maps.newHashMap();
+    v1Params.put(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
+    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
   private CoreContainer getCoreContainer() {

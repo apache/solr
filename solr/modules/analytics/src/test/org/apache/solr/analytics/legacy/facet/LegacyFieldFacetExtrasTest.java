@@ -159,26 +159,24 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
   @SuppressWarnings("unchecked")
   @Test
   public void sortTest() throws Exception {
-    Collection<Double> lon = getDoubleList("sr", "fieldFacets", "long_ld", "double", "mean");
-    ArrayList<Double> longTest = calculateNumberStat(intLongTestStart, "mean");
+    List<Double> lon = getDoubleList("sr", "fieldFacets", "long_ld", "double", "mean");
+    List<Double> longTest = calculateNumberStat(intLongTestStart, "mean");
     Collections.sort(longTest);
     assertEquals(getRawResponse(), longTest, lon);
 
-    Collection<Double> flo = getDoubleList("sr", "fieldFacets", "float_fd", "double", "median");
-    ArrayList<Double> floatTest = calculateNumberStat(intFloatTestStart, "median");
-    Collections.sort(floatTest, Collections.reverseOrder());
+    List<Double> flo = getDoubleList("sr", "fieldFacets", "float_fd", "double", "median");
+    List<Double> floatTest = calculateNumberStat(intFloatTestStart, "median");
+    floatTest.sort(Collections.reverseOrder());
     assertEquals(getRawResponse(), floatTest, flo);
 
-    Collection<Long> doub = getLongList("sr", "fieldFacets", "double_dd", "long", "count");
-    ArrayList<Long> doubleTest = (ArrayList<Long>) calculateStat(intDoubleTestStart, "count");
+    List<Long> doub = getLongList("sr", "fieldFacets", "double_dd", "long", "count");
+    List<Long> doubleTest = (List<Long>) calculateStat(intDoubleTestStart, "count");
     Collections.sort(doubleTest);
     assertEquals(getRawResponse(), doubleTest, doub);
 
-    Collection<Integer> string =
-        getIntegerList("sr", "fieldFacets", "string_sd", "int", "percentile_20");
-    ArrayList<Integer> stringTest =
-        (ArrayList<Integer>) calculateStat(intStringTestStart, "perc_20");
-    Collections.sort(stringTest, Collections.reverseOrder());
+    List<Integer> string = getIntegerList("sr", "fieldFacets", "string_sd", "int", "percentile_20");
+    List<Integer> stringTest = (List<Integer>) calculateStat(intStringTestStart, "perc_20");
+    stringTest.sort(Collections.reverseOrder());
     assertEquals(getRawResponse(), stringTest, string);
   }
 }

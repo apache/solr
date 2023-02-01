@@ -1114,9 +1114,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     /** Don't use, use the convenience methods */
     public ModelRange(int lower, int upper) {
       if (lower < 0 || upper < 0) {
-        assert (lower < 0 && upper < lower);
+        assertTrue(lower < 0 && upper < lower);
       } else {
-        assert (lower <= upper);
+        assertTrue(lower <= upper);
       }
       this.lower = lower;
       this.upper = upper;

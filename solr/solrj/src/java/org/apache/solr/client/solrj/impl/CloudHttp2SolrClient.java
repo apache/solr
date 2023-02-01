@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 
@@ -62,6 +65,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.clientIsInternal = false;
       this.myClient = builder.httpClient;
     }
+    this.retryExpiryTime = builder.retryExpiryTime;
+    if (builder.requestWriter != null) {
+      this.myClient.requestWriter = builder.requestWriter;
+    }
+    if (builder.responseParser != null) {
+      this.myClient.parser = builder.responseParser;
+    }
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.solrUrls != null) {
         throw new IllegalArgumentException(
@@ -87,7 +97,14 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-    this.lbClient = new LBHttp2SolrClient(myClient);
+
+    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
+
+    //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
+    // locks.
+    this.locks = objectList(builder.parallelCacheRefreshesLocks);
+
+    this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
 
   @Override
@@ -102,6 +119,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     super.close();
   }
 
+  @Override
   public LBHttp2SolrClient getLbClient() {
     return lbClient;
   }
@@ -131,6 +149,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
     protected Http2SolrClient.Builder internalClientBuilder;
+    private RequestWriter requestWriter;
+    private ResponseParser responseParser;
+    private long retryExpiryTime =
+        TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+    private int timeToLiveSeconds = 60;
+    private int parallelCacheRefreshesLocks = 3;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -183,11 +207,38 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>true</code>.
+     *
+     * @see #sendUpdatesToAnyReplica
+     * @see CloudSolrClient#isUpdatesToLeaders
+     */
+    public Builder sendUpdatesOnlyToShardLeaders() {
+      shardLeadersOnly = true;
+      return this;
+    }
+
+    /**
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>false</code>.
+     *
+     * @see #sendUpdatesOnlyToShardLeaders
+     * @see CloudSolrClient#isUpdatesToLeaders
+     */
+    public Builder sendUpdatesToAnyReplica() {
+      shardLeadersOnly = false;
+      return this;
+    }
+
+    /**
      * Tells {@link CloudHttp2SolrClient.Builder} that created clients should send direct updates to
      * shard leaders only.
      *
      * <p>UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a
      * {@link SolrException}
+     *
+     * @see #sendDirectUpdatesToAnyShardReplica
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
@@ -200,9 +251,24 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      *
      * <p>Shard leaders are still preferred, but the created clients will fallback to using other
      * replicas if a leader cannot be found.
+     *
+     * @see #sendDirectUpdatesToShardLeadersOnly
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
+      return this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
       return this;
     }
 
@@ -218,6 +284,36 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
+      return this;
+    }
+
+    /**
+     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
+     * number of locks.
+     *
+     * <p>Defaults to 3.
+     */
+    public Builder setParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
+      this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
+      return this;
+    }
+
+    /**
+     * This is the time to wait to refetch the state after getting the same state version from ZK
+     */
+    public Builder setRetryExpiryTime(int secs) {
+      this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+      return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param timeToLiveSeconds ttl value in seconds
+     */
+    public Builder withCollectionCacheTtl(int timeToLiveSeconds) {
+      assert timeToLiveSeconds > 0;
+      this.timeToLiveSeconds = timeToLiveSeconds;
       return this;
     }
 

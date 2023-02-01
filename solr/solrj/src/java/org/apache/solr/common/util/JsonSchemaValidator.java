@@ -17,11 +17,11 @@
 
 package org.apache.solr.common.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class JsonSchemaValidator {
   }
 
   public JsonSchemaValidator(Map<?, ?> jsonSchema) {
-    this.validators = new LinkedList<>();
+    this.validators = new ArrayList<>();
     for (Map.Entry<?, ?> entry : jsonSchema.entrySet()) {
       Object fname = entry.getKey();
       if (KNOWN_FNAMES.contains(fname.toString())) continue;
@@ -82,7 +82,7 @@ public class JsonSchemaValidator {
   }
 
   public List<String> validateJson(Object data) {
-    List<String> errs = new LinkedList<>();
+    List<String> errs = new ArrayList<>();
     validate(data, errs);
     return errs.isEmpty() ? null : errs;
   }
@@ -150,7 +150,7 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
-  Class<?> type;
+  final Class<?> type;
 
   Type(Class<?> type) {
     this.type = type;

@@ -38,3 +38,9 @@ teardown() {
   assert_output --partial '"RESPONSE_TIME":'
   refute_output --partial '"EXCEPTION"'
 }
+
+@test "icu collation in analysis-extras module" {
+  run solr start -c -Dsolr.modules=analysis-extras
+  run solr create_collection -c COLL_NAME -d test/analysis_extras_config/conf
+  assert_output --partial "Created collection 'COLL_NAME'"
+}

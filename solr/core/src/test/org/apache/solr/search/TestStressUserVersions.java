@@ -314,7 +314,7 @@ public class TestStressUserVersions extends TestRTGBase {
                           || (foundVer == info.version
                               && foundVal != info.val)) { // if the version matches, the val must
                         log.error("ERROR, id={} found={} model {}", id, response, info);
-                        assertTrue(false);
+                        fail();
                       }
                     } else {
                       // if the doc is deleted (via tombstone), it shouldn't have a value on it.
@@ -322,7 +322,7 @@ public class TestStressUserVersions extends TestRTGBase {
 
                       if (foundVer < Math.abs(info.version)) {
                         log.error("ERROR, id={} found={} model {}", id, response, info);
-                        assertTrue(false);
+                        fail();
                       }
                     }
                   }

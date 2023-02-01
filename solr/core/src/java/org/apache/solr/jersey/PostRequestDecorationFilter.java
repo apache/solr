@@ -45,6 +45,9 @@ public class PostRequestDecorationFilter implements ContainerResponseFilter {
   public void filter(
       ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
+    if (requestContext.getPropertyNames().contains(RequestContextKeys.NOT_FOUND_FLAG)) {
+      return;
+    }
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
     if (!responseContext.hasEntity()

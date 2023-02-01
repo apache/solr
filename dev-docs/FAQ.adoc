@@ -19,31 +19,9 @@ branch to avoid extra mailing list traffic etc.
 Periodically review https://github.com/apache/solr/branches/all to see if you have
 created a branch that can be deleted.
 
-=== Running Solr in Docker
+=== How do I run Solr in Docker?
 
-You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
-
-To run Solr in a container and expose the Solr port, run:
-
-`docker run -p 8983:8983 solr`
-
-In order to start Solr in cloud mode, run the following.
-
-`docker run -p 8983:8983 solr solr-fg -c`
-
-For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).
-Up to date documentation for running locally built images of this branch can be found in the [local reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
-
-There is also a gradle task for building custom Solr images from your local checkout.
-These local images are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
-This can be useful for testing out local changes as well as creating custom images for yourself or your organization.
-The task will output the image name to use at the end of the build.
-
-`./gradlew docker`
-
-For more info on building an image, run:
-
-`./gradlew helpDocker`
+You can review instructions for running Solr in Docker in the xref:running-in-docker.adoc[Running in Docker developer doc].
 
 === Whats the fastest build lifecycle for frontend work on Solr Admin?
 
@@ -51,3 +29,41 @@ Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
 via `bin/solr start -e cloud -noprompt` and then as you make changes to assets in `/solr/webapp/web`,
 run `gradle dev` to redeploy the web assets. Do a  hard refresh in your browser
 to pick up your changes.
+
+=== How do we ensure coding standards and quality?
+
+We use a number of tools for ensuring that Solr's codebase follows our community standards.
+The most important tool is the very rich testing infrastructure that Solr enjoys.
+We strive for testing of every aspect of Solr.
+If you find a bug, write a test demonstrating it, so we can ensure that once the bug is squashed, it stays squashed.
+
+Beyond testing, we also have some tools for ensuring coding standards are followed.
+https://github.com/diffplug/spotless[Spotless] is used to format the Java source code so that everyone uses the same formatting patterns.
+Run Spotless via:
+
+`./gradlew tidy`
+
+Learn more via `./gradlew :helpFormatting`.
+
+The Eclipse IDE's linting tool ECJ is applied as part of the `check` task.
+
+https://errorprone.info/[Error Prone] goes beyond static type checking and recommends fixes for common bug patterns.
+Error Prone is run during the CI build on Jenkins, however to run it locally (and skip the tests) do:
+
+`./gradlew check -Pvalidation.errorprone=true -x test`
+
+In the same space as Errorprone is https://lift.sonatype.com/[Sonatype Lift], an automated code reviewer that is run when you push your PR to Github.
+As with human reviewers, it's a good practice to respond to each comment to reflect on the recommendation.
+Of course, automated code analysis will turn up false-positives.
+Tip: There is no point in responding to Lift with the ignore command because we don't gate PRs on Lift.
+
+There are Java classes and methods that Solr doesn't allow.
+This exclusion is enforced by the https://github.com/policeman-tools/forbidden-apis[Forbidden APIs] tool and is applied as part of the `check` task.
+Learn more about using Forbidden APIs via `./gradlew :helpForbiddenApis`.
+
+To run a check for dependencies of Solr that have security vulnerabilities using the https://plugins.gradle.org/plugin/org.owasp.dependencycheck[OWASP] Gradle plugin.
+Run via:
+
+`./gradlew owasp`
+
+There are a number of other tasks that get run to validate the source code, and you can find them in the ./gradle/validation source tree.

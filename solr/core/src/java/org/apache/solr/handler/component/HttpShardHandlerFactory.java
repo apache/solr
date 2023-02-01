@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
@@ -287,7 +288,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .maxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -296,7 +297,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    clientBuilderPlugin.setup(defaultClient);
+    if (clientBuilderPlugin != null) {
+      clientBuilderPlugin.setup(defaultClient);
+    }
   }
 
   protected <T> T getParameter(
@@ -386,7 +389,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     }
   }
 
-  public Http2SolrClient getClient() {
+  public SolrClient getClient() {
     return defaultClient;
   }
 

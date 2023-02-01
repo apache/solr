@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,14 +93,14 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     Collection<Object> fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
-    assertThat(
+    MatcherAssert.assertThat(
         fieldValues, hasItems(vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2])));
-    assertThat(fieldValues, not(hasItems(vc.apply(values[3]))));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(vc.apply(values[3]))));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
-    assertThat(
+    MatcherAssert.assertThat(
         fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
-    assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
     getSolrClient()
         .add(sdoc("id", "20000", fieldName, ImmutableMap.of("remove", List.of(values[0]))));
@@ -114,13 +115,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
-    assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
+    MatcherAssert.assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
-    assertThat(
+    MatcherAssert.assertThat(
         fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
-    assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
     getSolrClient()
         .add(
@@ -140,12 +141,12 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
-    assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
+    MatcherAssert.assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
-    assertThat(fieldValues, hasItems(vc.apply(values[3])));
-    assertThat(
+    MatcherAssert.assertThat(fieldValues, hasItems(vc.apply(values[3])));
+    MatcherAssert.assertThat(
         fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]))));
 
     getSolrClient()
@@ -173,13 +174,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
-    assertThat(fieldValues, hasItems(vc.apply(values[0])));
-    assertThat(
+    MatcherAssert.assertThat(fieldValues, hasItems(vc.apply(values[0])));
+    MatcherAssert.assertThat(
         fieldValues, not(hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3]))));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
-    assertThat(fieldValues, hasItems(vc.apply(values[0])));
-    assertThat(
+    MatcherAssert.assertThat(fieldValues, hasItems(vc.apply(values[0])));
+    MatcherAssert.assertThat(
         fieldValues, not(hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3]))));
 
     getSolrClient()
@@ -206,13 +207,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(4, fieldValues.size());
-    assertThat(
+    MatcherAssert.assertThat(
         fieldValues,
         hasItems(
             vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(4, fieldValues.size());
-    assertThat(
+    MatcherAssert.assertThat(
         fieldValues,
         hasItems(
             vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
@@ -274,10 +275,10 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     Collection<Object> fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
 
     getSolrClient().add(sdoc("id", "20000", fieldName, ImmutableMap.of("remove", List.of(false))));
     getSolrClient().commit(true, true);
@@ -287,10 +288,10 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
-    assertThat(fieldValues, hasItems(true));
+    MatcherAssert.assertThat(fieldValues, hasItems(true));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
 
     getSolrClient()
         .add(sdoc("id", "20001", fieldName, ImmutableMap.of("remove", List.of(true, false))));
@@ -301,8 +302,8 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
-    assertThat(fieldValues, hasItems(true));
-    assertThat(fieldValues, not(hasItems(false)));
+    MatcherAssert.assertThat(fieldValues, hasItems(true));
+    MatcherAssert.assertThat(fieldValues, not(hasItems(false)));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertNull(fieldValues);
 
@@ -317,7 +318,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertNull(fieldValues);
 
@@ -333,10 +334,10 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
     fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
-    assertThat(fieldValues, hasItems(true, false));
+    MatcherAssert.assertThat(fieldValues, hasItems(true, false));
   }
 
   @Test

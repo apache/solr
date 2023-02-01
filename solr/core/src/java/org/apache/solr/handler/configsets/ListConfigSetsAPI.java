@@ -19,6 +19,7 @@ package org.apache.solr.handler.configsets;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -50,6 +51,9 @@ public class ListConfigSetsAPI extends JerseyResource {
 
   @GET
   @Produces({"application/json", "application/javabin"})
+  @Operation(
+      summary = "List the configsets available to Solr.",
+      tags = {"configset"})
   @PermissionName(CONFIG_READ_PERM)
   public ListConfigsetsResponse listConfigSet() throws Exception {
     final ListConfigsetsResponse response = instantiateJerseyResponse(ListConfigsetsResponse.class);

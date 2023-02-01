@@ -141,7 +141,7 @@ public class TestInjection {
 
   public static volatile String wrongIndexFingerprint = null;
 
-  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<>());
 
   private static volatile AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 

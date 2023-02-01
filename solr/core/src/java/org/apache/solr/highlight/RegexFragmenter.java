@@ -16,6 +16,7 @@
  */
 package org.apache.solr.highlight;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.NullFragmenter;
@@ -75,7 +76,8 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
         params.getFieldParam(
             fieldName, HighlightParams.PATTERN, LuceneRegexFragmenter.DEFAULT_PATTERN_RAW);
 
-    Pattern p = rawpat == defaultPatternRaw ? defaultPattern : Pattern.compile(rawpat);
+    Pattern p =
+        Objects.equals(rawpat, defaultPatternRaw) ? defaultPattern : Pattern.compile(rawpat);
 
     if (fragsize <= 0) {
       return new NullFragmenter();

@@ -22,7 +22,11 @@ description = 'Prometheus exporter for exposing metrics from Solr using Metrics 
 
 dependencies {
   implementation project(':solr:solrj')
-  implementation('org.apache.zookeeper:zookeeper') { transitive = false } // ideally remove ZK dep
+  runtimeOnly project(':solr:solrj-zookeeper')
+  // ideally remove ZK dep
+  implementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
 
   implementation ('io.prometheus:simpleclient')
   implementation ('io.prometheus:simpleclient_httpserver')
@@ -38,12 +42,10 @@ dependencies {
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
   runtimeOnly 'com.lmax:disruptor'
 
-  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
 
@@ -59,7 +61,7 @@ ext {
 task run(type: JavaExec) {
   group = 'application'
   description = 'Run the main class with JavaExecTask'
-  main = project.ext.mainClass
+  mainClass = project.ext.mainClass
   classpath = sourceSets.main.runtimeClasspath
   systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
   args = ["-f", "conf/solr-exporter-config.xml"]

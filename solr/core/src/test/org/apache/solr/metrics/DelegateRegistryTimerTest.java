@@ -17,18 +17,16 @@
 
 package org.apache.solr.metrics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class DelegateRegistryTimerTest {
+public class DelegateRegistryTimerTest extends SolrTestCase {
 
   MetricRegistry.MetricSupplier<Timer> timerSupplier =
       new MetricSuppliers.DefaultTimerSupplier(null);

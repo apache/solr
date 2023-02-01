@@ -91,7 +91,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   protected Map<String, CacheValue> byPathCache = new HashMap<>();
 
-  protected Map<Directory, CacheValue> byDirectoryCache = new IdentityHashMap<>();
+  protected IdentityHashMap<Directory, CacheValue> byDirectoryCache = new IdentityHashMap<>();
 
   protected Map<Directory, List<CloseListener>> closeListeners = new HashMap<>();
 

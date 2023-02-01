@@ -48,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -118,7 +119,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        filters = QueryUtils.parseFilterQueries(req, false);
+        filters = QueryUtils.parseFilterQueries(req);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -215,7 +216,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (mltDocs.docSet == null) {
           rsp.add("facet_counts", null);
         } else {
-          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params);
+          final ResponseBuilder responseBuilder =
+              new ResponseBuilder(req, rsp, Collections.emptyList());
+          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder);
+          FacetComponent.FacetContext.initContext(responseBuilder);
           rsp.add("facet_counts", FacetComponent.getFacetCounts(f));
         }
       }

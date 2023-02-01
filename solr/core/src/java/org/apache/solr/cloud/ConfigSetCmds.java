@@ -86,7 +86,7 @@ public class ConfigSetCmds {
     for (Map.Entry<String, Object> entry : message.getProperties().entrySet()) {
       if (entry.getKey().startsWith(CONFIG_SET_PROPERTY_PREFIX)) {
         if (properties == null) {
-          properties = new HashMap<String, Object>();
+          properties = new HashMap<>();
         }
         properties.put(
             entry.getKey().substring((CONFIG_SET_PROPERTY_PREFIX).length()), entry.getValue());

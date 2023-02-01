@@ -90,12 +90,12 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertEquals(fq_ac, fq_aa);
     assertEquals(fq_ac, fq_ab);
 
-    assertTrue(!fq_aa.equals(fq_zz));
-    assertTrue(!fq_ab.equals(fq_zz));
-    assertTrue(!fq_ac.equals(fq_zz));
-    assertTrue(!fq_zz.equals(fq_aa));
-    assertTrue(!fq_zz.equals(fq_ab));
-    assertTrue(!fq_zz.equals(fq_ac));
+    assertNotEquals(fq_aa, fq_zz);
+    assertNotEquals(fq_ab, fq_zz);
+    assertNotEquals(fq_ac, fq_zz);
+    assertNotEquals(fq_zz, fq_aa);
+    assertNotEquals(fq_zz, fq_ab);
+    assertNotEquals(fq_zz, fq_ac);
 
     List<Query> filters1 = Arrays.asList(fq_aa, fq_ab);
     List<Query> filters2 = Arrays.asList(fq_zz, fq_ac);
@@ -134,7 +134,6 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
         assertKeyNotEquals(aa, bb);
       }
     }
-    assert minIters <= iter;
   }
 
   public void testMinExactCount() {
@@ -166,8 +165,8 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
 
   /** does bi-directional check that the keys are <em>not</em> equals */
   public void assertKeyNotEquals(QueryResultKey key1, QueryResultKey key2) {
-    assertTrue(!key1.equals(key2));
-    assertTrue(!key2.equals(key1));
+    assertNotEquals(key1, key2);
+    assertNotEquals(key2, key1);
   }
 
   /**

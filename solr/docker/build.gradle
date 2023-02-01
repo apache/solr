@@ -24,13 +24,13 @@ description = 'Solr Docker image'
 apply plugin: 'base'
 
 // Solr Docker inputs
-def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
-def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
-def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
-def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre')
-def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
+def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
+def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version) }"
+def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}") }"
+def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-focal') }"
+def officialDockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}") }"
 
-def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
+def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
 
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
@@ -138,9 +138,9 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
     exec {
       standardInput = configurations.solrTgz.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr-${version}/docker/Dockerfile",
+              "-f", "solr-${ -> project.version }/docker/Dockerfile",
               "--iidfile", imageIdFile,
-              "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
+              "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
               "-"
     }
   }
@@ -149,9 +149,9 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
   doLast {
     def dockerImageId = file(imageIdFile).text
     project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tID: \t$dockerImageId")
-    project.logger.lifecycle("\tBase Image: \t$baseDockerImage")
-    project.logger.lifecycle("\tSolr Version: \t$version")
+    project.logger.lifecycle("\tID: \t${ -> dockerImageId }")
+    project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
+    project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
   }
 
   outputs.files(imageIdFile)
@@ -272,7 +272,7 @@ ext {
 
       // NOTE: SHA is lazy computed...
       'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrTgz.singleFile) }",
-      'RELEASE_MANAGER_GPG_FINGERPRINT': "${releaseGpgFingerprint}"
+      'RELEASE_MANAGER_GPG_FINGERPRINT': "${ -> releaseGpgFingerprint}"
     ]
   ]
 }
@@ -292,15 +292,17 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
   def outFile = file("$dockerfilesDirPath/${fileName}")
   
-  def props = [
-    // Values defined here should be common (and consistent) across both Dockerfiles
-    'BASE_IMAGE': baseDockerImage,
-    'SOLR_VERSION': version,
-    * : details.props
-  ]
+
   tasks.create("createDockerfile${details.name}", Copy) {
     description "Creates ${details.desc}"
-    
+
+    def props = [
+          // Values defined here should be common (and consistent) across both Dockerfiles
+          'BASE_IMAGE': baseDockerImage,
+          'SOLR_VERSION': "${ -> project.version}",
+          * : details.props
+      ]
+
     dependsOn tasks.createBodySnippetDockerfile
     inputs.properties(props)
     inputs.file("$buildDir/snippets/Dockerfile.body.snippet")
@@ -408,8 +410,8 @@ task testBuildDockerfileOfficial(type: Copy) {
             '--add-host', "mock-solr-dl-server:${mockServerIp}",
             '--no-cache', // force fresh downloads from our current network
             "--iidfile", imageIdFileOfficial,
-            '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
+            '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${ -> project.version}.tgz",
+            '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${ -> project.version}.tgz",
             '--tag', officialDockerImageName,
             '-'
         }

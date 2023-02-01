@@ -16,21 +16,20 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Arrays;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SolrInputDocumentReaderTest {
+public class SolrInputDocumentReaderTest extends SolrTestCase {
   private SolrInputDocument doc;
   private String[] allFields;
 
+  @Override
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     doc = new SolrInputDocument();
     doc.addField("f1", "a b c");
     doc.addField("f2", "multi");

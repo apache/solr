@@ -25,9 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
@@ -70,20 +67,13 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
         // We have to close this to flush OutputStreamWriter buffer
         out =
             new OutputStreamWriter(
-                new CloseShieldOutputStream(response.getOutputStream()), StandardCharsets.UTF_8);
+                CloseShieldOutputStream.wrap(response.getOutputStream()), StandardCharsets.UTF_8);
 
-        String html = IOUtils.toString(in, "UTF-8");
         Package pack = SolrCore.class.getPackage();
-
-        String[] search = new String[] {"${contextPath}", "${adminPath}", "${version}"};
-        String[] replace =
-            new String[] {
-              StringEscapeUtils.escapeEcmaScript(request.getContextPath()),
-              StringEscapeUtils.escapeEcmaScript(CommonParams.CORES_HANDLER_PATH),
-              StringEscapeUtils.escapeEcmaScript(pack.getSpecificationVersion())
-            };
-
-        out.write(StringUtils.replaceEach(html, search, replace));
+        String html =
+            IOUtils.toString(in, StandardCharsets.UTF_8)
+                .replace("${version}", pack.getSpecificationVersion());
+        out.write(html);
       } finally {
         IOUtils.closeQuietly(in);
         IOUtils.closeQuietly(out);

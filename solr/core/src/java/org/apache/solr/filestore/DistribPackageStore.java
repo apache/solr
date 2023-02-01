@@ -72,16 +72,16 @@ public class DistribPackageStore implements PackageStore {
   private final CoreContainer coreContainer;
   private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
 
-  private final Path solrhome;
+  private final Path solrHome;
 
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    this.solrhome = Paths.get(this.coreContainer.getSolrHome());
+    this.solrHome = Paths.get(this.coreContainer.getSolrHome());
   }
 
   @Override
   public Path getRealpath(String path) {
-    return _getRealPath(path, solrhome);
+    return _getRealPath(path, solrHome);
   }
 
   private static Path _getRealPath(String path, Path solrHome) {
@@ -127,7 +127,7 @@ public class DistribPackageStore implements PackageStore {
       synchronized (DistribPackageStore.this) {
         this.metaData = meta;
         this.fileData = data;
-        _persistToFile(solrhome, path, data, meta);
+        _persistToFile(solrHome, path, data, meta);
         if (log.isInfoEnabled()) {
           log.info(
               "persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
@@ -627,13 +627,13 @@ public class DistribPackageStore implements PackageStore {
 
   @Override
   public Map<String, byte[]> getKeys() throws IOException {
-    return _getKeys(solrhome);
+    return _getKeys(solrHome);
   }
 
   // reads local keys file
-  private static Map<String, byte[]> _getKeys(Path solrhome) throws IOException {
+  private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
-    Path keysDir = _getRealPath(PackageStoreAPI.KEYS_DIR, solrhome);
+    Path keysDir = _getRealPath(PackageStoreAPI.KEYS_DIR, solrHome);
 
     File[] keyFiles = keysDir.toFile().listFiles();
     if (keyFiles == null) return result;

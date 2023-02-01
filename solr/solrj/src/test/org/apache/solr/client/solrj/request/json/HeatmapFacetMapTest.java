@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
@@ -32,7 +33,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -50,7 +51,8 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
               new HeatmapFacetMap("ANY_FIELD_NAME")
                   .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME"));
             });
-    assertThat(thrown.getMessage(), containsString("doesn't currently support subfacets"));
+    MatcherAssert.assertThat(
+        thrown.getMessage(), containsString("doesn't currently support subfacets"));
   }
 
   @Test
@@ -61,7 +63,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap("ANY_FIELD_NAME").setRegionQuery(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -79,7 +81,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap("ANY_FIELD_NAME").setGridLevel(0);
             });
-    assertThat(thrown.getMessage(), containsString("must be a positive integer"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
   @Test
@@ -96,7 +98,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap("ANY_FIELD_NAME").setDistErr(-1.0);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-negative"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
@@ -113,7 +115,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap("ANY_FIELD_NAME").setDistErrPct(2.0);
             });
-    assertThat(thrown.getMessage(), containsString("must be between 0.0 and 1.0"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be between 0.0 and 1.0"));
   }
 
   @Test
@@ -130,7 +132,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new HeatmapFacetMap("ANY_FIELD_NAME").setHeatmapFormat(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test

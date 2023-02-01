@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,11 +42,14 @@ import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final String[] BASEPARMS =
       new String[] {"q", "*:*", "indent", "true", "olap", "true", "rows", "0"};
@@ -140,12 +144,8 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
           return val;
       }
     } catch (Exception e) {
-      e.printStackTrace();
-      fail(
-          "Caught exception in getStatResult, xPath = "
-              + sb.toString()
-              + " \nraw data: "
-              + rawResponse);
+      log.error("Caught exception in getStatResult", e);
+      fail("Caught exception in getStatResult, xPath = " + sb + " \nraw data: " + rawResponse);
     }
     fail("Unknown type used in getStatResult");
     return null; // Really can't get here, but the compiler thinks we can!

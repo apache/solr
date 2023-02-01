@@ -75,8 +75,8 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     String roleName = message.getStr("role");
-    boolean nodeExists = false;
-    if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
+    boolean nodeExists = zkClient.exists(ZkStateReader.ROLES, true);
+    if (nodeExists) {
       @SuppressWarnings("unchecked")
       Map<String, List<String>> tmp =
           (Map<String, List<String>>)

@@ -85,5 +85,6 @@ RUN set -ex; \
   { command -v gpgconf; gpgconf --kill all || :; }; \
   rm -r "$GNUPGHOME"; \
   tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz"; \
-  rm "/opt/solr-$SOLR_VERSION.tgz"*;
+  rm "/opt/solr-$SOLR_VERSION.tgz"*; \
+  apt-get -y remove gpg dirmngr && apt-get -y autoremove;
 

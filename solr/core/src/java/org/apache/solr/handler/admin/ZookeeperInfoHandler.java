@@ -29,7 +29,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -249,6 +248,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           + (filter != null ? filter : "");
     }
 
+    @Override
     public String toString() {
       return getPagingHeader();
     }
@@ -287,7 +287,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
-        Collections.sort(cachedCollections, this);
+        cachedCollections.sort(this);
       }
 
       return cachedCollections;

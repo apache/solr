@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -31,7 +32,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -124,28 +124,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               .getClusterState()
               .getCollection(collection)
               .getSlice(shardId)
-              .getReplicas()
-              .size()
+              .getNumLeaderReplicas()
           > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually
         // more than one replica.
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.LEADER.toLower(),
-                ZkStateReader.SHARD_ID_PROP,
-                shardId,
-                ZkStateReader.COLLECTION_PROP,
-                collection);
-
+        MapWriter m =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower())
+                    .put(ZkStateReader.SHARD_ID_PROP, shardId)
+                    .put(ZkStateReader.COLLECTION_PROP, collection);
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader,
-              m,
+              new ZkNodeProps(m),
               zkController.getSolrCloudManager(),
               zkStateReader);
         } else {
-          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+          zkController.getOverseer().getStateUpdateQueue().offer(m);
         }
       }
 

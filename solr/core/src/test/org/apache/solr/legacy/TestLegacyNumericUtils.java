@@ -224,9 +224,10 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check forward and back conversion
     for (int i = 0; i < vals.length; i++) {
       longVals[i] = NumericUtils.doubleToSortableLong(vals[i]);
-      assertTrue(
+      assertEquals(
           "forward and back conversion should generate same double",
-          Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i])) == 0);
+          0,
+          Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i])));
     }
 
     // check sort order (prefixVals should be ascending)
@@ -264,7 +265,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         new float[] {
           Float.NEGATIVE_INFINITY,
           -2.3E25f,
-          -1.0E15f,
+          -9.9999999E+14f,
           -1.0f,
           -1.0E-1f,
           -1.0E-2f,
@@ -273,7 +274,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
           1.0E-2f,
           1.0E-1f,
           1.0f,
-          1.0E15f,
+          9.9999999E+14f,
           2.3E25f,
           Float.POSITIVE_INFINITY,
           Float.NaN
@@ -283,9 +284,10 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check forward and back conversion
     for (int i = 0; i < vals.length; i++) {
       intVals[i] = NumericUtils.floatToSortableInt(vals[i]);
-      assertTrue(
+      assertEquals(
           "forward and back conversion should generate same double",
-          Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i])) == 0);
+          0,
+          Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i])));
     }
 
     // check sort order (prefixVals should be ascending)

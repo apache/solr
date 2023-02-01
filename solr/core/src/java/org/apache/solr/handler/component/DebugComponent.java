@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.lucene.search.Query;
@@ -41,6 +42,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Adds debugging information to a request.
@@ -219,12 +221,13 @@ public class DebugComponent extends SearchComponent {
             continue;
           }
           NamedList<Object> sdebug =
-              (NamedList<Object>) srsp.getSolrResponse().getResponse().get("debug");
+              (NamedList<Object>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "debug", true);
 
           info = (NamedList<Object>) merge(sdebug, info, EXCLUDE_SET);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
-            if (rb.isDebugResults()) {
+            if (rb.isDebugResults() && sdebug != null) {
               NamedList<Object> sexplain = (NamedList<Object>) sdebug.get("explain");
               SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
@@ -336,7 +339,7 @@ public class DebugComponent extends SearchComponent {
         // optimize case where elements are in same position
         if (i < dl.size()) {
           String dkey = dl.getName(i);
-          if (skey == dkey || (skey != null && skey.equals(dkey))) {
+          if (Objects.equals(skey, dkey)) {
             didx = i;
           }
         }

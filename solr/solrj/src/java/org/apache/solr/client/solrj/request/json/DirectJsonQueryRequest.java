@@ -47,6 +47,7 @@ public class DirectJsonQueryRequest extends QueryRequest {
     this.jsonString = jsonString;
   }
 
+  @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.StringPayloadContentWriter(jsonString, ClientUtils.TEXT_JSON);
   }

@@ -38,26 +38,32 @@ class FloatValue implements SortValue {
     this.present = false;
   }
 
+  @Override
   public Object getCurrentValue() {
     assert present == true;
     return currentValue;
   }
 
+  @Override
   public void toGlobalValue(SortValue previousValue) {}
 
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public FloatValue copy() {
     return new FloatValue(field, comp);
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
       throw new AssertionError(
@@ -82,17 +88,20 @@ class FloatValue implements SortValue {
     return present;
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
     FloatValue fv = (FloatValue) sv;
     this.currentValue = fv.currentValue;
     this.present = fv.present;
   }
 
+  @Override
   public void reset() {
     this.currentValue = comp.resetValue();
     this.present = false;
   }
 
+  @Override
   public int compareTo(SortValue o) {
     FloatValue fv = (FloatValue) o;
     return comp.compare(currentValue, fv.currentValue);

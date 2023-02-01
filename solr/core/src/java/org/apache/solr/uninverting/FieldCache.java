@@ -81,6 +81,7 @@ public interface FieldCache {
    * <p>This abstraction can be cleaned up when Parser.termsEnum is removed.
    */
   public abstract class PointParser implements Parser {
+    @Override
     public final TermsEnum termsEnum(Terms terms) throws IOException {
       throw new UnsupportedOperationException("makes no sense for parsing points");
     }

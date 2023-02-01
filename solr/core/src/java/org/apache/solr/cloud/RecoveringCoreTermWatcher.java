@@ -76,10 +76,9 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof RecoveringCoreTermWatcher)) return false;
 
     RecoveringCoreTermWatcher that = (RecoveringCoreTermWatcher) o;
-
     return coreDescriptor.getName().equals(that.coreDescriptor.getName());
   }
 

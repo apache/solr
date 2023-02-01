@@ -19,14 +19,11 @@ package org.apache.solr.util;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -34,24 +31,19 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_DOCS = 20;
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @BeforeClass
   public static void setUpClass() throws Exception {
@@ -84,11 +76,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testCBAlwaysTrips() {
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
-
     removeAllExistingCircuitBreakers();
 
     PluginInfo pluginInfo =
@@ -109,11 +96,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testCBFakeMemoryPressure() {
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
-
     removeAllExistingCircuitBreakers();
 
     PluginInfo pluginInfo =
@@ -135,10 +117,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   public void testBuildingMemoryPressure() {
     ExecutorService executor =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TestCircuitBreaker"));
-    HashMap<String, String> args = new HashMap<String, String>();
-
-    args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
-    args.put(CommonParams.FL, "id");
 
     AtomicInteger failureCount = new AtomicInteger();
 
@@ -164,7 +142,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
                   try {
                     h.query(req("name:\"john smith\""));
                   } catch (SolrException e) {
-                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
+                    MatcherAssert.assertThat(
+                        e.getMessage(), containsString("Circuit Breakers tripped"));
                     failureCount.incrementAndGet();
                   } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
@@ -181,20 +160,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           throw new RuntimeException(e.getMessage());
         }
       }
-
-      executor.shutdown();
-      try {
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e.getMessage());
-      }
-
-      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
     } finally {
-      if (!executor.isShutdown()) {
-        executor.shutdown();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
     }
   }
 
@@ -224,7 +192,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
                   try {
                     h.query(req("name:\"john smith\""));
                   } catch (SolrException e) {
-                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
+                    MatcherAssert.assertThat(
+                        e.getMessage(), containsString("Circuit Breakers tripped"));
                     failureCount.incrementAndGet();
                   } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
@@ -241,20 +210,9 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
           throw new RuntimeException(e.getMessage());
         }
       }
-
-      executor.shutdown();
-      try {
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e.getMessage());
-      }
-
-      assertEquals("Number of failed queries is not correct", 5, failureCount.get());
     } finally {
-      if (!executor.isShutdown()) {
-        executor.shutdown();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      assertEquals("Number of failed queries is not correct", 5, failureCount.get());
     }
   }
 

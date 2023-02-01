@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.sql.functions;
 
-import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -61,7 +60,7 @@ public abstract class ArrayContains extends SqlFunction {
       } else if (operand2.getKind() == SqlKind.ROW) {
         SqlBasicCall valuesCall = (SqlBasicCall) operand2;
         boolean literalMatch =
-            Arrays.stream(valuesCall.getOperands()).allMatch(op -> op.getKind() == SqlKind.LITERAL);
+            valuesCall.getOperandList().stream().allMatch(op -> op.getKind() == SqlKind.LITERAL);
         if (literalMatch) {
           return true;
         }

@@ -19,8 +19,7 @@ package org.apache.solr.internal.csv;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * CSVParserTest
@@ -30,7 +29,7 @@ import junit.framework.TestCase;
  * approach for fixing a potential bug (it's likely that the parser itself fails if the lexer has
  * problems...).
  */
-public class CSVParserTest extends TestCase {
+public class CSVParserTest extends SolrTestCase {
 
   /** TestCSVParser. */
   static class TestCSVParser extends CSVParser {
@@ -218,10 +217,10 @@ public class CSVParserTest extends TestCase {
     String[] tmp = null;
     for (String[] re : res) {
       tmp = parser.getLine();
-      assertTrue(Arrays.equals(re, tmp));
+      assertArrayEquals(re, tmp);
     }
     tmp = parser.getLine();
-    assertTrue(tmp == null);
+    assertNull(tmp);
   }
 
   public void testNextValue() throws IOException {
@@ -234,7 +233,7 @@ public class CSVParserTest extends TestCase {
       }
     }
     tmp = parser.nextValue();
-    assertTrue(tmp == null);
+    assertNull(tmp);
   }
 
   public void testGetAllValues() throws IOException {
@@ -243,7 +242,7 @@ public class CSVParserTest extends TestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertTrue(Arrays.equals(res[i], tmp[i]));
+      assertArrayEquals(res[i], tmp[i]);
     }
   }
 
@@ -263,7 +262,7 @@ public class CSVParserTest extends TestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertTrue(Arrays.equals(res[i], tmp[i]));
+      assertArrayEquals(res[i], tmp[i]);
     }
   }
 
@@ -281,7 +280,7 @@ public class CSVParserTest extends TestCase {
     assertEquals(res.length, tmp.length);
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertTrue(Arrays.equals(res[i], tmp[i]));
+      assertArrayEquals(res[i], tmp[i]);
     }
   }
 
@@ -307,7 +306,7 @@ public class CSVParserTest extends TestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertTrue(Arrays.equals(res[i], tmp[i]));
+        assertArrayEquals(res[i], tmp[i]);
       }
     }
   }
@@ -334,7 +333,7 @@ public class CSVParserTest extends TestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertTrue(Arrays.equals(res[i], tmp[i]));
+        assertArrayEquals(res[i], tmp[i]);
       }
     }
   }
@@ -354,7 +353,7 @@ public class CSVParserTest extends TestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertTrue(Arrays.equals(res[i], tmp[i]));
+        assertArrayEquals(res[i], tmp[i]);
       }
     }
   }
@@ -372,7 +371,7 @@ public class CSVParserTest extends TestCase {
       assertEquals(res.length, tmp.length);
       assertTrue(tmp.length > 0);
       for (int i = 0; i < res.length; i++) {
-        assertTrue(Arrays.equals(res[i], tmp[i]));
+        assertArrayEquals(res[i], tmp[i]);
       }
     }
   }
@@ -416,7 +415,7 @@ public class CSVParserTest extends TestCase {
     String[][] tmp = parser.getAllValues();
     assertTrue(tmp.length > 0);
     for (int i = 0; i < res.length; i++) {
-      assertTrue(Arrays.equals(res[i], tmp[i]));
+      assertArrayEquals(res[i], tmp[i]);
     }
   }
 
@@ -455,7 +454,7 @@ public class CSVParserTest extends TestCase {
     assertTrue(tmp.length > 0);
 
     if (!CSVPrinterTest.equals(res, tmp)) {
-      assertTrue(false);
+      fail();
     }
   }
 
@@ -481,7 +480,7 @@ public class CSVParserTest extends TestCase {
     assertTrue(tmp.length > 0);
 
     if (!CSVPrinterTest.equals(res, tmp)) {
-      assertTrue(false);
+      fail();
     }
 
     String[][] res_comments = {
@@ -495,7 +494,7 @@ public class CSVParserTest extends TestCase {
     tmp = parser.getAllValues();
 
     if (!CSVPrinterTest.equals(res_comments, tmp)) {
-      assertTrue(false);
+      fail();
     }
   }
 
@@ -542,7 +541,7 @@ public class CSVParserTest extends TestCase {
     parser = new CSVParser(new StringReader(code));
     CSVParser parser1 = new CSVParser(new StringReader(code));
     for (String[] datum : data) {
-      assertTrue(Arrays.equals(parser1.getLine(), datum));
+      assertArrayEquals(parser1.getLine(), datum);
       for (String d : datum) {
         assertEquals(parser.nextValue(), d);
       }

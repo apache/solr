@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -509,7 +508,7 @@ public class SolrDocumentFetcher {
                   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
                     Objects.requireNonNull(value, "String value should not be null");
                     bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
-                    bytesRef.length = value.length();
+                    bytesRef.length = bytesRef.bytes.length;
                     done = true;
                   }
 
@@ -635,7 +634,7 @@ public class SolrDocumentFetcher {
       case SORTED_SET:
         final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
         if (values != null && values.getValueCount() > 0 && values.advance(localId) == localId) {
-          final List<Object> outValues = new LinkedList<>();
+          final List<Object> outValues = new ArrayList<>();
           for (long ord = values.nextOrd();
               ord != SortedSetDocValues.NO_MORE_ORDS;
               ord = values.nextOrd()) {

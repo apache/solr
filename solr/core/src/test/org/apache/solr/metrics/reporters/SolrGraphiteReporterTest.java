@@ -98,6 +98,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       stop = false;
     }
 
+    @Override
     public void run() {
       while (!stop) {
         try {

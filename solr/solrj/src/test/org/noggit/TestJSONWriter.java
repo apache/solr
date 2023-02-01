@@ -44,7 +44,7 @@ public class TestJSONWriter extends SolrTestCaseJ4 {
   }
 
   public static Map<String, Object> O(Object... lst) {
-    LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+    LinkedHashMap<String, Object> map = new LinkedHashMap<>();
     for (int i = 0; i < lst.length; i += 2) {
       map.put(lst[i].toString(), lst[i + 1]);
     }
@@ -72,7 +72,7 @@ public class TestJSONWriter extends SolrTestCaseJ4 {
   public static class Custom implements JSONWriter.Writable {
     @Override
     public void write(JSONWriter writer) {
-      Map<String, Integer> val = new LinkedHashMap<String, Integer>();
+      Map<String, Integer> val = new LinkedHashMap<>();
       val.put("a", 1);
       val.put("b", 2);
       writer.write(val);

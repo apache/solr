@@ -571,7 +571,7 @@ This command will stop a specific daemon function and remove it from memory.
 
 === Continuous Pull Streaming
 
-The {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming.
+The {solr-javadocs}/solrj-streaming/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming.
 Sample code:
 
 [source,java]

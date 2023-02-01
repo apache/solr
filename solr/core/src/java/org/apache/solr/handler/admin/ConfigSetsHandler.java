@@ -200,6 +200,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return Category.ADMIN;
   }
 
+  @Override
   public Boolean registerV2() {
     return true;
   }

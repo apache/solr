@@ -17,13 +17,13 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.apache.solr.SolrTestCase;
 
 class MemWriter extends FastWriter {
-  public List<char[]> buffers = new LinkedList<>();
+  public List<char[]> buffers = new ArrayList<>();
 
   Random r;
 

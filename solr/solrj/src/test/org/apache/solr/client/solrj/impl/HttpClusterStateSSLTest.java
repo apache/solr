@@ -92,7 +92,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     }
 
     // http2
-    try (CloudHttp2SolrClient http2BasedClient =
+    try (CloudSolrClient http2BasedClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
             .build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();

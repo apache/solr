@@ -39,7 +39,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testProvidesBaseSolrUrlToClient() throws IOException {
     try (HttpSolrClient createdClient = new HttpSolrClient.Builder(ANY_BASE_SOLR_URL).build()) {
-      assertTrue(createdClient.getBaseURL().equals(ANY_BASE_SOLR_URL));
+      assertEquals(ANY_BASE_SOLR_URL, createdClient.getBaseURL());
     }
   }
 
@@ -47,7 +47,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   public void testProvidesHttpClientToClient() throws IOException {
     try (HttpSolrClient createdClient =
         new Builder(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
-      assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
+      assertEquals(createdClient.getHttpClient(), ANY_HTTP_CLIENT);
     }
   }
 
@@ -55,7 +55,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   public void testProvidesResponseParserToClient() throws IOException {
     try (HttpSolrClient createdClient =
         new Builder(ANY_BASE_SOLR_URL).withResponseParser(ANY_RESPONSE_PARSER).build()) {
-      assertTrue(createdClient.getParser().equals(ANY_RESPONSE_PARSER));
+      assertEquals(createdClient.getParser(), ANY_RESPONSE_PARSER);
     }
   }
 

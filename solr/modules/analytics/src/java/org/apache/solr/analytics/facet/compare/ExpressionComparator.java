@@ -31,6 +31,7 @@ public class ExpressionComparator<T extends Comparable<T>> extends FacetResultsC
     this.expression = expression;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public int compare(FacetBucket b1, FacetBucket b2) {
     T t1 = (T) b1.getResult(expression);

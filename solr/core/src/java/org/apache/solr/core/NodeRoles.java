@@ -36,7 +36,7 @@ public class NodeRoles {
   private Map<Role, String> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, String> roles = new EnumMap<Role, String>(Role.class);
+    Map<Role, String> roles = new EnumMap<>(Role.class);
     if (StringUtils.isEmpty(rolesString)) {
       rolesString = DEFAULT_ROLES_STRING;
     }

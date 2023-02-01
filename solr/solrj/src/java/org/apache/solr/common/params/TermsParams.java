@@ -76,7 +76,7 @@ public interface TermsParams {
 
   public static final String TERMS_REGEXP_FLAG = TERMS_REGEXP_STR + ".flag";
 
-  public static enum TermsRegexpFlag {
+  enum TermsRegexpFlag {
     UNIX_LINES(Pattern.UNIX_LINES),
     CASE_INSENSITIVE(Pattern.CASE_INSENSITIVE),
     COMMENTS(Pattern.COMMENTS),
@@ -86,7 +86,7 @@ public interface TermsParams {
     UNICODE_CASE(Pattern.UNICODE_CASE),
     CANON_EQ(Pattern.CANON_EQ);
 
-    int value;
+    final int value;
 
     TermsRegexpFlag(int value) {
       this.value = value;

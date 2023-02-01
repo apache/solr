@@ -191,7 +191,7 @@ public class ZkTestServer {
         String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
         Arrays.sort(
             maxKeys,
-            new Comparator<String>() {
+            new Comparator<>() {
               private final Comparator<Long> valComp = Comparator.<Long>naturalOrder().reversed();
 
               @Override
@@ -503,7 +503,7 @@ public class ZkTestServer {
         new SolrZkClient.Builder().url(getZkHost()).timeout(10000).build()) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
-      e.printStackTrace();
+      log.error("Error checking path {}", path, e);
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
     }
   }

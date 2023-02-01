@@ -609,7 +609,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     // TODO:  how do we make this into a 1-liner using "assertQ()" ???
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -627,8 +627,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     NamedList<?> values = rsp.getValues();
     NamedList<?> spellCheck = (NamedList<?>) values.get("spellcheck");
     NamedList<?> suggestions = (NamedList<?>) spellCheck.get("suggestions");
-    assertTrue(suggestions.get("suggestion") == null);
-    assertTrue((Boolean) spellCheck.get("correctlySpelled") == false);
+    assertNull(suggestions.get("suggestion"));
+    assertFalse((Boolean) spellCheck.get("correctlySpelled"));
 
     params.remove(SpellingParams.SPELLCHECK_DICT);
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
@@ -640,7 +640,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     values = rsp.getValues();
     spellCheck = (NamedList<?>) values.get("spellcheck");
     suggestions = (NamedList<?>) spellCheck.get("suggestions");
-    assertTrue(suggestions.get("suggestion") == null);
-    assertTrue((Boolean) spellCheck.get("correctlySpelled") == false);
+    assertNull(suggestions.get("suggestion"));
+    assertFalse((Boolean) spellCheck.get("correctlySpelled"));
   }
 }

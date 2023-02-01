@@ -20,6 +20,7 @@ package org.apache.solr.ltr.model;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
@@ -68,15 +69,10 @@ public abstract class WrapperModel extends AdapterModel {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof WrapperModel)) return false;
     WrapperModel other = (WrapperModel) obj;
-    if (model == null) {
-      if (other.model != null) return false;
-    } else if (!model.equals(other.model)) return false;
-    if (solrResourceLoader == null) {
-      if (other.solrResourceLoader != null) return false;
-    } else if (!solrResourceLoader.equals(other.solrResourceLoader)) return false;
-    return true;
+    return Objects.equals(model, other.model)
+        && Objects.equals(solrResourceLoader, other.solrResourceLoader);
   }
 
   public WrapperModel(

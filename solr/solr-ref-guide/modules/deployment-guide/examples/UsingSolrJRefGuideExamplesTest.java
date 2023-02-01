@@ -82,7 +82,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     expectedLines.clear();
     final SolrClient client = getSolrClient();
 
-    final List<TechProduct> products = new ArrayList<TechProduct>();
+    final List<TechProduct> products = new ArrayList<>();
     products.add(new TechProduct("1", "Fitbit Alta"));
     products.add(new TechProduct("2", "Sony Walkman"));
     products.add(new TechProduct("3", "Garmin GPS"));
@@ -112,7 +112,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     // tag::solrj-query-with-raw-solrparams[]
     final SolrClient client = getSolrClient();
 
-    final Map<String, String> queryParamMap = new HashMap<String, String>();
+    final Map<String, String> queryParamMap = new HashMap<>();
     queryParamMap.put("q", "*:*");
     queryParamMap.put("fl", "id, name");
     queryParamMap.put("sort", "id asc");

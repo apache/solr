@@ -46,6 +46,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       this.regex = regex;
     }
 
+    @Override
     public <T> void transform(List<T> choices) {
       log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();
@@ -110,7 +111,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
       final String name = "replica" + (ii + 1);
       final String url = urls.get(ii);
-      final Map<String, Object> propMap = new HashMap<String, Object>();
+      final Map<String, Object> propMap = new HashMap<>();
       propMap.put("base_url", url);
       propMap.put("core", "test_core");
       propMap.put("node_name", "test_node:80_");

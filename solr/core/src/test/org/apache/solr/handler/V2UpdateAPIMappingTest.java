@@ -17,9 +17,7 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.Maps;
@@ -27,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.util.CommandOperation;
@@ -39,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
-public class V2UpdateAPIMappingTest {
+public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
   private UpdateRequestHandler mockUpdateHandler;
 

@@ -25,7 +25,6 @@ import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,8 +79,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private String getDelegationToken(
-      final String renewer, final String user, HttpSolrClient solrClient) throws Exception {
+  private String getDelegationToken(final String renewer, final String user, SolrClient solrClient)
+      throws Exception {
     DelegationTokenRequest.Get get =
         new DelegationTokenRequest.Get(renewer) {
           @Override
@@ -95,7 +95,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private long renewDelegationToken(
-      final String token, final int expectedStatusCode, final String user, HttpSolrClient client)
+      final String token, final int expectedStatusCode, final String user, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Renew renew =
         new DelegationTokenRequest.Renew(token) {
@@ -123,7 +123,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void cancelDelegationToken(String token, int expectedStatusCode, HttpSolrClient client)
+  private void cancelDelegationToken(String token, int expectedStatusCode, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Cancel cancel = new DelegationTokenRequest.Cancel(token);
     try {

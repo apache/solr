@@ -59,7 +59,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
-            "conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+            "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     repositoryServer =
@@ -69,8 +69,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardown() throws Exception {
-    repositoryServer.stop();
-    System.clearProperty("enable.packages");
+    try {
+      if (repositoryServer != null) {
+        repositoryServer.stop();
+      }
+    } finally {
+      System.clearProperty("enable.packages");
+    }
   }
 
   @Test
@@ -98,7 +103,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf2", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 

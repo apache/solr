@@ -990,6 +990,7 @@ public class RawLocalFileSystem extends FileSystem {
    * @param opts Constraints that determine the validity of the
    *            {@link PathHandle} reference.
    */
+  @Override
   protected PathHandle createPathHandle(FileStatus stat,
       Options.HandleOpt... opts) {
     if (stat.isDirectory() || stat.isSymlink()) {

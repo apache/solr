@@ -356,7 +356,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   // This exception is not meant to escape this class it should be caught and wrapped.
-  private class NotACollectionException extends Exception {}
+  private static class NotACollectionException extends Exception {}
 
   @Override
   public String getQuorumHosts() {

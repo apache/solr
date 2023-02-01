@@ -16,10 +16,9 @@
  */
 package org.apache.solr.internal.csv;
 
-import junit.framework.TestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
-public class CharBufferTest extends TestCase {
+public class CharBufferTest extends SolrTestCaseJ4 {
   public void testCreate() {
     CharBuffer cb = new CharBuffer();
     assertEquals(0, cb.length());
@@ -63,9 +62,9 @@ public class CharBufferTest extends TestCase {
     }
   }
 
-  public void testAppendStringBuffer() {
+  public void testAppendStringBuilder() {
     CharBuffer cb = new CharBuffer(1);
-    StringBuffer abcd = new StringBuffer("abcd");
+    StringBuilder abcd = new StringBuilder("abcd");
     String expected = "";
     for (int i = 0; i < 10; i++) {
       cb.append(abcd);

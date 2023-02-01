@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 /**
@@ -85,7 +86,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
                   previous.createNext(Arrays.<Object>asList(buildRandomSortObjects(otherSort)));
             });
     assertEquals(500, e.code());
-    assertThat(e.getMessage(), containsString("sort values != sort length"));
+    MatcherAssert.assertThat(e.getMessage(), containsString("sort values != sort length"));
   }
 
   public void testInvalidUsage() {

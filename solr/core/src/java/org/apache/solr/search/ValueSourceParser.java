@@ -102,6 +102,7 @@ import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
+import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
@@ -274,16 +275,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             ValueSource a = fp.parseValueSource();
             ValueSource b = fp.parseValueSource();
-            return new DualFloatFunction(a, b) {
+            return new DualDoubleFunction(a, b) {
               @Override
               protected String name() {
                 return "mod";
               }
 
               @Override
-              protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              protected double func(int doc, FunctionValues aVals, FunctionValues bVals)
                   throws IOException {
-                return aVals.floatVal(doc) % bVals.floatVal(doc);
+                return aVals.doubleVal(doc) % bVals.doubleVal(doc);
               }
             };
           }
@@ -1585,7 +1586,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (LongConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof LongConstValueSource)) return false;
       LongConstValueSource other = (LongConstValueSource) o;
       return this.constant == other.constant;
     }
@@ -1738,7 +1739,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (this.getClass() != o.getClass()) return false;
+        if (!(o instanceof Function)) return false;
         Function other = (Function) o;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
@@ -1778,7 +1779,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (BoolConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof BoolConstValueSource)) return false;
       BoolConstValueSource other = (BoolConstValueSource) o;
       return this.constant == other.constant;
     }

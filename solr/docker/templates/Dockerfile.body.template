@@ -70,7 +70,7 @@ RUN set -ex; \
 
 RUN set -ex; \
     apt-get update; \
-    apt-get -y install acl dirmngr lsof procps wget netcat gosu tini jattach; \
+    apt-get -y install acl lsof procps wget netcat gosu tini jattach; \
     rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr

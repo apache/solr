@@ -75,8 +75,8 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
     public final Map<String, Integer> enumStringToIntMap;
     public final Map<Integer, String> enumIntToStringMap;
 
-    protected final String enumsConfigFile;
-    protected final String enumName;
+    private final String enumsConfigFile;
+    private final String enumName;
 
     /**
      * Takes in a FieldType and the initArgs Map used for that type, removing the keys that specify

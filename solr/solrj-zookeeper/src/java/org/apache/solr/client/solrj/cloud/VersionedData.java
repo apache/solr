@@ -82,7 +82,7 @@ public class VersionedData implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof VersionedData)) return false;
     VersionedData that = (VersionedData) o;
     return version == that.version
         && Arrays.equals(data, that.data)

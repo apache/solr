@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -220,18 +221,14 @@ public class FloatPayloadValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof FloatPayloadValueSource)) return false;
 
     FloatPayloadValueSource that = (FloatPayloadValueSource) o;
-
-    if (!indexedField.equals(that.indexedField)) return false;
-    if (indexedBytes != null ? !indexedBytes.equals(that.indexedBytes) : that.indexedBytes != null)
-      return false;
-    if (!decoder.equals(that.decoder)) return false;
-    if (payloadFunction != null
-        ? !payloadFunction.equals(that.payloadFunction)
-        : that.payloadFunction != null) return false;
-    return defaultValueSource.equals(that.defaultValueSource);
+    return Objects.equals(indexedField, that.indexedField)
+        && Objects.equals(indexedBytes, that.indexedBytes)
+        && Objects.equals(decoder, that.decoder)
+        && Objects.equals(payloadFunction, that.payloadFunction)
+        && Objects.equals(defaultValueSource, that.defaultValueSource);
   }
 
   @Override

@@ -15,8 +15,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<!-- Configuration for asynchronous logging -->
-<!--Configuration>
+<!-- We're configuring testing to be synchronous due to "logging polution", see SOLR-13268 -->
+<Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
@@ -28,34 +28,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
-    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
-    <AsyncLogger name="org.apache.directory" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-    <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
-
-    <AsyncRoot level="INFO">
-      <AppenderRef ref="STDERR"/>
-    </AsyncRoot>
-  </Loggers>
-</Configuration-->
-
-<!-- Configuration for synchronous logging
-     there _may_ be a very small window where log messages will not be flushed
-     to the log file on abnormal shutdown. If even this risk is unacceptable, use
-     the configuration below
--->
-<Configuration>
-  <Appenders>
-    <Console name="STDERR" target="SYSTEM_ERR">
-      <PatternLayout>
-        <Pattern>
-          %-4r %-5p (%t) [%notEmpty{n:%X{node_name}}%notEmpty{ c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}] %c{1.} %m%n
-        </Pattern>
-      </PatternLayout>
-    </Console>
-  </Appenders>
-  <Loggers>
+    <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
     <Logger name="org.apache.zookeeper" level="WARN"/>
     <Logger name="org.apache.hadoop" level="WARN"/>
     <Logger name="org.apache.directory" level="WARN"/>

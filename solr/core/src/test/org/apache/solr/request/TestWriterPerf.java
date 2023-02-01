@@ -202,9 +202,9 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     writerName = writerName.intern();
     for (int i = 0; i < decIter; i++) {
       ResponseParser rp = null;
-      if (writerName == "xml") {
+      if (writerName.equals("xml")) {
         rp = new XMLResponseParser();
-      } else if (writerName == "javabin") {
+      } else if (writerName.equals("javabin")) {
         rp = new BinaryResponseParser();
       } else {
         break;

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,15 +51,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   static final String COLLECTION = "dv_coll";
 
   static volatile List<FieldProps> fieldsToTestSingle = null;

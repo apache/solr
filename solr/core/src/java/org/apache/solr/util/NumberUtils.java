@@ -205,6 +205,6 @@ public class NumberUtils {
   public static int bytesToInt(byte[] bytes) {
     if (bytes == null) return 0;
     assert bytes.length == 4;
-    return bytes[0] << 24 | (bytes[1] & 255) << 16 | (bytes[2] & 255) << 8 | bytes[3] & 255;
+    return bytes[0] << 24 | (bytes[1] & 255) << 16 | (bytes[2] & 255) << 8 | (bytes[3] & 255);
   }
 }

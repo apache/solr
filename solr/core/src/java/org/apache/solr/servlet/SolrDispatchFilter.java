@@ -50,6 +50,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.security.AuditEvent;
@@ -94,7 +95,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private List<Pattern> excludePatterns;
 
-  public final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
   public HttpClient getHttpClient() {
     try {
@@ -119,7 +120,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     RETRY,
     ADMIN,
     REMOTEQUERY,
-    PROCESS
+    PROCESS,
+    ADMIN_OR_REMOTEQUERY
   }
 
   public SolrDispatchFilter() {}
@@ -264,6 +266,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         case ADMIN:
         case PROCESS:
         case REMOTEQUERY:
+        case ADMIN_OR_REMOTEQUERY:
         case RETURN:
           break;
       }

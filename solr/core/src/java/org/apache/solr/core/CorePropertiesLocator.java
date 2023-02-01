@@ -144,7 +144,7 @@ public class CorePropertiesLocator implements CoresLocator {
           this.rootDirectory,
           options,
           maxDepth,
-          new SimpleFileVisitor<Path>() {
+          new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {

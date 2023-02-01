@@ -161,7 +161,7 @@ public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTest
     }
     { // even w/o the long tail, we should have still asked shard2 to refine bbb0
       pivot = pivots.get(5);
-      assertTrue(pivot.toString(), pivot.getValue().equals("bbb0"));
+      assertEquals(pivot.toString(), "bbb0", pivot.getValue());
       assertEquals(pivot.toString(), 101, pivot.getCount());
       // basic check of refined stats
       FieldStatsInfo bbb0Stats = pivot.getFieldStatsInfo().get(STAT_FIELD);

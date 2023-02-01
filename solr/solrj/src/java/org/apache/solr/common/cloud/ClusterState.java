@@ -83,7 +83,7 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
-    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
+    this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
   }
 
   /**
@@ -94,13 +94,13 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the updated cluster state which preserves the current live nodes
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(new LinkedHashMap<>(collectionStates), liveNodes);
+    LinkedHashMap<String, CollectionRef> collections = new LinkedHashMap<>(collectionStates);
     if (collection == null) {
-      result.collectionStates.remove(collectionName);
+      collections.remove(collectionName);
     } else {
-      result.collectionStates.put(collectionName, new CollectionRef(collection));
+      collections.put(collectionName, new CollectionRef(collection));
     }
-    return result;
+    return new ClusterState(collections, liveNodes);
   }
 
   /**
@@ -317,8 +317,7 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof ClusterState)) return false;
     ClusterState other = (ClusterState) obj;
     if (liveNodes == null) {
       return other.liveNodes == null;

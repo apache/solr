@@ -17,11 +17,9 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,9 +29,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -48,7 +48,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 /** Unit tests for the v2 to v1 API mappings found in {@link ClusterAPI} */
-public class V2ClusterAPIMappingTest {
+public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private CollectionsHandler mockCollectionsHandler;
@@ -95,10 +95,10 @@ public class V2ClusterAPIMappingTest {
   }
 
   @Test
-  public void testListClusterAllParams() throws Exception {
+  public void testClusterStatusAllParams() throws Exception {
     final SolrParams v1Params = captureConvertedV1Params("/cluster", "GET", null);
 
-    assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
+    assertEquals(CollectionAction.CLUSTERSTATUS.lowerName, v1Params.get(ACTION));
   }
 
   @Test

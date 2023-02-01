@@ -1410,6 +1410,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -1436,6 +1437,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -1459,6 +1461,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       super(CollectionAction.LISTSNAPSHOTS, checkNotNull(CoreAdminParams.COLLECTION, collection));
     }
 
+    @Override
     public String getCollectionName() {
       return collection;
     }
@@ -1564,8 +1567,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Boolean splitByPrefix;
     protected Integer numSubShards;
     protected Float splitFuzz;
+    protected Boolean setPreferredLeaders;
 
     private Properties properties;
+    protected String createNodeSet;
 
     private SplitShard(String collection) {
       super(CollectionAction.SPLITSHARD);
@@ -1574,6 +1579,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
     public SplitShard setRanges(String ranges) {
       this.ranges = ranges;
+      return this;
+    }
+
+    public SplitShard setCreateNodeSet(String nodeset) {
+      this.createNodeSet = nodeset;
       return this;
     }
 
@@ -1640,6 +1650,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    public SplitShard shouldSetPreferredLeaders(Boolean setPreferredLeaders) {
+      this.setPreferredLeaders = setPreferredLeaders;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1660,13 +1675,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (splitFuzz != null) {
         params.set(CommonAdminParams.SPLIT_FUZZ, String.valueOf(splitFuzz));
       }
-
       if (splitByPrefix != null) {
         params.set(CommonAdminParams.SPLIT_BY_PREFIX, splitByPrefix);
       }
-
       if (properties != null) {
         addProperties(params, properties);
+      }
+      if (createNodeSet != null) {
+        params.set(CREATE_NODE_SET_PARAM, createNodeSet);
+      }
+      if (setPreferredLeaders != null) {
+        params.set(CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS, setPreferredLeaders);
       }
       return params;
     }
@@ -3289,6 +3308,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    @Override
     public String getCollection() {
       return collection;
     }

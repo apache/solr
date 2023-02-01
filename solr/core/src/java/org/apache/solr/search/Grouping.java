@@ -309,8 +309,7 @@ public class Grouping {
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
 
-    SolrIndexSearcher.ProcessedFilter pf =
-        searcher.getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
+    SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilterList());
     final Query filterQuery = pf.filter;
     maxDoc = searcher.maxDoc();
 
@@ -461,7 +460,10 @@ public class Grouping {
       searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
     } catch (TimeLimitingCollector.TimeExceededException
         | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: {}; ", query, x);
+      // INFO log the (possibly quite long) query object separately
+      log.info("Query: {}; ", query);
+      // to make WARN logged exception content more visible
+      log.warn("Query: {}; ", query.getClass().getName(), x);
       qr.setPartialResults(true);
     }
   }

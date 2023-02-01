@@ -26,7 +26,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,6 +37,7 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -60,6 +60,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -67,6 +68,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     cluster.getSolrClient().setDefaultCollection(collection);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -127,7 +129,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       Replica oldLeader = dc.getLeader("shard1");
       log.info("Will crash leader : {}", oldLeader);
 
-      try (HttpSolrClient solrClient =
+      try (SolrClient solrClient =
           new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
         new UpdateRequest().add("id", "99").commit(solrClient, null);
         fail("Should have injected tragedy");

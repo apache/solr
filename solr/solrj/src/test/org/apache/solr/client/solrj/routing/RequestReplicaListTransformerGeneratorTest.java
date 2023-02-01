@@ -142,7 +142,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
   }
 
   private static List<Replica> getBasicReplicaList() {
-    List<Replica> replicas = new ArrayList<Replica>();
+    List<Replica> replicas = new ArrayList<>();
     replicas.add(
         new Replica(
             "node1",

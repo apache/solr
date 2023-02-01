@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -183,7 +184,7 @@ public class CollectionHandlingUtils {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(Utils.toJSON(m));
+      ccc.offerStateUpdate(m);
     }
   }
 
@@ -235,7 +236,7 @@ public class CollectionHandlingUtils {
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         new HttpSolrClient.Builder(url)
             .withConnectionTimeout(30000)
             .withSocketTimeout(120000)

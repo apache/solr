@@ -53,17 +53,14 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
 
-    assertEquals(
+    assertFalse(
         "DocValues: Schema assumptions are broken",
-        false,
         h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
 
     assertEquals(

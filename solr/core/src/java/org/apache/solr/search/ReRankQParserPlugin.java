@@ -44,18 +44,20 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String RERANK_WEIGHT = "reRankWeight";
   public static final double RERANK_WEIGHT_DEFAULT = 2.0d;
 
+  @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ReRankQParser(query, localParams, params, req);
   }
 
-  private class ReRankQParser extends QParser {
+  private static class ReRankQParser extends QParser {
 
     public ReRankQParser(
         String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
     }
 
+    @Override
     public Query parse() throws SyntaxError {
       String reRankQueryString = localParams.get(RERANK_QUERY);
       if (StringUtils.isBlank(reRankQueryString)) {
@@ -88,16 +90,17 @@ public class ReRankQParserPlugin extends QParserPlugin {
         float firstPassScore, boolean secondPassMatches, float secondPassScore) {
       float score = firstPassScore;
       if (secondPassMatches) {
-        score += reRankWeight * secondPassScore;
+        score = (float) (score + reRankWeight * secondPassScore);
       }
       return score;
     }
   }
 
-  private final class ReRankQuery extends AbstractReRankQuery {
+  private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
 
+    @Override
     public int hashCode() {
       return 31 * classHash()
           + mainQuery.hashCode()
@@ -106,6 +109,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           + reRankDocs;
     }
 
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
@@ -135,6 +139,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return sb.toString();
     }
 
+    @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
       return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(rewrittenMainQuery);
     }

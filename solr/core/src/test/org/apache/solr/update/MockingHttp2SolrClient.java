@@ -58,6 +58,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
       this.idleTimeout(config.getDistributedSocketTimeout());
     }
 
+    @Override
     public MockingHttp2SolrClient build() {
       return new MockingHttp2SolrClient(null, this);
     }

@@ -284,6 +284,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     assertTrue(failed);
   }
 
+  @Override
   void doQuery(String expectedDocs, String... queryParams) throws Exception {
 
     List<String> strs = StrUtils.splitSmart(expectedDocs, ",", true);

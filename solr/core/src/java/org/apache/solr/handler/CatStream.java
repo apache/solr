@@ -255,7 +255,7 @@ public class CatStream extends TupleStream implements Expressible {
   // A pair of paths for a particular file to stream:
   // - absolute path for reading,
   // - display path to avoid leaking Solr node fs details in tuples (relative to chroot)
-  public class CrawlFile {
+  public static class CrawlFile {
     private final String displayPath;
     private final Path absolutePath;
 

@@ -180,7 +180,7 @@ subprojects {
       }
 
       if (errors) {
-        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
+        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ") + "\n\nThese missing checksums can be generated using:\n  ./gradlew updateLicenses"
         if (failOnError) {
           throw new GradleException(msg)
         } else {

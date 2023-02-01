@@ -276,7 +276,7 @@ class ChildDocTransformer extends DocTransformer {
     String trimmedPath = trimLastPound(cDocsPath);
     // if the child doc's path does not end with #, it is an array(same string is returned by
     // ChildDocTransformer#trimLastPound)
-    if (!parent.containsKey(trimmedPath) && (trimmedPath == cDocsPath)) {
+    if (!parent.containsKey(trimmedPath) && (trimmedPath.equals(cDocsPath))) {
       List<SolrDocument> list = new ArrayList<>(children);
       parent.setField(trimmedPath, list);
       return;

@@ -31,9 +31,9 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -684,7 +684,7 @@ public class DistributedClusterStateUpdater {
         log.error(err);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err);
       }
-      mutations = new LinkedList<>();
+      mutations = new ArrayList<>();
       this.collectionName = collectionName;
       this.isCollectionCreation = isCollectionCreation;
     }
@@ -807,7 +807,7 @@ public class DistributedClusterStateUpdater {
       @Override
       public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
-        List<PerReplicaStatesOps> perReplicaStateOps = new LinkedList<>();
+        List<PerReplicaStatesOps> perReplicaStateOps = new ArrayList<>();
         for (Pair<MutatingCommand, ZkNodeProps> mutation : mutations) {
           MutatingCommand mutatingCommand = mutation.first();
           ZkNodeProps message = mutation.second();

@@ -26,10 +26,12 @@ public class SecurityConfHandlerLocalForTesting extends SecurityConfHandlerLocal
     super(coreContainer);
   }
 
+  @Override
   public boolean persistConf(SecurityConfig securityConfig) throws IOException {
     return super.persistConf(securityConfig);
   }
 
+  @Override
   public void securityConfEdited() {
     super.securityConfEdited();
   }

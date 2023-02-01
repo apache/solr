@@ -22,9 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
@@ -295,7 +295,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_DATE";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {"tdt", "tdt1", "tdtdv", "tdtdv1", "dt_dv", "dt_dvo", "dt", "dt1", "dt_os"}) {
       FIELDS.add("malformed_" + type);
@@ -351,7 +351,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {
           "ti", "tf", "td", "tl",
@@ -552,8 +552,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     f = ischema.getField("test_notv");
     luf = f.createField("test");
-    assertTrue(!f.storeTermVector());
-    assertTrue(!luf.fieldType().storeTermVectors());
+    assertFalse(f.storeTermVector());
+    assertFalse(luf.fieldType().storeTermVectors());
 
     f = ischema.getField("test_postv");
     luf = f.createField("test");
@@ -619,8 +619,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.get("ss"), "SSS");
 
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
-    assertEquals(p.getBool("foo", true), true);
-    assertEquals(p.getBool("foo", false), false);
+    assertTrue(p.getBool("foo", true));
+    assertFalse(p.getBool("foo", false));
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
     NamedList<String> more = new NamedList<>();
@@ -764,8 +764,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field in fl is not lazy
-    assertFalse(((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
-    assertFalse(((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
+    assertNotEquals("LazyField", ((Field) d.getField("test_hlt")).getClass().getSimpleName());
+    assertNotEquals("LazyField", ((Field) d.getField("title")).getClass().getSimpleName());
     req.close();
   }
 
@@ -814,7 +814,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     di = dl.iterator();
     Document d2 = req.getSearcher().doc(di.nextDoc());
     // ensure same doc, same lazy field now
-    assertTrue("Doc was not cached", d1 == d2);
+    assertSame("Doc was not cached", d1, d2);
     IndexableField[] values2 = d2.getFields("test_hlt");
     assertEquals(values1.length, values2.length);
     for (int i = 0; i < values1.length; i++) {
