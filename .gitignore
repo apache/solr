@@ -37,8 +37,7 @@ __pycache__
 *~
 
 # Ignore lucene included build
-lucene/
-!buildSrc/src/main/java/org/apache/lucene
+/lucene
 
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
