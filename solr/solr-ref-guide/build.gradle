@@ -127,7 +127,8 @@ task buildLocalAntoraYaml {
             ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
             ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
 
         copy {
