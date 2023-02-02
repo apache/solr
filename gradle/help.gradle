@@ -25,6 +25,7 @@ configure(rootProject) {
       ["Formatting", "help/formatting.txt", "Code formatting conventions."],
       ["Deps", "help/dependencies.txt", "Declaring, inspecting and excluding dependencies."],
       ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
+      ["LocalSettings", "help/localSettings.txt", "Local settings, overrides and build performance tweaks."],
       ["Git", "help/git.txt", "Git assistance and guides."],
       ["ValidateLogCalls", "help/validateLogCalls.txt", "How to use logging calls efficiently."],
       ["Publishing", "help/publishing.txt", "Release publishing publishing, signing, etc."],
