@@ -17,12 +17,12 @@
 package org.apache.lucene.gradle;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Standalone class that generates a populated gradle.properties from a template.
@@ -58,29 +58,14 @@ public class GradlePropertiesGenerator {
     var maxWorkers = (int) Math.max(1d, Math.min(cpus * 0.5d, 12));
     var testsJvms = (int) Math.max(1d, Math.min(cpus * 0.5d, 12));
 
-    var replacements = Map.of("org.gradle.workers.max", maxWorkers, "tests.jvms", testsJvms);
+    var replacements = Map.of("@MAX_WORKERS@", maxWorkers, "@TEST_JVMS@", testsJvms);
 
-    // Java properties doesn't preserve comments, so going line by line instead
-    // The properties file isn't big, nor is the map of replacements, so not worrying about speed
-    // here.
     System.out.println("Generating gradle.properties");
-    final var lines =
-        Files.readAllLines(source).stream()
-            .map(
-                line -> {
-                  if (!line.startsWith("#") && line.contains("=")) {
-                    final String key = line.split("=")[0];
-                    var value = replacements.get(key);
-                    if (value != null) {
-                      final String newLine = key + '=' + value;
-                      System.out.println("Setting " + newLine);
-                      return newLine;
-                    }
-                  }
-                  return line;
-                })
-            .collect(Collectors.toList());
-
-    Files.write(destination, lines, StandardOpenOption.CREATE_NEW);
+    String fileContent = Files.readString(source, StandardCharsets.UTF_8);
+    for (var entry : replacements.entrySet()) {
+      fileContent = fileContent.replace(entry.getKey(), String.valueOf(entry.getValue()));
+    }
+    Files.writeString(
+            destination, fileContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
   }
 }
