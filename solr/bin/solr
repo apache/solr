@@ -2185,8 +2185,8 @@ function start_solr() {
     SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
   fi
 
-  if [ "$SOLR_PRESERVE_UNKNOWN_CORES" == "true" ]; then
-    SOLR_OPTS+=("-Dsolr.preserveUnknownCores=true")
+  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
+    SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
   fi
 
   # If SSL-related system props are set, add them to SOLR_OPTS
