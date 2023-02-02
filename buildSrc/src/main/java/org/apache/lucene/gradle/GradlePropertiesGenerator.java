@@ -50,6 +50,7 @@ public class GradlePropertiesGenerator {
     }
     if (Files.exists(destination)) {
       System.out.println(destination + " already exists, skipping generation.");
+      return;
     }
 
     // Approximate a common-sense default for running gradle/tests with parallel
