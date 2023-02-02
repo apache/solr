@@ -140,7 +140,8 @@ public class AllowListUrlChecker {
         clusterState == null ? Collections.emptySet() : clusterState.getHostAllowList();
     for (String url : urls) {
       String hostPort = parseHostPort(url);
-      if (!clusterHostAllowList.contains(hostPort) && !hostAllowList.contains(hostPort)) {
+      if (clusterHostAllowList.stream().noneMatch(hostPort::equalsIgnoreCase)
+          && hostAllowList.stream().noneMatch(hostPort::equalsIgnoreCase)) {
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN,
             "URL "
