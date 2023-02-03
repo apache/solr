@@ -97,14 +97,12 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
     return adminClient;
   }
 
-  /** Returns EmbeddedSolrServer instance for the collection named "collection1" */
-  @Override
-  public EmbeddedSolrServer getSolrClient() {
-    return getSolrClient("collection1");
-  }
-
   @Override
   public EmbeddedSolrServer getSolrClient(String name) {
-    return new EmbeddedSolrServer(getAdminClient().getCoreContainer(), name);
+    return new EmbeddedSolrServer(getCoreContainer(), name);
+  }
+
+  public CoreContainer getCoreContainer() {
+    return getAdminClient().getCoreContainer();
   }
 }
