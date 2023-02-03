@@ -177,7 +177,7 @@ else
   fi
   JAVA_VENDOR="Oracle"
    # OpenJ9 was previously known as IBM J9, this will match both
-  if [ "$(echo "$JAVA_VER" | grep -i -E "OpenJ9|IBM J9")" != "" ]; then
+  if [ "$(echo "$JAVA_VER" | grep -i "OpenJ9\|IBM J9")" != "" ]; then
       JAVA_VENDOR="OpenJ9"
   fi
 fi
@@ -2176,13 +2176,13 @@ function check_port_in_use() {
 
   case $tool in
     lsof)
-      lsof -iTCP:${port} 2>/dev/null | grep "LISTEN" | grep -Eow "java\s*?[0-9]+" | grep -Eow [0-9]+
+      lsof -iTCP:${port} 2>/dev/null -sTCP:LISTEN 2>/dev/null | grep -ow "java\s*\?[0-9]\+" | grep -ow "[0-9]\+"
       ;;
     ss)
-      ss -ntlp "( sport = :${port} )" 2>/dev/null | grep -Eow "\"java\",(pid=)?[0-9]+?" | grep -Eow "[0-9]+"
+      ss -ntlp "( sport = :${port} )" 2>/dev/null | grep '"java\"' | grep -o "pid=[0-9]\+" | grep -ow "[0-9]\+"
       ;;
     netstat)
-      netstat -nlp 2>/dev/null | grep ":${port} " | grep -Eow " [0-9]+/java" | grep -Eow "[0-9]+"
+      netstat -nlp 2>/dev/null | grep ":${port} " | grep -ow " [0-9]\+/java" | grep -ow "[0-9]\+"
       ;;
   esac
 }
