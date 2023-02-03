@@ -2179,7 +2179,7 @@ function check_port_in_use() {
       lsof -iTCP:${port} 2>/dev/null -sTCP:LISTEN 2>/dev/null | grep -ow "java\s*\?[0-9]\+" | grep -ow "[0-9]\+"
       ;;
     ss)
-      ss -ntlp "( sport = :${port} )" 2>/dev/null | grep '"java\"' | grep -o "pid=[0-9]\+" | grep -ow "[0-9]\+"
+      ss -ntlp "( sport = :${port} )" 2>/dev/null | grep -ow '"java",pid=[0-9]\+' | grep -ow "[0-9]\+"
       ;;
     netstat)
       netstat -nlp 2>/dev/null | grep ":${port} " | grep -ow " [0-9]\+/java" | grep -ow "[0-9]\+"
