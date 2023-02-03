@@ -788,6 +788,8 @@ Improvements
   This allows for custom plugins and Solr modules to rely on 3rd part dependencies that use the thread contextClassLoader.
   (Houston Putman)
 
+* SOLR-16645: Extend start script to support ss and netstat as alternatives to lsof (Colvin Cowie)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
