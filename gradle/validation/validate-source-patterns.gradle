@@ -78,6 +78,7 @@ allprojects {
       }
 
       // default excludes.
+      exclude '/lucene/**'
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'

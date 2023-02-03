@@ -225,9 +225,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(baseUrl, "'base_url' must not be null");
 
     // make sure all declared props are in the propMap
-    propMap.put(ReplicaStateProps.COLLECTION, collection);
-    propMap.put(ReplicaStateProps.SHARD_ID, shard);
-    propMap.put(ReplicaStateProps.CORE_NODE_NAME, name);
     propMap.put(ReplicaStateProps.NODE_NAME, node);
     propMap.put(ReplicaStateProps.CORE_NAME, core);
     propMap.put(ReplicaStateProps.TYPE, type.toString());
@@ -397,8 +394,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
       writer
           .put(ReplicaStateProps.CORE_NAME, core, p)
-          .put(ReplicaStateProps.SHARD_ID, shard, p)
-          .put(ReplicaStateProps.COLLECTION, collection, p)
           .put(ReplicaStateProps.NODE_NAME, node, p)
           .put(ReplicaStateProps.TYPE, type.toString(), p)
           .put(ReplicaStateProps.STATE, shard, p);

@@ -17,8 +17,11 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
+
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.glassfish.hk2.api.Factory;
@@ -60,6 +63,25 @@ public class InjectionFactories {
 
     @Override
     public void dispose(SolrQueryResponse instance) {}
+  }
+
+  /** Fetch the (existing) SolrCore from the request context */
+  public static class ReuseFromContextSolrCoreFactory implements Factory<SolrCore> {
+
+    private final ContainerRequestContext containerRequestContext;
+
+    @Inject
+    public ReuseFromContextSolrCoreFactory(ContainerRequestContext containerRequestContext) {
+      this.containerRequestContext = containerRequestContext;
+    }
+
+    @Override
+    public SolrCore provide() {
+      return (SolrCore) containerRequestContext.getProperty(SOLR_CORE);
+    }
+
+    @Override
+    public void dispose(SolrCore instance) {}
   }
 
   public static class SingletonFactory<T> implements Factory<T> {

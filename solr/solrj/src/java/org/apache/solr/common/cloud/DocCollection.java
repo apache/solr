@@ -283,7 +283,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public int getChildNodesVersion() {
     PerReplicaStates prs = prsSupplier == null ? null : prsSupplier.get();
-    return prs == null ? -1 : prs.cversion;
+    return prs == null ? 0 : prs.cversion;
   }
 
   public boolean isModified(int dataVersion, int childVersion) {

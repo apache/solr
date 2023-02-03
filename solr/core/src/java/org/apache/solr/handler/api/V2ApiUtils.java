@@ -31,6 +31,10 @@ public class V2ApiUtils {
     /* Private ctor prevents instantiation */
   }
 
+  public static boolean isEnabled() {
+    return !"true".equals(System.getProperty("disable.v2.api", "false"));
+  }
+
   public static void flattenMapWithPrefix(
       Map<String, Object> toFlatten, Map<String, Object> destination, String additionalPrefix) {
     if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
