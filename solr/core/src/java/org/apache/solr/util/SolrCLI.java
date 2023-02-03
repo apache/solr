@@ -912,7 +912,7 @@ public class SolrCLI implements CLIO {
       String solrUrl = cli.getOptionValue("solr", DEFAULT_SOLR_URL);
       if (maxWaitSecs > 0) {
         int solrPort = (new URL(solrUrl)).getPort();
-        echo("Waiting up to " + maxWaitSecs + " to see Solr running on port " + solrPort);
+        echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
         try {
           waitToSeeSolrUp(solrUrl, maxWaitSecs);
           echo("Started Solr server on port " + solrPort + ". Happy searching!");
