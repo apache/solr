@@ -2160,9 +2160,8 @@ function mk_writable_dir() {
 
 # Check whether at least one of lsof/netstat/ss are available
 function get_port_tool() {
-  for tool in 'lsof' 'netstat' 'ss'; do
-      which $tool &> nul
-      if [[ $? -eq 0 ]]; then
+  for tool in 'lsof' 'ss' 'netstat'; do
+      if [[ -x "$(command -v $tool)" ]]; then
         echo $tool
         return
       fi
@@ -2172,9 +2171,10 @@ function get_port_tool() {
 # Will get the PID of the java process running on the specified port, if one is running
 # Otherwise empty result. Use get_port_tool to check whether lsof/ss/netstat is installed first
 function check_port_in_use() {
-  local port=$1
+  local tool=$1
+  local port=$2
 
-  case $(get_port_tool) in
+  case $tool in
     lsof)
       lsof -iTCP:${port} 2>/dev/null | grep "LISTEN" | grep -Eow "java\s*?[0-9]+" | grep -Eow [0-9]+
       ;;
@@ -2340,14 +2340,14 @@ function start_solr() {
 	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
 	echo ""
     fi
-    # no lsof on cygwin though
-    if [ -n "$(get_port_tool)" ]; then
+    local port_tool=$(get_port_tool)
+    if [ -n "$port_tool" ]; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=$(check_port_in_use $SOLR_PORT)
+        running=$(check_port_in_use $port_tool $SOLR_PORT)
         if [ -z "${running:-}" ]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
