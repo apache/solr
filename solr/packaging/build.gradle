@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.util.TeeOutputStream
+
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
@@ -46,20 +48,8 @@ artifacts {
 }
 
 dependencies {
-  [":solr:modules:analysis-extras",
-   ":solr:modules:analytics",
-   ":solr:modules:extraction",
-   ":solr:modules:clustering",
-   ":solr:modules:gcs-repository",
-   ":solr:modules:hdfs",
-   ":solr:modules:jaegertracer-configurator",
-   ":solr:modules:jwt-auth",
-   ":solr:modules:langid",
-   ":solr:modules:ltr",
-   ":solr:modules:s3-repository",
-   ":solr:modules:scripting"
-  ].each { moduleName ->
-    modules project(path: moduleName, configuration: "packaging")
+  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+    modules project(path: module, configuration: "packaging")
   }
 
   prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
@@ -81,7 +71,6 @@ distributions {
   main {
     distributionBaseName = 'solr'
     contents {
-      // TODO: This is missing module README files, as compared to 8x
 
       from(rootDir, {
         include "LICENSE.txt"
@@ -93,7 +82,14 @@ distributions {
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
-        include "README.md"
+      })
+
+      from(projectDir, {
+        include "README.txt"
+      })
+
+      from ('static/lib', {
+        into 'lib'
       })
 
       from(configurations.modules, {
@@ -160,3 +156,72 @@ distTar {
 distZip.enabled = false
 
 assemble.dependsOn installDist
+
+task downloadBats(type: NpmTask) {
+  group = 'Build Dependency Download'
+  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
+                     "https://github.com/bats-core/bats-assert#v2.0.0",
+                     "https://github.com/bats-core/bats-file#v0.3.0",
+  ]
+
+  inputs.files("${project.ext.nodeProjectDir}/package.json")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
+}
+
+task integrationTests(type: BatsTask) {
+  dependsOn installDist
+  dependsOn downloadBats
+
+  def integrationTestOutput = "$buildDir/test-output"
+  def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+
+  inputs.dir(distDir)
+  outputs.dir(integrationTestOutput)
+
+  doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
+    // TODO - if quiet then don't tee
+    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+
+  }
+
+  environment SOLR_TIP: distDir.toString()
+  environment SOLR_HOME: solrHome
+  environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_FAILURE_DIR: solrTestFailuresDir
+  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+}
+
+class BatsTask extends Exec {
+  @InputDirectory
+  String testDir = 'test'
+
+  @Input
+  var testFiles = []
+
+  @Option(option = "tests", description = "Sets test cases to be included")
+  public void setTestNamePatterns(List<String> tests) {
+    // TODO: bats --filter <regex>
+    tests.each { testFiles << "$testDir/$it" }
+  }
+
+  @Override
+  @TaskAction
+  protected void exec() {
+    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+
+    // Note: tests to run must be listed after all other arguments
+    // Additional debugging output: -x, --verbose-run
+    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
+    super.exec()
+  }
+}

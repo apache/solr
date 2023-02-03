@@ -20,32 +20,28 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   private final List<StoppableIndexingThread> threads = new ArrayList<>();
@@ -62,14 +58,14 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
     final String collection = "recoverytest";
 
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .process(cluster.getSolrClient());
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
+    waitForState(
+        "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
     cluster.getSolrClient().setDefaultCollection(collection);
 
     // start a couple indexing threads
@@ -85,13 +81,13 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     }
     log.info("Indexing {} documents", maxDoc);
 
-    final StoppableIndexingThread indexThread
-        = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
+    final StoppableIndexingThread indexThread =
+        new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
     threads.add(indexThread);
     indexThread.start();
 
-    final StoppableIndexingThread indexThread2
-        = new StoppableIndexingThread(null, cluster.getSolrClient(), "2", true, maxDoc, 1, true);
+    final StoppableIndexingThread indexThread2 =
+        new StoppableIndexingThread(null, cluster.getSolrClient(), "2", true, maxDoc, 1, true);
     threads.add(indexThread2);
     indexThread2.start();
 
@@ -102,7 +98,7 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     // bring shard replica down
     DocCollection state = getCollectionState(collection);
     Replica leader = state.getLeader("shard1");
-    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> !leader.equals(r));
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();
@@ -123,15 +119,13 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     indexThread.join();
     indexThread2.join();
 
-    new UpdateRequest()
-        .commit(cluster.getSolrClient(), collection);
+    new UpdateRequest().commit(cluster.getSolrClient(), collection);
 
-    cluster.getSolrClient().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
+    cluster.getZkStateReader().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);
     assertShardConsistency(state.getSlice("shard1"), true);
-
   }
 
   private void assertShardConsistency(Slice shard, boolean expectDocs) throws Exception {
@@ -139,18 +133,20 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
-          .withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
-        numCounts[i] = client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
+      try (var client =
+          new HttpSolrClient.Builder(replica.getCoreUrl())
+              .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
+              .build()) {
+        numCounts[i] =
+            client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
         i++;
       }
     }
     for (int j = 1; j < replicas.size(); j++) {
       if (numCounts[j] != numCounts[j - 1])
-        fail("Mismatch in counts between replicas");  // TODO improve this!
+        fail("Mismatch in counts between replicas"); // TODO improve this!
       if (numCounts[j] == 0 && expectDocs)
         fail("Expected docs on shard " + shard.getName() + " but found none");
     }
   }
-
 }

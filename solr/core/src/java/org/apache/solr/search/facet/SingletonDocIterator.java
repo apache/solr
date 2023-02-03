@@ -48,5 +48,4 @@ final class SingletonDocIterator extends SweepDocIterator {
   public int registerCounts(SegCounter segCounts) {
     return 0;
   }
-
 }

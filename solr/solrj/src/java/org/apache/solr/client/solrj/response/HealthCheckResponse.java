@@ -21,12 +21,11 @@ import org.apache.solr.common.util.NamedList;
 
 public class HealthCheckResponse extends SolrResponseBase {
 
-  public HealthCheckResponse() {
-  }
+  public HealthCheckResponse() {}
 
   @SuppressWarnings({"unchecked"})
   public NamedList<String> getErrorMessages() {
-    return (NamedList<String>) getResponse().get( "errors" );
+    return (NamedList<String>) getResponse().get("errors");
   }
 
   public String getMessage() {
@@ -36,5 +35,4 @@ public class HealthCheckResponse extends SolrResponseBase {
   public String getNodeStatus() {
     return (String) getResponse().get("status");
   }
-
 }

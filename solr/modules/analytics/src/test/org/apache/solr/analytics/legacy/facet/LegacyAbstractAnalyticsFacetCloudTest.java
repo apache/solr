@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsCloudTest;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
@@ -31,7 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 
 public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
-  protected static final HashMap<String,Object> defaults = new HashMap<>();
+  protected static final HashMap<String, Object> defaults = new HashMap<>();
 
   protected String latestType = "";
 
@@ -41,44 +40,56 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
   }
 
   @SuppressWarnings("unchecked")
-  protected <T> ArrayList<T> getValueList(NamedList<Object> response, String infoName, String facetType, String facetName, String exprName, boolean includeMissing) {
+  protected <T> ArrayList<T> getValueList(
+      NamedList<Object> response,
+      String infoName,
+      String facetType,
+      String facetName,
+      String exprName,
+      boolean includeMissing) {
     NamedList<NamedList<Object>> facetList =
-        (NamedList<NamedList<Object>>)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
-                                                             infoName,
-                                                             facetType,
-                                                             facetName);
+        (NamedList<NamedList<Object>>)
+            response.findRecursive(
+                AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, infoName, facetType, facetName);
 
     ArrayList<T> results = new ArrayList<>();
-    facetList.forEach( (name, expressions) -> {
-      if (!includeMissing && !name.equals("(MISSING)")) {
-        T result = (T)expressions.get(exprName);
-        if (result != null)
-          results.add(result);
-      }
-    });
+    facetList.forEach(
+        (name, expressions) -> {
+          if (!includeMissing && !name.equals("(MISSING)")) {
+            T result = (T) expressions.get(exprName);
+            if (result != null) results.add(result);
+          }
+        });
     return results;
   }
 
-  protected boolean responseContainsFacetValue(NamedList<Object> response, String infoName, String facetType, String facetName, String facetValue) {
-    return null != response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
-                                          infoName,
-                                          facetType,
-                                          facetName,
-                                          facetValue);
+  protected boolean responseContainsFacetValue(
+      NamedList<Object> response,
+      String infoName,
+      String facetType,
+      String facetName,
+      String facetValue) {
+    return null
+        != response.findRecursive(
+            AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
+            infoName,
+            facetType,
+            facetName,
+            facetValue);
   }
 
-
-  public static void increment(List<Long> list, int idx){
+  public static void increment(List<Long> list, int idx) {
     Long i = list.remove(idx);
-    list.add(idx, i+1);
+    list.add(idx, i + 1);
   }
 
   protected void setLatestType(String latestType) {
     this.latestType = latestType;
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T extends Number & Comparable<T>> ArrayList calculateFacetedNumberStat(ArrayList<ArrayList<T>> lists, String stat) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public <T extends Number & Comparable<T>> ArrayList calculateFacetedNumberStat(
+      ArrayList<ArrayList<T>> lists, String stat) {
     ArrayList result;
     if (stat.equals("median")) {
       result = new ArrayList<Double>();
@@ -92,7 +103,7 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
         for (T element : list) {
           d += element.doubleValue();
         }
-        result.add(d/list.size());
+        result.add(d / list.size());
       }
     } else if (stat.equals("sum")) {
       result = new ArrayList<Double>();
@@ -108,7 +119,7 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
       for (List<T> list : lists) {
         double d = 0;
         for (T element : list) {
-          d += element.doubleValue()*element.doubleValue();
+          d += element.doubleValue() * element.doubleValue();
         }
         result.add(d);
       }
@@ -119,9 +130,11 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
         double sumSquares = 0;
         for (T element : list) {
           sum += element.doubleValue();
-          sumSquares += element.doubleValue()*element.doubleValue();
+          sumSquares += element.doubleValue() * element.doubleValue();
         }
-        String res = Double.toString(Math.sqrt(sumSquares/list.size()-sum*sum/(list.size()*list.size())));
+        String res =
+            Double.toString(
+                Math.sqrt(sumSquares / list.size() - sum * sum / (list.size() * list.size())));
         result.add(Double.parseDouble(res));
       }
     } else {
@@ -130,14 +143,15 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
     return result;
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T extends Comparable<T>> ArrayList calculateFacetedStat(ArrayList<ArrayList<T>> lists, String stat) {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public <T extends Comparable<T>> ArrayList calculateFacetedStat(
+      ArrayList<ArrayList<T>> lists, String stat) {
     ArrayList result;
     if (stat.contains("perc_")) {
       result = new ArrayList<T>();
       for (List<T> list : lists) {
-        if( list.size() == 0) continue;
-        int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5))/100 * list.size()) - 1;
+        if (list.size() == 0) continue;
+        int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5)) / 100 * list.size()) - 1;
         ArrayList<Integer> percs = new ArrayList<>(1);
         percs.add(ord);
         OrdinalCalculator.putOrdinalsInPosition(list, percs);
@@ -146,31 +160,31 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
     } else if (stat.equals("count")) {
       result = new ArrayList<Long>();
       for (List<T> list : lists) {
-        result.add((long)list.size());
+        result.add((long) list.size());
       }
     } else if (stat.equals("missing")) {
       result = new ArrayList<Long>();
       for (ArrayList<T> list : lists) {
-        result.add(calculateMissing(list,latestType));
+        result.add(calculateMissing(list, latestType));
       }
     } else if (stat.equals("unique")) {
       result = new ArrayList<Long>();
       for (List<T> list : lists) {
         HashSet<T> set = new HashSet<>();
         set.addAll(list);
-        result.add((long)set.size());
+        result.add((long) set.size());
       }
     } else if (stat.equals("max")) {
       result = new ArrayList<T>();
       for (List<T> list : lists) {
-        if( list.size() == 0) continue;
+        if (list.size() == 0) continue;
         Collections.sort(list);
-        result.add(list.get(list.size()-1));
+        result.add(list.get(list.size() - 1));
       }
     } else if (stat.equals("min")) {
       result = new ArrayList<T>();
       for (List<T> list : lists) {
-        if( list.size() == 0) continue;
+        if (list.size() == 0) continue;
         Collections.sort(list);
         result.add(list.get(0));
       }
@@ -182,10 +196,10 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
 
   @SuppressWarnings("unchecked")
   public <T extends Comparable<T>> Long calculateMissing(ArrayList<T> list, String type) {
-    T def = (T)defaults.get(type);
+    T def = (T) defaults.get(type);
     long miss = 0;
     for (T element : list) {
-      if (element.compareTo(def)==0) {
+      if (element.compareTo(def) == 0) {
         miss++;
       }
     }

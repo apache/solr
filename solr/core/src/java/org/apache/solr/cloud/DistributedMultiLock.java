@@ -17,17 +17,16 @@
 
 package org.apache.solr.cloud;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A lock as acquired for running a single API command (Collection or Config Set or anything else in the future).
- * Internally it is composed of multiple {@link DistributedLock}'s.
+ * A lock as acquired for running a single API command (Collection or Config Set or anything else in
+ * the future). Internally it is composed of multiple {@link DistributedLock}'s.
  */
 public class DistributedMultiLock {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -40,7 +39,8 @@ public class DistributedMultiLock {
 
   public void waitUntilAcquired() {
     if (isReleased) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be waited upon");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be waited upon");
     }
 
     for (DistributedLock lock : locks) {
@@ -59,7 +59,8 @@ public class DistributedMultiLock {
 
   public boolean isAcquired() {
     if (isReleased) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be tested");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be tested");
     }
     for (DistributedLock lock : locks) {
       if (!lock.isAcquired()) {

@@ -16,39 +16,36 @@
  */
 package org.apache.solr.spelling;
 
+import java.util.Objects;
+
 public class ResultEntry {
   public Token token;
   public String suggestion;
   public int freq;
+
   ResultEntry(Token t, String s, int f) {
     token = t;
     suggestion = s;
-    freq = f;    
-  } 
+    freq = f;
+  }
+
   @Override
-  public int hashCode() {  
+  public int hashCode() {
     final int prime = 31;
     int result = 1;
     result = prime * result + freq;
-    result = prime * result
-        + ((suggestion == null) ? 0 : suggestion.hashCode());
+    result = prime * result + ((suggestion == null) ? 0 : suggestion.hashCode());
     result = prime * result + ((token == null) ? 0 : token.hashCode());
     return result;
   }
+
   @Override
-  public boolean equals(Object obj) {    
+  public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof ResultEntry)) return false;
     ResultEntry other = (ResultEntry) obj;
-    if (freq != other.freq) return false;
-    if (suggestion == null) {
-      if (other.suggestion != null) return false;
-    } else if (!suggestion.equals(other.suggestion)) return false;
-    if (token == null) {
-      if (other.token != null) return false;
-    } else if (!token.equals(other.token)) return false;
-    return true;
+    return freq == other.freq
+        && Objects.equals(suggestion, other.suggestion)
+        && Objects.equals(token, other.token);
   }
-  
 }

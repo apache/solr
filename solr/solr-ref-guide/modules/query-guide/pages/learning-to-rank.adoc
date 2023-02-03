@@ -111,11 +111,15 @@ In the form of JSON files your trained model or models (e.g., different models f
 |(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
+== Module
+
+This is provided via the `ltr` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
 == Quick Start with LTR
 
-The `"techproducts"` example included with Solr is pre-configured with the plugins required for learning-to-rank, but they are disabled by default.
+The `"techproducts"` example included with Solr is pre-configured to load the plugins required for learning-to-rank from the `ltr` xref:configuration-guide:solr-modules.adoc[Solr Module], but they are disabled by default.
 
-To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property when running the example:
+To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property when running the `techproducts` example:
 
 [source,bash]
 ----
@@ -472,7 +476,7 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/modules/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=solr.git;a=tree;f=solr/modules/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-full-version}/solr/modules/ltr/example[github.com]).
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/modules/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=solr.git;a=tree;f=solr/modules/ltr/example[Apache Solr Git repository] (mirrored on https://github.com/apache/solr/tree/releases/solr/{solr-full-version}/solr/modules/ltr/example[github.com]).
 This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
@@ -550,6 +554,93 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
   <str name="csvFeatureSeparator"> </str>
 </transformer>
 ----
+
+==== Models handling features' null values
+This feature is available only for {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel].
+
+In some scenarios a null value for a feature has a different meaning than a zero value. There are models that are trained to distinguish the two (e.g. https://xgboost.readthedocs.io/en/stable/faq.html#how-to-deal-with-missing-values), in Solr an additional `"missing"` branch parameter has been introduced to support this feature. 
+
+This defines the branch to follow when the corresponding feature value is null. With the default configuration a null and a zero value have the same meaning.
+
+To handle null values, the `"myFeatures.json"` file needs to be modified. A `"defaultValue"` parameter with a `"NaN"` value needs to be added to each feature that can assume a null value.
+
+.Example: /path/myFeatures.json
+[source,json]
+----
+[
+  {
+    "name": "matchedTitle",
+    "class": "org.apache.solr.ltr.feature.SolrFeature",
+    "params": {
+      "q": "{!terms f=title}${user_query}"
+    }
+  },
+  {
+    "name": "productReviewScore",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+      "field": "product_review_score",
+      "defaultValue": "NaN"
+    }
+  }
+]
+----
+
+Also, the model configuration needs two additional parameter:
+
+* `"isNullSameAsZero"` needs to be defined in the model `"params"` and set to `"false"`;
+
+*  the `"missing"` parameter needs to be added to each branch where the corresponding feature supports null values. This can assume one value between `"left"` and `"right"`.
+
+.Example: /path/myModel.json
+[source,json]
+----
+{
+  "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+  "name":"multipleadditivetreesmodel",
+  "features":[
+    { "name": "matchedTitle"},
+    { "name": "productReviewScore"}
+  ],
+  "params":{
+    "isNullSameAsZero": "false",
+    "trees": [
+      {
+        "weight" : "1f",
+        "root": {
+          "feature": "matchedTitle",
+          "threshold": "0.5f",
+          "left" : {
+            "value" : "-100"
+          },
+          "right": {
+            "feature" : "productReviewScore",
+            "threshold": "0f",
+            "missing": "left",
+            "left" : {
+              "value" : "50"
+            },
+            "right" : {
+              "value" : "65"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+
+----
+
+When isNullSameAsZero is `"false"` for your model, the feature vector changes.
+
+* dense format: all features values are shown, also the default values which can be zero or null values.
+* sparse format: only non default values are shown.
+
+e.g.
+
+given the features defined in <<models-handling-features-null-values>>.
+If their values are `matchedTitle=0` and `productReviewScore=0`, the sparse format will return `productReviewScore:0` (0 is the default value of `matchedTitle=0` and therefore it is not returned, 0 is not the default value of `productReviewScore=0` and therefore it is returned).
 
 ==== Implementation and Contributions
 

@@ -16,9 +16,11 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -29,39 +31,43 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.junit.BeforeClass;
 
-import static org.mockito.Mockito.*;
-
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
-  
+
   @BeforeClass
   public static void beforeClass() {
     assumeWorkingMockito();
   }
-  
-  public void testCreateCollection() throws Exception {
-    ClusterState clusterState = new ClusterState(Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
+
+  public void testCreateCollection() {
+    ClusterState clusterState =
+        new ClusterState(
+            Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
     DistribStateManager mockStateManager = mock(DistribStateManager.class);
     SolrCloudManager dataProvider = mock(SolrCloudManager.class);
     when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);
 
     ClusterStateMutator mutator = new ClusterStateMutator(dataProvider);
-    ZkNodeProps message = new ZkNodeProps(Map.of(
-        "name", "xyz",
-        "numShards", "1"
-    ));
+    ZkNodeProps message =
+        new ZkNodeProps(
+            Map.of(
+                "name", "xyz",
+                "numShards", "1"));
     ZkWriteCommand cmd = mutator.createCollection(clusterState, message);
     DocCollection collection = cmd.collection;
     assertEquals("xyz", collection.getName());
     assertEquals(1, collection.getSlicesMap().size());
 
-    ClusterState state = new ClusterState(Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
-    message = new ZkNodeProps(Map.of(
-        "name", "abc",
-        "numShards", "2",
-        "router.name", "implicit",
-        "shards", "x,y",
-        "replicationFactor", "3"
-    ));
+    ClusterState state =
+        new ClusterState(
+            Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
+    message =
+        new ZkNodeProps(
+            Map.of(
+                "name", "abc",
+                "numShards", "2",
+                "router.name", "implicit",
+                "shards", "x,y",
+                "replicationFactor", "3"));
     cmd = mutator.createCollection(state, message);
     collection = cmd.collection;
     assertEquals("abc", collection.getName());
@@ -76,4 +82,3 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertNotNull(state.getCollectionOrNull("xyz")); // we still have the old collection
   }
 }
-

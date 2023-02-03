@@ -161,6 +161,15 @@ The `solr-exporter` collects metrics from Solr every few seconds controlled by t
 These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
 The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
 
+`-i`, `--cluster-id`, `$CLUSTER_ID`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
+
 The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
 
 === Environment Variable Options
@@ -279,7 +288,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -311,7 +320,7 @@ Below is a slightly shortened version of it:
             {
             name         : "solr_metrics_jetty_response_total",
             type         : "COUNTER",
-            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names  : ["status"],
             label_values : [$status],
             value        : $value
@@ -336,7 +345,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_collections_live_nodes",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-node-management.html#clusterstatus",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -473,7 +482,7 @@ A jq query has to output JSON in the following format:
 {
   "name": "solr_ping",
   "type": "GAUGE",
-  "help": "See following URL: https://solr.apache.org/guide/ping.html",
+  "help": "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
   "label_names": ["base_url","core"],
   "label_values": ["http://localhost:8983/solr","collection1"],
   "value": 1.0
@@ -523,7 +532,7 @@ For example, `solr-exporter` converts the JSON in the previous section to the fo
 [source,plain]
 ----
 # TYPE solr_ping gauge
-# HELP solr_ping See following URL: https://solr.apache.org/guide/ping.html
+# HELP solr_ping See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 

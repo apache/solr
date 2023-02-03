@@ -16,24 +16,19 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
 import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.DELETE_VALUE_SINGLETON;
 import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
 
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
 /**
- * Removes any values found which are CharSequence with a length of 0. 
- * (ie: empty strings) 
- * <p>
- * By default this processor applies itself to all fields.
- * </p>
+ * Removes any values found which are CharSequence with a length of 0. (ie: empty strings)
  *
- * <p>
- * For example, with the configuration listed below, blank strings will be 
- * removed from all fields except those whose name ends with 
- * "<code>_literal</code>".
- * </p>
+ * <p>By default this processor applies itself to all fields.
+ *
+ * <p>For example, with the configuration listed below, blank strings will be removed from all
+ * fields except those whose name ends with "<code>_literal</code>".
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.RemoveBlankFieldUpdateProcessorFactory"&gt;
@@ -44,19 +39,20 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  *
  * @since 4.0.0
  */
-public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
+public final class RemoveBlankFieldUpdateProcessorFactory
+    extends FieldMutatingUpdateProcessorFactory {
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp,
-                                            UpdateRequestProcessor next) {
-    return valueMutator(getSelector(), next, src -> {
-      if (src instanceof CharSequence
-          && 0 == ((CharSequence) src).length()) {
-        return DELETE_VALUE_SINGLETON;
-      }
-      return src;
-    });
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return valueMutator(
+        getSelector(),
+        next,
+        src -> {
+          if (src instanceof CharSequence && 0 == ((CharSequence) src).length()) {
+            return DELETE_VALUE_SINGLETON;
+          }
+          return src;
+        });
   }
 }
-

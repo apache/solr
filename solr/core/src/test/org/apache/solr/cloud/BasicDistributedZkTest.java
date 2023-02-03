@@ -16,25 +16,20 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
-
 /**
- * This test simply does a bunch of basic things in solrcloud mode and asserts things
- * work as expected.
- * Implementation moved to AbstractBasicDistributedZkTestBase as it is used by many HDFS contrib tests.
+ * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
+ * expected. Implementation moved to AbstractBasicDistributedZkTestBase as it is used by many HDFS
+ * contrib tests.
  */
-@Slow 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZkTest extends AbstractBasicDistributedZkTestBase {
-
 
   @Test
   @Override
   @ShardsFixed(num = 4)
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     super.test();
   }

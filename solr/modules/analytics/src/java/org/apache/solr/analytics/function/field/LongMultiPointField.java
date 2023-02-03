@@ -20,16 +20,13 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.solr.analytics.value.LongValueStream.CastingLongValueStream;
 import org.apache.solr.schema.LongPointField;
 
-/**
- * An analytics wrapper for a multi-valued {@link LongPointField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link LongPointField} with DocValues enabled. */
 public class LongMultiPointField extends AnalyticsField implements CastingLongValueStream {
   private SortedNumericDocValues docValues;
   private int count;
@@ -71,14 +68,17 @@ public class LongMultiPointField extends AnalyticsField implements CastingLongVa
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamLongs(value -> cons.accept((double)value));
+    streamLongs(value -> cons.accept((double) value));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamLongs(value -> cons.accept(Long.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamLongs(value -> cons.accept(value));

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * GCS Backup Repository for Solr
- */
+/** GCS Backup Repository for Solr */
 package org.apache.solr.gcs;

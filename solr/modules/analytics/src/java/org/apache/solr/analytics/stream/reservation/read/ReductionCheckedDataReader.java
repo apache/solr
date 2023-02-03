@@ -20,8 +20,8 @@ import java.io.DataInput;
 import java.io.IOException;
 
 /**
- * Abstract class to manage the reading and application of data from a {@link DataInput} stream.
- * The data being read may not exist, so the reader first checks before reading.
+ * Abstract class to manage the reading and application of data from a {@link DataInput} stream. The
+ * data being read may not exist, so the reader first checks before reading.
  */
 public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<A> {
 
@@ -31,8 +31,7 @@ public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<
 
   @Override
   /**
-   * Read a piece of data from the input stream and feed it to the applier.
-   * <br>
+   * Read a piece of data from the input stream and feed it to the applier. <br>
    * First checks that the piece of data exists before reading.
    *
    * @throws IOException if an exception occurs while reading from the input stream
@@ -44,8 +43,7 @@ public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<
   }
 
   /**
-   * Read a piece of data from the input stream and feed it to the applier.
-   * <br>
+   * Read a piece of data from the input stream and feed it to the applier. <br>
    * This piece of data is guaranteed to be there.
    *
    * @throws IOException if an exception occurs while reading from the input stream

@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
-import java.io.IOException;
 
+import java.io.IOException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * {@link DirectoryReader}.
- * 
+ * Default IndexReaderFactory implementation. Returns a standard Lucene {@link DirectoryReader}.
+ *
  * @see DirectoryReader#open(Directory)
  */
 public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
+
   @Override
   public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
     return DirectoryReader.open(indexDir);

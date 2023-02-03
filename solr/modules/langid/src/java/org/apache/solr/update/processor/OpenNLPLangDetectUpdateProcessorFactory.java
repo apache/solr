@@ -18,7 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.io.InputStream;
-
+import opennlp.tools.langdetect.LanguageDetectorModel;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -29,14 +29,13 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import opennlp.tools.langdetect.LanguageDetectorModel;
-
 /**
- * Identifies the language of a set of input fields using <a href="https://opennlp.apache.org/">Apache OpenNLP</a>.
- * <p>
- * The UpdateProcessorChain config entry can take a number of parameters
- * which may also be passed as HTTP parameters on the update request
- * and override the defaults. Here is the simplest processor config possible:
+ * Identifies the language of a set of input fields using <a
+ * href="https://opennlp.apache.org/">Apache OpenNLP</a>.
+ *
+ * <p>The UpdateProcessorChain config entry can take a number of parameters which may also be passed
+ * as HTTP parameters on the update request and override the defaults. Here is the simplest
+ * processor config possible:
  *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.OpenNLPLangDetectUpdateProcessorFactory&quot;&gt;
@@ -45,12 +44,14 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  *   &lt;str name="langid.model"&gt;langdetect-183.bin&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection</a>
+ *
+ * See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-opennlp-language-detection</a>
  *
  * @since 7.3.0
  */
 public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProcessorFactory
-  implements SolrCoreAware {
+    implements SolrCoreAware {
 
   private static final String MODEL_PARAM = "langid.model";
   private String modelFile;
@@ -61,8 +62,7 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   private SolrResourceLoader solrResourceLoader;
 
   @Override
-  public void init(NamedList<?> args )
-  {
+  public void init(NamedList<?> args) {
     if (args != null) {
       Object o;
       o = args.get("defaults");
@@ -91,7 +91,8 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
         } else {
           modelFile = defaults.get(MODEL_PARAM);
           if (modelFile == null) {
-            throw new RuntimeException("Couldn't load language model, will return empty languages always!");
+            throw new RuntimeException(
+                "Couldn't load language model, will return empty languages always!");
           }
         }
       }
@@ -99,7 +100,8 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     // Process defaults, appends and invariants if we got a request
     if (req != null) {
       SolrPluginUtils.setDefaults(req, defaults, appends, invariants);
@@ -109,19 +111,18 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
 
   private void loadModel() throws IOException {
     InputStream is = null;
-    try{
+    try {
       if (modelFile != null) {
         is = solrResourceLoader.openResource(modelFile);
         model = new LanguageDetectorModel(is);
       }
-    }
-    finally{
+    } finally {
       IOUtils.closeQuietly(is);
     }
   }
 
   @Override
-  public void inform(SolrCore core){
+  public void inform(SolrCore core) {
     solrResourceLoader = core.getResourceLoader();
     try {
       loadModel();

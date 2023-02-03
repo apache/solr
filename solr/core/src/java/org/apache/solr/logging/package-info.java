@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * APIs related to capturing log event info in the {@link org.apache.solr.handler.admin.LoggingHandler}
+
+/**
+ * APIs related to capturing log event info in the {@link
+ * org.apache.solr.handler.admin.LoggingHandler}
  */
 package org.apache.solr.logging;
-

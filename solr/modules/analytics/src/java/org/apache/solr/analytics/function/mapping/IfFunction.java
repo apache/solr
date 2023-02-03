@@ -20,56 +20,57 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue;
-import org.apache.solr.analytics.value.AnalyticsValueStream;
-import org.apache.solr.analytics.value.BooleanValue;
-import org.apache.solr.analytics.value.BooleanValueStream;
-import org.apache.solr.analytics.value.DateValue;
-import org.apache.solr.analytics.value.DateValueStream;
-import org.apache.solr.analytics.value.DoubleValue;
-import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValue;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
+import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
+import org.apache.solr.analytics.value.BooleanValueStream;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
+import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
+import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DateValueStream.AbstractDateValueStream;
+import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
+import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.DoubleValueStream.AbstractDoubleValueStream;
+import org.apache.solr.analytics.value.FloatValue;
 import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.FloatValueStream.AbstractFloatValueStream;
+import org.apache.solr.analytics.value.IntValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
+import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.IntValueStream.AbstractIntValueStream;
+import org.apache.solr.analytics.value.LongValue;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.LongValueStream.AbstractLongValueStream;
+import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.StringValueStream.AbstractStringValueStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * An if-else mapping function.
- * <p>
- * Three arguments are required. The first, the conditional parameter, must be a {@link BooleanValue} and
- * the later two, the if and else parameters, can be any type of {@link AnalyticsValueStream}.
- * For each document, if the conditional value is true then the if-value is used otherwise the else-value is used.
- * <p>
- * The resulting Value or ValueStream will be typed with the closest super-type of the two non-conditional parameters.
- * (e.g. {@value #name}(boolean,double,int) will return a double)
- * If two {@link AnalyticsValue}s are passed as the if-else parameters, an {@link AnalyticsValue} will be returned.
- * If either parameter isn't single-valued, a {@link AnalyticsValueStream} will be returned.
+ *
+ * <p>Three arguments are required. The first, the conditional parameter, must be a {@link
+ * BooleanValue} and the later two, the if and else parameters, can be any type of {@link
+ * AnalyticsValueStream}. For each document, if the conditional value is true then the if-value is
+ * used otherwise the else-value is used.
+ *
+ * <p>The resulting Value or ValueStream will be typed with the closest super-type of the two
+ * non-conditional parameters. (e.g. {@value #name}(boolean,double,int) will return a double) If two
+ * {@link AnalyticsValue}s are passed as the if-else parameters, an {@link AnalyticsValue} will be
+ * returned. If either parameter isn't single-valued, a {@link AnalyticsValueStream} will be
+ * returned.
  */
 public class IfFunction extends AbstractAnalyticsValueStream {
   private final BooleanValue ifExpr;
@@ -78,73 +79,91 @@ public class IfFunction extends AbstractAnalyticsValueStream {
   public static final String name = "if";
   private final String exprStr;
   private final ExpressionType funcType;
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 3) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 3 paramaters, " + params.length + " found.");
-    }
-    if (!(params[0] instanceof BooleanValue)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires single-valued numeric parameters. " +
-                      "Incorrect parameter: "+params[0].getExpressionStr());
-    }
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 3) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 3 paramaters, " + params.length + " found.");
+        }
+        if (!(params[0] instanceof BooleanValue)) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function requires single-valued numeric parameters. "
+                  + "Incorrect parameter: "
+                  + params[0].getExpressionStr());
+        }
 
-    BooleanValue castedIf = (BooleanValue) params[0];
-    AnalyticsValueStream thenExpr = params[1];
-    AnalyticsValueStream elseExpr = params[2];
+        BooleanValue castedIf = (BooleanValue) params[0];
+        AnalyticsValueStream thenExpr = params[1];
+        AnalyticsValueStream elseExpr = params[2];
 
-    if (thenExpr instanceof DateValue && elseExpr instanceof DateValue) {
-      return new DateIfFunction(castedIf,(DateValue)thenExpr,(DateValue)elseExpr);
-    }
-    if (thenExpr instanceof DateValueStream && elseExpr instanceof DateValueStream) {
-      return new DateStreamIfFunction(castedIf,(DateValueStream)thenExpr,(DateValueStream)elseExpr);
-    }
-    if (thenExpr instanceof BooleanValue && elseExpr instanceof BooleanValue) {
-      return new BooleanIfFunction(castedIf,(BooleanValue)thenExpr,(BooleanValue)elseExpr);
-    }
-    if (thenExpr instanceof BooleanValueStream && elseExpr instanceof BooleanValueStream) {
-      return new BooleanStreamIfFunction(castedIf,(BooleanValueStream)thenExpr,(BooleanValueStream)elseExpr);
-    }
-    if (thenExpr instanceof IntValue && elseExpr instanceof IntValue) {
-      return new IntIfFunction(castedIf,(IntValue)thenExpr,(IntValue)elseExpr);
-    }
-    if (thenExpr instanceof IntValueStream && elseExpr instanceof IntValueStream) {
-      return new IntStreamIfFunction(castedIf,(IntValueStream)thenExpr,(IntValueStream)elseExpr);
-    }
-    if (thenExpr instanceof LongValue && elseExpr instanceof LongValue) {
-      return new LongIfFunction(castedIf,(LongValue)thenExpr,(LongValue)elseExpr);
-    }
-    if (thenExpr instanceof LongValueStream && elseExpr instanceof LongValueStream) {
-      return new LongStreamIfFunction(castedIf,(LongValueStream)thenExpr,(LongValueStream)elseExpr);
-    }
-    if (thenExpr instanceof FloatValue && elseExpr instanceof FloatValue) {
-      return new FloatIfFunction(castedIf,(FloatValue)thenExpr,(FloatValue)elseExpr);
-    }
-    if (thenExpr instanceof FloatValueStream && elseExpr instanceof FloatValueStream) {
-      return new FloatStreamIfFunction(castedIf,(FloatValueStream)thenExpr,(FloatValueStream)elseExpr);
-    }
-    if (thenExpr instanceof DoubleValue && elseExpr instanceof DoubleValue) {
-      return new DoubleIfFunction(castedIf,(DoubleValue)thenExpr,(DoubleValue)elseExpr);
-    }
-    if (thenExpr instanceof DoubleValueStream && elseExpr instanceof DoubleValueStream) {
-      return new DoubleStreamIfFunction(castedIf,(DoubleValueStream)thenExpr,(DoubleValueStream)elseExpr);
-    }
-    if (thenExpr instanceof StringValue && elseExpr instanceof StringValue) {
-      return new StringIfFunction(castedIf,(StringValue)thenExpr,(StringValue)elseExpr);
-    }
-    if (thenExpr instanceof StringValueStream && elseExpr instanceof StringValueStream) {
-      return new StringStreamIfFunction(castedIf,(StringValueStream)thenExpr,(StringValueStream)elseExpr);
-    }
-    if (thenExpr instanceof AnalyticsValue && elseExpr instanceof AnalyticsValue) {
-      return new ValueIfFunction(castedIf,(AnalyticsValue)thenExpr,(AnalyticsValue)elseExpr);
-    }
-    return new IfFunction(castedIf,thenExpr,elseExpr);
-  });
+        if (thenExpr instanceof DateValue && elseExpr instanceof DateValue) {
+          return new DateIfFunction(castedIf, (DateValue) thenExpr, (DateValue) elseExpr);
+        }
+        if (thenExpr instanceof DateValueStream && elseExpr instanceof DateValueStream) {
+          return new DateStreamIfFunction(
+              castedIf, (DateValueStream) thenExpr, (DateValueStream) elseExpr);
+        }
+        if (thenExpr instanceof BooleanValue && elseExpr instanceof BooleanValue) {
+          return new BooleanIfFunction(castedIf, (BooleanValue) thenExpr, (BooleanValue) elseExpr);
+        }
+        if (thenExpr instanceof BooleanValueStream && elseExpr instanceof BooleanValueStream) {
+          return new BooleanStreamIfFunction(
+              castedIf, (BooleanValueStream) thenExpr, (BooleanValueStream) elseExpr);
+        }
+        if (thenExpr instanceof IntValue && elseExpr instanceof IntValue) {
+          return new IntIfFunction(castedIf, (IntValue) thenExpr, (IntValue) elseExpr);
+        }
+        if (thenExpr instanceof IntValueStream && elseExpr instanceof IntValueStream) {
+          return new IntStreamIfFunction(
+              castedIf, (IntValueStream) thenExpr, (IntValueStream) elseExpr);
+        }
+        if (thenExpr instanceof LongValue && elseExpr instanceof LongValue) {
+          return new LongIfFunction(castedIf, (LongValue) thenExpr, (LongValue) elseExpr);
+        }
+        if (thenExpr instanceof LongValueStream && elseExpr instanceof LongValueStream) {
+          return new LongStreamIfFunction(
+              castedIf, (LongValueStream) thenExpr, (LongValueStream) elseExpr);
+        }
+        if (thenExpr instanceof FloatValue && elseExpr instanceof FloatValue) {
+          return new FloatIfFunction(castedIf, (FloatValue) thenExpr, (FloatValue) elseExpr);
+        }
+        if (thenExpr instanceof FloatValueStream && elseExpr instanceof FloatValueStream) {
+          return new FloatStreamIfFunction(
+              castedIf, (FloatValueStream) thenExpr, (FloatValueStream) elseExpr);
+        }
+        if (thenExpr instanceof DoubleValue && elseExpr instanceof DoubleValue) {
+          return new DoubleIfFunction(castedIf, (DoubleValue) thenExpr, (DoubleValue) elseExpr);
+        }
+        if (thenExpr instanceof DoubleValueStream && elseExpr instanceof DoubleValueStream) {
+          return new DoubleStreamIfFunction(
+              castedIf, (DoubleValueStream) thenExpr, (DoubleValueStream) elseExpr);
+        }
+        if (thenExpr instanceof StringValue && elseExpr instanceof StringValue) {
+          return new StringIfFunction(castedIf, (StringValue) thenExpr, (StringValue) elseExpr);
+        }
+        if (thenExpr instanceof StringValueStream && elseExpr instanceof StringValueStream) {
+          return new StringStreamIfFunction(
+              castedIf, (StringValueStream) thenExpr, (StringValueStream) elseExpr);
+        }
+        if (thenExpr instanceof AnalyticsValue && elseExpr instanceof AnalyticsValue) {
+          return new ValueIfFunction(
+              castedIf, (AnalyticsValue) thenExpr, (AnalyticsValue) elseExpr);
+        }
+        return new IfFunction(castedIf, thenExpr, elseExpr);
+      });
 
-  public IfFunction(BooleanValue ifExpr, AnalyticsValueStream thenExpr, AnalyticsValueStream elseExpr) throws SolrException {
+  public IfFunction(
+      BooleanValue ifExpr, AnalyticsValueStream thenExpr, AnalyticsValueStream elseExpr)
+      throws SolrException {
     this.ifExpr = ifExpr;
     this.thenExpr = thenExpr;
     this.elseExpr = elseExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
   }
 
   @Override
@@ -153,8 +172,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     if (ifExpr.exists()) {
       if (ifValue) {
         thenExpr.streamObjects(cons);
-      }
-      else {
+      } else {
         elseExpr.streamObjects(cons);
       }
     }
@@ -164,10 +182,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
   }
+
   @Override
   public ExpressionType getExpressionType() {
     return funcType;
@@ -181,12 +201,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public ValueIfFunction(BooleanValue ifExpr, AnalyticsValue thenExpr, AnalyticsValue elseExpr) throws SolrException {
+    public ValueIfFunction(BooleanValue ifExpr, AnalyticsValue thenExpr, AnalyticsValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -200,14 +222,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getObject();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getObject();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -217,10 +239,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -235,12 +259,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanStreamIfFunction(BooleanValue ifExpr, BooleanValueStream thenExpr, BooleanValueStream elseExpr) throws SolrException {
+    public BooleanStreamIfFunction(
+        BooleanValue ifExpr, BooleanValueStream thenExpr, BooleanValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -249,8 +276,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamBooleans(cons);
-        }
-        else {
+        } else {
           elseExpr.streamBooleans(cons);
         }
       }
@@ -260,10 +286,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -278,12 +306,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanIfFunction(BooleanValue ifExpr, BooleanValue thenExpr, BooleanValue elseExpr) throws SolrException {
+    public BooleanIfFunction(BooleanValue ifExpr, BooleanValue thenExpr, BooleanValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -297,14 +327,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getBoolean();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getBoolean();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -314,10 +344,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -332,12 +364,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public IntStreamIfFunction(BooleanValue ifExpr, IntValueStream thenExpr, IntValueStream elseExpr) throws SolrException {
+    public IntStreamIfFunction(
+        BooleanValue ifExpr, IntValueStream thenExpr, IntValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -346,8 +381,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamInts(cons);
-        }
-        else {
+        } else {
           elseExpr.streamInts(cons);
         }
       }
@@ -357,10 +391,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -375,12 +411,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public IntIfFunction(BooleanValue ifExpr, IntValue thenExpr, IntValue elseExpr) throws SolrException {
+    public IntIfFunction(BooleanValue ifExpr, IntValue thenExpr, IntValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -394,14 +432,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getInt();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getInt();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -411,10 +449,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -429,12 +469,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public LongStreamIfFunction(BooleanValue ifExpr, LongValueStream thenExpr, LongValueStream elseExpr) throws SolrException {
+    public LongStreamIfFunction(
+        BooleanValue ifExpr, LongValueStream thenExpr, LongValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -443,8 +486,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamLongs(cons);
-        }
-        else {
+        } else {
           elseExpr.streamLongs(cons);
         }
       }
@@ -454,10 +496,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -472,12 +516,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public LongIfFunction(BooleanValue ifExpr, LongValue thenExpr, LongValue elseExpr) throws SolrException {
+    public LongIfFunction(BooleanValue ifExpr, LongValue thenExpr, LongValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -491,14 +537,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getLong();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getLong();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -508,10 +554,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -526,12 +574,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public FloatStreamIfFunction(BooleanValue ifExpr, FloatValueStream thenExpr, FloatValueStream elseExpr) throws SolrException {
+    public FloatStreamIfFunction(
+        BooleanValue ifExpr, FloatValueStream thenExpr, FloatValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -540,8 +591,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamFloats(cons);
-        }
-        else {
+        } else {
           elseExpr.streamFloats(cons);
         }
       }
@@ -551,10 +601,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -569,12 +621,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public FloatIfFunction(BooleanValue ifExpr, FloatValue thenExpr, FloatValue elseExpr) throws SolrException {
+    public FloatIfFunction(BooleanValue ifExpr, FloatValue thenExpr, FloatValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -588,14 +642,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getFloat();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getFloat();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -605,10 +659,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -623,12 +679,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleStreamIfFunction(BooleanValue ifExpr, DoubleValueStream thenExpr, DoubleValueStream elseExpr) throws SolrException {
+    public DoubleStreamIfFunction(
+        BooleanValue ifExpr, DoubleValueStream thenExpr, DoubleValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -637,8 +696,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamDoubles(cons);
-        }
-        else {
+        } else {
           elseExpr.streamDoubles(cons);
         }
       }
@@ -648,10 +706,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -666,12 +726,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleIfFunction(BooleanValue ifExpr, DoubleValue thenExpr, DoubleValue elseExpr) throws SolrException {
+    public DoubleIfFunction(BooleanValue ifExpr, DoubleValue thenExpr, DoubleValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -685,14 +747,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getDouble();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getDouble();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -702,10 +764,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -720,12 +784,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DateStreamIfFunction(BooleanValue ifExpr, DateValueStream thenExpr, DateValueStream elseExpr) throws SolrException {
+    public DateStreamIfFunction(
+        BooleanValue ifExpr, DateValueStream thenExpr, DateValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -734,8 +801,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamLongs(cons);
-        }
-        else {
+        } else {
           elseExpr.streamLongs(cons);
         }
       }
@@ -745,10 +811,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -763,12 +831,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DateIfFunction(BooleanValue ifExpr, DateValue thenExpr, DateValue elseExpr) throws SolrException {
+    public DateIfFunction(BooleanValue ifExpr, DateValue thenExpr, DateValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -782,14 +852,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getLong();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getLong();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -799,10 +869,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -817,12 +889,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringStreamIfFunction(BooleanValue ifExpr, StringValueStream thenExpr, StringValueStream elseExpr) throws SolrException {
+    public StringStreamIfFunction(
+        BooleanValue ifExpr, StringValueStream thenExpr, StringValueStream elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     @Override
@@ -831,8 +906,7 @@ public class IfFunction extends AbstractAnalyticsValueStream {
       if (ifExpr.exists()) {
         if (ifValue) {
           thenExpr.streamStrings(cons);
-        }
-        else {
+        } else {
           elseExpr.streamStrings(cons);
         }
       }
@@ -842,10 +916,12 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -860,12 +936,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringIfFunction(BooleanValue ifExpr, StringValue thenExpr, StringValue elseExpr) throws SolrException {
+    public StringIfFunction(BooleanValue ifExpr, StringValue thenExpr, StringValue elseExpr)
+        throws SolrException {
       this.ifExpr = ifExpr;
       this.thenExpr = thenExpr;
       this.elseExpr = elseExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,ifExpr,thenExpr,elseExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,ifExpr,thenExpr,elseExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, ifExpr, thenExpr, elseExpr);
+      this.funcType =
+          AnalyticsValueStream.determineMappingPhase(exprStr, ifExpr, thenExpr, elseExpr);
     }
 
     private boolean exists = false;
@@ -879,14 +957,14 @@ public class IfFunction extends AbstractAnalyticsValueStream {
         if (ifValue) {
           value = thenExpr.getString();
           exists = thenExpr.exists();
-        }
-        else {
+        } else {
           value = elseExpr.getString();
           exists = elseExpr.exists();
         }
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -896,14 +974,15 @@ public class IfFunction extends AbstractAnalyticsValueStream {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 }
-

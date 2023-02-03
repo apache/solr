@@ -15,36 +15,39 @@
  * limitations under the License.
  */
 package org.apache.solr.update.processor;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * <p>This implementation is copied from Apache Nutch. </p>
- * <p>An implementation of a page signature. It calculates an MD5 hash
- * of a plain text "profile" of a page.</p>
- * <p>The algorithm to calculate a page "profile" takes the plain text version of
- * a page and performs the following steps:
+ * This implementation is copied from Apache Nutch.
+ *
+ * <p>An implementation of a page signature. It calculates an MD5 hash of a plain text "profile" of
+ * a page.
+ *
+ * <p>The algorithm to calculate a page "profile" takes the plain text version of a page and
+ * performs the following steps:
+ *
  * <ul>
- * <li>remove all characters except letters and digits, and bring all characters
- * to lower case,</li>
- * <li>split the text into tokens (all consecutive non-whitespace characters),</li>
- * <li>discard tokens equal or shorter than MIN_TOKEN_LEN (default 2 characters),</li>
- * <li>sort the list of tokens by decreasing frequency,</li>
- * <li>round down the counts of tokens to the nearest multiple of QUANT
- * (<code>QUANT = QUANT_RATE * maxFreq</code>, where <code>QUANT_RATE</code> is 0.01f
- * by default, and <code>maxFreq</code> is the maximum token frequency). If
- * <code>maxFreq</code> is higher than 1, then QUANT is always higher than 2 (which
- * means that tokens with frequency 1 are always discarded).</li>
- * <li>tokens, which frequency after quantization falls below QUANT, are discarded.</li>
- * <li>create a list of tokens and their quantized frequency, separated by spaces,
- * in the order of decreasing frequency.</li>
+ *   <li>remove all characters except letters and digits, and bring all characters to lower case,
+ *   <li>split the text into tokens (all consecutive non-whitespace characters),
+ *   <li>discard tokens equal or shorter than MIN_TOKEN_LEN (default 2 characters),
+ *   <li>sort the list of tokens by decreasing frequency,
+ *   <li>round down the counts of tokens to the nearest multiple of QUANT (<code>
+ *       QUANT = QUANT_RATE * maxFreq</code>, where <code>QUANT_RATE</code> is 0.01f by default, and
+ *       <code>maxFreq</code> is the maximum token frequency). If <code>maxFreq</code> is higher
+ *       than 1, then QUANT is always higher than 2 (which means that tokens with frequency 1 are
+ *       always discarded).
+ *   <li>tokens, which frequency after quantization falls below QUANT, are discarded.
+ *   <li>create a list of tokens and their quantized frequency, separated by spaces, in the order of
+ *       decreasing frequency.
  * </ul>
- * This list is then submitted to an MD5 hash calculation.*/
+ *
+ * This list is then submitted to an MD5 hash calculation.
+ */
 public class TextProfileSignature extends MD5Signature {
 
   private float quantRate;
@@ -56,7 +59,6 @@ public class TextProfileSignature extends MD5Signature {
     minTokenLen = params.getInt("minTokenLen", 2);
   }
 
-  
   @Override
   public byte[] getSignature() {
     return super.getSignature();
@@ -83,8 +85,7 @@ public class TextProfileSignature extends MD5Signature {
               tokens.put(s, tok);
             }
             tok.cnt++;
-            if (tok.cnt > maxFreq)
-              maxFreq = tok.cnt;
+            if (tok.cnt > maxFreq) maxFreq = tok.cnt;
           }
           curToken.setLength(0);
         }
@@ -100,18 +101,15 @@ public class TextProfileSignature extends MD5Signature {
         tokens.put(s, tok);
       }
       tok.cnt++;
-      if (tok.cnt > maxFreq)
-        maxFreq = tok.cnt;
+      if (tok.cnt > maxFreq) maxFreq = tok.cnt;
     }
     Iterator<Token> it = tokens.values().iterator();
     ArrayList<Token> profile = new ArrayList<>();
     // calculate the QUANT value
     int quant = Math.round(maxFreq * quantRate);
     if (quant < 2) {
-      if (maxFreq > 1)
-        quant = 2;
-      else
-        quant = 1;
+      if (maxFreq > 1) quant = 2;
+      else quant = 1;
     }
     while (it.hasNext()) {
       Token t = it.next();
@@ -123,13 +121,12 @@ public class TextProfileSignature extends MD5Signature {
       }
       profile.add(t);
     }
-    Collections.sort(profile, new TokenComparator());
+    profile.sort(new TokenComparator());
     StringBuilder newText = new StringBuilder();
     it = profile.iterator();
     while (it.hasNext()) {
       Token t = it.next();
-      if (newText.length() > 0)
-        newText.append("\n");
+      if (newText.length() > 0) newText.append("\n");
       newText.append(t.toString());
     }
 
@@ -157,5 +154,4 @@ public class TextProfileSignature extends MD5Signature {
       return t2.cnt - t1.cnt;
     }
   }
-
 }

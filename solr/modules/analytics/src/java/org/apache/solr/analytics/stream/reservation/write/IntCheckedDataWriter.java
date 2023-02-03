@@ -23,7 +23,8 @@ import java.util.function.IntSupplier;
 
 public class IntCheckedDataWriter extends ReductionCheckedDataWriter<IntSupplier> {
 
-  public IntCheckedDataWriter(DataOutput output, IntSupplier extractor, BooleanSupplier existsSupplier) {
+  public IntCheckedDataWriter(
+      DataOutput output, IntSupplier extractor, BooleanSupplier existsSupplier) {
     super(output, extractor, existsSupplier);
   }
 

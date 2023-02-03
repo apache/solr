@@ -24,28 +24,37 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A division mapping function. No checking on divisor value is done. An error will occur if a zero divisor is used.
- * <p>
- * Uses:
+ * A division mapping function. No checking on divisor value is done. An error will occur if a zero
+ * divisor is used.
+ *
+ * <p>Uses:
+ *
  * <ul>
- * <li>If two numeric Values are passed in, a {@link DoubleValue} representing the divison of the two values is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the division of
- * the Value and each of the values of the ValueStream for a document is returned.
- * (Or the other way, since the Value and ValueStream can be used in either order)
+ *   <li>If two numeric Values are passed in, a {@link DoubleValue} representing the divison of the
+ *       two values is returned.
+ *   <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream}
+ *       representing the division of the Value and each of the values of the ValueStream for a
+ *       document is returned. (Or the other way, since the Value and ValueStream can be used in
+ *       either order)
  * </ul>
  */
 public class DivideFunction {
   public static final String name = "div";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 2) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramaters, " + params.length + " found.");
-    }
-    AnalyticsValueStream param1 = params[0];
-    AnalyticsValueStream param2 = params[1];
-    if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
-      return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> a/b, (DoubleValueStream)param1, (DoubleValueStream)param2);
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameters.");
-    }
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 2) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 2 paramaters, " + params.length + " found.");
+        }
+        AnalyticsValueStream param1 = params[0];
+        AnalyticsValueStream param2 = params[1];
+        if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
+          return LambdaFunction.createDoubleLambdaFunction(
+              name, (a, b) -> a / b, (DoubleValueStream) param1, (DoubleValueStream) param2);
+        } else {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "The " + name + " function requires numeric parameters.");
+        }
+      });
 }

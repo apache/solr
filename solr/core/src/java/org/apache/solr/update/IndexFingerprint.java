@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -38,7 +37,9 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** @lucene.internal */
+/**
+ * @lucene.internal
+ */
 public class IndexFingerprint implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -55,11 +56,11 @@ public class IndexFingerprint implements MapSerializable {
   public IndexFingerprint() {
     // default constructor
   }
-  
-  public IndexFingerprint (long maxVersionSpecified)  {
+
+  public IndexFingerprint(long maxVersionSpecified) {
     this.maxVersionSpecified = maxVersionSpecified;
   }
-  
+
   public long getMaxVersionSpecified() {
     return maxVersionSpecified;
   }
@@ -92,11 +93,12 @@ public class IndexFingerprint implements MapSerializable {
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
     RTimer timer = new RTimer();
     core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
-    RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher =
+        core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
     try {
       IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
       final double duration = timer.stop();
-      log.info("IndexFingerprint millis:{} result:{}",duration, f);
+      log.info("IndexFingerprint millis:{} result:{}", duration, f);
       return f;
     } finally {
       if (newestSearcher != null) {
@@ -104,19 +106,19 @@ public class IndexFingerprint implements MapSerializable {
       }
     }
   }
-  
-  public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
-      throws IOException {
+
+  public static IndexFingerprint getFingerprint(
+      SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion) throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
     Map<Object, Object> funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
-    
+
     IndexFingerprint f = new IndexFingerprint();
     f.maxVersionSpecified = maxVersion;
     f.maxDoc = ctx.reader().maxDoc();
     f.numDocs = ctx.reader().numDocs();
-    
+
     int maxDoc = ctx.reader().maxDoc();
     Bits liveDocs = ctx.reader().getLiveDocs();
     FunctionValues fv = vs.getValues(funcContext, ctx);
@@ -130,13 +132,13 @@ public class IndexFingerprint implements MapSerializable {
         f.numVersions++;
       }
     }
-    
+
     return f;
   }
-  
-  
+
   public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
-    // acc should have maxVersionSpecified already set in it using IndexFingerprint(long maxVersionSpecified) constructor
+    // acc should have maxVersionSpecified already set in it using IndexFingerprint(long
+    // maxVersionSpecified) constructor
     acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);
     acc.numDocs += f2.numDocs;
     acc.maxVersionEncountered = Math.max(acc.maxVersionEncountered, f2.maxVersionEncountered);
@@ -151,7 +153,8 @@ public class IndexFingerprint implements MapSerializable {
   public static int compare(IndexFingerprint f1, IndexFingerprint f2) {
     int cmp;
 
-    // NOTE: some way want number of docs in index to take precedence over highest version (add-only systems for sure)
+    // NOTE: some way want number of docs in index to take precedence over highest version (add-only
+    // systems for sure)
 
     // if we're comparing all of the versions in the index, then go by the highest encountered.
     if (f1.maxVersionSpecified == Long.MAX_VALUE) {
@@ -186,18 +189,16 @@ public class IndexFingerprint implements MapSerializable {
 
   private static long getLong(Map<String, Object> m, String key, long def) {
     Object oval = m.get(key);
-    return oval != null ? ((Number)oval).longValue() : def;
+    return oval != null ? ((Number) oval).longValue() : def;
   }
 
-  /**
-   * Create an IndexFingerprint object from a deserialized generic object (Map or NamedList)
-   */
+  /** Create an IndexFingerprint object from a deserialized generic object (Map or NamedList) */
   @SuppressWarnings("unchecked")
   public static IndexFingerprint fromObject(Object o) {
     if (o instanceof IndexFingerprint) return (IndexFingerprint) o;
     Map<String, Object> map = null;
     if (o instanceof Map) {
-      map = (Map<String,Object>) o;
+      map = (Map<String, Object>) o;
     } else if (o instanceof NamedList) {
       map = ((NamedList<Object>) o).asShallowMap();
     } else {
@@ -218,5 +219,4 @@ public class IndexFingerprint implements MapSerializable {
   public String toString() {
     return toMap(new LinkedHashMap<>()).toString();
   }
-
 }

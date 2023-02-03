@@ -20,13 +20,14 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "2.0.0"
-  id "org.owasp.dependencycheck" version "6.4.1.1"
-  id 'ca.cutterslade.analyze' version "1.8.3"
-  id 'de.thetaphi.forbiddenapis' version '3.2' apply false
-  id "de.undercouch.download" version "4.0.2" apply false
-  id "net.ltgt.errorprone" version "2.0.2" apply false
-  id 'com.diffplug.spotless' version "5.14.3" apply false
+  id "com.palantir.consistent-versions" version "2.11.0"
+  id "org.owasp.dependencycheck" version "8.0.1"
+  id 'ca.cutterslade.analyze' version "1.9.0"
+  id 'de.thetaphi.forbiddenapis' version '3.4' apply false
+  id "de.undercouch.download" version "5.2.0" apply false
+  id "net.ltgt.errorprone" version "3.0.1" apply false
+  id 'com.diffplug.spotless' version "6.5.2" apply false
+  id 'com.github.node-gradle.node' version '3.4.0' apply false
 }
 
 apply from: file('gradle/globals.gradle')
@@ -82,18 +83,6 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
-  // Declare script dependency versions outside of palantir's
-  // version unification control. These are not our main dependencies.
-  scriptDepVersions = [
-      "apache-rat": "0.11",
-      "commons-codec": "1.13",
-      "ecj": "3.19.0",
-      "javacc": "7.0.4",
-      "jflex": "1.7.0",
-      "jgit": "5.9.0.202009080501-r",
-      "flexmark": "0.61.24",
-  ]
-
   // Allow definiting external tool locations using system props.
   externalTool = { name ->
     def resolved = propertyOrDefault("${name}.exe", name as String)
@@ -112,6 +101,8 @@ ext {
     return luceneBaseVersion
   }
 }
+
+apply from: file('buildSrc/scriptDepVersions.gradle')
 
 // Include smaller chunks configuring dedicated build areas.
 // Some of these intersect or add additional functionality.
@@ -205,4 +196,4 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
-
+apply from: file('gradle/node.gradle')

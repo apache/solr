@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
-
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -55,22 +54,12 @@ public class MetricsQuery {
 
   public MetricsQuery withCore(String core) {
     return new MetricsQuery(
-        getPath(),
-        getParameters(),
-        core,
-        getCollection().orElse(null),
-        getJsonQueries()
-    );
+        getPath(), getParameters(), core, getCollection().orElse(null), getJsonQueries());
   }
 
   public MetricsQuery withCollection(String collection) {
     return new MetricsQuery(
-        getPath(),
-        getParameters(),
-        getCore().orElse(null),
-        collection,
-        getJsonQueries()
-    );
+        getPath(), getParameters(), getCore().orElse(null), collection, getJsonQueries());
   }
 
   public String getPath() {
@@ -89,7 +78,8 @@ public class MetricsQuery {
     return jsonQueries;
   }
 
-  public static List<MetricsQuery> from(Node node, Map<String,MetricsQueryTemplate> jqTemplates) throws JsonQueryException {
+  public static List<MetricsQuery> from(Node node, Map<String, MetricsQueryTemplate> jqTemplates)
+      throws JsonQueryException {
     List<MetricsQuery> metricsQueries = new ArrayList<>();
 
     NamedList<?> config = DOMUtil.childNodesToNamedList(node);
@@ -137,7 +127,8 @@ public class MetricsQuery {
               String templateName = matcher.group("TEMPLATE");
               MetricsQueryTemplate template = jqTemplates.get(templateName);
               if (template == null) {
-                throw new IllegalStateException("jq template '" + matcher.group("TEMPLATE") + "' not found!");
+                throw new IllegalStateException(
+                    "jq template '" + matcher.group("TEMPLATE") + "' not found!");
               }
 
               jsonQuery = template.applyTemplate(matcher);
@@ -149,12 +140,7 @@ public class MetricsQuery {
         }
       }
 
-      metricsQueries.add(new MetricsQuery(
-          path,
-          params,
-          core,
-          collection,
-          compiledQueries));
+      metricsQueries.add(new MetricsQuery(path, params, core, collection, compiledQueries));
     }
 
     return metricsQueries;

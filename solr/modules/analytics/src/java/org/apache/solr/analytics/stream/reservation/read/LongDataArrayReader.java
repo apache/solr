@@ -26,6 +26,7 @@ public class LongDataArrayReader extends ReductionDataArrayReader<LongConsumer> 
   public LongDataArrayReader(DataInput inputStream, LongConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }
+
   @Override
   public void read(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

@@ -20,15 +20,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Create a function query from the input value.
- * <br>Other parameters: none
- * <br>Example: <code>{!func}log(foo)</code>
+ * Create a function query from the input value. <br>
+ * Other parameters: none <br>
+ * Example: <code>{!func}log(foo)</code>
  */
 public class FunctionQParserPlugin extends QParserPlugin {
   public static final String NAME = "func";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FunctionQParser(qstr, localParams, params, req);
   }
 }

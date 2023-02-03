@@ -16,23 +16,19 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.solr.cluster.placement.CollectionMetrics;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ShardMetrics;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-
-/**
- * Builder class for constructing instances of {@link CollectionMetrics}.
- */
+/** Builder class for constructing instances of {@link CollectionMetrics}. */
 public class CollectionMetricsBuilder {
 
   final Map<String, ShardMetricsBuilder> shardMetricsBuilders = new HashMap<>();
-
 
   public Map<String, ShardMetricsBuilder> getShardMetricsBuilders() {
     return shardMetricsBuilders;
@@ -77,19 +73,24 @@ public class CollectionMetricsBuilder {
 
     public ShardMetrics build() {
       final Map<String, ReplicaMetrics> metricsMap = new HashMap<>();
-      replicaMetricsBuilders.forEach((name, replicaBuilder) -> {
-        ReplicaMetrics metrics = replicaBuilder.build();
-        metricsMap.put(name, metrics);
-        if (replicaBuilder.leader) {
-          if (leaderMetricsBuilder == null) {
-            leaderMetricsBuilder = replicaBuilder;
-          } else if (!leaderMetricsBuilder.replicaName.equals(replicaBuilder.replicaName)) {
-            throw new RuntimeException("two replicas claim to be the shard leader! existing=" +
-                leaderMetricsBuilder + " and current " + replicaBuilder);
-          }
-        }
-      });
-      final ReplicaMetrics finalLeaderMetrics = leaderMetricsBuilder != null ? leaderMetricsBuilder.build() : null;
+      replicaMetricsBuilders.forEach(
+          (name, replicaBuilder) -> {
+            ReplicaMetrics metrics = replicaBuilder.build();
+            metricsMap.put(name, metrics);
+            if (replicaBuilder.leader) {
+              if (leaderMetricsBuilder == null) {
+                leaderMetricsBuilder = replicaBuilder;
+              } else if (!leaderMetricsBuilder.replicaName.equals(replicaBuilder.replicaName)) {
+                throw new RuntimeException(
+                    "two replicas claim to be the shard leader! existing="
+                        + leaderMetricsBuilder
+                        + " and current "
+                        + replicaBuilder);
+              }
+            }
+          });
+      final ReplicaMetrics finalLeaderMetrics =
+          leaderMetricsBuilder != null ? leaderMetricsBuilder.build() : null;
       return new ShardMetrics() {
         @Override
         public String getShardName() {
@@ -128,8 +129,10 @@ public class CollectionMetricsBuilder {
       return this;
     }
 
-    /** Add unconverted (raw) values here, this method internally calls
-     * {@link ReplicaMetric#convert(Object)}.
+    /**
+     * Add unconverted (raw) values here, this method internally calls {@link
+     * ReplicaMetric#convert(Object)}.
+     *
      * @param metric metric to add
      * @param value raw (unconverted) metric value
      */

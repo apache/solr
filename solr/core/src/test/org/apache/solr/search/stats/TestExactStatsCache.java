@@ -38,10 +38,8 @@ public class TestExactStatsCache extends TestBaseStatsCache {
     commit();
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;
-      index_specific(i, id, docId++, "a_t", "one two three",
-              "shard_i", shard);
-      index_specific(i, id, docId++, "a_t", "one two three four five",
-              "shard_i", shard);
+      index_specific(i, id, docId++, "a_t", "one two three", "shard_i", shard);
+      index_specific(i, id, docId++, "a_t", "one two three four five", "shard_i", shard);
     }
     commit();
     int expectedResults = 2 * (clients.size() - 1);
@@ -88,7 +86,9 @@ public class TestExactStatsCache extends TestBaseStatsCache {
   }
 
   protected void checkPartialResponse(QueryResponse response, int expectedResults) {
-    assertTrue("should have 'partialResults' in header", (Boolean)response.getHeader().get("partialResults"));
+    assertTrue(
+        "should have 'partialResults' in header",
+        (Boolean) response.getHeader().get("partialResults"));
     SolrDocumentList docList = response.getResults();
     assertEquals(expectedResults, docList.size());
     assertEquals(expectedResults, docList.getNumFound());

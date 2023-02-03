@@ -20,9 +20,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class RebalanceLeadersPayload implements ReflectMapWriter {
-  @JsonProperty
-  public Integer maxAtOnce;
+  @JsonProperty public Integer maxAtOnce;
 
-  @JsonProperty
-  public Integer maxWaitSeconds = 60;
+  @JsonProperty public Integer maxWaitSeconds = 60;
 }

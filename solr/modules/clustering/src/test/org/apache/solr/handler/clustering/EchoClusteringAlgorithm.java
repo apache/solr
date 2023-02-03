@@ -16,23 +16,20 @@
  */
 package org.apache.solr.handler.clustering;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.carrot2.attrs.AttrComposite;
 import org.carrot2.clustering.Cluster;
 import org.carrot2.clustering.ClusteringAlgorithm;
 import org.carrot2.clustering.Document;
 import org.carrot2.language.LanguageComponents;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
-
 /**
- * Test-only pseudo clustering algorithm that creates
- * a cluster for each input document and sets the labels
- * of this cluster to the full content of clustered input
- * fields.
+ * Test-only pseudo clustering algorithm that creates a cluster for each input document and sets the
+ * labels of this cluster to the full content of clustered input fields.
  */
 public class EchoClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   @Override
@@ -46,16 +43,19 @@ public class EchoClusteringAlgorithm extends AttrComposite implements Clustering
   }
 
   @Override
-  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream, LanguageComponents languageComponents) {
+  public <T extends Document> List<Cluster<T>> cluster(
+      Stream<? extends T> documentStream, LanguageComponents languageComponents) {
     List<Cluster<T>> clusters = new ArrayList<>();
-    documentStream.forEach(document -> {
-      final Cluster<T> cluster = new Cluster<>();
-      cluster.addDocument(document);
-      document.visitFields((field, value) -> {
-        cluster.addLabel(field + ":" + value);
-      });
-      clusters.add(cluster);
-    });
+    documentStream.forEach(
+        document -> {
+          final Cluster<T> cluster = new Cluster<>();
+          cluster.addDocument(document);
+          document.visitFields(
+              (field, value) -> {
+                cluster.addLabel(field + ":" + value);
+              });
+          clusters.add(cluster);
+        });
 
     return clusters;
   }

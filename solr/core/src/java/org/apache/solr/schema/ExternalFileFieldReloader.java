@@ -16,6 +16,9 @@
  */
 package org.apache.solr.schema;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.AbstractSolrEventListener;
@@ -25,28 +28,22 @@ import org.apache.solr.search.function.FileFloatSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * An event listener to reload ExternalFileFields for new searchers.
  *
- * Opening a new IndexSearcher will invalidate the internal caches used by
- * {@link ExternalFileField}.  By default, these caches are reloaded lazily
- * by the first search that uses them.  For large external files, this can
- * slow down searches unacceptably.
+ * <p>Opening a new IndexSearcher will invalidate the internal caches used by {@link
+ * ExternalFileField}. By default, these caches are reloaded lazily by the first search that uses
+ * them. For large external files, this can slow down searches unacceptably.
  *
- * To reload the caches when the searcher is first opened, set up event
- * listeners in your solrconfig.xml:
+ * <p>To reload the caches when the searcher is first opened, set up event listeners in your
+ * solrconfig.xml:
  *
  * <pre>
  *   &lt;listener event="newSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/&gt;
  *   &lt;listener event="firstSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/&gt;
  * </pre>
  *
- * The caches will be reloaded for all ExternalFileFields in your schema after
- * each commit.
+ * The caches will be reloaded for all ExternalFileFields in your schema after each commit.
  */
 public class ExternalFileFieldReloader extends AbstractSolrEventListener {
 
@@ -83,7 +80,7 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
     for (SchemaField field : schema.getFields().values()) {
       FieldType type = field.getType();
       if (type instanceof ExternalFileField) {
-        ExternalFileField eff = (ExternalFileField)type;
+        ExternalFileField eff = (ExternalFileField) type;
         fieldSources.add(eff.getFileFloatSource(field, datadir));
         if (log.isInfoEnabled()) {
           log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());

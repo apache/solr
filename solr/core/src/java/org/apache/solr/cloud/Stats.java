@@ -16,22 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import com.codahale.metrics.Timer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 
 /**
  * Used to hold statistics about some SolrCloud operations.
  *
- * This is experimental API and subject to change.
+ * <p>This is experimental API and subject to change.
  */
 public class Stats {
   static final int MAX_STORED_FAILURES = 10;
@@ -48,7 +47,7 @@ public class Stats {
     return stat == null ? 0 : stat.success.get();
   }
 
-  public int getErrorCount(String operation)  {
+  public int getErrorCount(String operation) {
     Stat stat = stats.get(operation.toLowerCase(Locale.ROOT));
     return stat == null ? 0 : stat.errors.get();
   }
@@ -90,9 +89,9 @@ public class Stats {
       stat = new Stat();
       stats.put(op, stat);
     }
-    LinkedList<FailedOp> failedOps = stat.failureDetails;
-    synchronized (failedOps)  {
-      if (failedOps.size() >= MAX_STORED_FAILURES)  {
+    ArrayDeque<FailedOp> failedOps = stat.failureDetails;
+    synchronized (failedOps) {
+      if (failedOps.size() >= MAX_STORED_FAILURES) {
         failedOps.removeFirst();
       }
       failedOps.addLast(new FailedOp(request, resp));
@@ -102,8 +101,8 @@ public class Stats {
   public List<FailedOp> getFailureDetails(String operation) {
     Stat stat = stats.get(operation.toLowerCase(Locale.ROOT));
     if (stat == null || stat.failureDetails.isEmpty()) return null;
-    LinkedList<FailedOp> failedOps = stat.failureDetails;
-    synchronized (failedOps)  {
+    ArrayDeque<FailedOp> failedOps = stat.failureDetails;
+    synchronized (failedOps) {
       ArrayList<FailedOp> ret = new ArrayList<>(failedOps);
       return ret;
     }
@@ -121,21 +120,21 @@ public class Stats {
     stats.clear();
   }
 
-  public static class Stat  {
+  public static class Stat {
     public final AtomicInteger success;
     public final AtomicInteger errors;
     public final Timer requestTime;
-    public final LinkedList<FailedOp> failureDetails;
+    public final ArrayDeque<FailedOp> failureDetails;
 
     public Stat() {
       this.success = new AtomicInteger();
       this.errors = new AtomicInteger();
       this.requestTime = new Timer();
-      this.failureDetails = new LinkedList<>();
+      this.failureDetails = new ArrayDeque<>();
     }
   }
 
-  public static class FailedOp  {
+  public static class FailedOp {
     public final ZkNodeProps req;
     public final SolrResponse resp;
 

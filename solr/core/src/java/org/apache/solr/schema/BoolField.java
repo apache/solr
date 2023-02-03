@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -46,14 +45,12 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-/**
- *
- */
+/** */
 public class BoolField extends PrimitiveFieldType {
   @Override
-  public SortField getSortField(SchemaField field,boolean reverse) {
+  public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
-    return getStringSort(field,reverse);
+    return getStringSort(field, reverse);
   }
 
   @Override
@@ -72,44 +69,44 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   // avoid instantiating every time...
-  public final static char[] TRUE_TOKEN = {'T'};
-  public final static char[] FALSE_TOKEN = {'F'};
+  public static final char[] TRUE_TOKEN = {'T'};
+  public static final char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////
   // TODO: look into creating my own queryParser that can more efficiently
   // handle single valued non-text fields (int,bool,etc) if needed.
 
-  protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new Tokenizer() {
-        final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-        boolean done = false;
-
+  protected static final Analyzer boolAnalyzer =
+      new SolrAnalyzer() {
         @Override
-        public void reset() throws IOException {
-          super.reset();
-          done = false;
-        }
+        public TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer =
+              new Tokenizer() {
+                final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+                boolean done = false;
 
-        @Override
-        public boolean incrementToken() throws IOException {
-          clearAttributes();
-          if (done) return false;
-          done = true;
-          int ch = input.read();
-          if (ch==-1) return false;
-          termAtt.copyBuffer(
-                  ((ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN)
-                  ,0,1);
-          return true;
+                @Override
+                public void reset() throws IOException {
+                  super.reset();
+                  done = false;
+                }
+
+                @Override
+                public boolean incrementToken() throws IOException {
+                  clearAttributes();
+                  if (done) return false;
+                  done = true;
+                  int ch = input.read();
+                  if (ch == -1) return false;
+                  termAtt.copyBuffer(
+                      ((ch == 't' || ch == 'T' || ch == '1') ? TRUE_TOKEN : FALSE_TOKEN), 0, 1);
+                  return true;
+                }
+              };
+
+          return new TokenStreamComponents(tokenizer);
         }
       };
-
-      return new TokenStreamComponents(tokenizer);
-    }
-  };
-
 
   @Override
   public Analyzer getIndexAnalyzer() {
@@ -123,8 +120,8 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toInternal(String val) {
-    char ch = (val!=null && val.length()>0) ? val.charAt(0) : 0;
-    return (ch=='1' || ch=='t' || ch=='T') ? "T" : "F";
+    char ch = (val != null && val.length() > 0) ? val.charAt(0) : 0;
+    return (ch == '1' || ch == 't' || ch == 'T') ? "T" : "F";
   }
 
   @Override
@@ -140,7 +137,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public Boolean toObject(IndexableField f) {
-    return Boolean.valueOf( toExternal(f) );
+    return Boolean.valueOf(toExternal(f));
   }
 
   @Override
@@ -151,7 +148,7 @@ public class BoolField extends PrimitiveFieldType {
   @Override
   public String indexedToReadable(String indexedForm) {
     char ch = indexedForm.charAt(0);
-    return ch=='T' ? "true" : "false";
+    return ch == 'T' ? "true" : "false";
   }
 
   private static final CharsRef TRUE = new CharsRef("true");
@@ -229,18 +226,18 @@ public class BoolField extends PrimitiveFieldType {
       return "bool(" + field + ')';
     }
 
-
     @Override
-    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
       // figure out what ord maps to true
       int nord = sindex.getValueCount();
       // if no values in the segment, default trueOrd to something other then -1 (missing)
       int tord = -2;
-      for (int i=0; i<nord; i++) {
+      for (int i = 0; i < nord; i++) {
         final BytesRef br = sindex.lookupOrd(i);
-        if (br.length==1 && br.bytes[br.offset]=='T') {
+        if (br.length == 1 && br.bytes[br.offset] == 'T') {
           tord = i;
           break;
         }
@@ -294,7 +291,7 @@ public class BoolField extends PrimitiveFieldType {
 
     @Override
     public boolean equals(Object o) {
-      return o.getClass() == BoolFieldSource.class && this.field.equals(((BoolFieldSource)o).field);
+      return (o instanceof BoolFieldSource) && this.field.equals(((BoolFieldSource) o).field);
     }
 
     private static final int hcode = OrdFieldSource.class.hashCode();
@@ -303,7 +300,5 @@ public class BoolField extends PrimitiveFieldType {
     public int hashCode() {
       return hcode + field.hashCode();
     }
-
   }
 }
-

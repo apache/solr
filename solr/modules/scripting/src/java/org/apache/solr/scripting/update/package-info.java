@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Support for scripting during document updates.
- */
+/** Support for scripting during document updates. */
 package org.apache.solr.scripting.update;

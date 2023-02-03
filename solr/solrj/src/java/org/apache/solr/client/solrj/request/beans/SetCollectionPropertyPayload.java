@@ -23,6 +23,5 @@ public class SetCollectionPropertyPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
 
-  @JsonProperty
-  public String value = null;
+  @JsonProperty public String value = null;
 }

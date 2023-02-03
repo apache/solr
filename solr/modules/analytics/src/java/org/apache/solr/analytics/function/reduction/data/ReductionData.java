@@ -16,9 +16,7 @@
  */
 package org.apache.solr.analytics.function.reduction.data;
 
-/**
- * Base class to store data for {@link ReductionDataCollector}s
- */
+/** Base class to store data for {@link ReductionDataCollector}s */
 public class ReductionData {
   public boolean exists;
 }

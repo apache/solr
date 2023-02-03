@@ -307,15 +307,16 @@ Setting the hostname of the Solr server is recommended, especially when running 
 
 To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not.
 To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`.
-To specify label and/or color, use a comma-delimited format as below.
+Allowed values are `dev`, `test`, `stage` or `prod`. Each of these have default labels and colors predefined.
+To specify label and/or color, use a comma-delimited format as below. Label has to be defined before color.
 The `+` character can be used instead of space to avoid quoting.
 Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red.
 Examples of valid environment configs:
 
-* `prod`
-* `test,label=Functional+test`
-* `dev,label=MyDev,color=blue`
-* `dev,color=blue`
+* `prod` (default label is 'Production', default color is a tone of red)
+* `test,label=Functional+test` (default color will remain yellow, but override the label)
+* `dev,label=MyDev,color=blue` (override both label and color by name)
+* `stage,color=#ff8888` (customize color with code)
 
 === Override Settings in solrconfig.xml
 
@@ -362,9 +363,9 @@ These four settings in particular are important to have set very high, unlimited
 * file handles (`ulimit -n`): 65,000 is the recommended _minimum_.
 All the files used by all replicas have their file handles open at once so this can grow quite large.
 * virtual memory (`ulimit -v`): Set to unlimited.
-This is used to by MMapping the indexes.
+This is used by MMapping the indexes.
 * max memory size (`ulimit -m`): Also used by MMap, set to unlimited.
-* If your system supports it, `sysctl vm.max_map_count`, should be set to unlimited as well.
+* `sysctl vm.max_map_count` (if your system supports it), should be set to unlimited as well.
 
 We strongly recommend that these settings be permanently raised.
 The exact process to permanently raise them will vary per operating system.
@@ -385,7 +386,7 @@ Errors such as "too many open files", "connection error", and "max processes exc
 
 === Avoid Swapping (*nix Operating Systems)
 
-When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation.
+When running a Java application like Solr, having the OS swap memory to disk is a very bad situation.
 We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system.
 So our recommendation is to disable swap on the host altogether or reduce the "swappiness".
 These instructions are valid for Linux environments.
@@ -454,7 +455,7 @@ Ideally this would mean more machines, but budget constraints might make that im
 There is another issue once the heap reaches 32GB.
 Below 32GB, Java is able to use compressed pointers, but above that point, larger pointers are required, which uses more memory and slows down the JVM.
 
-Because of the potential garbage collection issues and the particular issues that happen at 32GB, if a single instance would require a 64GB heap, performance is likely to improve greatly if the machine is set up with two nodes that each have a 31GB heap.
+If your use case needs over 31GB of heap, then consider multiple nodes since they typically will perform better than one node with >32GB of heap.
 ====
 
 If your use case requires multiple instances, at a minimum you will need unique Solr home directories for each node you want to run; ideally, each home should be on a different physical disk so that multiple Solr nodes don’t have to compete with each other when accessing files on disk.

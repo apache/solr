@@ -38,13 +38,12 @@ import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
- *  Singleton that creates a Transformer for XSLT
- *  For now, only caches the last created Transformer, but
- *  could evolve to use an LRU cache of Transformers.
- *  
- *  See http://www.javaworld.com/javaworld/jw-05-2003/jw-0502-xsl_p.html for
- *  one possible way of improving caching. 
+/**
+ * Singleton that creates a Transformer for XSLT For now, only caches the last created Transformer,
+ * but could evolve to use an LRU cache of Transformers.
+ *
+ * <p>See http://www.javaworld.com/javaworld/jw-05-2003/jw-0502-xsl_p.html for one possible way of
+ * improving caching.
  */
 class TransformerProvider {
   private String lastFilename;
@@ -53,16 +52,17 @@ class TransformerProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-  
+
   public static TransformerProvider instance = new TransformerProvider();
 
   /** singleton */
   private TransformerProvider() {
     // tell'em: currently, we only cache the last used XSLT transform, and blindly recompile it
     // once cacheLifetimeSeconds expires
-    log.warn("The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
-        + "for high load scenarios, unless a single XSLT transform is used"
-        + " and xsltCacheLifetimeSeconds is set to a sufficiently high value.");
+    log.warn(
+        "The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
+            + "for high load scenarios, unless a single XSLT transform is used"
+            + " and xsltCacheLifetimeSeconds is set to a sufficiently high value.");
   }
 
   /**
@@ -86,59 +86,67 @@ class TransformerProvider {
     return result;
   }
 
-  /** Return a new Transformer, possibly created from our cached Templates object  
+  /**
+   * Return a new Transformer, possibly created from our cached Templates object
+   *
    * @throws IOException If there is a low-level I/O error.
-   */ 
-  public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
+   */
+  public synchronized Transformer getTransformer(
+      SolrConfig solrConfig, String filename, int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.
     // It'd be better to check the file modification time to reload only if needed.
-    if(lastTemplates!=null && filename.equals(lastFilename) &&
-        cacheExpiresTimeout != null && ! cacheExpiresTimeout.hasTimedOut()) {
-      if(log.isDebugEnabled()) {
+    if (lastTemplates != null
+        && filename.equals(lastFilename)
+        && cacheExpiresTimeout != null
+        && !cacheExpiresTimeout.hasTimedOut()) {
+      if (log.isDebugEnabled()) {
         log.debug("Using cached Templates:{}", filename);
       }
     } else {
-      lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename,cacheLifetimeSeconds);
+      lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename, cacheLifetimeSeconds);
     }
-    
+
     Transformer result = null;
-    
+
     try {
       result = lastTemplates.newTransformer();
-    } catch(TransformerConfigurationException tce) {
+    } catch (TransformerConfigurationException tce) {
       log.error(getClass().getName(), "getTransformer", tce);
       throw new IOException("newTransformer fails ( " + lastFilename + ")", tce);
     }
-    
+
     return result;
   }
-  
+
   /** Return a Templates object for the given filename */
-  private Templates getTemplates(ResourceLoader loader, String filename,int cacheLifetimeSeconds) throws IOException {
-    
+  private Templates getTemplates(ResourceLoader loader, String filename, int cacheLifetimeSeconds)
+      throws IOException {
+
     Templates result = null;
     lastFilename = null;
     try {
-      if(log.isDebugEnabled()) {
+      if (log.isDebugEnabled()) {
         log.debug("compiling XSLT templates:{}", filename);
       }
       final String fn = "xslt/" + filename;
       final TransformerFactory tFactory = TransformerFactory.newInstance();
       tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());
       tFactory.setErrorListener(xmllog);
-      final StreamSource src = new StreamSource(loader.openResource(fn),
-        SystemIdResolver.createSystemIdFromResourceName(fn));
+      final StreamSource src =
+          new StreamSource(
+              loader.openResource(fn), SystemIdResolver.createSystemIdFromResourceName(fn));
       try {
         result = tFactory.newTemplates(src);
       } finally {
-        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+        // some XML parsers are broken and don't close the byte stream (but they should according to
+        // spec)
         IOUtils.closeQuietly(src.getInputStream());
       }
     } catch (Exception e) {
       log.error(getClass().getName(), "newTemplates", e);
       throw new IOException("Unable to initialize Templates '" + filename + "'", e);
     }
-    
+
     lastFilename = filename;
     lastTemplates = result;
     cacheExpiresTimeout = new TimeOut(cacheLifetimeSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);

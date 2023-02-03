@@ -46,11 +46,11 @@ Examples of these are xref:deployment-guide:authentication-and-authorization-plu
 
 == Installing Plugins ==
 
-Most plugins are built-in to Solr core and there is nothing to install.
-The subject here is how to make the bundled modules and other plugins available to Solr.
-Plugins are packaged into a Java jar file and may have other dependent jar files to function.
+Many plugins are built-in to Solr core and there is nothing to install.
+However some plugins require installation step(s).
+Plugins are packaged into a Java jar file and may have other dependent jar files required to function.
 
-The next sections describe some options:
+The next sections describe some installation options:
 
 ****
 // This tags the below list so it can be used in the parent page section list

@@ -41,7 +41,7 @@ This is because many of the available options are only applied during the indexi
 Solr has no way to implement the desired change without reindexing the data.
 
 To understand the general reason why reindexing is ever required, it's helpful to understand the relationship between Solr's schema and the underlying Lucene index.
-Lucene does not use a schema, schemas a Solr-only concept.
+Lucene does not use a schema, schema is a Solr-only concept.
 When you change Solr's schema, the Lucene index is not modified in any way.
 
 This means that there are many types of schema changes that cannot be reflected in the index simply by modifying Solr's schema.
@@ -148,21 +148,21 @@ segments.
 Once the indexes have been cleared, you can start reindexing by re-running the original index process.
 
 [NOTE]
-A variation on this approch is to delete and recreate your collection using the updated schema, then reindex if you can afford to have your collection offline for the duration of the reindexing process.
+An alternate to this approach would be to delete and recreate your collection using the updated schema, then reindex if you can afford to have your collection offline for the duration of the reindexing process.
 
 === Index to Another Collection
 
-Another approach is to use index to a new collection and use Solr's xref:deployment-guide:alias-management.adoc#createalias[collection alias] feature to seamlessly point the application to a new collection without downtime.
+Another approach is to index to a new collection and use Solr's xref:deployment-guide:alias-management.adoc#createalias[collection alias] feature to seamlessly point the application to a new collection without downtime.
 
 This option is only available for Solr installations running in SolrCloud mode.
 
-With this approach, you will index your documents into a new collection that uses your changes and, once indexing and testing are complete, create an alias that points your front-end at the new collection.
+With this approach, you will index your documents into a new collection that uses your changes. If you store all the fields, you can use the xref:deployment-guide:collection-management.adoc#reindexcollection[REINDEXCOLLECTION command] to reindex from the old collection to the new one. Once indexing and testing are complete, create an alias that points your front-end at the new collection.
 From that point, new queries and updates will be routed to the new collection seamlessly.
 
 Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the Collections API xref:deployment-guide:collection-management.adoc#delete[DELETE command].
 
 [NOTE]
-One advantage of this option is that if you you can switch back to the old collection if you discover problems our testing did not uncover.
+One advantage of this option is that you can switch back to the old collection if you discover problems our testing did not uncover.
 Of course this option can require more resources until the old collection can be deleted.
 
 == Changes that Do Not Require Reindex

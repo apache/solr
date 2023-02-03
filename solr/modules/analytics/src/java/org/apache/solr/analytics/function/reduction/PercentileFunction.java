@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction;
 
 import java.util.Locale;
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
@@ -28,65 +27,78 @@ import org.apache.solr.analytics.function.reduction.data.SortedListCollector.Sor
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedLongListCollector;
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedStringListCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
+import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
 import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
-import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValueStream;
-import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
 import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
+import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
+import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A reduction function which returns the given percentile of the sorted values of the given expression.
+ * A reduction function which returns the given percentile of the sorted values of the given
+ * expression.
  */
 public class PercentileFunction {
   public static final String name = "percentile";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 2) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramater, " + params.length + " found.");
-    }
-    AnalyticsValueStream percValue = params[0];
-    double perc = 0;
-    if (percValue instanceof DoubleValue && percValue instanceof ConstantValue) {
-      perc = ((DoubleValue)percValue).getDouble();
-      if (perc < 0 || perc >= 100) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a percentile between [0, 100), " + perc + " found.");
-      }
-      perc /= 100;
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a constant double value (the percentile) as the first argument.");
-    }
-    AnalyticsValueStream param = params[1];
-    if (param instanceof DateValueStream) {
-      return new DatePercentileFunction((DateValueStream)param, perc);
-    }else if (param instanceof IntValueStream) {
-      return new IntPercentileFunction((IntValueStream)param, perc);
-    } else if (param instanceof LongValueStream) {
-      return new LongPercentileFunction((LongValueStream)param, perc);
-    } else if (param instanceof FloatValueStream) {
-      return new FloatPercentileFunction((FloatValueStream)param, perc);
-    } else if (param instanceof DoubleValueStream) {
-      return new DoublePercentileFunction((DoubleValueStream)param, perc);
-    } else if (param instanceof StringValueStream) {
-      return new StringPercentileFunction((StringValueStream)param, perc);
-    }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter.");
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 2) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 2 paramater, " + params.length + " found.");
+        }
+        AnalyticsValueStream percValue = params[0];
+        double perc = 0;
+        if (percValue instanceof DoubleValue && percValue instanceof ConstantValue) {
+          perc = ((DoubleValue) percValue).getDouble();
+          if (perc < 0 || perc >= 100) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "The "
+                    + name
+                    + " function requires a percentile between [0, 100), "
+                    + perc
+                    + " found.");
+          }
+          perc /= 100;
+        } else {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function requires a constant double value (the percentile) as the first argument.");
+        }
+        AnalyticsValueStream param = params[1];
+        if (param instanceof DateValueStream) {
+          return new DatePercentileFunction((DateValueStream) param, perc);
+        } else if (param instanceof IntValueStream) {
+          return new IntPercentileFunction((IntValueStream) param, perc);
+        } else if (param instanceof LongValueStream) {
+          return new LongPercentileFunction((LongValueStream) param, perc);
+        } else if (param instanceof FloatValueStream) {
+          return new FloatPercentileFunction((FloatValueStream) param, perc);
+        } else if (param instanceof DoubleValueStream) {
+          return new DoublePercentileFunction((DoubleValueStream) param, perc);
+        } else if (param instanceof StringValueStream) {
+          return new StringPercentileFunction((StringValueStream) param, perc);
+        }
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "The " + name + " function requires a comparable parameter.");
+      });
 
-  protected static String createPercentileExpressionString(AnalyticsValueStream param, double perc) {
-    return String.format(Locale.ROOT, "%s(%s,%s)",
-                         name,
-                         perc,
-                         param.getExpressionStr());
+  protected static String createPercentileExpressionString(
+      AnalyticsValueStream param, double perc) {
+    return String.format(Locale.ROOT, "%s(%s,%s)", name, perc, param.getExpressionStr());
   }
 
   static class IntPercentileFunction extends AbstractIntValue implements ReductionFunction {
@@ -106,6 +118,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -113,7 +126,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedIntListCollector)sync.apply(collector);
+      collector = (SortedIntListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -121,10 +134,12 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -148,6 +163,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -155,7 +171,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedLongListCollector)sync.apply(collector);
+      collector = (SortedLongListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -163,10 +179,12 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -190,6 +208,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -197,7 +216,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedFloatListCollector)sync.apply(collector);
+      collector = (SortedFloatListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -205,10 +224,12 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -232,6 +253,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -239,7 +261,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedDoubleListCollector)sync.apply(collector);
+      collector = (SortedDoubleListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -247,10 +269,12 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -274,6 +298,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -281,7 +306,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedLongListCollector)sync.apply(collector);
+      collector = (SortedLongListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -289,10 +314,12 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -316,6 +343,7 @@ public class PercentileFunction {
       int size = collector.size();
       return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : null;
     }
+
     @Override
     public boolean exists() {
       return collector.size() > 0;
@@ -323,7 +351,7 @@ public class PercentileFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedStringListCollector)sync.apply(collector);
+      collector = (SortedStringListCollector) sync.apply(collector);
       collector.calcPercentile(percentile);
     }
 
@@ -331,14 +359,15 @@ public class PercentileFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
     }
   }
 }
-

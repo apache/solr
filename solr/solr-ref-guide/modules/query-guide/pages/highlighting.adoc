@@ -27,8 +27,10 @@ Nonetheless, highlighting is very simple to use.
 
 == Usage
 
+Highlighting requires that you have a `uniqueKey` defined in your xref:indexing-guide:schema-elements.adoc[schema].
+
 === Common Highlighter Parameters
-You only need to set the `hl` and often `hl.fl` parameters to get results.
+You need to set the `hl` and often `hl.fl` parameters to enable highlighting results to be returned.
 The following table documents these and some other supported parameters.
 Note that many highlighting parameters support per-field overrides, such as: `f._title_txt_.hl.snippets`.
 
@@ -113,6 +115,19 @@ If set to `true`, only query terms aligning with the field being highlighted wil
 +
 If the query references fields different from the field being highlighted and they have different text analysis, the query may not highlight query terms it should have and vice versa.
 The analysis used is that of the field being highlighted (`hl.fl`), not the query fields.
+
+`hl.queryFieldPattern`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Similar to `hl.requireFieldMatch` but allows for multiple fields to match e.g. `q=fieldA:one OR fieldB:two OR fieldC:three` `hl.fl=fieldA` `hl.queryFieldPattern=fieldA,fieldB`
++
+Also allows for the `hl.fl` field to be absent in the query e.g. `q=fieldA:one OR fieldB:two` `hl.fl=fieldZ` `hl.queryFieldPattern=fieldA`
++
+If a `hl.queryFieldPattern` and `hl.requireFieldMatch=true` are both specified then the `hl.queryFieldPattern` is silently ignored.
 
 `hl.usePhraseHighlighter`::
 +

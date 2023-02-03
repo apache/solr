@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.AfterClass;
@@ -28,39 +27,42 @@ import org.junit.AfterClass;
 /**
  * Base class for tests that require more than one SolrCloud
  *
- * Derived tests should call {@link #doSetupClusters(String[], Function, BiConsumer)} in a {@code BeforeClass}
- * static method.  This configures and starts the {@link MiniSolrCloudCluster} instances, available
- * via the {@code clusterId2cluster} variable.  The clusters' shutdown is handled automatically.
+ * <p>Derived tests should call {@link #doSetupClusters(String[], Function, BiConsumer)} in a {@code
+ * BeforeClass} static method. This configures and starts the {@link MiniSolrCloudCluster}
+ * instances, available via the {@code clusterId2cluster} variable. The clusters' shutdown is
+ * handled automatically.
  */
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
-  protected static Map<String,MiniSolrCloudCluster> clusterId2cluster = new HashMap<String,MiniSolrCloudCluster>();
+  protected static Map<String, MiniSolrCloudCluster> clusterId2cluster =
+      new HashMap<String, MiniSolrCloudCluster>();
 
-  protected static abstract class DefaultClusterCreateFunction implements Function<String,MiniSolrCloudCluster> {
+  protected abstract static class DefaultClusterCreateFunction
+      implements Function<String, MiniSolrCloudCluster> {
 
-    public DefaultClusterCreateFunction() {
-    }
+    public DefaultClusterCreateFunction() {}
 
     protected abstract int nodesPerCluster(String clusterId);
 
     @Override
     public MiniSolrCloudCluster apply(String clusterId) {
       try {
-        final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
-            .addConfig("conf", configset("cloud-dynamic"))
-            .build();
+        final MiniSolrCloudCluster cluster =
+            new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
+                .addConfig("conf", configset("cloud-dynamic"))
+                .build();
         return cluster;
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }
-
   }
 
-  protected static abstract class DefaultClusterInitFunction implements BiConsumer<String,MiniSolrCloudCluster> {
+  protected abstract static class DefaultClusterInitFunction
+      implements BiConsumer<String, MiniSolrCloudCluster> {
 
-    final private int numShards;
-    final private int numReplicas;
+    private final int numShards;
+    private final int numReplicas;
 
     public DefaultClusterInitFunction(int numShards, int numReplicas) {
       this.numShards = numShards;
@@ -69,24 +71,25 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
     protected void doAccept(String collection, MiniSolrCloudCluster cluster) {
       try {
-        CollectionAdminRequest
-        .createCollection(collection, "conf", numShards, numReplicas)
-        .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
+        CollectionAdminRequest.createCollection(collection, "conf", numShards, numReplicas)
+            .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
 
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
+        AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+            collection, cluster.getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }
-
   }
 
-  protected static void doSetupClusters(final String[] clusterIds,
-      final Function<String,MiniSolrCloudCluster> createFunc,
-      final BiConsumer<String,MiniSolrCloudCluster> initFunc) throws Exception {
+  protected static void doSetupClusters(
+      final String[] clusterIds,
+      final Function<String, MiniSolrCloudCluster> createFunc,
+      final BiConsumer<String, MiniSolrCloudCluster> initFunc)
+      throws Exception {
 
     for (final String clusterId : clusterIds) {
-      assertFalse("duplicate clusterId "+clusterId, clusterId2cluster.containsKey(clusterId));
+      assertFalse("duplicate clusterId " + clusterId, clusterId2cluster.containsKey(clusterId));
       MiniSolrCloudCluster cluster = createFunc.apply(clusterId);
       initFunc.accept(clusterId, cluster);
       clusterId2cluster.put(clusterId, cluster);
@@ -100,5 +103,4 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
     }
     clusterId2cluster.clear();
   }
-
 }

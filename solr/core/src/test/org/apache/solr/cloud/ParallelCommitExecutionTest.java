@@ -16,12 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -31,10 +25,15 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,6 +45,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
+
   private static int expectCount;
 
   private static volatile CountDownLatch countdown;
@@ -53,8 +53,9 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // multi replicas matters; for the initial parallel commit execution tests, only consider repFactor=1
-    final int repFactor = 1;//random().nextBoolean() ? 1 : 2;
+    // multi replicas matters; for the initial parallel commit execution tests, only consider
+    // repFactor=1
+    final int repFactor = 1; // random().nextBoolean() ? 1 : 2;
     final int numShards = TestUtil.nextInt(random(), 1, 4);
     final int numNodes = (numShards * repFactor);
     expectCount = numNodes;
@@ -78,7 +79,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -101,15 +102,15 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
+    assertNotNull(client.getDefaultCollection());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 
   public static class CheckFactory extends UpdateRequestProcessorFactory {
     @Override
-    public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    public UpdateRequestProcessor getInstance(
+        SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
       return new Check(next);
     }
   }
@@ -125,8 +126,8 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
       super.processCommit(cmd);
       countdown.countDown();
       try {
-        // NOTE: this ensures that all commits are executed in parallel; no commit can complete successfully
-        // until all commits have entered the `processCommit(...)` method.
+        // NOTE: this ensures that all commits are executed in parallel; no commit can complete
+        // successfully until all commits have entered the `processCommit(...)` method.
         if (!countdown.await(5, TimeUnit.SECONDS)) {
           throw new RuntimeException("done waiting");
         }

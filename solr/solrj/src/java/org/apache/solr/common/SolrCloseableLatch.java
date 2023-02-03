@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This class mimicks the operation of {@link java.util.concurrent.CountDownLatch}, but it also
- * periodically checks the state of the provided {@link SolrCloseable} and terminates the wait
- * if it's closed by throwing an {@link InterruptedException}.
+ * periodically checks the state of the provided {@link SolrCloseable} and terminates the wait if
+ * it's closed by throwing an {@link InterruptedException}.
  */
 public class SolrCloseableLatch {
 

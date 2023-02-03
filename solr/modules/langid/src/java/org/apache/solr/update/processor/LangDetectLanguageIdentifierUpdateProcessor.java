@@ -16,42 +16,43 @@
  */
 package org.apache.solr.update.processor;
 
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+import com.cybozu.labs.langdetect.Language;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import com.cybozu.labs.langdetect.Language;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Identifies the language of a set of input fields using https://github.com/shuyo/language-detection
- * <p>
- * See <a href="https://solr.apache.org/guide/language-detection.html">Detecting Languages During
- * Indexing</a> in the Solr Ref Guide
+ * Identifies the language of a set of input fields using
+ * https://github.com/shuyo/language-detection
+ *
+ * <p>See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html">Detecting
+ * Languages During Indexing</a> in the Solr Ref Guide
+ *
  * @since 3.5
  */
 public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public LangDetectLanguageIdentifierUpdateProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public LangDetectLanguageIdentifierUpdateProcessor(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
   }
 
   /**
-   * Detects language(s) from a reader, typically based on some fields in SolrInputDocument
-   * Classes wishing to implement their own language detection module should override this method.
+   * Detects language(s) from a reader, typically based on some fields in SolrInputDocument Classes
+   * wishing to implement their own language detection module should override this method.
    *
    * @param solrDocReader A reader serving the text from the document to detect
    * @return List of detected language(s) according to RFC-3066
@@ -62,16 +63,17 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
       Detector detector = DetectorFactory.create();
       detector.setMaxTextLength(maxTotalChars);
 
-      // TODO Work around bug in LangDetect 1.1 which does not expect a -1 return value at end of stream,
+      // TODO Work around bug in LangDetect 1.1 which does not expect a -1 return value at end of
+      // stream,
       // but instead only looks at ready()
       if (solrDocReader instanceof SolrInputDocumentReader) {
-        ((SolrInputDocumentReader)solrDocReader).setEodReturnValue(0);
+        ((SolrInputDocumentReader) solrDocReader).setEodReturnValue(0);
       }
       detector.append(solrDocReader);
 
       ArrayList<Language> langlist = detector.getProbabilities();
       ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
-      for (Language l: langlist) {
+      for (Language l : langlist) {
         solrLangList.add(new DetectedLanguage(l.lang, l.prob));
       }
       return solrLangList;

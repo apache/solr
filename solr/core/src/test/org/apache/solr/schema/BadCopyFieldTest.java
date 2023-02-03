@@ -19,7 +19,8 @@ package org.apache.solr.schema;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 
 /**
- * SOLR-4650: copyField source with no asterisk should trigger an error if it doesn't match an explicit or dynamic field 
+ * SOLR-4650: copyField source with no asterisk should trigger an error if it doesn't match an
+ * explicit or dynamic field
  */
 public class BadCopyFieldTest extends AbstractBadConfigTestBase {
 
@@ -28,30 +29,36 @@ public class BadCopyFieldTest extends AbstractBadConfigTestBase {
   }
 
   public void testNonGlobCopyFieldSourceMatchingNothingShouldFail() throws Exception {
-    doTest("bad-schema-non-glob-copyfield-source-matching-nothing-should-fail-test.xml",
-           "copyField source :'matches_nothing' is not a glob and doesn't match any explicit field or dynamicField."); 
+    doTest(
+        "bad-schema-non-glob-copyfield-source-matching-nothing-should-fail-test.xml",
+        "copyField source :'matches_nothing' is not a glob and doesn't match any explicit field or dynamicField.");
   }
 
-  private static final String INVALID_GLOB_MESSAGE = " is an invalid glob: either it contains more than one asterisk,"
-                                                   + " or the asterisk occurs neither at the start nor at the end.";
-  
+  private static final String INVALID_GLOB_MESSAGE =
+      " is an invalid glob: either it contains more than one asterisk,"
+          + " or the asterisk occurs neither at the start nor at the end.";
+
   public void testMultipleAsteriskCopyFieldSourceShouldFail() throws Exception {
-    doTest("bad-schema-multiple-asterisk-copyfield-source-should-fail-test.xml",
-           "copyField source :'*too_many_asterisks*'" + INVALID_GLOB_MESSAGE);
+    doTest(
+        "bad-schema-multiple-asterisk-copyfield-source-should-fail-test.xml",
+        "copyField source :'*too_many_asterisks*'" + INVALID_GLOB_MESSAGE);
   }
 
   public void testMisplacedAsteriskCopyFieldSourceShouldFail() throws Exception {
-    doTest("bad-schema-misplaced-asterisk-copyfield-source-should-fail-test.xml",
-           "copyField source :'misplaced_*_asterisk'" + INVALID_GLOB_MESSAGE);
+    doTest(
+        "bad-schema-misplaced-asterisk-copyfield-source-should-fail-test.xml",
+        "copyField source :'misplaced_*_asterisk'" + INVALID_GLOB_MESSAGE);
   }
 
   public void testMultipleAsteriskCopyFieldDestShouldFail() throws Exception {
-    doTest("bad-schema-multiple-asterisk-copyfield-dest-should-fail-test.xml",
-           "copyField dest :'*too_many_asterisks*'" + INVALID_GLOB_MESSAGE);
+    doTest(
+        "bad-schema-multiple-asterisk-copyfield-dest-should-fail-test.xml",
+        "copyField dest :'*too_many_asterisks*'" + INVALID_GLOB_MESSAGE);
   }
 
   public void testMisplacedAsteriskCopyFieldDestShouldFail() throws Exception {
-    doTest("bad-schema-misplaced-asterisk-copyfield-dest-should-fail-test.xml",
-           "copyField dest :'misplaced_*_asterisk'" + INVALID_GLOB_MESSAGE);
+    doTest(
+        "bad-schema-misplaced-asterisk-copyfield-dest-should-fail-test.xml",
+        "copyField dest :'misplaced_*_asterisk'" + INVALID_GLOB_MESSAGE);
   }
 }

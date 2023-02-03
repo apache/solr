@@ -30,11 +30,8 @@
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
     <Logger name="org.apache.zookeeper" level="WARN"/>
-    <Logger name="org.apache.hadoop" level="WARN"/>
     <Logger name="org.apache.directory" level="WARN"/>
-    <Logger name="org.apache.solr.hadoop" level="INFO"/>
     <Logger name="org.eclipse.jetty" level="INFO"/>
-    <Logger name="org.apache.calcite" level="INFO"/>
 
     <Root level="INFO">
       <AppenderRef ref="STDERR"/>

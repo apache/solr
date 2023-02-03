@@ -21,24 +21,25 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.handler.designer.SampleDocuments;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SampleDocumentsLoader extends NamedListInitializedPlugin {
-  SampleDocuments parseDocsFromStream(SolrParams params, ContentStream stream, int maxDocsToLoad) throws IOException;
+  SampleDocuments parseDocsFromStream(SolrParams params, ContentStream stream, int maxDocsToLoad)
+      throws IOException;
 
   /**
-   * Ensure every sample document has a unique ID, but only applies if the unique key field is a string.
+   * Ensure every sample document has a unique ID, but only applies if the unique key field is a
+   * string.
    */
   default boolean ensureUniqueKey(final SchemaField idField, List<SolrInputDocument> docs) {
     boolean updatedDocs = false;
-    // if the unique key field is a string, we can supply a UUID if needed, otherwise must come from the user.
+    // if the unique key field is a string, we can supply a UUID if needed, otherwise must come from
+    // the user.
     if (StrField.class.equals(idField.getType().getClass())) {
       String idFieldName = idField.getName();
       for (SolrInputDocument d : docs) {

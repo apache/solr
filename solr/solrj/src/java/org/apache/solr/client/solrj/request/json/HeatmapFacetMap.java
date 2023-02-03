@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Represents a "heatmap" facet in a JSON request query.
  *
- * Ready for use with {@link JsonQueryRequest#withFacet(String, Map)}
+ * <p>Ready for use with {@link JsonQueryRequest#withFacet(String, Map)}
  */
 public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   public HeatmapFacetMap(String fieldName) {
@@ -36,18 +36,21 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   }
 
   @Override
-  public HeatmapFacetMap getThis() { return this; }
+  public HeatmapFacetMap getThis() {
+    return this;
+  }
 
   @Override
-  public HeatmapFacetMap withSubFacet(String facetName,
-                                      @SuppressWarnings({"rawtypes"})JsonFacetMap map) {
-    throw new UnsupportedOperationException(getClass().getName() + " doesn't currently support subfacets");
+  public HeatmapFacetMap withSubFacet(
+      String facetName, @SuppressWarnings({"rawtypes"}) JsonFacetMap map) {
+    throw new UnsupportedOperationException(
+        getClass().getName() + " doesn't currently support subfacets");
   }
 
   /**
    * Indicate the region to compute the heatmap facet on.
    *
-   * Defaults to the "world" ("[-180,-90 TO 180,90]")
+   * <p>Defaults to the "world" ("[-180,-90 TO 180,90]")
    */
   public HeatmapFacetMap setRegionQuery(String queryString) {
     if (queryString == null) {
@@ -61,16 +64,16 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   /**
    * Indicates the size of each cell in the computed heatmap grid
    *
-   * If not set, defaults to being computed by {@code distErrPct} or {@code distErr}
+   * <p>If not set, defaults to being computed by {@code distErrPct} or {@code distErr}
    *
    * @param individualCellSize the forced size of each cell in the heatmap grid
-   *
    * @see #setDistErr(double)
    * @see #setDistErrPct(double)
    */
   public HeatmapFacetMap setGridLevel(int individualCellSize) {
     if (individualCellSize <= 0) {
-      throw new IllegalArgumentException("Parameter 'individualCellSize' must be a positive integer");
+      throw new IllegalArgumentException(
+          "Parameter 'individualCellSize' must be a positive integer");
     }
     put("gridLevel", individualCellSize);
     return this;
@@ -79,7 +82,7 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   /**
    * A fraction of the heatmap region that is used to compute the cell size.
    *
-   * Defaults to 0.15 if not specified.
+   * <p>Defaults to 0.15 if not specified.
    *
    * @see #setGridLevel(int)
    * @see #setDistErr(double)
@@ -95,10 +98,10 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   /**
    * Indicates the maximum acceptable cell error distance.
    *
-   * Used to compute the size of each cell in the heatmap grid rather than specifying {@link #setGridLevel(int)}
+   * <p>Used to compute the size of each cell in the heatmap grid rather than specifying {@link
+   * #setGridLevel(int)}
    *
    * @param distErr a positive value representing the maximum acceptable cell error.
-   *
    * @see #setGridLevel(int)
    * @see #setDistErrPct(double)
    */
@@ -111,7 +114,8 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
   }
 
   public enum HeatmapFormat {
-    INTS2D("ints2D"), PNG("png");
+    INTS2D("ints2D"),
+    PNG("png");
 
     private final String value;
 
@@ -120,13 +124,15 @@ public class HeatmapFacetMap extends JsonFacetMap<HeatmapFacetMap> {
     }
 
     @Override
-    public String toString() { return value; }
+    public String toString() {
+      return value;
+    }
   }
 
   /**
    * Sets the format that the computed heatmap should be returned in.
    *
-   * Defaults to 'ints2D' if not specified.
+   * <p>Defaults to 'ints2D' if not specified.
    */
   public HeatmapFacetMap setHeatmapFormat(HeatmapFormat format) {
     if (format == null) {

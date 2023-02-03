@@ -21,31 +21,36 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-public class PivotField implements Serializable
-{
-  final String  _field;
-  final Object  _value;
-  final int     _count;
+public class PivotField implements Serializable {
+  final String _field;
+  final Object _value;
+  final int _count;
   final List<PivotField> _pivot;
-  final Map<String,FieldStatsInfo> _statsInfo;
-  final Map<String,Integer> _querycounts;
+  final Map<String, FieldStatsInfo> _statsInfo;
+  final Map<String, Integer> _querycounts;
+
   @SuppressWarnings({"rawtypes"})
   final List<RangeFacet> _ranges;
 
-  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo, Map<String,Integer> queryCounts,
-                     @SuppressWarnings({"rawtypes"})List<RangeFacet> ranges)
-  {
+  public PivotField(
+      String f,
+      Object v,
+      int count,
+      List<PivotField> pivot,
+      Map<String, FieldStatsInfo> statsInfo,
+      Map<String, Integer> queryCounts,
+      @SuppressWarnings({"rawtypes"}) List<RangeFacet> ranges) {
     _field = f;
     _value = v;
     _count = count;
     _pivot = pivot;
     _statsInfo = statsInfo;
-    _querycounts= queryCounts;
-    _ranges= ranges;
+    _querycounts = queryCounts;
+    _ranges = ranges;
   }
-   
+
   public String getField() {
-   return _field;
+    return _field;
   }
 
   public Object getValue() {
@@ -59,12 +64,12 @@ public class PivotField implements Serializable
   public List<PivotField> getPivot() {
     return _pivot;
   }
-   
-  public Map<String,FieldStatsInfo> getFieldStatsInfo() {
+
+  public Map<String, FieldStatsInfo> getFieldStatsInfo() {
     return _statsInfo;
   }
 
-  public Map<String,Integer> getFacetQuery() {
+  public Map<String, Integer> getFacetQuery() {
     return _querycounts;
   }
 
@@ -74,35 +79,33 @@ public class PivotField implements Serializable
   }
 
   @Override
-  public String toString()
-  {
-    return _field + ":" + _value + " ["+_count+"] "+_pivot;
+  public String toString() {
+    return _field + ":" + _value + " [" + _count + "] " + _pivot;
   }
 
-  public void write( PrintStream out, int indent )
-  {
-    for( int i=0; i<indent; i++ ) {
-      out.print( "  " );
+  public void write(PrintStream out, int indent) {
+    for (int i = 0; i < indent; i++) {
+      out.print("  ");
     }
-    out.print( _field + "=" + _value + " ("+_count+")" );
+    out.print(_field + "=" + _value + " (" + _count + ")");
     if (null != _statsInfo) {
-      out.print( "->stats:[" ); 
-      for( FieldStatsInfo fieldStatsInfo : _statsInfo.values() ) {
+      out.print("->stats:[");
+      for (FieldStatsInfo fieldStatsInfo : _statsInfo.values()) {
         out.print(fieldStatsInfo.toString());
         out.print(",");
       }
       out.print("]");
     }
     out.println();
-    if(_querycounts != null) {
+    if (_querycounts != null) {
       out.println(_querycounts.toString());
     }
-    if(_ranges != null) {
+    if (_ranges != null) {
       out.println(_ranges.toString());
     }
-    if( _pivot != null ) {
-      for( PivotField p : _pivot ) {
-        p.write( out, indent+1 );
+    if (_pivot != null) {
+      for (PivotField p : _pivot) {
+        p.write(out, indent + 1);
       }
     }
   }

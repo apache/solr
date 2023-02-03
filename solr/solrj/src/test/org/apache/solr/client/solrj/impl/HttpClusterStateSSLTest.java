@@ -21,13 +21,11 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.BeforeClass;
@@ -40,7 +38,14 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
   public static void setupClusterWithSSL() throws Exception {
     System.setProperty("solr.storeBaseUrl", "true");
     configureCluster(1)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
   }
 
@@ -60,10 +65,17 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionId, numShards, numShards * rf);
 
     // verify the base_url is actually stored with https in it on the server-side
-    byte[] stateJsonBytes = cluster.getZkClient().getData(ZkStateReader.getCollectionPath(collectionId), null, null, true);
+    byte[] stateJsonBytes =
+        cluster
+            .getZkClient()
+            .getData(DocCollection.getCollectionPath(collectionId), null, null, true);
     assertNotNull(stateJsonBytes);
     Map<String, Object> replicasMap =
-        (Map<String, Object>) Utils.getObjectByPath(Utils.fromJSON(stateJsonBytes), false, "/" + collectionId + "/shards/shard1/replicas");
+        (Map<String, Object>)
+            Utils.getObjectByPath(
+                Utils.fromJSON(stateJsonBytes),
+                false,
+                "/" + collectionId + "/shards/shard1/replicas");
     assertEquals(2, replicasMap.size());
     for (Object replicaObj : replicasMap.values()) {
       Map<String, Object> replicaData = (Map<String, Object>) replicaObj;
@@ -72,14 +84,17 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     }
 
     // verify the http derived cluster state (on the client side) agrees with what the server stored
-    try (CloudSolrClient httpBasedCloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
+    try (CloudSolrClient httpBasedCloudSolrClient =
+        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
-      assertTrue(csp instanceof HttpClusterStateProvider);
+      assertTrue(csp instanceof Http2ClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
     }
 
     // http2
-    try (CloudHttp2SolrClient http2BasedClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
+    try (CloudSolrClient http2BasedClient =
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
+            .build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
       assertTrue(csp instanceof Http2ClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
@@ -91,7 +106,8 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
   }
 
-  private void verifyUrlSchemeInClusterState(final ClusterState cs, final String collectionId, final int expectedReplicas) {
+  private void verifyUrlSchemeInClusterState(
+      final ClusterState cs, final String collectionId, final int expectedReplicas) {
     DocCollection dc = cs.getCollection(collectionId);
     assertNotNull(dc);
     List<Replica> replicas = dc.getReplicas();

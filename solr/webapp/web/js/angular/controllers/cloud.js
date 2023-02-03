@@ -383,7 +383,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
           nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
+          nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
           nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
           nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
@@ -421,53 +421,53 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
               nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
 
+              // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
               var docsTotal = 0;
               var graphData = [];
-              if (cores) {
-                for (coreId in cores) {
-                  var core = cores[coreId];
-                  var keyName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
-                  var nodeMetric = m.metrics[keyName];
-                  var size = nodeMetric['INDEX.sizeInBytes'];
+              for (coreId in cores) {
+                var core = cores[coreId];
+                if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+                  // If core state is not active, display the real state, or if shard is inactive, display that
+                  var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+                  core['label'] += "_(" + labelState + ")";
+                }
+                var coreMetricName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
+                var coreMetric = m.metrics[coreMetricName];
+                // we may not actually get metrics back for every expected core (the core may be down)
+                if (coreMetric) {
+                  var size = coreMetric['INDEX.sizeInBytes'];
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
-                    // If core state is not active, display the real state, or if shard is inactive, display that
-                    var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
-                    core['label'] += "_(" + labelState + ")";
-                  }
                   indexSizeTotal += size;
-                  var numDocs = nodeMetric['SEARCHER.searcher.numDocs'];
+                  var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
                   core['numDocsHuman'] = numDocsHuman(numDocs);
                   core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
-                  var deletedDocs = nodeMetric['SEARCHER.searcher.deletedDocs'];
+                  var deletedDocs = coreMetric['SEARCHER.searcher.deletedDocs'];
                   deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
                   core['deletedDocs'] = deletedDocs;
                   core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
-                  var warmupTime = nodeMetric['SEARCHER.searcher.warmupTime'];
+                  var warmupTime = coreMetric['SEARCHER.searcher.warmupTime'];
                   warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
-                for (coreId in cores) {
-                  core = cores[coreId];
-                  var graphObj = {};
-                  graphObj['label'] = core['label'];
-                  graphObj['size'] = core['sizeInBytes'];
-                  graphObj['sizeHuman'] = core['size'];
-                  graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
-                  graphData.push(graphObj);
-                }
+
+                var graphObj = {};
+                graphObj['label'] = core['label'];
+                graphObj['size'] = core['sizeInBytes'];
+                graphObj['sizeHuman'] = core['size'];
+                graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                graphData.push(graphObj);
+              }
+              if (cores) {
                 cores.sort(function (a, b) {
                   return b.sizeInBytes - a.sizeInBytes
                 });
-              } else {
-                cores = {};
               }
               graphData.sort(function (a, b) {
                 return b.size - a.size

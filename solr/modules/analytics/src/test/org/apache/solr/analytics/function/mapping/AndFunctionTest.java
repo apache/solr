@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.mapping.LogicFunction.AndFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -34,7 +33,8 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue val1 = new TestBooleanValue();
     TestBooleanValue val2 = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
+    AnalyticsValueStream uncasted =
+        AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -53,22 +53,22 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
     // Both exist
     val1.setValue(false).setExists(true);
     val2.setValue(false).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(true).setExists(true);
     val2.setValue(false).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(false).setExists(true);
     val2.setValue(true).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(true).setExists(true);
     val2.setValue(true).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -76,7 +76,8 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiValueParameterTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
-    AnalyticsValueStream uncasted = AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -87,20 +88,20 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
 
     // One value
     val.setValues(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
 
     val.setValues(false);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     // Multiple values
     val.setValues(true, true, false, true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val.setValues(true, true, true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
   }
 
@@ -109,41 +110,46 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue val1 = new TestBooleanValue();
     TestBooleanValueStream val2 = new TestBooleanValueStream();
 
-    AnalyticsValueStream uncasted = AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
+    AnalyticsValueStream uncasted =
+        AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
     // No values, One value
     val1.setValue(false).setExists(true);
     val2.setValues();
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Multiple values, no value
     val1.setExists(false);
     val2.setValues(true, false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Multiple values, one value
     val1.setValue(false).setExists(true);
     val2.setValues(true, false, true);
     Iterator<Boolean> values1 = Arrays.asList(false, false, false).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     val1.setValue(true).setExists(true);
     val2.setValues(true, false, true);
     Iterator<Boolean> values2 = Arrays.asList(true, false, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -154,7 +160,8 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue val3 = new TestBooleanValue();
     TestBooleanValue val4 = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        AndFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -179,14 +186,14 @@ public class AndFunctionTest extends SolrTestCaseJ4 {
     val2.setValue(false).setExists(true);
     val3.setValue(true).setExists(true);
     val4.setValue(true).setExists(true);
-    assertEquals(false, func.getBoolean());
+    assertFalse(func.getBoolean());
     assertTrue(func.exists());
 
     val1.setValue(true).setExists(true);
     val2.setValue(true).setExists(true);
     val3.setValue(true).setExists(true);
     val4.setValue(true).setExists(true);
-    assertEquals(true, func.getBoolean());
+    assertTrue(func.getBoolean());
     assertTrue(func.exists());
   }
 }

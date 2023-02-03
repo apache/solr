@@ -29,7 +29,8 @@ public class ExistsFunctionTest extends SolrTestCaseJ4 {
   public void singleValueParameterTest() {
     TestBooleanValue val = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = ExistsFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        ExistsFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -50,7 +51,8 @@ public class ExistsFunctionTest extends SolrTestCaseJ4 {
   public void multiValueParameterTest() {
     TestDoubleValueStream val = new TestDoubleValueStream();
 
-    AnalyticsValueStream uncasted = ExistsFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        ExistsFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 

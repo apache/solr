@@ -16,24 +16,20 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * <p>
- * An update processor that adds a constant default value to any document 
- * being added that does not already have a value in the specified field.
- * </p>
+ * An update processor that adds a constant default value to any document being added that does not
+ * already have a value in the specified field.
  *
- * <p>
- * In the example configuration below, if a document does not contain a value 
- * in the <code>price</code> and/or <code>type</code> fields, it will be given 
- * default values of <code>0.0</code> and/or <code>unknown</code> 
- * (respectively).
- * <br>
+ * <p>In the example configuration below, if a document does not contain a value in the <code>price
+ * </code> and/or <code>type</code> fields, it will be given default values of <code>0.0</code>
+ * and/or <code>unknown</code> (respectively). <br>
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.DefaultValueUpdateProcessorFactory"&gt;
@@ -45,10 +41,10 @@ import org.apache.solr.response.SolrQueryResponse;
  *   &lt;str name="value"&gt;unknown&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
+ *
  * @since 4.0.0
  */
-public class DefaultValueUpdateProcessorFactory
-  extends AbstractDefaultValueUpdateProcessorFactory {
+public class DefaultValueUpdateProcessorFactory extends AbstractDefaultValueUpdateProcessorFactory {
 
   protected Object defaultValue = null;
 
@@ -56,8 +52,7 @@ public class DefaultValueUpdateProcessorFactory
   public void init(NamedList<?> args) {
     Object obj = args.remove("value");
     if (null == obj) {
-      throw new SolrException
-        (SERVER_ERROR, "'value' init param must be specified and non-null"); 
+      throw new SolrException(SERVER_ERROR, "'value' init param must be specified and non-null");
     } else {
       defaultValue = obj;
     }
@@ -66,16 +61,13 @@ public class DefaultValueUpdateProcessorFactory
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
-                                            SolrQueryResponse rsp, 
-                                            UpdateRequestProcessor next ) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new DefaultValueUpdateProcessor(fieldName, next) {
       @Override
-      public Object getDefaultValue() { return defaultValue; }
+      public Object getDefaultValue() {
+        return defaultValue;
+      }
     };
   }
-
 }
-
-
-

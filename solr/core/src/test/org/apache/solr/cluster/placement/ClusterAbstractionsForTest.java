@@ -17,13 +17,21 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
 
 /**
- * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of plugin code).
+ * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of
+ * plugin code).
  */
 class ClusterAbstractionsForTest {
 
@@ -62,16 +70,8 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class NodeImpl implements Node {
     public final String nodeName;
-
-    /**
-     * Transforms a collection of node names into a set of {@link Node} instances.
-     */
-    static Set<Node> getNodes(Collection<String> nodeNames) {
-      return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
-    }
 
     NodeImpl(String nodeName) {
       this.nodeName = nodeName;
@@ -88,36 +88,30 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * This class ends up as a key in Maps in {@link org.apache.solr.cluster.placement.AttributeValues}.
-     * It is important to implement this method comparing node names given that new instances of {@link Node} are created
-     * with names equal to existing instances (See {@link Builders.NodeBuilder#build()}).
+     * This class ends up as a key in Maps in {@link
+     * org.apache.solr.cluster.placement.AttributeValues}. It is important to implement this method
+     * comparing node names given that new instances of {@link Node} are created with names equal to
+     * existing instances (See {@link Builders.NodeBuilder#build()}).
      */
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof NodeImpl)) return false;
       NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hashCode(nodeName);
     }
   }
 
-
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
-    /**
-     * Map from {@link Shard#getShardName()} to {@link Shard}
-     */
+    /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private Map<String, Shard> shards;
+
     private final Map<String, String> customProperties;
 
     SolrCollectionImpl(String collectionName, Map<String, String> customProperties) {
@@ -126,7 +120,8 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * Setting the shards has to happen (in tests) after creating the collection because shards reference the collection
+     * Setting the shards has to happen (in tests) after creating the collection because shards
+     * reference the collection
      */
     void setShards(Map<String, Shard> shards) {
       this.shards = shards;
@@ -163,7 +158,6 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class ShardImpl implements Shard {
     private final String shardName;
     private final SolrCollection collection;
@@ -178,7 +172,8 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * Setting the replicas has to happen (in tests) after creating the shard because replicas reference the shard
+     * Setting the replicas has to happen (in tests) after creating the shard because replicas
+     * reference the shard
      */
     void setReplicas(Map<String, Replica> replicas, Replica leader) {
       this.replicas = replicas;
@@ -220,16 +215,10 @@ class ClusterAbstractionsForTest {
       return shardState;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ShardImpl)) return false;
       ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
@@ -238,11 +227,11 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.leader, other.leader);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
     }
   }
-
 
   static class ReplicaImpl implements Replica {
     private final String replicaName;
@@ -252,7 +241,13 @@ class ClusterAbstractionsForTest {
     private final ReplicaState replicaState;
     private final Node node;
 
-    ReplicaImpl(String replicaName, String coreName, Shard shard, ReplicaType replicaType, ReplicaState replicaState, Node node) {
+    ReplicaImpl(
+        String replicaName,
+        String coreName,
+        Shard shard,
+        ReplicaType replicaType,
+        ReplicaState replicaState,
+        Node node) {
       this.replicaName = replicaName;
       this.coreName = coreName;
       this.shard = shard;
@@ -291,16 +286,10 @@ class ClusterAbstractionsForTest {
       return node;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (obj == this) {
-        return true;
-      }
-      if (obj.getClass() != getClass()) {
-        return false;
-      }
+      if (obj == this) return true;
+      if (!(obj instanceof ReplicaImpl)) return false;
       ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)
@@ -310,20 +299,30 @@ class ClusterAbstractionsForTest {
           && Objects.equals(this.node, other.node);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
     }
 
     @Override
     public String toString() {
-      return "ReplicaImpl{" +
-              "replicaName='" + replicaName + '\'' +
-              ", coreName='" + coreName + '\'' +
-              ", shard='" + shard + '\'' +
-              ", replicaType=" + replicaType +
-              ", replicaState=" + replicaState +
-              ", node=" + node +
-              '}';
+      return "ReplicaImpl{"
+          + "replicaName='"
+          + replicaName
+          + '\''
+          + ", coreName='"
+          + coreName
+          + '\''
+          + ", shard='"
+          + shard
+          + '\''
+          + ", replicaType="
+          + replicaType
+          + ", replicaState="
+          + replicaState
+          + ", node="
+          + node
+          + '}';
     }
   }
 }

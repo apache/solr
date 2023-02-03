@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.DoubleArrayReservation;
 import org.apache.solr.analytics.stream.reservation.FloatArrayReservation;
 import org.apache.solr.analytics.stream.reservation.IntArrayReservation;
@@ -40,27 +39,31 @@ import org.apache.solr.analytics.value.StringValueStream;
 /**
  * Collector of sorted lists.
  *
- * Once the sorted list has been collected, it can be reduced by calculating a median, percentiles, or ordinals.
- * All of the above reductions over the same data share one {@link SortedListCollector}.
- * <p>
- * Supported types are:
+ * <p>Once the sorted list has been collected, it can be reduced by calculating a median,
+ * percentiles, or ordinals. All of the above reductions over the same data share one {@link
+ * SortedListCollector}.
+ *
+ * <p>Supported types are:
+ *
  * <ul>
- * <li>Int
- * <li>Long
- * <li>Float
- * <li>Double
- * <li>Date (through longs)
- * <li>String
+ *   <li>Int
+ *   <li>Long
+ *   <li>Float
+ *   <li>Double
+ *   <li>Date (through longs)
+ *   <li>String
  * </ul>
  *
  * @param <T> The type of data being processed.
  */
-public abstract class SortedListCollector<T extends Comparable<T>> extends ReductionDataCollector<SortedListCollector.SortedListData<T>> {
+public abstract class SortedListCollector<T extends Comparable<T>>
+    extends ReductionDataCollector<SortedListCollector.SortedListData<T>> {
   public static final String name = "sorted";
   private final String exprStr;
 
   protected SortedListCollector(AnalyticsValueStream param, String specificationName) {
-    this.exprStr = AnalyticsValueStream.createExpressionString(name + "_" + specificationName,param);
+    this.exprStr =
+        AnalyticsValueStream.createExpressionString(name + "_" + specificationName, param);
 
     tempList = new ArrayList<>();
 
@@ -79,9 +82,7 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     return list.size();
   }
 
-  /**
-   * Informs the collector that the median needs to be computed.
-   */
+  /** Informs the collector that the median needs to be computed. */
   public void calcMedian() {
     calcMedian = true;
   }
@@ -105,11 +106,11 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   }
 
   /**
-   * Once the data has been set by either {@link #setData} or {@link #setMergedData},
-   * this returns the value at the given sorted index.
+   * Once the data has been set by either {@link #setData} or {@link #setMergedData}, this returns
+   * the value at the given sorted index.
    *
-   * Only the indices specified by {@link #calcMedian}, {@link #calcPercentile}, and {@link #calcOrdinal}
-   * will contain valid data. All other indices may return unsorted data.
+   * <p>Only the indices specified by {@link #calcMedian}, {@link #calcPercentile}, and {@link
+   * #calcOrdinal} will contain valid data. All other indices may return unsorted data.
    *
    * @param index the index of the sorted data to return
    */
@@ -126,6 +127,7 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   }
 
   ArrayList<T> tempList;
+
   @Override
   protected void apply(SortedListData<T> data) {
     data.list.addAll(tempList);
@@ -151,8 +153,8 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
 
   Iterator<T> iter;
   /**
-   * The list to be exported is unsorted.
-   * The lists of all shards will be combined with the {@link #startImport} and {@link #importNext} methods.
+   * The list to be exported is unsorted. The lists of all shards will be combined with the {@link
+   * #startImport} and {@link #importNext} methods.
    *
    * @return the size of the list being exported.
    */
@@ -169,9 +171,7 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     return iter.next();
   }
 
-  /**
-   * Put the given indices in their sorted positions
-   */
+  /** Put the given indices in their sorted positions */
   @Override
   public void setMergedData(ReductionData data) {
     setData(data);
@@ -180,12 +180,12 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   /**
    * This is where the given indices are put in their sorted positions.
    *
-   * Only the given indices are guaranteed to be in sorted order.
+   * <p>Only the given indices are guaranteed to be in sorted order.
    */
   @SuppressWarnings("unchecked")
   @Override
   public void setData(ReductionData data) {
-    list = ((SortedListData<T>)data).list;
+    list = ((SortedListData<T>) data).list;
     int size = list.size();
     if (size <= 1) {
       return;
@@ -199,7 +199,7 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     for (int ordinal : calcOrds) {
       if (ordinal > 0) {
         ordinals.add(ordinal - 1);
-      } else if (ordinal < 0){
+      } else if (ordinal < 0) {
         ordinals.add(size + ordinal);
       }
     }
@@ -217,6 +217,7 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
@@ -237,17 +238,17 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     @Override
     public void collect() {
       tempList.clear();
-      param.streamInts( val -> tempList.add(val) );
+      param.streamInts(val -> tempList.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new IntArrayReservation(
-          value -> importNext(value),
-          importSize -> startImport(importSize),
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new IntArrayReservation(
+              value -> importNext(value),
+              importSize -> startImport(importSize),
+              () -> exportNext(),
+              () -> startExport()));
     }
   }
 
@@ -262,17 +263,17 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     @Override
     public void collect() {
       tempList.clear();
-      param.streamLongs( val -> tempList.add(val) );
+      param.streamLongs(val -> tempList.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new LongArrayReservation(
-          value -> importNext(value),
-          importSize -> startImport(importSize),
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new LongArrayReservation(
+              value -> importNext(value),
+              importSize -> startImport(importSize),
+              () -> exportNext(),
+              () -> startExport()));
     }
   }
 
@@ -287,17 +288,17 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     @Override
     public void collect() {
       tempList.clear();
-      param.streamFloats( val -> tempList.add(val) );
+      param.streamFloats(val -> tempList.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new FloatArrayReservation(
-          value -> importNext(value),
-          importSize -> startImport(importSize),
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new FloatArrayReservation(
+              value -> importNext(value),
+              importSize -> startImport(importSize),
+              () -> exportNext(),
+              () -> startExport()));
     }
   }
 
@@ -312,17 +313,17 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     @Override
     public void collect() {
       tempList.clear();
-      param.streamDoubles( val -> tempList.add(val) );
+      param.streamDoubles(val -> tempList.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new DoubleArrayReservation(
-          value -> importNext(value),
-          importSize -> startImport(importSize),
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new DoubleArrayReservation(
+              value -> importNext(value),
+              importSize -> startImport(importSize),
+              () -> exportNext(),
+              () -> startExport()));
     }
   }
 
@@ -337,17 +338,17 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     @Override
     public void collect() {
       tempList.clear();
-      param.streamStrings( val -> tempList.add(val) );
+      param.streamStrings(val -> tempList.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new StringArrayReservation(
-          value -> importNext(value),
-          importSize -> startImport(importSize),
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new StringArrayReservation(
+              value -> importNext(value),
+              importSize -> startImport(importSize),
+              () -> exportNext(),
+              () -> startExport()));
     }
   }
 }

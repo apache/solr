@@ -23,23 +23,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MetricsQueryTemplate {
-  /*
-  A regex with named groups is used to match template references to template + vars using the basic pattern:
-
-      $jq:<TEMPLATE>( <UNIQUE>, <KEYSELECTOR>, <METRIC>, <TYPE> )
-
-  For instance,
-
-      $jq:core(requests_total, endswith(".requestTimes"), count, COUNTER)
-
-  TEMPLATE = core
-  UNIQUE = requests_total (unique suffix for this metric, results in a metric named "solr_metrics_core_requests_total")
-  KEYSELECTOR = endswith(".requestTimes") (filter to select the specific key for this metric)
-  METRIC = count
-  TYPE = COUNTER
-  */
+  /**
+   * A regex with named groups is used to match template references to template + vars using the
+   * basic pattern:
+   *
+   * <p>$jq:<TEMPLATE>( <UNIQUE>, <KEYSELECTOR>, <METRIC>, <TYPE> )
+   *
+   * <p>For instance,
+   *
+   * <p>$jq:core(requests_total, endswith(".requestTimes"), count, COUNTER)
+   *
+   * <p>TEMPLATE = core UNIQUE = requests_total (unique suffix for this metric, results in a metric
+   * named "solr_metrics_core_requests_total") KEYSELECTOR = endswith(".requestTimes") (filter to
+   * select the specific key for this metric) METRIC = count TYPE = COUNTER
+   */
   private static final Pattern matchJqTemplate =
-      Pattern.compile("^\\$jq:(?<TEMPLATE>.*?)\\(\\s?(?<UNIQUE>[^,]*),\\s?(?<KEYSELECTOR>[^,]*)(,\\s?(?<METRIC>[^,]*)\\s?)?(,\\s?(?<TYPE>[^,]*)\\s?)?\\)$");
+      Pattern.compile(
+          "^\\$jq:(?<TEMPLATE>.*?)\\(\\s?(?<UNIQUE>[^,]*),\\s?(?<KEYSELECTOR>[^,]*)(,\\s?(?<METRIC>[^,]*)\\s?)?(,\\s?(?<TYPE>[^,]*)\\s?)?\\)$");
 
   public static Optional<Matcher> matches(String jsonQuery) {
     Optional<Matcher> maybe = Optional.empty();
@@ -103,7 +103,8 @@ public class MetricsQueryTemplate {
           metric = "$object.value." + metric;
         }
       } // else some kind of function, pass thru as-is
-    } // else there's a $ so just assume it is a fully qualified reference to the desired value, leave as-is
+    } // else there's a $ so just assume it is a fully qualified reference to the desired value,
+    // leave as-is
 
     return template
         .replace("{UNIQUE}", unique)
@@ -115,11 +116,11 @@ public class MetricsQueryTemplate {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MetricsQueryTemplate)) return false;
     MetricsQueryTemplate that = (MetricsQueryTemplate) o;
-    return name.equals(that.name) &&
-        Objects.equals(defaultType, that.defaultType) &&
-        template.equals(that.template);
+    return name.equals(that.name)
+        && Objects.equals(defaultType, that.defaultType)
+        && template.equals(that.template);
   }
 
   @Override

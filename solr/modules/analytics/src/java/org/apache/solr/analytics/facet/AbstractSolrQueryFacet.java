@@ -18,7 +18,6 @@ package org.apache.solr.analytics.facet;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -29,14 +28,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Solr Query Facets are AnalyticsFacets that are calculated after the document streaming phase has occurred in the {@link AnalyticsDriver}
- * (during which StreamingFacets and overall expressions are calculated). {@link AbstractSolrQueryFacet}s should not be confused with {@link QueryFacet}s,
+ * Solr Query Facets are AnalyticsFacets that are calculated after the document streaming phase has
+ * occurred in the {@link AnalyticsDriver} (during which StreamingFacets and overall expressions are
+ * calculated). {@link AbstractSolrQueryFacet}s should not be confused with {@link QueryFacet}s,
  * which are a specific sub-type.
  *
- * <p>
- * The filtering for these facets is done through issuing additional Solr queries, and collecting on the resulting documents.
- * Unlike streaming facets, which have an unspecified amount of facet values (facet buckets), the amount of facet values is determined by the user and
- * a Solr query is issued for each requested facet value.
+ * <p>The filtering for these facets is done through issuing additional Solr queries, and collecting
+ * on the resulting documents. Unlike streaming facets, which have an unspecified amount of facet
+ * values (facet buckets), the amount of facet values is determined by the user and a Solr query is
+ * issued for each requested facet value.
  */
 public abstract class AbstractSolrQueryFacet extends AnalyticsFacet {
 
@@ -45,18 +45,24 @@ public abstract class AbstractSolrQueryFacet extends AnalyticsFacet {
   }
 
   /**
-   * Returns the set of {@link FacetValueQueryExecuter}s, one for each facet value, through the given consumer.
+   * Returns the set of {@link FacetValueQueryExecuter}s, one for each facet value, through the
+   * given consumer.
    *
-   * Each of these executors will be executed after the streaming phase in the {@link AnalyticsDriver}.
+   * <p>Each of these executors will be executed after the streaming phase in the {@link
+   * AnalyticsDriver}.
    *
    * @param filter the overall query representing the documents being used for the analytics request
    * @param queryRequest the queryRequest
    * @param consumer the consumer of each facet value's executer
    */
-  public abstract void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer);
+  public abstract void createFacetValueExecuters(
+      final Query filter,
+      SolrQueryRequest queryRequest,
+      Consumer<FacetValueQueryExecuter> consumer);
 
   /**
-   * This executer is in charge of issuing the Solr query for a facet value and collecting results as the query is processed.
+   * This executer is in charge of issuing the Solr query for a facet value and collecting results
+   * as the query is processed.
    */
   public class FacetValueQueryExecuter extends SimpleCollector {
     private final ReductionDataCollection collection;

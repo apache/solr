@@ -26,7 +26,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SafeXMLParsing;
 import org.apache.tika.parser.ParseContext;
@@ -40,24 +39,29 @@ import org.w3c.dom.NodeList;
 
 public class ParseContextConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private final Map<Class<?>, Object> entries = new HashMap<>();
 
   /** Creates an empty Config without any settings (used as placeholder). */
-  public ParseContextConfig() {
-  }
+  public ParseContextConfig() {}
 
   /** Creates a {@code ParseContextConfig} from the given XML DOM element. */
   public ParseContextConfig(SolrResourceLoader resourceLoader, Element element) throws Exception {
     extract(element, resourceLoader);
   }
 
-  /** Creates a {@code ParseContextConfig} from the given XML file, loaded from the given {@link SolrResourceLoader}. */
-  public ParseContextConfig(SolrResourceLoader resourceLoader, String parseContextConfigLoc) throws Exception {
-    this(resourceLoader, loadConfigFile(resourceLoader, parseContextConfigLoc).getDocumentElement());
+  /**
+   * Creates a {@code ParseContextConfig} from the given XML file, loaded from the given {@link
+   * SolrResourceLoader}.
+   */
+  public ParseContextConfig(SolrResourceLoader resourceLoader, String parseContextConfigLoc)
+      throws Exception {
+    this(
+        resourceLoader, loadConfigFile(resourceLoader, parseContextConfigLoc).getDocumentElement());
   }
-  
-  private static Document loadConfigFile(SolrResourceLoader resourceLoader, String parseContextConfigLoc) throws Exception {
+
+  private static Document loadConfigFile(
+      SolrResourceLoader resourceLoader, String parseContextConfigLoc) throws Exception {
     return SafeXMLParsing.parseConfigXML(log, resourceLoader, parseContextConfigLoc);
   }
 
@@ -68,11 +72,13 @@ public class ParseContextConfig {
       final String className = xmlEntryAttributes.getNamedItem("class").getNodeValue();
       final String implementationName = xmlEntryAttributes.getNamedItem("impl").getNodeValue();
 
-      final NodeList xmlProperties = ((Element)xmlEntries.item(i)).getElementsByTagName("property");
+      final NodeList xmlProperties =
+          ((Element) xmlEntries.item(i)).getElementsByTagName("property");
 
       final Class<?> interfaceClass = loader.findClass(className, Object.class);
-      final BeanInfo beanInfo = Introspector.getBeanInfo(interfaceClass, Introspector.IGNORE_ALL_BEANINFO);
-      
+      final BeanInfo beanInfo =
+          Introspector.getBeanInfo(interfaceClass, Introspector.IGNORE_ALL_BEANINFO);
+
       final HashMap<String, PropertyDescriptor> descriptorMap = new HashMap<>();
       for (final PropertyDescriptor pd : beanInfo.getPropertyDescriptors()) {
         descriptorMap.put(pd.getName(), pd);
@@ -80,7 +86,8 @@ public class ParseContextConfig {
 
       final Object instance = loader.newInstance(implementationName, Object.class);
       if (!interfaceClass.isInstance(instance)) {
-        throw new IllegalArgumentException("Implementation class does not extend " + interfaceClass.getName());
+        throw new IllegalArgumentException(
+            "Implementation class does not extend " + interfaceClass.getName());
       }
 
       for (int j = 0, c2 = xmlProperties.getLength(); j < c2; j++) {
@@ -92,15 +99,24 @@ public class ParseContextConfig {
 
         final PropertyDescriptor propertyDescriptor = descriptorMap.get(propertyName);
         if (propertyDescriptor == null) {
-          throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Unknown bean property %s in class %s",
-              propertyName, interfaceClass.getName()));
+          throw new IllegalArgumentException(
+              String.format(
+                  Locale.ENGLISH,
+                  "Unknown bean property %s in class %s",
+                  propertyName,
+                  interfaceClass.getName()));
         }
         final Method method = propertyDescriptor.getWriteMethod();
         if (method == null) {
-          throw new IllegalArgumentException(String.format(Locale.ENGLISH, "Cannot set bean property %s in class %s (no write method available)",
-              propertyName, interfaceClass.getName()));
+          throw new IllegalArgumentException(
+              String.format(
+                  Locale.ENGLISH,
+                  "Cannot set bean property %s in class %s (no write method available)",
+                  propertyName,
+                  interfaceClass.getName()));
         }
-        method.invoke(instance, getValueFromString(propertyDescriptor.getPropertyType(), propertyValue));
+        method.invoke(
+            instance, getValueFromString(propertyDescriptor.getPropertyType(), propertyValue));
       }
 
       entries.put(interfaceClass, instance);
@@ -120,7 +136,7 @@ public class ParseContextConfig {
   public ParseContext create() {
     final ParseContext result = new ParseContext();
 
-    for (Map.Entry<Class<?>, Object> entry : entries.entrySet()){
+    for (Map.Entry<Class<?>, Object> entry : entries.entrySet()) {
       result.set((Class) entry.getKey(), entry.getValue());
     }
 

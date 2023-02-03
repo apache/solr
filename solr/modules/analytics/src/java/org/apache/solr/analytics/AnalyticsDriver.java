@@ -40,16 +40,23 @@ public class AnalyticsDriver {
    * @param queryRequest used for the search request
    * @throws IOException if an error occurs while reading from Solr
    */
-  public static void drive(AnalyticsRequestManager manager, SolrIndexSearcher searcher, DocSet filter, SolrQueryRequest queryRequest) throws IOException {
+  public static void drive(
+      AnalyticsRequestManager manager,
+      SolrIndexSearcher searcher,
+      DocSet filter,
+      SolrQueryRequest queryRequest)
+      throws IOException {
     StreamingInfo streamingInfo = manager.getStreamingFacetInfo();
     Iterable<StreamingFacet> streamingFacets = streamingInfo.streamingFacets;
     ReductionCollectionManager collectionManager = streamingInfo.streamingCollectionManager;
 
-    Query fq = filter.makeQuery(); //TODO: passing this along as a DocSet would affect a lot of APIs
+    Query fq =
+        filter.makeQuery(); // TODO: passing this along as a DocSet would affect a lot of APIs
     Iterable<FacetValueQueryExecuter> facetExecuters = manager.getFacetExecuters(fq, queryRequest);
 
     // Streaming phase (Overall results & Value/Pivot Facets)
-    // Loop through all documents and collect reduction data for streaming facets and overall results
+    // Loop through all documents and collect reduction data for streaming facets and overall
+    // results
     if (collectionManager.needsCollection()) {
       List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
       for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
@@ -58,10 +65,10 @@ public class AnalyticsDriver {
         if (disi != null) {
           collectionManager.doSetNextReader(context);
           int doc = disi.nextDoc();
-          while( doc != DocIdSetIterator.NO_MORE_DOCS){
+          while (doc != DocIdSetIterator.NO_MORE_DOCS) {
             // Add a document to the statistics being generated
             collectionManager.collect(doc);
-            streamingFacets.forEach( facet -> facet.addFacetValueCollectionTargets() );
+            streamingFacets.forEach(facet -> facet.addFacetValueCollectionTargets());
             collectionManager.apply();
             doc = disi.nextDoc();
           }

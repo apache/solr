@@ -20,14 +20,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -39,80 +37,76 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final byte[] SECURITY_JSON =
+      "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}"
+          .getBytes(StandardCharsets.UTF_8);
+
   static final int TIMEOUT = 10000;
+
+  @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
-        TIMEOUT, TIMEOUT)) {
-      zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH,
-          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT, true);
+    try (ZkStateReader zkStateReader =
+        new ZkStateReader(zkServer.getZkAddress(), TIMEOUT, TIMEOUT)) {
+      zkStateReader
+          .getZkClient()
+          .create(
+              ZkStateReader.SOLR_SECURITY_CONF_PATH, SECURITY_JSON, CreateMode.PERSISTENT, true);
     }
   }
-
 
   @Test
   public void authorizationFrameworkTest() throws Exception {
     MockAuthorizationPlugin.denyUsers.add("user1");
-    MockAuthorizationPlugin.denyUsers.add("user1");
 
-    try {
-      waitForThingsToLevelOut(10, TimeUnit.SECONDS);
-      String baseUrl = jettys.get(0).getBaseUrl().toString();
-      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
-      log.info("Starting test");
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("q", "*:*");
-      // This should work fine.
-      cloudClient.query(params);
-      MockAuthorizationPlugin.protectedResources.add("/select");
+    waitForThingsToLevelOut(10, TimeUnit.SECONDS);
+    String baseUrl = jettys.get(0).getBaseUrl().toString();
+    verifySecurityStatus(
+        ((CloudLegacySolrClient) cloudClient).getHttpClient(),
+        baseUrl + "/admin/authorization",
+        "authorization/class",
+        s -> MockAuthorizationPlugin.class.getName().equals(s),
+        20);
 
-      // This user is disallowed in the mock. The request should return a 403.
-      params.add("uname", "user1");
-      expectThrows(Exception.class, () -> cloudClient.query(params));
-      log.info("Ending test");
-    } finally {
-      MockAuthorizationPlugin.denyUsers.clear();
-      MockAuthorizationPlugin.protectedResources.clear();
+    // This should work fine.
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    cloudClient.query(params);
 
-    }
+    // This user is disallowed in the mock. The request should return a 403.
+    MockAuthorizationPlugin.protectedResources.add("/select");
+    params.add("uname", "user1");
+    expectThrows(Exception.class, () -> cloudClient.query(params));
   }
 
   @Override
   public void distribTearDown() throws Exception {
-    super.distribTearDown();
+    MockAuthorizationPlugin.protectedResources.clear();
     MockAuthorizationPlugin.denyUsers.clear();
-
+    super.distribTearDown();
   }
 
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
-    boolean success = false;
+  public static void verifySecurityStatus(
+      HttpClient cl, String url, String objPath, Predicate<Object> expected, int count)
+      throws Exception {
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
-      s = EntityUtils.toString(cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
+      s =
+          EntityUtils.toString(
+              cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
-      if (expected instanceof Predicate) {
-        @SuppressWarnings("unchecked")
-        Predicate<Object> predicate = (Predicate<Object>) expected;
-        if (predicate.test(actual)) {
-          success = true;
-          break;
-        }
-      } else if (Objects.equals(String.valueOf(actual), expected)) {
-        success = true;
-        break;
+      if (expected.test(actual)) {
+        return;
       }
       Thread.sleep(50);
     }
-    assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
-
+    fail("No match for " + objPath + " = " + expected + ", full response = " + s);
   }
 }

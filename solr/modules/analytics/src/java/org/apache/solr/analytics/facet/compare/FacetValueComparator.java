@@ -19,19 +19,18 @@ package org.apache.solr.analytics.facet.compare;
 import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
 
 /**
- * A results comparator that compares the name of facet value buckets, which is the string value of the facet value.
+ * A results comparator that compares the name of facet value buckets, which is the string value of
+ * the facet value.
  */
 public class FacetValueComparator extends FacetResultsComparator {
 
-  /**
-   * Create a facet value comparator.
-   */
+  /** Create a facet value comparator. */
   public FacetValueComparator() {
     super();
   }
 
   @Override
   public int compare(FacetBucket b1, FacetBucket b2) {
-      return b1.getFacetValue().compareTo(b2.getFacetValue()) * resultMult;
+    return b1.getFacetValue().compareTo(b2.getFacetValue()) * resultMult;
   }
 }

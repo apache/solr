@@ -20,17 +20,17 @@ import org.apache.solr.common.SolrDocument;
 
 /**
  * A callback interface for streaming response
- * 
+ *
  * @since solr 4.0
  */
 public abstract class StreamingResponseCallback {
   /*
    * Called for each SolrDocument in the response
    */
-  public abstract void streamSolrDocument( SolrDocument doc );
+  public abstract void streamSolrDocument(SolrDocument doc);
 
   /*
    * Called at the beginning of each DocList (and SolrDocumentList)
    */
-  public abstract void streamDocListInfo( long numFound, long start, Float maxScore );
+  public abstract void streamDocListInfo(long numFound, long start, Float maxScore);
 }

@@ -16,9 +16,7 @@
  */
 
 /**
- * Writing classes for a single type of data being stored by one Reduction Data Collector.
- * These writers are used to export data between shards during the streaming process.
+ * Writing classes for a single type of data being stored by one Reduction Data Collector. These
+ * writers are used to export data between shards during the streaming process.
  */
 package org.apache.solr.analytics.stream.reservation.write;
-
-

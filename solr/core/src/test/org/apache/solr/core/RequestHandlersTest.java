@@ -16,9 +16,8 @@
  */
 package org.apache.solr.core;
 
-import java.util.Map;
-
 import com.codahale.metrics.Gauge;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestHandler;
@@ -36,68 +35,80 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
     @SuppressWarnings({"unchecked"})
-    Gauge<Number> g = (Gauge<Number>)manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
-    assertEquals("Incorrect init count",
-                 1, g.getValue().intValue());
+    Gauge<Number> g =
+        (Gauge<Number>) manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
+    assertEquals("Incorrect init count", 1, g.getValue().intValue());
   }
 
   @Test
-  public void testImplicitRequestHandlers(){
+  public void testImplicitRequestHandlers() {
     SolrCore core = h.getCore();
-    assertNotNull(core.getRequestHandler( "/update/json"));
-    assertNotNull(core.getRequestHandler( "/update/json/docs"));
-    assertNotNull(core.getRequestHandler( "/update/csv"));
+    assertNotNull(core.getRequestHandler("/update/json"));
+    assertNotNull(core.getRequestHandler("/update/json/docs"));
+    assertNotNull(core.getRequestHandler("/update/csv"));
   }
 
   @Test
   public void testLazyLoading() {
     SolrCore core = h.getCore();
-    PluginBag.PluginHolder<SolrRequestHandler> handler = core.getRequestHandlers().getRegistry().get("/lazy");
+    PluginBag.PluginHolder<SolrRequestHandler> handler =
+        core.getRequestHandlers().getRegistry().get("/lazy");
     assertFalse(handler.isLoaded());
-    
-    assertU(adoc("id", "42",
-                 "name", "Zapp Brannigan"));
-    assertU(adoc("id", "43",
-                 "title", "Democratic Order of Planets"));
-    assertU(adoc("id", "44",
-                 "name", "The Zapper"));
-    assertU(adoc("id", "45",
-                 "title", "25 star General"));
-    assertU(adoc("id", "46",
-                 "subject", "Defeated the pacifists of the Gandhi nebula"));
-    assertU(adoc("id", "47",
-                 "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+
+    assertU(
+        adoc(
+            "id", "42",
+            "name", "Zapp Brannigan"));
+    assertU(
+        adoc(
+            "id", "43",
+            "title", "Democratic Order of Planets"));
+    assertU(
+        adoc(
+            "id", "44",
+            "name", "The Zapper"));
+    assertU(
+        adoc(
+            "id", "45",
+            "title", "25 star General"));
+    assertU(
+        adoc(
+            "id", "46",
+            "subject", "Defeated the pacifists of the Gandhi nebula"));
+    assertU(
+        adoc(
+            "id", "47",
+            "text",
+                "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(commit());
 
-    assertQ("lazy request handler returns all matches",
-            req("q","id:[42 TO 47]"),
-            "*[count(//doc)=6]");
+    assertQ(
+        "lazy request handler returns all matches", req("q", "id:[42 TO 47]"), "*[count(//doc)=6]");
 
-        // But it should behave just like the 'defaults' request handler above
-    assertQ("lazy handler returns fewer matches",
-            req("q", "id:[42 TO 47]", "qt","/lazy"),
-            "*[count(//doc)=4]"
-            );
+    // But it should behave just like the 'defaults' request handler above
+    assertQ(
+        "lazy handler returns fewer matches",
+        req("q", "id:[42 TO 47]", "qt", "/lazy"),
+        "*[count(//doc)=4]");
 
-    assertQ("lazy handler includes highlighting",
-            req("q", "name:Zapp OR title:General", "qt","/lazy"),
-            "//lst[@name='highlighting']"
-            );
+    assertQ(
+        "lazy handler includes highlighting",
+        req("q", "name:Zapp OR title:General", "qt", "/lazy"),
+        "//lst[@name='highlighting']");
   }
 
   @Test
-  public void testPathNormalization()
-  {
+  public void testPathNormalization() {
     SolrCore core = h.getCore();
-    SolrRequestHandler h1 = core.getRequestHandler("/update" );
-    assertNotNull( h1 );
+    SolrRequestHandler h1 = core.getRequestHandler("/update");
+    assertNotNull(h1);
 
-    SolrRequestHandler h2 = core.getRequestHandler("/update/" );
-    assertNotNull( h2 );
-    
-    assertEquals( h1, h2 ); // the same object
-    
-    assertNull( core.getRequestHandler("/update/asdgadsgas" ) ); // prefix
+    SolrRequestHandler h2 = core.getRequestHandler("/update/");
+    assertNotNull(h2);
+
+    assertEquals(h1, h2); // the same object
+
+    assertNull(core.getRequestHandler("/update/asdgadsgas")); // prefix
   }
 
   @Test
@@ -106,16 +117,20 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     SolrRequestHandler updateHandler = core.getRequestHandler("/update");
     SolrRequestHandler termHandler = core.getRequestHandler("/terms");
 
-    assertU(adoc("id", "47",
-        "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+    assertU(
+        adoc(
+            "id",
+            "47",
+            "text",
+            "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(commit());
 
-    Map<String,Object> updateStats = updateHandler.getSolrMetricsContext().getMetricsSnapshot();
-    Map<String,Object> termStats = termHandler.getSolrMetricsContext().getMetricsSnapshot();
+    Map<String, Object> updateStats = updateHandler.getSolrMetricsContext().getMetricsSnapshot();
+    Map<String, Object> termStats = termHandler.getSolrMetricsContext().getMetricsSnapshot();
 
     Long updateTime = (Long) updateStats.get("UPDATE./update.totalTime");
     Long termTime = (Long) termStats.get("QUERY./terms.totalTime");
 
-    assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
+    assertNotEquals("RequestHandlers should not share statistics!", updateTime, termTime);
   }
 }

@@ -18,37 +18,39 @@ package org.apache.solr.core;
 
 import java.util.List;
 
-/**
- * Manage the discovery and persistence of core definitions across Solr restarts
- */
+/** Manage the discovery and persistence of core definitions across Solr restarts */
 public interface CoresLocator {
 
   /**
    * Make new cores available for discovery
-   * @param cc              the CoreContainer
+   *
+   * @param cc the CoreContainer
    * @param coreDescriptors CoreDescriptors to persist
    */
   public void create(CoreContainer cc, CoreDescriptor... coreDescriptors);
 
   /**
-   * Ensure that the core definitions from the passed in CoreDescriptors
-   * will persist across container restarts.
-   * @param cc              the CoreContainer
+   * Ensure that the core definitions from the passed in CoreDescriptors will persist across
+   * container restarts.
+   *
+   * @param cc the CoreContainer
    * @param coreDescriptors CoreDescriptors to persist
    */
   public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors);
 
   /**
-   * Ensure that the core definitions from the passed in CoreDescriptors
-   * are not available for discovery
-   * @param cc              the CoreContainer
+   * Ensure that the core definitions from the passed in CoreDescriptors are not available for
+   * discovery
+   *
+   * @param cc the CoreContainer
    * @param coreDescriptors CoreDescriptors of the cores to remove
    */
   public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors);
 
   /**
    * Persist the new name of a renamed core
-   * @param cc    the CoreContainer
+   *
+   * @param cc the CoreContainer
    * @param oldCD the CoreDescriptor of the core before renaming
    * @param newCD the CoreDescriptor of the core after renaming
    */
@@ -56,7 +58,8 @@ public interface CoresLocator {
 
   /**
    * Swap two core definitions
-   * @param cc  the CoreContainer
+   *
+   * @param cc the CoreContainer
    * @param cd1 the core descriptor of the first core, after swapping
    * @param cd2 the core descriptor of the second core, after swapping
    */
@@ -64,6 +67,7 @@ public interface CoresLocator {
 
   /**
    * Load all the CoreDescriptors from persistence store
+   *
    * @param cc the CoreContainer
    * @return a list of all CoreDescriptors found
    */

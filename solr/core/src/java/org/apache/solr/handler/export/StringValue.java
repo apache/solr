@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -47,7 +46,7 @@ class StringValue implements SortValue {
   private int lastOrd = -1;
   private int leafOrd = -1;
 
-  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
+  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp) {
     this.globalDocValues = globalDocValues;
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
@@ -69,13 +68,15 @@ class StringValue implements SortValue {
     this.lastString = lastString;
   }
 
+  @Override
   public StringValue copy() {
     StringValue copy = new StringValue(globalDocValues, field, comp);
     return copy;
   }
 
+  @Override
   public void setCurrentValue(int docId) throws IOException {
-    //System.out.println(docId +":"+lastDocID);
+    // System.out.println(docId +":"+lastDocID);
     /*
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
@@ -102,6 +103,7 @@ class StringValue implements SortValue {
     return present;
   }
 
+  @Override
   public void setCurrentValue(SortValue sv) {
     StringValue v = (StringValue) sv;
     this.currentOrd = v.currentOrd;
@@ -111,6 +113,7 @@ class StringValue implements SortValue {
     this.toGlobal = v.toGlobal;
   }
 
+  @Override
   public Object getCurrentValue() throws IOException {
     assert present == true;
     if (currentOrd != lastOrd) {
@@ -121,25 +124,29 @@ class StringValue implements SortValue {
     return lastBytes;
   }
 
+  @Override
   public void toGlobalValue(SortValue previousValue) {
     lastOrd = currentOrd;
     StringValue sv = (StringValue) previousValue;
     if (sv.lastOrd == currentOrd) {
-      //Take the global ord from the previousValue unless we are a -1 which is the same in both global and leaf ordinal
-      if(this.currentOrd != -1) {
+      // Take the global ord from the previousValue unless we are a -1 which is the same in both
+      // global and leaf ordinal
+      if (this.currentOrd != -1) {
         this.currentOrd = sv.currentOrd;
       }
     } else {
-      if(this.currentOrd > -1) {
+      if (this.currentOrd > -1) {
         this.currentOrd = (int) toGlobal.get(this.currentOrd);
       }
     }
   }
 
+  @Override
   public String getField() {
     return field;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     leafOrd = context.ord;
     if (ordinalMap != null) {
@@ -149,17 +156,20 @@ class StringValue implements SortValue {
     lastDocID = 0;
   }
 
+  @Override
   public void reset() {
     this.currentOrd = comp.resetValue();
     this.present = false;
     lastDocID = 0;
   }
 
+  @Override
   public int compareTo(SortValue o) {
     StringValue sv = (StringValue) o;
     return comp.compare(currentOrd, sv.currentOrd);
   }
 
+  @Override
   public String toString() {
     return Integer.toString(this.currentOrd);
   }

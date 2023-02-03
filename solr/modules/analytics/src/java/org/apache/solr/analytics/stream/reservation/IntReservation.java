@@ -20,7 +20,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-
 import org.apache.solr.analytics.stream.reservation.read.IntDataReader;
 import org.apache.solr.analytics.stream.reservation.write.IntDataWriter;
 

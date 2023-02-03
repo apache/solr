@@ -21,9 +21,7 @@ import org.apache.lucene.search.similarities.IndependenceChiSquared;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link DFISimilarityFactory}
- */
+/** Tests {@link DFISimilarityFactory} */
 public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
 
   @BeforeClass
@@ -31,10 +29,8 @@ public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
     initCore("solrconfig-basic.xml", "schema-dfi.xml");
   }
 
-  /**
-   * dfi with no parameters
-   */
-  public void test() throws Exception {
+  /** dfi with no parameters */
+  public void test() {
     Similarity sim = getSimilarity("text");
     assertEquals(DFISimilarity.class, sim.getClass());
     DFISimilarity dfi = (DFISimilarity) sim;
@@ -42,14 +38,11 @@ public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
     assertTrue(dfi.getIndependence() instanceof IndependenceChiSquared);
   }
 
-  /**
-   * dfi with discountOverlaps parameter set to false
-   */
-  public void testParameters() throws Exception {
+  /** dfi with discountOverlaps parameter set to false */
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(DFISimilarity.class, sim.getClass());
     DFISimilarity dfr = (DFISimilarity) sim;
     assertFalse(dfr.getDiscountOverlaps());
   }
 }
-

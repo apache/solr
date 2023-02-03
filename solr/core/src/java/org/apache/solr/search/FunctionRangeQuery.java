@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -43,13 +42,14 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return rangeFilt.createWeight(searcher, scoreMode, boost);
   }
 
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
-    Map<Object,Object> fcontext = ValueSource.newContext(searcher);
+    Map<Object, Object> fcontext = ValueSource.newContext(searcher);
     Weight weight = null;
     try {
       weight = rangeFilt.createWeight(searcher, ScoreMode.COMPLETE, 1);
@@ -60,12 +60,12 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
   }
 
   class FunctionRangeCollector extends DelegatingCollector {
-    final Map<Object,Object> fcontext;
+    final Map<Object, Object> fcontext;
     final Weight weight;
-    ValueSourceScorer scorer;
+    ValueSourceScorer valueSourceScorer;
     int maxdoc;
 
-    public FunctionRangeCollector(Map<Object,Object> fcontext, Weight weight) {
+    public FunctionRangeCollector(Map<Object, Object> fcontext, Weight weight) {
       this.fcontext = fcontext;
       this.weight = weight;
     }
@@ -73,7 +73,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
     @Override
     public void collect(int doc) throws IOException {
       assert doc < maxdoc;
-      if (scorer.matches(doc)) {
+      if (valueSourceScorer.matches(doc)) {
         leafDelegate.collect(doc);
       }
     }
@@ -83,7 +83,14 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
       super.doSetNextReader(context);
       maxdoc = context.reader().maxDoc();
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
-      scorer = dv.getRangeScorer(weight, context, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
+      valueSourceScorer =
+          dv.getRangeScorer(
+              weight,
+              context,
+              rangeFilt.getLowerVal(),
+              rangeFilt.getUpperVal(),
+              rangeFilt.isIncludeLower(),
+              rangeFilt.isIncludeUpper());
     }
   }
 
@@ -99,8 +106,7 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
 
   @Override
   public boolean equals(Object obj) {
-    return sameClassAs(obj) &&
-            Objects.equals(rangeFilt, ((FunctionRangeQuery) obj).rangeFilt);
+    return sameClassAs(obj) && Objects.equals(rangeFilt, ((FunctionRangeQuery) obj).rangeFilt);
   }
 
   @Override

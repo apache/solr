@@ -20,9 +20,9 @@ package org.apache.solr.common.util;
 public class BytesBlock {
   private int bufSize;
   public byte[] buf;
-  //current position
+  // current position
   private int pos;
-  //going to expand. mark the start position
+  // going to expand. mark the start position
   private int startPos = 0;
 
   public BytesBlock(int sz) {
@@ -46,7 +46,8 @@ public class BytesBlock {
     if (bufSize - pos >= sz) {
       return markPositions(sz);
     }
-    if (sz > (bufSize / 4)) return new BytesBlock(sz).expand(sz);// a reasonably large block, create new
+    if (sz > (bufSize / 4))
+      return new BytesBlock(sz).expand(sz); // a reasonably large block, create new
     create();
     return markPositions(sz);
   }
@@ -56,7 +57,6 @@ public class BytesBlock {
     pos += sz;
     return this;
   }
-
 
   private void create() {
     buf = new byte[bufSize];

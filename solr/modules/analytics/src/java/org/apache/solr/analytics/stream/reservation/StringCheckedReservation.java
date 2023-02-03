@@ -18,17 +18,17 @@ package org.apache.solr.analytics.stream.reservation;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.apache.solr.analytics.stream.reservation.read.StringCheckedDataReader;
 import org.apache.solr.analytics.stream.reservation.write.StringCheckedDataWriter;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
+public class StringCheckedReservation
+    extends ReductionCheckedDataReservation<Consumer<String>, Supplier<String>> {
 
-public class StringCheckedReservation extends ReductionCheckedDataReservation<Consumer<String>, Supplier<String>> {
-
-  public StringCheckedReservation(Consumer<String> applier, Supplier<String> extractor, BooleanSupplier exists) {
+  public StringCheckedReservation(
+      Consumer<String> applier, Supplier<String> extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }
 

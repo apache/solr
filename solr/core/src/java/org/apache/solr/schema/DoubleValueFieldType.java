@@ -16,8 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for double-valued field types.
- */
-public interface DoubleValueFieldType extends NumericValueFieldType {
-}
+/** Marker interface for double-valued field types. */
+public interface DoubleValueFieldType extends NumericValueFieldType {}

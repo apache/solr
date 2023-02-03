@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -63,63 +62,77 @@ public class JavabinLoader extends ContentStreamLoader {
   }
 
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+  public void load(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ContentStream stream,
+      UpdateRequestProcessor processor)
+      throws Exception {
     InputStream is = null;
     try {
       is = stream.getStream();
       parseAndLoadDocs(req, rsp, is, processor);
     } finally {
-      if(is != null) {
+      if (is != null) {
         is.close();
       }
     }
   }
-  
-  private void parseAndLoadDocs(final SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
-                                final UpdateRequestProcessor processor) throws IOException {
+
+  private void parseAndLoadDocs(
+      final SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      InputStream stream,
+      final UpdateRequestProcessor processor)
+      throws IOException {
     if (req.getParams().getBool("multistream", false)) {
       handleMultiStream(req, rsp, stream, processor);
       return;
     }
     UpdateRequest update = null;
-    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      private AddUpdateCommand addCmd = null;
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler =
+        new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+          private AddUpdateCommand addCmd = null;
 
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
-        if (document == null) {
-          return;
-        }
-        if (addCmd == null) {
-          addCmd = getAddCommand(req, updateRequest.getParams());
-        }
-        addCmd.solrDoc = document;
-        if (commitWithin != null) {
-          addCmd.commitWithin = commitWithin;
-        }
-        if (overwrite != null) {
-          addCmd.overwrite = overwrite;
-        }
+          @Override
+          public void update(
+              SolrInputDocument document,
+              UpdateRequest updateRequest,
+              Integer commitWithin,
+              Boolean overwrite) {
+            if (document == null) {
+              return;
+            }
+            if (addCmd == null) {
+              addCmd = getAddCommand(req, updateRequest.getParams());
+            }
+            addCmd.solrDoc = document;
+            if (commitWithin != null) {
+              addCmd.commitWithin = commitWithin;
+            }
+            if (overwrite != null) {
+              addCmd.overwrite = overwrite;
+            }
 
-        if (updateRequest.isLastDocInBatch()) {
-          // this is a hint to downstream code that indicates we've sent the last doc in a batch
-          addCmd.isLastDocInBatch = true;
-        }
+            if (updateRequest.isLastDocInBatch()) {
+              // this is a hint to downstream code that indicates we've sent the last doc in a batch
+              addCmd.isLastDocInBatch = true;
+            }
 
-        try {
-          processor.processAdd(addCmd);
-          addCmd.clear();
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document, e);
-        }
-      }
-    };
+            try {
+              processor.processAdd(addCmd);
+              addCmd.clear();
+            } catch (IOException e) {
+              throw new SolrException(
+                  SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document, e);
+            }
+          }
+        };
     FastInputStream in = FastInputStream.wrap(stream);
     for (; ; ) {
       if (in.peek() == -1) return;
       try {
-        update = new JavaBinUpdateRequestCodec()
-            .unmarshal(in, handler);
+        update = new JavaBinUpdateRequestCodec().unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
       }
@@ -129,42 +142,47 @@ public class JavabinLoader extends ContentStreamLoader {
     }
   }
 
-  private void handleMultiStream(SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream, UpdateRequestProcessor processor)
+  private void handleMultiStream(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      InputStream stream,
+      UpdateRequestProcessor processor)
       throws IOException {
     FastInputStream in = FastInputStream.wrap(stream);
     SolrParams old = req.getParams();
-    try (JavaBinCodec jbc = new JavaBinCodec() {
-      SolrParams params;
-      AddUpdateCommand addCmd = null;
+    try (JavaBinCodec jbc =
+        new JavaBinCodec() {
+          SolrParams params;
+          AddUpdateCommand addCmd = null;
 
-      @Override
-      public List<Object> readIterator(DataInputInputStream fis) throws IOException {
-        while (true) {
-          Object o = readVal(fis);
-          if (o == END_OBJ) break;
-          if (o instanceof NamedList) {
-            params = ((NamedList) o).toSolrParams();
-          } else {
-            try {
-              if (o instanceof byte[]) {
-                if (params != null) req.setParams(params);
-                byte[] buf = (byte[]) o;
-                contentStreamLoader.load(req, rsp, new ContentStreamBase.ByteArrayStream(buf, null), processor);
+          @Override
+          public List<Object> readIterator(DataInputInputStream fis) throws IOException {
+            while (true) {
+              Object o = readVal(fis);
+              if (o == END_OBJ) break;
+              if (o instanceof NamedList) {
+                params = ((NamedList) o).toSolrParams();
               } else {
-                throw new RuntimeException("unsupported type ");
+                try {
+                  if (o instanceof byte[]) {
+                    if (params != null) req.setParams(params);
+                    byte[] buf = (byte[]) o;
+                    contentStreamLoader.load(
+                        req, rsp, new ContentStreamBase.ByteArrayStream(buf, null), processor);
+                  } else {
+                    throw new RuntimeException("unsupported type ");
+                  }
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                } finally {
+                  params = null;
+                  req.setParams(old);
+                }
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            } finally {
-              params = null;
-              req.setParams(old);
             }
+            return Collections.emptyList();
           }
-        }
-        return Collections.emptyList();
-      }
-
-    }) {
+        }) {
       jbc.unmarshal(in);
     }
   }
@@ -176,18 +194,19 @@ public class JavabinLoader extends ContentStreamLoader {
     return addCmd;
   }
 
-  private void delete(SolrQueryRequest req, UpdateRequest update, UpdateRequestProcessor processor) throws IOException {
+  private void delete(SolrQueryRequest req, UpdateRequest update, UpdateRequestProcessor processor)
+      throws IOException {
     SolrParams params = update.getParams();
     DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
-    if(params != null) {
+    if (params != null) {
       delcmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     }
-    
-    if(update.getDeleteByIdMap() != null) {
-      Set<Entry<String,Map<String,Object>>> entries = update.getDeleteByIdMap().entrySet();
-      for (Entry<String,Map<String,Object>> e : entries) {
+
+    if (update.getDeleteByIdMap() != null) {
+      Set<Entry<String, Map<String, Object>>> entries = update.getDeleteByIdMap().entrySet();
+      for (Entry<String, Map<String, Object>> e : entries) {
         delcmd.id = e.getKey();
-        Map<String,Object> map = e.getValue();
+        Map<String, Object> map = e.getValue();
         if (map != null) {
           Long version = (Long) map.get("ver");
           if (version != null) {
@@ -204,8 +223,8 @@ public class JavabinLoader extends ContentStreamLoader {
         delcmd.clear();
       }
     }
-    
-    if(update.getDeleteQuery() != null) {
+
+    if (update.getDeleteQuery() != null) {
       for (String s : update.getDeleteQuery()) {
         delcmd.query = s;
         processor.processDelete(delcmd);

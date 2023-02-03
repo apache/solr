@@ -24,28 +24,44 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * A logarithm mapping function.
- * <p>
- * Uses:
+ *
+ * <p>Uses:
+ *
  * <ul>
- * <li>If one numeric Value or ValueStream is passed in, a {@link DoubleValue} or {@link DoubleValueStream}
- * representing the natural logarithm is returned.
- * <li>If two numeric Values are passed in, a {@link DoubleValue} representing the logarithm of the first with the second as the base is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the logarithm of
- * the Value with each of the values of the ValueStream for a document as the base is returned.
- * (Or the other way, since the Value and ValueStream can be used in either order)
+ *   <li>If one numeric Value or ValueStream is passed in, a {@link DoubleValue} or {@link
+ *       DoubleValueStream} representing the natural logarithm is returned.
+ *   <li>If two numeric Values are passed in, a {@link DoubleValue} representing the logarithm of
+ *       the first with the second as the base is returned.
+ *   <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream}
+ *       representing the logarithm of the Value with each of the values of the ValueStream for a
+ *       document as the base is returned. (Or the other way, since the Value and ValueStream can be
+ *       used in either order)
  * </ul>
  */
 public class LogFunction {
   public static final String name = "log";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires at least 1.");
-    } else if (params.length == 1) {
-      return LambdaFunction.createDoubleLambdaFunction(name, (a) -> Math.log(a), (DoubleValueStream)params[0]);
-    } else if (params.length == 2) {
-      return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> Math.log(a)/Math.log(b), (DoubleValueStream)params[0], (DoubleValueStream)params[1]);
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function accepts at most 2 paramaters, " + params.length + " found.");
-    }
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length == 0) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "The " + name + " function requires at least 1.");
+        } else if (params.length == 1) {
+          return LambdaFunction.createDoubleLambdaFunction(
+              name, (a) -> Math.log(a), (DoubleValueStream) params[0]);
+        } else if (params.length == 2) {
+          return LambdaFunction.createDoubleLambdaFunction(
+              name,
+              (a, b) -> Math.log(a) / Math.log(b),
+              (DoubleValueStream) params[0],
+              (DoubleValueStream) params[1]);
+        } else {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function accepts at most 2 paramaters, "
+                  + params.length
+                  + " found.");
+        }
+      });
 }

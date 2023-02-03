@@ -18,14 +18,13 @@ package org.apache.solr.analytics.stream.reservation;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.apache.solr.analytics.stream.reservation.read.StringDataReader;
 import org.apache.solr.analytics.stream.reservation.write.StringDataWriter;
 
-import java.util.function.Consumer;
-
-public class StringReservation extends ReductionDataReservation<Consumer<String>, Supplier<String>> {
+public class StringReservation
+    extends ReductionDataReservation<Consumer<String>, Supplier<String>> {
 
   public StringReservation(Consumer<String> applier, Supplier<String> extractor) {
     super(applier, extractor);

@@ -27,28 +27,42 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * An absolute value mapping function.
- * <p>
- * Takes a numeric ValueStream or Value and returns a ValueStream or Value of the same numeric type.
+ *
+ * <p>Takes a numeric ValueStream or Value and returns a ValueStream or Value of the same numeric
+ * type.
  */
 public class AbsoluteValueFunction {
   public static final String name = "abs";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 1) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 paramaters, " + params.length + " found.");
-    }
-    AnalyticsValueStream param = params[0];
-    if (param instanceof IntValueStream) {
-      return LambdaFunction.createIntLambdaFunction(name, x -> (x<0)? x*-1:x, (IntValueStream)param);
-    }
-    if (param instanceof LongValueStream) {
-      return LambdaFunction.createLongLambdaFunction(name, x -> (x<0)? x*-1:x, (LongValueStream)param);
-    }
-    if (param instanceof FloatValueStream) {
-      return LambdaFunction.createFloatLambdaFunction(name, x -> (x<0)? x*-1:x, (FloatValueStream)param);
-    }
-    if (param instanceof DoubleValueStream) {
-      return LambdaFunction.createDoubleLambdaFunction(name, x -> (x<0)? x*-1:x, (DoubleValueStream)param);
-      }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a numeric parameter, "+param.getExpressionStr()+" found.");
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 1) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 1 paramaters, " + params.length + " found.");
+        }
+        AnalyticsValueStream param = params[0];
+        if (param instanceof IntValueStream) {
+          return LambdaFunction.createIntLambdaFunction(
+              name, x -> (x < 0) ? x * -1 : x, (IntValueStream) param);
+        }
+        if (param instanceof LongValueStream) {
+          return LambdaFunction.createLongLambdaFunction(
+              name, x -> (x < 0) ? x * -1 : x, (LongValueStream) param);
+        }
+        if (param instanceof FloatValueStream) {
+          return LambdaFunction.createFloatLambdaFunction(
+              name, x -> (x < 0) ? x * -1 : x, (FloatValueStream) param);
+        }
+        if (param instanceof DoubleValueStream) {
+          return LambdaFunction.createDoubleLambdaFunction(
+              name, x -> (x < 0) ? x * -1 : x, (DoubleValueStream) param);
+        }
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "The "
+                + name
+                + " function requires a numeric parameter, "
+                + param.getExpressionStr()
+                + " found.");
+      });
 }

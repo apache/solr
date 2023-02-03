@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
@@ -37,9 +36,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
 
-/**
- * Creates all the collectors needed for the first phase and how to handle the results.
- */
+/** Creates all the collectors needed for the first phase and how to handle the results. */
 public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldCommandResult> {
 
   public static class Builder {
@@ -76,7 +73,6 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
 
       return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount);
     }
-
   }
 
   private final SchemaField field;
@@ -87,7 +83,8 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   private FirstPassGroupingCollector<?> firstPassGroupingCollector;
   private AllGroupsCollector<?> allGroupsCollector;
 
-  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
+  private SearchGroupsFieldCommand(
+      SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
     this.field = field;
     this.groupSort = groupSort;
     this.topNGroups = topNGroups;
@@ -101,19 +98,23 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     if (topNGroups > 0) {
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
-        // TODO: Maybe create a GroupSelector implementation that takes a value source and a field but produces a BytesRef
-        firstPassGroupingCollector
-            = new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
+        // TODO: Maybe create a GroupSelector implementation that takes a value source and a field
+        // but produces a BytesRef
+        firstPassGroupingCollector =
+            new FirstPassGroupingCollector<>(
+                new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
       } else {
-        firstPassGroupingCollector
-            = new FirstPassGroupingCollector<>(new TermGroupSelector(field.getName()), groupSort, topNGroups);
+        firstPassGroupingCollector =
+            new FirstPassGroupingCollector<>(
+                new TermGroupSelector(field.getName()), groupSort, topNGroups);
       }
       collectors.add(firstPassGroupingCollector);
     }
     if (includeGroupCount) {
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
-        allGroupsCollector = new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
+        allGroupsCollector =
+            new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
       } else {
         allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(field.getName()));
       }
@@ -129,7 +130,8 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     if (firstPassGroupingCollector != null) {
       Collection<?> values = firstPassGroupingCollector.getTopGroups(0);
       if (field.getType().getNumberType() != null) {
-        topGroups = GroupConverter.fromMutable(field, (Collection<SearchGroup<MutableValue>>) values);
+        topGroups =
+            GroupConverter.fromMutable(field, (Collection<SearchGroup<MutableValue>>) values);
       } else {
         topGroups = (Collection<SearchGroup<BytesRef>>) values;
       }

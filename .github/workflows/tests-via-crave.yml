@@ -1,0 +1,21 @@
+name: Solr Tests
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test:
+    name: Run Solr Tests using Crave.io resources
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get the Crave binary
+      run: curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
+    - name: Initialize, build, test
+      run: ./crave run --clean

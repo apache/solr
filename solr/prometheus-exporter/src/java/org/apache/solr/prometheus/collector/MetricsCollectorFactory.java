@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 
@@ -45,28 +44,28 @@ public class MetricsCollectorFactory {
   }
 
   public SchedulerMetricsCollector create() {
-    Stream<MetricCollector> pings = metricsConfiguration.getPingConfiguration()
-        .stream()
-        .map(query -> new PingCollector(solrScraper, query));
+    Stream<MetricCollector> pings =
+        metricsConfiguration.getPingConfiguration().stream()
+            .map(query -> new PingCollector(solrScraper, query));
 
-    Stream<MetricCollector> metrics = metricsConfiguration.getMetricsConfiguration()
-        .stream()
-        .map(query -> new MetricsCollector(solrScraper, query));
+    Stream<MetricCollector> metrics =
+        metricsConfiguration.getMetricsConfiguration().stream()
+            .map(query -> new MetricsCollector(solrScraper, query));
 
-    Stream<MetricCollector> searches = metricsConfiguration.getSearchConfiguration()
-        .stream()
-        .map(query -> new SearchCollector(solrScraper, query));
+    Stream<MetricCollector> searches =
+        metricsConfiguration.getSearchConfiguration().stream()
+            .map(query -> new SearchCollector(solrScraper, query));
 
-    Stream<MetricCollector> collections = metricsConfiguration.getCollectionsConfiguration()
-        .stream()
-        .map(query -> new CollectionsCollector(solrScraper, query));
+    Stream<MetricCollector> collections =
+        metricsConfiguration.getCollectionsConfiguration().stream()
+            .map(query -> new CollectionsCollector(solrScraper, query));
 
-    List<MetricCollector> collectors = Stream.of(pings, metrics, searches, collections)
-        .reduce(Stream::concat)
-        .orElseGet(Stream::empty)
-        .collect(Collectors.toList());
+    List<MetricCollector> collectors =
+        Stream.of(pings, metrics, searches, collections)
+            .reduce(Stream::concat)
+            .orElseGet(Stream::empty)
+            .collect(Collectors.toList());
 
     return new SchedulerMetricsCollector(executor, refreshInSeconds, TimeUnit.SECONDS, collectors);
   }
-
 }

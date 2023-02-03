@@ -17,6 +17,35 @@
  */
 package org.apache.hadoop.hdfs.server.datanode.fsdataset.impl;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.DFSUtilClient;
+import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
+import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportReplica;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
+import org.apache.hadoop.hdfs.server.datanode.BlockMetadataHeader;
+import org.apache.hadoop.hdfs.server.datanode.DataStorage;
+import org.apache.hadoop.hdfs.server.datanode.DatanodeUtil;
+import org.apache.hadoop.hdfs.server.datanode.FileIoProvider;
+import org.apache.hadoop.hdfs.server.datanode.ReplicaBuilder;
+import org.apache.hadoop.hdfs.server.datanode.ReplicaInfo;
+import org.apache.hadoop.hdfs.server.datanode.fsdataset.ReplicaInputStreams;
+import org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.RamDiskReplicaTracker.RamDiskReplica;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.MultipleIOException;
+import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.util.DataChecksum;
+import org.apache.hadoop.util.DataChecksum.Type;
+import org.apache.hadoop.util.DiskChecker;
+import org.apache.hadoop.util.DiskChecker.DiskErrorException;
+import org.apache.hadoop.util.ShutdownHookManager;
+import org.apache.hadoop.util.Timer;
+import org.apache.solr.hdfs.cloud.HdfsTestUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -32,6 +61,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,37 +69,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeys;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DFSUtilClient;
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
-import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportReplica;
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
-import org.apache.hadoop.hdfs.server.datanode.FileIoProvider;
-import org.apache.hadoop.hdfs.server.datanode.BlockMetadataHeader;
-import org.apache.hadoop.hdfs.server.datanode.DataStorage;
-import org.apache.hadoop.hdfs.server.datanode.DatanodeUtil;
-import org.apache.hadoop.hdfs.server.datanode.ReplicaInfo;
-import org.apache.hadoop.hdfs.server.datanode.ReplicaBuilder;
-import org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.RamDiskReplicaTracker.RamDiskReplica;
-import org.apache.hadoop.hdfs.server.datanode.fsdataset.ReplicaInputStreams;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.MultipleIOException;
-import org.apache.hadoop.util.AutoCloseableLock;
-import org.apache.hadoop.util.DataChecksum;
-import org.apache.hadoop.util.DiskChecker;
-import org.apache.hadoop.util.DiskChecker.DiskErrorException;
-import org.apache.hadoop.util.ShutdownHookManager;
-import org.apache.hadoop.util.Timer;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-
-import com.google.common.annotations.VisibleForTesting;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A block pool slice represents a portion of a block pool stored on a volume.
@@ -100,7 +102,8 @@ public class BlockPoolSlice {
   private static final int SHUTDOWN_HOOK_PRIORITY = 30;
   private final boolean deleteDuplicateReplicas;
   private static final String REPLICA_CACHE_FILE = "replicas";
-  private final long replicaCacheExpiry = 5*60*1000;
+  private final long replicaCacheExpiry;
+  private final File replicaCacheDir;
   private AtomicLong numOfBlocks = new AtomicLong();
   private final long cachedDfsUsedCheckTime;
   private final Timer timer;
@@ -128,7 +131,7 @@ public class BlockPoolSlice {
    * @throws IOException Error making directories
    */
   BlockPoolSlice(String bpid, FsVolumeImpl volume, File bpDir,
-                 Configuration conf, Timer timer) throws IOException {
+      Configuration conf, Timer timer) throws IOException {
     this.bpid = bpid;
     this.volume = volume;
     this.fileIoProvider = volume.getFileIoProvider();
@@ -174,9 +177,27 @@ public class BlockPoolSlice {
     fileIoProvider.mkdirs(volume, rbwDir);
     fileIoProvider.mkdirs(volume, tmpDir);
 
+    String cacheDirRoot = conf.get(
+        DFSConfigKeys.DFS_DATANODE_REPLICA_CACHE_ROOT_DIR_KEY);
+    if (cacheDirRoot != null && !cacheDirRoot.isEmpty()) {
+      this.replicaCacheDir = new File(cacheDirRoot,
+          currentDir.getCanonicalPath());
+      if (!this.replicaCacheDir.exists()) {
+        if (!this.replicaCacheDir.mkdirs()) {
+          throw new IOException("Failed to mkdirs " + this.replicaCacheDir);
+        }
+      }
+    } else {
+      this.replicaCacheDir = currentDir;
+    }
+    this.replicaCacheExpiry = conf.getTimeDuration(
+        DFSConfigKeys.DFS_DATANODE_REPLICA_CACHE_EXPIRY_TIME_KEY,
+        DFSConfigKeys.DFS_DATANODE_REPLICA_CACHE_EXPIRY_TIME_DEFAULT,
+        TimeUnit.MILLISECONDS);
+
     if (addReplicaThreadPool == null) {
       // initialize add replica fork join pool
-      initializeAddReplicaPool(conf);
+      initializeAddReplicaPool(conf, (FsDatasetImpl) volume.getDataset());
     }
     // Make the dfs usage to be saved during shutdown.
     shutdownHook = new Runnable() {
@@ -189,9 +210,9 @@ public class BlockPoolSlice {
         SHUTDOWN_HOOK_PRIORITY);
   }
 
-  private synchronized void initializeAddReplicaPool(Configuration conf) {
+  private synchronized static void initializeAddReplicaPool(Configuration conf,
+      FsDatasetImpl dataset) {
     if (addReplicaThreadPool == null) {
-      FsDatasetImpl dataset = (FsDatasetImpl) volume.getDataset();
       int numberOfBlockPoolSlice = dataset.getVolumeCount()
           * dataset.getBPServiceCount();
       int poolsize = Math.max(numberOfBlockPoolSlice,
@@ -278,7 +299,7 @@ public class BlockPoolSlice {
    * under finalized.
    */
   ReplicaInfo activateSavedReplica(ReplicaInfo replicaInfo,
-                                   RamDiskReplica replicaState) throws IOException {
+      RamDiskReplica replicaState) throws IOException {
     File metaFile = replicaState.getSavedMetaFile();
     File blockFile = replicaState.getSavedBlockFile();
     final long blockId = replicaInfo.getBlockId();
@@ -307,8 +328,10 @@ public class BlockPoolSlice {
     DiskChecker.checkDir(rbwDir);
   }
 
+
+
   void getVolumeMap(ReplicaMap volumeMap,
-                    final RamDiskReplicaTracker lazyWriteReplicaMap)
+      final RamDiskReplicaTracker lazyWriteReplicaMap)
       throws IOException {
     // Recover lazy persist replicas, they will be added to the volumeMap
     // when we scan the finalized directory.
@@ -360,7 +383,7 @@ public class BlockPoolSlice {
    *           throw if any sub task or multiple sub tasks failed.
    */
   private void waitForSubTaskToFinish(Queue<RecursiveAction> subTaskQueue,
-                                      List<IOException> exceptions) throws IOException {
+      List<IOException> exceptions) throws IOException {
     while (!subTaskQueue.isEmpty()) {
       RecursiveAction task = subTaskQueue.poll();
       if (task != null) {
@@ -454,7 +477,7 @@ public class BlockPoolSlice {
   }
 
   private void addReplicaToReplicasMap(Block block, ReplicaMap volumeMap,
-                                       final RamDiskReplicaTracker lazyWriteReplicaMap,boolean isFinalized)
+      final RamDiskReplicaTracker lazyWriteReplicaMap,boolean isFinalized)
       throws IOException {
     ReplicaInfo newReplica = null;
     long blockId = block.getBlockId();
@@ -516,7 +539,7 @@ public class BlockPoolSlice {
     }
 
     ReplicaInfo tmpReplicaInfo = volumeMap.addAndGet(bpid, newReplica);
-    ReplicaInfo oldReplica = (tmpReplicaInfo == newReplica) ? null
+    ReplicaInfo oldReplica = (tmpReplicaInfo.equals(newReplica)) ? null
         : tmpReplicaInfo;
     if (oldReplica != null) {
       // We have multiple replicas of the same block so decide which one
@@ -551,8 +574,8 @@ public class BlockPoolSlice {
    * @param subTaskQueue queue of sub tasks
    */
   void addToReplicasMap(ReplicaMap volumeMap, File dir,
-                        final RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
-                        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue)
+      final RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
+      List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue)
       throws IOException {
     File[] files = fileIoProvider.listFiles(volume, dir);
     Arrays.sort(files, FILE_COMPARATOR);
@@ -618,7 +641,7 @@ public class BlockPoolSlice {
     final ReplicaInfo replicaToDelete =
         selectReplicaToDelete(replica1, replica2);
     final ReplicaInfo replicaToKeep =
-        (replicaToDelete != replica1) ? replica1 : replica2;
+        (!Objects.equals(replicaToDelete, replica1)) ? replica1 : replica2;
     // Update volumeMap and delete the replica
     volumeMap.add(bpid, replicaToKeep);
     if (replicaToDelete != null) {
@@ -629,7 +652,7 @@ public class BlockPoolSlice {
 
   @VisibleForTesting
   static ReplicaInfo selectReplicaToDelete(final ReplicaInfo replica1,
-                                           final ReplicaInfo replica2) {
+      final ReplicaInfo replica2) {
     ReplicaInfo replicaToKeep;
     ReplicaInfo replicaToDelete;
 
@@ -651,7 +674,7 @@ public class BlockPoolSlice {
       replicaToKeep = replica1;
     }
 
-    replicaToDelete = (replicaToKeep == replica1) ? replica2 : replica1;
+    replicaToDelete = (replicaToKeep.equals(replica1)) ? replica2 : replica1;
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("resolveDuplicateReplicas decide to keep {}.  Will try to delete {}", replicaToKeep, replicaToDelete);
@@ -697,6 +720,10 @@ public class BlockPoolSlice {
         // read and handle the common header here. For now just a version
         final DataChecksum checksum = BlockMetadataHeader.readDataChecksum(
             checksumIn, metaFile);
+        if (Type.NULL.equals(checksum.getChecksumType())) {
+          // in case of NULL checksum type consider full file as valid
+          return blockFileLen;
+        }
         int bytesPerChecksum = checksum.getBytesPerChecksum();
         int checksumSize = checksum.getChecksumSize();
         long numChunks = Math.min(
@@ -758,9 +785,9 @@ public class BlockPoolSlice {
   }
 
   private boolean readReplicasFromCache(ReplicaMap volumeMap,
-                                        final RamDiskReplicaTracker lazyWriteReplicaMap) {
-    ReplicaMap tmpReplicaMap = new ReplicaMap(new AutoCloseableLock());
-    File replicaFile = new File(currentDir, REPLICA_CACHE_FILE);
+      final RamDiskReplicaTracker lazyWriteReplicaMap) {
+    ReplicaMap tmpReplicaMap = new ReplicaMap(new ReentrantReadWriteLock());
+    File replicaFile = new File(replicaCacheDir, REPLICA_CACHE_FILE);
     // Check whether the file exists or not.
     if (!replicaFile.exists()) {
       if (LOG.isInfoEnabled()) {
@@ -844,8 +871,8 @@ public class BlockPoolSlice {
         blocksListToPersist.getNumberOfBlocks()== 0) {
       return;
     }
-    final File tmpFile = new File(currentDir, REPLICA_CACHE_FILE + ".tmp");
-    final File replicaCacheFile = new File(currentDir, REPLICA_CACHE_FILE);
+    final File tmpFile = new File(replicaCacheDir, REPLICA_CACHE_FILE + ".tmp");
+    final File replicaCacheFile = new File(replicaCacheDir, REPLICA_CACHE_FILE);
     if (!fileIoProvider.deleteWithExistsCheck(volume, tmpFile) ||
         !fileIoProvider.deleteWithExistsCheck(volume, replicaCacheFile)) {
       return;
@@ -910,8 +937,8 @@ public class BlockPoolSlice {
      *          queue of sub tasks
      */
     AddReplicaProcessor(ReplicaMap volumeMap, File dir,
-                        RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
-                        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue) {
+        RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
+        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue) {
       this.volumeMap = volumeMap;
       this.dir = dir;
       this.lazyWriteReplicaMap = lazyWriteReplicaMap;
@@ -938,5 +965,16 @@ public class BlockPoolSlice {
   @VisibleForTesting
   public static int getAddReplicaForkPoolSize() {
     return addReplicaThreadPool.getPoolSize();
+  }
+
+  @VisibleForTesting
+  public ForkJoinPool getAddReplicaThreadPool() {
+    return addReplicaThreadPool;
+  }
+
+  @VisibleForTesting
+  public static void reInitializeAddReplicaThreadPool() {
+    addReplicaThreadPool.shutdown();
+    addReplicaThreadPool = null;
   }
 }

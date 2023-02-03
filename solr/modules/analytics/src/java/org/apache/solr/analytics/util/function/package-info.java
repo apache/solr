@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Pure java functional interfaces. Not specific to analytics.
- */
+/** Pure java functional interfaces. Not specific to analytics. */
 package org.apache.solr.analytics.util.function;
-
-

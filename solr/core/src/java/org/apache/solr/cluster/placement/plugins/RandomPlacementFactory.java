@@ -24,19 +24,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 
 /**
- * <p>Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random placement for new
- * collection creation while preventing two replicas of same shard from being placed on same node..</p>
+ * Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random
+ * placement for new collection creation while preventing two replicas of same shard from being
+ * placed on same node..
  *
- * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
+ * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
-public class RandomPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+public class RandomPlacementFactory
+    implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
 
   @Override
   public PlacementPlugin createPluginInstance() {
@@ -44,7 +52,8 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
   }
 
   public static class RandomPlacementPlugin implements PlacementPlugin {
-    private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
+    private final Random replicaPlacementRandom =
+        new Random(); // ok even if random sequence is predictable.
 
     private RandomPlacementPlugin() {
       // We make things reproducible in tests by using test seed if any
@@ -55,7 +64,9 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
     }
 
     @Override
-    public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
+    public List<PlacementPlan> computePlacements(
+        Collection<PlacementRequest> requests, PlacementContext placementContext)
+        throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
       for (PlacementRequest request : requests) {
         int totalReplicasPerShard = 0;
@@ -67,31 +78,50 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
           throw new PlacementException("Cluster size too small for number of replicas per shard");
         }
 
-        Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+        Set<ReplicaPlacement> replicaPlacements =
+            new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
         // Now place randomly all replicas of all shards on available nodes
         for (String shardName : request.getShardNames()) {
-          // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
+          // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct
+          // yet random nodes
           ArrayList<Node> nodesToAssign = new ArrayList<>(request.getTargetNodes());
           Collections.shuffle(nodesToAssign, replicaPlacementRandom);
 
           for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-            placeForReplicaType(request.getCollection(), nodesToAssign, placementContext.getPlacementPlanFactory(), replicaPlacements, shardName, request, rt);
+            placeForReplicaType(
+                request.getCollection(),
+                nodesToAssign,
+                placementContext.getPlacementPlanFactory(),
+                replicaPlacements,
+                shardName,
+                request,
+                rt);
           }
         }
 
-        placementPlans.add(placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements));
+        placementPlans.add(
+            placementContext
+                .getPlacementPlanFactory()
+                .createPlacementPlan(request, replicaPlacements));
       }
       return placementPlans;
     }
 
-    private void placeForReplicaType(SolrCollection solrCollection, ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,
-                                     Set<ReplicaPlacement> replicaPlacements,
-                                     String shardName, PlacementRequest request, Replica.ReplicaType replicaType) {
+    private void placeForReplicaType(
+        SolrCollection solrCollection,
+        ArrayList<Node> nodesToAssign,
+        PlacementPlanFactory placementPlanFactory,
+        Set<ReplicaPlacement> replicaPlacements,
+        String shardName,
+        PlacementRequest request,
+        Replica.ReplicaType replicaType) {
       for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
         Node node = nodesToAssign.remove(0);
 
-        replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, node, replicaType));
+        replicaPlacements.add(
+            placementPlanFactory.createReplicaPlacement(
+                solrCollection, shardName, node, replicaType));
       }
     }
   }

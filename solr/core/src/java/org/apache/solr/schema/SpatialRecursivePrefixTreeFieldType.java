@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.util.Map;
-
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.PackedQuadPrefixTree;
 
@@ -25,9 +24,12 @@ import org.apache.lucene.spatial.prefix.tree.PackedQuadPrefixTree;
  * @see RecursivePrefixTreeStrategy
  * @lucene.experimental
  */
-public class SpatialRecursivePrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<RecursivePrefixTreeStrategy> {
+public class SpatialRecursivePrefixTreeFieldType
+    extends AbstractSpatialPrefixTreeFieldType<RecursivePrefixTreeStrategy> {
 
-  /** @see RecursivePrefixTreeStrategy#setPrefixGridScanLevel(int) */
+  /**
+   * @see RecursivePrefixTreeStrategy#setPrefixGridScanLevel(int)
+   */
   public static final String PREFIX_GRID_SCAN_LEVEL = "prefixGridScanLevel";
 
   private Integer prefixGridScanLevel;
@@ -36,15 +38,13 @@ public class SpatialRecursivePrefixTreeFieldType extends AbstractSpatialPrefixTr
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
     String v = args.remove(PREFIX_GRID_SCAN_LEVEL);
-    if (v != null)
-      prefixGridScanLevel = Integer.valueOf(v);
+    if (v != null) prefixGridScanLevel = Integer.valueOf(v);
   }
 
   @Override
   protected RecursivePrefixTreeStrategy newPrefixTreeStrategy(String fieldName) {
     RecursivePrefixTreeStrategy strategy = new RecursivePrefixTreeStrategy(grid, fieldName);
-    if (prefixGridScanLevel != null)
-      strategy.setPrefixGridScanLevel(prefixGridScanLevel);
+    if (prefixGridScanLevel != null) strategy.setPrefixGridScanLevel(prefixGridScanLevel);
     if (grid instanceof PackedQuadPrefixTree) {
       // This grid has a (usually) better prune leafy branch implementation
       ((PackedQuadPrefixTree) grid).setPruneLeafyBranches(true);
@@ -53,4 +53,3 @@ public class SpatialRecursivePrefixTreeFieldType extends AbstractSpatialPrefixTr
     return strategy;
   }
 }
-

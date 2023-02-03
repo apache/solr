@@ -17,6 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -25,53 +32,47 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
-
 /**
  * V2 API for swapping two existing Solr cores.
  *
- * Not intended for use in SolrCloud mode.
+ * <p>Not intended for use in SolrCloud mode.
  *
- * The new API (POST /v2/cores/coreName {'swap': {...}}) is equivalent to the v1
+ * <p>The new API (POST /v2/cores/coreName {'swap': {...}}) is equivalent to the v1
  * /admin/cores?action=swap command.
  */
 @EndPoint(
-        path = {"/cores/{core}"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+    path = {"/cores/{core}"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class SwapCoresAPI {
-    private static final String V2_SWAP_CORES_CMD = "swap";
+  private static final String V2_SWAP_CORES_CMD = "swap";
 
-    private final CoreAdminHandler coreHandler;
+  private final CoreAdminHandler coreHandler;
 
-    public SwapCoresAPI(CoreAdminHandler coreHandler) {
-        this.coreHandler = coreHandler;
-    }
+  public SwapCoresAPI(CoreAdminHandler coreHandler) {
+    this.coreHandler = coreHandler;
+  }
 
-    @Command(name = V2_SWAP_CORES_CMD)
-    public void swapCores(PayloadObj<SwapCoresPayload> obj) throws Exception {
-        final SwapCoresPayload v2Body = obj.get();
-        final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-        v1Params.put(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SWAP.name().toLowerCase(Locale.ROOT));
-        v1Params.put(CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
+  @Command(name = V2_SWAP_CORES_CMD)
+  public void swapCores(PayloadObj<SwapCoresPayload> obj) throws Exception {
+    final SwapCoresPayload v2Body = obj.get();
+    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    v1Params.put(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.SWAP.name().toLowerCase(Locale.ROOT));
+    v1Params.put(
+        CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
 
-        // V1 API uses 'other' instead of 'with' to represent the second/replacement core.
-        v1Params.put(CoreAdminParams.OTHER, v1Params.remove("with"));
+    // V1 API uses 'other' instead of 'with' to represent the second/replacement core.
+    v1Params.put(CoreAdminParams.OTHER, v1Params.remove("with"));
 
-        coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
+    coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
 
-    public static class SwapCoresPayload implements ReflectMapWriter {
-        @JsonProperty(required = true)
-        public String with;
+  public static class SwapCoresPayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String with;
 
-        @JsonProperty
-        public String async;
-    }
+    @JsonProperty public String async;
+  }
 }

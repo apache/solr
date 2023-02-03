@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.FloatCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.IntCheckedReservation;
@@ -33,15 +32,16 @@ import org.apache.solr.analytics.value.StringValueStream;
 
 /**
  * Collector of min values.
- * <p>
- * Supported types are:
+ *
+ * <p>Supported types are:
+ *
  * <ul>
- * <li>Int
- * <li>Long
- * <li>Float
- * <li>Double
- * <li>Date (through longs)
- * <li>String
+ *   <li>Int
+ *   <li>Long
+ *   <li>Float
+ *   <li>Double
+ *   <li>Date (through longs)
+ *   <li>String
  * </ul>
  *
  * @param <T> The type of data being processed.
@@ -51,7 +51,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
   private final String exprStr;
 
   protected MinCollector(AnalyticsValueStream param) {
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
   }
 
   private boolean exists;
@@ -79,6 +79,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
@@ -112,16 +113,19 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
     int tempMin;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamInts( val -> {
-        if (!tempExists || val < tempMin) {
-          tempMin = val;
-          tempExists = true;
-        }
-      });
+      param.streamInts(
+          val -> {
+            if (!tempExists || val < tempMin) {
+              tempMin = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MinData data) {
       if (tempExists && (!data.exists || tempMin < data.val)) {
@@ -131,37 +135,35 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new IntCheckedReservation(
-          value -> {
-            if (!ioData.exists || value < ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new IntCheckedReservation(
+              value -> {
+                if (!ioData.exists || value < ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     public static class MinData extends ReductionData {
       int val;
     }
   }
-
-
 
   public static class LongMinCollector extends MinCollector<LongMinCollector.MinData> {
     private LongValueStream param;
@@ -191,16 +193,19 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
     long tempMin;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamLongs( val -> {
-        if (!tempExists || val < tempMin) {
-          tempMin = val;
-          tempExists = true;
-        }
-      });
+      param.streamLongs(
+          val -> {
+            if (!tempExists || val < tempMin) {
+              tempMin = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MinData data) {
       if (tempExists && (!data.exists || tempMin < data.val)) {
@@ -210,29 +215,29 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new LongCheckedReservation(
-          value -> {
-            if (!ioData.exists || value < ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new LongCheckedReservation(
+              value -> {
+                if (!ioData.exists || value < ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     public static class MinData extends ReductionData {
@@ -268,16 +273,19 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
     float tempMin;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamFloats( val -> {
-        if (!tempExists || val < tempMin) {
-          tempMin = val;
-          tempExists = true;
-        }
-      });
+      param.streamFloats(
+          val -> {
+            if (!tempExists || val < tempMin) {
+              tempMin = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MinData data) {
       if (tempExists && (!data.exists || tempMin < data.val)) {
@@ -287,29 +295,29 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new FloatCheckedReservation(
-          value -> {
-            if (!ioData.exists || value < ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new FloatCheckedReservation(
+              value -> {
+                if (!ioData.exists || value < ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     public static class MinData extends ReductionData {
@@ -345,16 +353,19 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
     double tempMin;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamDoubles( val -> {
-        if (!tempExists || val < tempMin) {
-          tempMin = val;
-          tempExists = true;
-        }
-      });
+      param.streamDoubles(
+          val -> {
+            if (!tempExists || val < tempMin) {
+              tempMin = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MinData data) {
       if (tempExists && (!data.exists || tempMin < data.val)) {
@@ -364,37 +375,35 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new DoubleCheckedReservation(
-          value -> {
-            if (!ioData.exists || value < ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new DoubleCheckedReservation(
+              value -> {
+                if (!ioData.exists || value < ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     public static class MinData extends ReductionData {
       double val;
     }
   }
-
-
 
   public static class StringMinCollector extends MinCollector<StringMinCollector.MinData> {
     private StringValueStream param;
@@ -424,16 +433,19 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
     String tempMin;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamStrings( val -> {
-        if (!tempExists || val.compareTo(tempMin) < 0) {
-          tempMin = val;
-          tempExists = true;
-        }
-      });
+      param.streamStrings(
+          val -> {
+            if (!tempExists || val.compareTo(tempMin) < 0) {
+              tempMin = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MinData data) {
       if (tempExists && (!data.exists || tempMin.compareTo(data.val) < 0)) {
@@ -443,29 +455,29 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new StringCheckedReservation(
-          value -> {
-            if (!ioData.exists || value.compareTo(ioData.val) < 0) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new StringCheckedReservation(
+              value -> {
+                if (!ioData.exists || value.compareTo(ioData.val) < 0) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      min = ((MinData)data).val;
+      min = ((MinData) data).val;
     }
 
     public static class MinData extends ReductionData {

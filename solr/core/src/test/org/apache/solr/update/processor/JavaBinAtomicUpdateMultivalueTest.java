@@ -24,5 +24,4 @@ public class JavaBinAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMult
   RequestWriterSupplier getRequestWriterSupplier() {
     return RequestWriterSupplier.JavaBin;
   }
-
 }

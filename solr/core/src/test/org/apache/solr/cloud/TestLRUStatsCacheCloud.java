@@ -18,11 +18,8 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.search.stats.LRUStatsCache;
 
-/**
- *
- */
-public class
-TestLRUStatsCacheCloud extends TestBaseStatsCacheCloud {
+/** */
+public class TestLRUStatsCacheCloud extends TestBaseStatsCacheCloud {
   @Override
   protected boolean assertSameScores() {
     return true;

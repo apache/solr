@@ -20,7 +20,6 @@ package org.apache.solr.cluster.api;
 import org.apache.solr.common.SolrException;
 
 /** Represents a Solr cluster */
-
 public interface SolrCluster {
 
   /** collections in the cluster */
@@ -32,17 +31,15 @@ public interface SolrCluster {
   /** nodes in the cluster */
   SimpleMap<SolrNode> nodes() throws SolrException;
 
-
-  /** Config sets in the cluster*/
+  /** Config sets in the cluster */
   SimpleMap<CollectionConfig> configs() throws SolrException;
 
   /** Name of the node in which the overseer is running */
   String overseerNode() throws SolrException;
 
   /**
-   * The name of the node in which this method is invoked from. returns null, if this is not invoked from a
-   * Solr node
+   * The name of the node in which this method is invoked from. returns null, if this is not invoked
+   * from a Solr node
    */
   String thisNode();
-
 }

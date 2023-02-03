@@ -16,6 +16,9 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory.CONTEXTS_FIELD_NAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,7 +27,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
@@ -46,41 +48,34 @@ import org.apache.solr.update.SolrCoreState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory.CONTEXTS_FIELD_NAME;
-
-/** 
- * Responsible for loading the lookup and dictionary Implementations specified by 
- * the SolrConfig. 
- * Interacts (query/build/reload) with Lucene Suggesters through {@link Lookup} and
- * {@link Dictionary}
- * */
+/**
+ * Responsible for loading the lookup and dictionary Implementations specified by the SolrConfig.
+ * Interacts (query/build/reload) with Lucene Suggesters through {@link Lookup} and {@link
+ * Dictionary}
+ */
 public class SolrSuggester implements Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   /** Name used when an unnamed suggester config is passed */
   public static final String DEFAULT_DICT_NAME = "default";
-  
-  /** Location of the source data - either a path to a file, or null for the
-   * current IndexReader.
-   * */
+
+  /** Location of the source data - either a path to a file, or null for the current IndexReader. */
   public static final String LOCATION = "sourceLocation";
-  
+
   /** Fully-qualified class of the {@link Lookup} implementation. */
   public static final String LOOKUP_IMPL = "lookupImpl";
-  
+
   /** Fully-qualified class of the {@link Dictionary} implementation */
   public static final String DICTIONARY_IMPL = "dictionaryImpl";
 
   /**
-   * Name of the location where to persist the dictionary. If this location
-   * is relative then the data will be stored under the core's dataDir. If this
-   * is null the storing will be disabled.
+   * Name of the location where to persist the dictionary. If this location is relative then the
+   * data will be stored under the core's dataDir. If this is null the storing will be disabled.
    */
   public static final String STORE_DIR = "storeDir";
-  
+
   static SuggesterResult EMPTY_RESULT = new SuggesterResult();
-  
+
   private String sourceLocation;
   private Path storeDir;
   private Dictionary dictionary;
@@ -94,48 +89,50 @@ public class SolrSuggester implements Accountable {
   private Analyzer contextFilterQueryAnalyzer;
 
   /**
-   * Uses the <code>config</code> and the <code>core</code> to initialize the underlying 
-   * Lucene suggester
-   * */
+   * Uses the <code>config</code> and the <code>core</code> to initialize the underlying Lucene
+   * suggester
+   */
   public String init(NamedList<?> config, SolrCore core) {
     log.info("init: {}", config);
-    
+
     // read the config
-    name = config.get(NAME) != null ? (String) config.get(NAME)
-        : DEFAULT_DICT_NAME;
+    name = config.get(NAME) != null ? (String) config.get(NAME) : DEFAULT_DICT_NAME;
     sourceLocation = (String) config.get(LOCATION);
     lookupImpl = (String) config.get(LOOKUP_IMPL);
     dictionaryImpl = (String) config.get(DICTIONARY_IMPL);
-    String store = (String)config.get(STORE_DIR);
+    String store = (String) config.get(STORE_DIR);
 
     if (lookupImpl == null) {
       lookupImpl = LookupFactory.DEFAULT_FILE_BASED_DICT;
       log.info("No {} parameter was provided falling back to {}", LOOKUP_IMPL, lookupImpl);
     }
 
-    contextFilterQueryAnalyzer = new TokenizerChain(new StandardTokenizerFactory(Collections.emptyMap()), null);
+    contextFilterQueryAnalyzer =
+        new TokenizerChain(new StandardTokenizerFactory(Collections.emptyMap()), null);
 
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     lookup = factory.create(config, core);
-    
+
     if (lookup instanceof Closeable) {
-      core.addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {
-          try {
-            ((Closeable) lookup).close();
-          } catch (IOException e) {
-            log.warn("Could not close the suggester lookup.", e);
-          }
-        }
-      });
+      core.addCloseHook(
+          new CloseHook() {
+            @Override
+            public void preClose(SolrCore core) {
+              try {
+                ((Closeable) lookup).close();
+              } catch (IOException e) {
+                log.warn("Could not close the suggester lookup.", e);
+              }
+            }
+          });
     }
 
     // if store directory is provided make it or load up the lookup with its content
     if (store != null && !store.isEmpty()) {
       storeDir = Path.of(store);
-      storeDir = Path.of(core.getDataDir()).resolve(storeDir); // if store dir is absolute this won't change it
+      // if store dir is absolute this won't change it
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir);
       try {
         Files.createDirectories(storeDir);
       } catch (IOException e) {
@@ -151,15 +148,18 @@ public class SolrSuggester implements Accountable {
         }
       }
     }
-    
+
     // dictionary configuration
     if (dictionaryImpl == null) {
-      dictionaryImpl = (sourceLocation == null) ? DictionaryFactory.DEFAULT_INDEX_BASED_DICT : 
-        DictionaryFactory.DEFAULT_FILE_BASED_DICT;
+      dictionaryImpl =
+          (sourceLocation == null)
+              ? DictionaryFactory.DEFAULT_INDEX_BASED_DICT
+              : DictionaryFactory.DEFAULT_FILE_BASED_DICT;
       log.info("No {} parameter was provided falling back to {}", DICTIONARY_IMPL, dictionaryImpl);
     }
 
-    dictionaryFactory = core.getResourceLoader().newInstance(dictionaryImpl, DictionaryFactory.class);
+    dictionaryFactory =
+        core.getResourceLoader().newInstance(dictionaryImpl, DictionaryFactory.class);
     dictionaryFactory.setParams(config);
     log.info("Dictionary loaded with params: {}", config);
 
@@ -174,14 +174,15 @@ public class SolrSuggester implements Accountable {
     try {
       lookup.build(dictionary);
     } catch (AlreadyClosedException e) {
-      RuntimeException e2 = new SolrCoreState.CoreIsClosedException
-          ("Suggester build has been interrupted by a core reload or shutdown.");
+      RuntimeException e2 =
+          new SolrCoreState.CoreIsClosedException(
+              "Suggester build has been interrupted by a core reload or shutdown.");
       e2.initCause(e);
       throw e2;
     }
     if (storeDir != null) {
       Path target = getStoreFile();
-      if(!lookup.store(Files.newOutputStream(target))) {
+      if (!lookup.store(Files.newOutputStream(target))) {
         log.error("Store Lookup build failed");
       } else {
         if (log.isInfoEnabled()) {
@@ -206,8 +207,7 @@ public class SolrSuggester implements Accountable {
   }
 
   /**
-   * @return the file where this suggester is stored.
-   *         null if no storeDir was configured
+   * @return the file where this suggester is stored. null if no storeDir was configured
    */
   public Path getStoreFile() {
     if (storeDir == null) {
@@ -225,16 +225,19 @@ public class SolrSuggester implements Accountable {
       log.info("Lookup is null - invoke suggest.build first");
       return EMPTY_RESULT;
     }
-    
+
     SuggesterResult res = new SuggesterResult();
     List<LookupResult> suggestions;
-    if(options.contextFilterQuery == null){
-      //TODO: this path needs to be fixed to accept query params to override configs such as allTermsRequired, highlight
+    if (options.contextFilterQuery == null) {
+      // TODO: this path needs to be fixed to accept query params to override configs such as
+      // allTermsRequired, highlight
       suggestions = lookup.lookup(options.token, false, options.count);
     } else {
       BooleanQuery query = parseContextFilterQuery(options.contextFilterQuery);
-      suggestions = lookup.lookup(options.token, query, options.count, options.allTermsRequired, options.highlight);
-      if(suggestions == null){
+      suggestions =
+          lookup.lookup(
+              options.token, query, options.count, options.allTermsRequired, options.highlight);
+      if (suggestions == null) {
         // Context filtering not supported/configured by lookup
         // Silently ignore filtering and serve a result by querying without context filtering
         if (log.isDebugEnabled()) {
@@ -248,13 +251,15 @@ public class SolrSuggester implements Accountable {
   }
 
   private BooleanQuery parseContextFilterQuery(String contextFilter) {
-    if(contextFilter == null){
+    if (contextFilter == null) {
       return null;
     }
 
     Query query = null;
     try {
-      query = new StandardQueryParser(contextFilterQueryAnalyzer).parse(contextFilter, CONTEXTS_FIELD_NAME);
+      query =
+          new StandardQueryParser(contextFilterQueryAnalyzer)
+              .parse(contextFilter, CONTEXTS_FIELD_NAME);
       if (query instanceof BooleanQuery) {
         return (BooleanQuery) query;
       }
@@ -273,20 +278,31 @@ public class SolrSuggester implements Accountable {
   public long ramBytesUsed() {
     return lookup.ramBytesUsed();
   }
-  
+
   @Override
   public Collection<Accountable> getChildResources() {
     return lookup.getChildResources();
   }
-  
+
   @Override
   public String toString() {
-    return "SolrSuggester [ name=" + name + ", "
-        + "sourceLocation=" + sourceLocation + ", "
-        + "storeDir=" + ((storeDir == null) ? "" : storeDir.toAbsolutePath()) + ", "
-        + "lookupImpl=" + lookupImpl + ", "
-        + "dictionaryImpl=" + dictionaryImpl + ", "
-        + "sizeInBytes=" + ((lookup!=null) ? String.valueOf(ramBytesUsed()) : "0") + " ]";
+    return "SolrSuggester [ name="
+        + name
+        + ", "
+        + "sourceLocation="
+        + sourceLocation
+        + ", "
+        + "storeDir="
+        + ((storeDir == null) ? "" : storeDir.toAbsolutePath())
+        + ", "
+        + "lookupImpl="
+        + lookupImpl
+        + ", "
+        + "dictionaryImpl="
+        + dictionaryImpl
+        + ", "
+        + "sizeInBytes="
+        + ((lookup != null) ? String.valueOf(ramBytesUsed()) : "0")
+        + " ]";
   }
-
 }

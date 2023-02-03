@@ -18,9 +18,7 @@ package org.apache.solr.analytics.value;
 
 import org.apache.solr.analytics.facet.compare.FacetResultsComparator;
 
-/**
- * A single-valued analytics value that can be compared and used to sort a facet.
- */
+/** A single-valued analytics value that can be compared and used to sort a facet. */
 public interface ComparableValue extends AnalyticsValue {
   /**
    * Create an entry comparator used to sort the facet-value buckets of a facet.

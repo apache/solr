@@ -17,12 +17,12 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import java.util.List;
-
 import io.prometheus.client.Collector;
+import java.util.List;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 
-public class CachedPrometheusCollector extends Collector implements SchedulerMetricsCollector.Observer {
+public class CachedPrometheusCollector extends Collector
+    implements SchedulerMetricsCollector.Observer {
 
   private volatile List<MetricFamilySamples> samples;
 
@@ -35,5 +35,4 @@ public class CachedPrometheusCollector extends Collector implements SchedulerMet
   public void metricsUpdated(List<MetricFamilySamples> samples) {
     this.samples = samples;
   }
-
 }

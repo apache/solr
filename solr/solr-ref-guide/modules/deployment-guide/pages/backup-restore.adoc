@@ -140,10 +140,12 @@ http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 [source,xml]
 ----
 <lst name="backup">
-  <str name="startTime">Sun Apr 12 16:22:50 DAVT 2015</str>
+  <str name="startTime">2022-02-11T17:19:33.271461700Z</str>
   <int name="fileCount">10</int>
+  <int name="indexFileCount">10</int>
   <str name="status">success</str>
-  <str name="snapshotCompletedAt">Sun Apr 12 16:22:50 DAVT 2015</str>
+  <str name="snapshotCompletedAt">2022-02-11T17:19:34.363859100Z</str>
+  <str name="endTime">2022-02-11T17:19:34.363859100Z</str>
   <str name="snapshotName">my_backup</str>
 </lst>
 ----
@@ -351,7 +353,7 @@ Request ID to track this action which will be processed asynchronously.
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers three different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, and `GCSBackupRepository`), and allows users to create plugins for their own storage systems as needed.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -392,7 +394,7 @@ An example configuration using this property can be found below.
 [source,xml]
 ----
 <backup>
-  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSytemRepository">
+  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository">
     <str name="location">/solr/backup_data</str>
   </repository>
 </backup>
@@ -402,8 +404,8 @@ An example configuration using this property can be found below.
 === HdfsBackupRepository
 
 Stores and retrieves backup files from HDFS directories.
-This is provided in the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 HdfsBackupRepository accepts the following configuration options:
 
@@ -450,7 +452,7 @@ An example configuration using these properties can be found below:
 [source,xml]
 ----
 <backup>
-  <repository name="hdfs" class="org.apache.solr.core.backup.repository.HdfsBackupRepository" default="false">
+  <repository name="hdfs" class="org.apache.solr.hdfs.backup.repository.HdfsBackupRepository" default="false">
     <str name="solr.hdfs.home">hdfs://some_hdfs_host:1234/solr/backup/data</str>
     <int name="solr.hdfs.buffer.size">8192</int>
     <str name="solr.hdfs.permissions.umask-mode">0022</str>
@@ -462,8 +464,8 @@ An example configuration using these properties can be found below:
 === GCSBackupRepository
 
 Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
-This is provided in the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -652,9 +654,9 @@ An example configuration using the overall and GCS-client properties can be seen
     <str name="location">/default/gcs/backup/location</str>
 
     <int name="gcsClientMaxRetries">5</int>
-    <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
+    <int name="gcsClientHttpInitialRetryDelayMillis">1500</int>
     <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
-    <int name="gcsClientMaxHttpRetryDelayMillis">10000</int>
+    <int name="gcsClientHttpMaxRetryDelayMillis">10000</int>
   </repository>
 </backup>
 ----
@@ -662,16 +664,34 @@ An example configuration using the overall and GCS-client properties can be seen
 === S3BackupRepository
 
 Stores and retrieves backup files in an Amazon S3 bucket.
-This is provided in the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 
 [NOTE]
 ====
-When using the Backup & Restore Collections API Calls, you can provide a **location** that either starts with `s3://` or not.
-Either way, if your **location** (or s3 object prefix) starts with a `/`, it will be removed automatically.
-The repository does not allow backup locations that begin with a `/`.
+There are a few nuances to using the **`location`** option with the S3 Repository.
+The `location` option specifies the sub-directory to store backup information in.
+
+Location Format::
+When using the Backup & Restore Collections API Calls, the **`location`** option can be presented in a number of ways:
++
+* `dir/in/bucket`
+* `/dir/in/bucket`
+* `s3:/dir/in/bucket`
+* `s3://dir/in/bucket`
++
+All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
+
+Pre-Creation::
+The location must already exist within your S3 bucket before you can preform any backup operations with that location.
++
+**Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
+
+Empty Location::
+If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
+However the location option is mandatory and you will recieve an error when trying to perform backup operations without it.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:

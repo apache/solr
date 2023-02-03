@@ -15,6 +15,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+
+<!-- This file should be called managed-schema.xml, but leaving it here to prove
+that we still are backwards compatible with this format.  -->
 <schema name="minimal" version="1.1">
  <types>
   <fieldType name="string" class="solr.StrField"/>

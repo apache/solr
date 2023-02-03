@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -48,9 +47,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 @LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
@@ -71,36 +68,25 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   private DistribStateManager stateManager;
 
   @Before
-  public void doBefore() throws Exception {
+  public void doBefore() {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();
-    solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
-        Optional.empty()).build();
+    solrClient =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
+            .build();
   }
 
   private ReindexCollectionCmd.State getState(String collection) {
     try {
-      return ReindexCollectionCmd.State.get(ReindexCollectionCmd
-          .getReindexingState(stateManager, collection)
-          .get(ReindexCollectionCmd.STATE));
+      return ReindexCollectionCmd.State.get(
+          ReindexCollectionCmd.getReindexingState(stateManager, collection)
+              .get(ReindexCollectionCmd.STATE));
     } catch (Exception e) {
       fail("Unexpected exception checking state of " + collection + ": " + e);
       return null;
     }
-  }
-
-  private void waitForState(String collection, ReindexCollectionCmd.State expected) throws Exception {
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource());
-    ReindexCollectionCmd.State current = null;
-    while (!timeOut.hasTimedOut()) {
-      current = getState(collection);
-      if (expected == current) {
-        return;
-      }
-      timeOut.sleep(500);
-    }
-    throw new Exception("timeout waiting for state, current=" + current + ", expected=" + expected);
   }
 
   @After
@@ -123,24 +109,34 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     createCollection(sourceCollection, "conf1", 2, 2);
 
-    indexDocs(sourceCollection, NUM_DOCS,
+    indexDocs(
+        sourceCollection,
+        NUM_DOCS,
         i -> new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
 
     final String targetCollection = "basicReindexingTarget";
 
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection);
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
     CollectionAdminResponse rsp = req.process(solrClient);
     assertNotNull(rsp.toString(), rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS));
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
-    assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("inputDocs")).longValue());
-    assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("processedDocs")).longValue());
+    Map<String, Object> status =
+        (Map<String, Object>) rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
+    assertEquals(
+        status.toString(), (long) NUM_DOCS, ((Number) status.get("inputDocs")).longValue());
+    assertEquals(
+        status.toString(), (long) NUM_DOCS, ((Number) status.get("processedDocs")).longValue());
 
-    CloudUtil.waitForState(cloudManager, "did not finish copying in time", targetCollection, (liveNodes, coll) -> {
-      ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
-      return ReindexCollectionCmd.State.FINISHED == state;
-    });
+    CloudUtil.waitForState(
+        cloudManager,
+        "did not finish copying in time",
+        targetCollection,
+        (liveNodes, coll) -> {
+          ReindexCollectionCmd.State state =
+              ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
+          return ReindexCollectionCmd.State.FINISHED == state;
+        });
 
     // verify the target docs exist
     QueryResponse queryResponse = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
@@ -155,16 +151,19 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     doTestSameTargetReindexing(true, true);
   }
 
-  private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases) throws Exception {
+  private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases)
+      throws Exception {
     final String sourceCollection = "sameTargetReindexing_" + sourceRemove + "_" + followAliases;
     final String targetCollection = sourceCollection;
 
     createCollection(sourceCollection, "conf1", 2, 2);
-    indexDocs(sourceCollection, NUM_DOCS,
+    indexDocs(
+        sourceCollection,
+        NUM_DOCS,
         i -> new SolrInputDocument("id", String.valueOf(i), "string_s", String.valueOf(i)));
 
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection);
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
     req.setRemoveSource(sourceRemove);
     req.setFollowAliases(followAliases);
     req.process(solrClient);
@@ -174,7 +173,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     String prefix = ReindexCollectionCmd.TARGET_COL_PREFIX + targetCollection;
     while (!timeOut.hasTimedOut()) {
       timeOut.sleep(500);
-      for (String name : cloudManager.getClusterStateProvider().getClusterState().getCollectionsMap().keySet()) {
+      for (String name : cloudManager.getClusterState().getCollectionsMap().keySet()) {
         if (name.startsWith(prefix)) {
           realTargetCollection = name;
           break;
@@ -186,15 +185,20 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
     assertNotNull("target collection not present after 30s", realTargetCollection);
 
-    CloudUtil.waitForState(cloudManager, "did not finish copying in time", realTargetCollection, (liveNodes, coll) -> {
-      ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
-      return ReindexCollectionCmd.State.FINISHED == state;
-    });
-    solrClient.getZkStateReader().aliasesManager.update();
+    CloudUtil.waitForState(
+        cloudManager,
+        "did not finish copying in time",
+        realTargetCollection,
+        (liveNodes, coll) -> {
+          ReindexCollectionCmd.State state =
+              ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
+          return ReindexCollectionCmd.State.FINISHED == state;
+        });
+    ZkStateReader.from(solrClient).aliasesManager.update();
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
-    ClusterState state = solrClient.getClusterStateProvider().getClusterState();
+    ClusterState state = solrClient.getClusterState();
     if (sourceRemove) {
       assertFalse("source collection still present", state.hasCollection(sourceCollection));
     }
@@ -205,29 +209,38 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     final String sourceCollection = "sourceLossyReindexing";
     final String targetCollection = "targetLossyReindexing";
 
-
     createCollection(sourceCollection, "conf2", 2, 2);
 
-    indexDocs(sourceCollection, NUM_DOCS, i ->
-      new SolrInputDocument(
-          "id", String.valueOf(i),
-          "string_s", String.valueOf(i),
-          "sind", "this is a test " + i)); // "sind": indexed=true, stored=false, will be lost...
+    indexDocs(
+        sourceCollection,
+        NUM_DOCS,
+        i ->
+            new SolrInputDocument(
+                "id", String.valueOf(i),
+                "string_s", String.valueOf(i),
+                "sind",
+                    "this is a test " + i)); // "sind": indexed=true, stored=false, will be lost...
 
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection)
-        .setConfigName("conf3");
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection)
+            .setTarget(targetCollection)
+            .setConfigName("conf3");
     req.process(solrClient);
 
-    CloudUtil.waitForState(cloudManager, "did not finish copying in time", targetCollection, (liveNodes, coll) -> {
-      ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
-      return ReindexCollectionCmd.State.FINISHED == state;
-    });
+    CloudUtil.waitForState(
+        cloudManager,
+        "did not finish copying in time",
+        targetCollection,
+        (liveNodes, coll) -> {
+          ReindexCollectionCmd.State state =
+              ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
+          return ReindexCollectionCmd.State.FINISHED == state;
+        });
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
     for (SolrDocument doc : rsp.getResults()) {
-      String id = (String)doc.getFieldValue("id");
+      String id = (String) doc.getFieldValue("id");
       assertEquals(id, doc.getFieldValue("string_s"));
       assertFalse(doc.containsKey("sind")); // lost in translation ...
     }
@@ -238,26 +251,35 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     final String sourceCollection = "reshapeReindexing";
     final String targetCollection = "reshapeReindexingTarget";
     createCollection(sourceCollection, "conf1", 2, 2);
-    indexDocs(sourceCollection, NUM_DOCS,
-        i -> new SolrInputDocument(
-            "id", String.valueOf(i),
-            "string_s", String.valueOf(i),
-            "remove_s", String.valueOf(i)));
+    indexDocs(
+        sourceCollection,
+        NUM_DOCS,
+        i ->
+            new SolrInputDocument(
+                "id", String.valueOf(i),
+                "string_s", String.valueOf(i),
+                "remove_s", String.valueOf(i)));
 
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection)
-        .setCollectionParam(ZkStateReader.NUM_SHARDS_PROP, 3)
-        .setCollectionParam(ZkStateReader.REPLICATION_FACTOR, 1)
-        .setCollectionParam("router.name", ImplicitDocRouter.NAME)
-        .setCollectionParam("shards", "foo,bar,baz")
-        .setCollectionParam("fl", "id,string_s")
-        .setCollectionParam("q", "id:10*");
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection)
+            .setTarget(targetCollection)
+            .setCollectionParam(ZkStateReader.NUM_SHARDS_PROP, 3)
+            .setCollectionParam(ZkStateReader.REPLICATION_FACTOR, 1)
+            .setCollectionParam("router.name", ImplicitDocRouter.NAME)
+            .setCollectionParam("shards", "foo,bar,baz")
+            .setCollectionParam("fl", "id,string_s")
+            .setCollectionParam("q", "id:10*");
     req.process(solrClient);
 
-    CloudUtil.waitForState(cloudManager, "did not finish copying in time", targetCollection, (liveNodes, coll) -> {
-      ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
-      return ReindexCollectionCmd.State.FINISHED == state;
-    });
+    CloudUtil.waitForState(
+        cloudManager,
+        "did not finish copying in time",
+        targetCollection,
+        (liveNodes, coll) -> {
+          ReindexCollectionCmd.State state =
+              ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
+          return ReindexCollectionCmd.State.FINISHED == state;
+        });
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
 
@@ -271,8 +293,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
 
     // check the shape of the new collection
-    ClusterState clusterState = solrClient.getClusterStateProvider().getClusterState();
-    List<String> aliases = solrClient.getZkStateReader().getAliases().resolveAliases(targetCollection);
+    ClusterState clusterState = solrClient.getClusterState();
+    List<String> aliases =
+        ZkStateReader.from(solrClient).getAliases().resolveAliases(targetCollection);
     assertFalse(aliases.isEmpty());
     String realTargetCollection = aliases.get(0);
     DocCollection coll = clusterState.getCollection(realTargetCollection);
@@ -293,45 +316,59 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     createCollection(sourceCollection, "conf1", 2, 2);
     createCollection(targetCollection, "conf1", 1, 1);
     CollectionAdminRequest.createAlias(aliasTarget, targetCollection).process(solrClient);
-    indexDocs(sourceCollection, NUM_DOCS,
-        i -> new SolrInputDocument(
-            "id", String.valueOf(i),
-            "string_s", String.valueOf(i)));
+    indexDocs(
+        sourceCollection,
+        NUM_DOCS,
+        i ->
+            new SolrInputDocument(
+                "id", String.valueOf(i),
+                "string_s", String.valueOf(i)));
 
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection);
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
     CollectionAdminResponse rsp = req.process(solrClient);
     assertNotNull(rsp.getResponse().get("error"));
-    assertTrue(rsp.toString(), rsp.getResponse().get("error").toString().contains("already exists"));
+    assertTrue(
+        rsp.toString(), rsp.getResponse().get("error").toString().contains("already exists"));
 
-    req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(aliasTarget);
+    req = CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(aliasTarget);
     rsp = req.process(solrClient);
     assertNotNull(rsp.getResponse().get("error"));
-    assertTrue(rsp.toString(), rsp.getResponse().get("error").toString().contains("already exists"));
+    assertTrue(
+        rsp.toString(), rsp.getResponse().get("error").toString().contains("already exists"));
 
     CollectionAdminRequest.deleteAlias(aliasTarget).process(solrClient);
     CollectionAdminRequest.deleteCollection(targetCollection).process(solrClient);
 
-    req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection);
+    req = CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
 
     TestInjection.reindexFailure = "true:100";
     rsp = req.process(solrClient);
     assertNotNull(rsp.getResponse().get("error"));
-    assertTrue(rsp.toString(), rsp.getResponse().get("error").toString().contains("waiting for daemon"));
+    assertTrue(
+        rsp.toString(), rsp.getResponse().get("error").toString().contains("waiting for daemon"));
 
     // verify that the target and checkpoint collections don't exist
-    cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> {
-      assertFalse(coll.getName() + " still exists", coll.getName().startsWith(ReindexCollectionCmd.TARGET_COL_PREFIX));
-      assertFalse(coll.getName() + " still exists", coll.getName().startsWith(ReindexCollectionCmd.CHK_COL_PREFIX));
-    });
+    cloudManager
+        .getClusterState()
+        .forEachCollection(
+            coll -> {
+              assertFalse(
+                  coll.getName() + " still exists",
+                  coll.getName().startsWith(ReindexCollectionCmd.TARGET_COL_PREFIX));
+              assertFalse(
+                  coll.getName() + " still exists",
+                  coll.getName().startsWith(ReindexCollectionCmd.CHK_COL_PREFIX));
+            });
     // verify that the source collection is read-write and has no reindexing flags
-    CloudUtil.waitForState(cloudManager, "collection state is incorrect", sourceCollection,
+    CloudUtil.waitForState(
+        cloudManager,
+        "collection state is incorrect",
+        sourceCollection,
         ((liveNodes, collectionState) ->
-            !collectionState.isReadOnly() &&
-            collectionState.getStr(ReindexCollectionCmd.REINDEXING_STATE) == null &&
-            getState(sourceCollection) == null));
+            !collectionState.isReadOnly()
+                && collectionState.getStr(ReindexCollectionCmd.REINDEXING_STATE) == null
+                && getState(sourceCollection) == null));
   }
 
   @Test
@@ -342,50 +379,64 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     createCollection(sourceCollection, "conf1", 2, 1);
 
     TestInjection.reindexLatch = new CountDownLatch(1);
-    CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
-        .setTarget(targetCollection);
+    CollectionAdminRequest.ReindexCollection req =
+        CollectionAdminRequest.reindexCollection(sourceCollection).setTarget(targetCollection);
     String asyncId = req.processAsync(solrClient);
     // wait for the source collection to be put in readOnly mode
-    CloudUtil.waitForState(cloudManager, "source collection didn't become readOnly",
-        sourceCollection, (liveNodes, coll) -> coll.isReadOnly());
+    CloudUtil.waitForState(
+        cloudManager,
+        "source collection didn't become readOnly",
+        sourceCollection,
+        (liveNodes, coll) -> coll.isReadOnly());
 
     req = CollectionAdminRequest.reindexCollection(sourceCollection);
     req.setCommand("abort");
     CollectionAdminResponse rsp = req.process(solrClient);
-    Map<String, Object> status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
+    Map<String, Object> status =
+        (Map<String, Object>) rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
     assertNotNull(rsp.toString(), status);
     assertEquals(status.toString(), "aborting", status.get("state"));
 
-    CloudUtil.waitForState(cloudManager, "incorrect collection state", sourceCollection,
+    CloudUtil.waitForState(
+        cloudManager,
+        "incorrect collection state",
+        sourceCollection,
         ((liveNodes, collectionState) ->
-            collectionState.isReadOnly() &&
-            getState(sourceCollection) == ReindexCollectionCmd.State.ABORTED));
+            collectionState.isReadOnly()
+                && getState(sourceCollection) == ReindexCollectionCmd.State.ABORTED));
 
     // verify status
     req.setCommand("status");
     rsp = req.process(solrClient);
-    status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
+    status = (Map<String, Object>) rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
     assertNotNull(rsp.toString(), status);
     assertEquals(status.toString(), "aborted", status.get("state"));
     // let the process continue
     TestInjection.reindexLatch.countDown();
-    CloudUtil.waitForState(cloudManager, "source collection is in wrong state",
-        sourceCollection, (liveNodes, docCollection) -> !docCollection.isReadOnly() && getState(sourceCollection) == null);
+    CloudUtil.waitForState(
+        cloudManager,
+        "source collection is in wrong state",
+        sourceCollection,
+        (liveNodes, docCollection) ->
+            !docCollection.isReadOnly() && getState(sourceCollection) == null);
     // verify the response
     rsp = CollectionAdminRequest.requestStatus(asyncId).process(solrClient);
-    status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
+    status = (Map<String, Object>) rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
     assertNotNull(rsp.toString(), status);
     assertEquals(status.toString(), "aborted", status.get("state"));
   }
 
-  private void createCollection(String name, String config, int numShards, int numReplicas) throws Exception {
+  private void createCollection(String name, String config, int numShards, int numReplicas)
+      throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
         .process(solrClient);
 
     cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
-  private void indexDocs(String collection, int numDocs, Function<Integer, SolrInputDocument> generator) throws Exception {
+  private void indexDocs(
+      String collection, int numDocs, Function<Integer, SolrInputDocument> generator)
+      throws Exception {
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 0; i < numDocs; i++) {
       docs.add(generator.apply(i));
@@ -396,6 +447,5 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
 
     assertEquals("num docs", NUM_DOCS, rsp.getResults().getNumFound());
-
   }
 }

@@ -21,7 +21,6 @@ import org.apache.solr.core.SolrCore;
 /**
  * @since solr 1.3
  */
-public interface SolrCoreAware 
-{
-  void inform( SolrCore core );
+public interface SolrCoreAware {
+  void inform(SolrCore core);
 }

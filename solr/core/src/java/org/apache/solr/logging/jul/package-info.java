@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * JUL based implementation of {@link org.apache.solr.logging.LogWatcher}
- */
-package org.apache.solr.logging.jul;
 
+/** JUL based implementation of {@link org.apache.solr.logging.LogWatcher} */
+package org.apache.solr.logging.jul;

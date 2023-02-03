@@ -20,13 +20,10 @@ package org.apache.solr.logging;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Utility to log a deprecation.
- */
+/** Utility to log a deprecation. */
 public class DeprecationLog {
   // not used but needed to satisfy validate-source-patterns.gradle
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -37,9 +34,10 @@ public class DeprecationLog {
   private static final Map<String, String> alreadyLogged = new ConcurrentHashMap<>();
 
   /**
-   * Logs a deprecation warning for the provided feature, but only the first time.
-   * The logger name used is {@value #LOG_PREFIX} + {@code featureId}.
-   * Remember that logger names are disable-able via configuration if needed.
+   * Logs a deprecation warning for the provided feature, but only the first time. The logger name
+   * used is {@value #LOG_PREFIX} + {@code featureId}. Remember that logger names are disable-able
+   * via configuration if needed.
+   *
    * @return true if logged
    */
   public static boolean log(String featureId, String message) {

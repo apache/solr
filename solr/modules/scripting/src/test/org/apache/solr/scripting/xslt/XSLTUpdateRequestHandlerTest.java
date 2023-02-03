@@ -37,13 +37,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * <p>
- * This tests the XSLTUpdateRequestHandler ability to work with XSLT stylesheet and xml content.
- * </p>
-*/
+/** This tests the XSLTUpdateRequestHandler ability to work with XSLT stylesheet and xml content. */
 public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
-
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -59,67 +54,70 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUpdate() throws Exception
-  {
+  public void testUpdate() throws Exception {
     String xml =
-      "<random>" +
-      " <document>" +
-      "  <node name=\"id\" value=\"12345\"/>" +
-      "  <node name=\"name\" value=\"kitten\"/>" +
-      "  <node name=\"text\" enhance=\"3\" value=\"some other day\"/>" +
-      "  <node name=\"title\" enhance=\"4\" value=\"A story\"/>" +
-      "  <node name=\"timestamp\" enhance=\"5\" value=\"2011-07-01T10:31:57.140Z\"/>" +
-      " </document>" +
-      "</random>";
+        "<random>"
+            + " <document>"
+            + "  <node name=\"id\" value=\"12345\"/>"
+            + "  <node name=\"name\" value=\"kitten\"/>"
+            + "  <node name=\"text\" enhance=\"3\" value=\"some other day\"/>"
+            + "  <node name=\"title\" enhance=\"4\" value=\"A story\"/>"
+            + "  <node name=\"timestamp\" enhance=\"5\" value=\"2011-07-01T10:31:57.140Z\"/>"
+            + " </document>"
+            + "</random>";
 
-    Map<String,String> args = new HashMap<>();
+    Map<String, String> args = new HashMap<>();
     args.put("tr", "xsl-update-handler-test.xsl");
 
     SolrCore core = h.getCore();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     ArrayList<ContentStream> streams = new ArrayList<>();
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    //try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
+    // try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
     try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {
       handler.init(new NamedList<>());
       handler.handleRequestBody(req, rsp);
     }
     StringWriter sw = new StringWriter(32000);
     QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw,req,rsp);
+    responseWriter.write(sw, req, rsp);
     req.close();
     String response = sw.toString();
     assertU(response);
     assertU(commit());
 
-    assertQ("test document was correctly committed", req("q","*:*")
-            , "//result[@numFound='1']"
-            , "//str[@name='id'][.='12345']"
-        );
+    assertQ(
+        "test document was correctly committed",
+        req("q", "*:*"),
+        "//result[@numFound='1']",
+        "//str[@name='id'][.='12345']");
   }
 
   @Test
-  public void testEntities() throws Exception
-  {
+  public void testEntities() throws Exception {
     // use a binary file, so when it's loaded fail with XML error:
     String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml =
-      "<?xml version=\"1.0\"?>" +
-      "<!DOCTYPE foo [" +
-      // check that external entities are not resolved!
-      "<!ENTITY bar SYSTEM \""+file+"\">"+
-      // but named entities should be
-      "<!ENTITY wacky \"zzz\">"+
-      "]>" +
-      "<random>" +
-      " &bar;" +
-      " <document>" +
-      "  <node name=\"id\" value=\"12345\"/>" +
-      "  <node name=\"foo_s\" value=\"&wacky;\"/>" +
-      " </document>" +
-      "</random>";
+        "<?xml version=\"1.0\"?>"
+            + "<!DOCTYPE foo ["
+            +
+            // check that external entities are not resolved!
+            "<!ENTITY bar SYSTEM \""
+            + file
+            + "\">"
+            +
+            // but named entities should be
+            "<!ENTITY wacky \"zzz\">"
+            + "]>"
+            + "<random>"
+            + " &bar;"
+            + " <document>"
+            + "  <node name=\"id\" value=\"12345\"/>"
+            + "  <node name=\"foo_s\" value=\"&wacky;\"/>"
+            + " </document>"
+            + "</random>";
     SolrQueryRequest req = req("tr", "xsl-update-handler-test.xsl");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);

@@ -16,25 +16,22 @@
  */
 package org.apache.solr.util.hll;
 
-/**
- * Reads 'words' of a fixed width, in sequence, from a byte array.
- */
+/** Reads 'words' of a fixed width, in sequence, from a byte array. */
 public interface IWordDeserializer {
-    /**
-     * @return the next word in the sequence. Should not be called more than
-     * {@link #totalWordCount()} times.
-     */
-    long readWord();
+  /**
+   * @return the next word in the sequence. Should not be called more than {@link #totalWordCount()}
+   *     times.
+   */
+  long readWord();
 
-    /**
-     * Returns the number of words that could be encoded in the sequence.
-     *
-     * NOTE:  the sequence that was encoded may be shorter than the value this
-     *        method returns due to padding issues within bytes. This guarantees
-     *        only an upper bound on the number of times {@link #readWord()}
-     *        can be called.
-     *
-     * @return the maximum number of words that could be read from the sequence.
-     */
-    int totalWordCount();
+  /**
+   * Returns the number of words that could be encoded in the sequence.
+   *
+   * <p>NOTE: the sequence that was encoded may be shorter than the value this method returns due to
+   * padding issues within bytes. This guarantees only an upper bound on the number of times {@link
+   * #readWord()} can be called.
+   *
+   * @return the maximum number of words that could be read from the sequence.
+   */
+  int totalWordCount();
 }

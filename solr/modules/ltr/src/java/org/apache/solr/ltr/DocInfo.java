@@ -18,7 +18,7 @@ package org.apache.solr.ltr;
 
 import java.util.HashMap;
 
-public class DocInfo extends HashMap<String,Object> {
+public class DocInfo extends HashMap<String, Object> {
 
   // Name of key used to store the original score of a doc
   private static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
@@ -32,11 +32,10 @@ public class DocInfo extends HashMap<String,Object> {
   }
 
   public Float getOriginalDocScore() {
-    return (Float)get(ORIGINAL_DOC_SCORE);
+    return (Float) get(ORIGINAL_DOC_SCORE);
   }
 
   public boolean hasOriginalDocScore() {
     return containsKey(ORIGINAL_DOC_SCORE);
   }
-
 }

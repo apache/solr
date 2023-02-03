@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * V2 utilities useful for all API implementations.
- */
+/** V2 utilities useful for all API implementations. */
 package org.apache.solr.handler.api;

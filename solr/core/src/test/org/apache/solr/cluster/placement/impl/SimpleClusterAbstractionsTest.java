@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -31,31 +33,26 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Locale;
-import java.util.Set;
-
-/**
- *
- */
+/** */
 public class SimpleClusterAbstractionsTest extends SolrCloudTestCase {
 
-  private static final String COLLECTION = SimpleClusterAbstractionsTest.class.getName() + "_collection";
+  private static final String COLLECTION =
+      SimpleClusterAbstractionsTest.class.getName() + "_collection";
 
   private static SolrCloudManager cloudManager;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
+    cloudManager =
+        cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
         .process(cluster.getSolrClient());
   }
 
   @Test
   public void testBasic() throws Exception {
-    ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudManager.getClusterState();
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     assertNotNull(cluster);
     Set<Node> nodes = cluster.getLiveNodes();
@@ -76,14 +73,19 @@ public class SimpleClusterAbstractionsTest extends SolrCloudTestCase {
       assertNotNull("no leader in shard " + shard, shard.getLeader());
       Replica replica = shard.getLeader();
       assertEquals(slice.getLeader().getName(), replica.getReplicaName());
-      slice.getReplicas().forEach(sreplica -> {
-        Replica r = shard.getReplica(sreplica.getName());
-        assertNotNull("missing replica " + sreplica.getName(), r);
-        assertEquals(r.getCoreName(), sreplica.getCoreName());
-        assertEquals(r.getNode().getName(), sreplica.getNodeName());
-        assertEquals(r.getState().toString().toLowerCase(Locale.ROOT), sreplica.getState().toString());
-        assertEquals(r.getType().toString(), sreplica.getType().toString());
-      });
+      slice
+          .getReplicas()
+          .forEach(
+              sreplica -> {
+                Replica r = shard.getReplica(sreplica.getName());
+                assertNotNull("missing replica " + sreplica.getName(), r);
+                assertEquals(r.getCoreName(), sreplica.getCoreName());
+                assertEquals(r.getNode().getName(), sreplica.getNodeName());
+                assertEquals(
+                    r.getState().toString().toLowerCase(Locale.ROOT),
+                    sreplica.getState().toString());
+                assertEquals(r.getType().toString(), sreplica.getType().toString());
+              });
     }
   }
 }

@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -28,9 +27,7 @@ import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.FloatValueStream.CastingFloatValueStream;
 import org.apache.solr.schema.FloatPointField;
 
-/**
- * An analytics wrapper for a multi-valued {@link FloatPointField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link FloatPointField} with DocValues enabled. */
 public class FloatMultiPointField extends AnalyticsField implements CastingFloatValueStream {
   private SortedNumericDocValues docValues;
   private int count;
@@ -53,7 +50,7 @@ public class FloatMultiPointField extends AnalyticsField implements CastingFloat
       count = docValues.docValueCount();
       resizeEmptyValues(count);
       for (int i = 0; i < count; ++i) {
-        values[i] = NumericUtils.sortableIntToFloat((int)docValues.nextValue());
+        values[i] = NumericUtils.sortableIntToFloat((int) docValues.nextValue());
       }
     } else {
       count = 0;
@@ -72,14 +69,17 @@ public class FloatMultiPointField extends AnalyticsField implements CastingFloat
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamFloats(value -> cons.accept((double)value));
+    streamFloats(value -> cons.accept((double) value));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamFloats(value -> cons.accept(Float.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamFloats(value -> cons.accept(value));

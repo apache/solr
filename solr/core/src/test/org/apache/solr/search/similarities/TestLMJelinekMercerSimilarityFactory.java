@@ -20,22 +20,20 @@ import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link LMJelinekMercerSimilarityFactory}
- */
+/** Tests {@link LMJelinekMercerSimilarityFactory} */
 public class TestLMJelinekMercerSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-lmjelinekmercer.xml");
+    initCore("solrconfig-basic.xml", "schema-lmjelinekmercer.xml");
   }
-  
+
   /** jelinek-mercer with default parameters */
-  public void test() throws Exception {
+  public void test() {
     assertEquals(LMJelinekMercerSimilarity.class, getSimilarity("text").getClass());
   }
-  
+
   /** jelinek-mercer with parameters */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(LMJelinekMercerSimilarity.class, sim.getClass());
     LMJelinekMercerSimilarity lm = (LMJelinekMercerSimilarity) sim;

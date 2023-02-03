@@ -42,11 +42,3 @@ Assemble Solr distribution at solr/packaging/build/...
 
 ant create-package  => gradlew -p solr/packaging assemble
 
-"Resolve" libraries by copying them to lib/ and other source
-locations. This task should *not* be used anymore. It is added
-for backward compatibility with ant (and for debugging)
-but it mixes sources with output locations and this workflow
-should be discouraged. Instead run assemble on packaging (above).
-
-ant resolve         => gradlew -p solr resolve
-

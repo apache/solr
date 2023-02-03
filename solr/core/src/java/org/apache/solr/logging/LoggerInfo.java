@@ -16,13 +16,11 @@
  */
 package org.apache.solr.logging;
 
-import org.apache.solr.common.util.SimpleOrderedMap;
-
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-/**
- * Wrapper class for Logger implementations
- */
+import org.apache.solr.common.util.SimpleOrderedMap;
+
+/** Wrapper class for Logger implementations */
 public abstract class LoggerInfo implements Comparable<LoggerInfo> {
   public static final String ROOT_NAME = "root";
 
@@ -40,7 +38,7 @@ public abstract class LoggerInfo implements Comparable<LoggerInfo> {
   public String getName() {
     return name;
   }
-  
+
   public abstract boolean isSet();
 
   public SimpleOrderedMap<?> getInfo() {
@@ -53,16 +51,13 @@ public abstract class LoggerInfo implements Comparable<LoggerInfo> {
 
   @Override
   public int compareTo(LoggerInfo other) {
-    if (this.equals(other))
-      return 0;
+    if (this.equals(other)) return 0;
 
     String tN = this.getName();
     String oN = other.getName();
 
-    if(ROOT_NAME.equals(tN))
-      return -1;
-    if(ROOT_NAME.equals(oN))
-      return 1;
+    if (ROOT_NAME.equals(tN)) return -1;
+    if (ROOT_NAME.equals(oN)) return 1;
 
     return tN.compareTo(oN);
   }

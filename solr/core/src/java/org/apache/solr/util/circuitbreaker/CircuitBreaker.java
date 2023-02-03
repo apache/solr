@@ -19,16 +19,15 @@ package org.apache.solr.util.circuitbreaker;
 
 /**
  * Default class to define circuit breakers for Solr.
- * <p>
- *  There are two (typical) ways to use circuit breakers:
- *  1. Have them checked at admission control by default (use CircuitBreakerManager for the same).
- *  2. Use the circuit breaker in a specific code path(s).
  *
- * TODO: This class should be grown as the scope of circuit breakers grow.
+ * <p>There are two (typical) ways to use circuit breakers: 1. Have them checked at admission
+ * control by default (use CircuitBreakerManager for the same). 2. Use the circuit breaker in a
+ * specific code path(s).
  *
- * The class and its derivatives raise a standard exception when a circuit breaker is triggered.
+ * <p>TODO: This class should be grown as the scope of circuit breakers grow.
+ *
+ * <p>The class and its derivatives raise a standard exception when a circuit breaker is triggered.
  * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
- * </p>
  */
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
@@ -45,19 +44,13 @@ public abstract class CircuitBreaker {
     return config.isEnabled();
   }
 
-  /**
-   * Check if circuit breaker is tripped.
-   */
+  /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
 
-  /**
-   * Get debug useful info.
-   */
+  /** Get debug useful info. */
   public abstract String getDebugInfo();
 
-  /**
-   * Get error message when the circuit breaker triggers
-   */
+  /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
 
   public static class CircuitBreakerConfig {
@@ -67,8 +60,12 @@ public abstract class CircuitBreaker {
     private final boolean cpuCBEnabled;
     private final int cpuCBThreshold;
 
-    public CircuitBreakerConfig(final boolean enabled, final boolean memCBEnabled, final int memCBThreshold,
-                                  final boolean cpuCBEnabled, final int cpuCBThreshold) {
+    public CircuitBreakerConfig(
+        final boolean enabled,
+        final boolean memCBEnabled,
+        final int memCBThreshold,
+        final boolean cpuCBEnabled,
+        final int cpuCBThreshold) {
       this.enabled = enabled;
       this.memCBEnabled = memCBEnabled;
       this.memCBThreshold = memCBThreshold;

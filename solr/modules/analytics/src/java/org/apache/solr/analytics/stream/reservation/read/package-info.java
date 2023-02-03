@@ -16,9 +16,7 @@
  */
 
 /**
- * Reading classes for a single type of data being stored by one Reduction Data Collector.
- * These writers are used to import data from shards during the streaming process.
+ * Reading classes for a single type of data being stored by one Reduction Data Collector. These
+ * writers are used to import data from shards during the streaming process.
  */
 package org.apache.solr.analytics.stream.reservation.read;
-
-

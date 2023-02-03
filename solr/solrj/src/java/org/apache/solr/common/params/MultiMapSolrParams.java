@@ -20,18 +20,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/**
- *
- */
+/** */
 public class MultiMapSolrParams extends SolrParams {
-  protected final Map<String,String[]> map;
+  protected final Map<String, String[]> map;
 
-  public static void addParam(String name, String val, Map<String,String[]> map) {
+  public static void addParam(String name, String val, Map<String, String[]> map) {
     String[] arr = map.get(name);
     if (arr == null) {
-      arr = new String[]{val};
+      arr = new String[] {val};
     } else {
-      String[] newarr = new String[arr.length+1];
+      String[] newarr = new String[arr.length + 1];
       System.arraycopy(arr, 0, newarr, 0, arr.length);
       newarr[arr.length] = val;
       arr = newarr;
@@ -39,13 +37,13 @@ public class MultiMapSolrParams extends SolrParams {
     map.put(name, arr);
   }
 
-  public static void addParam(String name, String[] vals, Map<String,String[]> map) {
+  public static void addParam(String name, String[] vals, Map<String, String[]> map) {
     String[] arr = map.put(name, vals);
     if (arr == null) {
       return;
     }
 
-    String[] newarr = new String[arr.length+vals.length];
+    String[] newarr = new String[arr.length + vals.length];
     System.arraycopy(arr, 0, newarr, 0, arr.length);
     System.arraycopy(vals, 0, newarr, arr.length, vals.length);
     arr = newarr;
@@ -53,20 +51,22 @@ public class MultiMapSolrParams extends SolrParams {
     map.put(name, arr);
   }
 
-
-  public MultiMapSolrParams(Map<String,String[]> map) {
-    assert map.entrySet().stream().allMatch(e -> {
-      boolean hasStringKey = e.getKey() == null || e.getKey().getClass() == String.class;
-      boolean hasStringArrayValue = e.getValue() == null || e.getValue().getClass() == String[].class;
-      return hasStringKey && hasStringArrayValue;
-    });
+  public MultiMapSolrParams(Map<String, String[]> map) {
+    assert map.entrySet().stream()
+        .allMatch(
+            e -> {
+              boolean hasStringKey = e.getKey() == null || e.getKey().getClass() == String.class;
+              boolean hasStringArrayValue =
+                  e.getValue() == null || e.getValue().getClass() == String[].class;
+              return hasStringKey && hasStringArrayValue;
+            });
     this.map = map;
   }
 
   @Override
   public String get(String name) {
     String[] arr = map.get(name);
-    return arr==null ? null : arr[0];
+    return arr == null ? null : arr[0];
   }
 
   @Override
@@ -84,34 +84,38 @@ public class MultiMapSolrParams extends SolrParams {
     return map.entrySet().iterator();
   }
 
-  public Map<String,String[]> getMap() { return map; }
+  public Map<String, String[]> getMap() {
+    return map;
+  }
 
-  /** Returns a MultiMap view of the SolrParams as efficiently as possible.  The returned map may or may not be a backing implementation. */
-  public static Map<String,String[]> asMultiMap(SolrParams params) {
+  /**
+   * Returns a MultiMap view of the SolrParams as efficiently as possible. The returned map may or
+   * may not be a backing implementation.
+   */
+  public static Map<String, String[]> asMultiMap(SolrParams params) {
     return asMultiMap(params, false);
   }
 
-  /** Returns a MultiMap view of the SolrParams.  A new map will be created if newCopy==true */
-  public static Map<String,String[]> asMultiMap(SolrParams params, boolean newCopy) {
+  /** Returns a MultiMap view of the SolrParams. A new map will be created if newCopy==true */
+  public static Map<String, String[]> asMultiMap(SolrParams params, boolean newCopy) {
     if (params instanceof MultiMapSolrParams) {
-      Map<String,String[]> map = ((MultiMapSolrParams)params).getMap();
+      Map<String, String[]> map = ((MultiMapSolrParams) params).getMap();
       if (newCopy) {
         return new HashMap<>(map);
       }
       return map;
     } else if (params instanceof ModifiableSolrParams) {
-      Map<String,String[]> map = ((ModifiableSolrParams)params).getMap();
+      Map<String, String[]> map = ((ModifiableSolrParams) params).getMap();
       if (newCopy) {
         return new HashMap<>(map);
       }
       return map;
     } else {
-      Map<String,String[]> map = new HashMap<>();
+      Map<String, String[]> map = new HashMap<>();
       for (Map.Entry<String, String[]> pair : params) {
         map.put(pair.getKey(), pair.getValue());
       }
       return map;
     }
   }
-
 }

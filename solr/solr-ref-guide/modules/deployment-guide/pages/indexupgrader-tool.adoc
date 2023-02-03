@@ -36,7 +36,7 @@ You will need to include the `lucene-core-<version>.jar` and `lucene-backwards-c
 
 [source,bash,subs="attributes"]
 ----
-java -cp lucene-core-{solr-full-version}.jar:lucene-backward-codecs-{solr-full-version}.jar org.apache.lucene.index.IndexUpgrader [-delete-prior-commits] [-verbose] /path/to/index
+java -cp lucene-core-{dep-version-lucene}.jar:lucene-backward-codecs-{dep-version-lucene}.jar org.apache.lucene.index.IndexUpgrader [-delete-prior-commits] [-verbose] /path/to/index
 ----
 
 This tool keeps only the last commit in an index.

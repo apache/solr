@@ -20,9 +20,9 @@ import java.io.IOException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
@@ -30,7 +30,7 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.util.SolrPluginUtils;
 
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
-  
+
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
@@ -38,25 +38,22 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
   }
 
   @Override
-  public DocTransformer create(String name, SolrParams localparams,
-      SolrQueryRequest req) {
+  public DocTransformer create(String name, SolrParams localparams, SolrQueryRequest req) {
     return new InterleavingTransformer(name, req);
   }
-  
-  class InterleavingTransformer extends DocTransformer {
 
-    final private String name;
-    final private SolrQueryRequest req;
-    
+  static class InterleavingTransformer extends DocTransformer {
+
+    private final String name;
+    private final SolrQueryRequest req;
+
     private LTRInterleavingScoringQuery[] rerankingQueries;
 
     /**
-     * @param name
-     *          Name of the field to be added in a document representing the
-     *          model picked by the interleaving process
+     * @param name Name of the field to be added in a document representing the model picked by the
+     *     interleaving process
      */
-    public InterleavingTransformer(String name,
-        SolrQueryRequest req) {
+    public InterleavingTransformer(String name, SolrQueryRequest req) {
       this.name = name;
       this.req = req;
     }
@@ -75,7 +72,8 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
       if (context.getRequest() == null) {
         return;
       }
-      rerankingQueries = (LTRInterleavingScoringQuery[])SolrQueryRequestContextUtils.getScoringQueries(req);
+      rerankingQueries =
+          (LTRInterleavingScoringQuery[]) SolrQueryRequestContextUtils.getScoringQueries(req);
       for (int i = 0; i < rerankingQueries.length; i++) {
         LTRScoringQuery scoringQuery = rerankingQueries[i];
 
@@ -83,31 +81,29 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
           scoringQuery.setOriginalQuery(context.getQuery());
         }
         if (scoringQuery.getFeatureLogger() == null) {
-          scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+          scoringQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
         }
         scoringQuery.setRequest(req);
       }
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score)
-        throws IOException {
+    public void transform(SolrDocument doc, int docid, float score) throws IOException {
       implTransform(doc, docid);
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid)
-        throws IOException {
+    public void transform(SolrDocument doc, int docid) throws IOException {
       implTransform(doc, docid);
     }
 
     private void implTransform(SolrDocument doc, int docid) {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
-      if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
+      if (rerankingQueries.length > 1
+          && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
         rerankingQuery = rerankingQueries[1];
       }
       doc.addField(name, rerankingQuery.getScoringModelName());
     }
   }
-
 }

@@ -18,9 +18,8 @@
 package org.apache.solr.cloud;
 
 import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +33,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
         .addConfig("conf2", configset("cloud-minimal"))
         .configure();
   }
-  
+
   @After
   public void teardownCluster() throws Exception {
     shutdownCluster();
@@ -47,7 +46,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("halfdeletedcollection2", 60, TimeUnit.SECONDS, 4, 12);
-    
+
     // stop a couple nodes
     JettySolrRunner j1 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
     JettySolrRunner j2 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
@@ -56,11 +55,15 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
     cluster.waitForJettyToStop(j2);
 
     // delete the collection
-    CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());
-    waitForState("Timed out waiting for collection to be deleted", "halfdeletedcollection2", (n, c) -> c == null);
+    CollectionAdminRequest.deleteCollection("halfdeletedcollection2")
+        .process(cluster.getSolrClient());
+    waitForState(
+        "Timed out waiting for collection to be deleted",
+        "halfdeletedcollection2",
+        (n, c) -> c == null);
 
-    assertFalse("Still found collection that should be gone",
-        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
-
+    assertFalse(
+        "Still found collection that should be gone",
+        cluster.getSolrClient().getClusterState().hasCollection("halfdeletedcollection2"));
   }
 }

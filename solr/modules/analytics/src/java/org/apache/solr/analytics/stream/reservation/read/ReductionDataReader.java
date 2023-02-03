@@ -19,9 +19,7 @@ package org.apache.solr.analytics.stream.reservation.read;
 import java.io.DataInput;
 import java.io.IOException;
 
-/**
- * Abstract class to manage the reading and application of data from a {@link DataInput} stream.
- */
+/** Abstract class to manage the reading and application of data from a {@link DataInput} stream. */
 public abstract class ReductionDataReader<A> {
   protected final DataInput inputStream;
   protected final A applier;

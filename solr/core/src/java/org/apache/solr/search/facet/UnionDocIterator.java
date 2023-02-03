@@ -18,8 +18,8 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.solr.search.DocIterator;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.search.DocIterator;
 
 final class UnionDocIterator extends SweepDocIterator {
 
@@ -34,24 +34,28 @@ final class UnionDocIterator extends SweepDocIterator {
     private final DocIterator sub;
     private final int index;
     private int docId;
+
     public SubIterStruct(DocIterator sub, int index) throws IOException {
       this.sub = sub;
       this.index = index;
       nextDoc();
     }
+
     public void nextDoc() {
       docId = sub.hasNext() ? sub.nextDoc() : DocIdSetIterator.NO_MORE_DOCS;
     }
   }
+
   UnionDocIterator(DocIterator[] subIterators, int baseIdx) throws IOException {
     super(subIterators.length);
     this.maxIdx = size - 1;
-    queue = new PriorityQueue<SubIterStruct>(size) {
-      @Override
-      protected boolean lessThan(SubIterStruct a, SubIterStruct b) {
-        return a.docId < b.docId;
-      }
-    };
+    queue =
+        new PriorityQueue<>(size) {
+          @Override
+          protected boolean lessThan(SubIterStruct a, SubIterStruct b) {
+            return a.docId < b.docId;
+          }
+        };
     SubIterStruct tmpBase = null;
     int i = maxIdx;
     do {

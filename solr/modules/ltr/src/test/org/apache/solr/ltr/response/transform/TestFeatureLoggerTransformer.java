@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.response.transform;
 
 import java.util.Random;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.SolrFeature;
@@ -32,25 +31,42 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w5", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w1", "description", "w5", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w1", "description", "w1", "popularity",
-        "6"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "w6 w2", "description", "w1 w2",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w6 w2 w3 w4 w5 w8", "popularity", "88888"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2 w5", "popularity", "88888"));
+    assertU(adoc("id", "1", "title", "w1", "description", "w5", "popularity", "1"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "title",
+            "w2 2asd asdd didid",
+            "description",
+            "w2 2asd asdd didid",
+            "popularity",
+            "2"));
+    assertU(adoc("id", "3", "title", "w1", "description", "w5", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w1", "description", "w1", "popularity", "6"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "w6 w2", "description", "w1 w2", "popularity", "6"));
+    assertU(
+        adoc(
+            "id",
+            "7",
+            "title",
+            "w1 w2 w3 w4 w5",
+            "description",
+            "w6 w2 w3 w4 w5 w8",
+            "popularity",
+            "88888"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2 w5",
+            "popularity",
+            "88888"));
     assertU(commit());
-
-
   }
 
   @After
@@ -59,39 +75,161 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   protected void loadFeaturesAndModels() throws Exception {
-    loadFeature("featureA1", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=popularity}88888\"]}");
-    loadFeature("featureA2", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
-    loadFeature("featureAB", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
-    loadFeature("featureB1", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=popularity}6\"]}");
-    loadFeature("featureB2", SolrFeature.class.getName(),
+    loadFeature(
+        "featureA1", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}88888\"]}");
+    loadFeature(
+        "featureA2", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
+    loadFeature(
+        "featureAB", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
+    loadFeature("featureB1", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}6\"]}");
+    loadFeature(
+        "featureB2",
+        SolrFeature.class.getName(),
         "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
-    loadFeature("featureC1", SolrFeature.class.getName(),"featureStore2",
+    loadFeature(
+        "featureC1",
+        SolrFeature.class.getName(),
+        "featureStore2",
         "{\"fq\":[\"{!terms f=popularity}6\"]}");
-    loadFeature("featureC2", SolrFeature.class.getName(),"featureStore2",
+    loadFeature(
+        "featureC2",
+        SolrFeature.class.getName(),
+        "featureStore2",
         "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
-    loadFeature("featureC3", SolrFeature.class.getName(),"featureStore2",
+    loadFeature(
+        "featureC3",
+        SolrFeature.class.getName(),
+        "featureStore2",
         "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
 
-    loadModel("modelA", LinearModel.class.getName(),
-        new String[]{"featureA1", "featureA2", "featureAB"},
+    loadModel(
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"featureA1", "featureA2", "featureAB"},
         "{\"weights\":{\"featureA1\":3.0, \"featureA2\":9.0, \"featureAB\":27.0}}");
 
-    loadModel("modelB", LinearModel.class.getName(),
-        new String[]{"featureB1", "featureB2", "featureAB"},
+    loadModel(
+        "modelB",
+        LinearModel.class.getName(),
+        new String[] {"featureB1", "featureB2", "featureAB"},
         "{\"weights\":{\"featureB1\":2.0, \"featureB2\":4.0, \"featureAB\":8.0}}");
-    
-    loadModel("modelC", LinearModel.class.getName(),
-        new String[]{"featureC1", "featureC2"},"featureStore2",
+
+    loadModel(
+        "modelC",
+        LinearModel.class.getName(),
+        new String[] {"featureC1", "featureC2"},
+        "featureStore2",
         "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
   }
-  
+
+  protected void loadFeaturesAndModelsWithNulls() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch_for_interleaving.json");
+  }
+
+  @Test
+  public void featureTransformer_shouldWorkInSparseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
+
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0"
+        };
+
+    int[] expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
+
+    String[] tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+
+    // user_device has a different default value (NaN), if zero we would like to see the zero value
+    final SolrQuery query2 = new SolrQuery();
+    query2.setQuery("*:*");
+    query2.add("fl", "*, score,features:[fv format=sparse]");
+    query2.add("rows", "10");
+    query2.add("debugQuery", "true");
+    query2.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3 efi.user_device=0}");
+
+    expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+        };
+
+    expectedIds = new int[] {7, 1, 2, 3, 4, 5, 6, 8};
+
+    tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedIds[(i - 1)] + "\"";
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query2.toQueryString(), tests);
+  }
+
+  @Test
+  public void featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=dense]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("rq", "{!ltr model=modelA reRankDocs=10 efi.user_query=w3}");
+
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN"
+        };
+
+    String[] tests = new String[17];
+    tests[0] = "/response/numFound/==8";
+    for (int i = 1; i <= 8; i++) {
+      tests[i + 8] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
   @Test
   public void interleaving_featureTransformer_shouldWorkInSparseFormat() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -100,8 +238,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0), ScoreB(4)
@@ -111,24 +248,33 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3), ScoreB(4)
     ModelARerankedList = [7,8,1,3,4]
     ModelBRerankedList = [7,1,3,8,4]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{"featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0", "featureB2\\=1.0", "featureB2\\=1.0", "featureA1\\=1.0\\,featureB2\\=1.0", "featureB1\\=1.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
+          "featureB2\\=1.0",
+          "featureB2\\=1.0",
+          "featureA1\\=1.0\\,featureB2\\=1.0",
+          "featureB1\\=1.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[11];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 5] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
 
   @Test
   public void interleaving_featureTransformer_shouldWorkInDenseFormat() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -137,8 +283,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0), ScoreB(4)
@@ -148,28 +293,127 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3), ScoreB(4)
     ModelARerankedList = [7,8,1,3,4]
     ModelBRerankedList = [7,1,3,8,4]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{"featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
-        "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
-        "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
-        "featureA1\\=1.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
-        "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=1.0\\,featureB2\\=0.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
+          "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
+          "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
+          "featureA1\\=1.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=0.0\\,featureB2\\=1.0",
+          "featureA1\\=0.0\\,featureA2\\=0.0\\,featureAB\\=0.0\\,featureB1\\=1.0\\,featureB2\\=0.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[11];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 5] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
 
   @Test
-  public void interleaving_explicitNewFeatureStore_shouldExtractAllFeaturesFromNewStore() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+  public void interleaving_featureTransformer_shouldWorkInSparseFormat_withNulls()
+      throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add(
+        "rq",
+        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5' efi.user_device=0}");
+
+    /*
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=0.0", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0",
+          "constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=0.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 4, 8};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_featureTransformer_shouldWorkInDenseFormat_withNulls() throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101011)); // Random Boolean Choices Generation from Seed: [0,0,1]
+    loadFeaturesAndModelsWithNulls();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv format=dense]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+
+    /*
+    Doc1 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc3 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc4 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc8 = "matchedTitle=0.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-20)
+    Doc7 = "matchedTitle=1.0,constantScoreToForceMultipleAdditiveTreesScoreAllDocs=1.0,userDevice=NaN", ScoreA(30), ScoreB(-45)
+    ModelARerankedList = [7,1,3,4,8]
+    ModelBRerankedList = [1,3,4,8,7]
+
+    Random Boolean Choices Generation from Seed: [0,0,1]
+    */
+    String[] expectedFeatureVectors =
+        new String[] {
+          "matchedTitle\\=1.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN",
+          "matchedTitle\\=0.0\\,constantScoreToForceMultipleAdditiveTreesScoreAllDocs\\=1.0\\,userDevice\\=NaN"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 4, 8};
+
+    String[] tests = new String[11];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 5] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_explicitNewFeatureStore_shouldExtractAllFeaturesFromNewStore()
+      throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -178,8 +422,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0), ScoreB(4)
@@ -189,29 +432,35 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3), ScoreB(4)
     ModelARerankedList = [7,8,1,3,4]
     ModelBRerankedList = [7,1,3,8,4]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{
-        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=1.0\\,featureC2\\=0.0\\,featureC3\\=0.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=1.0\\,featureC2\\=0.0\\,featureC3\\=0.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 10] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
-  
+
   @Test
-  public void interleaving_withOriginalRankingAndExplicitFeatureStore_shouldReturnNewCalculatedFeatureVector() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+  public void
+      interleaving_withOriginalRankingAndExplicitFeatureStore_shouldReturnNewCalculatedFeatureVector()
+          throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -220,8 +469,8 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=_OriginalRanking_ reRankDocs=10 efi.user_query='w5'}");
+    query.add(
+        "rq", "{!ltr model=modelA model=_OriginalRanking_ reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0)
@@ -229,32 +478,35 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc4 = "featureB1=1.0", ScoreA(0)
     Doc7 ="featureA1=1.0,featureA2=1.0,featureAB=1.0,featureB2=1.0", ScoreA(39)
     Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3)
-    
+
     ModelARerankedList = [7,8,1,3,4]
     _OriginalRanking_ = [1,3,4,7,8]
 
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=1.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=1.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
       if (expectedFeatureVectors[(i - 1)] != null) {
-        tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+        tests[i + 10] =
+            "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
       }
     }
     assertJQ("/query" + query.toQueryString(), tests);
 
-    int[] nullFeatureVectorIndexes = new int[]{1, 2, 4};
+    int[] nullFeatureVectorIndexes = new int[] {1, 2, 4};
     for (int index : nullFeatureVectorIndexes) {
       TeamDraftInterleaving.setRANDOM(new Random(10101010));
       String[] nullFeatureVectorTests = new String[1];
@@ -265,14 +517,14 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
         assertEquals("Path not found: /response/docs/[" + index + "]/features", e.getMessage());
         continue;
       }
-
     }
-
   }
 
   @Test
-  public void interleaving_modelsFromDifferentFeatureStores_shouldLogFeaturesCorrectly() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+  public void interleaving_modelsFromDifferentFeatureStores_shouldLogFeaturesCorrectly()
+      throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -281,8 +533,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureC2=1.0", ScoreA(0), ScoreC(25)
@@ -292,29 +543,35 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureC2=1.0", ScoreA(3), ScoreC(25)
     ModelARerankedList = [7,8,1,3,4]
     ModelCRerankedList = [1,3,8,4,7]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{
-        "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureA1\\=1.0\\,featureB2\\=1.0",
-        "featureC1\\=1.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureA1\\=1.0\\,featureB2\\=1.0",
+          "featureC1\\=1.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 10] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
 
   @Test
-  public void interleaving_featureLoggerFromNewFeatureStoreWithDifferentEfi_shouldReturnNewCalculatedFeatureVector() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+  public void
+      interleaving_featureLoggerFromNewFeatureStoreWithDifferentEfi_shouldReturnNewCalculatedFeatureVector()
+          throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -323,8 +580,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelB reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0), ScoreB(4)
@@ -334,29 +590,28 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureB2=1.0", ScoreA(3), ScoreB(4)
     ModelARerankedList = [7,8,1,3,4]
     ModelBRerankedList = [7,1,3,8,4]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "",
-        "",
-        "",
-        ""};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {"featureC2\\=1.0\\,featureC3\\=1.0", "", "", "", ""};
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 10] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
 
   @Test
-  public void interleaving_explicitFeatureStoreReusableFromModel_shouldLogFeaturesCorrectly() throws Exception {
-    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+  public void interleaving_explicitFeatureStoreReusableFromModel_shouldLogFeaturesCorrectly()
+      throws Exception {
+    TeamDraftInterleaving.setRANDOM(
+        new Random(10101010)); // Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
@@ -365,8 +620,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
-    query.add("rq",
-        "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureC2=1.0", ScoreA(0), ScoreC(25)
@@ -376,25 +630,26 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Doc8 = "featureA1=1.0,featureC2=1.0", ScoreA(3), ScoreC(25)
     ModelARerankedList = [7,8,1,3,4]
     ModelCRerankedList = [1,3,8,4,7]
-   
+
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedFeatureVectors = new String[]{
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC2\\=1.0\\,featureC3\\=1.0",
-        "featureC1\\=1.0"};
-    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+    String[] expectedFeatureVectors =
+        new String[] {
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC2\\=1.0\\,featureC3\\=1.0",
+          "featureC1\\=1.0"
+        };
+    int[] expectedInterleaved = new int[] {7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
     tests[0] = "/response/numFound/==5";
     for (int i = 1; i <= 5; i++) {
       tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
-      tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+      tests[i + 10] =
+          "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
     }
     assertJQ("/query" + query.toQueryString(), tests);
   }
-  
-
 }

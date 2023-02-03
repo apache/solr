@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -29,20 +31,20 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 final class OverseerElectionContext extends ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
   private final Overseer overseer;
   private volatile boolean isClosed = false;
 
-  public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
+  public OverseerElectionContext(
+      SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
     super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
-      new ZkCmdExecutor(zkClient.getZkClientTimeout()).ensureExists(Overseer.OVERSEER_ELECT, zkClient);
+      new ZkCmdExecutor(zkClient.getZkClientTimeout())
+          .ensureExists(Overseer.OVERSEER_ELECT, zkClient);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -52,18 +54,16 @@ final class OverseerElectionContext extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
-      InterruptedException {
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
+      throws KeeperException, InterruptedException {
     if (isClosed) {
       return;
     }
     log.info("I am going to be the leader {}", id);
-    final String id = leaderSeqPath
-        .substring(leaderSeqPath.lastIndexOf("/") + 1);
+    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf("/") + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps),
-        CreateMode.EPHEMERAL, true);
+    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL, true);
     if (pauseBeforeStartMs > 0) {
       try {
         Thread.sleep(pauseBeforeStartMs);
@@ -106,5 +106,4 @@ final class OverseerElectionContext extends ElectionContext {
     // leader changed - close the overseer
     overseer.close();
   }
-
 }

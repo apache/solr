@@ -15,29 +15,27 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+
 import org.apache.solr.schema.SchemaField;
 
-/**
- *
- *
- **/
+/** */
 public class SpatialOptions {
   public String pointStr;
   public double distance;
   public SchemaField field;
   public String measStr;
-  public double radius;//(planetRadius) effectively establishes the units
+  public double radius; // (planetRadius) effectively establishes the units
 
-  /** Just do a "bounding box" - or any other quicker method / shape that
-   * still encompasses all of the points of interest, but may also encompass
-   * points outside.
-   */ 
+  /**
+   * Just do a "bounding box" - or any other quicker method / shape that still encompasses all of
+   * the points of interest, but may also encompass points outside.
+   */
   public boolean bbox;
 
-  public SpatialOptions() {
-  }
+  public SpatialOptions() {}
 
-  public SpatialOptions(String pointStr, double dist, SchemaField sf, String measStr, double radius) {
+  public SpatialOptions(
+      String pointStr, double dist, SchemaField sf, String measStr, double radius) {
     this.pointStr = pointStr;
     this.distance = dist;
     this.field = sf;

@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Constant values to be used in analytics expressions.
- */
+/** Constant values to be used in analytics expressions. */
 package org.apache.solr.analytics.value.constant;
-
-

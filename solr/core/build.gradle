@@ -15,10 +15,19 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+}
 
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
+
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file("build/generated/openapi")
+  prettyPrint = true
+}
 
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
@@ -32,6 +41,8 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
+  implementation 'io.swagger.core.v3:swagger-annotations'
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -44,8 +55,30 @@ dependencies {
   api 'org.slf4j:slf4j-api'
 
   api project(':solr:solrj')
-  api project(':solr:server')
-  permitUnusedDeclared project(':solr:server')
+  api project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-streaming')
+
+
+  api 'io.dropwizard.metrics:metrics-core'
+  implementation ('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  implementation 'io.dropwizard.metrics:metrics-jmx'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
+
+  implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
+    exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+  })
+  permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
+  implementation 'org.glassfish.jersey.inject:jersey-hk2'
+  permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
+  implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  implementation 'org.glassfish.jersey.core:jersey-common'
+  implementation 'org.glassfish.jersey.core:jersey-server'
+  implementation 'org.glassfish.hk2:hk2-api'
+  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
 
   // Non-API below; although there are exceptions
 
@@ -54,6 +87,8 @@ dependencies {
   runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
   runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
+  implementation "org.apache.lucene:lucene-backward-codecs"
+  permitUnusedDeclared "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -64,6 +99,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'
@@ -89,37 +125,25 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  compileOnlyApi 'javax.servlet:javax.servlet-api'
-
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty:jetty-http'
+  implementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-http'
-  compileOnlyApi 'org.eclipse.jetty:jetty-io'
-  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
-  compileOnlyApi 'org.eclipse.jetty:jetty-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
-  compileOnlyApi 'org.eclipse.jetty:jetty-util'
-
-  // ZooKeeper & Curator
+  // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
+  implementation('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  testImplementation 'org.apache.zookeeper:zookeeper::tests'
+
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-  implementation ('org.apache.curator:curator-client')
-  implementation ('org.apache.curator:curator-framework')
-  runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
-  implementation 'com.github.zafarkhaja:java-semver'
+  implementation 'org.semver4j:semver4j'
 
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
@@ -136,57 +160,16 @@ dependencies {
 
   implementation 'org.apache.commons:commons-exec'
 
-  implementation 'org.apache.commons:commons-text'
-
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
-
-  // SQL Parser via Calcite
-  implementation ('org.apache.calcite:calcite-core', {
-    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
-    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
-    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
-    exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
-    exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
-    exclude group: 'org.apache.commons', module: 'commons-dbcp2'
-    exclude group: 'net.minidev', module: 'json-smart'
-    exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
-  })
-  // sub-deps of calcite-core that we reference directly
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
-  permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
-
-  // Hadoop auth framework
-  implementation 'org.apache.hadoop:hadoop-annotations'
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
-
-  // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
-    exclude group:'org.apache.kerby', module:'kerby-xdr'
-    exclude group:'org.apache.kerby', module:'token-provider'
-  })
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
+  compileOnly 'org.osgi:osgi.annotation'
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
@@ -199,9 +182,17 @@ dependencies {
 
   testImplementation 'org.apache.lucene:lucene-test-framework'
 
+  testImplementation 'org.eclipse.jetty:jetty-server'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
+
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
+
+  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
+  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+  permitTestUnusedDeclared 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

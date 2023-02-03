@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -42,7 +41,13 @@ public class TestWrapperModel extends TestRerankBase {
     }
 
     private StubWrapperModel(String name, List<Feature> features, List<Normalizer> norms) {
-      super(name, features, norms, FeatureStore.DEFAULT_FEATURE_STORE_NAME, features, Collections.emptyMap());
+      super(
+          name,
+          features,
+          norms,
+          FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+          features,
+          Collections.emptyMap());
     }
 
     @Override
@@ -51,13 +56,13 @@ public class TestWrapperModel extends TestRerankBase {
     }
   }
 
-  private static LTRScoringModel createMockWrappedModel(String featureStoreName,
-      List<Feature> features, List<Normalizer> norms) {
-      LTRScoringModel wrappedModel = Mockito.mock(LTRScoringModel.class);
-      Mockito.doReturn(featureStoreName).when(wrappedModel).getFeatureStoreName();
-      Mockito.doReturn(features).when(wrappedModel).getFeatures();
-      Mockito.doReturn(norms).when(wrappedModel).getNorms();
-      return wrappedModel;
+  private static LTRScoringModel createMockWrappedModel(
+      String featureStoreName, List<Feature> features, List<Normalizer> norms) {
+    LTRScoringModel wrappedModel = Mockito.mock(LTRScoringModel.class);
+    Mockito.doReturn(featureStoreName).when(wrappedModel).getFeatureStoreName();
+    Mockito.doReturn(features).when(wrappedModel).getFeatures();
+    Mockito.doReturn(norms).when(wrappedModel).getNorms();
+    return wrappedModel;
   }
 
   @Test
@@ -66,14 +71,20 @@ public class TestWrapperModel extends TestRerankBase {
     wrapperModel.validate();
 
     // wrapper model with features
-    WrapperModel wrapperModelWithFeatures = new StubWrapperModel("testModel",
-        Collections.singletonList(new ValueFeature("val", Collections.emptyMap())), Collections.emptyList());
+    WrapperModel wrapperModelWithFeatures =
+        new StubWrapperModel(
+            "testModel",
+            Collections.singletonList(new ValueFeature("val", Collections.emptyMap())),
+            Collections.emptyList());
     ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
-    WrapperModel wrapperModelWithNorms = new StubWrapperModel("testModel",
-        Collections.emptyList(), Collections.singletonList(IdentityNormalizer.INSTANCE));
+    WrapperModel wrapperModelWithNorms =
+        new StubWrapperModel(
+            "testModel",
+            Collections.emptyList(),
+            Collections.singletonList(IdentityNormalizer.INSTANCE));
     e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
     assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 
@@ -81,55 +92,51 @@ public class TestWrapperModel extends TestRerankBase {
 
     // update valid model
     {
-      LTRScoringModel wrappedModel = 
-          createMockWrappedModel(FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+      LTRScoringModel wrappedModel =
+          createMockWrappedModel(
+              FeatureStore.DEFAULT_FEATURE_STORE_NAME,
               Arrays.asList(
                   new ValueFeature("v1", Collections.emptyMap()),
                   new ValueFeature("v2", Collections.emptyMap())),
-              Arrays.asList(
-                  IdentityNormalizer.INSTANCE,
-                  IdentityNormalizer.INSTANCE)
-              );
+              Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       wrapperModel.updateModel(wrappedModel);
     }
 
     // update invalid model (feature store mismatch)
     {
-      LTRScoringModel wrappedModel = 
-          createMockWrappedModel("wrappedFeatureStore",
+      LTRScoringModel wrappedModel =
+          createMockWrappedModel(
+              "wrappedFeatureStore",
               Arrays.asList(
                   new ValueFeature("v1", Collections.emptyMap()),
                   new ValueFeature("v2", Collections.emptyMap())),
-              Arrays.asList(
-                  IdentityNormalizer.INSTANCE,
-                  IdentityNormalizer.INSTANCE)
-              );
+              Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
-      assertEquals("wrapper feature store name (_DEFAULT_) must match the wrapped feature store name (wrappedFeatureStore)", e.getMessage());
+      assertEquals(
+          "wrapper feature store name (_DEFAULT_) must match the wrapped feature store name (wrappedFeatureStore)",
+          e.getMessage());
     }
 
     // update invalid model (no features)
     {
-      LTRScoringModel wrappedModel = 
-          createMockWrappedModel(FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+      LTRScoringModel wrappedModel =
+          createMockWrappedModel(
+              FeatureStore.DEFAULT_FEATURE_STORE_NAME,
               Collections.emptyList(),
-              Arrays.asList(
-                  IdentityNormalizer.INSTANCE,
-                  IdentityNormalizer.INSTANCE)
-              );
+              Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("no features declared for model testModel", e.getMessage());
     }
 
     // update invalid model (no norms)
     {
-      LTRScoringModel wrappedModel = 
-          createMockWrappedModel(FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+      LTRScoringModel wrappedModel =
+          createMockWrappedModel(
+              FeatureStore.DEFAULT_FEATURE_STORE_NAME,
               Arrays.asList(
                   new ValueFeature("v1", Collections.emptyMap()),
                   new ValueFeature("v2", Collections.emptyMap())),
-              Collections.emptyList()
-              );
+              Collections.emptyList());
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());
     }
@@ -152,21 +159,28 @@ public class TestWrapperModel extends TestRerankBase {
 
       ++overridableMethodCount;
       if (Arrays.asList(
-          "getName",  // the wrapper model's name is its own name i.e. _not_ the name of the wrapped model
-          "getFeatureStoreName", // wrapper and wrapped model feature store should match, so need not override
-          "getParams" // the wrapper model's params are its own params i.e. _not_ the params of the wrapped model
-          ).contains(superClassMethod.getName())) {
-        assertThrows("WrapperModel need not override '" + superClassMethod.getName() + "'",
-            NoSuchMethodException.class, () -> {
-              WrapperModel.class.getDeclaredMethod(superClassMethod.getName(), superClassMethod.getParameterTypes());
-            }
-        );
+              "getName", // the wrapper model's name is its own name i.e. _not_ the name of the
+              // wrapped model
+              "getFeatureStoreName", // wrapper and wrapped model feature store should match, so
+              // need not override
+              "getParams" // the wrapper model's params are its own params i.e. _not_ the params of
+              // the wrapped model
+              )
+          .contains(superClassMethod.getName())) {
+        assertThrows(
+            "WrapperModel need not override '" + superClassMethod.getName() + "'",
+            NoSuchMethodException.class,
+            () -> {
+              WrapperModel.class.getDeclaredMethod(
+                  superClassMethod.getName(), superClassMethod.getParameterTypes());
+            });
       } else {
         try {
-          final Method subClassMethod = WrapperModel.class.getDeclaredMethod(
-              superClassMethod.getName(),
-              superClassMethod.getParameterTypes());
-          assertEquals("getReturnType() difference",
+          final Method subClassMethod =
+              WrapperModel.class.getDeclaredMethod(
+                  superClassMethod.getName(), superClassMethod.getParameterTypes());
+          assertEquals(
+              "getReturnType() difference",
               superClassMethod.getReturnType(),
               subClassMethod.getReturnType());
         } catch (NoSuchMethodException e) {

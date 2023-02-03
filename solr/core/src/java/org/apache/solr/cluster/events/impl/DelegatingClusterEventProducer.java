@@ -17,24 +17,23 @@
 package org.apache.solr.cluster.events.impl;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Set;
+import java.util.concurrent.Phaser;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.cluster.events.ClusterEventProducerBase;
+import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Set;
-import java.util.concurrent.Phaser;
-
 /**
- * This implementation allows Solr to dynamically change the underlying implementation
- * of {@link ClusterEventProducer} in response to the changed plugin configuration.
+ * This implementation allows Solr to dynamically change the underlying implementation of {@link
+ * ClusterEventProducer} in response to the changed plugin configuration.
  */
 public final class DelegatingClusterEventProducer extends ClusterEventProducerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -58,8 +57,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   }
 
   /**
-   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is called.
-   * Useful for allowing tests to know when a new delegate is finished getting set.
+   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is
+   * called. Useful for allowing tests to know when a new delegate is finished getting set.
    */
   @VisibleForTesting
   public void setDelegationPhaser(Phaser phaser) {
@@ -69,25 +68,28 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
 
   public void setDelegate(ClusterEventProducer newDelegate) {
     if (log.isDebugEnabled()) {
-      log.debug("--setting new delegate for CC-{}: {}", Integer.toHexString(cc.hashCode()), newDelegate);
+      log.debug(
+          "--setting new delegate for CC-{}: {}", Integer.toHexString(cc.hashCode()), newDelegate);
     }
     this.delegate = newDelegate;
     // transfer all listeners to the new delegate
-    listeners.forEach((type, listenerSet) -> {
-      listenerSet.forEach(listener -> {
-        try {
-          delegate.registerListener(listener, type);
-        } catch (Exception e) {
-          log.warn("Exception registering listener with the new event producer", e);
-          // make sure it's not registered
-          delegate.unregisterListener(listener, type);
-          // unregister it here, too
-          super.unregisterListener(listener, type);
-        }
-      });
-    });
-    if ((state == State.RUNNING || state == State.STARTING) &&
-        !(delegate.getState() == State.RUNNING || delegate.getState() == State.STARTING)) {
+    listeners.forEach(
+        (type, listenerSet) -> {
+          listenerSet.forEach(
+              listener -> {
+                try {
+                  delegate.registerListener(listener, type);
+                } catch (Exception e) {
+                  log.warn("Exception registering listener with the new event producer", e);
+                  // make sure it's not registered
+                  delegate.unregisterListener(listener, type);
+                  // unregister it here, too
+                  super.unregisterListener(listener, type);
+                }
+              });
+        });
+    if ((state == State.RUNNING || state == State.STARTING)
+        && !(delegate.getState() == State.RUNNING || delegate.getState() == State.STARTING)) {
       try {
         delegate.start();
         if (log.isDebugEnabled()) {
@@ -104,18 +106,21 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
       assert localPhaser.getRegisteredParties() == 1;
-      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+      // we should be the only ones registered, so this will advance phase each time
+      localPhaser.arrive();
     }
   }
 
   @Override
-  public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+  public void registerListener(
+      ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
     super.registerListener(listener, eventTypes);
     delegate.registerListener(listener, eventTypes);
   }
 
   @Override
-  public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+  public void unregisterListener(
+      ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
     super.unregisterListener(listener, eventTypes);
     delegate.unregisterListener(listener, eventTypes);
   }
@@ -123,8 +128,11 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   @Override
   public synchronized void start() throws Exception {
     if (log.isDebugEnabled()) {
-      log.debug("-- starting CC-{}, Delegating {}, delegate {}",
-          Integer.toHexString(cc.hashCode()), Integer.toHexString(hashCode()), delegate);
+      log.debug(
+          "-- starting CC-{}, Delegating {}, delegate {}",
+          Integer.toHexString(cc.hashCode()),
+          Integer.toHexString(hashCode()),
+          delegate);
     }
     state = State.STARTING;
     if (!(delegate.getState() == State.RUNNING || delegate.getState() == State.STARTING)) {
@@ -151,7 +159,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   @Override
   public synchronized void stop() {
     if (log.isDebugEnabled()) {
-      log.debug("-- stopping Delegating {}, delegate {}", Integer.toHexString(hashCode()), delegate);
+      log.debug(
+          "-- stopping Delegating {}, delegate {}", Integer.toHexString(hashCode()), delegate);
     }
     state = State.STOPPING;
     delegate.stop();

@@ -16,38 +16,38 @@
  */
 package org.apache.solr.security;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * Similar to BasicAuthOnSingleNodeTest, but using a different configset, to test SOLR-14569
- */
+/** Similar to BasicAuthOnSingleNodeTest, but using a different configset, to test SOLR-14569 */
 public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCase {
 
   private static final String COLLECTION = "authCollection";
   private static final String ALIAS = "alias";
-  
-  private static final String SECURITY_CONF = "{\n" +
-      "  \"authentication\":{\n" +
-      "   \"blockUnknown\": true,\n" +
-      "   \"class\":\"solr.BasicAuthPlugin\",\n" +
-      "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n" +
-      "  },\n" +
-      "  \"authorization\":{\n" +
-      "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n" +
-      "   \"permissions\":[\n" +
-      " {\"name\":\"all\", \"role\":\"admin\"}\n" +
-      "   ],\n" +
-      "   \"user-role\":{\"solr\":\"admin\"}\n" +
-      "  }\n" +
-      "}";
+
+  private static final String SECURITY_CONF =
+      "{\n"
+          + "  \"authentication\":{\n"
+          + "   \"blockUnknown\": true,\n"
+          + "   \"class\":\"solr.BasicAuthPlugin\",\n"
+          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "  },\n"
+          + "  \"authorization\":{\n"
+          + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
+          + "   \"permissions\":[\n"
+          + " {\"name\":\"all\", \"role\":\"admin\"}\n"
+          + "   ],\n"
+          + "   \"user-role\":{\"solr\":\"admin\"}\n"
+          + "  }\n"
+          + "}";
 
   @Before
   public void setupCluster() throws Exception {
@@ -58,11 +58,11 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
-    
+
     CollectionAdminRequest.createAlias(ALIAS, COLLECTION)
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
 
     JettySolrRunner jetty = cluster.getJettySolrRunner(0);
@@ -82,12 +82,15 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
 
   @Test
   public void collectionTest() throws Exception {
-    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build()){
+    try (SolrClient client =
+        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
 
       for (int i = 0; i < 30; i++) {
-        SolrResponse response = new QueryRequest(params("q", "*:*"))
-            .setBasicAuthCredentials("solr", "solr").process(client, COLLECTION);
+        SolrResponse response =
+            new QueryRequest(params("q", "*:*"))
+                .setBasicAuthCredentials("solr", "solr")
+                .process(client, COLLECTION);
         // likely to be non-null, even if an error occurred
         assertNotNull(response);
         assertNotNull(response.getResponse());
@@ -96,15 +99,18 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
       }
     }
   }
-  
+
   @Test
   public void aliasTest() throws Exception {
-    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build()){
+    try (SolrClient client =
+        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
 
       for (int i = 0; i < 30; i++) {
-        SolrResponse response = new QueryRequest(params("q", "*:*"))
-            .setBasicAuthCredentials("solr", "solr").process(client, ALIAS);
+        SolrResponse response =
+            new QueryRequest(params("q", "*:*"))
+                .setBasicAuthCredentials("solr", "solr")
+                .process(client, ALIAS);
         // likely to be non-null, even if an error occurred
         assertNotNull(response);
         assertNotNull(response.getResponse());

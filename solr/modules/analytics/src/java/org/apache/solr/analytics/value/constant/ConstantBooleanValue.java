@@ -18,14 +18,14 @@
 package org.apache.solr.analytics.value.constant;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValue.CastingBooleanValue;
 
 /**
- * A constant {@link BooleanValue}. Every call to {@link #getBoolean()} and other methods will return the same constant value.
+ * A constant {@link BooleanValue}. Every call to {@link #getBoolean()} and other methods will
+ * return the same constant value.
  */
 public class ConstantBooleanValue extends ConstantValue implements CastingBooleanValue {
   private final boolean value;
@@ -43,14 +43,17 @@ public class ConstantBooleanValue extends ConstantValue implements CastingBoolea
   public boolean getBoolean() {
     return value;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -60,10 +63,12 @@ public class ConstantBooleanValue extends ConstantValue implements CastingBoolea
   public void streamBooleans(BooleanConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

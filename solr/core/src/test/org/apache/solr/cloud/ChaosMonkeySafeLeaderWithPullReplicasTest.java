@@ -21,8 +21,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -31,6 +30,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -40,30 +40,31 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
-  
-  private final boolean useTlogReplicas = random().nextBoolean();
-  
+
+  private static final Integer RUN_LENGTH =
+      Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
+
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
-  
+
   @Override
   protected int getPullReplicaCount() {
     return numPullReplicas;
   }
-  
+
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
+    return false;
   }
 
   @BeforeClass
   public static void beforeSuperClass() {
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
     if (usually()) {
       System.setProperty("solr.autoCommit.maxTime", "15000");
     }
@@ -72,7 +73,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     System.clearProperty("solr.retries.to.followers");
     setErrorHook();
   }
-  
+
   @AfterClass
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
@@ -80,23 +81,25 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     TestInjection.reset();
   }
 
-  protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
-  
+  protected static final String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  protected static final RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
+
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
-  
+
   @Override
   public void distribSetUp() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
     super.distribSetUp();
   }
-  
+
   public ChaosMonkeySafeLeaderWithPullReplicasTest() {
     super();
     numPullReplicas = random().nextInt(TEST_NIGHTLY ? 3 : 2) + 1;
@@ -110,33 +113,42 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     fixShardCount(numNodes);
     log.info("Starting ChaosMonkey test with {} shards and {} nodes", sliceCount, numNodes);
   }
-  
+
   @Test
-  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
-    assertEquals("Unexpected number of replicas. Collection: " + docCollection, numRealtimeOrTlogReplicas + numPullReplicas, s.getReplicas().size());
-    assertEquals("Unexpected number of pull replicas. Collection: " + docCollection, numPullReplicas, s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-    assertEquals(useTlogReplicas()?0:numRealtimeOrTlogReplicas, s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-    assertEquals(useTlogReplicas()?numRealtimeOrTlogReplicas:0, s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+    assertEquals(
+        "Unexpected number of replicas. Collection: " + docCollection,
+        numRealtimeOrTlogReplicas + numPullReplicas,
+        s.getReplicas().size());
+    assertEquals(
+        "Unexpected number of pull replicas. Collection: " + docCollection,
+        numPullReplicas,
+        s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(
+        useTlogReplicas() ? 0 : numRealtimeOrTlogReplicas,
+        s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(
+        useTlogReplicas() ? numRealtimeOrTlogReplicas : 0,
+        s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
+
     // randomly turn on 1 seconds 'soft' commit
     randomlyEnableAutoSoftCommit();
 
     tryDelete();
-    
+
     List<StoppableThread> threads = new ArrayList<>();
     int threadCount = 2;
     int batchSize = 1;
     if (random().nextBoolean()) {
       batchSize = random().nextInt(98) + 2;
     }
-    
+
     boolean pauseBetweenUpdates = TEST_NIGHTLY ? random().nextBoolean() : true;
     int maxUpdates = -1;
     if (!pauseBetweenUpdates) {
@@ -144,17 +156,25 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     } else {
       maxUpdates = 15000;
     }
-    
+
     for (int i = 0; i < threadCount; i++) {
-      StoppableIndexingThread indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxUpdates, batchSize, pauseBetweenUpdates); // random().nextInt(999) + 1
+      StoppableIndexingThread indexThread =
+          new StoppableIndexingThread(
+              controlClient,
+              cloudClient,
+              Integer.toString(i),
+              true,
+              maxUpdates,
+              batchSize,
+              pauseBetweenUpdates); // random().nextInt(999) + 1
       threads.add(indexThread);
       indexThread.start();
     }
-    
+
     StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
     threads.add(commitThread);
     commitThread.start();
-    
+
     chaosMonkey.startTheMonkey(false, 500);
     try {
       long runLength;
@@ -163,58 +183,64 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
       } else {
         int[] runTimes;
         if (TEST_NIGHTLY) {
-          runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
-              30000, 45000, 90000, 120000};
+          runTimes =
+              new int[] {5000, 6000, 10000, 15000, 25000, 30000, 30000, 45000, 90000, 120000};
         } else {
           runTimes = new int[] {5000, 7000, 15000};
         }
         runLength = runTimes[random().nextInt(runTimes.length - 1)];
       }
-      
-      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, cloudClient.getZkStateReader());
+
+      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, ZkStateReader.from(cloudClient));
     } finally {
       chaosMonkey.stopTheMonkey();
     }
-    
+
     for (StoppableThread thread : threads) {
       thread.safeStop();
     }
-    
+
     // wait for stop...
     for (StoppableThread thread : threads) {
       thread.join();
     }
-    
+
     for (StoppableThread thread : threads) {
       if (thread instanceof StoppableIndexingThread) {
-        assertEquals(0, ((StoppableIndexingThread)thread).getFailCount());
+        assertEquals(0, ((StoppableIndexingThread) thread).getFailCount());
       }
     }
-    
+
     // try and wait for any replications and what not to finish...
 
     Thread.sleep(2000);
 
     waitForThingsToLevelOut(3, TimeUnit.MINUTES);
-    
+
     // even if things were leveled out, a jetty may have just been stopped or something
     // we wait again and wait to level out again to make sure the system is not still in flux
-    
+
     Thread.sleep(3000);
 
     waitForThingsToLevelOut(3, TimeUnit.MINUTES);
 
     if (log.isInfoEnabled()) {
-      log.info("control docs:{}\n\n", controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      log.info(
+          "control docs:{}\n\n",
+          controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // nowarn
     }
-    
-    waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
-//    waitForAllWarmingSearchers();
+
+    waitForReplicationFromReplicas(
+        DEFAULT_COLLECTION,
+        ZkStateReader.from(cloudClient),
+        new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+    //    waitForAllWarmingSearchers();
 
     checkShardConsistency(batchSize == 1, true);
-    
-    // try and make a collection to make sure the overseer has survived the expiration and session loss
+
+    // try and make a collection to make sure the overseer has survived the expiration and session
+    // loss
 
     // sometimes we restart zookeeper as well
     if (random().nextBoolean()) {
@@ -224,13 +250,12 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
-        createCollection(null, "testcollection", 1, 1, client, null, "conf1");
-
+      createCollection(null, "testcollection", 1, 1, client, null, "conf1");
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1 + getPullReplicaCount());
-    checkForCollection("testcollection",numShardsNumReplicas, null);
+    checkForCollection("testcollection", numShardsNumReplicas, null);
   }
 
   private void tryDelete() throws Exception {
@@ -241,13 +266,12 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         del("*:*");
         break;
       } catch (SolrServerException | SolrException e) {
-        // cluster may not be up yet
-        e.printStackTrace();
+        log.error("cluster may not be up yet", e);
       }
       Thread.sleep(100);
     }
   }
-  
+
   // skip the randoms - they can deadlock...
   @Override
   protected void indexr(Object... fields) throws Exception {
@@ -256,5 +280,4 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     addFields(doc, "rnd_b", true);
     indexDoc(doc);
   }
-
 }

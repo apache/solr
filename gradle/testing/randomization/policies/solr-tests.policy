@@ -107,9 +107,6 @@ grant {
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
 
-  // needed by hadoop htrace
-  permission java.net.NetPermission "getNetworkInformation";
-
   // needed by DIH - possibly even after DIH is a package
   permission java.sql.SQLPermission "deregisterDriver";
 

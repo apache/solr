@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,21 +25,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
- * <p>
- * Given a list of possible Spelling Corrections for multiple mis-spelled words
- * in a query, This iterator returns Possible Correction combinations ordered by
- * reasonable probability that such a combination will return actual hits if
- * re-queried. This implementation simply ranks the Possible Combinations by the
- * sum of their component ranks.
- * </p>
- * 
+ * Given a list of possible Spelling Corrections for multiple mis-spelled words in a query, This
+ * iterator returns Possible Correction combinations ordered by reasonable probability that such a
+ * combination will return actual hits if re-queried. This implementation simply ranks the Possible
+ * Combinations by the sum of their component ranks.
  */
-public class PossibilityIterator implements
-    Iterator<PossibilityIterator.RankedSpellPossibility> {
+public class PossibilityIterator implements Iterator<PossibilityIterator.RankedSpellPossibility> {
   private List<List<SpellCheckCorrection>> possibilityList = new ArrayList<>();
   private Iterator<RankedSpellPossibility> rankedPossibilityIterator = null;
   private int correctionIndex[];
@@ -49,30 +44,29 @@ public class PossibilityIterator implements
   private int nextOnesRank = 0;
   private int nextOnesIndex = 0;
   private boolean suggestionsMayOverlap = false;
-  
+
   @SuppressWarnings("unused")
   private PossibilityIterator() {
     throw new AssertionError("You shan't go here.");
   }
-  
+
   /**
-   * <p>
-   * We assume here that the passed-in inner LinkedHashMaps are already sorted
-   * in order of "Best Possible Correction".
-   * </p>
+   * We assume here that the passed-in inner LinkedHashMaps are already sorted in order of "Best
+   * Possible Correction".
    */
   public PossibilityIterator(
-      Map<Token,LinkedHashMap<String,Integer>> suggestions,
-      int maximumRequiredSuggestions, int maxEvaluations, boolean overlap) {
+      Map<Token, LinkedHashMap<String, Integer>> suggestions,
+      int maximumRequiredSuggestions,
+      int maxEvaluations,
+      boolean overlap) {
     this.suggestionsMayOverlap = overlap;
-    for (Map.Entry<Token,LinkedHashMap<String,Integer>> entry : suggestions
-        .entrySet()) {
+    for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
       Token token = entry.getKey();
       if (entry.getValue().size() == 0) {
         continue;
       }
       List<SpellCheckCorrection> possibleCorrections = new ArrayList<>();
-      for (Map.Entry<String,Integer> entry1 : entry.getValue().entrySet()) {
+      for (Map.Entry<String, Integer> entry1 : entry.getValue().entrySet()) {
         SpellCheckCorrection correction = new SpellCheckCorrection();
         correction.setOriginal(token);
         correction.setCorrection(entry1.getKey());
@@ -81,7 +75,7 @@ public class PossibilityIterator implements
       }
       possibilityList.add(possibleCorrections);
     }
-    
+
     int wrapSize = possibilityList.size();
     if (wrapSize == 0) {
       done = true;
@@ -96,8 +90,8 @@ public class PossibilityIterator implements
         correctionIndex[i] = 0;
       }
     }
-    PriorityQueue<RankedSpellPossibility> rankedPossibilities = new PriorityQueue<>(
-        11, new RankComparator());
+    PriorityQueue<RankedSpellPossibility> rankedPossibilities =
+        new PriorityQueue<>(11, new RankComparator());
     Set<RankedSpellPossibility> removeDuplicates = null;
     if (suggestionsMayOverlap) {
       removeDuplicates = new HashSet<>();
@@ -118,7 +112,7 @@ public class PossibilityIterator implements
       } else {
         // Needs to be in token-offset order so that the match-and-replace
         // option for collations can work.
-        Collections.sort(rsp.corrections, new StartOffsetComparator());
+        rsp.corrections.sort(new StartOffsetComparator());
         if (removeDuplicates.add(rsp)) {
           rankedPossibilities.offer(rsp);
         }
@@ -130,15 +124,14 @@ public class PossibilityIterator implements
         }
       }
     }
-    
-    RankedSpellPossibility[] rpArr = new RankedSpellPossibility[rankedPossibilities
-        .size()];
+
+    RankedSpellPossibility[] rpArr = new RankedSpellPossibility[rankedPossibilities.size()];
     for (int i = rankedPossibilities.size() - 1; i >= 0; i--) {
       rpArr[i] = rankedPossibilities.remove();
     }
     rankedPossibilityIterator = Arrays.asList(rpArr).iterator();
   }
-  
+
   private boolean isSuggestionForReal(RankedSpellPossibility rsp) {
     for (SpellCheckCorrection corr : rsp.corrections) {
       if (!corr.getOriginalAsString().equals(corr.getCorrection())) {
@@ -147,7 +140,7 @@ public class PossibilityIterator implements
     }
     return false;
   }
-  
+
   private boolean internalHasNext() {
     if (nextOnes != null && nextOnes.hasNext()) {
       return true;
@@ -161,17 +154,13 @@ public class PossibilityIterator implements
     }
     return false;
   }
-  
+
   /**
-   * <p>
-   * This method is converting the independent LinkHashMaps containing various
-   * (silo'ed) suggestions for each mis-spelled word into individual
-   * "holistic query corrections", aka. "Spell Check Possibility"
-   * </p>
-   * <p>
-   * Rank here is the sum of each selected term's position in its respective
-   * LinkedHashMap.
-   * </p>
+   * This method is converting the independent LinkHashMaps containing various (silo'ed) suggestions
+   * for each mis-spelled word into individual "holistic query corrections", aka. "Spell Check
+   * Possibility"
+   *
+   * <p>Rank here is the sum of each selected term's position in its respective LinkedHashMap.
    */
   private RankedSpellPossibility internalNext() {
     if (nextOnes != null && nextOnes.hasNext()) {
@@ -194,7 +183,7 @@ public class PossibilityIterator implements
     }
     throw new NoSuchElementException();
   }
-  
+
   private void internalNextAdvance() {
     List<SpellCheckCorrection> possibleCorrection = null;
     if (nextOnes != null && nextOnes.hasNext()) {
@@ -206,14 +195,12 @@ public class PossibilityIterator implements
       possibleCorrection = new ArrayList<>();
       List<List<SpellCheckCorrection>> possibleCorrections = null;
       int rank = 0;
-      while (!done
-          && (possibleCorrections == null || possibleCorrections.size() == 0)) {
+      while (!done && (possibleCorrections == null || possibleCorrections.size() == 0)) {
         rank = 0;
         for (int i = 0; i < correctionIndex.length; i++) {
-          List<SpellCheckCorrection> singleWordPossibilities = possibilityList
-              .get(i);
-          SpellCheckCorrection singleWordPossibility = singleWordPossibilities
-              .get(correctionIndex[i]);
+          List<SpellCheckCorrection> singleWordPossibilities = possibilityList.get(i);
+          SpellCheckCorrection singleWordPossibility =
+              singleWordPossibilities.get(correctionIndex[i]);
           rank += correctionIndex[i];
           if (i == correctionIndex.length - 1) {
             correctionIndex[i]++;
@@ -224,8 +211,7 @@ public class PossibilityIterator implements
               }
               for (int ii = i - 1; ii >= 0; ii--) {
                 correctionIndex[ii]++;
-                if (correctionIndex[ii] >= possibilityList.get(ii).size()
-                    && ii > 0) {
+                if (correctionIndex[ii] >= possibilityList.get(ii).size() && ii > 0) {
                   correctionIndex[ii] = 0;
                 } else {
                   break;
@@ -250,7 +236,7 @@ public class PossibilityIterator implements
       nextOnesIndex = 0;
     }
   }
-  
+
   private List<List<SpellCheckCorrection>> separateOverlappingTokens(
       List<SpellCheckCorrection> possibleCorrection) {
     List<List<SpellCheckCorrection>> ret = null;
@@ -266,13 +252,11 @@ public class PossibilityIterator implements
     }
     return ret;
   }
-  
-  private List<SpellCheckCorrection> compatible(List<SpellCheckCorrection> all,
-      int pos) {
+
+  private List<SpellCheckCorrection> compatible(List<SpellCheckCorrection> all, int pos) {
     List<SpellCheckCorrection> priorPassCompatibles = null;
     {
-      List<SpellCheckCorrection> firstPassCompatibles = new ArrayList<>(
-          all.size());
+      List<SpellCheckCorrection> firstPassCompatibles = new ArrayList<>(all.size());
       SpellCheckCorrection sacred = all.get(pos);
       firstPassCompatibles.add(sacred);
       int index = pos;
@@ -293,15 +277,15 @@ public class PossibilityIterator implements
       }
       priorPassCompatibles = firstPassCompatibles;
     }
-    
+
     {
       pos = 1;
       while (true) {
         if (pos == priorPassCompatibles.size() - 1) {
           return priorPassCompatibles;
         }
-        List<SpellCheckCorrection> subsequentPassCompatibles = new ArrayList<>(
-            priorPassCompatibles.size());
+        List<SpellCheckCorrection> subsequentPassCompatibles =
+            new ArrayList<>(priorPassCompatibles.size());
         SpellCheckCorrection sacred = null;
         for (int i = 0; i <= pos; i++) {
           sacred = priorPassCompatibles.get(i);
@@ -328,7 +312,7 @@ public class PossibilityIterator implements
       }
     }
   }
-  
+
   private boolean conflicts(SpellCheckCorrection c1, SpellCheckCorrection c2) {
     int s1 = c1.getOriginal().startOffset();
     int e1 = c1.getOriginal().endOffset();
@@ -342,52 +326,48 @@ public class PossibilityIterator implements
     }
     return false;
   }
-  
+
   @Override
   public boolean hasNext() {
     return rankedPossibilityIterator.hasNext();
   }
-  
+
   @Override
   public PossibilityIterator.RankedSpellPossibility next() {
     return rankedPossibilityIterator.next();
   }
-  
+
   @Override
   public void remove() {
     throw new UnsupportedOperationException();
   }
-  
+
   public static class RankedSpellPossibility {
     public List<SpellCheckCorrection> corrections;
     public int rank;
     public int index;
-    
+
     @Override
     // hashCode() and equals() only consider the actual correction, not the rank
     // or index.
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      result = prime * result
-          + ((corrections == null) ? 0 : corrections.hashCode());
+      result = prime * result + ((corrections == null) ? 0 : corrections.hashCode());
       return result;
     }
-    
+
     @Override
     // hashCode() and equals() only consider the actual correction, not the rank
     // or index.
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof RankedSpellPossibility)) return false;
       RankedSpellPossibility other = (RankedSpellPossibility) obj;
-      if (corrections == null) {
-        if (other.corrections != null) return false;
-      } else if (!corrections.equals(other.corrections)) return false;
-      return true;
+      return Objects.equals(corrections, other.corrections);
     }
-    
+
     @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
@@ -395,23 +375,25 @@ public class PossibilityIterator implements
       if (corrections != null) {
         for (SpellCheckCorrection corr : corrections) {
           sb.append("     ");
-          sb.append(corr.getOriginal()).append(">")
-              .append(corr.getCorrection()).append(" (").append(
-                  corr.getNumberOfOccurences()).append(")");
+          sb.append(corr.getOriginal())
+              .append(">")
+              .append(corr.getCorrection())
+              .append(" (")
+              .append(corr.getNumberOfOccurences())
+              .append(")");
         }
       }
       return sb.toString();
     }
   }
-  
-  private static class StartOffsetComparator implements
-      Comparator<SpellCheckCorrection> {
+
+  private static class StartOffsetComparator implements Comparator<SpellCheckCorrection> {
     @Override
     public int compare(SpellCheckCorrection o1, SpellCheckCorrection o2) {
       return o1.getOriginal().startOffset() - o2.getOriginal().startOffset();
     }
   }
-  
+
   private static class RankComparator implements Comparator<RankedSpellPossibility> {
     // Rank poorer suggestions ahead of better ones for use with a PriorityQueue
     @Override
@@ -423,5 +405,4 @@ public class PossibilityIterator implements
       return retval;
     }
   }
-  
 }

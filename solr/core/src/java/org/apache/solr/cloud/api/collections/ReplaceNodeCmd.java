@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -28,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
@@ -48,10 +50,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,26 +60,34 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
-    String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
-    String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
+    String source = message.getStr(CollectionParams.SOURCE_NODE);
+    String target = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     if (source == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "sourceNode is a required param");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "sourceNode is a required param");
     }
-    String async = message.getStr("async");
+    String async = message.getStr(ASYNC);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
     ClusterState clusterState = zkStateReader.getClusterState();
 
     if (!clusterState.liveNodesContain(source)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + source + " is not live");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + source + " is not live");
     }
     if (target != null && !clusterState.liveNodesContain(target)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
     } else if (clusterState.getLiveNodes().size() <= 1) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No nodes other than the source node: " + source + " are live, therefore replicas cannot be moved");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "No nodes other than the source node: "
+              + source
+              + " are live, therefore replicas cannot be moved");
     }
     List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
@@ -99,26 +105,33 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
-    SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
+    SolrCloseableLatch countDownLatch =
+        new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
 
-    SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
+    SolrCloseableLatch replicasToRecover =
+        new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
 
     List<ReplicaPosition> replicaPositions = null;
     if (target == null || target.isEmpty()) {
       List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
       for (ZkNodeProps sourceReplica : sourceReplicas) {
-        Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+        Replica.Type replicaType =
+            Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
         int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
         int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
         int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
-        Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-            .forCollection(sourceReplica.getStr(COLLECTION_PROP))
-            .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
-            .assignNrtReplicas(numNrtReplicas)
-            .assignTlogReplicas(numTlogReplicas)
-            .assignPullReplicas(numPullReplicas)
-            .onNodes(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream().filter(node -> !node.equals(source)).collect(Collectors.toList()))
-            .build();
+        Assign.AssignRequest assignRequest =
+            new Assign.AssignRequestBuilder()
+                .forCollection(sourceReplica.getStr(COLLECTION_PROP))
+                .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
+                .assignNrtReplicas(numNrtReplicas)
+                .assignTlogReplicas(numTlogReplicas)
+                .assignPullReplicas(numPullReplicas)
+                .onNodes(
+                    ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream()
+                        .filter(node -> !node.equals(source))
+                        .collect(Collectors.toList()))
+                .build();
         assignRequests.add(assignRequest);
       }
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
@@ -128,7 +141,11 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
       if (log.isInfoEnabled()) {
-        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+        log.info(
+            "Going to create replica for collection={} shard={} on node={}",
+            sourceCollection,
+            sourceReplica.getStr(SHARD_ID_PROP),
+            target);
       }
       String targetNode;
       // Use the assigned replica positions, if target is null or empty (checked above)
@@ -138,30 +155,47 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       } else {
         targetNode = target;
       }
-      ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
+      ZkNodeProps msg =
+          sourceReplica
+              .plus("parallel", String.valueOf(parallel))
+              .plus(CoreAdminParams.NODE, targetNode);
       if (async != null) msg.getProperties().put(ASYNC, async);
       NamedList<Object> nl = new NamedList<>();
-      final ZkNodeProps addedReplica = new AddReplicaCmd(ccc).addReplica(clusterState,
-          msg, nl, () -> {
-            countDownLatch.countDown();
-            if (nl.get("failure") != null) {
-              String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
-                  " on node=%s", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-              log.warn(errorString);
-              // one replica creation failed. Make the best attempt to
-              // delete all the replicas created so far in the target
-              // and exit
-              synchronized (results) {
-                results.add("failure", errorString);
-                anyOneFailed.set(true);
-              }
-            } else {
-              if (log.isDebugEnabled()) {
-                log.debug("Successfully created replica for collection={} shard={} on node={}",
-                    sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-              }
-            }
-          }).get(0);
+      final ZkNodeProps addedReplica =
+          new AddReplicaCmd(ccc)
+              .addReplica(
+                  clusterState,
+                  msg,
+                  nl,
+                  () -> {
+                    countDownLatch.countDown();
+                    if (nl.get("failure") != null) {
+                      String errorString =
+                          String.format(
+                              Locale.ROOT,
+                              "Failed to create replica for collection=%s shard=%s" + " on node=%s",
+                              sourceCollection,
+                              sourceReplica.getStr(SHARD_ID_PROP),
+                              target);
+                      log.warn(errorString);
+                      // one replica creation failed. Make the best attempt to
+                      // delete all the replicas created so far in the target
+                      // and exit
+                      synchronized (results) {
+                        results.add("failure", errorString);
+                        anyOneFailed.set(true);
+                      }
+                    } else {
+                      if (log.isDebugEnabled()) {
+                        log.debug(
+                            "Successfully created replica for collection={} shard={} on node={}",
+                            sourceCollection,
+                            sourceReplica.getStr(SHARD_ID_PROP),
+                            target);
+                      }
+                    }
+                  })
+              .get(0);
 
       if (addedReplica != null) {
         createdReplicas.add(addedReplica);
@@ -172,11 +206,20 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
           String key = collectionName + "_" + replicaName;
           CollectionStateWatcher watcher;
           if (waitForFinalState) {
-            watcher = new ActiveReplicaWatcher(collectionName, null,
-                Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)), replicasToRecover);
+            watcher =
+                new ActiveReplicaWatcher(
+                    collectionName,
+                    null,
+                    Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)),
+                    replicasToRecover);
           } else {
-            watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
-                addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+            watcher =
+                new LeaderRecoveryWatcher(
+                    collectionName,
+                    shardName,
+                    replicaName,
+                    addedReplica.getStr(ZkStateReader.CORE_NAME_PROP),
+                    replicasToRecover);
           }
           watchers.put(key, watcher);
           log.debug("--- adding {}, {}", key, watcher);
@@ -199,7 +242,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     log.debug("Waiting for {} leader replicas to recover", numLeaders);
     if (!replicasToRecover.await(timeout, TimeUnit.SECONDS)) {
       if (log.isInfoEnabled()) {
-        log.info("Timed out waiting for {} leader replicas to recover", replicasToRecover.getCount());
+        log.info(
+            "Timed out waiting for {} leader replicas to recover", replicasToRecover.getCount());
       }
       anyOneFailed.set(true);
     } else {
@@ -211,18 +255,26 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     }
     if (anyOneFailed.get()) {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
-      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
+      SolrCloseableLatch cleanupLatch =
+          new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
       for (ZkNodeProps createdReplica : createdReplicas) {
         NamedList<Object> deleteResult = new NamedList<>();
         try {
-          new DeleteReplicaCmd(ccc).deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
-            cleanupLatch.countDown();
-            if (deleteResult.get("failure") != null) {
-              synchronized (results) {
-                results.add("failure", "Could not cleanup, because of : " + deleteResult.get("failure"));
-              }
-            }
-          });
+          new DeleteReplicaCmd(ccc)
+              .deleteReplica(
+                  zkStateReader.getClusterState(),
+                  createdReplica.plus("parallel", "true"),
+                  deleteResult,
+                  () -> {
+                    cleanupLatch.countDown();
+                    if (deleteResult.get("failure") != null) {
+                      synchronized (results) {
+                        results.add(
+                            "failure",
+                            "Could not cleanup, because of : " + deleteResult.get("failure"));
+                      }
+                    }
+                  });
         } catch (KeeperException e) {
           cleanupLatch.countDown();
           log.warn("Error deleting replica ", e);
@@ -236,11 +288,12 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       return;
     }
 
-
     // we have reached this far means all replicas could be recreated
-    //now cleanup the replicas in the source node
+    // now cleanup the replicas in the source node
     DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ccc, source, async);
-    results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
+    results.add(
+        "success",
+        "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
   static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {
@@ -249,14 +302,22 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       for (Slice slice : e.getValue().getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           if (source.equals(replica.getNodeName())) {
-            ZkNodeProps props = new ZkNodeProps(
-                COLLECTION_PROP, e.getKey(),
-                SHARD_ID_PROP, slice.getName(),
-                ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
-                ZkStateReader.REPLICA_PROP, replica.getName(),
-                ZkStateReader.REPLICA_TYPE, replica.getType().name(),
-                ZkStateReader.LEADER_PROP, String.valueOf(replica.equals(slice.getLeader())),
-                CoreAdminParams.NODE, source);
+            ZkNodeProps props =
+                new ZkNodeProps(
+                    COLLECTION_PROP,
+                    e.getKey(),
+                    SHARD_ID_PROP,
+                    slice.getName(),
+                    ZkStateReader.CORE_NAME_PROP,
+                    replica.getCoreName(),
+                    ZkStateReader.REPLICA_PROP,
+                    replica.getName(),
+                    ZkStateReader.REPLICA_TYPE,
+                    replica.getType().name(),
+                    ZkStateReader.LEADER_PROP,
+                    String.valueOf(replica.equals(slice.getLeader())),
+                    CoreAdminParams.NODE,
+                    source);
             sourceReplicas.add(props);
           }
         }
@@ -264,5 +325,4 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     }
     return sourceReplicas;
   }
-
 }

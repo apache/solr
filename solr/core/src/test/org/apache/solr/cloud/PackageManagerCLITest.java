@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
@@ -42,8 +41,11 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
   // You need to re-sign the jars for install step, as follows:
-  // $ openssl dgst -sha1 -sign ./solr/core/src/test-files/solr/question-answer-repository-private-key.pem ./solr/core/src/test-files/solr/question-answer-repository/question-answer-request-handler-1.1.jar | openssl enc -base64
-  // You can place the new signature thus obtained (removing any whitespaces) in the repository.json.
+  // $ openssl dgst -sha1 -sign
+  // ./solr/core/src/test-files/solr/question-answer-repository-private-key.pem
+  // ./solr/core/src/test-files/solr/question-answer-repository/question-answer-request-handler-1.1.jar | openssl enc -base64
+  // You can place the new signature thus obtained (removing any whitespaces) in the
+  // repository.json.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -54,18 +56,26 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     System.setProperty("enable.packages", "true");
 
     configureCluster(1)
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .addConfig("conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .configure();
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
 
-    repositoryServer = new LocalWebServer(TEST_PATH().resolve("question-answer-repository").toString());
+    repositoryServer =
+        new LocalWebServer(TEST_PATH().resolve("question-answer-repository").toString());
     repositoryServer.start();
   }
 
   @AfterClass
   public static void teardown() throws Exception {
-    repositoryServer.stop();
-    System.clearProperty("enable.packages");
+    try {
+      if (repositoryServer != null) {
+        repositoryServer.stop();
+      }
+    } finally {
+      System.clearProperty("enable.packages");
+    }
   }
 
   @Test
@@ -76,7 +86,15 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:" + repositoryServer.getPort()});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl",
+          solrUrl,
+          "add-repo",
+          "fullstory",
+          "http://localhost:" + repositoryServer.getPort()
+        });
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
 
@@ -85,27 +103,44 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf2", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-y", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl",
+          solrUrl,
+          "deploy",
+          "question-answer",
+          "-y",
+          "-collections",
+          "abc",
+          "-p",
+          "RH-HANDLER-PATH=" + rhPath
+        });
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "-c", "abc"});
 
-    // Should we test the "auto-update to latest" functionality or the default explicit deploy functionality
+    // Should we test the "auto-update to latest" functionality or the default explicit deploy
+    // functionality
     boolean autoUpdateToLatest = random().nextBoolean();
 
     if (autoUpdateToLatest) {
       log.info("Testing auto-update to latest installed");
 
       // This command pegs the version to the latest available
-      run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"});
+      run(
+          tool,
+          new String[] {
+            "-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"
+          });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
 
       run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
@@ -116,22 +151,50 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
-      if (random().nextBoolean()) { // even if parameters are not passed in, they should be picked up from previous deployment
-        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "-y", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
+      // even if parameters are not passed in, they should be picked up from previous deployment
+      if (random().nextBoolean()) {
+        run(
+            tool,
+            new String[] {
+              "-solrUrl",
+              solrUrl,
+              "deploy",
+              "--update",
+              "-y",
+              "question-answer",
+              "-collections",
+              "abc",
+              "-p",
+              "RH-HANDLER-PATH=" + rhPath
+            });
       } else {
-        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "-y", "question-answer", "-collections", "abc"});
+        run(
+            tool,
+            new String[] {
+              "-solrUrl",
+              solrUrl,
+              "deploy",
+              "--update",
+              "-y",
+              "question-answer",
+              "-collections",
+              "abc"
+            });
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }
 
     log.info("Running undeploy...");
-    run(tool, new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
+    run(
+        tool,
+        new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
-
   }
 
-  void assertPackageVersion(String collection, String pkg, String version, String component, String componentVersion) throws Exception {
+  void assertPackageVersion(
+      String collection, String pkg, String version, String component, String componentVersion)
+      throws Exception {
     TestSolrConfigHandler.testForResponseElement(
         null,
         cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
@@ -152,13 +215,16 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    int res =
+        tool.runTool(
+            SolrCLI.processCommandLineArgs(
+                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 
   static class LocalWebServer {
     private int port = 0;
-    final private String resourceDir;
+    private final String resourceDir;
     Server server;
     ServerConnector connector;
 
@@ -167,7 +233,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     }
 
     public int getPort() {
-      return connector != null? connector.getLocalPort(): port;
+      return connector != null ? connector.getLocalPort() : port;
     }
 
     public void start() throws Exception {

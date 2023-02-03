@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet.FacetValueQueryExecuter;
@@ -36,9 +35,7 @@ import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- * The manager of an entire analytics request.
- */
+/** The manager of an entire analytics request. */
 public class AnalyticsRequestManager {
   private final ReductionCollectionManager ungroupedReductionManager;
   private ReductionDataCollection ungroupedData;
@@ -48,25 +45,25 @@ public class AnalyticsRequestManager {
   private final Collection<AnalyticsExpression> ungroupedExpressions;
   private final ExpressionCalculator ungroupedExpressionCalculator;
 
-  /**
-   * If the request is distributed, the manager for shard requests.
-   */
+  /** If the request is distributed, the manager for shard requests. */
   public String analyticsRequest;
+
   public AnalyticsShardRequestManager shardStream;
   public boolean sendShards;
   private boolean partialResults = false;
 
   /**
    * Create an manager with the given ungrouped expressions. This is straightforward in the new
-   * style of request, however in the old olap-style requests all groupings' expressions are expected
-   * to be ungrouped as well.
+   * style of request, however in the old olap-style requests all groupings' expressions are
+   * expected to be ungrouped as well.
    *
-   *
-   * @param ungroupedReductionManager to manage the reduction collection for all ungrouped expressions
+   * @param ungroupedReductionManager to manage the reduction collection for all ungrouped
+   *     expressions
    * @param ungroupedExpressions to compute overall results for
    */
-  public AnalyticsRequestManager(ReductionCollectionManager ungroupedReductionManager,
-                                 Collection<AnalyticsExpression> ungroupedExpressions) {
+  public AnalyticsRequestManager(
+      ReductionCollectionManager ungroupedReductionManager,
+      Collection<AnalyticsExpression> ungroupedExpressions) {
     this.ungroupedReductionManager = ungroupedReductionManager;
     this.ungroupedData = ungroupedReductionManager.newDataCollection();
     this.ungroupedReductionManager.addLastingCollectTarget(ungroupedData);
@@ -77,8 +74,8 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Get the collection manager for ungrouped expressions, including grouped expressions if
-   * the old request notation is used.
+   * Get the collection manager for ungrouped expressions, including grouped expressions if the old
+   * request notation is used.
    *
    * @return the collection manager for the ungrouped expressions
    */
@@ -87,8 +84,8 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Get the collection manager for all ungrouped expressions, including grouped expressions if
-   * the old request notation is used.
+   * Get the collection manager for all ungrouped expressions, including grouped expressions if the
+   * old request notation is used.
    *
    * @return the collection manager for the ungrouped expressions
    */
@@ -97,8 +94,8 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Return all ungrouped expressions, including grouped expressions if
-   * the old request notation is used.
+   * Return all ungrouped expressions, including grouped expressions if the old request notation is
+   * used.
    *
    * @return an {@link Iterable} of the ungrouped expressions
    */
@@ -107,23 +104,23 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Generate the results of all ungrouped expressions, including grouped expressions if
-   * the old request notation is used.
+   * Generate the results of all ungrouped expressions, including grouped expressions if the old
+   * request notation is used.
    *
    * @param response the response to add the ungrouped results to.
    */
-  public void addUngroupedResults(Map<String,Object> response) {
+  public void addUngroupedResults(Map<String, Object> response) {
     ungroupedReductionManager.setData(ungroupedData);
     ungroupedExpressionCalculator.addResults(response);
   }
 
   /**
-   * Generate the results of all ungrouped expressions, including grouped expressions if
-   * the old request notation is used.
+   * Generate the results of all ungrouped expressions, including grouped expressions if the old
+   * request notation is used.
    *
    * @return the map containing the ungrouped results
    */
-  public Map<String,Object> getUngroupedResults() {
+  public Map<String, Object> getUngroupedResults() {
     ungroupedReductionManager.setData(ungroupedData);
     return ungroupedExpressionCalculator.getResults();
   }
@@ -138,10 +135,10 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Import the shard data for this request from a bit-stream,
-   * exported by the {@link #exportShardData} method in the each of the collection's shards.
-   * <p>
-   * First the overall data is imported, then the grouping data is imported.
+   * Import the shard data for this request from a bit-stream, exported by the {@link
+   * #exportShardData} method in the each of the collection's shards.
+   *
+   * <p>First the overall data is imported, then the grouping data is imported.
    *
    * @param input The bit-stream to import the shard data from
    * @throws IOException if an exception occurs while reading from the {@link DataInput}
@@ -165,10 +162,10 @@ public class AnalyticsRequestManager {
   }
 
   /**
-   * Export the shard data for this request through a bit-stream,
-   * to be imported by the {@link #importShardData} method in the originating shard.
-   * <p>
-   * First the overall data is exported, then the grouping data is exported.
+   * Export the shard data for this request through a bit-stream, to be imported by the {@link
+   * #importShardData} method in the originating shard.
+   *
+   * <p>First the overall data is exported, then the grouping data is exported.
    *
    * @param output The bit-stream to output the shard data through
    * @throws IOException if an exception occurs while writing to the {@link DataOutput}
@@ -196,58 +193,65 @@ public class AnalyticsRequestManager {
   public StreamingInfo getStreamingFacetInfo() {
     StreamingInfo streamingInfo = new StreamingInfo();
     ArrayList<ReductionCollectionManager> groupingCollectors = new ArrayList<>();
-    groupingManagers.values().forEach( grouping -> {
-      // If a grouping has streaming facets, then that groupings expressions
-      // must be collected during the streaming phase.
-      if (grouping.getStreamingFacets( facet -> streamingInfo.streamingFacets.add(facet) )) {
-        groupingCollectors.add(grouping.getReductionManager());
-      }
-    });
+    groupingManagers
+        .values()
+        .forEach(
+            grouping -> {
+              // If a grouping has streaming facets, then that groupings expressions
+              // must be collected during the streaming phase.
+              if (grouping.getStreamingFacets(facet -> streamingInfo.streamingFacets.add(facet))) {
+                groupingCollectors.add(grouping.getReductionManager());
+              }
+            });
 
-    // Create an streaming collection manager to manage the collection of all ungrouped expressions and
+    // Create an streaming collection manager to manage the collection of all ungrouped expressions
+    // and
     // grouped expressions that are calculated over streaming facets.
     streamingInfo.streamingCollectionManager = ungroupedReductionManager.merge(groupingCollectors);
     return streamingInfo;
   }
 
-  /**
-   * Class to encapsulate all necessary data for collecting {@link StreamingFacet}s.
-   */
+  /** Class to encapsulate all necessary data for collecting {@link StreamingFacet}s. */
   public static class StreamingInfo {
     Collection<StreamingFacet> streamingFacets = new ArrayList<>();
-    /**
-     * Manages the collection of all expressions needed for streaming facets
-     */
+    /** Manages the collection of all expressions needed for streaming facets */
     ReductionCollectionManager streamingCollectionManager;
   }
 
   /**
-   * Create the {@link FacetValueQueryExecuter}s for all {@link AbstractSolrQueryFacet}s contained in the request.
+   * Create the {@link FacetValueQueryExecuter}s for all {@link AbstractSolrQueryFacet}s contained
+   * in the request.
    *
    * @param filter representing the overall search query
    * @param queryRequest of the overall search query
    * @return an {@link Iterable} of executers
    */
-  public Iterable<FacetValueQueryExecuter> getFacetExecuters(Query filter, SolrQueryRequest queryRequest) {
+  public Iterable<FacetValueQueryExecuter> getFacetExecuters(
+      Query filter, SolrQueryRequest queryRequest) {
     ArrayList<FacetValueQueryExecuter> facetExecutors = new ArrayList<>();
-    groupingManagers.values().forEach( grouping -> {
-      grouping.getFacetExecuters(filter, queryRequest, executor -> facetExecutors.add(executor));
-    });
+    groupingManagers
+        .values()
+        .forEach(
+            grouping -> {
+              grouping.getFacetExecuters(
+                  filter, queryRequest, executor -> facetExecutors.add(executor));
+            });
     return facetExecutors;
   }
 
   /**
-   * Create the response for a request given in the old olap-style format.
-   * The old response returned overall expressions within groupings.
+   * Create the response for a request given in the old olap-style format. The old response returned
+   * overall expressions within groupings.
    *
    * @return a {@link NamedList} representation of the response
    */
   public NamedList<Object> createOldResponse() {
     NamedList<Object> analyticsResponse = new NamedList<>();
-    Map<String,Object> ungroupedResults = getUngroupedResults();
-    groupingManagers.forEach( (name, groupingManager) -> {
-      analyticsResponse.add(name, groupingManager.createOldResponse(ungroupedResults));
-    });
+    Map<String, Object> ungroupedResults = getUngroupedResults();
+    groupingManagers.forEach(
+        (name, groupingManager) -> {
+          analyticsResponse.add(name, groupingManager.createOldResponse(ungroupedResults));
+        });
 
     return analyticsResponse;
   }
@@ -255,22 +259,22 @@ public class AnalyticsRequestManager {
   /**
    * Create the response for a request.
    *
-   * <p>
-   * NOTE: Analytics requests specified in the old olap-style format
-   * have their responses generated by {@link #createOldResponse()}.
+   * <p>NOTE: Analytics requests specified in the old olap-style format have their responses
+   * generated by {@link #createOldResponse()}.
    *
    * @return a {@link Map} representation of the response
    */
-  public Map<String,Object> createResponse() {
-    Map<String,Object> analyticsResponse = new HashMap<>();
+  public Map<String, Object> createResponse() {
+    Map<String, Object> analyticsResponse = new HashMap<>();
     if (ungroupedExpressions.size() > 0) {
       addUngroupedResults(analyticsResponse);
     }
 
-    Map<String,Object> groupingsResponse = new HashMap<>();
-    groupingManagers.forEach( (name, groupingManager) -> {
-      groupingsResponse.put(name, groupingManager.createResponse());
-    });
+    Map<String, Object> groupingsResponse = new HashMap<>();
+    groupingManagers.forEach(
+        (name, groupingManager) -> {
+          groupingsResponse.put(name, groupingManager.createResponse());
+        });
 
     if (groupingsResponse.size() > 0) {
       analyticsResponse.put(AnalyticsResponseHeadings.GROUPINGS, groupingsResponse);
@@ -279,12 +283,10 @@ public class AnalyticsRequestManager {
   }
 
   public void setPartialResults(boolean b) {
-    this.partialResults=b;
+    this.partialResults = b;
   }
 
   public boolean isPartialResults() {
     return partialResults;
   }
-  
-  
 }

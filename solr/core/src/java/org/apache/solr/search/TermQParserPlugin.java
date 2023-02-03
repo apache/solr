@@ -26,25 +26,25 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 
 /**
- * Create a single term query from the input value equivalent to readableToIndexed().
- * This is useful for generating filter queries from the external human readable terms returned by the
- * faceting or terms components.
+ * Create a single term query from the input value equivalent to readableToIndexed(). This is useful
+ * for generating filter queries from the external human readable terms returned by the faceting or
+ * terms components.
  *
- * <p>
- * For text fields, no analysis is done since raw terms are already returned from the faceting
- * and terms components, and not all text analysis is idempotent.
- * To apply analysis to text fields as well, see the {@link FieldQParserPlugin}.
- * <br>
- * If no analysis or transformation is desired for any type of field, see the {@link RawQParserPlugin}.
+ * <p>For text fields, no analysis is done since raw terms are already returned from the faceting
+ * and terms components, and not all text analysis is idempotent. To apply analysis to text fields
+ * as well, see the {@link FieldQParserPlugin}. <br>
+ * If no analysis or transformation is desired for any type of field, see the {@link
+ * RawQParserPlugin}.
  *
- * <p>Other parameters: <code>f</code>, the field
- * <br>Example: <code>{!term f=weight}1.5</code>
+ * <p>Other parameters: <code>f</code>, the field <br>
+ * Example: <code>{!term f=weight}1.5</code>
  */
 public class TermQParserPlugin extends QParserPlugin {
   public static final String NAME = "term";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {

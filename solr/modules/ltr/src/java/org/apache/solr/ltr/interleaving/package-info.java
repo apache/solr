@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- *  Contains Various Interleaving auxiliary classes
- */
+/** Contains Various Interleaving auxiliary classes */
 package org.apache.solr.ltr.interleaving;

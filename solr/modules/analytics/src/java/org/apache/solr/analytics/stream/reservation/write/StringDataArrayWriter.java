@@ -23,7 +23,8 @@ import java.util.function.Supplier;
 
 public class StringDataArrayWriter extends ReductionDataArrayWriter<Supplier<String>> {
 
-  public StringDataArrayWriter(DataOutput output, Supplier<String> extractor, IntSupplier sizeSupplier) {
+  public StringDataArrayWriter(
+      DataOutput output, Supplier<String> extractor, IntSupplier sizeSupplier) {
     super(output, extractor, sizeSupplier);
   }
 

@@ -17,7 +17,6 @@
 
 package org.noggit;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
@@ -74,13 +73,10 @@ public class CharArr implements CharSequence, Appendable {
     return size();
   }
 
-  /**
-   * The capacity of the buffer when empty (getArray().size())
-   */
+  /** The capacity of the buffer when empty (getArray().size()) */
   public int capacity() {
     return buf.length;
   }
-
 
   @Override
   public char charAt(int index) {
@@ -98,7 +94,7 @@ public class CharArr implements CharSequence, Appendable {
   }
 
   public int read(char cbuf[], int off, int len) {
-    //TODO
+    // TODO
     return 0;
   }
 
@@ -159,22 +155,19 @@ public class CharArr implements CharSequence, Appendable {
     end += len;
   }
 
-  public void flush() {
-  }
+  public void flush() {}
 
   public final void reset() {
     start = end = 0;
   }
 
-  public void close() {
-  }
+  public void close() {}
 
   public char[] toCharArray() {
     char newbuf[] = new char[size()];
     System.arraycopy(buf, start, newbuf, 0, size());
     return newbuf;
   }
-
 
   @Override
   public String toString() {
@@ -183,12 +176,12 @@ public class CharArr implements CharSequence, Appendable {
 
   public int read(CharBuffer cb) throws IOException {
 
-    /***
-     int sz = size();
-     if (sz<=0) return -1;
-     if (sz>0) cb.put(buf, start, sz);
-     return -1;
-     ***/
+    /*
+    int sz = size();
+    if (sz<=0) return -1;
+    if (sz>0) cb.put(buf, start, sz);
+    return -1;
+    */
 
     int sz = size();
     if (sz > 0) cb.put(buf, start, sz);
@@ -202,9 +195,8 @@ public class CharArr implements CharSequence, Appendable {
     }
   }
 
-
   public int fill() throws IOException {
-    return 0;  // or -1?
+    return 0; // or -1?
   }
 
   //////////////// Appendable methods /////////////
@@ -225,39 +217,31 @@ public class CharArr implements CharSequence, Appendable {
     return this;
   }
 
-
   static class NullCharArr extends CharArr {
     public NullCharArr() {
       super(new char[1], 0, 0);
     }
 
     @Override
-    public void unsafeWrite(char b) {
-    }
+    public void unsafeWrite(char b) {}
 
     @Override
-    public void unsafeWrite(char b[], int off, int len) {
-    }
+    public void unsafeWrite(char b[], int off, int len) {}
 
     @Override
-    public void unsafeWrite(int b) {
-    }
+    public void unsafeWrite(int b) {}
 
     @Override
-    public void write(char b) {
-    }
+    public void write(char b) {}
 
     @Override
-    public void write(char b[], int off, int len) {
-    }
+    public void write(char b[], int off, int len) {}
 
     @Override
-    public void reserve(int num) {
-    }
+    public void reserve(int num) {}
 
     @Override
-    protected void resize(int len) {
-    }
+    protected void resize(int len) {}
 
     @Override
     public Appendable append(CharSequence csq, int start, int end) throws IOException {
@@ -270,13 +254,11 @@ public class CharArr implements CharSequence, Appendable {
     }
 
     @Override
-    public void write(String s, int stringOffset, int len) {
-    }
+    public void write(String s, int stringOffset, int len) {}
   }
 
-
   // IDEA: a subclass that refills the array from a reader?
-  class CharArrReader extends CharArr {
+  static class CharArrReader extends CharArr {
     protected final Reader in;
 
     public CharArrReader(Reader in, int size) {
@@ -309,19 +291,18 @@ public class CharArr implements CharSequence, Appendable {
         end = size();
         start = 0;
       }
-      /***
-       // fill fully or not???
-       do {
-       int sz = in.read(buf,end,buf.length-end);
-       if (sz==-1) return;
-       end+=sz;
-       } while (end < buf.length);
-       ***/
+      /*
+      // fill fully or not???
+      do {
+        int sz = in.read(buf,end,buf.length-end);
+        if (sz==-1) return;
+        end+=sz;
+      } while (end < buf.length);
+      */
 
       int sz = in.read(buf, end, buf.length - end);
       if (sz > 0) end += sz;
       return sz;
     }
-
   }
 }

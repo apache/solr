@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.TransactionLog.LogReader;
@@ -32,8 +31,9 @@ public class TransactionLogTest extends SolrTestCase {
 
   @Test
   public void testBigLastAddSize() {
-    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME,
-        Long.MAX_VALUE);
+    String tlogFileName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, Long.MAX_VALUE);
     Path path = createTempDir();
     Path logFile = path.resolve(tlogFileName);
     try (TransactionLog transactionLog = new TransactionLog(logFile, null)) {
@@ -46,8 +46,9 @@ public class TransactionLogTest extends SolrTestCase {
 
   @Test
   public void testUUID() throws IOException, InterruptedException {
-    String tlogFileName = String.format(Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME,
-        Long.MAX_VALUE);
+    String tlogFileName =
+        String.format(
+            Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, Long.MAX_VALUE);
     Path path = createTempDir();
     Path logFile = path.resolve(tlogFileName);
     UUID uuid = UUID.randomUUID();

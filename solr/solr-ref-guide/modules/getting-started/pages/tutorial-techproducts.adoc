@@ -1,4 +1,4 @@
-= Exercise 1 Index Techproducts Data
+= Exercise 1: Index Techproducts Data
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -260,7 +260,10 @@ If you click on it, your browser will show you the raw response.
 
 To use curl, give the same URL shown in your browser in quotes on the command line:
 
-`curl "http://localhost:8983/solr/techproducts/select?indent=on&q=\*:*"`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?indent=on&q=\*:*"
+----
 
 What's happening here is that we are using Solr's query parameter (`q`) with a special syntax that requests all documents in the index (`\*:*`).
 All of the documents are not returned to us, however, because of the default for a parameter called `rows`, which you can see in the form is `10`.
@@ -277,7 +280,10 @@ Enter "foundation" and hit btn:[Execute Query] again.
 
 If you prefer curl, enter something like this:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=foundation"`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?q=foundation"
+----
 
 You'll see something like this:
 
@@ -321,7 +327,10 @@ This is one of the available fields on the query form in the Admin UI.
 Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
 Or, to specify it with curl:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=foundation&fl=id"`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?q=foundation&fl=id"
+----
 
 You should only see the IDs of the matching records returned.
 
@@ -414,7 +423,10 @@ For example, search for "CAS latency" by entering that phrase in quotes to the `
 
 If you're following along with curl, note that the space between terms must be converted to "+" in a URL, as so:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=\"CAS+latency\""`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?q=\"CAS+latency\""
+----
 
 We get 2 results:
 
@@ -472,14 +484,20 @@ To find documents that contain both terms "electronics" and "music", enter `+ele
 If you're using curl, you must encode the `+` character because it has a reserved purpose in URLs (encoding the space character).
 The encoding for `+` is `%2B` as in:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics%20%2Bmusic"`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics%20%2Bmusic"
+----
 
 You should only get a single result.
 
 To search for documents that contain the term "electronics" but *don't* contain the term "music", enter `+electronics -music` in the `q` box in the Admin UI.
 For curl, again, URL encode `+` as `%2B` as in:
 
-`curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics+-music"`
+[source,bash]
+----
+curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics+-music"
+----
 
 This time you get 13 results.
 
@@ -496,14 +514,23 @@ You can choose now to continue to the next example which will introduce more Sol
 If you decide not to continue with this tutorial, the data we've indexed so far is likely of little value to you.
 You can delete your installation and start over, or you can use the `bin/solr` script we started out with to delete this collection:
 
-`bin/solr delete -c techproducts`
+[source,bash]
+----
+bin/solr delete -c techproducts
+----
 
 And then create a new collection:
 
-`bin/solr create -c <yourCollection> -s 2 -rf 2`
+[source,bash]
+----
+bin/solr create -c <yourCollection> -s 2 -rf 2
+----
 
 To stop both of the Solr nodes we started, issue the command:
 
-`bin/solr stop -all`
+[source,bash]
+----
+bin/solr stop -all
+----
 
 For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].

@@ -24,12 +24,16 @@ import java.util.regex.Pattern;
 
 public class RedactionUtils {
   public static final String SOLR_REDACTION_SYSTEM_PATTERN_PROP = "solr.redaction.system.pattern";
-  private static Pattern pattern = Pattern.compile(System.getProperty(SOLR_REDACTION_SYSTEM_PATTERN_PROP, ".*password.*"), Pattern.CASE_INSENSITIVE);
+  private static Pattern pattern =
+      Pattern.compile(
+          System.getProperty(SOLR_REDACTION_SYSTEM_PATTERN_PROP, ".*password.*"),
+          Pattern.CASE_INSENSITIVE);
   private static final String REDACT_STRING = "--REDACTED--";
   public static final String NODE_REDACTION_PREFIX = "N_";
   public static final String COLL_REDACTION_PREFIX = "COLL_";
 
-  private static boolean redactSystemProperty = Boolean.parseBoolean(System.getProperty("solr.redaction.system.enabled", "true"));
+  private static boolean redactSystemProperty =
+      Boolean.parseBoolean(System.getProperty("solr.redaction.system.enabled", "true"));
 
   /**
    * Returns if the given system property should be redacted.
@@ -37,14 +41,14 @@ public class RedactionUtils {
    * @param name The system property that is being checked.
    * @return true if property should be redacted.
    */
-  static public boolean isSystemPropertySensitive(String name) {
+  public static boolean isSystemPropertySensitive(String name) {
     return redactSystemProperty && pattern.matcher(name).matches();
   }
 
   /**
    * @return redaction string to be used instead of the value.
    */
-  static public String getRedactString() {
+  public static String getRedactString() {
     return REDACT_STRING;
   }
 
@@ -54,21 +58,20 @@ public class RedactionUtils {
 
   /**
    * Replace actual names found in a string with redacted names.
+   *
    * @param redactions a map of original to redacted names
    * @param data string to redact
    * @return redacted string where all actual names have been replaced.
    */
   public static String redactNames(Map<String, String> redactions, String data) {
     // replace the longest first to avoid partial replacements
-    Map<String, String> sorted = new TreeMap<>(Comparator
-        .comparing(String::length)
-        .reversed()
-        .thenComparing(String::compareTo));
+    Map<String, String> sorted =
+        new TreeMap<>(
+            Comparator.comparing(String::length).reversed().thenComparing(String::compareTo));
     sorted.putAll(redactions);
     for (Map.Entry<String, String> entry : sorted.entrySet()) {
       data = data.replaceAll("\\Q" + entry.getKey() + "\\E", entry.getValue());
     }
     return data;
   }
-
 }

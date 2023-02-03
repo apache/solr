@@ -17,12 +17,11 @@
 
 package org.apache.solr.prometheus.collector;
 
+import io.prometheus.client.Collector;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import io.prometheus.client.Collector;
 
 public class MetricSamples {
 
@@ -40,7 +39,8 @@ public class MetricSamples {
     samplesByMetricName.putIfAbsent(metricName, samples);
   }
 
-  public void addSampleIfMetricExists(String metricName, Collector.MetricFamilySamples.Sample sample) {
+  public void addSampleIfMetricExists(
+      String metricName, Collector.MetricFamilySamples.Sample sample) {
     Collector.MetricFamilySamples sampleFamily = samplesByMetricName.get(metricName);
 
     if (sampleFamily == null) {
@@ -53,7 +53,8 @@ public class MetricSamples {
   }
 
   public void addAll(MetricSamples other) {
-    for (Map.Entry<String, Collector.MetricFamilySamples> entry : other.samplesByMetricName.entrySet()) {
+    for (Map.Entry<String, Collector.MetricFamilySamples> entry :
+        other.samplesByMetricName.entrySet()) {
       String key = entry.getKey();
       if (this.samplesByMetricName.containsKey(key)) {
         for (Collector.MetricFamilySamples.Sample sample : entry.getValue().samples) {
@@ -70,5 +71,4 @@ public class MetricSamples {
         .filter(value -> !value.samples.isEmpty())
         .collect(Collectors.toList());
   }
-
 }

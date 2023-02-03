@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
@@ -34,10 +34,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * ResourceLoader that works with ZooKeeper.
- *
- */
+/** ResourceLoader that works with ZooKeeper. */
 public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   private final String configSetZkPath;
@@ -47,26 +44,37 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * <p>
-   * This loader will first attempt to load resources from ZooKeeper, but if not found
-   * will delegate to the context classloader when possible,
-   * otherwise it will attempt to resolve resources using any jar files found in
-   * the "lib/" directory in the specified instance directory.
+   * This loader will first attempt to load resources from ZooKeeper, but if not found will delegate
+   * to the context classloader when possible, otherwise it will attempt to resolve resources using
+   * any jar files found in the "lib/" directory in the specified instance directory.
    */
-  public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
-                              ZkController zooKeeperController) {
+  public ZkSolrResourceLoader(
+      Path instanceDir, String configSet, ClassLoader parent, ZkController zooKeeperController) {
     super(instanceDir, parent);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
   }
 
+  public Pair<String, Integer> getZkResourceInfo(String resource) {
+    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
+    try {
+      Stat stat = zkController.getZkClient().exists(file, null, true);
+      if (stat != null) {
+        return new Pair<>(file, stat.getVersion());
+      } else {
+        return null;
+      }
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   /**
-   * Opens any resource by its name. By default, this will look in multiple
-   * locations to load the resource: $configDir/$resource from ZooKeeper.
-   * It will look for it in any jar
-   * accessible through the class loader if it cannot be found in ZooKeeper. 
-   * Override this method to customize loading resources.
-   * 
+   * Opens any resource by its name. By default, this will look in multiple locations to load the
+   * resource: $configDir/$resource from ZooKeeper. It will look for it in any jar accessible
+   * through the class loader if it cannot be found in ZooKeeper. Override this method to customize
+   * loading resources.
+   *
    * @return the stream for the named resource
    */
   @Override
@@ -75,14 +83,14 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     int maxTries = 10;
     Exception exception = null;
-    while (maxTries -- > 0) {
+    while (maxTries-- > 0) {
       try {
         if (zkController.pathExists(file)) {
           Stat stat = new Stat();
           byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
           return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
-          //Path does not exists. We only retry for session expired exceptions.
+          // Path does not exists. We only retry for session expired exceptions.
           break;
         }
       } catch (KeeperException.SessionExpiredException e) {
@@ -106,7 +114,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     }
 
     if (exception != null) {
-      throw new IOException("We re-tried 10 times but was still unable to fetch resource=" + resource + " from ZK", exception);
+      throw new IOException(
+          "We re-tried 10 times but was still unable to fetch resource=" + resource + " from ZK",
+          exception);
     }
 
     try {
@@ -116,24 +126,29 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       throw new IOException("Error opening " + resource, e);
     }
     if (is == null) {
-      throw new SolrResourceNotFoundException("Can't find resource '" + resource
-          + "' in classpath or '" + configSetZkPath + "', cwd="
-          + System.getProperty("user.dir"));
+      throw new SolrResourceNotFoundException(
+          "Can't find resource '"
+              + resource
+              + "' in classpath or '"
+              + configSetZkPath
+              + "', cwd="
+              + System.getProperty("user.dir"));
     }
     return is;
   }
 
-  public static class ZkByteArrayInputStream extends ByteArrayInputStream{
+  public static class ZkByteArrayInputStream extends ByteArrayInputStream {
 
     public final String fileName;
     private final Stat stat;
+
     public ZkByteArrayInputStream(byte[] buf, String fileName, Stat stat) {
       super(buf);
       this.fileName = fileName;
       this.stat = stat;
     }
 
-    public Stat getStat(){
+    public Stat getStat() {
       return stat;
     }
   }
@@ -148,7 +163,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public String getConfigSetZkPath() {
     return configSetZkPath;
   }
-  
+
   public ZkController getZkController() {
     return zkController;
   }
@@ -157,7 +172,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     this.zkIndexSchemaReader = zkIndexSchemaReader;
   }
 
-  public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
+  public ZkIndexSchemaReader getZkIndexSchemaReader() {
+    return zkIndexSchemaReader;
+  }
 
   @Override
   public CoreContainer getCoreContainer() {

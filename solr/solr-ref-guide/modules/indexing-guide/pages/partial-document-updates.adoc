@@ -149,12 +149,8 @@ Solr offers two solutions to address this:
 * Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.
 This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
 
-Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
-field of this partial update.
-This is how Solr understands that you are updating a child
-document, and not a Root document.
-Without it, Solr only guesses that the `\_route_` parameter is
-equivalent, but it may be absent or not equivalent (e.g., when using the `implicit` router).
+Furthermore, you _must_ specify the Root document's ID in the `\_root_` field of this partial update.
+This is how Solr understands that you are updating a child document, and not a Root document.
 
 All of the examples below use `id` prefixes, so no `\_route_` parameter will be necessary for these examples.
 ====

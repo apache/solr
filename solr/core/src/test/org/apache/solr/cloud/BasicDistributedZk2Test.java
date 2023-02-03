@@ -20,9 +20,9 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
 /**
- * This test simply does a bunch of basic things in solrcloud mode and asserts things
- * work as expected.
- * Implementation moved to AbstractBasicDistributedZk2TestBase as it is used by HDFS contrib module tests.
+ * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
+ * expected. Implementation moved to AbstractBasicDistributedZk2TestBase as it is used by HDFS
+ * contrib module tests.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZk2Test extends AbstractBasicDistributedZk2TestBase {
@@ -33,5 +33,4 @@ public class BasicDistributedZk2Test extends AbstractBasicDistributedZk2TestBase
   public void test() throws Exception {
     super.test();
   }
-  
 }

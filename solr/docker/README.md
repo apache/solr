@@ -47,3 +47,8 @@ When building the image, Solr accepts arguments for customization. Currently onl
 ```bash
 docker build --build-arg BASE_IMAGE=custom/jdk:17-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
 ```
+
+Official Image Management
+----
+
+Please refer to the `dev-docs` in [apache/solr-docker](https://github.com/apache/solr-docker) for information on how the [Official Solr Dockerfile](https://hub.docker.com/_/solr) is maintained & released.

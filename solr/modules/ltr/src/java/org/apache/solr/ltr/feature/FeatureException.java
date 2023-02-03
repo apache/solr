@@ -27,5 +27,4 @@ public class FeatureException extends RuntimeException {
   public FeatureException(String message, Exception cause) {
     super(message, cause);
   }
-
 }

@@ -16,17 +16,11 @@
  */
 
 /**
- * A {@link org.apache.solr.handler.component.SearchComponent} for dynamic,
- * unsupervised grouping of
- * search results based on the content of their text fields or contextual
- * snippets around query-matching regions.
+ * A {@link org.apache.solr.handler.component.SearchComponent} for dynamic, unsupervised grouping of
+ * search results based on the content of their text fields or contextual snippets around
+ * query-matching regions.
  *
- * <p>
- * The default implementation uses clustering algorithms from the
- * <a href="https://project.carrot2.org">Carrot<sup>2</sup> project</a>.
+ * <p>The default implementation uses clustering algorithms from the <a
+ * href="https://project.carrot2.org">Carrot<sup>2</sup> project</a>.
  */
 package org.apache.solr.handler.clustering;
-
-
-
-

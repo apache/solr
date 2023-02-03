@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search.function;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -30,13 +33,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-import java.util.Map;
-
-
-/**
- * RangeFilter over a ValueSource.
- */
+/** RangeFilter over a ValueSource. */
 public class ValueSourceRangeFilter extends Query {
   private final ValueSource valueSource;
   private final String lowerVal;
@@ -44,18 +41,19 @@ public class ValueSourceRangeFilter extends Query {
   private final boolean includeLower;
   private final boolean includeUpper;
 
-  public ValueSourceRangeFilter(ValueSource valueSource,
-                                String lowerVal,
-                                String upperVal,
-                                boolean includeLower,
-                                boolean includeUpper) {
+  public ValueSourceRangeFilter(
+      ValueSource valueSource,
+      String lowerVal,
+      String upperVal,
+      boolean includeLower,
+      boolean includeUpper) {
     this.valueSource = valueSource;
     this.lowerVal = lowerVal;
     this.upperVal = upperVal;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
-//    this.includeLower = lowerVal != null && includeLower;
-//    this.includeUpper = upperVal != null && includeUpper;
+    //    this.includeLower = lowerVal != null && includeLower;
+    //    this.includeUpper = upperVal != null && includeUpper;
   }
 
   public ValueSource getValueSource() {
@@ -79,7 +77,8 @@ public class ValueSourceRangeFilter extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new FunctionRangeWeight(searcher, scoreMode, boost);
   }
 
@@ -87,7 +86,8 @@ public class ValueSourceRangeFilter extends Query {
     private final Map<Object, Object> vsContext;
     private final ScoreMode scoreMode;
 
-    public FunctionRangeWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public FunctionRangeWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       super(ValueSourceRangeFilter.this, boost);
       this.scoreMode = scoreMode;
       vsContext = ValueSource.newContext(searcher);
@@ -97,18 +97,24 @@ public class ValueSourceRangeFilter extends Query {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       FunctionValues functionValues = valueSource.getValues(vsContext, context);
-      ValueSourceScorer scorer = functionValues.getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
+      ValueSourceScorer scorer =
+          functionValues.getRangeScorer(
+              this, context, lowerVal, upperVal, includeLower, includeUpper);
       if (scorer.matches(doc)) {
         scorer.iterator().advance(doc);
-        return Explanation.match(scorer.score(), ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
+        return Explanation.match(
+            scorer.score(), ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
       } else {
-        return Explanation.noMatch(ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
+        return Explanation.noMatch(
+            ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
       }
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      ValueSourceScorer scorer = valueSource.getValues(vsContext, context)
+      ValueSourceScorer scorer =
+          valueSource
+              .getValues(vsContext, context)
               .getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
       return new ConstantScoreScorer(this, score(), scoreMode, scorer.iterator());
     }
@@ -138,30 +144,26 @@ public class ValueSourceRangeFilter extends Query {
     visitor.visitLeaf(this);
   }
 
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof ValueSourceRangeFilter)) return false;
-    ValueSourceRangeFilter other = (ValueSourceRangeFilter)o;
 
-    if (!this.valueSource.equals(other.valueSource)
-        || this.includeLower != other.includeLower
-        || this.includeUpper != other.includeUpper
-    ) { return false; }
-    if (this.lowerVal != null ? !this.lowerVal.equals(other.lowerVal) : other.lowerVal != null) return false;
-    if (this.upperVal != null ? !this.upperVal.equals(other.upperVal) : other.upperVal != null) return false;
-    return true;
+    ValueSourceRangeFilter other = (ValueSourceRangeFilter) o;
+    return Objects.equals(this.valueSource, other.valueSource)
+        && this.includeLower == other.includeLower
+        && this.includeUpper == other.includeUpper
+        && Objects.equals(this.lowerVal, other.lowerVal)
+        && Objects.equals(this.upperVal, other.upperVal);
   }
 
   @Override
   public int hashCode() {
     int h = valueSource.hashCode();
     h += lowerVal != null ? lowerVal.hashCode() : 0x572353db;
-    h = (h << 16) | (h >>> 16);  // rotate to distinguish lower from upper
+    h = (h << 16) | (h >>> 16); // rotate to distinguish lower from upper
     h += (upperVal != null ? (upperVal.hashCode()) : 0xe16fe9e7);
-    h += (includeLower ? 0xdaa47978 : 0)
-    + (includeUpper ? 0x9e634b57 : 0);
+    h += (includeLower ? 0xdaa47978 : 0) + (includeUpper ? 0x9e634b57 : 0);
     return h;
   }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.client.solrj.SolrRequest;
-
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+
+import org.apache.solr.client.solrj.SolrRequest;
 
 public class RateLimiterConfig {
   public static final String RL_CONFIG_KEY = "rate-limiters";
@@ -41,8 +41,13 @@ public class RateLimiterConfig {
     this.waitForSlotAcquisition = DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
   }
 
-  public RateLimiterConfig(SolrRequest.SolrRequestType requestType, boolean isEnabled, int guaranteedSlotsThreshold,
-                           long waitForSlotAcquisition, int allowedRequests, boolean isSlotBorrowingEnabled) {
+  public RateLimiterConfig(
+      SolrRequest.SolrRequestType requestType,
+      boolean isEnabled,
+      int guaranteedSlotsThreshold,
+      long waitForSlotAcquisition,
+      int allowedRequests,
+      boolean isSlotBorrowingEnabled) {
     this.requestType = requestType;
     this.isEnabled = isEnabled;
     this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;

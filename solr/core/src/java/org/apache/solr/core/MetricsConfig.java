@@ -20,9 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- *
- */
+/** */
 public class MetricsConfig {
 
   private final PluginInfo[] metricReporters;
@@ -36,12 +34,21 @@ public class MetricsConfig {
   private final Object nullString;
   private final Object nullObject;
   private final boolean enabled;
+  private final CacheConfig cacheConfig;
 
-  private MetricsConfig(boolean enabled,
-                        PluginInfo[] metricReporters, Set<String> hiddenSysProps,
-                        PluginInfo counterSupplier, PluginInfo meterSupplier,
-                        PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
+  private MetricsConfig(
+      boolean enabled,
+      PluginInfo[] metricReporters,
+      Set<String> hiddenSysProps,
+      PluginInfo counterSupplier,
+      PluginInfo meterSupplier,
+      PluginInfo timerSupplier,
+      PluginInfo histogramSupplier,
+      Object nullNumber,
+      Object notANumber,
+      Object nullString,
+      Object nullObject,
+      CacheConfig cacheConfig) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
@@ -53,10 +60,15 @@ public class MetricsConfig {
     this.notANumber = notANumber;
     this.nullString = nullString;
     this.nullObject = nullObject;
+    this.cacheConfig = cacheConfig;
   }
 
   public boolean isEnabled() {
     return enabled;
+  }
+
+  public CacheConfig getCacheConfig() {
+    return cacheConfig;
   }
 
   private static final PluginInfo[] NO_OP_REPORTERS = new PluginInfo[0];
@@ -97,9 +109,7 @@ public class MetricsConfig {
   public static final String NOOP_IMPL_CLASS = "__noop__";
 
   private static final PluginInfo NO_OP_PLUGIN =
-      new PluginInfo("typeUnused",
-            Collections.singletonMap("class", NOOP_IMPL_CLASS),
-            null, null);
+      new PluginInfo("typeUnused", Collections.singletonMap("class", NOOP_IMPL_CLASS), null, null);
 
   public PluginInfo getCounterSupplier() {
     if (enabled) {
@@ -146,13 +156,17 @@ public class MetricsConfig {
     private Object nullObject = null;
     // default to metrics enabled
     private boolean enabled = true;
+    private CacheConfig cacheConfig = null;
 
-    public MetricsConfigBuilder() {
-
-    }
+    public MetricsConfigBuilder() {}
 
     public MetricsConfigBuilder setEnabled(boolean enabled) {
       this.enabled = enabled;
+      return this;
+    }
+
+    public MetricsConfigBuilder setCacheConfig(CacheConfig cacheConfig) {
+      this.cacheConfig = cacheConfig;
       return this;
     }
 
@@ -165,7 +179,8 @@ public class MetricsConfig {
     }
 
     public MetricsConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
+      this.metricReporterPlugins =
+          metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
       return this;
     }
 
@@ -210,11 +225,27 @@ public class MetricsConfig {
     }
 
     public MetricsConfig build() {
-      return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier,
-          nullNumber, notANumber, nullString, nullObject);
+      return new MetricsConfig(
+          enabled,
+          metricReporterPlugins,
+          hiddenSysProps,
+          counterSupplier,
+          meterSupplier,
+          timerSupplier,
+          histogramSupplier,
+          nullNumber,
+          notANumber,
+          nullString,
+          nullObject,
+          cacheConfig);
     }
-
   }
 
+  public static class CacheConfig {
+    public Integer threadsIntervalSeconds; // intervals for which the threads metrics are cached
+
+    public CacheConfig(Integer threadsIntervalSeconds) {
+      this.threadsIntervalSeconds = threadsIntervalSeconds;
+    }
+  }
 }

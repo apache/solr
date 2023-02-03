@@ -17,39 +17,43 @@
 package org.apache.solr.analytics.function.reduction;
 
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.CountCollector.ExpressionCountCollector;
+import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
-import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A reduction function which returns the number of documents for which the given expression does not exist.
+ * A reduction function which returns the number of documents for which the given expression does
+ * not exist.
  */
 public class MissingFunction extends AbstractLongValue implements ReductionFunction {
   private ExpressionCountCollector collector;
   public static final String name = "missing";
   private final String exprStr;
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 1) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 paramater, " + params.length + " found.");
-    }
-    return new MissingFunction(params[0]);
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 1) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 1 paramater, " + params.length + " found.");
+        }
+        return new MissingFunction(params[0]);
+      });
 
   public MissingFunction(AnalyticsValueStream param) {
     this.collector = new ExpressionCountCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
   }
 
   @Override
   public long getLong() {
     return collector.missing();
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -57,13 +61,14 @@ public class MissingFunction extends AbstractLongValue implements ReductionFunct
 
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (ExpressionCountCollector)sync.apply(collector);
+    collector = (ExpressionCountCollector) sync.apply(collector);
   }
 
   @Override
   public String getExpressionStr() {
     return exprStr;
   }
+
   @Override
   public String getName() {
     return name;

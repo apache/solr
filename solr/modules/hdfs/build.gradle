@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'HDFS Contrib Module'
+description = 'HDFS Module'
 
 dependencies {
   implementation project(':solr:core')
@@ -27,63 +27,49 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
 
-  // Hadoop dependencies
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
-  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-auth'
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by HDFS
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  api 'org.apache.hadoop:hadoop-client-api'
+  runtimeOnly 'org.apache.hadoop:hadoop-client-runtime'
 
-  // Guava implements the VisibleForTesting annotations
+  // Guava implements Preconditions, caches, and VisibleForTesting annotations
   implementation 'com.google.guava:guava'
 
   // Caffeine cache to implement HDFS block caching  
-  implementation ('com.github.ben-manes.caffeine:caffeine')
+  implementation 'com.github.ben-manes.caffeine:caffeine'
+
+  implementation 'commons-cli:commons-cli'
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
 
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
+  testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
 
   testImplementation 'org.slf4j:jcl-over-slf4j'
-  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.
-  testImplementation project(':solr:modules:analysis-extras')
-
-  // required for instantiating a Zookeeper server in tests or embedded
-  runtimeOnly ('org.xerial.snappy:snappy-java')
+  testRuntimeOnly project(':solr:modules:analysis-extras')
 
   // used by the hadoop-specific test framework classes
-  testImplementation('commons-io:commons-io') { transitive = false }
-  testImplementation ('org.apache.commons:commons-compress') { transitive = false }
-  testImplementation ('org.apache.commons:commons-collections4') { transitive = false }
-  testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
-  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+  testImplementation 'commons-io:commons-io'
+  testImplementation 'org.apache.commons:commons-compress'
+  testImplementation 'org.apache.commons:commons-collections4'
+  testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'io.dropwizard.metrics:metrics-core'
-  testImplementation 'javax.servlet:javax.servlet-api'
-  testImplementation 'org.eclipse.jetty:jetty-http'
-  testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
-  testImplementation 'org.eclipse.jetty:jetty-util'
-  testImplementation 'org.eclipse.jetty:jetty-webapp'
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
-  testImplementation 'org.apache.zookeeper:zookeeper'
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  // required for instantiating a Zookeeper server in tests or embedded
+  testRuntimeOnly 'org.xerial.snappy:snappy-java'
 }
 
 
@@ -100,4 +86,11 @@ task copySolrCoreTestResources(type: Copy) {
 
 tasks.processTestResources.configure {
   dependsOn copySolrCoreTestResources
+}
+
+// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
+           "--add-opens=java.base/java.util=ALL-UNNAMED"])
 }

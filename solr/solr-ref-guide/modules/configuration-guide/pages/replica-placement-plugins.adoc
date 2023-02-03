@@ -34,7 +34,11 @@ The configuration entry may also contain a `config` element if the plugin implem
 
 == Placement Plugins Included with Solr
 The following placement plugins are available out-of-the-box in Solr 9.0.
-If no placement plugin is defined, Solr will default to using the <<#simpleplacementfactory,SimplePlacementPlugin>>.
+If no placement plugin is defined in cluster properties, Solr will default to using
+the plugin configured in system property `solr.placementplugin.default` or environment
+variable `SOLR_PLACEMENTPLUGIN_DEFAULT`. Supported values are `simple`, `random`, `affinity`
+and `minimizecores`. If no such property or environment variable is set,
+the <<#simpleplacementfactory,SimplePlacementPlugin>> is used.
 
 In order to use a plugin its configuration must be added using the `/cluster/plugin` API.
 For example, in order to use the `AffinityPlacementFactory` plugin the following command should be executed:
@@ -52,7 +56,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
             "A_primary": "A_secondary",
             "B_primary": "B_secondary"
           },
-          "nodeType": {
+          "collectionNodeType": {
             "collection_A": "searchNode,indexNode",
             "collection_B": "analyticsNode"
           }
@@ -109,7 +113,7 @@ The autoscaling specification in the configuration linked above aimed to do the 
 It also supports additional per-collection constraints:
 
 * `withCollection` enforces the placement of co-located collections' replicas on the same nodes, and prevents deletions of collections and replicas that would break this constraint.
-* `nodeType` limits the nodes eligible for placement to only those that match one or more of the specified node types.
+* `collectionNodeType` limits the nodes eligible for placement to only those that match one or more of the specified node types.
 
 See below for more details on these constraints.
 
@@ -142,7 +146,7 @@ This plugin supports the following configuration parameters:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `10` Gigabytes
+|Optional |Default: `20` Gigabytes
 |===
 +
 If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -169,7 +173,7 @@ The plugin will assume that the secondary collection replicas are already in pla
 +
 See the section <<withCollection constraint>> below.
 
-`nodeType`::
+`collectionNodeType`::
 +
 [%autowidth,frame=none]
 |===
@@ -252,7 +256,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
         "config": {
-          "nodeType": {
+          "collectionNodeType": {
             "collection_A": "searchNode,indexNode",
             "collection_B": "analyticsNode"
           }

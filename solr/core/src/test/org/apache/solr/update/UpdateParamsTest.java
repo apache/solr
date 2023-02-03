@@ -17,17 +17,14 @@
 package org.apache.solr.update;
 
 import java.util.HashMap;
-
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
-
-
 
 public class UpdateParamsTest extends SolrTestCaseJ4 {
 
@@ -35,42 +32,44 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
-  /**
-   * Tests that only update.chain and not update.processor works (SOLR-2105)
-   */
-  public void testUpdateProcessorParamDeprecationRemoved() throws Exception {
+
+  /** Tests that only update.chain and not update.processor works (SOLR-2105) */
+  public void testUpdateProcessorParamDeprecationRemoved() {
     SolrCore core = h.getCore();
-    
+
     UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init( null );
-    
-    MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
-    params.getMap().put("update.processor", "nonexistant");
+    handler.init(null);
+
+    MapSolrParams params = new MapSolrParams(new HashMap<>());
+    params.getMap().put("update.processor", "nonexistent");
 
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
-    
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {};
+
     // First check that the old param behaves as it should
     try {
       handler.handleRequestBody(req, rsp);
       assertTrue("Old param update.processor should not have any effect anymore", true);
     } catch (Exception e) {
-      assertFalse("Got wrong exception while testing update.chain", e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistant"));
+      assertNotEquals(
+          "Got wrong exception while testing update.chain",
+          "unknown UpdateRequestProcessorChain: nonexistent",
+          e.getMessage());
     }
-    
+
     // Then check that the new param behaves correctly
     params.getMap().remove("update.processor");
-    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistant");    
+    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistent");
     req.setParams(params);
     try {
       handler.handleRequestBody(req, rsp);
-      assertFalse("Faulty update.chain parameter not causing an error - i.e. it is not detected", true);
+      fail("Faulty update.chain parameter not causing an error - i.e. it is not detected");
     } catch (Exception e) {
-      assertEquals("Got wrong exception while testing update.chain", e.getMessage(), "unknown UpdateRequestProcessorChain: nonexistant");
+      assertEquals(
+          "Got wrong exception while testing update.chain",
+          e.getMessage(),
+          "unknown UpdateRequestProcessorChain: nonexistent");
     }
-    
   }
-
 }

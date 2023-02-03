@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Classes related to applying run time scripting changes to Solr.
- */
+/** Classes related to applying run time scripting changes to Solr. */
 package org.apache.solr.scripting;

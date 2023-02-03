@@ -22,31 +22,31 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
-  
+
   public void testEmpty() {
-    assertSerializeDeserialize(new NamedList<Object>());
+    assertSerializeDeserialize(new NamedList<>());
   }
-  
+
   public void testWithSingleObject() {
     NamedList<Object> responseNl = new NamedList<>();
     responseNl.add("foo", "bar");
     assertSerializeDeserialize(responseNl);
   }
-  
+
   public void testWithMultipleObject() {
     NamedList<Object> responseNl = new NamedList<>();
     responseNl.add("foo", "bar");
     responseNl.add("foobar", "foo");
     assertSerializeDeserialize(responseNl);
   }
-  
+
   public void testRepeatedKeys() {
     NamedList<Object> responseNl = new NamedList<>();
     responseNl.add("foo", "bar");
     responseNl.add("foo", "zoo");
     assertSerializeDeserialize(responseNl);
   }
-  
+
   public void testNested() {
     NamedList<Object> responseNl = new NamedList<>();
     NamedList<Object> response2 = new NamedList<>();
@@ -54,7 +54,7 @@ public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
     responseNl.add("foo", response2);
     assertSerializeDeserialize(responseNl);
   }
-  
+
   public void testException() {
     NamedList<Object> responseNl = new NamedList<>();
     SolrException e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Foo");
@@ -62,18 +62,31 @@ public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
     exceptionNl.add("msg", e.getMessage());
     exceptionNl.add("rspCode", e.code());
     responseNl.add("exception", exceptionNl);
-    OverseerSolrResponse deserialized = OverseerSolrResponseSerializer.deserialize(OverseerSolrResponseSerializer.serialize(new OverseerSolrResponse(responseNl)));
+    OverseerSolrResponse deserialized =
+        OverseerSolrResponseSerializer.deserialize(
+            OverseerSolrResponseSerializer.serialize(new OverseerSolrResponse(responseNl)));
     assertNotNull("Expecting an exception", deserialized.getException());
-    assertEquals("Unexpected exception type in deserialized response", SolrException.class, deserialized.getException().getClass());
-    assertEquals("Unexpected exception code in deserialized response", e.code(), ((SolrException)deserialized.getException()).code());
-    assertEquals("Unexpected exception message in deserialized response", e.getMessage(), deserialized.getException().getMessage());
+    assertEquals(
+        "Unexpected exception type in deserialized response",
+        SolrException.class,
+        deserialized.getException().getClass());
+    assertEquals(
+        "Unexpected exception code in deserialized response",
+        e.code(),
+        ((SolrException) deserialized.getException()).code());
+    assertEquals(
+        "Unexpected exception message in deserialized response",
+        e.getMessage(),
+        deserialized.getException().getMessage());
   }
-  
+
   private void assertSerializeDeserialize(NamedList<Object> content) {
     OverseerSolrResponse response = new OverseerSolrResponse(content);
     byte[] serialized = OverseerSolrResponseSerializer.serialize(response);
     OverseerSolrResponse deserialized = OverseerSolrResponseSerializer.deserialize(serialized);
-    assertEquals("Deserialized response is different than original", response.getResponse(), deserialized.getResponse());
+    assertEquals(
+        "Deserialized response is different than original",
+        response.getResponse(),
+        deserialized.getResponse());
   }
-
 }

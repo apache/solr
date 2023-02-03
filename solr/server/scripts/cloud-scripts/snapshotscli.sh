@@ -11,7 +11,7 @@ run_solr_snapshot_tool() {
     log4j_config="file:${scriptDir}/../../resources/log4j2-console.xml"
   fi
   PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
-  -classpath "${solrLibPath}" org.apache.solr.core.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
+  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
 }
 
 usage() {
@@ -104,7 +104,7 @@ snapshotName="$2"
 copyListingDirPath=""
 distCpCmd="${SOLR_DISTCP_CMD:-hadoop distcp}"
 scriptDir=$(dirname "$0")
-solrLibPath="${SOLR_LIB_PATH:-${scriptDir}/../../solr-webapp/webapp/WEB-INF/lib/*:${scriptDir}/../../lib/ext/*}"
+solrLibPath="${SOLR_LIB_PATH:-${scriptDir}/../../solr-webapp/webapp/WEB-INF/lib/*:${scriptDir}/../../lib/ext/*:${scriptDir}/../../../modules/hdfs/lib/*}"
 
 case "${cmd}" in
   --create)

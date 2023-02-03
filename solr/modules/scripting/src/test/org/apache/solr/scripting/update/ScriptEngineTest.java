@@ -16,21 +16,19 @@
  */
 package org.apache.solr.scripting.update;
 
-import org.apache.lucene.util.Constants;
-
+import java.io.StringReader;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.StringReader;
-
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCase;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
 /**
- * Sanity tests basic functionality of {@link ScriptEngineManager} and 
- * {@link ScriptEngine} w/o exercising any Lucene specific code.
+ * Sanity tests basic functionality of {@link ScriptEngineManager} and {@link ScriptEngine} w/o
+ * exercising any Lucene specific code.
  */
 public class ScriptEngineTest extends SolrTestCase {
 
@@ -38,7 +36,8 @@ public class ScriptEngineTest extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
+    assumeFalse(
+        "https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
         Constants.MAC_OS_X);
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
@@ -68,7 +67,7 @@ public class ScriptEngineTest extends SolrTestCase {
     ScriptEngine engine = manager.getEngineByName("JavaScript");
     assertNotNull(engine);
     engine.eval("function add(a,b) { return a + b }");
-    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable) engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
@@ -78,7 +77,7 @@ public class ScriptEngineTest extends SolrTestCase {
     assertNotNull(engine);
     StringReader reader = new StringReader("function add(a,b) { return a + b }");
     engine.eval(reader);
-    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable) engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
@@ -89,22 +88,21 @@ public class ScriptEngineTest extends SolrTestCase {
     engine.put("b", 2);
     assertNotNull(engine);
     engine.eval("function add() { return a + b }");
-    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable) engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
 
- public void testJRuby() throws ScriptException, NoSuchMethodException {  
-   // Simply adding jruby.jar to Solr's lib/ directory gets this test passing
-   ScriptEngine engine = manager.getEngineByName("jruby");
+  public void testJRuby() throws ScriptException, NoSuchMethodException {
+    // Simply adding jruby.jar to Solr's lib/ directory gets this test passing
+    ScriptEngine engine = manager.getEngineByName("jruby");
 
-   Assume.assumeNotNull(engine);
+    Assume.assumeNotNull(engine);
 
-   assertNotNull(engine);
-   engine.eval("def add(a,b); a + b; end");
-   Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
-   assertNotNull(result);
-   assertEquals(3, result.intValue());
- }
-
+    assertNotNull(engine);
+    engine.eval("def add(a,b); a + b; end");
+    Number result = (Number) ((Invocable) engine).invokeFunction("add", 1, 2);
+    assertNotNull(result);
+    assertEquals(3, result.intValue());
+  }
 }

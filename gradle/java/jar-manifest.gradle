@@ -27,7 +27,6 @@ subprojects {
     // Apply the manifest to any JAR or WAR file created by any project,
     // excluding those explicitly listed.
     tasks.withType(Jar)
-            .matching { t -> !["sourcesJar", "javadocJar"].contains(t.name) }
             .configureEach { task ->
                 // Compute git status once on the root project prior to assembling manifest.
                 dependsOn ":gitStatus"
@@ -45,7 +44,9 @@ subprojects {
                     if (snapshotBuild) {
                       return "${project.version} ${gitRev} [snapshot build, details omitted]"
                     } else {
-                      return "${project.version} ${gitRev} - ${System.properties['user.name']} - ${buildDate} ${buildTime}"
+                      def sysProps = System.properties
+                      def manifestUsername = sysProps.getOrDefault('manifest.username', sysProps['user.name'])
+                      return "${project.version} ${gitRev} - ${manifestUsername} - ${buildDate} ${buildTime}"
                     }
                 }
 

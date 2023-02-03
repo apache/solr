@@ -25,6 +25,7 @@ public class IntCheckedDataReader extends ReductionCheckedDataReader<IntConsumer
   public IntCheckedDataReader(DataInput inputStream, IntConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void checkedRead() throws IOException {
     applier.accept(inputStream.readInt());

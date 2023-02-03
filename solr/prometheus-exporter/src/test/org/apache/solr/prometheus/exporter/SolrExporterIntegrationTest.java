@@ -18,25 +18,22 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Before;
 import org.junit.Test;
 
-//@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13786")
-@Slow
 public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    startMetricsExporterWithConfiguration("conf/prometheus-solr-exporter-integration-test-config.xml");
+    startMetricsExporterWithConfiguration(
+        "conf/prometheus-solr-exporter-integration-test-config.xml");
   }
 
-  private Map<String, Double> metricsWithName(Map<String, Double> allMetrics, String desiredMetricName) {
-    return allMetrics.entrySet()
-        .stream()
+  private Map<String, Double> metricsWithName(
+      Map<String, Double> allMetrics, String desiredMetricName) {
+    return allMetrics.entrySet().stream()
         .filter(entry -> entry.getKey().startsWith(desiredMetricName))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
@@ -54,7 +51,8 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Test
   public void solrExporterDurationMetric() throws Exception {
-    Map<String, Double> durationHistogram = metricsWithName(getAllMetrics(), "solr_exporter_duration");
+    Map<String, Double> durationHistogram =
+        metricsWithName(getAllMetrics(), "solr_exporter_duration");
 
     assertTrue(durationHistogram.get("solr_exporter_duration_seconds_count") > 0);
     assertTrue(durationHistogram.get("solr_exporter_duration_seconds_sum") > 0);
@@ -65,13 +63,12 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Test
   public void jvmMetrics() throws Exception {
-    Map<String, Double> jvmMetrics = metricsWithName(
-        getAllMetrics(), "solr_metrics_jvm_threads");
+    Map<String, Double> jvmMetrics = metricsWithName(getAllMetrics(), "solr_metrics_jvm_threads");
 
     // exact set of metrics can vary based on JVM impl (ie: windows)
     // but there should always be at least one per known thread state per node...
-    assertTrue(jvmMetrics.toString(),
-               (NUM_NODES * Thread.State.values().length) < jvmMetrics.size());
+    assertTrue(
+        jvmMetrics.toString(), (NUM_NODES * Thread.State.values().length) < jvmMetrics.size());
   }
 
   @Test
@@ -83,21 +80,22 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
   @Test
   public void collectionMetrics() throws Exception {
     Map<String, Double> allMetrics = getAllMetrics();
-    Map<String, Double> liveNodeMetrics = metricsWithName(allMetrics, "solr_collections_live_nodes");
+    Map<String, Double> liveNodeMetrics =
+        metricsWithName(allMetrics, "solr_collections_live_nodes");
 
     assertEquals(1, liveNodeMetrics.size());
-    liveNodeMetrics.forEach((metric, value) -> {
-      assertEquals((double) NUM_NODES, value, 0.001);
-    });
+    liveNodeMetrics.forEach(
+        (metric, value) -> {
+          assertEquals((double) NUM_NODES, value, 0.001);
+        });
 
-    Map<String, Double> shardLeaderMetrics = metricsWithName(allMetrics, "solr_collections_shard_leader");
+    Map<String, Double> shardLeaderMetrics =
+        metricsWithName(allMetrics, "solr_collections_shard_leader");
 
     assertEquals(NUM_NODES, shardLeaderMetrics.size());
 
-    double totalLeaderCount = shardLeaderMetrics.values()
-        .stream()
-        .mapToDouble(Double::doubleValue)
-        .sum();
+    double totalLeaderCount =
+        shardLeaderMetrics.values().stream().mapToDouble(Double::doubleValue).sum();
 
     assertEquals(NUM_SHARDS, totalLeaderCount, 0.001);
   }

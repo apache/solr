@@ -18,42 +18,58 @@
 
 package org.apache.hadoop.fs;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.impl.StoreImplementationUtils;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.statistics.BufferedIOStatisticsOutputStream;
+import org.apache.hadoop.fs.statistics.IOStatistics;
+import org.apache.hadoop.fs.statistics.IOStatisticsSource;
+import org.apache.hadoop.fs.statistics.impl.IOStatisticsStore;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.nativeio.NativeIO;
+import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.util.Progressable;
+import org.apache.hadoop.util.Shell;
+import org.apache.hadoop.util.StringUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.FileDescriptor;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.nativeio.NativeIO;
-import org.apache.hadoop.util.Progressable;
-import org.apache.hadoop.util.Shell;
-import org.apache.hadoop.util.StringUtils;
+import static org.apache.hadoop.fs.impl.PathCapabilitiesSupport.validatePathCapabilityArgs;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_BYTES;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_EXCEPTIONS;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_SEEK_OPERATIONS;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_SKIP_BYTES;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_SKIP_OPERATIONS;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_WRITE_BYTES;
+import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_WRITE_EXCEPTIONS;
+import static org.apache.hadoop.fs.statistics.impl.IOStatisticsBinding.iostatisticsStore;
 
 /****************************************************************
  * Implement the FileSystem API for the raw local filesystem.
@@ -66,6 +82,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   static final URI NAME = URI.create("file:///");
   private Path workingDir;
+  private long defaultBlockSize;
   // Temporary workaround for HADOOP-9652.
   private static boolean useDeprecatedFileStatus = true;
 
@@ -102,17 +119,36 @@ public class RawLocalFileSystem extends FileSystem {
   public void initialize(URI uri, Configuration conf) throws IOException {
     super.initialize(uri, conf);
     setConf(conf);
+    defaultBlockSize = getDefaultBlockSize(new Path(uri));
   }
 
   /*******************************************************
    * For open()'s FSInputStream.
    *******************************************************/
-  class LocalFSFileInputStream extends FSInputStream implements HasFileDescriptor {
+  class LocalFSFileInputStream extends FSInputStream implements
+      HasFileDescriptor, IOStatisticsSource, StreamCapabilities {
     private FileInputStream fis;
     private long position;
 
+    /**
+     * Minimal set of counters.
+     */
+    private final IOStatisticsStore ioStatistics = iostatisticsStore()
+        .withCounters(
+            STREAM_READ_BYTES,
+            STREAM_READ_EXCEPTIONS,
+            STREAM_READ_SEEK_OPERATIONS,
+            STREAM_READ_SKIP_OPERATIONS,
+            STREAM_READ_SKIP_BYTES)
+        .build();
+
+    /** Reference to the bytes read counter for slightly faster counting. */
+    private final AtomicLong bytesRead;
+
     public LocalFSFileInputStream(Path f) throws IOException {
       fis = new FileInputStream(pathToFile(f));
+      bytesRead = ioStatistics.getCounterReference(
+          STREAM_READ_BYTES);
     }
 
     @Override
@@ -152,9 +188,11 @@ public class RawLocalFileSystem extends FileSystem {
         if (value >= 0) {
           this.position++;
           statistics.incrementBytesRead(1);
+          bytesRead.addAndGet(1);
         }
         return value;
       } catch (IOException e) {                 // unexpected exception
+        ioStatistics.incrementCounter(STREAM_READ_EXCEPTIONS);
         throw new FSError(e);                   // assume native fs error
       }
     }
@@ -168,9 +206,11 @@ public class RawLocalFileSystem extends FileSystem {
         if (value > 0) {
           this.position += value;
           statistics.incrementBytesRead(value);
+          bytesRead.addAndGet(value);
         }
         return value;
       } catch (IOException e) {                 // unexpected exception
+        ioStatistics.incrementCounter(STREAM_READ_EXCEPTIONS);
         throw new FSError(e);                   // assume native fs error
       }
     }
@@ -189,18 +229,22 @@ public class RawLocalFileSystem extends FileSystem {
         int value = fis.getChannel().read(bb, position);
         if (value > 0) {
           statistics.incrementBytesRead(value);
+          ioStatistics.incrementCounter(STREAM_READ_BYTES, value);
         }
         return value;
       } catch (IOException e) {
+        ioStatistics.incrementCounter(STREAM_READ_EXCEPTIONS);
         throw new FSError(e);
       }
     }
 
     @Override
     public long skip(long n) throws IOException {
+      ioStatistics.incrementCounter(STREAM_READ_SKIP_OPERATIONS);
       long value = fis.skip(n);
       if (value > 0) {
         this.position += value;
+        ioStatistics.incrementCounter(STREAM_READ_SKIP_BYTES, value);
       }
       return value;
     }
@@ -208,6 +252,23 @@ public class RawLocalFileSystem extends FileSystem {
     @Override
     public FileDescriptor getFileDescriptor() throws IOException {
       return fis.getFD();
+    }
+
+    @Override
+    public boolean hasCapability(String capability) {
+      // a bit inefficient, but intended to make it easier to add
+      // new capabilities.
+      switch (capability.toLowerCase(Locale.ENGLISH)) {
+        case StreamCapabilities.IOSTATISTICS:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    @Override
+    public IOStatistics getIOStatistics() {
+      return ioStatistics;
     }
   }
 
@@ -233,11 +294,21 @@ public class RawLocalFileSystem extends FileSystem {
   /*********************************************************
    * For create()'s FSOutputStream.
    *********************************************************/
-  class LocalFSFileOutputStream extends OutputStream {
+  final class LocalFSFileOutputStream extends OutputStream implements
+      IOStatisticsSource, StreamCapabilities, Syncable {
     private FileOutputStream fos;
 
+    /**
+     * Minimal set of counters.
+     */
+    private final IOStatisticsStore ioStatistics = iostatisticsStore()
+        .withCounters(
+            STREAM_WRITE_BYTES,
+            STREAM_WRITE_EXCEPTIONS)
+        .build();
+
     private LocalFSFileOutputStream(Path f, boolean append,
-                                    FsPermission permission) throws IOException {
+        FsPermission permission) throws IOException {
       File file = pathToFile(f);
       if (!append && permission == null) {
         permission = FsPermission.getFileDefault();
@@ -275,7 +346,9 @@ public class RawLocalFileSystem extends FileSystem {
     public void write(byte[] b, int off, int len) throws IOException {
       try {
         fos.write(b, off, len);
+        ioStatistics.incrementCounter(STREAM_WRITE_BYTES, len);
       } catch (IOException e) {                // unexpected exception
+        ioStatistics.incrementCounter(STREAM_WRITE_EXCEPTIONS);
         throw new FSError(e);                  // assume native fs error
       }
     }
@@ -284,15 +357,49 @@ public class RawLocalFileSystem extends FileSystem {
     public void write(int b) throws IOException {
       try {
         fos.write(b);
+        ioStatistics.incrementCounter(STREAM_WRITE_BYTES);
       } catch (IOException e) {              // unexpected exception
+        ioStatistics.incrementCounter(STREAM_WRITE_EXCEPTIONS);
         throw new FSError(e);                // assume native fs error
       }
+    }
+
+    @Override
+    public void hflush() throws IOException {
+      flush();
+    }
+
+    /**
+     * HSync calls sync on fhe file descriptor after a local flush() call.
+     * @throws IOException failure
+     */
+    @Override
+    public void hsync() throws IOException {
+      flush();
+      fos.getFD().sync();
+    }
+
+    @Override
+    public boolean hasCapability(String capability) {
+      // a bit inefficient, but intended to make it easier to add
+      // new capabilities.
+      switch (capability.toLowerCase(Locale.ENGLISH)) {
+        case StreamCapabilities.IOSTATISTICS:
+          return true;
+        default:
+          return StoreImplementationUtils.isProbeForSyncable(capability);
+      }
+    }
+
+    @Override
+    public IOStatistics getIOStatistics() {
+      return ioStatistics;
     }
   }
 
   @Override
   public FSDataOutputStream append(Path f, int bufferSize,
-                                   Progressable progress) throws IOException {
+      Progressable progress) throws IOException {
     FileStatus status = getFileStatus(f);
     if (status.isDirectory()) {
       throw new IOException("Cannot append to a diretory (=" + f + " )");
@@ -304,15 +411,15 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream create(Path f, boolean overwrite, int bufferSize,
-                                   short replication, long blockSize, Progressable progress)
+      short replication, long blockSize, Progressable progress)
       throws IOException {
     return create(f, overwrite, true, bufferSize, replication, blockSize,
         progress, null);
   }
 
   private FSDataOutputStream create(Path f, boolean overwrite,
-                                    boolean createParent, int bufferSize, short replication, long blockSize,
-                                    Progressable progress, FsPermission permission) throws IOException {
+      boolean createParent, int bufferSize, short replication, long blockSize,
+      Progressable progress, FsPermission permission) throws IOException {
     if (exists(f) && !overwrite) {
       throw new FileAlreadyExistsException("File already exists: " + f);
     }
@@ -320,8 +427,8 @@ public class RawLocalFileSystem extends FileSystem {
     if (parent != null && !mkdirs(parent)) {
       throw new IOException("Mkdirs failed to create " + parent.toString());
     }
-    return new FSDataOutputStream(new BufferedOutputStream(
-        createOutputStreamWithMode(f, false, permission), bufferSize),
+    return new FSDataOutputStream(new BufferedIOStatisticsOutputStream(
+        createOutputStreamWithMode(f, false, permission), bufferSize, true),
         statistics);
   }
 
@@ -331,26 +438,26 @@ public class RawLocalFileSystem extends FileSystem {
   }
 
   protected OutputStream createOutputStreamWithMode(Path f, boolean append,
-                                                    FsPermission permission) throws IOException {
+      FsPermission permission) throws IOException {
     return new LocalFSFileOutputStream(f, append, permission);
   }
 
   @Override
   public FSDataOutputStream createNonRecursive(Path f, FsPermission permission,
-                                               EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize,
-                                               Progressable progress) throws IOException {
+      EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
     if (exists(f) && !flags.contains(CreateFlag.OVERWRITE)) {
       throw new FileAlreadyExistsException("File already exists: " + f);
     }
-    return new FSDataOutputStream(new BufferedOutputStream(
-        createOutputStreamWithMode(f, false, permission), bufferSize),
+    return new FSDataOutputStream(new BufferedIOStatisticsOutputStream(
+        createOutputStreamWithMode(f, false, permission), bufferSize, true),
         statistics);
   }
 
   @Override
   public FSDataOutputStream create(Path f, FsPermission permission,
-                                   boolean overwrite, int bufferSize, short replication, long blockSize,
-                                   Progressable progress) throws IOException {
+      boolean overwrite, int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
 
     FSDataOutputStream out = create(f, overwrite, true, bufferSize, replication,
         blockSize, progress, permission);
@@ -359,9 +466,9 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream createNonRecursive(Path f, FsPermission permission,
-                                               boolean overwrite,
-                                               int bufferSize, short replication, long blockSize,
-                                               Progressable progress) throws IOException {
+      boolean overwrite,
+      int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
     FSDataOutputStream out = create(f, overwrite, false, bufferSize, replication,
         blockSize, progress, permission);
     return out;
@@ -403,7 +510,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @VisibleForTesting
   public final boolean handleEmptyDstDirectoryOnWindows(Path src, File srcFile,
-                                                        Path dst, File dstFile) throws IOException {
+      Path dst, File dstFile) throws IOException {
 
     // Enforce POSIX rename behavior that a source directory replaces an
     // existing destination if the destination is an empty directory. On most
@@ -520,7 +627,12 @@ public class RawLocalFileSystem extends FileSystem {
     }
     return new FileStatus[] {
         new DeprecatedRawLocalFileStatus(localf,
-            getDefaultBlockSize(f), this) };
+            defaultBlockSize, this) };
+  }
+
+  @Override
+  public boolean exists(Path f) throws IOException {
+    return pathToFile(f).exists();
   }
 
   protected boolean mkOneDir(File p2f) throws IOException {
@@ -665,7 +777,7 @@ public class RawLocalFileSystem extends FileSystem {
     File path = pathToFile(f);
     if (path.exists()) {
       return new DeprecatedRawLocalFileStatus(pathToFile(f),
-          getDefaultBlockSize(f), this);
+          defaultBlockSize, this);
     } else {
       throw new FileNotFoundException("File " + f + " does not exist");
     }
@@ -878,8 +990,9 @@ public class RawLocalFileSystem extends FileSystem {
    * @param opts Constraints that determine the validity of the
    *            {@link PathHandle} reference.
    */
+  @Override
   protected PathHandle createPathHandle(FileStatus stat,
-                                        Options.HandleOpt... opts) {
+      Options.HandleOpt... opts) {
     if (stat.isDirectory() || stat.isSymlink()) {
       throw new IllegalArgumentException("PathHandle only available for files");
     }
@@ -964,7 +1077,7 @@ public class RawLocalFileSystem extends FileSystem {
    * @throws IOException Exception on getFileLinkStatusInternal
    */
   private FileStatus getFileLinkStatusInternal(final Path f,
-                                               boolean dereference) throws IOException {
+      boolean dereference) throws IOException {
     if (!useDeprecatedFileStatus) {
       return getNativeFileLinkStatus(f, dereference);
     } else if (dereference) {
@@ -1031,10 +1144,11 @@ public class RawLocalFileSystem extends FileSystem {
    * @throws IOException Exception on getNativeFileLinkStatus
    */
   private FileStatus getNativeFileLinkStatus(final Path f,
-                                             boolean dereference) throws IOException {
+      boolean dereference) throws IOException {
     checkPath(f);
-    Stat stat = new Stat(f, getDefaultBlockSize(f), dereference, this);
-    return stat.getFileStatus();
+    Stat stat = new Stat(f, defaultBlockSize, dereference, this);
+    FileStatus status = stat.getFileStatus();
+    return status;
   }
 
   @Override
@@ -1042,5 +1156,22 @@ public class RawLocalFileSystem extends FileSystem {
     FileStatus fi = getFileLinkStatusInternal(f, false);
     // return an unqualified symlink target
     return fi.getSymlink();
+  }
+
+  @Override
+  public boolean hasPathCapability(final Path path, final String capability)
+      throws IOException {
+    switch (validatePathCapabilityArgs(makeQualified(path), capability)) {
+      case CommonPathCapabilities.FS_APPEND:
+      case CommonPathCapabilities.FS_CONCAT:
+      case CommonPathCapabilities.FS_PATHHANDLES:
+      case CommonPathCapabilities.FS_PERMISSIONS:
+      case CommonPathCapabilities.FS_TRUNCATE:
+        return true;
+      case CommonPathCapabilities.FS_SYMLINKS:
+        return FileSystem.areSymlinksEnabled();
+      default:
+        return super.hasPathCapability(path, capability);
+    }
   }
 }

@@ -31,25 +31,26 @@ import org.w3c.dom.Node;
 
 public class ChooseOneWordQueryBuilder extends SolrSpanQueryBuilder {
 
-  public ChooseOneWordQueryBuilder(String defaultField, Analyzer analyzer, SolrQueryRequest req,
-      SpanQueryBuilder spanFactory) {
+  public ChooseOneWordQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, SpanQueryBuilder spanFactory) {
     super(defaultField, analyzer, req, spanFactory);
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return implGetQuery(e, false);
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
-    return (SpanQuery)implGetQuery(e, true);
+    return (SpanQuery) implGetQuery(e, true);
   }
 
   public Query implGetQuery(Element e, boolean span) throws ParserException {
     Term term = null;
     final String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     for (Node node = e.getFirstChild(); node != null; node = node.getNextSibling()) {
-      if (node.getNodeType() == Node.ELEMENT_NODE &&
-          node.getNodeName().equals("Word")) {
+      if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals("Word")) {
         final String word = DOMUtils.getNonBlankTextOrFail((Element) node);
         final Term t = new Term(fieldName, word);
         if (term == null || term.text().length() < t.text().length()) {

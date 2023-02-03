@@ -22,25 +22,31 @@ import org.apache.solr.common.util.NamedList;
 public class TestRTimerTree extends SolrTestCase {
 
   private static class MockTimerImpl implements RTimer.TimerImpl {
-    static private long systemTime;
-    static public void incrementSystemTime(long ms) {
+    private static long systemTime;
+
+    public static void incrementSystemTime(long ms) {
       systemTime += ms;
     }
 
     private long start;
+
+    @Override
     public void start() {
       start = systemTime;
     }
+
+    @Override
     public double elapsed() {
       return systemTime - start;
     }
   }
 
-  private class MockRTimerTree extends RTimerTree {
+  private static class MockRTimerTree extends RTimerTree {
     @Override
     protected TimerImpl newTimerImpl() {
       return new MockTimerImpl();
     }
+
     @Override
     protected RTimerTree newTimer() {
       return new MockRTimerTree();

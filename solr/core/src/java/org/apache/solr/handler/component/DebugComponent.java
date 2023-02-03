@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.FQ;
+import static org.apache.solr.common.params.CommonParams.JSON;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -24,9 +27,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -39,81 +42,79 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
-
-import static org.apache.solr.common.params.CommonParams.FQ;
-import static org.apache.solr.common.params.CommonParams.JSON;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Adds debugging information to a request.
- * 
  *
  * @since solr 1.3
  */
-public class DebugComponent extends SearchComponent
-{
+public class DebugComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "debug";
-  
+
   /**
-   * Map containing all the possible stages as key and
-   * the corresponding readable purpose as value
+   * Map containing all the possible stages as key and the corresponding readable purpose as value
    */
   private static final Map<Integer, String> stages;
 
   static {
-      Map<Integer, String> map = new TreeMap<>();
-      map.put(ResponseBuilder.STAGE_START, "START");
-      map.put(ResponseBuilder.STAGE_PARSE_QUERY, "PARSE_QUERY");
-      map.put(ResponseBuilder.STAGE_TOP_GROUPS, "TOP_GROUPS");
-      map.put(ResponseBuilder.STAGE_EXECUTE_QUERY, "EXECUTE_QUERY");
-      map.put(ResponseBuilder.STAGE_GET_FIELDS, "GET_FIELDS");
-      map.put(ResponseBuilder.STAGE_DONE, "DONE");
-      stages = Collections.unmodifiableMap(map);
+    Map<Integer, String> map = new TreeMap<>();
+    map.put(ResponseBuilder.STAGE_START, "START");
+    map.put(ResponseBuilder.STAGE_PARSE_QUERY, "PARSE_QUERY");
+    map.put(ResponseBuilder.STAGE_TOP_GROUPS, "TOP_GROUPS");
+    map.put(ResponseBuilder.STAGE_EXECUTE_QUERY, "EXECUTE_QUERY");
+    map.put(ResponseBuilder.STAGE_GET_FIELDS, "GET_FIELDS");
+    map.put(ResponseBuilder.STAGE_DONE, "DONE");
+    stages = Collections.unmodifiableMap(map);
   }
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException
-  {
-    if(rb.isDebugTrack() && rb.isDistrib) {
+  public void prepare(ResponseBuilder rb) throws IOException {
+    if (rb.isDebugTrack() && rb.isDistrib) {
       rb.setNeedDocList(true);
       doDebugTrack(rb);
     }
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException
-  {
-    if( rb.isDebug() ) {
+  public void process(ResponseBuilder rb) throws IOException {
+    if (rb.isDebug()) {
       SolrQueryRequest req = rb.req;
       StatsCache statsCache = req.getSearcher().getStatsCache();
       req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
       DocList results = null;
-      //some internal grouping requests won't have results value set
-      if(rb.getResults() != null) {
+      // some internal grouping requests won't have results value set
+      if (rb.getResults() != null) {
         results = rb.getResults().docList;
       }
 
-      NamedList<Object> stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
-          rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults());
-      
+      NamedList<Object> stdinfo =
+          SolrPluginUtils.doStandardDebug(
+              rb.req,
+              rb.getQueryString(),
+              rb.wrap(rb.getQuery()),
+              results,
+              rb.isDebugQuery(),
+              rb.isDebugResults());
+
       NamedList<Object> info = rb.getDebugInfo();
-      if( info == null ) {
-        rb.setDebugInfo( stdinfo );
+      if (info == null) {
+        rb.setDebugInfo(stdinfo);
         info = stdinfo;
-      }
-      else {
-        info.addAll( stdinfo );
+      } else {
+        info.addAll(stdinfo);
       }
 
-      FacetDebugInfo fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo"));
+      FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
       if (fdebug != null) {
         info.add("facet-trace", fdebug.getFacetDebugInfo());
       }
 
-      fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo-nonJson"));
+      fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
       if (fdebug != null) {
         info.add("facet-debug", fdebug.getFacetDebugInfo());
       }
-      
+
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
       }
@@ -121,32 +122,32 @@ public class DebugComponent extends SearchComponent
       if (rb.isDebugQuery() && rb.getQparser() != null) {
         rb.getQparser().addDebugInfo(rb.getDebugInfo());
       }
-      
-      if (null != rb.getDebugInfo() ) {
-        if (rb.isDebugQuery() && null != rb.getFilters() ) {
-          info.add("filter_queries",rb.req.getParams().getParams(FQ));
+
+      if (null != rb.getDebugInfo()) {
+        if (rb.isDebugQuery() && null != rb.getFilters()) {
+          info.add("filter_queries", rb.req.getParams().getParams(FQ));
           List<String> fqs = new ArrayList<>(rb.getFilters().size());
           for (Query fq : rb.getFilters()) {
             fqs.add(QueryParsing.toString(fq, rb.req.getSchema()));
           }
-          info.add("parsed_filter_queries",fqs);
+          info.add("parsed_filter_queries", fqs);
         }
-        
+
         // Add this directly here?
-        rb.rsp.add("debug", rb.getDebugInfo() );
+        rb.rsp.add("debug", rb.getDebugInfo());
       }
     }
   }
 
   private void doDebugTrack(ResponseBuilder rb) {
     final String rid = rb.req.getParams().get(CommonParams.REQUEST_ID);
-    rb.addDebug(rid, "track", CommonParams.REQUEST_ID);//to see it in the response
+    rb.addDebug(rid, "track", CommonParams.REQUEST_ID); // to see it in the response
   }
 
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
-    
+
     // Turn on debug to get explain only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
@@ -158,10 +159,10 @@ public class DebugComponent extends SearchComponent
       if (rb.isDebugAll()) {
         sreq.params.set(CommonParams.DEBUG_QUERY, "true");
       } else {
-        if (rb.isDebugQuery()){
+        if (rb.isDebugQuery()) {
           sreq.params.add(CommonParams.DEBUG, CommonParams.QUERY);
         }
-        if (rb.isDebugResults()){
+        if (rb.isDebugResults()) {
           sreq.params.add(CommonParams.DEBUG, CommonParams.RESULTS);
         }
       }
@@ -171,11 +172,12 @@ public class DebugComponent extends SearchComponent
     }
     if (rb.isDebugTimings()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TIMING);
-    } 
+    }
     if (rb.isDebugTrack()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TRACK);
       sreq.params.set(CommonParams.REQUEST_ID, rb.req.getParams().get(CommonParams.REQUEST_ID));
-      sreq.params.set(CommonParams.REQUEST_PURPOSE, SolrPluginUtils.getRequestPurpose(sreq.purpose));
+      sreq.params.set(
+          CommonParams.REQUEST_PURPOSE, SolrPluginUtils.getRequestPurpose(sreq.purpose));
     }
   }
 
@@ -183,18 +185,20 @@ public class DebugComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (rb.isDebugTrack() && rb.isDistrib && !rb.finished.isEmpty()) {
       @SuppressWarnings("unchecked")
-      NamedList<Object> stageList = (NamedList<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
-      if(stageList == null) {
+      NamedList<Object> stageList =
+          (NamedList<Object>)
+              ((NamedList<Object>) rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
+      if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
         rb.addDebug(stageList, "track", stages.get(rb.stage));
       }
-      for(ShardResponse response: sreq.responses) {
+      for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
       }
     }
   }
 
-  private final static Set<String> EXCLUDE_SET = Set.of("explain");
+  private static final Set<String> EXCLUDE_SET = Set.of("explain");
 
   @Override
   @SuppressWarnings({"unchecked"})
@@ -203,7 +207,9 @@ public class DebugComponent extends SearchComponent
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 
-      Map.Entry<String, Object>[]  arr = (Map.Entry<String, Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
+      Map.Entry<String, Object>[] arr =
+          (Map.Entry<String, Object>[])
+              Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
       // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
       boolean hasGetDebugResponses = false;
 
@@ -214,13 +220,15 @@ public class DebugComponent extends SearchComponent
             // this should only happen when using shards.tolerant=true
             continue;
           }
-          NamedList<Object> sdebug = (NamedList<Object>)srsp.getSolrResponse().getResponse().get("debug");
+          NamedList<Object> sdebug =
+              (NamedList<Object>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "debug", true);
 
-          info = (NamedList<Object>)merge(sdebug, info, EXCLUDE_SET);
+          info = (NamedList<Object>) merge(sdebug, info, EXCLUDE_SET);
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
             hasGetDebugResponses = true;
-            if (rb.isDebugResults()) {
-              NamedList<Object> sexplain = (NamedList<Object>)sdebug.get("explain");
+            if (rb.isDebugResults() && sdebug != null) {
+              NamedList<Object> sexplain = (NamedList<Object>) sdebug.get("explain");
               SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(sexplain, rb.resultIds, arr);
             }
           }
@@ -228,7 +236,7 @@ public class DebugComponent extends SearchComponent
       }
 
       if (rb.isDebugResults()) {
-         explain = SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
+        explain = SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
       }
 
       if (!hasGetDebugResponses) {
@@ -237,14 +245,14 @@ public class DebugComponent extends SearchComponent
         }
         // No responses were received from shards. Show local query info.
         SolrPluginUtils.doStandardQueryDebug(
-                rb.req, rb.getQueryString(),  rb.wrap(rb.getQuery()), rb.isDebugQuery(), info);
+            rb.req, rb.getQueryString(), rb.wrap(rb.getQuery()), rb.isDebugQuery(), info);
         if (rb.isDebugQuery() && rb.getQparser() != null) {
           rb.getQparser().addDebugInfo(info);
         }
       }
       if (rb.isDebugResults()) {
-        int idx = info.indexOf("explain",0);
-        if (idx>=0) {
+        int idx = info.indexOf("explain", 0);
+        if (idx >= 0) {
           info.setVal(idx, explain);
         } else {
           info.add("explain", explain);
@@ -252,11 +260,9 @@ public class DebugComponent extends SearchComponent
       }
 
       rb.setDebugInfo(info);
-      rb.rsp.add("debug", rb.getDebugInfo() );
+      rb.rsp.add("debug", rb.getDebugInfo());
     }
-    
   }
-
 
   private NamedList<String> getTrackResponse(ShardResponse shardResponse) {
     NamedList<String> namedList = new SimpleOrderedMap<>();
@@ -265,14 +271,16 @@ public class DebugComponent extends SearchComponent
       return namedList;
     }
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
-    NamedList<?> responseHeader = (NamedList<?>)responseNL.get("responseHeader");
-    if(responseHeader != null) {
+    NamedList<?> responseHeader = (NamedList<?>) responseNL.get("responseHeader");
+    if (responseHeader != null) {
       namedList.add("QTime", responseHeader.get("QTime").toString());
     }
     namedList.add("ElapsedTime", String.valueOf(shardResponse.getSolrResponse().getElapsedTime()));
-    namedList.add("RequestPurpose", shardResponse.getShardRequest().params.get(CommonParams.REQUEST_PURPOSE));
-    SolrDocumentList docList = (SolrDocumentList)shardResponse.getSolrResponse().getResponse().get("response");
-    if(docList != null) {
+    namedList.add(
+        "RequestPurpose", shardResponse.getShardRequest().params.get(CommonParams.REQUEST_PURPOSE));
+    SolrDocumentList docList =
+        (SolrDocumentList) shardResponse.getSolrResponse().getResponse().get("response");
+    if (docList != null) {
       namedList.add("NumFound", String.valueOf(docList.getNumFound()));
     }
     namedList.add("Response", String.valueOf(responseNL));
@@ -296,7 +304,7 @@ public class DebugComponent extends SearchComponent
           dest = new LinkedHashSet<>((Collection<?>) dest);
         }
         if (source instanceof Collection) {
-          ((Collection<Object>) dest).addAll((Collection<?>)source);
+          ((Collection<Object>) dest).addAll((Collection<?>) source);
         } else {
           ((Collection<Object>) dest).add(source);
         }
@@ -304,9 +312,9 @@ public class DebugComponent extends SearchComponent
       } else if (source instanceof Number) {
         if (dest instanceof Number) {
           if (source instanceof Double || dest instanceof Double) {
-            return ((Number)source).doubleValue() + ((Number)dest).doubleValue();
+            return ((Number) source).doubleValue() + ((Number) dest).doubleValue();
           }
-          return ((Number)source).longValue() + ((Number)dest).longValue();
+          return ((Number) source).longValue() + ((Number) dest).longValue();
         }
         // fall through
       } else if (source instanceof String) {
@@ -317,13 +325,12 @@ public class DebugComponent extends SearchComponent
       }
     }
 
-
     if (source instanceof NamedList && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      NamedList<?> sl = (NamedList<?>)source;
+      NamedList<?> sl = (NamedList<?>) source;
       @SuppressWarnings("unchecked")
-      NamedList<Object> dl = (NamedList<Object>)dest;
-      for (int i=0; i<sl.size(); i++) {
+      NamedList<Object> dl = (NamedList<Object>) dest;
+      for (int i = 0; i < sl.size(); i++) {
         String skey = sl.getName(i);
         if (exclude.contains(skey)) continue;
         Object sval = sl.getVal(i);
@@ -332,7 +339,7 @@ public class DebugComponent extends SearchComponent
         // optimize case where elements are in same position
         if (i < dl.size()) {
           String dkey = dl.getName(i);
-          if (skey == dkey || (skey!=null && skey.equals(dkey))) {
+          if (Objects.equals(skey, dkey)) {
             didx = i;
           }
         }
@@ -361,8 +368,6 @@ public class DebugComponent extends SearchComponent
     return t;
   }
 
-
-  
   /////////////////////////////////////////////
   ///  SolrInfoBean
   ////////////////////////////////////////////

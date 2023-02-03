@@ -23,7 +23,6 @@ import org.junit.Test;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
 
-
   @BeforeClass
   public static void before() throws Exception {
     setuptest(true);
@@ -48,7 +47,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide one or two models in the request"));
+    assertTrue(res.contains("Must provide one or two models in the request"));
   }
 
   @Test
@@ -62,7 +61,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=-1 reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("cannot find model"));
+    assertTrue(res.contains("cannot find model"));
   }
 
   @Test
@@ -76,7 +75,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=\"\" reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("the model 0 is empty"));
+    assertTrue(res.contains("the model 0 is empty"));
   }
 
   @Test
@@ -90,7 +89,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=-1}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must rerank at least 1 document"));
+    assertTrue(res.contains("Must rerank at least 1 document"));
   }
 
   @Test
@@ -106,24 +105,26 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     // String nonRerankedScore = "0.09271725";
 
     // Normal solr order
-    assertJQ("/query" + query.toQueryString(),
+    assertJQ(
+        "/query" + query.toQueryString(),
         "/response/docs/[0]/id=='9'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='7'",
         "/response/docs/[3]/id=='6'"
-    //  "/response/docs/[3]/score=="+nonRerankedScore
-    );
+        //  "/response/docs/[3]/score=="+nonRerankedScore
+        );
 
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
 
     // Different order for top 3 reranked, but last one is the same top nonreranked doc
-    assertJQ("/query" + query.toQueryString(),
+    assertJQ(
+        "/query" + query.toQueryString(),
         "/response/docs/[0]/id=='7'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='9'",
         "/response/docs/[3]/id=='6'"
-    //  "/response/docs/[3]/score=="+nonRerankedScore
-    );
+        //  "/response/docs/[3]/score=="+nonRerankedScore
+        );
   }
 
   @Test
@@ -136,5 +137,4 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
   }
-
 }

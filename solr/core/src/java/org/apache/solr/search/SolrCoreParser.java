@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
@@ -35,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.ErrorHandler;
 
 /**
- * Assembles a QueryBuilder which uses Query objects from Solr's <code>search</code> module
- * in addition to Query objects supported by the Lucene <code>CoreParser</code>.
+ * Assembles a QueryBuilder which uses Query objects from Solr's <code>search</code> module in
+ * addition to Query objects supported by the Lucene <code>CoreParser</code>.
  */
 public class SolrCoreParser extends CoreParser implements NamedListInitializedPlugin {
 
@@ -62,37 +61,51 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
     Iterator<? extends Map.Entry<String, ?>> it = initArgs.iterator();
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       Map.Entry<String, ?> entry = it.next();
       final String queryName = entry.getKey();
-      final String queryBuilderClassName = (String)entry.getValue();
+      final String queryBuilderClassName = (String) entry.getValue();
 
       try {
-        final SolrSpanQueryBuilder spanQueryBuilder = loader.newInstance(
-            queryBuilderClassName,
-            SolrSpanQueryBuilder.class,
-            null,
-            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class},
-            new Object[] {defaultField, analyzer, req, this});
+        final SolrSpanQueryBuilder spanQueryBuilder =
+            loader.newInstance(
+                queryBuilderClassName,
+                SolrSpanQueryBuilder.class,
+                null,
+                new Class<?>[] {
+                  String.class, Analyzer.class, SolrQueryRequest.class, SpanQueryBuilder.class
+                },
+                new Object[] {defaultField, analyzer, req, this});
 
         this.addSpanQueryBuilder(queryName, spanQueryBuilder);
       } catch (Exception outerException) {
         try {
-        final SolrQueryBuilder queryBuilder = loader.newInstance(
-            queryBuilderClassName,
-            SolrQueryBuilder.class,
-            null,
-            new Class<?>[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
-            new Object[] {defaultField, analyzer, req, this});
+          final SolrQueryBuilder queryBuilder =
+              loader.newInstance(
+                  queryBuilderClassName,
+                  SolrQueryBuilder.class,
+                  null,
+                  new Class<?>[] {
+                    String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class
+                  },
+                  new Object[] {defaultField, analyzer, req, this});
 
-        this.addQueryBuilder(queryName, queryBuilder);
+          this.addQueryBuilder(queryName, queryBuilder);
         } catch (Exception innerException) {
-          log.error("Class {} not found or not suitable: {} {}",
-              queryBuilderClassName, outerException, innerException);
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Cannot find suitable "
-                  + SolrSpanQueryBuilder.class.getCanonicalName() + " or "
-                  + SolrQueryBuilder.class.getCanonicalName() + " class: "
-                  + queryBuilderClassName + " in "
+          log.error(
+              "Class {} not found or not suitable: {} {}",
+              queryBuilderClassName,
+              outerException,
+              innerException);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Cannot find suitable "
+                  + SolrSpanQueryBuilder.class.getCanonicalName()
+                  + " or "
+                  + SolrQueryBuilder.class.getCanonicalName()
+                  + " class: "
+                  + queryBuilderClassName
+                  + " in "
                   + loader);
         }
       }
@@ -103,5 +116,4 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   protected ErrorHandler getErrorHandler() {
     return xmllog;
   }
-
 }

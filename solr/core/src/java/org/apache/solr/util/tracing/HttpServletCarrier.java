@@ -17,68 +17,66 @@
 
 package org.apache.solr.util.tracing;
 
-import javax.servlet.http.HttpServletRequest;
+import io.opentracing.propagation.TextMap;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import javax.servlet.http.HttpServletRequest;
 
-import io.opentracing.propagation.TextMap;
-
-/**
- * A Carrier for extract Span context out of request headers
- */
+/** A Carrier for extract Span context out of request headers */
 public class HttpServletCarrier implements TextMap {
   private Iterator<Map.Entry<String, String>> it;
 
   public HttpServletCarrier(HttpServletRequest request) {
-    this.it = new Iterator<>() {
+    this.it =
+        new Iterator<>() {
 
-      Enumeration<String> headerNameIt = request.getHeaderNames();
-      String headerName = null;
-      Enumeration<String> headerValue = null;
+          Enumeration<String> headerNameIt = request.getHeaderNames();
+          String headerName = null;
+          Enumeration<String> headerValue = null;
 
-      @Override
-      public boolean hasNext() {
-        if (headerValue != null && headerValue.hasMoreElements()) {
-          return true;
-        }
-
-        return headerNameIt.hasMoreElements();
-      }
-
-      @Override
-      public Map.Entry<String, String> next() {
-        if (!hasNext()) {
-          throw new NoSuchElementException();
-        }
-
-        if (headerValue == null || !headerValue.hasMoreElements()) {
-          headerName = headerNameIt.nextElement();
-          headerValue = request.getHeaders(headerName);
-        }
-
-        String key = headerName;
-        String val = headerValue.nextElement();
-
-        return new Map.Entry<>() {
           @Override
-          public String getKey() {
-            return key;
+          public boolean hasNext() {
+            if (headerValue != null && headerValue.hasMoreElements()) {
+              return true;
+            }
+
+            return headerNameIt.hasMoreElements();
           }
 
           @Override
-          public String getValue() {
-            return val;
-          }
+          public Map.Entry<String, String> next() {
+            if (!hasNext()) {
+              throw new NoSuchElementException();
+            }
 
-          @Override
-          public String setValue(String value) {
-            throw new UnsupportedOperationException();
+            if (headerValue == null || !headerValue.hasMoreElements()) {
+              headerName = headerNameIt.nextElement();
+              headerValue = request.getHeaders(headerName);
+            }
+
+            String key = headerName;
+            String val = headerValue.nextElement();
+
+            return new Map.Entry<>() {
+              @Override
+              public String getKey() {
+                return key;
+              }
+
+              @Override
+              public String getValue() {
+                return val;
+              }
+
+              @Override
+              public String setValue(String value) {
+                throw new UnsupportedOperationException();
+              }
+            };
           }
         };
-      }
-    };
   }
 
   @Override
@@ -88,6 +86,7 @@ public class HttpServletCarrier implements TextMap {
 
   @Override
   public void put(String key, String value) {
-    throw new UnsupportedOperationException("HttpServletCarrier should only be used with Tracer.extract()");
+    throw new UnsupportedOperationException(
+        "HttpServletCarrier should only be used with Tracer.extract()");
   }
 }

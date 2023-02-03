@@ -20,11 +20,6 @@
  * to avoid certain issues during tests. The copied classes override the
  * Apache Hadoop dependency versions during tests.
  *
- * HttpServer2 class was copied to avoid Jetty 9.4 dependency issues. Since
- * Solr uses Jetty 9.4, Hadoop integration tests needs to use Jetty 9.4 as
- * well. The HttpServer2 class should be removed when Hadoop is upgraded to
- * 3.3.0 due to HADOOP-16152 upgrading Hadoop to Jetty 9.4.
- *
  * The classes BlockPoolSlice (HDFS-14251), DiskChecker, FileUtil, HardLink,
  * NameNodeResourceChecker, and RawLocalFileSystem were copied to avoid
  * issues with running Hadoop integration tests under the Java security

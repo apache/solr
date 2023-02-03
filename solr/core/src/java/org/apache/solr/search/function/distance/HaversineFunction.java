@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.search.IndexSearcher;
-import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
-
-import java.io.IOException;
-import java.util.Map;
-
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
- * Calculate the Haversine formula (distance) between any two points on a sphere
- * Takes in four value sources: (latA, lonA); (latB, lonB).
- * <p>
- * Assumes the value sources are in radians unless
- * <p>
- * See http://en.wikipedia.org/wiki/Great-circle_distance and
- * http://en.wikipedia.org/wiki/Haversine_formula for the actual formula and
- * also http://www.movable-type.co.uk/scripts/latlong.html
+ * Calculate the Haversine formula (distance) between any two points on a sphere Takes in four value
+ * sources: (latA, lonA); (latB, lonB).
+ *
+ * <p>Assumes the value sources are in radians unless
+ *
+ * <p>See http://en.wikipedia.org/wiki/Great-circle_distance and
+ * http://en.wikipedia.org/wiki/Haversine_formula for the actual formula and also
+ * http://www.movable-type.co.uk/scripts/latlong.html
  */
 public class HaversineFunction extends ValueSource {
 
@@ -49,11 +49,13 @@ public class HaversineFunction extends ValueSource {
     this(p1, p2, radius, false);
   }
 
-  public HaversineFunction(MultiValueSource p1, MultiValueSource p2, double radius, boolean convertToRads){
+  public HaversineFunction(
+      MultiValueSource p1, MultiValueSource p2, double radius, boolean convertToRads) {
     this.p1 = p1;
     this.p2 = p2;
     if (p1.dimension() != 2 || p2.dimension() != 2) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal dimension for value sources");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Illegal dimension for value sources");
     }
     this.radius = radius;
     this.convertToRadians = convertToRads;
@@ -64,7 +66,7 @@ public class HaversineFunction extends ValueSource {
   }
 
   /**
-   * @param doc  The doc to score
+   * @param doc The doc to score
    * @return The haversine distance formula
    */
   protected double distance(int doc, FunctionValues p1DV, FunctionValues p2DV) throws IOException {
@@ -88,12 +90,12 @@ public class HaversineFunction extends ValueSource {
       y2 = p2D[0];
       x2 = p2D[1];
     }
-    return DistanceUtils.distHaversineRAD(y1,x1,y2,x2)*radius;
+    return DistanceUtils.distHaversineRAD(y1, x1, y2, x2) * radius;
   }
 
-
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues vals1 = p1.getValues(context, readerContext);
 
     final FunctionValues vals2 = p2.getValues(context, readerContext);
@@ -102,6 +104,7 @@ public class HaversineFunction extends ValueSource {
       public double doubleVal(int doc) throws IOException {
         return distance(doc, vals1, vals2);
       }
+
       @Override
       public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -117,16 +120,16 @@ public class HaversineFunction extends ValueSource {
   public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     p1.createWeight(context, searcher);
     p2.createWeight(context, searcher);
-
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this.getClass() != o.getClass()) return false;
+    if (!(o instanceof HaversineFunction)) return false;
     HaversineFunction other = (HaversineFunction) o;
-    return this.name().equals(other.name())
-            && p1.equals(other.p1) &&
-            p2.equals(other.p2) && radius == other.radius;
+    return Objects.equals(this.name(), other.name())
+        && Objects.equals(p1, other.p1)
+        && Objects.equals(p2, other.p2)
+        && (radius == other.radius);
   }
 
   @Override

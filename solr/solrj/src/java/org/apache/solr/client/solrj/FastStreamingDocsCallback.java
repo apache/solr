@@ -17,23 +17,24 @@
 
 package org.apache.solr.client.solrj;
 
-
 import org.apache.solr.common.util.DataEntry;
 
 public interface FastStreamingDocsCallback {
-  /** callback for a doclist
+  /**
+   * callback for a doclist
    *
-   * @return the object to be shared with all the {{@link #startDoc(Object)}} calls. return null if nothing needs to be shared
+   * @return the object to be shared with all the {{@link #startDoc(Object)}} calls. return null if
+   *     nothing needs to be shared
    */
   default Object initDocList(Long numFound, Long start, Float maxScore) {
     return null;
   }
 
-
   /**
    * Started a document
    *
-   * @param docListObj This object is the value returned by the {{@link #initDocList(Long, Long, Float)}} method
+   * @param docListObj This object is the value returned by the {{@link #initDocList(Long, Long,
+   *     Float)}} method
    * @return any arbitrary object that should be shared between each field
    */
   Object startDoc(Object docListObj);
@@ -41,7 +42,7 @@ public interface FastStreamingDocsCallback {
   /**
    * FOund a new field
    *
-   * @param field  Read the appropriate value
+   * @param field Read the appropriate value
    * @param docObj The object returned by {{@link #startDoc(Object)}} method
    */
   void field(DataEntry field, Object docObj);
@@ -51,16 +52,16 @@ public interface FastStreamingDocsCallback {
    *
    * @param docObj The object returned by {{@link #startDoc(Object)}} method
    */
-  default void endDoc(Object docObj) { }
+  default void endDoc(Object docObj) {}
 
-  /** A new child doc starts
-   * @param parentDocObj an objec that will be shared across all the  {{@link FastStreamingDocsCallback#field(DataEntry, Object)}}
+  /**
+   * A new child doc starts
+   *
+   * @param parentDocObj an objec that will be shared across all the {{@link
+   *     FastStreamingDocsCallback#field(DataEntry, Object)}}
    * @return any custom object that be shared with the fields in this child doc
    */
   default Object startChildDoc(Object parentDocObj) {
     return null;
   }
-
-
-
 }

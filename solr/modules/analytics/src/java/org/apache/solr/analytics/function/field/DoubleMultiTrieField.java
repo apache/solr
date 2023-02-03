@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -30,6 +29,7 @@ import org.apache.solr.schema.TrieDoubleField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieDoubleField} with DocValues enabled.
+ *
  * @deprecated Trie fields are deprecated as of Solr 7.0
  */
 @Deprecated
@@ -48,22 +48,25 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
+
   @Override
   public void collect(int doc) throws IOException {
     count = 0;
     if (docValues.advanceExact(doc)) {
       int term;
-      while ((term = (int)docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      while ((term = (int) docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term)));
+        values[count++] =
+            NumericUtils.sortableLongToDouble(
+                LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term)));
       }
     }
   }
 
   private void resizeValues() {
-    double[] newValues = new double[values.length*2];
+    double[] newValues = new double[values.length * 2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -76,10 +79,12 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamDoubles(value -> cons.accept(Double.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamDoubles(value -> cons.accept(value));

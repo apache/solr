@@ -250,7 +250,7 @@ This is not required for near real-time search, but will reduce search latency o
 == Compound File Segments
 
 Each Lucene segment is typically comprised of a dozen or so files.
-Lucene can be configured to bundle all of the files for a segment into a single compound file using a file extension of `.cfs`, for "Compound File Segment".
+Solr can be configured to bundle all of the files for a Lucene segment into a single compound file using a file extension of `.cfs`, for "Compound File Segment".
 
 CFS segments may incur a minor performance hit for various reasons, depending on the runtime environment.
 For example, filesystem buffers are typically associated with open file descriptors, which may limit the total cache space available to each index.

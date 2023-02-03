@@ -20,14 +20,14 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.IntValue;
 import org.apache.solr.analytics.value.IntValue.CastingIntValue;
 
 /**
- * A constant {@link IntValue}. Every call to {@link #getInt()} and other methods will return the same constant value.
+ * A constant {@link IntValue}. Every call to {@link #getInt()} and other methods will return the
+ * same constant value.
  */
 public class ConstantIntValue extends ConstantValue implements CastingIntValue {
   private final int value;
@@ -41,31 +41,36 @@ public class ConstantIntValue extends ConstantValue implements CastingIntValue {
     this.exprStr = ConstantValue.createExpressionString(this, valueStr);
   }
 
-
   @Override
   public int getInt() {
     return value;
   }
+
   @Override
   public long getLong() {
     return value;
   }
+
   @Override
   public float getFloat() {
     return value;
   }
+
   @Override
   public double getDouble() {
     return value;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -75,22 +80,27 @@ public class ConstantIntValue extends ConstantValue implements CastingIntValue {
   public void streamInts(IntConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamLongs(LongConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamFloats(FloatConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

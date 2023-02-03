@@ -16,11 +16,12 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -28,7 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -58,8 +58,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -68,39 +68,34 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 /**
- * <p>
  * Solr Request Handler for streaming data.
- * </p>
- * <p>
- * It loads a Solr specific set of streaming expression functions via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
- * </p>
- * <p>
- * To add additional functions, just define them as plugins in solrconfig.xml via
- * {@code
- * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
- * }
- * </p>
+ *
+ * <p>It loads a Solr specific set of streaming expression functions via {@link
+ * org.apache.solr.handler.SolrDefaultStreamFactory}.
+ *
+ * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
+ * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />}
  *
  * @since 5.1.0
  */
-public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+public class StreamHandler extends RequestHandlerBase
+    implements SolrCoreAware, PermissionNameProvider {
 
   private ModelCache modelCache;
-  private ConcurrentMap<String, ConcurrentMap<String,Object>> objectCache;
+  private ConcurrentMap<String, ConcurrentMap<String, Object>> objectCache;
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
+  private Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     String defaultCollection;
@@ -109,16 +104,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
     String cacheKey = this.getClass().getName() + "_" + coreName + "_";
-    this.objectCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "objectCache",
-        ConcurrentHashMap.class, k-> new ConcurrentHashMap<>());
+    this.objectCache =
+        coreContainer
+            .getObjectCache()
+            .computeIfAbsent(
+                cacheKey + "objectCache", ConcurrentHashMap.class, k -> new ConcurrentHashMap<>());
     if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
-      modelCache = coreContainer.getObjectCache().computeIfAbsent(cacheKey + "modelCache",
-          ModelCache.class,
-          k -> new ModelCache(250, defaultZkhost, solrClientCache));
+      modelCache =
+          coreContainer
+              .getObjectCache()
+              .computeIfAbsent(
+                  cacheKey + "modelCache",
+                  ModelCache.class,
+                  k -> new ModelCache(250, defaultZkhost, solrClientCache));
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
@@ -131,10 +133,15 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
         @SuppressWarnings("resource")
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
+        ExpressibleHolder holder =
+            new ExpressibleHolder(
+                pluginInfo,
+                core,
+                SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
         streamFactory.withFunctionName(pluginInfo.name, holder);
       } else {
-        Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
+        Class<? extends Expressible> clazz =
+            core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
         streamFactory.withFunctionName(pluginInfo.name, clazz);
       }
     }
@@ -153,12 +160,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     @Override
-    protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
-      // This is called from super constructor, so be careful that pluginInfo.className is done initializing.
+    protected Object initNewInstance(SolrPackageLoader.SolrPackage.Version newest, SolrCore core) {
+      // This is called from super constructor, so be careful that pluginInfo.className is done
+      // initializing.
       return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -172,37 +181,40 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     TupleStream tupleStream;
 
     try {
-      StreamExpression streamExpression = StreamExpressionParser.parse(params.get(StreamParams.EXPR));
+      StreamExpression streamExpression =
+          StreamExpressionParser.parse(params.get(StreamParams.EXPR));
       if (this.streamFactory.isEvaluator(streamExpression)) {
         StreamExpression tupleExpression = new StreamExpression(StreamParams.TUPLE);
-        tupleExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, streamExpression));
+        tupleExpression.addParameter(
+            new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, streamExpression));
         tupleStream = this.streamFactory.constructStream(tupleExpression);
       } else {
         tupleStream = this.streamFactory.constructStream(streamExpression);
       }
     } catch (Exception e) {
-      // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
-      // rules.
+      // Catch exceptions that occur while the stream is being created. This will include streaming
+      // expression parse rules.
       SolrException.log(log, e);
       rsp.add(StreamParams.RESULT_SET, new DummyErrorStream(e));
 
       return;
     }
 
-
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
     @SuppressWarnings("resource")
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
     if (zkController != null) {
-      requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator(
-          zkController.getZkStateReader().getClusterProperties()
-              .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
-              .toString(),
-          zkController.getNodeName(),
-          zkController.getBaseUrl(),
-          zkController.getSysPropsCacher()
-      );
+      requestReplicaListTransformerGenerator =
+          new RequestReplicaListTransformerGenerator(
+              zkController
+                  .getZkStateReader()
+                  .getClusterProperties()
+                  .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+                  .toString(),
+              zkController.getNodeName(),
+              zkController.getBaseUrl(),
+              zkController.getSysPropsCacher());
     } else {
       requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
     }
@@ -237,7 +249,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       daemonStream.setDaemons(daemons);
       daemonStream.open(); // This will start the daemonStream
       daemons.put(daemonStream.getId(), daemonStream);
-      rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + daemonStream.getId() + " started on " + coreName));
+      rsp.add(
+          StreamParams.RESULT_SET,
+          new DaemonResponseStream("Daemon:" + daemonStream.getId() + " started on " + coreName));
     } else {
       rsp.add(StreamParams.RESULT_SET, new TimerStream(new ExceptionStream(tupleStream)));
     }
@@ -246,7 +260,13 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
     String action = params.get("action").toLowerCase(Locale.ROOT).trim();
     if ("plugins".equals(action)) {
-      rsp.add("plugins", (MapWriter) ew -> streamFactory.getFunctionNames().forEach((s, classSupplier) -> ew.putNoEx(s, classSupplier.get().getName())));
+      rsp.add(
+          "plugins",
+          (MapWriter)
+              ew ->
+                  streamFactory
+                      .getFunctionNames()
+                      .forEach((s, classSupplier) -> ew.putNoEx(s, classSupplier.get().getName())));
       return;
     }
 
@@ -259,34 +279,47 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     String id = params.get(ID);
     DaemonStream d = daemons.get(id);
     if (d == null) {
-      rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " not found on " + coreName));
+      rsp.add(
+          StreamParams.RESULT_SET,
+          new DaemonResponseStream("Daemon:" + id + " not found on " + coreName));
       return;
     }
 
     switch (action) {
       case "stop":
         d.close();
-        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " stopped on " + coreName));
+        rsp.add(
+            StreamParams.RESULT_SET,
+            new DaemonResponseStream("Daemon:" + id + " stopped on " + coreName));
         break;
 
       case "start":
         try {
           d.open();
         } catch (IOException e) {
-          rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
+          rsp.add(
+              StreamParams.RESULT_SET,
+              new DaemonResponseStream("Daemon: " + id + " error: " + e.getMessage()));
         }
-        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " started on " + coreName));
+        rsp.add(
+            StreamParams.RESULT_SET,
+            new DaemonResponseStream("Daemon:" + id + " started on " + coreName));
         break;
 
       case "kill":
         daemons.remove(id);
-        d.close(); // we already found it in the daemons list, so we don't need to verify we removed it.
-        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));
+        // we already found it in the daemons list, so we don't need to verify we removed it.
+        d.close();
+        rsp.add(
+            StreamParams.RESULT_SET,
+            new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));
         break;
 
       default:
-        rsp.add(StreamParams.RESULT_SET, new DaemonResponseStream("Daemon:" + id + " action '"
-            + action + "' not recognized on " + coreName));
+        rsp.add(
+            StreamParams.RESULT_SET,
+            new DaemonResponseStream(
+                "Daemon:" + id + " action '" + action + "' not recognized on " + coreName));
         break;
     }
   }
@@ -298,6 +331,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     return adjustedParams;
   }
 
+  @Override
   public String getDescription() {
     return "StreamHandler";
   }
@@ -313,19 +347,21 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       this.e = e;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    public void close() {
-    }
+    @Override
+    public void close() {}
 
-    public void open() {
-    }
+    @Override
+    public void open() {}
 
-    public void setStreamContext(StreamContext context) {
-    }
+    @Override
+    public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -340,6 +376,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       String msg = e.getMessage();
 
@@ -359,19 +396,21 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       this.it = col.iterator();
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    public void close() {
-    }
+    @Override
+    public void close() {}
 
-    public void open() {
-    }
+    @Override
+    public void open() {}
 
-    public void setStreamContext(StreamContext context) {
-    }
+    @Override
+    public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -386,6 +425,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       if (it.hasNext()) {
         return it.next().getInfo();
@@ -403,19 +443,21 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       this.message = message;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    public void close() {
-    }
+    @Override
+    public void close() {}
 
-    public void open() {
-    }
+    @Override
+    public void open() {}
 
-    public void setStreamContext(StreamContext context) {
-    }
+    @Override
+    public void setStreamContext(StreamContext context) {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
@@ -430,6 +472,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() {
       if (sendEOF) {
         return Tuple.EOF();
@@ -449,23 +492,28 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       this.tupleStream = tupleStream;
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return this.tupleStream.getStreamSort();
     }
 
+    @Override
     public void close() throws IOException {
       this.tupleStream.close();
     }
 
+    @Override
     public void open() throws IOException {
       this.begin = System.nanoTime();
       this.tupleStream.open();
     }
 
+    @Override
     public void setStreamContext(StreamContext context) {
       this.tupleStream.setStreamContext(context);
     }
 
+    @Override
     public List<TupleStream> children() {
       return this.tupleStream.children();
     }
@@ -480,6 +528,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
           .withExpression("--non-expressible--");
     }
 
+    @Override
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if (tuple.EOF) {

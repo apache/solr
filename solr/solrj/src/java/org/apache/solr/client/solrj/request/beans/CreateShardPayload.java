@@ -17,40 +17,30 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 
 public class CreateShardPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String shard;
 
-  @JsonProperty
-  public List<String> nodeSet;
+  @JsonProperty public List<String> nodeSet;
 
-  @JsonProperty
-  public Map<String, Object> coreProperties;
+  @JsonProperty public Map<String, Object> coreProperties;
 
-  @JsonProperty
-  public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-  @JsonProperty
-  public String async;
+  @JsonProperty public String async;
 
-  @JsonProperty
-  public Boolean waitForFinalState;
+  @JsonProperty public Boolean waitForFinalState;
 
-  @JsonProperty
-  public Integer replicationFactor;
+  @JsonProperty public Integer replicationFactor;
 
-  @JsonProperty
-  public Integer nrtReplicas;
+  @JsonProperty public Integer nrtReplicas;
 
-  @JsonProperty
-  public Integer tlogReplicas;
+  @JsonProperty public Integer tlogReplicas;
 
-  @JsonProperty
-  public Integer pullReplicas;
+  @JsonProperty public Integer pullReplicas;
 }

@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -26,8 +25,8 @@ import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.ComparisonBoolFunction;
 
 /**
- * Refines {@link ComparisonBoolFunction} to compare based on a 'long' or 'double' depending on if the
- * any of the FunctionValues are {@link LongDocValues}.
+ * Refines {@link ComparisonBoolFunction} to compare based on a 'long' or 'double' depending on if
+ * the any of the FunctionValues are {@link LongDocValues}.
  */
 public class SolrComparisonBoolFunction extends ComparisonBoolFunction {
 

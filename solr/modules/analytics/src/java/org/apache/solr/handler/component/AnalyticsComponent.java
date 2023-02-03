@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
@@ -29,9 +28,7 @@ import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * Computes analytics requests.
- */
+/** Computes analytics requests. */
 public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
 
@@ -51,15 +48,15 @@ public class AnalyticsComponent extends SearchComponent {
       rb.setAnalytics(true);
       rb.setAnalyticsRequestManager(
           AnalyticsRequestParser.parse(
-              analyticsRequest,
-              new ExpressionFactory(rb.req.getSchema()), isDistributed));
+              analyticsRequest, new ExpressionFactory(rb.req.getSchema()), isDistributed));
     }
     // If there is no request in the current format, check for the old olap-style format
-    else if (rb.req.getParams().getBool(OldAnalyticsParams.OLD_ANALYTICS,false)) {
+    else if (rb.req.getParams().getBool(OldAnalyticsParams.OLD_ANALYTICS, false)) {
       rb.setAnalyticsRequestManager(
           AnalyticsRequestParser.parse(
               OldAnalyticsRequestConverter.convert(rb.req.getParams()),
-              new ExpressionFactory(rb.req.getSchema()), isDistributed));
+              new ExpressionFactory(rb.req.getSchema()),
+              isDistributed));
       rb.setOlapAnalytics(true);
       rb.setAnalytics(true);
     }
@@ -73,7 +70,7 @@ public class AnalyticsComponent extends SearchComponent {
         reqManager.shardStream = new AnalyticsShardRequestManager(rb.req.getParams(), reqManager);
       } else {
         reqManager.sendShards = false;
-        rb.setNeedDocSet( true );
+        rb.setNeedDocSet(true);
       }
     }
   }
@@ -103,12 +100,13 @@ public class AnalyticsComponent extends SearchComponent {
       return ResponseBuilder.STAGE_DONE;
     }
     AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
-    if (!reqManager.sendShards){
+    if (!reqManager.sendShards) {
       return ResponseBuilder.STAGE_DONE;
     }
 
     // Send out a request to each shard and merge the responses into our AnalyticsRequestManager
-    reqManager.shardStream.sendRequests(rb.req.getCore().getCoreDescriptor().getCollectionName(),
+    reqManager.shardStream.sendRequests(
+        rb.req.getCore().getCoreDescriptor().getCollectionName(),
         rb.req.getCoreContainer().getZkController().getZkServerAddress());
 
     reqManager.sendShards = false;
@@ -145,7 +143,10 @@ public class AnalyticsComponent extends SearchComponent {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
       }
       if (reqManager.isPartialResults()) {
-        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,true);
+        rb.rsp
+            .getResponseHeader()
+            .asShallowMap()
+            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, true);
       }
     }
 
@@ -163,7 +164,7 @@ public class AnalyticsComponent extends SearchComponent {
   }
 
   private AnalyticsRequestManager getAnalyticsRequestManager(ResponseBuilder rb) {
-    return (AnalyticsRequestManager)rb.getAnalyticsRequestManager();
+    return (AnalyticsRequestManager) rb.getAnalyticsRequestManager();
   }
 
   /*@Override

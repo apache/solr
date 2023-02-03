@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Test framework classes for collection APIs
- */
+/** Test framework classes for collection APIs */
 package org.apache.solr.cloud.api.collections;

@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Grouping related {@link org.apache.lucene.search.Collector}s
- */
-package org.apache.solr.search.grouping.collector;
 
+/** Grouping related {@link org.apache.lucene.search.Collector}s */
+package org.apache.solr.search.grouping.collector;

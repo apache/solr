@@ -23,21 +23,22 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link LMJelinekMercerSimilarity}
- * <p>
- * Parameters:
+ *
+ * <p>Parameters:
+ *
  * <ul>
- *     <li>parameter lambda (float): smoothing parameter &lambda;. The default
- *         is <code>0.7</code></li>
+ *   <li>parameter lambda (float): smoothing parameter &lambda;. The default is <code>0.7</code>
  * </ul>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LMJelinekMercerSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link
+ *       LMJelinekMercerSimilarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @lucene.experimental
  */
-
 public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private float lambda;

@@ -20,13 +20,13 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValue.CastingDateValue;
 
 /**
- * A constant {@link DateValue}. Every call to {@link #getDate()} and other methods will return the same constant value.
+ * A constant {@link DateValue}. Every call to {@link #getDate()} and other methods will return the
+ * same constant value.
  */
 public class ConstantDateValue extends ConstantValue implements CastingDateValue {
   private final long value;
@@ -42,23 +42,26 @@ public class ConstantDateValue extends ConstantValue implements CastingDateValue
     this.exprStr = ConstantValue.createExpressionString(this, valueStr);
   }
 
-
   @Override
   public long getLong() {
     return value;
   }
+
   @Override
   public Date getDate() {
     return valueDate;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return valueDate;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -68,14 +71,17 @@ public class ConstantDateValue extends ConstantValue implements CastingDateValue
   public void streamLongs(LongConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamDates(Consumer<Date> cons) {
     cons.accept(valueDate);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(valueDate);

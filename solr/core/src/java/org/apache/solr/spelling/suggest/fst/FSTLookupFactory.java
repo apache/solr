@@ -22,42 +22,40 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
 
-/**
- * Factory for {@link FSTCompletionLookup}
- */
+/** Factory for {@link FSTCompletionLookup} */
 public class FSTLookupFactory extends LookupFactory {
-  
-  /**
-   * File name for the automaton.
-   */
+
+  /** File name for the automaton. */
   private static final String FILENAME = "fst.bin";
-  
+
   /**
-   * The number of separate buckets for weights (discretization). The more buckets,
-   * the more fine-grained term weights (priorities) can be assigned. The speed of lookup
-   * will not decrease for prefixes which have highly-weighted completions (because these
-   * are filled-in first), but will decrease significantly for low-weighted terms (but
-   * these should be infrequent, so it is all right).
-   * 
+   * The number of separate buckets for weights (discretization). The more buckets, the more
+   * fine-grained term weights (priorities) can be assigned. The speed of lookup will not decrease
+   * for prefixes which have highly-weighted completions (because these are filled-in first), but
+   * will decrease significantly for low-weighted terms (but these should be infrequent, so it is
+   * all right).
+   *
    * <p>The number of buckets must be within [1, 255] range.
    */
   public static final String WEIGHT_BUCKETS = "weightBuckets";
 
   /**
-   * If <code>true</code>, exact suggestions are returned first, even if they are prefixes
-   * of other strings in the automaton (possibly with larger weights). 
+   * If <code>true</code>, exact suggestions are returned first, even if they are prefixes of other
+   * strings in the automaton (possibly with larger weights).
    */
   public static final String EXACT_MATCH_FIRST = "exactMatchFirst";
 
   @Override
   public Lookup create(NamedList<?> params, SolrCore core) {
-    int buckets = params.get(WEIGHT_BUCKETS) != null
-    ? Integer.parseInt(params.get(WEIGHT_BUCKETS).toString())
-    : 10;
+    int buckets =
+        params.get(WEIGHT_BUCKETS) != null
+            ? Integer.parseInt(params.get(WEIGHT_BUCKETS).toString())
+            : 10;
 
-    boolean exactMatchFirst = params.get(EXACT_MATCH_FIRST) != null
-    ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
-    : true;
+    boolean exactMatchFirst =
+        params.get(EXACT_MATCH_FIRST) != null
+            ? Boolean.valueOf(params.get(EXACT_MATCH_FIRST).toString())
+            : true;
 
     return new FSTCompletionLookup(getTempDir(), "suggester", buckets, exactMatchFirst);
   }

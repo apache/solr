@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -54,17 +53,14 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     h.update("<delete><query>*:*</query></delete>");
 
     // Solr Cloud
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-analytics"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-analytics")).configure();
 
-    CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTIONORALIAS, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTIONORALIAS, cluster.getZkStateReader(), false, true, TIMEOUT);
 
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     cloudReq = new UpdateRequest();
   }
@@ -72,9 +68,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   protected static void cleanIndex() throws Exception {
     h.update("<delete><query>*:*</query></delete>");
 
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
   protected static void addDoc(List<String> fieldsAndValues) {
@@ -97,7 +91,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     Object cloudObj = queryCloudObject(params);
 
     for (String test : tests) {
-      if (test == null || test.length()==0) continue;
+      if (test == null || test.length() == 0) continue;
       // Single-Sharded
       String err = null;
       try {
@@ -105,11 +99,17 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       } catch (Exception e) {
         err = e.getMessage();
       } finally {
-        assertNull("query failed JSON validation. test= Single-Sharded Collection" +
-            "\n error=" + err +
-            "\n expected =" + test +
-            "\n response = " + coreJson +
-            "\n analyticsRequest = " + analyticsRequest, err);
+        assertNull(
+            "query failed JSON validation. test= Single-Sharded Collection"
+                + "\n error="
+                + err
+                + "\n expected ="
+                + test
+                + "\n response = "
+                + coreJson
+                + "\n analyticsRequest = "
+                + analyticsRequest,
+            err);
       }
 
       // Cloud
@@ -119,11 +119,17 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       } catch (Exception e) {
         err = e.getMessage();
       } finally {
-        assertNull("query failed JSON validation. test= Solr Cloud Collection" +
-            "\n error=" + err +
-            "\n expected =" + test +
-            "\n response = " + Utils.toJSONString(cloudObj) +
-            "\n analyticsRequest = " + analyticsRequest, err);
+        assertNull(
+            "query failed JSON validation. test= Solr Cloud Collection"
+                + "\n error="
+                + err
+                + "\n expected ="
+                + test
+                + "\n response = "
+                + Utils.toJSONString(cloudObj)
+                + "\n analyticsRequest = "
+                + analyticsRequest,
+            err);
       }
     }
   }
@@ -148,7 +154,8 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     return convertDatesToStrings(resp.getResponse().asShallowMap());
   }
 
-  protected void testAnalytics(String analyticsRequest, String... tests) throws IOException, InterruptedException, SolrServerException {
+  protected void testAnalytics(String analyticsRequest, String... tests)
+      throws IOException, InterruptedException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
     params.set("indent", "true");
@@ -157,106 +164,133 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
 
     params.set("analytics", analyticsRequest);
 
-    String[] revisedTests = Arrays.stream(tests).map( test -> "analytics_response/" + test).toArray( size -> new String[size]);
+    String[] revisedTests =
+        Arrays.stream(tests)
+            .map(test -> "analytics_response/" + test)
+            .toArray(size -> new String[size]);
     testResults(params, analyticsRequest, revisedTests);
   }
 
   protected void testExpressions(Map<String, ETP> expressions) throws Exception {
     StringBuilder analyticsRequest = new StringBuilder("{ \"expressions\": {");
-    String expressionsStr = expressions.entrySet()
-        .stream()
-        .map( entry -> '"' + entry.getKey() + "\":\"" + entry.getValue().expression + '"')
-        .reduce((a,b) -> a + ',' + b)
-        .orElseGet(() -> "");
+    String expressionsStr =
+        expressions.entrySet().stream()
+            .map(entry -> '"' + entry.getKey() + "\":\"" + entry.getValue().expression + '"')
+            .reduce((a, b) -> a + ',' + b)
+            .orElseGet(() -> "");
     analyticsRequest.append(expressionsStr);
     analyticsRequest.append("}}");
 
-    String results = expressions.entrySet()
-        .stream()
-        .map( entry -> '"' + entry.getKey() + "\":" + entry.getValue().expectedResultStr())
-        .reduce((a,b) -> a + ',' + b)
-        .orElseGet(() -> "");
+    String results =
+        expressions.entrySet().stream()
+            .map(entry -> '"' + entry.getKey() + "\":" + entry.getValue().expectedResultStr())
+            .reduce((a, b) -> a + ',' + b)
+            .orElseGet(() -> "");
 
-    testAnalytics(analyticsRequest.toString(), "results=={"+results+", \"_UNORDERED_\":true}");
+    testAnalytics(analyticsRequest.toString(), "results=={" + results + ", \"_UNORDERED_\":true}");
   }
 
-  protected void testGrouping(String grouping,
-                                Map<String, String> expressions,
-                                Map<String, String> facets,
-                                Map<String, List<FVP>> results,
-                                boolean sortAscending) throws Exception {
-    testGroupingSorted(grouping,
+  protected void testGrouping(
+      String grouping,
+      Map<String, String> expressions,
+      Map<String, String> facets,
+      Map<String, List<FVP>> results,
+      boolean sortAscending)
+      throws Exception {
+    testGroupingSorted(
+        grouping,
         expressions,
         facets,
         results,
-        ", 'sort': { 'criteria' : [{'type': 'facetvalue', 'direction': '" + (sortAscending ? "ascending" : "descending") + "'}]}",
+        ", 'sort': { 'criteria' : [{'type': 'facetvalue', 'direction': '"
+            + (sortAscending ? "ascending" : "descending")
+            + "'}]}",
         (fvp1, fvp2) -> fvp1.facetValue.compareTo(fvp2.facetValue),
         sortAscending);
   }
 
   @SuppressWarnings("unchecked")
-  protected void testGrouping(String grouping,
-                                Map<String, String> expressions,
-                                Map<String, String> facets,
-                                Map<String, List<FVP>> results,
-                                String sortExpression,
-                                boolean sortAscending) throws Exception {
-    testGroupingSorted(grouping,
+  protected void testGrouping(
+      String grouping,
+      Map<String, String> expressions,
+      Map<String, String> facets,
+      Map<String, List<FVP>> results,
+      String sortExpression,
+      boolean sortAscending)
+      throws Exception {
+    testGroupingSorted(
+        grouping,
         expressions,
         facets,
         results,
-        ", 'sort': { 'criteria' : [{'type': 'expression', 'expression': '" + sortExpression + "', 'direction': '" + (sortAscending ? "ascending" : "descending") + "'}]}",
-        (fvp1, fvp2) -> fvp1.expectedResults.get(sortExpression).compareTo(fvp2.expectedResults.get(sortExpression)),
+        ", 'sort': { 'criteria' : [{'type': 'expression', 'expression': '"
+            + sortExpression
+            + "', 'direction': '"
+            + (sortAscending ? "ascending" : "descending")
+            + "'}]}",
+        (fvp1, fvp2) ->
+            fvp1.expectedResults
+                .get(sortExpression)
+                .compareTo(fvp2.expectedResults.get(sortExpression)),
         sortAscending);
   }
 
-  protected void testGrouping(String grouping,
-                              Map<String, String> expressions,
-                              Map<String, String> facets,
-                              Map<String, List<FVP>> results) throws Exception {
-    testGroupingSorted(grouping,
-        expressions,
-        facets,
-        results,
-        "",
-        (fvp1, fvp2) -> fvp1.compareTo(fvp2),
-        true);
+  protected void testGrouping(
+      String grouping,
+      Map<String, String> expressions,
+      Map<String, String> facets,
+      Map<String, List<FVP>> results)
+      throws Exception {
+    testGroupingSorted(
+        grouping, expressions, facets, results, "", (fvp1, fvp2) -> fvp1.compareTo(fvp2), true);
   }
 
-  private void testGroupingSorted(String grouping,
-                                    Map<String, String> expressions,
-                                    Map<String, String> facets,
-                                    Map<String, List<FVP>> results,
-                                    String sort,
-                                    Comparator<FVP> comparator,
-                                    boolean sortAscending) throws Exception {
-    StringBuilder analyticsRequest = new StringBuilder("{ \"groupings\": { \"" + grouping + "\" : { \"expressions\" : {");
-    String expressionsStr = expressions.entrySet()
-        .stream()
-        .map( entry -> '"' + entry.getKey() + "\":\"" + entry.getValue() + '"')
-        .collect(Collectors.joining(" , "));
+  private void testGroupingSorted(
+      String grouping,
+      Map<String, String> expressions,
+      Map<String, String> facets,
+      Map<String, List<FVP>> results,
+      String sort,
+      Comparator<FVP> comparator,
+      boolean sortAscending)
+      throws Exception {
+    StringBuilder analyticsRequest =
+        new StringBuilder("{ \"groupings\": { \"" + grouping + "\" : { \"expressions\" : {");
+    String expressionsStr =
+        expressions.entrySet().stream()
+            .map(entry -> '"' + entry.getKey() + "\":\"" + entry.getValue() + '"')
+            .collect(Collectors.joining(" , "));
     analyticsRequest.append(expressionsStr);
     analyticsRequest.append("}, \"facets\": {");
-    String facetsStr = facets.entrySet()
-        .stream()
-        .map( entry -> '"' + entry.getKey() + "\":" + entry.getValue().replaceFirst("}\\s*$", sort) + "}")
-        .collect(Collectors.joining(" , "));
+    String facetsStr =
+        facets.entrySet().stream()
+            .map(
+                entry ->
+                    '"'
+                        + entry.getKey()
+                        + "\":"
+                        + entry.getValue().replaceFirst("}\\s*$", sort)
+                        + "}")
+            .collect(Collectors.joining(" , "));
     analyticsRequest.append(facetsStr);
     analyticsRequest.append("}}}}");
 
-    String groupingResults = results.entrySet()
-        .stream()
-        .map( facet -> {
-          String resultList = facet.getValue()
-              .stream()
-              .sorted(sortAscending ? comparator : comparator.reversed())
-              .map( fvp -> fvp.toJsonResults() )
-              .collect(Collectors.joining(" , "));
-          return '"' + facet.getKey() + "\" : [ " + resultList + " ]";
-        })
-        .collect(Collectors.joining(" , "));
+    String groupingResults =
+        results.entrySet().stream()
+            .map(
+                facet -> {
+                  String resultList =
+                      facet.getValue().stream()
+                          .sorted(sortAscending ? comparator : comparator.reversed())
+                          .map(fvp -> fvp.toJsonResults())
+                          .collect(Collectors.joining(" , "));
+                  return '"' + facet.getKey() + "\" : [ " + resultList + " ]";
+                })
+            .collect(Collectors.joining(" , "));
 
-    testAnalytics(analyticsRequest.toString(), "groupings/" + grouping + "=={"+groupingResults+", \"_UNORDERED_\":true}");
+    testAnalytics(
+        analyticsRequest.toString(),
+        "groupings/" + grouping + "=={" + groupingResults + ", \"_UNORDERED_\":true}");
   }
 
   private static String resultToJson(Object result) {
@@ -291,9 +325,9 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
    */
   @SuppressWarnings("rawtypes")
   protected static class FVP implements Comparable<FVP> {
-    final private int order;
-    final public String facetValue;
-    final public Map<String, Comparable> expectedResults;
+    private final int order;
+    public final String facetValue;
+    public final Map<String, Comparable> expectedResults;
 
     public FVP(int order, String facetValue, Map<String, Comparable> expectedResults) {
       this.order = order;
@@ -302,11 +336,15 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     }
 
     public String toJsonResults() {
-      String valueResults = expectedResults.entrySet()
-          .stream()
-          .map( result -> '"' + result.getKey() + "\":" + resultToJson(result.getValue()))
-          .collect(Collectors.joining(" , "));
-      return "{ \"value\" : \"" + facetValue + "\", \"results\": { " + valueResults + ", \"_UNORDERED_\":true } }";
+      String valueResults =
+          expectedResults.entrySet().stream()
+              .map(result -> '"' + result.getKey() + "\":" + resultToJson(result.getValue()))
+              .collect(Collectors.joining(" , "));
+      return "{ \"value\" : \""
+          + facetValue
+          + "\", \"results\": { "
+          + valueResults
+          + ", \"_UNORDERED_\":true } }";
     }
 
     @Override
@@ -318,11 +356,11 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   protected static Object convertDatesToStrings(Object value) {
     if (value instanceof Date) {
-      return Instant.ofEpochMilli(((Date)value).getTime()).toString();
+      return Instant.ofEpochMilli(((Date) value).getTime()).toString();
     } else if (value instanceof Map) {
-      ((Map<String,Object>)value).replaceAll( (key, obj) -> convertDatesToStrings(obj));
+      ((Map<String, Object>) value).replaceAll((key, obj) -> convertDatesToStrings(obj));
     } else if (value instanceof List) {
-      ((List<Object>)value).replaceAll( obj -> convertDatesToStrings(obj));
+      ((List<Object>) value).replaceAll(obj -> convertDatesToStrings(obj));
     }
     return value;
   }

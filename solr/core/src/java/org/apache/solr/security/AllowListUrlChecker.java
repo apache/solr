@@ -18,12 +18,6 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.core.NodeConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -33,6 +27,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.core.NodeConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud. */
 public class AllowListUrlChecker {
@@ -118,7 +117,9 @@ public class AllowListUrlChecker {
     }
   }
 
-  /** @see #checkAllowList(List, ClusterState) */
+  /**
+   * @see #checkAllowList(List, ClusterState)
+   */
   public void checkAllowList(List<String> urls) throws MalformedURLException {
     checkAllowList(urls, null);
   }

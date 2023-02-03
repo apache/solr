@@ -16,28 +16,6 @@
  */
 package org.apache.solr.scripting.update;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.*;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.FilenameUtils;
-
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -49,87 +27,95 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
-import java.util.Set;
-import java.util.LinkedHashSet;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
-
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineFactory;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>
- * An update request processor factory that enables the use of update
- * processors implemented as scripts which can be loaded from the
- * configSet.  Previously known as the StatelessScriptUpdateProcessorFactory.
- * </p>
- * <p>
- * This factory requires at least one configuration parameter named
- * <code>script</code> which may be the name of a script file as a string,
- * or an array of multiple script files.  If multiple script files are
- * specified, they are executed sequentially in the order specified in the
+ * An update request processor factory that enables the use of update processors implemented as
+ * scripts which can be loaded from the configSet. Previously known as the
+ * StatelessScriptUpdateProcessorFactory.
+ *
+ * <p>This factory requires at least one configuration parameter named <code>script</code> which may
+ * be the name of a script file as a string, or an array of multiple script files. If multiple
+ * script files are specified, they are executed sequentially in the order specified in the
  * configuration -- as if multiple factories were configured sequentially
- * </p>
- * <p>
- * Each script file is expected to declare functions with the same name
- * as each method in {@link UpdateRequestProcessor}, using the same
- * arguments.  One slight deviation is in the optional return value from
- * these functions: If a script function has a <code>boolean</code> return
- * value, and that value is <code>false</code> then the processor will
- * cleanly terminate processing of the command and return, without forwarding
- * the command on to the next script or processor in the chain.
- * Due to limitations in the {@link ScriptEngine} API used by
- * this factory, it can not enforce that all functions exist on initialization,
- * so errors from missing functions will only be generated at runtime when
- * the chain attempts to use them.
- * </p>
- * <p>
- * The factory may also be configured with an optional "params" argument,
- * which can be an {@link NamedList} (or array, or any other simple Java
- * object) which will be put into the global scope for each script.
- * </p>
- * <p>
- * The following variables are define as global variables for each script:
+ *
+ * <p>Each script file is expected to declare functions with the same name as each method in {@link
+ * UpdateRequestProcessor}, using the same arguments. One slight deviation is in the optional return
+ * value from these functions: If a script function has a <code>boolean</code> return value, and
+ * that value is <code>false</code> then the processor will cleanly terminate processing of the
+ * command and return, without forwarding the command on to the next script or processor in the
+ * chain. Due to limitations in the {@link ScriptEngine} API used by this factory, it can not
+ * enforce that all functions exist on initialization, so errors from missing functions will only be
+ * generated at runtime when the chain attempts to use them.
+ *
+ * <p>The factory may also be configured with an optional "params" argument, which can be an {@link
+ * NamedList} (or array, or any other simple Java object) which will be put into the global scope
+ * for each script.
+ *
+ * <p>The following variables are define as global variables for each script:
+ *
  * <ul>
- *  <li>req - The {@link SolrQueryRequest}</li>
- *  <li>rsp - The {@link SolrQueryResponse}</li>
- *  <li>logger - A {@link Logger} that can be used for logging purposes in the script</li>
- *  <li>params - The "params" init argument in the factory configuration (if any)</li>
+ *   <li>req - The {@link SolrQueryRequest}
+ *   <li>rsp - The {@link SolrQueryResponse}
+ *   <li>logger - A {@link Logger} that can be used for logging purposes in the script
+ *   <li>params - The "params" init argument in the factory configuration (if any)
  * </ul>
- * <p>
- * Internally this update processor uses JDK 6 scripting engine support,
- * and any {@link Invocable} implementations of <code>ScriptEngine</code>
- * that can be loaded using the Solr Plugin ClassLoader may be used.
- * By default, the engine used for each script is determined by the file
- * extension (ie: a *.js file will be treated as a JavaScript script) but
- * this can be overridden by specifying an explicit "engine" name init
- * param for the factory, which identifies a registered name of a
- * {@link ScriptEngineFactory}.
- * (This may be particularly useful if multiple engines are available for
- * the same scripting language, and you wish to force the usage of a
- * particular engine because of known quirks)
- * </p>
- * <p>
- * A new {@link ScriptEngineManager} is created for each
- * <code>SolrQueryRequest</code> defining a "global" scope for the script(s)
- * which is request specific.  Separate <code>ScriptEngine</code> instances
- * are then used to evaluate the script files, resulting in an "engine" scope
- * that is specific to each script.
- * </p>
- * <p>
- * A simple example...
- * </p>
+ *
+ * <p>Internally this update processor uses JDK 6 scripting engine support, and any {@link
+ * Invocable} implementations of <code>ScriptEngine</code> that can be loaded using the Solr Plugin
+ * ClassLoader may be used. By default, the engine used for each script is determined by the file
+ * extension (ie: a *.js file will be treated as a JavaScript script) but this can be overridden by
+ * specifying an explicit "engine" name init param for the factory, which identifies a registered
+ * name of a {@link ScriptEngineFactory}. (This may be particularly useful if multiple engines are
+ * available for the same scripting language, and you wish to force the usage of a particular engine
+ * because of known quirks)
+ *
+ * <p>A new {@link ScriptEngineManager} is created for each <code>SolrQueryRequest</code> defining a
+ * "global" scope for the script(s) which is request specific. Separate <code>ScriptEngine</code>
+ * instances are then used to evaluate the script files, resulting in an "engine" scope that is
+ * specific to each script.
+ *
+ * <p>A simple example...
+ *
  * <pre class="prettyprint">
  * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;str name="script"&gt;updateProcessor.js&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * <p>
- * A more complex example involving multiple scripts in different languages,
- * and a "params" <code>NamedList</code> that will be put into the global
- * scope of each script...
- * </p>
+ *
+ * <p>A more complex example involving multiple scripts in different languages, and a "params"
+ * <code>NamedList</code> that will be put into the global scope of each script...
+ *
  * <pre class="prettyprint">
  * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
@@ -142,10 +128,10 @@ import org.slf4j.LoggerFactory;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;
  * </pre>
- * <p>
- * An example where the script file extensions are ignored, and an
- * explicit script engine is used....
- * </p>
+ *
+ * <p>An example where the script file extensions are ignored, and an explicit script engine is
+ * used....
+ *
  * <pre class="prettyprint">
  * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
@@ -158,13 +144,14 @@ import org.slf4j.LoggerFactory;
  *
  * @since 4.0.0
  */
-public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {
+public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final static String SCRIPT_ARG = "script";
-  private final static String PARAMS_ARG = "params";
-  private final static String ENGINE_NAME_ARG = "engine";
+  private static final String SCRIPT_ARG = "script";
+  private static final String PARAMS_ARG = "params";
+  private static final String ENGINE_NAME_ARG = "engine";
 
   private List<ScriptFile> scriptFiles;
 
@@ -179,12 +166,11 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
   @Override
   public void init(NamedList<?> args) {
-    Collection<String> scripts =
-      args.removeConfigArgs(SCRIPT_ARG);
+    Collection<String> scripts = args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "ScriptUpdateProcessorFactory must be " +
-                              "initialized with at least one " + SCRIPT_ARG);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "ScriptUpdateProcessorFactory must be " + "initialized with at least one " + SCRIPT_ARG);
     }
     scriptFiles = new ArrayList<>();
     for (String script : scripts) {
@@ -196,21 +182,24 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     Object engine = args.remove(ENGINE_NAME_ARG);
     if (engine != null) {
       if (engine instanceof String) {
-        engineName = (String)engine;
+        engineName = (String) engine;
       } else {
-        throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-           "'" + ENGINE_NAME_ARG + "' init param must be a String (found: " +
-           engine.getClass() + ")");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "'"
+                + ENGINE_NAME_ARG
+                + "' init param must be a String (found: "
+                + engine.getClass()
+                + ")");
       }
     }
 
     super.init(args);
-
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     List<EngineInfo> scriptEngines = null;
 
     scriptEngines = initEngines(req, rsp);
@@ -218,7 +207,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     return new ScriptUpdateProcessor(req, rsp, scriptEngines, next);
   }
 
-  // TODO: Make this useful outside of tests, such that a ScriptEngineCustomizer could be looked up through the resource loader
+  // TODO: Make this useful outside of tests, such that a ScriptEngineCustomizer could be looked up
+  // through the resource loader
   void setScriptEngineCustomizer(ScriptEngineCustomizer scriptEngineCustomizer) {
     this.scriptEngineCustomizer = scriptEngineCustomizer;
   }
@@ -226,9 +216,11 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   @Override
   public void inform(SolrCore core) {
     if (!core.getCoreDescriptor().isConfigSetTrusted()) {
-      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
-          + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-          + " after enabling authentication and authorization.");
+      throw new SolrException(
+          ErrorCode.UNAUTHORIZED,
+          "The configset for this collection was uploaded without any authentication in place,"
+              + " and this operation is not available for collections with untrusted configsets. To use this component, re-upload the configset"
+              + " after enabling authentication and authorization.");
     }
     resourceLoader = core.getResourceLoader();
 
@@ -245,12 +237,10 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     } finally {
       req.close();
     }
-
-
   }
 
-
-  //================================================ Helper Methods ==================================================
+  // ================================================ Helper Methods
+  // ==================================================
 
   /**
    * Initializes a list of script engines - an engine per script file.
@@ -259,14 +249,13 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
    * @param rsp The solr response
    * @return The list of initialized script engines.
    */
-  private List<EngineInfo> initEngines(SolrQueryRequest req,
-                                       SolrQueryResponse rsp)
-    throws SolrException {
+  private List<EngineInfo> initEngines(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws SolrException {
 
     List<EngineInfo> scriptEngines = new ArrayList<>();
 
-    ScriptEngineManager scriptEngineManager
-      = new ScriptEngineManager(resourceLoader.getClassLoader());
+    ScriptEngineManager scriptEngineManager =
+        new ScriptEngineManager(resourceLoader.getClassLoader());
 
     scriptEngineManager.put("logger", log);
     scriptEngineManager.put("req", req);
@@ -281,33 +270,33 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         engine = scriptEngineManager.getEngineByName(engineName);
         if (engine == null) {
           String details = getSupportedEngines(scriptEngineManager, false);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                  "No ScriptEngine found by name: "
-                                  + engineName +
-                                  (null != details ?
-                                   " -- supported names: " + details : ""));
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "No ScriptEngine found by name: "
+                  + engineName
+                  + (null != details ? " -- supported names: " + details : ""));
         }
       } else {
-        engine = scriptEngineManager.getEngineByExtension
-          (scriptFile.getExtension());
+        engine = scriptEngineManager.getEngineByExtension(scriptFile.getExtension());
         if (engine == null) {
           String details = getSupportedEngines(scriptEngineManager, true);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                  "No ScriptEngine found by file extension: "
-                                  + scriptFile.getFileName() +
-                                  (null != details ?
-                                   " -- supported extensions: " + details : ""));
-
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "No ScriptEngine found by file extension: "
+                  + scriptFile.getFileName()
+                  + (null != details ? " -- supported extensions: " + details : ""));
         }
       }
 
-      if (! (engine instanceof Invocable)) {
+      if (!(engine instanceof Invocable)) {
         String msg =
-          "Engine " + ((null != engineName) ? engineName :
-                       ("for script " + scriptFile.getFileName())) +
-          " does not support function invocation (via Invocable): " +
-          engine.getClass().toString() + " (" +
-          engine.getFactory().getEngineName() + ")";
+            "Engine "
+                + ((null != engineName) ? engineName : ("for script " + scriptFile.getFileName()))
+                + " does not support function invocation (via Invocable): "
+                + engine.getClass().toString()
+                + " ("
+                + engine.getFactory().getEngineName()
+                + ")";
         log.error(msg);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
       }
@@ -316,45 +305,49 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         scriptEngineCustomizer.customize(engine);
       }
 
-      scriptEngines.add(new EngineInfo((Invocable)engine, scriptFile));
+      scriptEngines.add(new EngineInfo((Invocable) engine, scriptFile));
       try {
         Reader scriptSrc = scriptFile.openReader(resourceLoader);
 
         try {
           try {
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-              @Override
-              public Void run() throws ScriptException  {
-                engine.eval(scriptSrc);
-                return null;
-              }
-            }, SCRIPT_SANDBOX);
+            AccessController.doPrivileged(
+                new PrivilegedExceptionAction<Void>() {
+                  @Override
+                  public Void run() throws ScriptException {
+                    engine.eval(scriptSrc);
+                    return null;
+                  }
+                },
+                SCRIPT_SANDBOX);
           } catch (PrivilegedActionException e) {
             throw (ScriptException) e.getException();
           }
         } catch (ScriptException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                  "Unable to evaluate script: " +
-                                  scriptFile.getFileName(), e);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Unable to evaluate script: " + scriptFile.getFileName(),
+              e);
         } finally {
           IOUtils.closeQuietly(scriptSrc);
         }
       } catch (IOException ioe) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to evaluate script: " +
-            scriptFile.getFileName(), ioe);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unable to evaluate script: " + scriptFile.getFileName(),
+            ioe);
       }
     }
     return scriptEngines;
   }
 
   /**
-   * For error messages - returns null if there are any exceptions of any
-   * kind building the string (or of the list is empty for some unknown reason).
+   * For error messages - returns null if there are any exceptions of any kind building the string
+   * (or of the list is empty for some unknown reason).
+   *
    * @param ext - if true, list of extensions, otherwise a list of engine names
    */
-  private static String getSupportedEngines(ScriptEngineManager mgr,
-                                            boolean ext) {
+  private static String getSupportedEngines(ScriptEngineManager mgr, boolean ext) {
     String result = null;
     try {
       List<ScriptEngineFactory> factories = mgr.getEngineFactories();
@@ -375,18 +368,19 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     return result;
   }
 
+  // ================================================= Inner Classes
+  // ==================================================
 
-
-  //================================================= Inner Classes ==================================================
-
-  /**
-   * The actual update processor. All methods delegate to scripts.
-   */
+  /** The actual update processor. All methods delegate to scripts. */
   private static class ScriptUpdateProcessor extends UpdateRequestProcessor {
 
     private List<EngineInfo> engines;
 
-    private ScriptUpdateProcessor(SolrQueryRequest req, SolrQueryResponse res, List<EngineInfo> engines, UpdateRequestProcessor next) {
+    private ScriptUpdateProcessor(
+        SolrQueryRequest req,
+        SolrQueryResponse res,
+        List<EngineInfo> engines,
+        UpdateRequestProcessor next) {
       super(next);
       this.engines = engines;
     }
@@ -403,7 +397,6 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       if (invokeFunction("processDelete", cmd)) {
         super.processDelete(cmd);
       }
-
     }
 
     @Override
@@ -435,18 +428,19 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
 
     /**
-     * returns true if processing should continue, or false if the
-     * request should be ended now.  Result value is computed from the return
-     * value of the script function if: it exists, is non-null, and can be
-     * cast to a java Boolean.
+     * returns true if processing should continue, or false if the request should be ended now.
+     * Result value is computed from the return value of the script function if: it exists, is
+     * non-null, and can be cast to a java Boolean.
      */
     private boolean invokeFunction(String name, Object... cmd) {
-      return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
-        @Override
-        public Boolean run() {
-          return invokeFunctionUnsafe(name, cmd);
-        }
-      }, SCRIPT_SANDBOX);
+      return AccessController.doPrivileged(
+          new PrivilegedAction<Boolean>() {
+            @Override
+            public Boolean run() {
+              return invokeFunctionUnsafe(name, cmd);
+            }
+          },
+          SCRIPT_SANDBOX);
     }
 
     private boolean invokeFunctionUnsafe(String name, Object... cmd) {
@@ -455,17 +449,21 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         try {
           Object result = engine.getEngine().invokeFunction(name, cmd);
           if (null != result && result instanceof Boolean) {
-            if (! ((Boolean)result).booleanValue() ) {
+            if (!((Boolean) result).booleanValue()) {
               return false;
             }
           }
 
         } catch (ScriptException | NoSuchMethodException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                  "Unable to invoke function " + name +
-                                  " in script: " +
-                                  engine.getScriptFile().getFileName() +
-                                  ": " + e.getMessage(), e);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Unable to invoke function "
+                  + name
+                  + " in script: "
+                  + engine.getScriptFile().getFileName()
+                  + ": "
+                  + e.getMessage(),
+              e);
         }
       }
 
@@ -473,9 +471,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
   }
 
-  /**
-   * Holds the script engine and its associated script file.
-   */
+  /** Holds the script engine and its associated script file. */
   private static class EngineInfo {
 
     private final Invocable engine;
@@ -495,9 +491,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
   }
 
-  /**
-   * Represents a script file.
-   */
+  /** Represents a script file. */
   private static class ScriptFile {
 
     private final String fileName;
@@ -518,12 +512,11 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
     public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
       InputStream input = resourceLoader.openResource(fileName);
-      return org.apache.lucene.util.IOUtils.getDecodingReader
-        (input, StandardCharsets.UTF_8);
+      return org.apache.lucene.util.IOUtils.getDecodingReader(input, StandardCharsets.UTF_8);
     }
   }
 
   // sandbox for script code: zero permissions
   private static final AccessControlContext SCRIPT_SANDBOX =
-      new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, null) });
+      new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
 }

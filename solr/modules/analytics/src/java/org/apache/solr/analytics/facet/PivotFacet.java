@@ -21,13 +21,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.analytics.function.ExpressionCalculator;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * A facet that takes in multiple ValueFacet expressions and does analytics calculations over each dimension given.
+ * A facet that takes in multiple ValueFacet expressions and does analytics calculations over each
+ * dimension given.
  */
 public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   private final PivotHead<?> pivotHead;
@@ -68,14 +68,15 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   }
 
   @Override
-  public Iterable<Map<String,Object>> createResponse() {
+  public Iterable<Map<String, Object>> createResponse() {
     return pivotHead.createResponse();
   }
 
   /**
    * Typed Pivot class that stores the overall Pivot data and head of the Pivot node chain.
    *
-   * This class exists so that the {@link PivotFacet} class doesn't have to be typed ( {@code <T>} ).
+   * <p>This class exists so that the {@link PivotFacet} class doesn't have to be typed ( {@code
+   * <T>} ).
    */
   private static class PivotHead<T> implements StreamingFacet {
     private final PivotNode<T> topPivot;
@@ -107,7 +108,7 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
       topPivot.exportPivot(output, pivotValues);
     }
 
-    public Iterable<Map<String,Object>> createResponse() {
+    public Iterable<Map<String, Object>> createResponse() {
       return topPivot.getPivotedResponse(pivotValues);
     }
   }

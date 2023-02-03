@@ -18,7 +18,6 @@ package org.apache.solr.analytics.legacy.expression;
 
 import java.time.Instant;
 import java.util.Date;
-
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsTest;
 import org.apache.solr.util.DateMathParser;
 import org.junit.BeforeClass;
@@ -35,7 +34,6 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
   private static final int STRING = 28;
   private static final int NUM_LOOPS = 100;
 
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
@@ -48,8 +46,22 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
       double d = j % DOUBLE;
       String dt = (1800 + j % DATE) + "-12-31T23:59:59Z";
       String s = "str" + (j % STRING);
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
-          "double_dd", "" + d, "date_dtd", dt, "string_sd", s));
+      assertU(
+          adoc(
+              "id",
+              "1000" + j,
+              "int_id",
+              "" + i,
+              "long_ld",
+              "" + l,
+              "float_fd",
+              "" + f,
+              "double_dd",
+              "" + d,
+              "date_dtd",
+              dt,
+              "string_sd",
+              s));
 
       if (usually()) {
         assertU(commit()); // to have several segments
@@ -123,7 +135,7 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
 
     long countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG));
     long lresult = (Long) getStatResult("nr", "c", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), -1 * countResult, lresult, 0.0);
+    assertEquals(getRawResponse(), -1 * countResult, lresult);
   }
 
   @Test
@@ -134,13 +146,13 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
 
     long countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG));
     long lresult = (Long) getStatResult("avr", "c", VAL_TYPE.LONG);
-    assertEquals(getRawResponse(), countResult, lresult, 0.0);
+    assertEquals(getRawResponse(), countResult, lresult);
   }
 
   @Test
   public void constantNumberTest() throws Exception {
     int result = (Integer) getStatResult("cnr", "c8", VAL_TYPE.INTEGER);
-    assertEquals(getRawResponse(), 8, result, 0.0);
+    assertEquals(getRawResponse(), 8, result);
 
     double dresult = (Double) getStatResult("cnr", "c10", VAL_TYPE.DOUBLE);
     assertEquals(getRawResponse(), 10.0, dresult, 0.0);
@@ -150,15 +162,25 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
   public void dateMathTest() throws Exception {
     String math = (String) getStatResult("dmr", "cme", VAL_TYPE.STRING);
     DateMathParser dateMathParser = new DateMathParser();
-    dateMathParser.setNow(new Date(Instant.parse((String) getStatResult("dmr", "median", VAL_TYPE.DATE)).toEpochMilli()));
+    dateMathParser.setNow(
+        new Date(
+            Instant.parse((String) getStatResult("dmr", "median", VAL_TYPE.DATE)).toEpochMilli()));
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), new Date(Instant.parse(dateMath).toEpochMilli()), dateMathParser.parseMath(math));
+    assertEquals(
+        getRawResponse(),
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
     dateMathParser = new DateMathParser();
-    dateMathParser.setNow(new Date(Instant.parse((String) getStatResult("dmr", "max", VAL_TYPE.DATE)).toEpochMilli()));
+    dateMathParser.setNow(
+        new Date(
+            Instant.parse((String) getStatResult("dmr", "max", VAL_TYPE.DATE)).toEpochMilli()));
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), new Date(Instant.parse(dateMath).toEpochMilli()), dateMathParser.parseMath(math));
+    assertEquals(
+        getRawResponse(),
+        new Date(Instant.parse(dateMath).toEpochMilli()).toInstant(),
+        dateMathParser.parseMath(math).toInstant());
   }
 
   @Test

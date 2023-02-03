@@ -21,14 +21,18 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 
 public class TestRestoreCoreUtil {
-  public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
-    String leaderUrl = baseUrl + "/" + coreName +
-        ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_RESTORE_STATUS;
+  public static boolean fetchRestoreStatus(String baseUrl, String coreName) throws IOException {
+    String leaderUrl =
+        baseUrl
+            + "/"
+            + coreName
+            + ReplicationHandler.PATH
+            + "?wt=xml&command="
+            + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
     InputStream stream = null;
@@ -37,12 +41,12 @@ public class TestRestoreCoreUtil {
       stream = url.openStream();
       String response = IOUtils.toString(stream, "UTF-8");
       Matcher matcher = pException.matcher(response);
-      if(matcher.find()) {
+      if (matcher.find()) {
         Assert.fail("Failed to complete restore action with exception " + matcher.group(1));
       }
-      if(response.contains("<str name=\"status\">success</str>")) {
+      if (response.contains("<str name=\"status\">success</str>")) {
         return true;
-      } else if (response.contains("<str name=\"status\">failed</str>")){
+      } else if (response.contains("<str name=\"status\">failed</str>")) {
         Assert.fail("Restore Failed");
       }
       stream.close();

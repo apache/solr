@@ -449,7 +449,7 @@ limitations under the License.
                     ng-options="schema for schema in publishedSchemas"><option value=""></option></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
             <div id="copyFromHelp" class="help" ng-show="helpId === 'copyFromHelp'" escape-pressed="hideAll()">
               <div class="help">
-              <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/config-sets.html">Configsets</a></div></p>
+              <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/configuration-guide/config-sets.html">Configsets</a></div></p>
               </div>
             </div>
           </div>
@@ -582,7 +582,7 @@ limitations under the License.
                 <div class="help">
                   <p>By default, schemas copied from the <i>_default</i> schema include field types (and associated files) for all built-in languages. Select the languages needed for your application and the designer will remove all the unnecessary field types for languages you don't need. For more information about text analysis and languages, see:
                   <div class="help-anchor">
-                    <a target="_blank" href="https://solr.apache.org/guide/language-analysis.html#language-specific-factories">Language-Specific Factories</a>
+                    <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-analysis.html#language-specific-factories">Language-Specific Factories</a>
                   </div>
                   </p>
                 </div>
@@ -595,7 +595,7 @@ limitations under the License.
               <div id="dynamicFieldsHelp" class="help" ng-show="helpId === 'dynamicFieldsHelp'">
                 <div class="help-wide">
                   <p>Dynamic fields allow Solr to index fields that you did not explicitly define in your schema. Dynamic fields can make your application less brittle by providing some flexibility in the documents you can add to Solr. It is recommended to keep the default set of dynamic fields enabled for your schema. Unchecking this option removes all dynamic fields from your schema. For more information about dynamic fields, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/dynamic-fields.html">Dynamic Fields</a></div>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/dynamic-fields.html">Dynamic Fields</a></div>
                   </p>
                 </div>
               </div>
@@ -608,7 +608,7 @@ limitations under the License.
                 <div class="help-wide">
                   <p>Field guessing (aka "schemaless mode") allows Solr to detect the "best" field type for unknown fields encountered during indexing. Field guessing also performs some field transformations, such as removing spaces from field names. If you use the schema designer to create your schema based on sample documents, you may not need to enable this feature.
                     However, with this feature disabled, you need to make sure the incoming data matches the schema exactly or indexing errors may occur. For more information about schemaless mode, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/schemaless-mode.html">Schemaless Mode</a></div>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/schemaless-mode.html">Schemaless Mode</a></div>
                   </p>
                 </div>
               </div>
@@ -620,7 +620,7 @@ limitations under the License.
               <div id="nestedDocsHelp" class="help" ng-show="helpId === 'nestedDocsHelp'">
                 <div class="help-wide">
                   <p>Enabling this feature adds the <b>_root_</b> and <b>_nest_path_</b> fields to your schema.<br/><br/>For more information about indexing nested child documents, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/indexing-nested-documents.html">Indexing Nested Child Documents</a></div>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-nested-documents.html">Indexing Nested Child Documents</a></div>
                   </p>
                 </div>
               </div>
@@ -651,7 +651,7 @@ limitations under the License.
                       <div class="help-wider">
                         <p>The field type defines how Solr should interpret data in a field and how the field can be queried. The properties on each field are inherited from the field type if not explicitly overridden in the field definition. In many cases, it's preferable to choose a different field type instead of overriding the field properties. For example, there's typically a multi-valued version of each type, such as <b>strings</b> is the multi-valued version of the <b>string</b> type. For more information about field types, see:
                         <div class="help-anchor">
-                          <a target="_blank" href="https://solr.apache.org/guide/field-type-definitions-and-properties.html#field-type-definitions-and-properties">Field Type Definitions and Properties</a>
+                          <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/field-type-definitions-and-properties.html">Field Type Definitions and Properties</a>
                         </div>
                         </p>
                       </div>
@@ -755,7 +755,7 @@ limitations under the License.
                       <div class="help-top">
                         <p>Copy fields allow you to apply several distinct field types to a single piece of incoming information during indexing. For instance, a common approach is to copy important string fields into the catch-all '_text_' field to enable full-text matches on terms contained in string fields. Provide a comma-delimited list of fields to copy into during indexing. For more information about copy fields, see:
                         <div class="help-anchor">
-                          <a target="_blank" href="https://solr.apache.org/guide/8_8/copying-fields.html">Copy Fields</a>
+                          <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/copy-fields.html">Copy Fields</a>
                         </div>
                         </p>
                       </div>
@@ -799,7 +799,7 @@ limitations under the License.
                 <th class="prop-hdr">Name <a ng-click="showHelp('fieldTableHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
                   <div id="fieldTableHelp" class="help" ng-show="helpId === 'fieldTableHelp'">
                     <div class="help">
-                      <p>This table provides a list of {{containerNodeLabel}} defined for your schema. Click on the name in the first column to edit properties. Click on <b>{{containerNodeLabel}}</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field properties, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/defining-fields.html">Field Properties</a></div></p>
+                      <p>This table provides a list of {{containerNodeLabel}} defined for your schema. Click on the name in the first column to edit properties. Click on <b>{{containerNodeLabel}}</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field properties, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Field Properties</a></div></p>
                     </div>
                   </div>
                 </th>
@@ -829,7 +829,7 @@ limitations under the License.
                 <th class="prop-hdr">Type <a ng-click="showHelp('fieldTypeTableHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
                   <div id="fieldTypeTableHelp" class="help" ng-show="helpId === 'fieldTypeTableHelp'">
                     <div class="help">
-                      <p>This table provides a list of field types defined for your schema. Click on the type name in the first column to edit properties for that type. Changing properties for a type impacts all fields linked to the type. Click on <b>Field Types</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field types, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/field-type-definitions-and-properties.html">Field Type Definitions and Properties</a></div></p>
+                      <p>This table provides a list of field types defined for your schema. Click on the type name in the first column to edit properties for that type. Changing properties for a type impacts all fields linked to the type. Click on <b>Field Types</b> in the Schema Editor tree on the left to return to this table view.<br/><br/>For more information about field types, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/field-type-definitions-and-properties.html">Field Type Definitions and Properties</a></div></p>
                     </div>
                   </div></th>
                 <th class="prop-hdr">Class</th>
@@ -951,7 +951,7 @@ limitations under the License.
                       If the query results do not contain expected documents, check how the default text field is populated, typically using copy field directives in the schema.
                       <br/><br/>For more information about query parameters, see:
                     <div class="help-anchor">
-                      <a target="_blank" href="https://solr.apache.org/guide/query-syntax-and-parsing.html">Query Syntax and Parsing</a>
+                      <a target="_blank" href="https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html">Query Syntax and Parsing</a>
                     </div>
                     </p>
                   </div>
@@ -966,7 +966,7 @@ limitations under the License.
                     <p>Sort fields must be single-valued and indexed (or have docValues enabled). If an expected field is not present in this list, check the active properties in the schema.
                       <br/><br/>For more information about query parameters, see:
                     <div class="help-anchor">
-                      <a target="_blank" href="https://solr.apache.org/guide/query-syntax-and-parsing.html">Query Syntax and Parsing</a>
+                      <a target="_blank" href="https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html">Query Syntax and Parsing</a>
                     </div>
                     </p>
                   </div>
@@ -979,7 +979,7 @@ limitations under the License.
                 <div id="queryFacetHelp" class="help" ng-show="helpId === 'queryFacetHelp'">
                   <div class="help">
                     Fields must be indexed or have docValues enabled to compute facets.<br/><br/>For more information about faceting, see:
-                    <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/faceting.html">Faceting</a></div>
+                    <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/query-guide/faceting.html">Faceting</a></div>
                   </div>
                 </div>
               </div>

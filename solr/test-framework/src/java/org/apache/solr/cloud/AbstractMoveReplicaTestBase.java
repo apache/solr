@@ -25,13 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -40,7 +37,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.IdUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -70,11 +69,16 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
         .configure();
 
     // If Collection API is distributed let's not wait for Overseer.
-    if (isCollectionApiDistributed = new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+    isCollectionApiDistributed =
+        new CollectionAdminRequest.RequestApiDistributedProcessing()
+            .process(cluster.getSolrClient())
+            .getIsCollectionApiDistributed();
+    if (isCollectionApiDistributed) {
       return;
     }
 
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    NamedList<Object> overSeerStatus =
+        cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     JettySolrRunner overseerJetty = null;
     String overseerLeader = (String) overSeerStatus.get("leader");
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -98,7 +102,6 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
     if (log.isInfoEnabled()) {
@@ -110,13 +113,15 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
 
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(
+            coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     cloudClient.request(create);
 
     addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
@@ -128,20 +133,23 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     }
     assertNotNull(targetNode);
     String shardId = null;
-    for (Slice slice : cloudClient.getZkStateReader().getClusterState().getCollection(coll).getSlices()) {
+    for (Slice slice : cloudClient.getClusterState().getCollection(coll).getSlices()) {
       if (slice.getReplicas().contains(replica)) {
         shardId = slice.getName();
       }
     }
 
-    int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name());
+    int sourceNumCores =
+        getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name());
     int targetNumCores = getNumOfCores(cloudClient, targetNode, coll, replica.getType().name());
 
-    CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
+    CollectionAdminRequest.MoveReplica moveReplica =
+        createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.setInPlaceMove(inPlaceMove);
     String asyncId = IdUtils.randomId();
     moveReplica.processAsync(asyncId, cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
+    CollectionAdminRequest.RequestStatus requestStatus =
+        CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = false;
     for (int i = 0; i < 200; i++) {
@@ -154,8 +162,14 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
       Thread.sleep(500);
     }
     assertTrue(success);
-    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
-    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
+    assertEquals(
+        "should be one less core on the source node!",
+        sourceNumCores - 1,
+        getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
+    assertEquals(
+        "should be one more core on target node!",
+        targetNumCores + 1,
+        getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
     // wait for recovery
     boolean recovered = false;
     for (int i = 0; i < 300; i++) {
@@ -194,7 +208,8 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     }
     assertTrue("replica never fully recovered", recovered);
 
-    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
@@ -236,15 +251,11 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     }
     assertTrue("replica never fully recovered", recovered);
 
-    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
-  //Commented out 5-Dec-2017
-  // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
-  //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
@@ -253,12 +264,15 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
 
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(
+            coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     cloudClient.request(create);
 
     addDocs(coll, 100);
 
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    NamedList<Object> overSeerStatus =
+        cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
 
     // don't kill overseer in this test
@@ -268,18 +282,20 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
       replica = getRandomReplica(coll, cloudClient);
     } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
     assertNotNull("could not find non-overseer replica???", replica);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node) && (isCollectionApiDistributed || !overseerLeader.equals(node))) {
+      if (!replica.getNodeName().equals(node)
+          && (isCollectionApiDistributed || !overseerLeader.equals(node))) {
         targetNode = node;
         break;
       }
     }
     assertNotNull(targetNode);
-    CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
+    CollectionAdminRequest.MoveReplica moveReplica =
+        createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.setInPlaceMove(inPlaceMove);
     // start moving
     String asyncId = IdUtils.randomId();
@@ -292,12 +308,14 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
         break;
       }
     }
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
+    CollectionAdminRequest.RequestStatus requestStatus =
+        CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = true;
     for (int i = 0; i < 200; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      assertNotSame(rsp.getRequestStatus().toString(), rsp.getRequestStatus(), RequestStatusState.COMPLETED);
+      assertNotSame(
+          rsp.getRequestStatus().toString(), rsp.getRequestStatus(), RequestStatusState.COMPLETED);
       if (rsp.getRequestStatus() == RequestStatusState.FAILED) {
         success = false;
         break;
@@ -307,35 +325,48 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     assertFalse(success);
 
     if (log.isInfoEnabled()) {
-      log.info("--- current collection state: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+      log.info(
+          "--- current collection state: {}", cloudClient.getClusterState().getCollection(coll));
     }
-    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
-  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode, String shardId) {
+  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(
+      String coll, Replica replica, String targetNode, String shardId) {
     return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
   }
 
-  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode) {
+  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(
+      String coll, Replica replica, String targetNode) {
     return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
   }
 
-  private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {
-    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(coll).getReplicas();
+  private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) throws IOException {
+    List<Replica> replicas = cloudClient.getClusterState().getCollection(coll).getReplicas();
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
 
-  private void checkNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
-    assertEquals(nodeName + " does not have expected number of cores", expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
+  private void checkNumOfCores(
+      CloudSolrClient cloudClient, String nodeName, String collectionName, int expectedCores)
+      throws IOException, SolrServerException {
+    assertEquals(
+        nodeName + " does not have expected number of cores",
+        expectedCores,
+        getNumOfCores(cloudClient, nodeName, collectionName));
   }
 
-  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {
+  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName)
+      throws IOException, SolrServerException {
     return getNumOfCores(cloudClient, nodeName, collectionName, null);
   }
 
-  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+  private int getNumOfCores(
+      CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType)
+      throws IOException, SolrServerException {
+    try (SolrClient coreclient =
+        getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;
@@ -347,13 +378,15 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
       int size = 0;
       for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
         if (collectionName != null) {
-          String coll = (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
+          String coll =
+              (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
           if (!collectionName.equals(coll)) {
             continue;
           }
         }
         if (replicaType != null) {
-          String type = (String) stringNamedListEntry.getValue().findRecursive("cloud", "replicaType");
+          String type =
+              (String) stringNamedListEntry.getValue().findRecursive("cloud", "replicaType");
           if (!replicaType.equals(type)) {
             continue;
           }

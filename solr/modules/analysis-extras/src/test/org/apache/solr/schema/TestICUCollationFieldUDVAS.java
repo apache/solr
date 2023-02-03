@@ -24,8 +24,8 @@ import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 
 /**
- * Tests warn/failure of {@link ICUCollationField} when schema explicitly sets
- * <code>useDocValuesAsStored="true"</code>
+ * Tests warn/failure of {@link ICUCollationField} when schema explicitly sets <code>
+ * useDocValuesAsStored="true"</code>
  */
 public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
 
@@ -40,7 +40,11 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     home = TestICUCollationFieldDocValues.setupSolrHome();
   }
 
-  private enum Mode { OK, WARN, FAIL }
+  private enum Mode {
+    OK,
+    WARN,
+    FAIL
+  }
 
   @SuppressWarnings("fallthrough")
   public void testInitCore() throws Exception {
@@ -64,10 +68,13 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
     if (mode == Mode.OK) {
       restoreLuceneMatchVersion = null;
     } else {
-      System.setProperty(random().nextBoolean() ? ICU_TYPE_UDVAS_PROPNAME : ICU_FIELD_UDVAS_PROPNAME, "true");
-      restoreLuceneMatchVersion = System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, useVersion.toString());
+      System.setProperty(
+          random().nextBoolean() ? ICU_TYPE_UDVAS_PROPNAME : ICU_FIELD_UDVAS_PROPNAME, "true");
+      restoreLuceneMatchVersion =
+          System.setProperty(TEST_LUCENE_MATCH_VERSION_PROPNAME, useVersion.toString());
     }
-    try (LogListener warnLog = LogListener.warn(XmlConfigFile.class).substring(ICUCollationField.UDVAS_MESSAGE)){
+    try (LogListener warnLog =
+        LogListener.warn(XmlConfigFile.class).substring(ICUCollationField.UDVAS_MESSAGE)) {
       initCore("solrconfig.xml", "schema.xml", home);
       switch (mode) {
         case FAIL:
@@ -85,7 +92,9 @@ public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
       }
     } catch (SolrException ex) {
       assertSame("unexpected hard failure for " + useVersion + ": " + ex, mode, Mode.FAIL);
-      assertTrue("unexpected failure message", getRootCause(ex).getMessage().contains(ICUCollationField.UDVAS_MESSAGE));
+      assertTrue(
+          "unexpected failure message",
+          getRootCause(ex).getMessage().contains(ICUCollationField.UDVAS_MESSAGE));
     } finally {
       restoreSysProps(restoreLuceneMatchVersion);
     }

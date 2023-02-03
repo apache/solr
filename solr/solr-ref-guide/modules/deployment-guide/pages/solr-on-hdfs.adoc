@@ -17,11 +17,8 @@
 // under the License.
 
 
-The Solr HDFS module has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
-This module needs to be installed as lib, it is planned to evolve to a Solr package in a later release.
-
-This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage.
+The Solr HDFS Module has support for writing and reading Solr's index and transaction log files to the HDFS distributed filesystem.
+It does not use Hadoop MapReduce to process Solr data.
 
 To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you will need to instruct Solr to use the `HdfsDirectoryFactory`.
 There are also several additional parameters to define.
@@ -32,6 +29,10 @@ These would need to be passed every time you start Solr with `bin/solr`.
 * Modify `solr.in.sh` (or `solr.in.cmd` on Windows) to pass the JVM arguments automatically when using `bin/solr` without having to set them manually.
 * Define the properties in `solrconfig.xml`.
 These configuration changes would need to be repeated for every collection, so is a good option if you only want some of your collections stored in HDFS.
+
+== Module
+
+This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Starting Solr on HDFS
 

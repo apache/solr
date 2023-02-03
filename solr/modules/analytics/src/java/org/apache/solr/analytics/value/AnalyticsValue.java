@@ -17,17 +17,18 @@
 package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
+
 /**
  * A single-valued analytics value.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getObject()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getObject()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface AnalyticsValue extends AnalyticsValueStream {
   /**
-   * Check whether the current value exists.
-   * <br>
-   * NOTE: The result of this method is only guaranteed after any {@code get<Type>()} method is called.
+   * Check whether the current value exists. <br>
+   * NOTE: The result of this method is only guaranteed after any {@code get<Type>()} method is
+   * called.
    *
    * @return whether the current value exists
    */
@@ -40,10 +41,8 @@ public interface AnalyticsValue extends AnalyticsValueStream {
    */
   Object getObject();
 
-  /**
-   * An abstract base for {@link AnalyticsValue} that automatically casts to castable types.
-   */
-  public static abstract class AbstractAnalyticsValue implements AnalyticsValue {
+  /** An abstract base for {@link AnalyticsValue} that automatically casts to castable types. */
+  public abstract static class AbstractAnalyticsValue implements AnalyticsValue {
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object value = getObject();
@@ -51,6 +50,7 @@ public interface AnalyticsValue extends AnalyticsValueStream {
         cons.accept(value);
       }
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

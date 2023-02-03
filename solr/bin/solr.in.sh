@@ -199,11 +199,23 @@
 #SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL
-#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \
-#  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider \
+#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
+#  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider \
+#  -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector \
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+# optionally, you can use using a a Java properties file 'zkDigestCredentialsFile'
+#...
+#   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
+#...
+
+# Use a custom injector to inject ZK credentials into DigestZkACLProvider
+# -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
+# ...
+#   -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName"
+# ...
 
 # Jetty GZIP module enabled by default
 #SOLR_GZIP_ENABLED=true
@@ -269,3 +281,7 @@
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 # SOLR_MODULES=extraction,ltr
+
+# Configure the default replica placement plugin to use if one is not configured in cluster properties
+# See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+#SOLR_PLACEMENTPLUGIN_DEFAULT=simple

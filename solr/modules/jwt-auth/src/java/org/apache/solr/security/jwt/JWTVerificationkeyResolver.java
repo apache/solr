@@ -97,7 +97,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
         } else {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "Signature verifiction not supported for multiple issuers without 'iss' claim in token.");
+              "Signature verification not supported for multiple issuers without 'iss' claim in token.");
         }
       } else {
         issuerConfig = issuerConfigs.get(tokenIssuer);
@@ -112,7 +112,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
           } else {
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
-                "Signature verifiction failed due to no configured issuer with id " + tokenIssuer);
+                "Signature verification failed due to no configured issuer with id " + tokenIssuer);
           }
         }
       }

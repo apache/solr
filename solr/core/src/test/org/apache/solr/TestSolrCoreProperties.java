@@ -16,14 +16,6 @@
  */
 package org.apache.solr;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -31,10 +23,16 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Properties;
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.junit.BeforeClass;
 
 /**
- * <p> Test for Loading core properties from a properties file </p>
- *
+ * Test for Loading core properties from a properties file
  *
  * @since solr 1.4
  */
@@ -55,41 +53,46 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     dataDir.mkdirs();
     confDir.mkdirs();
 
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    FileUtils.copyFile(
+        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(src_dir, "schema-tiny.xml"), 
-                       new File(confDir, "schema.xml"));
-    FileUtils.copyFile(new File(src_dir, "solrconfig-solcoreproperties.xml"), 
-                       new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
-                       new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    FileUtils.copyFile(new File(src_dir, "schema-tiny.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(
+        new File(src_dir, "solrconfig-coreproperties.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(
+        new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
+        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
 
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
-    Writer fos = new OutputStreamWriter(new FileOutputStream(new File(confDir, "solrcore.properties")), StandardCharsets.UTF_8);
+    Writer fos =
+        new OutputStreamWriter(
+            new FileOutputStream(new File(confDir, "solrcore.properties")), StandardCharsets.UTF_8);
     p.store(fos, null);
     IOUtils.close(fos);
 
     Files.createFile(collDir.toPath().resolve("core.properties"));
-
 
     Properties nodeProperties = new Properties();
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null) {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
-    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
+    jetty =
+        new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
 
     jetty.start();
     port = jetty.getLocalPort();
 
-    //createJetty(homeDir.getAbsolutePath(), null, null);
+    // createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
   public void testSimple() throws Exception {
-    SolrParams params = params("q", "*:*", 
-                               "echoParams", "all");
+    SolrParams params =
+        params(
+            "q", "*:*",
+            "echoParams", "all");
     QueryResponse res = getSolrClient().query(params);
     assertEquals(0, res.getResults().getNumFound());
 
@@ -97,5 +100,4 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     assertEquals("f1", echoedParams.get("p1"));
     assertEquals("f2", echoedParams.get("p2"));
   }
-
 }

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The `currency` FieldType provides support for monetary values to Solr/Lucene with query-time currency conversion and exchange rates.
+The `currency` FieldType provides support for monetary values to Solr with query-time currency conversion and exchange rates.
 The following features are supported:
 
 * Point queries

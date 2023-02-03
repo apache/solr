@@ -25,7 +25,7 @@ For overviews of and comparisons between algorithms, see http://en.wikipedia.org
 For examples of how to use this encoding in your analyzer, see xref:filters.adoc#beider-morse-filter[Beider Morse Filter] in the Filter Descriptions section.
 
 Beider-Morse Phonetic Matching (BMPM) is a "soundalike" tool that lets you search using a new phonetic matching system.
-BMPM helps you search for personal names (or just surnames) in a Solr/Lucene index, and is far superior to the existing phonetic codecs, such as regular soundex, metaphone, caverphone, etc.
+BMPM helps you search for personal names (or just surnames) in a Solr index, and is far superior to the existing phonetic codecs, such as regular soundex, metaphone, caverphone, etc.
 
 In general, phonetic matching lets you search a name list for names that are phonetically equivalent to the desired name.
 BMPM is similar to a soundex search in that an exact spelling is not required.

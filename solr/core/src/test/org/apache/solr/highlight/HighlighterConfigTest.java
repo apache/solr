@@ -18,11 +18,10 @@ package org.apache.solr.highlight;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,12 +51,12 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
 
   public void testConfig() {
     SolrHighlighter highlighter = getHighlighter();
-    log.info( "highlighter" );
+    log.info("highlighter");
 
-    assertTrue( highlighter instanceof DummyHighlighter );
+    assertTrue(highlighter instanceof DummyHighlighter);
 
     // check to see that doHighlight is called from the DummyHighlighter
-    HashMap<String,String> args = new HashMap<>();
+    HashMap<String, String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.method", "original");
     args.put("df", "t_text");
@@ -66,16 +65,16 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
     assertU(adoc("t_text", "a long day's night", "id", "1"));
     assertU(commit());
     assertU(optimize());
-    assertQ("Basic summarization",
-            req(new MapSolrParams(args), "q", "long"),
-            "//lst[@name='highlighting']/str[@name='dummy']"
-            );
+    assertQ(
+        "Basic summarization",
+        req(new MapSolrParams(args), "q", "long"),
+        "//lst[@name='highlighting']/str[@name='dummy']");
   }
 
   private static SolrHighlighter getHighlighter() {
-    var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    var hl =
+        (HighlightComponent)
+            h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
     return hl.getHighlighter(new MapSolrParams(Map.of("hl.method", "original")));
   }
 }
-
-

@@ -17,6 +17,16 @@
 
 package org.apache.solr.handler.component;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.BlobRepository;
@@ -24,18 +34,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static org.junit.Assert.assertEquals;
 
 public class ResourceSharingTestComponent extends SearchComponent implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -45,7 +43,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
 
   @SuppressWarnings("SynchronizeOnNonFinalField")
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     String q = "text:" + getTestObj().getLastCollection();
@@ -56,7 +54,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
   }
 
   @Override
-  public void process(ResponseBuilder rb) throws IOException {}
+  public void process(ResponseBuilder rb) {}
 
   @Override
   public String getDescription() {
@@ -72,7 +70,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
   public void inform(SolrCore core) {
     log.info("Informing test component...");
     this.core = core;
-    this.blob =  core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
+    this.blob = core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
     log.info("Test component informed!");
   }
 
@@ -90,9 +88,9 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
 
   class DumbCsvDecoder implements BlobRepository.Decoder<TestObject> {
     private final Map<String, String> dict = new HashMap<>();
-    
+
     public DumbCsvDecoder() {}
-    
+
     void processSimpleCsvRow(String string) {
       String[] row = string.split(","); // dumbest csv parser ever... :)
       getDict().put(row[0], row[1]);
@@ -105,30 +103,30 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     @Override
     public TestObject decode(InputStream inputStream) {
       // loading a tiny csv like:
-      // 
+      //
       // foo,bar
       // baz,bam
 
-      try (Stream<String> lines = new BufferedReader(new InputStreamReader(inputStream, Charset.forName("UTF-8"))).lines()) {
-          lines.forEach(this::processSimpleCsvRow);
+      try (Stream<String> lines =
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
+        lines.forEach(this::processSimpleCsvRow);
       } catch (Exception e) {
-        log.error("failed to read dictionary {}", getResourceName() );
-        throw new RuntimeException("Cannot load  dictionary " , e);
+        log.error("failed to read dictionary {}", getResourceName());
+        throw new RuntimeException("Cannot load  dictionary ", e);
       }
-      
+
       assertEquals("bar", dict.get("foo"));
       assertEquals("bam", dict.get("baz"));
       if (log.isInfoEnabled()) {
         log.info("Loaded {}  using {}", getDict().size(), this.getClass().getClassLoader());
       }
-      
-      // if we get here we have seen the data from the blob and all we need is to test that two collections
-      // are able to see the same object..
+
+      // if we get here we have seen the data from the blob and all we need is to test that two
+      // collections are able to see the same object...
       return new TestObject();
     }
   }
 
-  
   public static class TestObject {
     public static final String NEVER_UPDATED = "never updated";
     private volatile String lastCollection = NEVER_UPDATED;
@@ -141,5 +139,4 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       this.lastCollection = lastCollection;
     }
   }
-  
 }

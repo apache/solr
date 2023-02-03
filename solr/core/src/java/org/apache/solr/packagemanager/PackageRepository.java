@@ -19,13 +19,10 @@ package org.apache.solr.packagemanager;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 
-/**
- * Abstract class for a repository, holding {@link SolrPackage} items.
- */
+/** Abstract class for a repository, holding {@link SolrPackage} items. */
 public abstract class PackageRepository {
 
   @JsonProperty("name")
@@ -36,18 +33,13 @@ public abstract class PackageRepository {
 
   public abstract void refresh();
 
-  /**
-   * Returns a map of package name to {@link SolrPackage}s.
-   */
+  /** Returns a map of package name to {@link SolrPackage}s. */
   public abstract Map<String, SolrPackage> getPackages();
 
   public abstract SolrPackage getPackage(String packageName);
 
   public abstract boolean hasPackage(String packageName);
 
-  /**
-   * Provides a method to download an artifact from this repository.
-   */
-  public abstract Path download(String artifactName) throws SolrException, IOException; 
-
+  /** Provides a method to download an artifact from this repository. */
+  public abstract Path download(String artifactName) throws SolrException, IOException;
 }

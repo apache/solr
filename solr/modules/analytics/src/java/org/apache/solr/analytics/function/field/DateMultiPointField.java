@@ -19,13 +19,10 @@ package org.apache.solr.analytics.function.field;
 import java.time.Instant;
 import java.util.Date;
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.value.DateValueStream.CastingDateValueStream;
 import org.apache.solr.schema.DatePointField;
 
-/**
- * An analytics wrapper for a multi-valued {@link DatePointField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link DatePointField} with DocValues enabled. */
 public class DateMultiPointField extends LongMultiPointField implements CastingDateValueStream {
 
   public DateMultiPointField(String fieldName) {
@@ -36,10 +33,12 @@ public class DateMultiPointField extends LongMultiPointField implements CastingD
   public void streamDates(Consumer<Date> cons) {
     streamLongs(value -> cons.accept(new Date(value)));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamLongs(value -> cons.accept(Instant.ofEpochMilli(value).toString()));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamLongs(value -> cons.accept(new Date(value)));

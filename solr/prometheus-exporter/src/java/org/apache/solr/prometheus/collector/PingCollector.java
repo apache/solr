@@ -34,13 +34,14 @@ public class PingCollector implements MetricCollector {
   public MetricSamples collect() throws Exception {
     MetricSamples results = new MetricSamples();
 
-    solrScraper.pingAllCollections(metricsQuery)
+    solrScraper
+        .pingAllCollections(metricsQuery)
         .forEach((collection, metrics) -> results.addAll(metrics));
 
-    solrScraper.pingAllCores(metricsQuery)
+    solrScraper
+        .pingAllCores(metricsQuery)
         .forEach((collection, metrics) -> results.addAll(metrics));
 
     return results;
   }
-
 }

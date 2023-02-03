@@ -16,16 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.zookeeper.server.ServerConfig;
-import org.apache.zookeeper.server.ZooKeeperServerMain;
-import org.apache.zookeeper.server.quorum.QuorumPeer;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.apache.zookeeper.server.quorum.QuorumPeerMain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -38,6 +28,15 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.ZooKeeperServerMain;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
+import org.apache.zookeeper.server.quorum.QuorumPeerMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,7 +50,7 @@ public class SolrZkServer {
   Properties props;
   SolrZkServerProps zkProps;
 
-  private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
+  private Thread zkThread; // the thread running a zookeeper server, only if zkRun is set
 
   private File dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
@@ -66,12 +65,14 @@ public class SolrZkServer {
 
   public String getClientString() {
     if (zkHost != null) return zkHost;
-    
+
     if (zkProps == null) return null;
 
     // if the string wasn't passed as zkHost, then use the standalone server we started
     if (zkRun == null) return null;
-    return "localhost:" + zkProps.getClientPortAddress().getPort();
+
+    InetSocketAddress addr = zkProps.getClientPortAddress();
+    return addr.getHostString() + ":" + addr.getPort();
   }
 
   public void parseConfig() {
@@ -89,8 +90,10 @@ public class SolrZkServer {
       log.info("Zookeeper configuration not found in {}, using built-in default", confHome);
       String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
       if (solrInstallDir == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Could not find default zoo.cfg file due to missing " + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Could not find default zoo.cfg file due to missing "
+                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
       }
       zooCfgPath = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("zoo.cfg");
     }
@@ -103,8 +106,7 @@ public class SolrZkServer {
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
-      if (zkRun != null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      if (zkRun != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -119,49 +121,64 @@ public class SolrZkServer {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();
-    zkThread = new Thread(() -> {
-      try {
-        if (zkProps.getServers().size() > 1) {
-          QuorumPeerMain zkServer = new QuorumPeerMain();
-          zkServer.runFromConfig(zkProps);
-        } else {
-          ServerConfig sc = new ServerConfig();
-          sc.readFrom(zkProps);
-          ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
-          zkServer.runFromConfig(sc);
-        }
-        log.info("ZooKeeper Server exited.");
-      } catch (Exception e) {
-        log.error("ZooKeeper Server ERROR", e);
-        zkException.set(e);
-      }
-    }, "embeddedZkServer");
+    zkThread =
+        new Thread(
+            () -> {
+              try {
+                if (zkProps.getServers().size() > 1) {
+                  QuorumPeerMain zkServer = new QuorumPeerMain();
+                  zkServer.runFromConfig(zkProps);
+                } else {
+                  ServerConfig sc = new ServerConfig();
+                  sc.readFrom(zkProps);
+                  ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
+                  zkServer.runFromConfig(sc);
+                }
+                log.info("ZooKeeper Server exited.");
+              } catch (Exception e) {
+                log.error("ZooKeeper Server ERROR", e);
+                zkException.set(e);
+              }
+            },
+            "embeddedZkServer");
 
     if (zkProps.getServers().size() > 1) {
       if (log.isInfoEnabled()) {
-        log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}", zkProps.getClientPortAddress().getPort());
+        log.info(
+            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}",
+            zkProps.getClientPortAddress().getPort());
       }
     } else {
       if (log.isInfoEnabled()) {
-        log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port {}", zkProps.getClientPortAddress().getPort());
+        log.info(
+            "STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port {}",
+            zkProps.getClientPortAddress().getPort());
       }
     }
 
-    log.warn("Embedded Zookeeper is not recommended in production environments. See Reference Guide for details.");
+    log.warn(
+        "Embedded Zookeeper is not recommended in production environments. See Reference Guide for details.");
 
     zkThread.setDaemon(true);
     zkThread.start();
     try {
-      // We don't have any way to hook into the ZK server object to check that it is running, so we just wait and hope
+      // We don't have any way to hook into the ZK server object to check that it is running, so we
+      // just wait and hope
       Thread.sleep(500); // pause for ZooKeeper to start
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while starting embedded zookeeper server", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Interrupted while starting embedded zookeeper server",
+          e);
     }
 
     if (zkException.get() != null) {
       log.info("Embedded ZK dataHome={}", dataHome);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not start embedded zookeeper server", zkException.get());
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not start embedded zookeeper server",
+          zkException.get());
     }
   }
 
@@ -170,9 +187,6 @@ public class SolrZkServer {
     zkThread.interrupt();
   }
 }
-
-
-
 
 // Allows us to set a default for the data dir before parsing
 // zoo.cfg (which validates that there is a dataDir)
@@ -184,6 +198,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   /**
    * Parse a ZooKeeper configuration file
+   *
    * @param configPath the path of the configuration file
    * @throws IllegalArgumentException if a config file does not exist at the given path
    * @throws ConfigException error processing configuration
@@ -204,7 +219,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
     }
   }
 
-
   // Adds server.x if they don't exist, based on zkHost if it does exist.
   // Given zkHost=localhost:1111,localhost:2222 this will inject
   // server.0=localhost:1112:1113
@@ -212,10 +226,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
   public static void injectServers(Properties props, String zkRun, String zkHost) {
 
     // if clientPort not already set, use zkRun
-    if (zkRun != null && props.getProperty("clientPort")==null) {
+    if (zkRun != null && props.getProperty("clientPort") == null) {
       int portIdx = zkRun.lastIndexOf(':');
       if (portIdx > 0) {
-        String portStr = zkRun.substring(portIdx+1);
+        String portStr = zkRun.substring(portIdx + 1);
         props.setProperty("clientPort", portStr);
       }
     }
@@ -223,32 +237,30 @@ class SolrZkServerProps extends QuorumPeerConfig {
     boolean hasServers = hasServers(props);
 
     if (!hasServers && zkHost != null) {
-      int alg = Integer.parseInt(props.getProperty("electionAlg","3").trim());
+      int alg = Integer.parseInt(props.getProperty("electionAlg", "3").trim());
       String[] hosts = zkHost.split(",");
       int serverNum = 0;
       for (String hostAndPort : hosts) {
         hostAndPort = hostAndPort.trim();
         int portIdx = hostAndPort.lastIndexOf(':');
-        String clientPortStr = hostAndPort.substring(portIdx+1);
+        String clientPortStr = hostAndPort.substring(portIdx + 1);
         int clientPort = Integer.parseInt(clientPortStr);
-        String host = hostAndPort.substring(0,portIdx);
+        String host = hostAndPort.substring(0, portIdx);
 
-        String serverStr = host + ':' + (clientPort+1);
+        String serverStr = host + ':' + (clientPort + 1);
         // zk leader election algorithms other than 0 need an extra port for leader election.
         if (alg != 0) {
-          serverStr = serverStr + ':' + (clientPort+2);
+          serverStr = serverStr + ':' + (clientPort + 2);
         }
 
-        props.setProperty("server."+serverNum, serverStr);
+        props.setProperty("server." + serverNum, serverStr);
         serverNum++;
       }
     }
   }
 
   public static boolean hasServers(Properties props) {
-    for (Object key : props.keySet())
-      if (((String)key).startsWith("server."))
-        return true;
+    for (Object key : props.keySet()) if (((String) key).startsWith("server.")) return true;
     return false;
   }
 
@@ -259,7 +271,8 @@ class SolrZkServerProps extends QuorumPeerConfig {
   public void setClientPort(int clientPort) {
     if (clientPortAddress != null) {
       try {
-        this.clientPortAddress = new InetSocketAddress(
+        this.clientPortAddress =
+            new InetSocketAddress(
                 InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
       } catch (UnknownHostException e) {
         throw new RuntimeException(e);
@@ -271,11 +284,11 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   /**
    * Parse config from a Properties.
+   *
    * @param zkProp Properties to parse from.
    */
   @Override
-  public void parseProperties(Properties zkProp)
-      throws IOException, ConfigException {
-      super.parseProperties(zkProp);
+  public void parseProperties(Properties zkProp) throws IOException, ConfigException {
+    super.parseProperties(zkProp);
   }
 }

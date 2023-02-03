@@ -17,20 +17,18 @@
 package org.apache.solr.search;
 
 import java.util.Random;
-
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.util.RTimer;
 
-/**
- */
+/** */
 public class DocSetPerf {
 
   // use test instead of assert since asserts may be turned off
   public static void test(boolean condition) {
-      if (!condition) {
-        throw new RuntimeException("test requestHandler: assertion failed!");
-      }
+    if (!condition) {
+      throw new RuntimeException("test requestHandler: assertion failed!");
+    }
   }
 
   static FixedBitSet bs;
@@ -38,7 +36,7 @@ public class DocSetPerf {
   static int[] ids; // not unique
 
   static Random rand = getRandom();
-  
+
   @SuppressForbidden(reason = "No testcase, use of java.util.Random allowed")
   private static Random getRandom() {
     return new Random();
@@ -47,26 +45,26 @@ public class DocSetPerf {
   static void generate(int maxSize, int bitsToSet) {
     bs = new FixedBitSet(maxSize);
     ids = new int[bitsToSet];
-    int count=0;
-    if (maxSize>0) {
-      for (int i=0; i<bitsToSet; i++) {
-        int id=rand.nextInt(maxSize);
+    int count = 0;
+    if (maxSize > 0) {
+      for (int i = 0; i < bitsToSet; i++) {
+        int id = rand.nextInt(maxSize);
         if (!bs.get(id)) {
           bs.set(id);
-          ids[count++]=id;
+          ids[count++] = id;
         }
       }
     }
-    bds = new BitDocSet(bs,bitsToSet);
+    bds = new BitDocSet(bs, bitsToSet);
   }
 
   public static void main(String[] args) {
-    String bsSize=args[0];
-    boolean randSize=false;
+    String bsSize = args[0];
+    boolean randSize = false;
 
     if (bsSize.endsWith("-")) {
-      bsSize=bsSize.substring(0,bsSize.length()-1);
-      randSize=true;
+      bsSize = bsSize.substring(0, bsSize.length() - 1);
+      randSize = true;
     }
 
     int bitSetSize = Integer.parseInt(bsSize);
@@ -75,12 +73,12 @@ public class DocSetPerf {
     String test = args[3].intern();
     int iter = Integer.parseInt(args[4]);
 
-    long ret=0;
+    long ret = 0;
 
     FixedBitSet[] sets = new FixedBitSet[numSets];
     DocSet[] bset = new DocSet[numSets];
 
-    for (int i=0; i<numSets; i++) {
+    for (int i = 0; i < numSets; i++) {
       generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
       sets[i] = bs;
       bset[i] = bds;
@@ -89,10 +87,10 @@ public class DocSetPerf {
     final RTimer timer = new RTimer();
 
     if ("test".equals(test)) {
-      for (int it=0; it<iter; it++) {
+      for (int it = 0; it < iter; it++) {
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
-        FixedBitSet bs1=bs;
-        BitDocSet bds1=bds;
+        FixedBitSet bs1 = bs;
+        BitDocSet bds1 = bds;
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
 
         FixedBitSet res = bs1.clone();
@@ -106,47 +104,50 @@ public class DocSetPerf {
       }
     }
 
-    String type=null;
-    String oper=null;
+    String type = null;
+    String oper = null;
 
-    if (test.endsWith("B")) { type="B"; }
-    if (test.endsWith("M")) { type="M"; }
-    if (test.startsWith("intersect")) oper="intersect";
-    if (test.startsWith("intersectSize")) oper="intersectSize";
-    if (test.startsWith("intersectAndSize")) oper="intersectSize";
+    if (test.endsWith("B")) {
+      type = "B";
+    }
+    if (test.endsWith("M")) {
+      type = "M";
+    }
+    if (test.startsWith("intersect")) oper = "intersect";
+    if (test.startsWith("intersectSize")) oper = "intersectSize";
+    if (test.startsWith("intersectAndSize")) oper = "intersectSize";
 
-
-    if (oper!=null) {
-      for (int it=0; it<iter; it++) {
+    if (oper != null) {
+      for (int it = 0; it < iter; it++) {
         int idx1 = rand.nextInt(numSets);
         int idx2 = rand.nextInt(numSets);
-        DocSet a=null,b=null;
+        DocSet a = null, b = null;
 
-        if (type=="B") {
-          a=bset[idx1]; b=bset[idx2];
-        } else if (type=="M") {
+        if (type.equals("B")) {
+          a = bset[idx1];
+          b = bset[idx2];
+        } else if (type.equals("M")) {
           if (idx1 < idx2) {
-            a=bset[idx1];
+            a = bset[idx1];
           } else {
-            b=bset[idx2];
+            b = bset[idx2];
           }
         }
 
-        if (oper=="intersect") {
+        if (oper.equals("intersect")) {
           DocSet res = a.intersection(b);
           ret += res.ramBytesUsed();
-        } else if (oper=="intersectSize") {
+        } else if (oper.equals("intersectSize")) {
           ret += a.intersectionSize(b);
-        } else if (oper=="intersectAndSize") {
+        } else if (oper.equals("intersectAndSize")) {
           DocSet res = a.intersection(b);
           ret += res.size();
         }
       }
     }
 
-    System.out.println("TIME="+timer.getTime());
+    System.out.println("TIME=" + timer.getTime());
 
-    System.out.println("ret="+ret);
+    System.out.println("ret=" + ret);
   }
-
 }

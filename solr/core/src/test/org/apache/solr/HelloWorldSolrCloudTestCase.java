@@ -23,25 +23,21 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * How to use this test class:
- * #1 Run the test, e.g.
- *    in Eclipse 'Run As JUnit Test' or
- *    on the command line:  ./gradlew -p solr/core test --tests HelloWorldSolrCloudTestCase
- * #2 Modify the test, e.g.
- *    in setupCluster add further documents and then re-run the test.
+ * How to use this test class: #1 Run the test, e.g. in Eclipse 'Run As JUnit Test' or on the
+ * command line: ./gradlew -p solr/core test --tests HelloWorldSolrCloudTestCase #2 Modify the test,
+ * e.g. in setupCluster add further documents and then re-run the test.
  */
 public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
-  private static final String COLLECTION = "hello_world" ;
+  private static final String COLLECTION = "hello_world";
 
   private static final int numShards = 3;
   private static final int numReplicas = 2;
-  private static final int nodeCount = numShards*numReplicas;
+  private static final int nodeCount = numShards * numReplicas;
 
   private static final String id = "id";
 
@@ -49,22 +45,24 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
 
     // create and configure cluster
-    configureCluster(nodeCount)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
+    configureCluster(nodeCount).addConfig("conf", configset("cloud-dynamic")).configure();
 
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
         .process(cluster.getSolrClient());
 
     // add a document
-    final SolrInputDocument doc1 = sdoc(id, "1",
-        "title_s", "Here comes the sun",
-        "artist_s", "The Beatles",
-        "popularity_i", "123");
-    new UpdateRequest()
-        .add(doc1)
-        .commit(cluster.getSolrClient(), COLLECTION);
+    final SolrInputDocument doc1 =
+        sdoc(
+            id,
+            "1",
+            "title_s",
+            "Here comes the sun",
+            "artist_s",
+            "The Beatles",
+            "popularity_i",
+            "123");
+    new UpdateRequest().add(doc1).commit(cluster.getSolrClient(), COLLECTION);
 
     // add further document(s) here
     // TODO
@@ -72,7 +70,9 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   @Test
   public void testHighestScoring() throws Exception {
-    final SolrQuery solrQuery = new SolrQuery("q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i desc", "rows", "1");
+    final SolrQuery solrQuery =
+        new SolrQuery(
+            "q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i desc", "rows", "1");
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
     final QueryResponse rsp = cloudSolrClient.query(COLLECTION, solrQuery);
     assertEquals(1, rsp.getResults().size());
@@ -81,12 +81,11 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   @Test
   public void testLowestScoring() throws Exception {
-    final SolrQuery solrQuery = new SolrQuery("q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i asc", "rows", "1");
+    final SolrQuery solrQuery =
+        new SolrQuery("q", "*:*", "fl", "id,popularity_i", "sort", "popularity_i asc", "rows", "1");
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
     final QueryResponse rsp = cloudSolrClient.query(COLLECTION, solrQuery);
     assertEquals(1, rsp.getResults().size());
     assertEquals("1", rsp.getResults().get(0).getFieldValue(id));
   }
-
 }
-

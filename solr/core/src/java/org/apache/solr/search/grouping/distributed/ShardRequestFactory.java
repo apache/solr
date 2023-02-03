@@ -20,19 +20,19 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 
 /**
- * Responsible for creating shard requests to the shards in the cluster to perform distributed grouping.
+ * Responsible for creating shard requests to the shards in the cluster to perform distributed
+ * grouping.
  *
  * @lucene.experimental
  */
 public interface ShardRequestFactory {
 
   /**
-   * Returns {@link ShardRequest} instances.
-   * Never returns <code>null</code>. If no {@link ShardRequest} instances are constructed an empty array is returned.
+   * Returns {@link ShardRequest} instances. Never returns <code>null</code>. If no {@link
+   * ShardRequest} instances are constructed an empty array is returned.
    *
    * @param rb The response builder
    * @return {@link ShardRequest} instances
    */
   ShardRequest[] constructRequest(ResponseBuilder rb);
-
 }

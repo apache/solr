@@ -23,7 +23,8 @@ import java.util.function.IntSupplier;
 
 public class BooleanDataArrayWriter extends ReductionDataArrayWriter<BooleanSupplier> {
 
-  public BooleanDataArrayWriter(DataOutput output, BooleanSupplier extractor, IntSupplier sizeSupplier) {
+  public BooleanDataArrayWriter(
+      DataOutput output, BooleanSupplier extractor, IntSupplier sizeSupplier) {
     super(output, extractor, sizeSupplier);
   }
 

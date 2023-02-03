@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,24 +39,31 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+    cluster
+        .getZkStateReader()
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 
   @Test
-  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testAddTheSameFieldTwice() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
-    SchemaRequest.Update fieldAddition = new SchemaRequest.AddField
-        (Map.of("name","myfield", "type","string"));
+    SchemaRequest.Update fieldAddition =
+        new SchemaRequest.AddField(Map.of("name", "myfield", "type", "string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    BaseHttpSolrClient.RemoteExecutionException ex = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class,
-        () -> fieldAddition.process(client, COLLECTION));
+    BaseHttpSolrClient.RemoteExecutionException ex =
+        expectThrows(
+            BaseHttpSolrClient.RemoteExecutionException.class,
+            () -> fieldAddition.process(client, COLLECTION));
 
-    assertTrue("expected error message 'Field 'myfield' already exists'.",Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]").toString().contains("Field 'myfield' already exists.") );
-
+    assertTrue(
+        "expected error message 'Field 'myfield' already exists'.",
+        Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]")
+            .toString()
+            .contains("Field 'myfield' already exists."));
   }
-
-
 }

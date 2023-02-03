@@ -70,7 +70,9 @@ html.is-clipped--nav {
   opacity: 0.75;
 }
 
-.nav-panel-menu:not(.is-active)::after {
+/* Solr Changes - Start */
+.nav-panel-menu:not(.is-active) .nav-menu::after {
+  /* Solr Changes - End */
   content: "";
   background: rgba(0, 0, 0, 0.5);
   display: block;
@@ -83,7 +85,9 @@ html.is-clipped--nav {
 
 .nav-menu {
   min-height: 100%;
-  padding: 0.5rem 0.75rem;
+  /* Solr Changes - Start */
+  padding: 0.01rem 0.75rem;
+  /* Solr Changes - End */
   line-height: var(--nav-line-height);
   position: relative;
 }
@@ -106,7 +110,7 @@ html.is-clipped--nav {
 }
 
 .nav-menu > ul.nav-list {
-  padding-top: 20px;
+  padding-top: 0;
 }
 /* Solr Changes - End */
 
@@ -164,22 +168,36 @@ html.is-clipped--nav {
   background: var(--nav-background);
   display: flex;
   flex-direction: column;
-  position: absolute;
-  top: 0;
+  /* Solr Changes - Start */
+  position: sticky;
+  top: var(--navbar-height);
+  /* Solr Changes - End */
   right: 0;
+  /* Solr Removals - Start
   bottom: 0;
+  Solr Removals - End */
+  /* Solr Additions - Start */
+  z-index: 2;
+  /* Solr Additions - End */
   left: 0;
 }
 
 .nav-panel-explore:not(:first-child) {
   top: auto;
-  max-height: var(--nav-panel-explore-height);
+  /* Solr Changes - Start */
+  max-height: 100%;
+  /* Solr Changes - End */
 }
 
 .nav-panel-explore .context {
   font-size: calc(15 / var(--rem-base) * 1rem);
   flex-shrink: 0;
+  /* Solr Removals - Start
   color: var(--nav-muted-color);
+   Solr Removals - End */
+  /* Solr Additions - Start */
+  font-weight: var(--body-font-weight-bold);
+  /* Solr Additions - End */
   box-shadow: 0 -1px 0 var(--nav-panel-divider-color);
   padding: 0 0.5rem;
   display: flex;

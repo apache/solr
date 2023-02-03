@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
@@ -45,11 +44,10 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCollection() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-analytics"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-analytics")).configure();
 
-    CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTIONORALIAS, 2, 2);
   }
 
@@ -59,12 +57,11 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   }
 
   public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
-  protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
+  protected static final String[] BASEPARMS =
+      new String[] {"q", "*:*", "indent", "true", "olap", "true", "rows", "0"};
 
   public static enum VAL_TYPE {
     INTEGER("int"),
@@ -74,7 +71,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     STRING("str"),
     DATE("date");
 
-    private VAL_TYPE (final String text) {
+    private VAL_TYPE(final String text) {
       this.text = text;
     }
 
@@ -86,14 +83,14 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     }
   }
 
-  
-  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException, TimeoutException {
+  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams)
+      throws SolrServerException, IOException, InterruptedException, TimeoutException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
     params.set("indent", "true");
     params.set("olap", "true");
     params.set("rows", "0");
-    for (int i = 0; i + 1 < testParams.length;) {
+    for (int i = 0; i + 1 < testParams.length; ) {
       params.add(testParams[i++], testParams[i++]);
     }
     cluster.waitForAllNodes(10);
@@ -109,23 +106,29 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
       throws IOException, InterruptedException, TimeoutException, SolrServerException {
     params.set("timeAllowed", 0);
     cluster.waitForAllNodes(10);
-    final QueryResponse maybeTimeout = new QueryRequest(params).process(cluster.getSolrClient(), COLLECTIONORALIAS);
+    final QueryResponse maybeTimeout =
+        new QueryRequest(params).process(cluster.getSolrClient(), COLLECTIONORALIAS);
     assertEquals(maybeTimeout.getHeader() + "", 0, maybeTimeout.getStatus());
-    final Boolean partial = maybeTimeout.getHeader()
-        .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+    final Boolean partial =
+        maybeTimeout
+            .getHeader()
+            .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
     assertNotNull("No partial results header returned", partial);
-    assertTrue("The request " + params
-        + "was not stopped halfway through, the partial results header was false", partial);
+    assertTrue(
+        "The request "
+            + params
+            + "was not stopped halfway through, the partial results header was false",
+        partial);
   }
 
   @SuppressWarnings("unchecked")
   protected <T> T getValue(NamedList<Object> response, String infoName, String exprName) {
-    return (T)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,
-                                     infoName,
-                                     exprName);
+    return (T)
+        response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, infoName, exprName);
   }
 
-  public <T extends Number & Comparable<T>> Double calculateNumberStat(ArrayList<T> list, String stat) {
+  public <T extends Number & Comparable<T>> Double calculateNumberStat(
+      ArrayList<T> list, String stat) {
     Double result;
     if (stat.equals("median")) {
       result = MedianCalculator.getMedian(list);
@@ -134,7 +137,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
       for (T element : list) {
         d += element.doubleValue();
       }
-      result = Double.valueOf(d/list.size());
+      result = Double.valueOf(d / list.size());
     } else if (stat.equals("sum")) {
       double d = 0;
       for (T element : list) {
@@ -144,7 +147,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     } else if (stat.equals("sumOfSquares")) {
       double d = 0;
       for (T element : list) {
-        d += element.doubleValue()*element.doubleValue();
+        d += element.doubleValue() * element.doubleValue();
       }
       result = Double.valueOf(d);
     } else if (stat.equals("stddev")) {
@@ -152,9 +155,9 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
       double sumSquares = 0;
       for (T element : list) {
         sum += element.doubleValue();
-        sumSquares += element.doubleValue()*element.doubleValue();
+        sumSquares += element.doubleValue() * element.doubleValue();
       }
-      result = Math.sqrt(sumSquares/list.size()-sum*sum/(list.size()*list.size()));
+      result = Math.sqrt(sumSquares / list.size() - sum * sum / (list.size() * list.size()));
     } else {
       throw new IllegalArgumentException();
     }
@@ -165,7 +168,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     Object result;
     if (stat.contains("perc_")) {
       ArrayList<Integer> percs = new ArrayList<>(1);
-      int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5))/100 * list.size()) - 1;
+      int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5)) / 100 * list.size()) - 1;
       percs.add(ord);
       OrdinalCalculator.putOrdinalsInPosition(list, percs);
       result = list.get(percs.get(0));
@@ -174,10 +177,10 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     } else if (stat.equals("unique")) {
       HashSet<T> set = new HashSet<>();
       set.addAll(list);
-      result = Long.valueOf((long)set.size());
+      result = Long.valueOf((long) set.size());
     } else if (stat.equals("max")) {
       Collections.sort(list);
-      result = list.get(list.size()-1);
+      result = list.get(list.size() - 1);
     } else if (stat.equals("min")) {
       Collections.sort(list);
       result = list.get(0);

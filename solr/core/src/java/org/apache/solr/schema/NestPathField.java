@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.pattern.PatternReplaceFilterFactory;
@@ -27,10 +26,10 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 
 /**
- * To be used for field {@link IndexSchema#NEST_PATH_FIELD_NAME} for enhanced
- * nested doc information.  By defining a field type, we can encapsulate the configuration
- * here so that the schema is free of it.  Alternatively, some notion of "implicit field types"
- * would be cool and a more general way of accomplishing this.
+ * To be used for field {@link IndexSchema#NEST_PATH_FIELD_NAME} for enhanced nested doc
+ * information. By defining a field type, we can encapsulate the configuration here so that the
+ * schema is free of it. Alternatively, some notion of "implicit field types" would be cool and a
+ * more general way of accomplishing this.
  *
  * @see org.apache.solr.update.processor.NestedUpdateProcessorFactory
  * @since 8.0
@@ -49,19 +48,18 @@ public class NestPathField extends SortableTextField {
     // CustomAnalyzer is easy to use
     CustomAnalyzer customAnalyzer;
     try {
-      customAnalyzer = CustomAnalyzer.builder(schema.getResourceLoader())
-          .withDefaultMatchVersion(schema.getDefaultLuceneMatchVersion())
-          .withTokenizer(KeywordTokenizerFactory.class)
-          .addTokenFilter(PatternReplaceFilterFactory.class,
-              "pattern", "#\\d*",
-              "replace", "all")
-          .build();
+      customAnalyzer =
+          CustomAnalyzer.builder(schema.getResourceLoader())
+              .withDefaultMatchVersion(schema.getDefaultLuceneMatchVersion())
+              .withTokenizer(KeywordTokenizerFactory.class)
+              .addTokenFilter(
+                  PatternReplaceFilterFactory.class, "pattern", "#\\d*", "replace", "all")
+              .build();
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);//impossible?
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e); // impossible?
     }
     // Solr HTTP Schema APIs don't know about CustomAnalyzer so use TokenizerChain instead
     setIndexAnalyzer(new TokenizerChain(customAnalyzer));
     // leave queryAnalyzer as literal
   }
-
 }

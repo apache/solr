@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import com.tdunning.math.stats.AVLTreeDigest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -24,8 +25,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.function.IntFunction;
-
-import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -49,14 +48,16 @@ public class PercentileAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
       String field = ((FieldNameValueSource) vs).getFieldName();
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
       if (sf.getType().getNumberType() == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             name() + " aggregation not supported for " + sf.getType().getTypeName());
       }
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
@@ -67,7 +68,8 @@ public class PercentileAgg extends SimpleAggValueSource {
           return new PercentileSortedSetAcc(fcontext, sf, numSlots);
         }
         if (sf.getType().isPointField()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               name() + " aggregation not supported for PointField w/o docValues");
         }
         return new PercentileUnInvertedFieldAcc(fcontext, sf, numSlots);
@@ -85,7 +87,7 @@ public class PercentileAgg extends SimpleAggValueSource {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof PercentileAgg)) return false;
-    PercentileAgg other = (PercentileAgg)o;
+    PercentileAgg other = (PercentileAgg) o;
     return this.arg.equals(other.arg) && this.percentiles.equals(other.percentiles);
   }
 
@@ -101,14 +103,15 @@ public class PercentileAgg extends SimpleAggValueSource {
       ValueSource vs = fp.parseValueSource();
       while (fp.hasMoreArguments()) {
         double val = fp.parseDouble();
-        if (val<0 || val>100) {
+        if (val < 0 || val > 100) {
           throw new SyntaxError("requested percentile must be between 0 and 100.  got " + val);
         }
         percentiles.add(val);
       }
 
       if (percentiles.isEmpty()) {
-        throw new SyntaxError("expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
+        throw new SyntaxError(
+            "expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
       }
 
       return new PercentileAgg(vs, percentiles);
@@ -121,13 +124,13 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     if (percentiles.size() == 1) {
-      return digest.quantile( percentiles.get(0) * 0.01 );
+      return digest.quantile(percentiles.get(0) * 0.01);
     }
 
     List<Double> lst = new ArrayList<>(percentiles.size());
     for (Double percentile : percentiles) {
-      double val = digest.quantile( percentile * 0.01 );
-      lst.add( val );
+      double val = digest.quantile(percentile * 0.01);
+      lst.add(val);
     }
     return lst;
   }
@@ -142,13 +145,15 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
-    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    @Override
+    public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
+        throws IOException {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 
       AVLTreeDigest digest = digests[slotNum];
       if (digest == null) {
-        digests[slotNum] = digest = new AVLTreeDigest(100);   // TODO: make compression configurable
+        digests[slotNum] = digest = new AVLTreeDigest(100); // TODO: make compression configurable
       }
 
       digest.add(val);
@@ -163,9 +168,9 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     private void fillSortVals() {
-      sortvals = new double[ digests.length ];
+      sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
-      for (int i=0; i<digests.length; i++) {
+      for (int i = 0; i < digests.length; i++) {
         AVLTreeDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
@@ -180,21 +185,21 @@ public class PercentileAgg extends SimpleAggValueSource {
       if (fcontext.isShard()) {
         return getShardValue(slotNum);
       }
-      if (sortvals != null && percentiles.size()==1) {
+      if (sortvals != null && percentiles.size() == 1) {
         // we've already calculated everything we need
         return digests[slotNum] != null ? sortvals[slotNum] : null;
       }
-      return getValueFromDigest( digests[slotNum] );
+      return getValueFromDigest(digests[slotNum]);
     }
 
     public Object getShardValue(int slot) throws IOException {
       AVLTreeDigest digest = digests[slot];
-      if (digest == null) return null;  // no values for this slot
+      if (digest == null) return null; // no values for this slot
 
       digest.compress();
       int sz = digest.byteSize();
       if (buf == null || buf.capacity() < sz) {
-        buf = ByteBuffer.allocate(sz+(sz>>1));  // oversize by 50%
+        buf = ByteBuffer.allocate(sz + (sz >> 1)); // oversize by 50%
       } else {
         buf.clear();
       }
@@ -220,7 +225,8 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected ByteBuffer buf;
     double[] sortvals;
 
-    public BasePercentileDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public BasePercentileDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf);
       digests = new AVLTreeDigest[numSlots];
     }
@@ -234,9 +240,9 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     private void fillSortVals() {
-      sortvals = new double[ digests.length ];
+      sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
-      for (int i=0; i<digests.length; i++) {
+      for (int i = 0; i < digests.length; i++) {
         AVLTreeDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
@@ -251,21 +257,21 @@ public class PercentileAgg extends SimpleAggValueSource {
       if (fcontext.isShard()) {
         return getShardValue(slotNum);
       }
-      if (sortvals != null && percentiles.size()==1) {
+      if (sortvals != null && percentiles.size() == 1) {
         // we've already calculated everything we need
         return digests[slotNum] != null ? sortvals[slotNum] : null;
       }
-      return getValueFromDigest( digests[slotNum] );
+      return getValueFromDigest(digests[slotNum]);
     }
 
     public Object getShardValue(int slot) throws IOException {
       AVLTreeDigest digest = digests[slot];
-      if (digest == null) return null;  // no values for this slot
+      if (digest == null) return null; // no values for this slot
 
       digest.compress();
       int sz = digest.byteSize();
       if (buf == null || buf.capacity() < sz) {
-        buf = ByteBuffer.allocate(sz+(sz>>1));  // oversize by 50%
+        buf = ByteBuffer.allocate(sz + (sz >> 1)); // oversize by 50%
       } else {
         buf.clear();
       }
@@ -289,7 +295,8 @@ public class PercentileAgg extends SimpleAggValueSource {
   class PercentileSortedNumericAcc extends BasePercentileDVAcc {
     SortedNumericDocValues values;
 
-    public PercentileSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -308,7 +315,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
+      values = DocValues.getSortedNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override
@@ -316,9 +323,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       return values.advanceExact(doc);
     }
 
-    /**
-     * converts given long value to double based on field type
-     */
+    /** converts given long value to double based on field type */
     protected double getDouble(long val) {
       switch (sf.getType().getNumberType()) {
         case INTEGER:
@@ -339,7 +344,8 @@ public class PercentileAgg extends SimpleAggValueSource {
   class PercentileSortedSetAcc extends BasePercentileDVAcc {
     SortedSetDocValues values;
 
-    public PercentileSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots);
     }
 
@@ -353,7 +359,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         BytesRef term = values.lookupOrd(ord);
         Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date ? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
         digest.add(val);
       }
     }
@@ -361,7 +367,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getSortedSet(readerContext.reader(),  sf.getName());
+      values = DocValues.getSortedSet(readerContext.reader(), sf.getName());
     }
 
     @Override
@@ -376,13 +382,15 @@ public class PercentileAgg extends SimpleAggValueSource {
     protected double[] sortvals;
     private int currentSlot;
 
-    public PercentileUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public PercentileUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots);
       digests = new AVLTreeDigest[numSlots];
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       this.currentSlot = slot;
       docToTerm.getBigTerms(doc + currentDocBase, this);
       docToTerm.getSmallTerms(doc + currentDocBase, this);
@@ -397,9 +405,9 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     private void fillSortVals() {
-      sortvals = new double[ digests.length ];
+      sortvals = new double[digests.length];
       double sortp = percentiles.get(0) * 0.01;
-      for (int i=0; i<digests.length; i++) {
+      for (int i = 0; i < digests.length; i++) {
         AVLTreeDigest digest = digests[i];
         if (digest == null) {
           sortvals[i] = Double.NEGATIVE_INFINITY;
@@ -414,11 +422,11 @@ public class PercentileAgg extends SimpleAggValueSource {
       if (fcontext.isShard()) {
         return getShardValue(slotNum);
       }
-      if (sortvals != null && percentiles.size()==1) {
+      if (sortvals != null && percentiles.size() == 1) {
         // we've already calculated everything we need
         return digests[slotNum] != null ? sortvals[slotNum] : null;
       }
-      return getValueFromDigest( digests[slotNum] );
+      return getValueFromDigest(digests[slotNum]);
     }
 
     public Object getShardValue(int slot) throws IOException {
@@ -428,7 +436,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digest.compress();
       int sz = digest.byteSize();
       if (buf == null || buf.capacity() < sz) {
-        buf = ByteBuffer.allocate(sz+(sz>>1));  // oversize by 50%
+        buf = ByteBuffer.allocate(sz + (sz >> 1)); // oversize by 50%
       } else {
         buf.clear();
       }
@@ -471,7 +479,7 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
-      byte[] arr = (byte[])facetResult;
+      byte[] arr = (byte[]) facetResult;
       if (arr == null) return; // an explicit null can mean no values in the field
       AVLTreeDigest subDigest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(arr));
       if (digest == null) {
@@ -488,13 +496,15 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(
+        FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Double.compare(getSortVal(), ((Merger) other).getSortVal());
     }
 
     private Double getSortVal() {
       if (sortVal == null) {
-        sortVal = digest==null ? Double.NEGATIVE_INFINITY : digest.quantile( percentiles.get(0) * 0.01 );
+        sortVal =
+            digest == null ? Double.NEGATIVE_INFINITY : digest.quantile(percentiles.get(0) * 0.01);
       }
       return sortVal;
     }

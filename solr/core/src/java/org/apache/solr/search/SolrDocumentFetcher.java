@@ -27,26 +27,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -58,6 +56,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocument;
@@ -75,8 +74,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A helper class of {@link org.apache.solr.search.SolrIndexSearcher} for stored Document related matters
- * including DocValue substitutions.
+ * A helper class of {@link org.apache.solr.search.SolrIndexSearcher} for stored Document related
+ * matters including DocValue substitutions.
  */
 public class SolrDocumentFetcher {
 
@@ -86,7 +85,7 @@ public class SolrDocumentFetcher {
 
   private final boolean enableLazyFieldLoading;
 
-  private final SolrCache<Integer,Document> documentCache;
+  private final SolrCache<Integer, Document> documentCache;
 
   private final Set<String> allStored;
 
@@ -95,24 +94,36 @@ public class SolrDocumentFetcher {
   /** Contains the names/patterns of all docValues=true,stored=false fields in the schema. */
   private final Set<String> allNonStoredDVs;
 
-  /** Contains the names/patterns of all docValues=true,stored=false,useDocValuesAsStored=true fields in the schema. */
+  /**
+   * Contains the names/patterns of all docValues=true,stored=false,useDocValuesAsStored=true fields
+   * in the schema.
+   */
   private final Set<String> nonStoredDVsUsedAsStored;
 
-  /** Contains the names/patterns of all docValues=true,stored=false fields, excluding those that are copyField targets in the schema. */
+  /**
+   * Contains the names/patterns of all docValues=true,stored=false fields, excluding those that are
+   * copyField targets in the schema.
+   */
   private final Set<String> nonStoredDVsWithoutCopyTargets;
 
-  private static int largeValueLengthCacheThreshold = Integer.getInteger("solr.largeField.cacheThreshold", 512 * 1024); // internal setting
+  private static int largeValueLengthCacheThreshold =
+      Integer.getInteger("solr.largeField.cacheThreshold", 512 * 1024); // internal setting
 
   private final Set<String> largeFields;
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
+
+  private Collection<String> indexedFieldNames; // lazy populated; use getter
 
   @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
-      documentCache = solrConfig.documentCacheConfig == null ? null : solrConfig.documentCacheConfig.newInstance();
+      documentCache =
+          solrConfig.documentCacheConfig == null
+              ? null
+              : solrConfig.documentCacheConfig.newInstance();
     } else {
       documentCache = null;
     }
@@ -124,7 +135,8 @@ public class SolrDocumentFetcher {
     final Set<String> dvsCanSubstituteStored = new HashSet<>();
     final Set<String> allStoreds = new HashSet<>();
 
-    for (FieldInfo fieldInfo : searcher.getFieldInfos()) { // can find materialized dynamic fields, unlike using the Solr IndexSchema.
+    // can find materialized dynamic fields, unlike using the Solr IndexSchema.
+    for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
       final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldInfo.name);
       if (schemaField == null) {
         continue;
@@ -151,7 +163,8 @@ public class SolrDocumentFetcher {
 
     this.nonStoredDVsUsedAsStored = Collections.unmodifiableSet(nonStoredDVsUsedAsStored);
     this.allNonStoredDVs = Collections.unmodifiableSet(allNonStoredDVs);
-    this.nonStoredDVsWithoutCopyTargets = Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
+    this.nonStoredDVsWithoutCopyTargets =
+        Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
@@ -165,7 +178,9 @@ public class SolrDocumentFetcher {
     DocValuesType docValuesType = fieldInfo.getDocValuesType();
     NumberType numberType = schemaField.getType().getNumberType();
     // can not decode a numeric without knowing its numberType
-    if (numberType == null && (docValuesType == DocValuesType.SORTED_NUMERIC || docValuesType == DocValuesType.NUMERIC)) {
+    if (numberType == null
+        && (docValuesType == DocValuesType.SORTED_NUMERIC
+            || docValuesType == DocValuesType.NUMERIC)) {
       return false;
     }
     return true;
@@ -180,21 +195,24 @@ public class SolrDocumentFetcher {
   }
 
   /**
-   * Returns a collection of the names of all stored fields which can be highlighted the index reader knows about.
+   * Returns a collection of the names of all stored fields which can be highlighted the index
+   * reader knows about.
    */
   public Collection<String> getStoredHighlightFieldNames() {
     synchronized (this) {
       if (storedHighlightFieldNames == null) {
-        storedHighlightFieldNames = new LinkedList<>();
+        storedHighlightFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           final String fieldName = fieldInfo.name;
           try {
             SchemaField field = searcher.getSchema().getField(fieldName);
-            if (field.stored() && ((field.getType() instanceof org.apache.solr.schema.TextField)
-                || (field.getType() instanceof org.apache.solr.schema.StrField))) {
+            if (field.stored()
+                && ((field.getType() instanceof org.apache.solr.schema.TextField)
+                    || (field.getType() instanceof org.apache.solr.schema.StrField))) {
               storedHighlightFieldNames.add(fieldName);
             }
-          } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
+          } catch (RuntimeException e) {
+            // getField() throws a SolrException, but it arrives as a RuntimeException
             log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
           }
         }
@@ -203,16 +221,33 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /** @see SolrIndexSearcher#doc(int) */
+  /** Returns a collection of the names of all indexed fields which the index reader knows about. */
+  public Collection<String> getIndexedFieldNames() {
+    synchronized (this) {
+      if (indexedFieldNames == null) {
+        indexedFieldNames = new ArrayList<>();
+        for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
+          if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            indexedFieldNames.add(fieldInfo.name);
+          }
+        }
+      }
+      return indexedFieldNames;
+    }
+  }
+
+  /**
+   * @see SolrIndexSearcher#doc(int)
+   */
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
   }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
-   * <p>
-   * <b>NOTE</b>: the document will have all fields accessible, but if a field filter is provided, only the provided
-   * fields will be loaded (the remainder will be available lazily).
+   *
+   * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
+   * provided, only the provided fields will be loaded (the remainder will be available lazily).
    *
    * @see SolrIndexSearcher#doc(int, Set)
    */
@@ -234,7 +269,8 @@ public class SolrDocumentFetcher {
 
   private Document docNC(int i, Set<String> fields) throws IOException {
     final DirectoryReader reader = searcher.getIndexReader();
-    final SolrDocumentStoredFieldVisitor visitor = new SolrDocumentStoredFieldVisitor(fields, reader, i);
+    final SolrDocumentStoredFieldVisitor visitor =
+        new SolrDocumentStoredFieldVisitor(fields, reader, i);
     reader.document(i, visitor);
     return visitor.getDocument();
   }
@@ -242,46 +278,44 @@ public class SolrDocumentFetcher {
   /**
    * This is an optimized version for populating a SolrDocument that:
    *
-   * 1. fetches all fields from docValues if possible. If no decompression of the stored
-   * data is necessary, we can avoid a disk seek and decompression cycle.
-   * This step is only used if all requested fields are
-   * {code docValues=true stored=false multiValued=false}.
-   * This last restriction because multiValued docValues fields do not faithfully reflect
-   * the input order in all cases. the values are returned and no decompression is necessary.
+   * <p>1. fetches all fields from docValues if possible. If no decompression of the stored data is
+   * necessary, we can avoid a disk seek and decompression cycle. This step is only used if all
+   * requested fields are {code docValues=true stored=false multiValued=false}. This last
+   * restriction because multiValued docValues fields do not faithfully reflect the input order in
+   * all cases. the values are returned and no decompression is necessary.
    *
-   * 2. if 1 is impossible, try to fetch all requested fields from the stored values. If
-   * the stored data has to be decompressed anyway, it's more efficient to
-   * just get all field values from the stored values. If we got all the requested fields, return.
+   * <p>2. if 1 is impossible, try to fetch all requested fields from the stored values. If the
+   * stored data has to be decompressed anyway, it's more efficient to just get all field values
+   * from the stored values. If we got all the requested fields, return.
    *
-   * 3. add fields where docValues=true stored=false thus could not be fetched in step 2
+   * <p>3. add fields where docValues=true stored=false thus could not be fetched in step 2
    *
-   * @param luceneDocId       The Lucene doc ID
-   * @param solrReturnFields  the structure holding the fields to be returned.
-   *                          The first time this method is called for a particular
-   *                          document list, it will be modified by adding a
-   *                          RetrieveFieldsOptimizer for use in future calls.
-   *
+   * @param luceneDocId The Lucene doc ID
+   * @param solrReturnFields the structure holding the fields to be returned. The first time this
+   *     method is called for a particular document list, it will be modified by adding a
+   *     RetrieveFieldsOptimizer for use in future calls.
    * @return The SolrDocument with values requested.
-   * <p>
-   * This method is designed to be as simple as possible to use, just call it. e.g.
-   * {code SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);}
-   * then process the resulting SolrDocument as usual. Subsequent calls with the same
-   * solrReturnFields will re-use the optimizer created the first time.
-   *
-   * NOTE: DO NOT re-use the same SolrReturnFields object if the fields requested change.
+   *     <p>This method is designed to be as simple as possible to use, just call it. e.g. {code
+   *     SolrDocument sdoc = docFetcher.solrDoc(id, solrReturnFields);} then process the resulting
+   *     SolrDocument as usual. Subsequent calls with the same solrReturnFields will re-use the
+   *     optimizer created the first time.
+   *     <p>NOTE: DO NOT re-use the same SolrReturnFields object if the fields requested change.
    */
-
   public SolrDocument solrDoc(int luceneDocId, SolrReturnFields solrReturnFields) {
-    Supplier<RetrieveFieldsOptimizer> rfoSupplier = () -> new RetrieveFieldsOptimizer(solrReturnFields);
+    Supplier<RetrieveFieldsOptimizer> rfoSupplier =
+        () -> new RetrieveFieldsOptimizer(solrReturnFields);
     return solrReturnFields.getFetchOptimizer(rfoSupplier).getSolrDoc(luceneDocId);
   }
 
-  /** {@link StoredFieldVisitor} which loads the specified fields eagerly (or all if null).
-   * If {@link #enableLazyFieldLoading} then the rest get special lazy field entries.  Designated "large"
-   * fields will always get a special field entry. */
+  /**
+   * {@link StoredFieldVisitor} which loads the specified fields eagerly (or all if null). If {@link
+   * #enableLazyFieldLoading} then the rest get special lazy field entries. Designated "large"
+   * fields will always get a special field entry.
+   */
   private class SolrDocumentStoredFieldVisitor extends DocumentStoredFieldVisitor {
     private final Document doc;
-    private final LazyDocument lazyFieldProducer; // arguably a better name than LazyDocument; at least how we use it here
+    private final LazyDocument
+        lazyFieldProducer; // arguably a better name than LazyDocument; at least how we use it here
     private final int docId;
     private final boolean addLargeFieldsLazily;
 
@@ -289,12 +323,13 @@ public class SolrDocumentFetcher {
       super(toLoad);
       this.docId = docId;
       this.doc = getDocument();
-      this.lazyFieldProducer = toLoad != null && enableLazyFieldLoading ? new LazyDocument(reader, docId) : null;
+      this.lazyFieldProducer =
+          toLoad != null && enableLazyFieldLoading ? new LazyDocument(reader, docId) : null;
       this.addLargeFieldsLazily = (documentCache != null && !largeFields.isEmpty());
-      //TODO can we return Status.STOP after a val is loaded and we know there are no other fields of interest?
+      // TODO can we return Status.STOP after a val is loaded and we know there are no other fields
+      // of interest?
       //    When: toLoad is one single-valued field, no lazyFieldProducer
     }
-
 
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
@@ -309,14 +344,14 @@ public class SolrDocumentFetcher {
       } else {
         super.stringField(fieldInfo, value);
       }
-
     }
 
     @Override
     public Status needsField(FieldInfo fieldInfo) throws IOException {
       Status status = super.needsField(fieldInfo);
       assert status != Status.STOP : "Status.STOP not supported or expected";
-      if (addLargeFieldsLazily && largeFields.contains(fieldInfo.name)) { // load "large" fields using this lazy mechanism
+      // load "large" fields using this lazy mechanism
+      if (addLargeFieldsLazily && largeFields.contains(fieldInfo.name)) {
         if (lazyFieldProducer != null || status == Status.YES) {
           doc.add(new LargeLazyField(fieldInfo.name, docId));
         }
@@ -329,7 +364,9 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /** @see SolrIndexSearcher#doc(int, StoredFieldVisitor) */
+  /**
+   * @see SolrIndexSearcher#doc(int, StoredFieldVisitor)
+   */
   public void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
       // get cached document or retrieve it including all fields (and cache it)
@@ -388,11 +425,18 @@ public class SolrDocumentFetcher {
     if (bytesRef.offset == 0 && bytesRef.bytes.length == bytesRef.length) {
       return new String(bytesRef.bytes, StandardCharsets.UTF_8);
     } else {
-      return new String(bytesRef.bytes, bytesRef.offset, bytesRef.offset + bytesRef.length, StandardCharsets.UTF_8);
+      return new String(
+          bytesRef.bytes,
+          bytesRef.offset,
+          bytesRef.offset + bytesRef.length,
+          StandardCharsets.UTF_8);
     }
   }
 
-  /** Unlike LazyDocument.LazyField, we (a) don't cache large values, and (b) provide access to the byte[]. */
+  /**
+   * Unlike LazyDocument.LazyField, we (a) don't cache large values, and (b) provide access to the
+   * byte[].
+   */
   class LargeLazyField implements IndexableField {
 
     final String name;
@@ -422,7 +466,8 @@ public class SolrDocumentFetcher {
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
-      return analyzer.tokenStream(name(), stringValue()); // or we could throw unsupported exception?
+      // or we could throw unsupported exception?
+      return analyzer.tokenStream(name(), stringValue());
     }
 
     /** (for tests) */
@@ -444,30 +489,35 @@ public class SolrDocumentFetcher {
         return cachedBytes;
       } else {
         BytesRef bytesRef = new BytesRef();
-        searcher.getIndexReader().document(docId, new StoredFieldVisitor() {
-          boolean done = false;
+        searcher
+            .getIndexReader()
+            .document(
+                docId,
+                new StoredFieldVisitor() {
+                  boolean done = false;
 
-          @Override
-          public Status needsField(FieldInfo fieldInfo) throws IOException {
-            if (done) {
-              return Status.STOP;
-            }
-            return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
-          }
+                  @Override
+                  public Status needsField(FieldInfo fieldInfo) throws IOException {
+                    if (done) {
+                      return Status.STOP;
+                    }
+                    return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
+                  }
 
-          @Override
-          public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-            Objects.requireNonNull(value, "String value should not be null");
-            bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
-            bytesRef.length = value.length();
-            done = true;
-          }
+                  @Override
+                  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+                    Objects.requireNonNull(value, "String value should not be null");
+                    bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
+                    bytesRef.length = bytesRef.bytes.length;
+                    done = true;
+                  }
 
-          @Override
-          public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-            throw new UnsupportedOperationException("'large' binary fields are not (yet) supported");
-          }
-        });
+                  @Override
+                  public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+                    throw new UnsupportedOperationException(
+                        "'large' binary fields are not (yet) supported");
+                  }
+                });
         if (bytesRef.length < largeValueLengthCacheThreshold) {
           return cachedBytes = bytesRef;
         } else {
@@ -495,15 +545,12 @@ public class SolrDocumentFetcher {
   /**
    * This will fetch and add the docValues fields to a given SolrDocument/SolrInputDocument
    *
-   * @param doc
-   *          A SolrDocument or SolrInputDocument instance where docValues will be added
-   * @param docid
-   *          The lucene docid of the document to be populated
-   * @param fields
-   *          The fields with docValues to populate the document with.
-   *          DocValues fields which do not exist or not decodable will be ignored.
+   * @param doc A SolrDocument or SolrInputDocument instance where docValues will be added
+   * @param docid The lucene docid of the document to be populated
+   * @param fields The fields with docValues to populate the document with. DocValues fields which
+   *     do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(SolrDocumentBase<?, ?> doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
@@ -519,9 +566,11 @@ public class SolrDocumentFetcher {
 
   /**
    * Decode value from DV field for a document
+   *
    * @return null if DV field is not exist or can not decodable
    */
-  private Object decodeDVField(int localId, LeafReader leafReader, String fieldName) throws IOException {
+  private Object decodeDVField(int localId, LeafReader leafReader, String fieldName)
+      throws IOException {
     final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldName);
     FieldInfo fi = searcher.getFieldInfos().fieldInfo(fieldName);
     if (schemaField == null || !schemaField.hasDocValues() || fi == null) {
@@ -570,7 +619,8 @@ public class SolrDocumentFetcher {
             if (value == null) {
               return null;
             }
-            // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single valued
+            // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single
+            // valued
             else if (schemaField.multiValued() == false) {
               return value;
             } else {
@@ -584,8 +634,10 @@ public class SolrDocumentFetcher {
       case SORTED_SET:
         final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
         if (values != null && values.getValueCount() > 0 && values.advance(localId) == localId) {
-          final List<Object> outValues = new LinkedList<>();
-          for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+          final List<Object> outValues = new ArrayList<>();
+          for (long ord = values.nextOrd();
+              ord != SortedSetDocValues.NO_MORE_ORDS;
+              ord = values.nextOrd()) {
             BytesRef value = values.lookupOrd(ord);
             outValues.add(schemaField.getType().toObject(schemaField, value));
           }
@@ -599,23 +651,27 @@ public class SolrDocumentFetcher {
   }
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
-    // note: This special-case is unfortunate; if we have to add any more than perhaps the fieldType should
-    //  have this method so that specific field types can customize it.
+    // note: This special-case is unfortunate; if we have to add any more than perhaps the fieldType
+    // should have this method so that specific field types can customize it.
     if (schemaField.getType() instanceof LatLonPointSpatialField) {
       return LatLonPointSpatialField.decodeDocValueToString(value);
     }
 
     if (schemaField.getType().getNumberType() == null) {
-      log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
-          schemaField.getName(), schemaField);
+      log.warn(
+          "Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
+          schemaField.getName(),
+          schemaField);
       return null;
     }
 
     switch (schemaField.getType().getNumberType()) {
       case INTEGER:
-        final int raw = (int)value;
+        final int raw = (int) value;
         if (schemaField.getType() instanceof AbstractEnumField) {
-          return ((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(raw);
+          return ((AbstractEnumField) schemaField.getType())
+              .getEnumMapping()
+              .intValueToStringValue(raw);
         } else {
           return raw;
         }
@@ -623,9 +679,9 @@ public class SolrDocumentFetcher {
         return value;
       case FLOAT:
         if (sortableNumeric) {
-          return NumericUtils.sortableIntToFloat((int)value);
+          return NumericUtils.sortableIntToFloat((int) value);
         } else {
-          return Float.intBitsToFloat((int)value);
+          return Float.intBitsToFloat((int) value);
         }
       case DOUBLE:
         if (sortableNumeric) {
@@ -652,31 +708,30 @@ public class SolrDocumentFetcher {
   /**
    * Returns an unmodifiable set of non-stored docValues field names.
    *
-   * @param onlyUseDocValuesAsStored
-   *          If false, returns all non-stored docValues. If true, returns only those non-stored docValues which have
-   *          the {@link SchemaField#useDocValuesAsStored()} flag true.
+   * @param onlyUseDocValuesAsStored If false, returns all non-stored docValues. If true, returns
+   *     only those non-stored docValues which have the {@link SchemaField#useDocValuesAsStored()}
+   *     flag true.
    */
   public Set<String> getNonStoredDVs(boolean onlyUseDocValuesAsStored) {
     return onlyUseDocValuesAsStored ? nonStoredDVsUsedAsStored : allNonStoredDVs;
   }
 
   /**
-   * Returns an unmodifiable set of names of non-stored docValues fields, except those that are targets of a copy field.
+   * Returns an unmodifiable set of names of non-stored docValues fields, except those that are
+   * targets of a copy field.
    */
   public Set<String> getNonStoredDVsWithoutCopyTargets() {
     return nonStoredDVsWithoutCopyTargets;
   }
 
-
   /**
-   * Moved as a private class here, we consider it an impelmentation detail. It should not
-   * be exposed outside of this class.
-   * <p>
-   * This class is in charge of insuring that SolrDocuments can have their fields populated
-   * during a request in the most efficient way possible. See the comments at
-   * {@link #solrDoc(int docId, SolrReturnFields solrReturnFields)}
+   * Moved as a private class here, we consider it an impelmentation detail. It should not be
+   * exposed outside of this class.
+   *
+   * <p>This class is in charge of insuring that SolrDocuments can have their fields populated
+   * during a request in the most efficient way possible. See the comments at {@link #solrDoc(int
+   * docId, SolrReturnFields solrReturnFields)}
    */
-
   class RetrieveFieldsOptimizer {
     // null means get all available stored fields
     private final Set<String> storedFields;
@@ -697,11 +752,10 @@ public class SolrDocumentFetcher {
     }
 
     /**
-     * Sometimes we could fetch a field value from either the stored document or docValues.
-     * Such fields have both and are single-valued.
-     * If choosing docValues allows us to avoid accessing the stored document altogether
-     * for all fields to be returned then we do it,
-     * otherwise we prefer the stored value when we have a choice.
+     * Sometimes we could fetch a field value from either the stored document or docValues. Such
+     * fields have both and are single-valued. If choosing docValues allows us to avoid accessing
+     * the stored document altogether for all fields to be returned then we do it, otherwise we
+     * prefer the stored value when we have a choice.
      */
     private boolean returnStoredFields() {
       return !(storedFields != null && storedFields.isEmpty());
@@ -719,7 +773,7 @@ public class SolrDocumentFetcher {
       return dvFields;
     }
 
-    //who uses all of these?
+    // who uses all of these?
     private ReturnFields getReturnFields() {
       return solrReturnFields;
     }
@@ -737,13 +791,23 @@ public class SolrDocumentFetcher {
         }
       } else if (fnames != null) {
         storedFields.addAll(fnames);
-        storedFields.removeIf((String name) -> {
-          SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
-          if (schemaField == null) return false; // Get it from the stored fields if, for some reasonm, we can't get the schema.
-          if (schemaField.stored() && schemaField.multiValued()) return false; // must return multivalued fields from stored data if possible.
-          if (schemaField.stored() == false) return true; // if it's not stored, no choice but to return from DV.
-          return false;
-        });
+        storedFields.removeIf(
+            (String name) -> {
+              SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
+              if (schemaField == null) {
+                // Get it from the stored fields if, for some reason, we can't get the schema.
+                return false;
+              }
+              if (schemaField.stored() && schemaField.multiValued()) {
+                // must return multivalued fields from stored data if possible.
+                return false;
+              }
+              if (schemaField.stored() == false) {
+                // if it's not stored, no choice but to return from DV.
+                return true;
+              }
+              return false;
+            });
       }
       storedFields.remove(SolrReturnFields.SCORE);
       return storedFields;
@@ -790,7 +854,8 @@ public class SolrDocumentFetcher {
         if (returnStoredFields()) {
           Document doc = doc(luceneDocId, getStoredFields());
           // make sure to use the schema from the searcher and not the request (cross-core)
-          sdoc = DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), getReturnFields());
+          sdoc =
+              DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), getReturnFields());
           if (returnDVFields() == false) {
             solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED);
             return sdoc;
@@ -808,10 +873,12 @@ public class SolrDocumentFetcher {
           decorateDocValueFields(sdoc, luceneDocId, getDvFields());
         }
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + luceneDocId, e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error reading document with docId " + luceneDocId,
+            e);
       }
       return sdoc;
     }
   }
 }
-

@@ -20,58 +20,63 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.constant.ConstantIntValue;
 
 /**
  * A single-valued analytics value that can be represented as an int.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getInt()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getInt()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface IntValue extends IntValueStream, AnalyticsValue {
   /**
    * Get the int representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
   int getInt();
 
-  /**
-   * An interface that represents all of the types a {@link IntValue} should be able to cast to.
-   */
-  public static interface CastingIntValue extends IntValue, LongValue, FloatValue,DoubleValue, StringValue, ComparableValue { }
+  /** An interface that represents all of the types a {@link IntValue} should be able to cast to. */
+  public static interface CastingIntValue
+      extends IntValue, LongValue, FloatValue, DoubleValue, StringValue, ComparableValue {}
 
   /**
-   * An abstract base for {@link CastingIntValue} that automatically casts to all types if {@link #getInt()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingIntValue} that automatically casts to all types if {@link
+   * #getInt()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractIntValue implements CastingIntValue {
+  public abstract static class AbstractIntValue implements CastingIntValue {
     @Override
     public long getLong() {
       return getInt();
     }
+
     @Override
     public float getFloat() {
       return getInt();
     }
+
     @Override
     public double getDouble() {
       return getInt();
     }
+
     @Override
     public String getString() {
       int val = getInt();
       return exists() ? Integer.toString(val) : null;
     }
+
     @Override
     public Object getObject() {
       int val = getInt();
       return exists() ? val : null;
     }
+
     @Override
     public void streamInts(IntConsumer cons) {
       int val = getInt();
@@ -79,6 +84,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamLongs(LongConsumer cons) {
       long val = getLong();
@@ -86,6 +92,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamFloats(FloatConsumer cons) {
       float val = getFloat();
@@ -93,6 +100,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       double val = getDouble();
@@ -100,6 +108,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       String val = getString();
@@ -107,6 +116,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object val = getObject();
@@ -114,6 +124,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -121,6 +132,7 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<Integer> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

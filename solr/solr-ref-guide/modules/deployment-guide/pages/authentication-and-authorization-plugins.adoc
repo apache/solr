@@ -87,7 +87,7 @@ Create the file `security.json` with the contents:
 
 [source,json]
 ----
-{"authentication": {"class": "org.apache.solr.security.KerberosPlugin"}}
+{"authentication": {"class": "solr.KerberosPlugin"}}
 ----
 
 Note that this example defines the `KerberosPlugin` for authentication.
@@ -207,6 +207,7 @@ Solr has a built-in `PKIAuthenticationPlugin` (described below) that is always a
 Each Authentication plugin may also decide to secure inter-node requests on its own.
 They may do this through the so-called `HttpClientBuilder` mechanism, or they may alternatively choose on a per-request basis whether to delegate to PKI or not by overriding a `interceptInternodeRequest()` method from the base class, where any HTTP headers can be set.
 
+[#pkiauthenticationplugin]
 === PKIAuthenticationPlugin
 
 The `PKIAuthenticationPlugin` provides a built-in authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes through the use of Public Key Infrastructure (PKI).

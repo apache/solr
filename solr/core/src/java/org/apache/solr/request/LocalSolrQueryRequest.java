@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,53 +30,52 @@ import org.apache.solr.core.SolrCore;
 // With the addition of SolrParams, this class isn't needed for much anymore... it's currently
 // retained more for backward compatibility.
 
-/**
- *
- */
+/** */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public String userPrincipalName = null;
-  
-  protected static SolrParams makeParams(String query, String qtype, int start, int limit,
-                                         Map<?,?> args) {
-    Map<String,String[]> map = new HashMap<>();
-    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext();) {
-      Map.Entry<?,?> e = iter.next();
+
+  protected static SolrParams makeParams(
+      String query, String qtype, int start, int limit, Map<?, ?> args) {
+    Map<String, String[]> map = new HashMap<>();
+    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext(); ) {
+      Map.Entry<?, ?> e = iter.next();
       String k = e.getKey().toString();
       Object v = e.getValue();
-      if (v instanceof String[]) map.put(k,(String[])v);
-      else map.put(k,new String[]{v.toString()});
+      if (v instanceof String[]) map.put(k, (String[]) v);
+      else map.put(k, new String[] {v.toString()});
     }
-    if (query!=null) map.put(CommonParams.Q, new String[]{query});
-    if (qtype!=null) map.put(CommonParams.QT, new String[]{qtype});
-    map.put(CommonParams.START, new String[]{Integer.toString(start)});
-    map.put(CommonParams.ROWS, new String[]{Integer.toString(limit)});
+    if (query != null) map.put(CommonParams.Q, new String[] {query});
+    if (qtype != null) map.put(CommonParams.QT, new String[] {qtype});
+    map.put(CommonParams.START, new String[] {Integer.toString(start)});
+    map.put(CommonParams.ROWS, new String[] {Integer.toString(limit)});
     return new MultiMapSolrParams(map);
   }
 
-  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit,
-                               Map<?,?> args) {
-    super(core,makeParams(query,qtype,start,limit,args));
+  public LocalSolrQueryRequest(
+      SolrCore core, String query, String qtype, int start, int limit, Map<?, ?> args) {
+    super(core, makeParams(query, qtype, start, limit, args));
   }
 
   public LocalSolrQueryRequest(SolrCore core, NamedList<?> args) {
     super(core, args.toSolrParams());
   }
 
-  public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {
+  public LocalSolrQueryRequest(SolrCore core, Map<String, String[]> args) {
     super(core, new MultiMapSolrParams(args));
   }
-  
+
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
     super(core, args);
   }
 
-  @Override public Principal getUserPrincipal() {
+  @Override
+  public Principal getUserPrincipal() {
     return new LocalPrincipal(this.userPrincipalName);
   }
-  
-  /** 
-   * Allows setting the 'name' of the User Principal for the purposes of creating local requests
-   * in a solr node when security is enabled.  It is experiemental and subject to removal
+
+  /**
+   * Allows setting the 'name' of the User Principal for the purposes of creating local requests in
+   * a solr node when security is enabled. It is experiemental and subject to removal
    *
    * @see org.apache.solr.security.PKIAuthenticationPlugin#NODE_IS_USER
    * @see #getUserPrincipal
@@ -87,21 +85,28 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public void setUserPrincipalName(String s) {
     this.userPrincipalName = s;
   }
-  private final class LocalPrincipal implements Principal {
+
+  private static final class LocalPrincipal implements Principal {
     private final String user;
+
     public LocalPrincipal(String user) {
       this.user = user;
     }
+
+    @Override
     public String getName() {
       return user;
     }
-    @Override public int hashCode() {
+
+    @Override
+    public int hashCode() {
       return Objects.hashCode(user);
     }
-    @Override public boolean equals(Object other) {
+
+    @Override
+    public boolean equals(Object other) {
       return Objects.equals(this.getClass(), other.getClass())
-        && Objects.equals(this.getName(), ((LocalPrincipal)other).getName() );
+          && Objects.equals(this.getName(), ((LocalPrincipal) other).getName());
     }
   }
 }
-

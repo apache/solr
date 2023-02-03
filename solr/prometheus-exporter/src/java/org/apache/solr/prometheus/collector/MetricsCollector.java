@@ -34,11 +34,8 @@ public class MetricsCollector implements MetricCollector {
   public MetricSamples collect() throws Exception {
     MetricSamples results = new MetricSamples();
 
-    solrClient.metricsForAllHosts(metricsQuery)
-        .forEach((host, samples) -> results.addAll(samples));
+    solrClient.metricsForAllHosts(metricsQuery).forEach((host, samples) -> results.addAll(samples));
 
     return results;
   }
-
-
 }

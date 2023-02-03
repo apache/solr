@@ -27,7 +27,8 @@ import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
-  public BlockJoinChildQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public BlockJoinChildQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
@@ -40,14 +41,15 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   protected String getParentFilterLocalParamName() {
     return "of";
   }
-  
+
   @Override
   protected Query noClausesQuery() throws SyntaxError {
     final Query parents = parseParentFilter();
-    final BooleanQuery notParents = new BooleanQuery.Builder()
-        .add(new MatchAllDocsQuery(), Occur.MUST)
-        .add(parents, Occur.MUST_NOT)
-      .build();
+    final BooleanQuery notParents =
+        new BooleanQuery.Builder()
+            .add(new MatchAllDocsQuery(), Occur.MUST)
+            .add(parents, Occur.MUST_NOT)
+            .build();
     return new BitSetProducerQuery(getBitSetProducer(notParents));
   }
 }

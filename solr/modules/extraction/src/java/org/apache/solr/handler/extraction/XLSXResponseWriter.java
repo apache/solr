@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -52,13 +51,14 @@ import org.apache.solr.search.ReturnFields;
 public class XLSXResponseWriter extends RawResponseWriter {
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     // throw away arraywriter just to satisfy super requirements; we're grabbing
     // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
 
-    LinkedHashMap<String,String> reqNamesMap = new LinkedHashMap<>();
-    LinkedHashMap<String,Integer> reqWidthsMap = new LinkedHashMap<>();
+    LinkedHashMap<String, String> reqNamesMap = new LinkedHashMap<>();
+    LinkedHashMap<String, Integer> reqWidthsMap = new LinkedHashMap<>();
 
     Iterator<String> paramNamesIter = req.getParams().getParameterNamesIterator();
     while (paramNamesIter.hasNext()) {
@@ -102,12 +102,12 @@ class XLSXWriter extends TabularResponseWriter {
 
       this.rowIndex = 0;
 
-      this.headerStyle = (XSSFCellStyle)swb.createCellStyle();
+      this.headerStyle = (XSSFCellStyle) swb.createCellStyle();
       this.headerStyle.setFillBackgroundColor(IndexedColors.BLACK.getIndex());
-      //solid fill
+      // solid fill
       this.headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
       Font headerFont = swb.createFont();
-      headerFont.setFontHeightInPoints((short)14);
+      headerFont.setFontHeightInPoints((short) 14);
       headerFont.setBold(true);
       headerFont.setColor(IndexedColors.WHITE.getIndex());
       this.headerStyle.setFont(headerFont);
@@ -119,18 +119,18 @@ class XLSXWriter extends TabularResponseWriter {
     }
 
     void setHeaderRow() {
-      curRow.setHeightInPoints((short)21);
+      curRow.setHeightInPoints((short) 21);
     }
 
-    //sets last created cell to have header style
+    // sets last created cell to have header style
     void setHeaderCell() {
       curRow.getCell(cellIndex - 1).setCellStyle(this.headerStyle);
     }
 
-    //set the width of the most recently created column
+    // set the width of the most recently created column
     void setColWidth(int charWidth) {
-      //width in poi is units of 1/256th of a character width for some reason
-      this.sh.setColumnWidth(cellIndex - 1, 256*charWidth);
+      // width in poi is units of 1/256th of a character width for some reason
+      this.sh.setColumnWidth(cellIndex - 1, 256 * charWidth);
     }
 
     void writeCell(String value) {
@@ -145,7 +145,7 @@ class XLSXWriter extends TabularResponseWriter {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
         String stacktrace = sw.toString();
-      }finally {
+      } finally {
         swb.dispose();
       }
     }
@@ -158,14 +158,17 @@ class XLSXWriter extends TabularResponseWriter {
     SchemaField sf;
   }
 
-  private Map<String,XLField> xlFields = new LinkedHashMap<String,XLField>();
+  private Map<String, XLField> xlFields = new LinkedHashMap<String, XLField>();
 
   public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
   }
 
-  public void writeResponse(OutputStream out, LinkedHashMap<String, String> colNamesMap,
-                            LinkedHashMap<String, Integer> colWidthsMap) throws IOException {
+  public void writeResponse(
+      OutputStream out,
+      LinkedHashMap<String, String> colNamesMap,
+      LinkedHashMap<String, Integer> colWidthsMap)
+      throws IOException {
 
     Collection<String> fields = getFields();
     for (String field : fields) {
@@ -194,10 +197,8 @@ class XLSXWriter extends TabularResponseWriter {
       xlFields.put(field, xlField);
     }
 
-
-
     wb.addRow();
-    //write header
+    // write header
     for (XLField xlField : xlFields.values()) {
       String printName = xlField.name;
       int colWidth = 14;
@@ -230,11 +231,12 @@ class XLSXWriter extends TabularResponseWriter {
     super.close();
   }
 
-  //NOTE: a document cannot currently contain another document
+  // NOTE: a document cannot currently contain another document
   List<Object> tmpList;
 
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+      throws IOException {
     if (tmpList == null) {
       tmpList = new ArrayList<>(1);
       tmpList.add(null);
@@ -242,7 +244,7 @@ class XLSXWriter extends TabularResponseWriter {
 
     for (XLField xlField : xlFields.values()) {
       Object val = doc.getFieldValue(xlField.name);
-      int nVals = val instanceof Collection ? ((Collection)val).size() : (val==null ? 0 : 1);
+      int nVals = val instanceof Collection ? ((Collection) val).size() : (val == null ? 0 : 1);
       if (nVals == 0) {
         writeNull(xlField.name);
         continue;
@@ -252,7 +254,7 @@ class XLSXWriter extends TabularResponseWriter {
         Collection<?> values;
         // normalize to a collection
         if (val instanceof Collection) {
-          values = (Collection<?>)val;
+          values = (Collection<?>) val;
         } else {
           tmpList.set(0, val);
           values = tmpList;
@@ -263,7 +265,7 @@ class XLSXWriter extends TabularResponseWriter {
       } else {
         // normalize to first value
         if (val instanceof Collection) {
-          Collection<?> values = (Collection<?>)val;
+          Collection<?> values = (Collection<?>) val;
           val = values.iterator().next();
         }
         writeVal(xlField.name, val);
@@ -280,11 +282,11 @@ class XLSXWriter extends TabularResponseWriter {
   @Override
   public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     assert !raw;
-    StringBuffer output = new StringBuffer();
+    StringBuilder output = new StringBuilder();
     while (val.hasNext()) {
       Object v = val.next();
       if (v instanceof IndexableField) {
-        IndexableField f = (IndexableField)v;
+        IndexableField f = (IndexableField) v;
         if (v instanceof Date) {
           output.append(((Date) val).toInstant().toString()).append("; ");
         } else {
@@ -295,8 +297,8 @@ class XLSXWriter extends TabularResponseWriter {
       }
     }
     if (output.length() > 0) {
-      output.deleteCharAt(output.length()-1);
-      output.deleteCharAt(output.length()-1);
+      output.deleteCharAt(output.length() - 1);
+      output.deleteCharAt(output.length() - 1);
     }
     writeStr(name, output.toString(), false);
   }

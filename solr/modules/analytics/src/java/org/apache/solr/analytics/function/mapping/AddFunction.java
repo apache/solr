@@ -16,53 +16,69 @@
  */
 package org.apache.solr.analytics.function.mapping;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * An addition mapping function.
- * <p>
- * Uses:
+ *
+ * <p>Uses:
+ *
  * <ul>
- * <li>If a single numeric ValueStream is passed in, a {@link DoubleValue} representing the sum of the values for each document is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the sum of
- * the Value and each of the values of the ValueStream for a document is returned.
- * (Or the other way, since the Value and ValueStream can be used in either order)
- * <li>If multiple numeric Values are passed in, a {@link DoubleValue} representing the sum of all values is returned.
+ *   <li>If a single numeric ValueStream is passed in, a {@link DoubleValue} representing the sum of
+ *       the values for each document is returned.
+ *   <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream}
+ *       representing the sum of the Value and each of the values of the ValueStream for a document
+ *       is returned. (Or the other way, since the Value and ValueStream can be used in either
+ *       order)
+ *   <li>If multiple numeric Values are passed in, a {@link DoubleValue} representing the sum of all
+ *       values is returned.
  * </ul>
  */
 public class AddFunction {
   public static final String name = "add";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires parameters.");
-    }
-    else if (params.length == 1) {
-      if (params[0] instanceof DoubleValueStream) {
-        return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> a+b, (DoubleValueStream)params[0]);
-      }
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameters. Incorrect param: "+params[0].getExpressionStr());
-    }
-    else if (params.length == 2) {
-      AnalyticsValueStream param1 = params[0];
-      AnalyticsValueStream param2 = params[1];
-      if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
-        return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> a+b, (DoubleValueStream)param1, (DoubleValueStream)param2);
-      }
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameters.");
-    }
-    DoubleValue[] castedParams = new DoubleValue[params.length];
-    for (int i = 0; i < params.length; i++) {
-      if (params[i] instanceof DoubleValue) {
-        castedParams[i] = (DoubleValue) params[i];
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires that all parameters be single-valued if more than 2 are given.");
-      }
-    }
-    return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> a+b, castedParams);
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length == 0) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "The " + name + " function requires parameters.");
+        } else if (params.length == 1) {
+          if (params[0] instanceof DoubleValueStream) {
+            return LambdaFunction.createDoubleLambdaFunction(
+                name, (a, b) -> a + b, (DoubleValueStream) params[0]);
+          }
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function requires numeric parameters. Incorrect param: "
+                  + params[0].getExpressionStr());
+        } else if (params.length == 2) {
+          AnalyticsValueStream param1 = params[0];
+          AnalyticsValueStream param2 = params[1];
+          if (param1 instanceof DoubleValueStream && param2 instanceof DoubleValueStream) {
+            return LambdaFunction.createDoubleLambdaFunction(
+                name, (a, b) -> a + b, (DoubleValueStream) param1, (DoubleValueStream) param2);
+          }
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "The " + name + " function requires numeric parameters.");
+        }
+        DoubleValue[] castedParams = new DoubleValue[params.length];
+        for (int i = 0; i < params.length; i++) {
+          if (params[i] instanceof DoubleValue) {
+            castedParams[i] = (DoubleValue) params[i];
+          } else {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "The "
+                    + name
+                    + " function requires that all parameters be single-valued if more than 2 are given.");
+          }
+        }
+        return LambdaFunction.createDoubleLambdaFunction(name, (a, b) -> a + b, castedParams);
+      });
 }

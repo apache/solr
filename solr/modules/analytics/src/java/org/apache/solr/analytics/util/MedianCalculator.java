@@ -19,8 +19,8 @@ package org.apache.solr.analytics.util;
 import java.util.List;
 
 /**
- * Only used for testing.
- * Medians are calculated with the {@link OrdinalCalculator} for actual analytics requests.
+ * Only used for testing. Medians are calculated with the {@link OrdinalCalculator} for actual
+ * analytics requests.
  */
 public class MedianCalculator {
 
@@ -45,7 +45,8 @@ public class MedianCalculator {
     return result;
   }
 
-  private static <T extends Comparable<T>> void select(List<T> list, double place, int begin, int end) {
+  private static <T extends Comparable<T>> void select(
+      List<T> list, double place, int begin, int end) {
     T split;
     if (end - begin < 10) {
       split = list.get((int) (Math.random() * (end - begin + 1)) + begin);
@@ -86,7 +87,8 @@ public class MedianCalculator {
     return list.get(recursiveSize / 2 + begin);
   }
 
-  private static <T extends Comparable<T>> OrdinalCalculator.Point partition(List<T> list, int begin, int end, T indexElement) {
+  private static <T extends Comparable<T>> OrdinalCalculator.Point partition(
+      List<T> list, int begin, int end, T indexElement) {
     T temp;
     int left, right;
     for (left = begin, right = end; left < right; left++, right--) {

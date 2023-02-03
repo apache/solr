@@ -138,12 +138,6 @@ def scaffold_folder(module_name, module_full_name, module_folder, module_descrip
   os.makedirs(os.path.join(module_folder, 'src', 'test-files'))
   os.makedirs(os.path.join(module_folder, 'src', 'test'))
 
-  update_build(os.path.join('solr', 'packaging', 'build.gradle'),
-               r':solr:modules:extraction',
-               '   ":solr:modules:%s",\n' % module_name)
-  update_build(os.path.join('gradle', 'maven', 'defaults-maven.gradle'),
-               r':solr:modules:extraction',
-               '        ":solr:modules:%s",\n' % module_name)
   update_build(os.path.join('settings.gradle'),
                r'include "solr:modules:extraction"',
                'include "solr:modules:%s"\n' % module_name)

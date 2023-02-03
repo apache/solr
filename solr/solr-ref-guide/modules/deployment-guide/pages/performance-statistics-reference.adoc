@@ -100,15 +100,17 @@ The table below shows the metric names and attributes to request:
 `UPDATE./update.handlerStart` |Epoch time when the handler was registered.
 |===
 
-*Distributed vs. Local Request Times*
+*Differentiating Internal Requests*
 
-Processing of a single distributed request in SolrCloud usually requires making several requests to other nodes and other replicas.
-The common statistics listed above lump these timings together, even though they are very different in nature, thus making it difficult to measure the latency of distributed and local requests separately.
-Solr 8.4 introduced additional statistics that help to do this.
+Processing of a single request in SolrCloud for a large collection requires making additional requests to other replicas, often on other nodes.
+The internal requests look much the same on the surface (same handler), but they are performing a portion of the over-arching task.
+Differentiating these requests is really important!
+Solr tracks its metrics on these handlers with a different handler name when the request is contributing to some other request:
 
-These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
-The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed request to complete all remote calls plus any local processing, and return the result to the caller.
-The metrics under the `local` path correspond to the time it takes for a local call (non-distributed, i.e., being processed only by the Solr core where the handler operates) to complete.
+* Queries: `/select` query's internal requests will be tracked as `/select[shard]`.  Technically, this occurs on `SearchHandler` and its subclasses.
+* _(More can be instrumented some day)_
+
+Solr's Prometheus exporter configuration extracts this suffix on the handler to a label named "internal".  When configuring Grafana or other metrics tools, be sure to filter these metrics in or out depending on what is being analyzed.
 
 == Update Handler
 

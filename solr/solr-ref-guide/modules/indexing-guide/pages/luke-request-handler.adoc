@@ -17,7 +17,7 @@
 // under the License.
 
 The Luke Request Handler offers programmatic access to the information provided on the xref:schema-browser-screen.adoc[] page of the Admin UI.
-It is modeled after Luke, the Lucene Index Browser by Andrzej Bialecki.
+It is modeled after https://github.com/apache/lucene/tree/releases/lucene/{dep-version-lucene}/lucene/luke[Luke], the Lucene Index Browser.
 It is an implicit handler, so you don't need to define it in `solrconfig.xml`.
 
 The Luke Request Handler accepts the following parameters:

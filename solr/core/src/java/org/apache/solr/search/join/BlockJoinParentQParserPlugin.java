@@ -23,21 +23,21 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
 /**
- * Usage: {!parent which="PARENT:true"}CHILD_PRICE:10
- * supports optional <code>score</code> parameter with one of {@link ScoreMode} values:
- *  None,Avg,Total,Min,Max. Lowercase is also accepted.
- **/
+ * Usage: {!parent which="PARENT:true"}CHILD_PRICE:10 supports optional <code>score</code> parameter
+ * with one of {@link ScoreMode} values: None,Avg,Total,Min,Max. Lowercase is also accepted.
+ */
 public class BlockJoinParentQParserPlugin extends QParserPlugin {
   public static final String NAME = "parent";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     QParser parser = createBJQParser(qstr, localParams, params, req);
     return parser;
   }
 
-  protected QParser createBJQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  protected QParser createBJQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new BlockJoinParentQParser(qstr, localParams, params, req);
   }
 }
-

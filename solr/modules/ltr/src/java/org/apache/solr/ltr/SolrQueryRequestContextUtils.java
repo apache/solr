@@ -20,23 +20,22 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class SolrQueryRequestContextUtils {
 
-  /** key prefix to reduce possibility of clash with other code's key choices **/
+  /** key prefix to reduce possibility of clash with other code's key choices */
   private static final String LTR_PREFIX = "ltr.";
 
-  /** key of the feature logger in the request context **/
+  /** key of the feature logger in the request context */
   private static final String FEATURE_LOGGER = LTR_PREFIX + "feature_logger";
 
-  /** key of the scoring queries in the request context **/
+  /** key of the scoring queries in the request context */
   private static final String SCORING_QUERIES = LTR_PREFIX + "scoring_queries";
 
-  /** key of the isExtractingFeatures flag in the request context **/
+  /** key of the isExtractingFeatures flag in the request context */
   private static final String IS_EXTRACTING_FEATURES = LTR_PREFIX + "isExtractingFeatures";
 
-  /** key of the feature vector store name in the request context **/
+  /** key of the feature vector store name in the request context */
   private static final String STORE = LTR_PREFIX + "store";
 
-  /** feature logger accessors **/
-
+  /** feature logger accessors */
   public static void setFeatureLogger(SolrQueryRequest req, FeatureLogger featureLogger) {
     req.getContext().put(FEATURE_LOGGER, featureLogger);
   }
@@ -45,8 +44,7 @@ public class SolrQueryRequestContextUtils {
     return (FeatureLogger) req.getContext().get(FEATURE_LOGGER);
   }
 
-  /** scoring query accessors **/
-
+  /** scoring query accessors */
   public static void setScoringQueries(SolrQueryRequest req, LTRScoringQuery[] scoringQueries) {
     req.getContext().put(SCORING_QUERIES, scoringQueries);
   }
@@ -55,8 +53,7 @@ public class SolrQueryRequestContextUtils {
     return (LTRScoringQuery[]) req.getContext().get(SCORING_QUERIES);
   }
 
-  /** isExtractingFeatures flag accessors **/
-
+  /** isExtractingFeatures flag accessors */
   public static void setIsExtractingFeatures(SolrQueryRequest req) {
     req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.TRUE);
   }
@@ -69,8 +66,7 @@ public class SolrQueryRequestContextUtils {
     return Boolean.TRUE.equals(req.getContext().get(IS_EXTRACTING_FEATURES));
   }
 
-  /** feature vector store name accessors **/
-
+  /** feature vector store name accessors */
   public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
     req.getContext().put(STORE, fvStoreName);
   }
@@ -78,6 +74,4 @@ public class SolrQueryRequestContextUtils {
   public static String getFvStoreName(SolrQueryRequest req) {
     return (String) req.getContext().get(STORE);
   }
-
 }
-

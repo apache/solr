@@ -18,13 +18,13 @@ package org.apache.solr.analytics.stream.reservation;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.analytics.stream.reservation.read.ReductionDataReader;
 import org.apache.solr.analytics.stream.reservation.write.ReductionDataWriter;
 
 /**
- * A reservation allows a {@link ReductionDataCollector} to specify a piece of data it needs to export from the shard.
+ * A reservation allows a {@link ReductionDataCollector} to specify a piece of data it needs to
+ * export from the shard.
  */
 public abstract class ReductionDataReservation<A, E> {
   protected final A applier;
@@ -44,7 +44,8 @@ public abstract class ReductionDataReservation<A, E> {
   public abstract ReductionDataReader<A> createReadStream(DataInput input);
 
   /**
-   * Generate a {@link ReductionDataWriter} that exports the set of data this reservation represents.
+   * Generate a {@link ReductionDataWriter} that exports the set of data this reservation
+   * represents.
    *
    * @param output the shard output stream
    * @return a writer to the given output

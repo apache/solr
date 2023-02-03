@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -60,28 +59,17 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-
-/**
- * The class responsible for loading extracted content into Solr.
- *
- **/
+/** The class responsible for loading extracted content into Solr. */
 public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Extract Only supported format
-   */
+  /** Extract Only supported format */
   public static final String TEXT_FORMAT = "text";
-  /**
-   * Extract Only supported format.  Default
-   */
+  /** Extract Only supported format. Default */
   public static final String XML_FORMAT = "xml";
-  /**
-   * XHTML XPath parser.
-   */
-  private static final XPathParser PARSER =
-          new XPathParser("xhtml", XHTMLContentHandler.XHTML);
+  /** XHTML XPath parser. */
+  private static final XPathParser PARSER = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
 
   final SolrCore core;
   final SolrParams params;
@@ -95,9 +83,12 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   protected ParseContextConfig parseContextConfig;
   protected SolrContentHandlerFactory factory;
 
-  public ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
-                           TikaConfig config, ParseContextConfig parseContextConfig,
-                                  SolrContentHandlerFactory factory) {
+  public ExtractingDocumentLoader(
+      SolrQueryRequest req,
+      UpdateRequestProcessor processor,
+      TikaConfig config,
+      ParseContextConfig parseContextConfig,
+      SolrContentHandlerFactory factory) {
     this.params = req.getParams();
     this.core = req.getCore();
     this.config = config;
@@ -108,20 +99,15 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
 
-    //this is lightweight
+    // this is lightweight
     autoDetectParser = new AutoDetectParser(config);
     this.factory = factory;
-    
+
     ignoreTikaException = params.getBool(ExtractingParams.IGNORE_TIKA_EXCEPTION, false);
   }
 
-
-  /**
-   * this must be MT safe... may be called concurrently from multiple threads.
-   *
-   */
-  void doAdd(SolrContentHandler handler, AddUpdateCommand template)
-          throws IOException {
+  /** this must be MT safe... may be called concurrently from multiple threads. */
+  void doAdd(SolrContentHandler handler, AddUpdateCommand template) throws IOException {
     template.solrDoc = handler.newDocument();
     processor.processAdd(template);
   }
@@ -132,12 +118,16 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp,
-      ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+  public void load(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ContentStream stream,
+      UpdateRequestProcessor processor)
+      throws Exception {
     Parser parser = null;
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
-      //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
+      // Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
       MediaType mt = MediaType.parse(streamType.trim().toLowerCase(Locale.ROOT));
       parser = new DefaultParser(config.getMediaTypeRegistry()).getParsers().get(mt);
     } else {
@@ -153,7 +143,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(TikaMetadataKeys.RESOURCE_NAME_KEY, resourceName);
       }
       // Provide stream's content type as hint for auto detection
-      if(stream.getContentType() != null) {
+      if (stream.getContentType() != null) {
         metadata.add(HttpHeaders.CONTENT_TYPE, stream.getContentType());
       }
 
@@ -166,13 +156,14 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, stream.getContentType());
         // HtmlParser and TXTParser regard Metadata.CONTENT_ENCODING in metadata
         String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-        if(charset != null){
+        if (charset != null) {
           metadata.add(HttpHeaders.CONTENT_ENCODING, charset);
         }
 
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
         boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
-        SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, req.getSchema());
+        SolrContentHandler handler =
+            factory.createSolrContentHandler(metadata, params, req.getSchema());
         ContentHandler parsingHandler = handler;
 
         StringWriter writer = null;
@@ -188,23 +179,23 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
             serializer = new XMLSerializer(writer, new OutputFormat("XML", "UTF-8", true));
           }
           if (xpathExpr != null) {
-            Matcher matcher =
-                    PARSER.parse(xpathExpr);
-            serializer.startDocument();//The MatchingContentHandler does not invoke startDocument.  See https://lists.apache.org/thread.html/5ec63e104e564a2363e45f74d5aced6520b7d32b4b625762ef56cb86%401226775505%40%3Cdev.tika.apache.org%3E
+            Matcher matcher = PARSER.parse(xpathExpr);
+            serializer
+                .startDocument(); // The MatchingContentHandler does not invoke startDocument.  See
+            // https://lists.apache.org/thread.html/5ec63e104e564a2363e45f74d5aced6520b7d32b4b625762ef56cb86%401226775505%40%3Cdev.tika.apache.org%3E
             parsingHandler = new MatchingContentHandler(serializer, matcher);
           } else {
             parsingHandler = serializer;
           }
         } else if (xpathExpr != null) {
-          Matcher matcher =
-                  PARSER.parse(xpathExpr);
+          Matcher matcher = PARSER.parse(xpathExpr);
           parsingHandler = new MatchingContentHandler(handler, matcher);
-        } //else leave it as is
+        } // else leave it as is
 
-        try{
-          //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
+        try {
+          // potentially use a wrapper handler for parsing, but we still need the SolrContentHandler
+          // for getting the document.
           ParseContext context = parseContextConfig.create();
-
 
           context.set(Parser.class, parser);
           context.set(HtmlMapper.class, MostlyPassthroughHtmlMapper.INSTANCE);
@@ -212,32 +203,35 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           // Password handling
           RegexRulesPasswordProvider epp = new RegexRulesPasswordProvider();
           String pwMapFile = params.get(ExtractingParams.PASSWORD_MAP_FILE);
-          if(pwMapFile != null && pwMapFile.length() > 0) {
+          if (pwMapFile != null && pwMapFile.length() > 0) {
             InputStream is = req.getCore().getResourceLoader().openResource(pwMapFile);
-            if(is != null) {
+            if (is != null) {
               log.debug("Password file supplied: {}", pwMapFile);
               epp.parse(is);
             }
           }
           context.set(PasswordProvider.class, epp);
           String resourcePassword = params.get(ExtractingParams.RESOURCE_PASSWORD);
-          if(resourcePassword != null) {
+          if (resourcePassword != null) {
             epp.setExplicitPassword(resourcePassword);
             log.debug("Literal password supplied for file {}", resourceName);
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
-          if(ignoreTikaException)
-            log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
-                .append(". metadata=").append(metadata.toString()).toString()); // nowarn
-          else
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          if (ignoreTikaException)
+            log.warn(
+                new StringBuilder("skip extracting text due to ")
+                    .append(e.getLocalizedMessage())
+                    .append(". metadata=")
+                    .append(metadata.toString())
+                    .toString()); // nowarn
+          else throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
         if (extractOnly == false) {
           addDoc(handler);
         } else {
-          //serializer is not null, so we need to call endDoc on it if using xpath
-          if (xpathExpr != null){
+          // serializer is not null, so we need to call endDoc on it if using xpath
+          if (xpathExpr != null) {
             serializer.endDocument();
           }
           rsp.add(stream.getName(), writer.toString());
@@ -256,20 +250,26 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         IOUtils.closeQuietly(inputStream);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Stream type of " + streamType + " didn't match any known parsers.  Please supply the " + ExtractingParams.STREAM_TYPE + " parameter.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Stream type of "
+              + streamType
+              + " didn't match any known parsers.  Please supply the "
+              + ExtractingParams.STREAM_TYPE
+              + " parameter.");
     }
   }
 
   public static class MostlyPassthroughHtmlMapper implements HtmlMapper {
     public static final HtmlMapper INSTANCE = new MostlyPassthroughHtmlMapper();
 
-    /** 
+    /**
      * Keep all elements and their content.
-     *  
-     * Apparently &lt;SCRIPT&gt; and &lt;STYLE&gt; elements are blocked elsewhere
+     *
+     * <p>Apparently &lt;SCRIPT&gt; and &lt;STYLE&gt; elements are blocked elsewhere
      */
     @Override
-    public boolean isDiscardElement(String name) {     
+    public boolean isDiscardElement(String name) {
       return false;
     }
 
@@ -280,15 +280,14 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     }
 
     /**
-     * Lowercases the element name, but returns null for &lt;BR&gt;,
-     * which suppresses the start-element event for lt;BR&gt; tags.
-     * This also suppresses the &lt;BODY&gt; tags because those
-     * are handled internally by Tika's XHTMLContentHandler.
+     * Lowercases the element name, but returns null for &lt;BR&gt;, which suppresses the
+     * start-element event for lt;BR&gt; tags. This also suppresses the &lt;BODY&gt; tags because
+     * those are handled internally by Tika's XHTMLContentHandler.
      */
     @Override
     public String mapSafeElement(String name) {
       String lowerName = name.toLowerCase(Locale.ROOT);
       return (lowerName.equals("br") || lowerName.equals("body")) ? null : lowerName;
     }
-   }
- }
+  }
+}

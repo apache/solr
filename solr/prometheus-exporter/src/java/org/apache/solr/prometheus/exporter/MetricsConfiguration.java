@@ -17,10 +17,6 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -30,7 +26,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
@@ -98,7 +97,11 @@ public class MetricsConfiguration {
     if (Files.exists(path)) {
       document = dbf.newDocumentBuilder().parse(path.toUri().toASCIIString());
     } else {
-      try (InputStream configInputStream = MethodHandles.lookup().lookupClass().getClassLoader().getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+      try (InputStream configInputStream =
+          MethodHandles.lookup()
+              .lookupClass()
+              .getClassLoader()
+              .getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
         document = dbf.newDocumentBuilder().parse(configInputStream);
       }
     }
@@ -110,9 +113,13 @@ public class MetricsConfiguration {
     Node settings = getNode(config, "/config/settings");
 
     NodeList jqTemplates =
-        (NodeList)(xpathFactory.newXPath()).evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
-    Map<String,MetricsQueryTemplate> jqTemplatesMap =
-        (jqTemplates != null && jqTemplates.getLength() > 0) ? loadJqTemplates(jqTemplates) : Collections.emptyMap();
+        (NodeList)
+            (xpathFactory.newXPath())
+                .evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
+    Map<String, MetricsQueryTemplate> jqTemplatesMap =
+        (jqTemplates != null && jqTemplates.getLength() > 0)
+            ? loadJqTemplates(jqTemplates)
+            : Collections.emptyMap();
 
     Node pingConfig = getNode(config, "/config/rules/ping");
     Node metricsConfig = getNode(config, "/config/rules/metrics");
@@ -120,12 +127,13 @@ public class MetricsConfiguration {
     Node searchConfiguration = getNode(config, "/config/rules/search");
 
     return new MetricsConfiguration(
-        settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
+        settings == null
+            ? PrometheusExporterSettings.builder().build()
+            : PrometheusExporterSettings.from(settings),
         toMetricQueries(pingConfig, jqTemplatesMap),
         toMetricQueries(metricsConfig, jqTemplatesMap),
         toMetricQueries(collectionsConfig, jqTemplatesMap),
-        toMetricQueries(searchConfiguration, jqTemplatesMap)
-    );
+        toMetricQueries(searchConfiguration, jqTemplatesMap));
   }
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -133,11 +141,10 @@ public class MetricsConfiguration {
   private static Node getNode(Document doc, String path) {
     // Copied from solr-core XmlConfigFile.getNode with simplifications
     XPath xpath = xpathFactory.newXPath();
-    String xstr = path; //normalize(path);
+    String xstr = path; // normalize(path);
 
     try {
-      NodeList nodes = (NodeList) xpath.evaluate(xstr, doc,
-          XPathConstants.NODESET);
+      NodeList nodes = (NodeList) xpath.evaluate(xstr, doc, XPathConstants.NODESET);
       if (nodes == null || 0 == nodes.getLength()) {
         return null;
       }
@@ -150,7 +157,8 @@ public class MetricsConfiguration {
     }
   }
 
-  private static List<MetricsQuery> toMetricQueries(Node node, Map<String,MetricsQueryTemplate> jqTemplatesMap) throws JsonQueryException {
+  private static List<MetricsQuery> toMetricQueries(
+      Node node, Map<String, MetricsQueryTemplate> jqTemplatesMap) throws JsonQueryException {
     if (node == null) {
       return Collections.emptyList();
     }
@@ -158,9 +166,9 @@ public class MetricsConfiguration {
     return MetricsQuery.from(node, jqTemplatesMap);
   }
 
-  static Map<String,MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
-    Map<String,MetricsQueryTemplate> map = new HashMap<>();
-    for (int t=0; t < jqTemplates.getLength(); t++) {
+  static Map<String, MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
+    Map<String, MetricsQueryTemplate> map = new HashMap<>();
+    for (int t = 0; t < jqTemplates.getLength(); t++) {
       Node template = jqTemplates.item(t);
       if (template.getNodeType() == Node.ELEMENT_NODE && template.hasAttributes()) {
         Node nameAttr = template.getAttributes().getNamedItem("name");

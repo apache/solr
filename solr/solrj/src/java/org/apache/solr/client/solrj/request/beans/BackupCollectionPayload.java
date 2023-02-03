@@ -22,33 +22,26 @@ import org.apache.solr.common.util.ReflectMapWriter;
 /**
  * V2 API POJO for the /v2/collections 'backup-collection' command.
  *
- * Analogous to the request parameters for v1 /admin/collections?action=BACKUP API.
+ * <p>Analogous to the request parameters for v1 /admin/collections?action=BACKUP API.
  */
 public class BackupCollectionPayload implements ReflectMapWriter {
-    @JsonProperty(required = true)
-    public String collection;
+  @JsonProperty(required = true)
+  public String collection;
 
-    @JsonProperty(required = true)
-    public String name;
+  @JsonProperty(required = true)
+  public String name;
 
-    @JsonProperty
-    public String location;
+  @JsonProperty public String location;
 
-    @JsonProperty
-    public String repository;
+  @JsonProperty public String repository;
 
-    @JsonProperty
-    public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-    @JsonProperty
-    public String indexBackup;
+  @JsonProperty public String indexBackup;
 
-    @JsonProperty
-    public String commitName;
+  @JsonProperty public String commitName;
 
-    @JsonProperty
-    public Boolean incremental;
+  @JsonProperty public Boolean incremental;
 
-    @JsonProperty
-    public String async;
+  @JsonProperty public String async;
 }

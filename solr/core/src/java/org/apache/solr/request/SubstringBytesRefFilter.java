@@ -17,17 +17,17 @@
 package org.apache.solr.request;
 
 import java.util.function.Predicate;
-
-import org.apache.lucene.util.BytesRef;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * An implementation of {@link Predicate} which returns true if the BytesRef contains a given substring.
+ * An implementation of {@link Predicate} which returns true if the BytesRef contains a given
+ * substring.
  */
 public class SubstringBytesRefFilter implements Predicate<BytesRef> {
-  final private String contains;
-  final private boolean ignoreCase;
-  
+  private final String contains;
+  private final boolean ignoreCase;
+
   public SubstringBytesRefFilter(String contains, boolean ignoreCase) {
     this.contains = contains;
     this.ignoreCase = ignoreCase;

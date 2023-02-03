@@ -25,6 +25,7 @@ public class DoubleCheckedDataReader extends ReductionCheckedDataReader<DoubleCo
   public DoubleCheckedDataReader(DataInput inputStream, DoubleConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void checkedRead() throws IOException {
     applier.accept(inputStream.readDouble());

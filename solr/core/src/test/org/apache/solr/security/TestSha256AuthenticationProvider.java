@@ -16,20 +16,19 @@
  */
 package org.apache.solr.security;
 
+import static java.util.Collections.singletonMap;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.CommandOperation;
 import org.junit.Test;
 
-import static java.util.Collections.singletonMap;
-
 public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
-  public void testAuthenticate(){
+  public void testAuthenticate() {
     Sha256AuthenticationProvider zkAuthenticationProvider = new Sha256AuthenticationProvider();
     zkAuthenticationProvider.init(createConfigMap("ignore", "me"));
 
@@ -37,15 +36,15 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     String user = "marcus";
     Map<String, Object> latestConf = createConfigMap(user, pwd);
     Map<String, Object> params = singletonMap(user, pwd);
-    Map<String, Object> result = zkAuthenticationProvider.edit(latestConf,
-        Collections.singletonList(new CommandOperation("set-user",params )));
+    Map<String, Object> result =
+        zkAuthenticationProvider.edit(
+            latestConf, Collections.singletonList(new CommandOperation("set-user", params)));
     zkAuthenticationProvider = new Sha256AuthenticationProvider();
     zkAuthenticationProvider.init(result);
 
     assertTrue(zkAuthenticationProvider.authenticate(user, pwd));
     assertFalse(zkAuthenticationProvider.authenticate(user, "WrongPassword"));
     assertFalse(zkAuthenticationProvider.authenticate("unknownuser", "WrongPassword"));
-
   }
 
   public void testBasicAuthCommands() throws IOException {
@@ -54,7 +53,8 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
       Map<String, Object> latestConf = createConfigMap("solr", "SolrRocks");
 
-      CommandOperation blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", true));
+      CommandOperation blockUnknown =
+          new CommandOperation("set-property", singletonMap("blockUnknown", true));
       basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
       assertEquals(Boolean.TRUE, latestConf.get("blockUnknown"));
       basicAuthPlugin.init(latestConf);
@@ -69,7 +69,10 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
   public void testBasicAuthWithCredentials() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
-      Map<String, Object> config = createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
+      Map<String, Object> config =
+          createConfigMap(
+              "solr",
+              "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
       basicAuthPlugin.init(config);
       assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
     }
@@ -85,7 +88,10 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
   public void testBasicAuthDeleteFinalUser() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
-      Map<String, Object> config = createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
+      Map<String, Object> config =
+          createConfigMap(
+              "solr",
+              "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
       basicAuthPlugin.init(config);
       assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
 
@@ -93,7 +99,10 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
       assertFalse(deleteUser.hasError());
       basicAuthPlugin.edit(config, Arrays.asList(deleteUser));
       assertTrue(deleteUser.hasError());
-      assertTrue(deleteUser.getErrors().contains(Sha256AuthenticationProvider.CANNOT_DELETE_LAST_USER_ERROR));
+      assertTrue(
+          deleteUser
+              .getErrors()
+              .contains(Sha256AuthenticationProvider.CANNOT_DELETE_LAST_USER_ERROR));
     }
   }
 
@@ -106,6 +115,4 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     config.put("credentials", credentials);
     return config;
   }
-
 }
-

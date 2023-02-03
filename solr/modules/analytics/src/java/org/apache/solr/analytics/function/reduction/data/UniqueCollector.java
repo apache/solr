@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.DoubleArrayReservation;
 import org.apache.solr.analytics.stream.reservation.FloatArrayReservation;
 import org.apache.solr.analytics.stream.reservation.IntArrayReservation;
@@ -36,23 +35,25 @@ import org.apache.solr.analytics.value.StringValueStream;
 
 /**
  * Collects the number of unique values that exist for the given parameter.
- * <p>
- * Supported types are:
+ *
+ * <p>Supported types are:
+ *
  * <ul>
- * <li>Int
- * <li>Long
- * <li>Float
- * <li>Double
- * <li>Date (through longs)
- * <li>String
+ *   <li>Int
+ *   <li>Long
+ *   <li>Float
+ *   <li>Double
+ *   <li>Date (through longs)
+ *   <li>String
  * </ul>
  */
-public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCollector.UniqueData<T>> {
+public abstract class UniqueCollector<T>
+    extends ReductionDataCollector<UniqueCollector.UniqueData<T>> {
   public static final String name = "unique";
   private final String exprStr;
 
   public UniqueCollector(AnalyticsValueStream param) {
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
     this.tempSet = new HashSet<T>();
   }
 
@@ -76,34 +77,38 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
   }
 
   Set<T> tempSet;
+
   @Override
   protected void apply(UniqueData<T> data) {
     data.set.addAll(tempSet);
   }
 
   Iterator<T> iter;
+
   public int startExport() {
     iter = ioData.set.iterator();
     return ioData.set.size();
   }
+
   public T exportNext() {
     return iter.next();
   }
 
   @Override
   public void setMergedData(ReductionData data) {
-    count = ((UniqueData<?>)data).set.size();
+    count = ((UniqueData<?>) data).set.size();
   }
 
   @Override
   public void setData(ReductionData data) {
-    count = ((UniqueData<?>)data).set.size();
+    count = ((UniqueData<?>) data).set.size();
   }
 
   @Override
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
@@ -124,17 +129,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     @Override
     public void collect() {
       tempSet.clear();
-      param.streamInts( val -> tempSet.add(val) );
+      param.streamInts(val -> tempSet.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new IntArrayReservation(
-          value -> ioData.set.add(value),
-          size -> {},
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new IntArrayReservation(
+              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
     }
   }
 
@@ -149,17 +151,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     @Override
     public void collect() {
       tempSet.clear();
-      param.streamLongs( val -> tempSet.add(val) );
+      param.streamLongs(val -> tempSet.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new LongArrayReservation(
-          value -> ioData.set.add(value),
-          size -> {},
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new LongArrayReservation(
+              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
     }
   }
 
@@ -174,17 +173,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     @Override
     public void collect() {
       tempSet.clear();
-      param.streamFloats( val -> tempSet.add(val) );
+      param.streamFloats(val -> tempSet.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new FloatArrayReservation(
-          value -> ioData.set.add(value),
-          size -> {},
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new FloatArrayReservation(
+              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
     }
   }
 
@@ -199,17 +195,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     @Override
     public void collect() {
       tempSet.clear();
-      param.streamDoubles( val -> tempSet.add(val) );
+      param.streamDoubles(val -> tempSet.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new DoubleArrayReservation(
-          value -> ioData.set.add(value),
-          size -> {},
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new DoubleArrayReservation(
+              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
     }
   }
 
@@ -224,17 +217,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     @Override
     public void collect() {
       tempSet.clear();
-      param.streamStrings( val -> tempSet.add(val) );
+      param.streamStrings(val -> tempSet.add(val));
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new StringArrayReservation(
-          value -> ioData.set.add(value),
-          size -> {},
-          () -> exportNext(),
-          () -> startExport()
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new StringArrayReservation(
+              value -> ioData.set.add(value), size -> {}, () -> exportNext(), () -> startExport()));
     }
   }
 }

@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,47 +31,50 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.uninverting.UninvertingReader;
 
-/** 
- * Allows access to uninverted docvalues by delete-by-queries.
- * this is used e.g. to implement versioning constraints in solr.
- * <p>
- * Even though we wrap for each query, UninvertingReader's core 
- * cache key is the inner one, so it still reuses fieldcaches and so on.
+/**
+ * Allows access to uninverted docvalues by delete-by-queries. this is used e.g. to implement
+ * versioning constraints in solr.
+ *
+ * <p>Even though we wrap for each query, UninvertingReader's core cache key is the inner one, so it
+ * still reuses fieldcaches and so on.
  */
 final class DeleteByQueryWrapper extends Query {
   final Query in;
   final IndexSchema schema;
-  
+
   DeleteByQueryWrapper(Query in, IndexSchema schema) {
     this.in = in;
     this.schema = schema;
   }
-  
+
   LeafReader wrap(LeafReader reader) {
     return UninvertingReader.wrap(reader, schema.getUninversionMapper());
   }
-  
+
   // we try to be well-behaved, but we are not (and IW's applyQueryDeletes isn't much better...)
-  
+
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = in.rewrite(reader);
-    if (rewritten != in) {
+    if (!rewritten.equals(in)) {
       return new DeleteByQueryWrapper(rewritten, schema);
     } else {
       return super.rewrite(reader);
     }
   }
-  
+
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final LeafReader wrapped = wrap((LeafReader) searcher.getIndexReader());
     final IndexSearcher privateContext = new IndexSearcher(wrapped);
     privateContext.setQueryCache(searcher.getQueryCache());
     final Weight inner = in.createWeight(privateContext, scoreMode, boost);
     return new Weight(DeleteByQueryWrapper.this) {
       @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException { throw new UnsupportedOperationException(); }
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+        throw new UnsupportedOperationException();
+      }
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -102,13 +104,11 @@ final class DeleteByQueryWrapper extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(DeleteByQueryWrapper other) {
-    return Objects.equals(in, other.in) &&
-           Objects.equals(schema, other.schema);
+    return Objects.equals(in, other.in) && Objects.equals(schema, other.schema);
   }
 
   @Override

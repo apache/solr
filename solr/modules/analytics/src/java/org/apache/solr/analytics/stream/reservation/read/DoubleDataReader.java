@@ -25,6 +25,7 @@ public class DoubleDataReader extends ReductionDataReader<DoubleConsumer> {
   public DoubleDataReader(DataInput inputStream, DoubleConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void read() throws IOException {
     applier.accept(inputStream.readDouble());

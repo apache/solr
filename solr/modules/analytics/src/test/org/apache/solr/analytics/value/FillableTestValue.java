@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
@@ -78,13 +77,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_analytics_value"; }
+    public String getName() {
+      return "test_analytics_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_analytics_value"; }
+    public String getExpressionStr() {
+      return "test_analytics_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestAnalyticsValueStream extends AbstractAnalyticsValueStream {
@@ -113,13 +118,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_analytics_value_stream"; }
+    public String getName() {
+      return "test_analytics_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_analytics_value_stream"; }
+    public String getExpressionStr() {
+      return "test_analytics_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestIntValue extends AbstractIntValue {
@@ -157,13 +168,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_int_value"; }
+    public String getName() {
+      return "test_int_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_int_value"; }
+    public String getExpressionStr() {
+      return "test_int_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestIntValueStream extends AbstractIntValueStream {
@@ -186,13 +203,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_int_value_stream"; }
+    public String getName() {
+      return "test_int_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_int_value_stream"; }
+    public String getExpressionStr() {
+      return "test_int_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestLongValue extends AbstractLongValue {
@@ -230,13 +253,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_long_value"; }
+    public String getName() {
+      return "test_long_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_long_value"; }
+    public String getExpressionStr() {
+      return "test_long_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestLongValueStream extends AbstractLongValueStream {
@@ -259,13 +288,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_long_value_stream"; }
+    public String getName() {
+      return "test_long_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_long_value_stream"; }
+    public String getExpressionStr() {
+      return "test_long_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestFloatValue extends AbstractFloatValue {
@@ -303,13 +338,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_float_value"; }
+    public String getName() {
+      return "test_float_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_float_value"; }
+    public String getExpressionStr() {
+      return "test_float_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestFloatValueStream extends AbstractFloatValueStream {
@@ -332,13 +373,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_float_value_stream"; }
+    public String getName() {
+      return "test_float_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_float_value_stream"; }
+    public String getExpressionStr() {
+      return "test_float_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestDoubleValue extends AbstractDoubleValue {
@@ -376,13 +423,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_double_value"; }
+    public String getName() {
+      return "test_double_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_double_value"; }
+    public String getExpressionStr() {
+      return "test_double_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestDoubleValueStream extends AbstractDoubleValueStream {
@@ -405,13 +458,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_double_value_stream"; }
+    public String getName() {
+      return "test_double_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_double_value_stream"; }
+    public String getExpressionStr() {
+      return "test_double_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestBooleanValue extends AbstractBooleanValue {
@@ -449,13 +508,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_boolean_value"; }
+    public String getName() {
+      return "test_boolean_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_boolean_value"; }
+    public String getExpressionStr() {
+      return "test_boolean_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestBooleanValueStream extends AbstractBooleanValueStream {
@@ -478,13 +543,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_boolean_value_stream"; }
+    public String getName() {
+      return "test_boolean_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_boolean_value_stream"; }
+    public String getExpressionStr() {
+      return "test_boolean_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestDateValue extends AbstractDateValue {
@@ -526,13 +597,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_date_value"; }
+    public String getName() {
+      return "test_date_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_date_value"; }
+    public String getExpressionStr() {
+      return "test_date_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestDateValueStream extends AbstractDateValueStream {
@@ -552,18 +629,25 @@ public class FillableTestValue {
       for (int i = 0; i < values.length; ++i) {
         try {
           cons.accept(Instant.parse(values[i]).toEpochMilli());
-        } catch (DateTimeParseException e) { }
+        } catch (DateTimeParseException e) {
+        }
       }
     }
 
     @Override
-    public String getName() { return "test_date_value_stream"; }
+    public String getName() {
+      return "test_date_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_date_value_stream"; }
+    public String getExpressionStr() {
+      return "test_date_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 
   public static class TestStringValue extends AbstractStringValue {
@@ -601,13 +685,19 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_string_value"; }
+    public String getName() {
+      return "test_string_value";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_string_value"; }
+    public String getExpressionStr() {
+      return "test_string_value";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return expressionType; }
+    public ExpressionType getExpressionType() {
+      return expressionType;
+    }
   }
 
   public static class TestStringValueStream extends AbstractStringValueStream {
@@ -630,12 +720,18 @@ public class FillableTestValue {
     }
 
     @Override
-    public String getName() { return "test_string_value_stream"; }
+    public String getName() {
+      return "test_string_value_stream";
+    }
 
     @Override
-    public String getExpressionStr() { return "test_string_value_stream"; }
+    public String getExpressionStr() {
+      return "test_string_value_stream";
+    }
 
     @Override
-    public ExpressionType getExpressionType() { return ExpressionType.UNREDUCED_MAPPING; }
+    public ExpressionType getExpressionType() {
+      return ExpressionType.UNREDUCED_MAPPING;
+    }
   }
 }

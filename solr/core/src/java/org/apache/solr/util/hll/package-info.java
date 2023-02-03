@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * A fork of <a href="https://github.com/aggregateknowledge/java-hll/">Java-HyperLogLog</a> package tweaked
- * not to depend on fastutil and with cleanups to make it lean and clean.
+
+/**
+ * A fork of <a href="https://github.com/aggregateknowledge/java-hll/">Java-HyperLogLog</a> package
+ * tweaked not to depend on fastutil and with cleanups to make it lean and clean.
  */
 package org.apache.solr.util.hll;
-
-

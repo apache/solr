@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
@@ -39,15 +38,18 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedTrieIntTest() throws IOException {
     IntField valueField = new IntField("int_i_t");
-    Map<String,Integer> values = new HashMap<>();
+    Map<String, Integer> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      int value = valueField.getInt();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              int value = valueField.getInt();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleInts, values, missing);
   }
@@ -55,15 +57,18 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedPointIntTest() throws IOException {
     IntField valueField = new IntField("int_i_p");
-    Map<String,Integer> values = new HashMap<>();
+    Map<String, Integer> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      int value = valueField.getInt();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              int value = valueField.getInt();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleInts, values, missing);
   }
@@ -71,18 +76,22 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedTrieIntTest() throws IOException {
     IntMultiTrieField valueField = new IntMultiTrieField("int_im_t");
-    Map<String,Map<Integer,Integer>> values = new HashMap<>();
+    Map<String, Map<Integer, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Integer, Integer> doc = new HashMap<>();
-      valueField.streamInts( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Integer, Integer> doc = new HashMap<>();
+              valueField.streamInts(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiInts, values, missing, true);
   }
@@ -90,18 +99,22 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedPointIntTest() throws IOException {
     IntMultiPointField valueField = new IntMultiPointField("int_im_p");
-    Map<String,Map<Integer,Integer>> values = new HashMap<>();
+    Map<String, Map<Integer, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Integer, Integer> doc = new HashMap<>();
-      valueField.streamInts( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Integer, Integer> doc = new HashMap<>();
+              valueField.streamInts(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiInts, values, missing, false);
   }

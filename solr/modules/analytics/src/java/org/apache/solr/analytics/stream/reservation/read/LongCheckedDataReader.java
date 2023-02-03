@@ -25,6 +25,7 @@ public class LongCheckedDataReader extends ReductionCheckedDataReader<LongConsum
   public LongCheckedDataReader(DataInput inputStream, LongConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void checkedRead() throws IOException {
     applier.accept(inputStream.readLong());

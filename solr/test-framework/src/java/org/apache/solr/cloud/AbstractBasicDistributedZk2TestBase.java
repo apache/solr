@@ -19,13 +19,11 @@ package org.apache.solr.cloud;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.lucene.mockfile.FilterPath;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.mockfile.FilterPath;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,33 +34,36 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 
 /**
- * This test simply does a bunch of basic things in solrcloud mode and asserts things
- * work as expected.
+ * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
+ * expected.
  */
-@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
-
   public AbstractBasicDistributedZk2TestBase() {
     super();
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
+      System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
 
     sliceCount = 2;
   }
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
+    // and it's TestInjection use
   }
 
   @Test
@@ -75,9 +76,21 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
       testNodeWithoutCollectionForwarding();
 
-      indexr(id, 1, i1, 100, tlong, 100, t1,
-          "now is the time for all good men", "foo_f", 1.414f, "foo_b", "true",
-          "foo_d", 1.414d);
+      indexr(
+          id,
+          1,
+          i1,
+          100,
+          tlong,
+          100,
+          t1,
+          "now is the time for all good men",
+          "foo_f",
+          1.414f,
+          "foo_b",
+          "true",
+          "foo_d",
+          1.414d);
 
       commit();
 
@@ -115,9 +128,8 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
       // TODO: bring this to its own method?
       // try indexing to a leader that has no replicas up
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(
-          DEFAULT_COLLECTION, SHARD2);
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, SHARD2);
 
       String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       chaosMonkey.stopShardExcept(SHARD2, nodeName);
@@ -143,66 +155,67 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
         printLayoutOnTearDown = true;
       }
     }
-
   }
 
   private void testNodeWithoutCollectionForwarding() throws Exception {
-    assertEquals(0, CollectionAdminRequest
-        .createCollection(ONE_NODE_COLLECTION, "conf1", 1, 1)
-        .setCreateNodeSet("")
-        .process(cloudClient).getStatus());
-    assertTrue(CollectionAdminRequest
-        .addReplicaToShard(ONE_NODE_COLLECTION, "shard1")
-        .setCoreName(ONE_NODE_COLLECTION + "core")
-        .process(cloudClient).isSuccess());
+    assertEquals(
+        0,
+        CollectionAdminRequest.createCollection(ONE_NODE_COLLECTION, "conf1", 1, 1)
+            .setCreateNodeSet("")
+            .process(cloudClient)
+            .getStatus());
+    assertTrue(
+        CollectionAdminRequest.addReplicaToShard(ONE_NODE_COLLECTION, "shard1")
+            .setCoreName(ONE_NODE_COLLECTION + "core")
+            .process(cloudClient)
+            .isSuccess());
 
-    waitForCollection(cloudClient.getZkStateReader(), ONE_NODE_COLLECTION, 1);
-    waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
+    waitForCollection(ZkStateReader.from(cloudClient), ONE_NODE_COLLECTION, 1);
+    waitForRecoveriesToFinish(ONE_NODE_COLLECTION, ZkStateReader.from(cloudClient), false);
 
-    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
+    ZkStateReader.from(cloudClient).getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
 
     int docs = 2;
-    for (SolrClient client : clients) {
-      final String clientUrl = getBaseUrl((HttpSolrClient) client);
+    for (JettySolrRunner jetty : jettys) {
+      final String clientUrl = getBaseUrl(jetty);
       addAndQueryDocs(clientUrl, docs);
       docs += 2;
     }
   }
 
   // 2 docs added every call
-  private void addAndQueryDocs(final String baseUrl, int docs)
-      throws Exception {
+  private void addAndQueryDocs(final String baseUrl, int docs) throws Exception {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    String collectionUrl = baseUrl + "/onenodecollection" + "core";
+    try (SolrClient client = getHttpSolrClient(collectionUrl)) {
 
       // it might take a moment for the proxy node to see us in their cloud state
-      waitForNon403or404or503(qclient);
+      waitForNon403or404or503(client, collectionUrl);
 
       // add a doc
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs);
-      qclient.add(doc);
-      qclient.commit();
+      client.add(doc);
+      client.commit();
 
-
-      QueryResponse results = qclient.query(query);
+      QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
-      QueryResponse results = qclient.query(query);
+    try (SolrClient client = getHttpSolrClient(baseUrl + "/onenodecollection")) {
+      QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs + 1);
-      qclient.add(doc);
-      qclient.commit();
+      client.add(doc);
+      client.commit();
 
       query = new SolrQuery("*:*");
       query.set("rows", 0);
-      results = qclient.query(query);
+      results = client.query(query);
       assertEquals(docs, results.getResults().getNumFound());
     }
   }
@@ -248,12 +261,16 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     commit();
 
-    long deadShardCount = shardToJetty.get(SHARD2).get(0).client.solrClient
-        .query(query).getResults().getNumFound();
+    long deadShardCount =
+        shardToJetty.get(SHARD2).get(0).client.solrClient.query(query).getResults().getNumFound();
 
     query("q", "*:*", "sort", "n_tl1 desc");
 
-    int oldLiveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
+    int oldLiveNodes =
+        ZkStateReader.from(cloudClient)
+            .getZkClient()
+            .getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true)
+            .size();
 
     assertEquals(5, oldLiveNodes);
 
@@ -261,10 +278,10 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
 
     // ensure shard is dead
-    expectThrows(SolrServerException.class,
+    expectThrows(
+        SolrServerException.class,
         "This server should be down and this update should have failed",
-        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!")
-    );
+        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!"));
 
     commit();
 
@@ -276,18 +293,29 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     // try to index to a living shard at shard2
 
-
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
-    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 60000);
+    ZkStateReader.from(cloudClient).getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 60000);
 
     try {
-      index_specific(shardToJetty.get(SHARD1).get(1).client.solrClient, id, 1000, i1, 108, t1,
+      index_specific(
+          shardToJetty.get(SHARD1).get(1).client.solrClient,
+          id,
+          1000,
+          i1,
+          108,
+          t1,
           "specific doc!");
     } catch (Exception e) {
       // wait and try again
       Thread.sleep(4000);
-      index_specific(shardToJetty.get(SHARD1).get(1).client.solrClient, id, 1000, i1, 108, t1,
+      index_specific(
+          shardToJetty.get(SHARD1).get(1).client.solrClient,
+          id,
+          1000,
+          i1,
+          108,
+          t1,
           "specific doc!");
     }
 
@@ -296,7 +324,6 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     checkShardConsistency(true, false);
 
     query("q", "*:*", "sort", "n_tl1 desc");
-
 
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
 
@@ -316,7 +343,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     try {
       ureq.process(cloudClient);
-    } catch(SolrServerException e){
+    } catch (SolrServerException e) {
       // try again
       Thread.sleep(3500);
       ureq.process(cloudClient);
@@ -335,15 +362,13 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     testDebugQueries();
 
     if (VERBOSE) {
-      System.err.println(controlClient.query(new SolrQuery("*:*")).getResults()
-          .getNumFound());
+      System.err.println(controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
       for (SolrClient client : clients) {
         try {
           SolrQuery q = new SolrQuery("*:*");
           q.set("distrib", false);
-          System.err.println(client.query(q).getResults()
-              .getNumFound());
+          System.err.println(client.query(q).getResults().getNumFound());
         } catch (Exception e) {
 
         }
@@ -361,12 +386,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     waitForRecoveriesToFinish(false);
 
-    deadShardCount = shardToJetty.get(SHARD1).get(0).client.solrClient
-        .query(query).getResults().getNumFound();
+    deadShardCount =
+        shardToJetty.get(SHARD1).get(0).client.solrClient.query(query).getResults().getNumFound();
     // if we properly recovered, we should now have the couple missing docs that
     // came in while shard was down
     checkShardConsistency(true, false);
-
 
     // recover over 100 docs so we do more than just peer sync (replicate recovery)
     chaosMonkey.stopJetty(deadShard);
@@ -398,7 +422,8 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     checkShardConsistency(true, false);
 
     // try a backup command
-    try(final HttpSolrClient client = getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
+    try (final SolrClient client =
+        getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
       final String backupName = "the_backup";
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", ReplicationHandler.PATH);
@@ -412,14 +437,13 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
       QueryRequest request = new QueryRequest(params);
       client.request(request, DEFAULT_TEST_COLLECTION_NAME);
 
-
-      final BackupStatusChecker backupStatus
-          = new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
+      final BackupStatusChecker backupStatus =
+          new BackupStatusChecker(client, "/" + DEFAULT_TEST_COLLECTION_NAME + "/replication");
       final String backupDirName = backupStatus.waitForBackupSuccess(backupName, 30);
-      assertTrue("Backup dir does not exist: " + backupDirName,
+      assertTrue(
+          "Backup dir does not exist: " + backupDirName,
           Files.exists(location.resolve(backupDirName)));
     }
-
   }
 
   private void addNewReplica() throws Exception {
@@ -429,12 +453,16 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     // new server should be part of first shard
     // how many docs are on the new shard?
     for (CloudJettyRunner cjetty : shardToJetty.get(SHARD1)) {
-      if (VERBOSE) System.err.println("shard1 total:"
-          + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      if (VERBOSE)
+        System.err.println(
+            "shard1 total:"
+                + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     for (CloudJettyRunner cjetty : shardToJetty.get(SHARD2)) {
-      if (VERBOSE) System.err.println("shard2 total:"
-          + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      if (VERBOSE)
+        System.err.println(
+            "shard2 total:"
+                + cjetty.client.solrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     checkShardConsistency(SHARD1);
@@ -448,12 +476,10 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP);
-    query("q", "now their fox sat had put", "fl", "*,score",
-        CommonParams.DEBUG_QUERY, "true");
+    query("q", "now their fox sat had put", "fl", "*,score", CommonParams.DEBUG_QUERY, "true");
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
     query("q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
   }
-
 }

@@ -17,7 +17,8 @@
 
 package org.apache.solr.response;
 
-
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collection;
@@ -26,9 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -36,9 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 
-/**
- * Base response writer for table-oriented data
- */
+/** Base response writer for table-oriented data */
 public abstract class TabularResponseWriter extends TextResponseWriter {
 
   private boolean returnStoredOrDocValStored;
@@ -46,24 +42,22 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   public TabularResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse resp) {
     super(writer, req, resp);
     // fl=* or globs specified in fl
-    returnStoredOrDocValStored = ((returnFields.getRequestedFieldNames() == null) ||
-        returnFields.hasPatternMatching());
+    returnStoredOrDocValStored =
+        ((returnFields.getRequestedFieldNames() == null) || returnFields.hasPatternMatching());
   }
 
-  /**
-   * Returns fields to be returned in the response
-   */
+  /** Returns fields to be returned in the response */
   public Collection<String> getFields() {
     Collection<String> fields = returnFields.getRequestedFieldNames();
     Set<String> explicitReqFields = returnFields.getExplicitlyRequestedFieldNames();
     Object responseObj = rsp.getResponse();
-    if (fields==null||returnFields.hasPatternMatching()) {
+    if (fields == null || returnFields.hasPatternMatching()) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
-        if(fields==null) {
+        if (fields == null) {
           fields = new LinkedHashSet<>();
         }
-        for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
+        for (SolrDocument sdoc : (SolrDocumentList) responseObj) {
           fields.addAll(sdoc.getFieldNames());
         }
       } else {
@@ -92,6 +86,7 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
 
   /**
    * Returns true if field needs to be skipped else false
+   *
    * @param field name of the field
    * @return boolean value
    */
@@ -101,46 +96,45 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
 
     // Return stored fields or useDocValuesAsStored=true fields,
     // unless an explicit field list is specified
-    return  (returnStoredOrDocValStored && !(explicitReqFields != null && explicitReqFields.contains(field)) &&
-        sf!= null && !sf.stored() && !(sf.hasDocValues() && sf.useDocValuesAsStored()));
+    return (returnStoredOrDocValStored
+        && !(explicitReqFields != null && explicitReqFields.contains(field))
+        && sf != null
+        && !sf.stored()
+        && !(sf.hasDocValues() && sf.useDocValuesAsStored()));
   }
 
   public void writeResponse(Object responseObj) throws IOException {
     if (responseObj instanceof ResultContext) {
-      writeDocuments(null, (ResultContext)responseObj );
-    }
-    else if (responseObj instanceof DocList) {
-      ResultContext ctx = new BasicResultContext((DocList)responseObj, returnFields, null, null, req);
-      writeDocuments(null, ctx );
+      writeDocuments(null, (ResultContext) responseObj);
+    } else if (responseObj instanceof DocList) {
+      ResultContext ctx =
+          new BasicResultContext((DocList) responseObj, returnFields, null, null, req);
+      writeDocuments(null, ctx);
     } else if (responseObj instanceof SolrDocumentList) {
-      writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
+      writeSolrDocumentList(null, (SolrDocumentList) responseObj, returnFields);
     }
   }
 
   @Override
-  public void writeNamedList(String name, NamedList<?> val) throws IOException {
-  }
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {}
 
   @Override
-  public void writeStartDocumentList(String name,
-                                     long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
-  {
+  public void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException {
     // nothing
   }
 
   @Override
-  public void writeEndDocumentList() throws IOException
-  {
+  public void writeEndDocumentList() throws IOException {
     // nothing
   }
 
   @Override
-  public void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) {
-  }
+  public void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) {}
 
   @Override
-  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
-  }
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {}
 
   @Override
   public void writeDate(String name, Date val) throws IOException {

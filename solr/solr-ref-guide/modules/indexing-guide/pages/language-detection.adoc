@@ -31,6 +31,10 @@ For specific information on each of these language identification implementation
 
 For more information about language analysis in Solr, see xref:language-analysis.adoc[].
 
+== Module
+
+This is provided via the `langid` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
 == Configuring Language Detection
 
 You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`.

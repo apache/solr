@@ -22,18 +22,19 @@ import java.util.List;
 
 /**
  * Calculates ordinals of a comparable list by placing them in the correct positions in the list.
- * <p>
- * Implements the QuickSelect algorithm, but modifies it to select multiple ordinals all at once.
+ *
+ * <p>Implements the QuickSelect algorithm, but modifies it to select multiple ordinals all at once.
  */
 public class OrdinalCalculator {
   /**
-   * Calculates a set of ordinal values for a given list of comparable objects.
-   * Once the method returns, the each ordinal is guaranteed to have the correct value in the list.
+   * Calculates a set of ordinal values for a given list of comparable objects. Once the method
+   * returns, the each ordinal is guaranteed to have the correct value in the list.
    *
    * @param list the list of {@link Comparable} objects
    * @param ordinals the collection ordinals to calculate (0 to (size of list) - 1)
    */
-  public static <T extends Comparable<T>> void putOrdinalsInPosition(List<T> list, Collection<Integer> ordinals) {
+  public static <T extends Comparable<T>> void putOrdinalsInPosition(
+      List<T> list, Collection<Integer> ordinals) {
     int size = list.size();
     if (size == 0) {
       return;
@@ -44,12 +45,13 @@ public class OrdinalCalculator {
     for (int ord : ordinals) {
       ords[i++] = ord;
     }
-    ords = Arrays.stream(ords).sorted().filter( ord -> ord >= 0 && ord < size).toArray();
+    ords = Arrays.stream(ords).sorted().filter(ord -> ord >= 0 && ord < size).toArray();
 
     distributeAndFind(list, ords, 0, ords.length - 1);
   }
 
-  private static <T extends Comparable<T>> void distributeAndFind(List<T> list, int[] ordinals, int beginIdx, int endIdx) {
+  private static <T extends Comparable<T>> void distributeAndFind(
+      List<T> list, int[] ordinals, int beginIdx, int endIdx) {
     if (endIdx < beginIdx) {
       return;
     }
@@ -81,7 +83,8 @@ public class OrdinalCalculator {
     distributeAndFind(list, ordinals, middleIdxe + 1, endIdx);
   }
 
-  private static <T extends Comparable<T>> void select(List<T> list, int place, int begin, int end) {
+  private static <T extends Comparable<T>> void select(
+      List<T> list, int place, int begin, int end) {
     T split;
     if (end - begin < 10) {
       split = list.get((int) (Math.random() * (end - begin + 1)) + begin);
@@ -115,7 +118,8 @@ public class OrdinalCalculator {
     return list.get(recursiveSize / 2 + begin);
   }
 
-  private static <T extends Comparable<T>> Point partition(List<T> list, int begin, int end, T indexElement) {
+  private static <T extends Comparable<T>> Point partition(
+      List<T> list, int begin, int end, T indexElement) {
     T temp;
     int left, right;
     for (left = begin, right = end; left <= right; left++, right--) {
@@ -168,4 +172,3 @@ public class OrdinalCalculator {
     }
   }
 }
-

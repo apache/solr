@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import com.google.common.io.ByteStreams;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +30,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -37,9 +37,7 @@ import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.junit.After;
 import org.junit.AfterClass;
 
-import com.google.common.io.ByteStreams;
-
-abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
+public abstract class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   protected static final String DEFAULT_CORE_NAME = "collection1";
 
@@ -52,9 +50,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterEmbeddedSolrServerTestBase() throws Exception {
-
-  }
+  public static void afterEmbeddedSolrServerTestBase() throws Exception {}
 
   public synchronized EmbeddedSolrServer getSolrClient() {
     if (client == null) {
@@ -63,9 +59,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
     return client;
   }
 
-  /**
-   * Create a new solr client. Subclasses should override for other options.
-   */
+  /** Create a new solr client. Subclasses should override for other options. */
   public EmbeddedSolrServer createNewSolrClient() {
     return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
   }
@@ -103,7 +97,8 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
           try {
             final ByteArrayOutputStream os = new ByteArrayOutputStream();
             ByteStreams.copy(new FileInputStream(file), os);
-            final ByteArrayStream stream = new ContentStreamBase.ByteArrayStream(os.toByteArray(), name);
+            final ByteArrayStream stream =
+                new ContentStreamBase.ByteArrayStream(os.toByteArray(), name);
             result.add(stream);
           } catch (final IOException e) {
             throw new RuntimeException(e);

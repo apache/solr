@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * XSLT related classes.
- */
+
+/** XSLT related classes. */
 package org.apache.solr.scripting.xslt;
-
-

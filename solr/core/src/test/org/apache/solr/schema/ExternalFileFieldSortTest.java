@@ -16,21 +16,20 @@
  */
 package org.apache.solr.schema;
 
+import java.io.File;
+import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
   static void updateExternalFile() throws IOException {
     final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     String filename = "external_eff";
-    FileUtils.copyFile(new File(testHome + "/" + filename),
-        new File(h.getCore().getDataDir() + "/" + filename));
+    FileUtils.copyFile(
+        new File(testHome + "/" + filename), new File(h.getCore().getDataDir() + "/" + filename));
   }
 
   private void addDocuments() {
@@ -47,7 +46,8 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
     updateExternalFile();
 
     addDocuments();
-    assertQ("query",
+    assertQ(
+        "query",
         req("q", "*:*", "sort", "eff asc"),
         "//result/doc[position()=1]/str[.='3']",
         "//result/doc[position()=2]/str[.='1']",
@@ -55,12 +55,13 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
     assertQ("test exists", req("q", "*:*", "sort", "exists(eff) desc"));
   }
-  
+
   @Test
-  public void testPointKeyFieldType() throws Exception {
+  public void testPointKeyFieldType() {
     // This one should fail though, no "node" parameter specified
-    SolrException e = expectThrows(SolrException.class, 
-        () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
+    SolrException e =
+        expectThrows(
+            SolrException.class, () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
     assertTrue(e.getMessage().contains("has a Point field type, which is not supported."));
   }
 }

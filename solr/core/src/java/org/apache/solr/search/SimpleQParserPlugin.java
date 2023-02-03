@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.simple.SimpleQueryParser;
@@ -36,37 +39,27 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.util.SolrPluginUtils;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 /**
- * Create a query from the input value that will be parsed by Lucene's SimpleQueryParser.
- * See {@link org.apache.lucene.queryparser.simple.SimpleQueryParser} for details on the exact syntax allowed
- * to be used for queries.
- * <br>
+ * Create a query from the input value that will be parsed by Lucene's SimpleQueryParser. See {@link
+ * org.apache.lucene.queryparser.simple.SimpleQueryParser} for details on the exact syntax allowed
+ * to be used for queries. <br>
  * The following options may be applied for parsing the query.
+ *
  * <ul>
- *   <li>
- *     q.operators - Used to enable specific operations for parsing.  The operations that can be enabled are
- *                   and, not, or, prefix, phrase, precedence, escape, and whitespace.  By default all operations
- *                   are enabled.  All operations can be disabled by passing in an empty string to this parameter.
- *   </li>
- *   <li>
- *     q.op - Used to specify the operator to be used if whitespace is a delimiter. Either 'AND' or 'OR'
- *            can be specified for this parameter.  Any other string will cause an exception to be thrown.
- *            If this parameter is not specified 'OR' will be used by default.
- *   </li>
- *   <li>
- *     qf - The list of query fields and boosts to use when building the simple query.  The format is the following:
- *          <code>fieldA^1.0 fieldB^2.2</code>.  A field can also be specified without a boost by simply listing the
- *          field as <code>fieldA fieldB</code>.  Any field without a boost will default to use a boost of 1.0.
- *   </li>
- *   <li>
- *     df - An override for the default field specified in the schema or a default field if one is not specified
- *          in the schema.  If qf is not specified the default field will be used as the field to run the query
- *          against.
- *   </li>
+ *   <li>q.operators - Used to enable specific operations for parsing. The operations that can be
+ *       enabled are and, not, or, prefix, phrase, precedence, escape, and whitespace. By default
+ *       all operations are enabled. All operations can be disabled by passing in an empty string to
+ *       this parameter.
+ *   <li>q.op - Used to specify the operator to be used if whitespace is a delimiter. Either 'AND'
+ *       or 'OR' can be specified for this parameter. Any other string will cause an exception to be
+ *       thrown. If this parameter is not specified 'OR' will be used by default.
+ *   <li>qf - The list of query fields and boosts to use when building the simple query. The format
+ *       is the following: <code>fieldA^1.0 fieldB^2.2</code>. A field can also be specified without
+ *       a boost by simply listing the field as <code>fieldA fieldB</code>. Any field without a
+ *       boost will default to use a boost of 1.0.
+ *   <li>df - An override for the default field specified in the schema or a default field if one is
+ *       not specified in the schema. If qf is not specified the default field will be used as the
+ *       field to run the query against.
  * </ul>
  */
 public class SimpleQParserPlugin extends QParserPlugin {
@@ -78,35 +71,38 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
   /* Setup the map of possible operators. */
   static {
-    OPERATORS.put(SimpleParams.AND_OPERATOR,         SimpleQueryParser.AND_OPERATOR);
-    OPERATORS.put(SimpleParams.NOT_OPERATOR,         SimpleQueryParser.NOT_OPERATOR);
-    OPERATORS.put(SimpleParams.OR_OPERATOR,          SimpleQueryParser.OR_OPERATOR);
-    OPERATORS.put(SimpleParams.PREFIX_OPERATOR,      SimpleQueryParser.PREFIX_OPERATOR);
-    OPERATORS.put(SimpleParams.PHRASE_OPERATOR,      SimpleQueryParser.PHRASE_OPERATOR);
+    OPERATORS.put(SimpleParams.AND_OPERATOR, SimpleQueryParser.AND_OPERATOR);
+    OPERATORS.put(SimpleParams.NOT_OPERATOR, SimpleQueryParser.NOT_OPERATOR);
+    OPERATORS.put(SimpleParams.OR_OPERATOR, SimpleQueryParser.OR_OPERATOR);
+    OPERATORS.put(SimpleParams.PREFIX_OPERATOR, SimpleQueryParser.PREFIX_OPERATOR);
+    OPERATORS.put(SimpleParams.PHRASE_OPERATOR, SimpleQueryParser.PHRASE_OPERATOR);
     OPERATORS.put(SimpleParams.PRECEDENCE_OPERATORS, SimpleQueryParser.PRECEDENCE_OPERATORS);
-    OPERATORS.put(SimpleParams.ESCAPE_OPERATOR,      SimpleQueryParser.ESCAPE_OPERATOR);
-    OPERATORS.put(SimpleParams.WHITESPACE_OPERATOR,  SimpleQueryParser.WHITESPACE_OPERATOR);
-    OPERATORS.put(SimpleParams.FUZZY_OPERATOR,       SimpleQueryParser.FUZZY_OPERATOR);
-    OPERATORS.put(SimpleParams.NEAR_OPERATOR,        SimpleQueryParser.NEAR_OPERATOR);
+    OPERATORS.put(SimpleParams.ESCAPE_OPERATOR, SimpleQueryParser.ESCAPE_OPERATOR);
+    OPERATORS.put(SimpleParams.WHITESPACE_OPERATOR, SimpleQueryParser.WHITESPACE_OPERATOR);
+    OPERATORS.put(SimpleParams.FUZZY_OPERATOR, SimpleQueryParser.FUZZY_OPERATOR);
+    OPERATORS.put(SimpleParams.NEAR_OPERATOR, SimpleQueryParser.NEAR_OPERATOR);
   }
 
   /** Returns a QParser that will create a query by using Lucene's SimpleQueryParser. */
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new SimpleQParser(qstr, localParams, params, req);
   }
 
   private static class SimpleQParser extends QParser {
     private SimpleQueryParser parser;
 
-    public SimpleQParser (String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    public SimpleQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
       super(qstr, localParams, params, req);
       // Some of the parameters may come in through localParams, so combine them with params.
       SolrParams defaultParams = SolrParams.wrapDefaults(localParams, params);
 
       // This will be used to specify what fields and boosts will be used by SimpleQueryParser.
-      Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(defaultParams.get(SimpleParams.QF));
+      Map<String, Float> queryFields =
+          SolrPluginUtils.parseFieldBoosts(defaultParams.get(SimpleParams.QF));
 
       if (queryFields.isEmpty()) {
         // It qf is not specified setup up the queryFields map to use the defaultField.
@@ -114,17 +110,16 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
         if (defaultField == null) {
           // A query cannot be run without having a field or set of fields to run against.
-          throw new IllegalStateException("Neither " + SimpleParams.QF + " nor " + CommonParams.DF
-              + " are present.");
+          throw new IllegalStateException(
+              "Neither " + SimpleParams.QF + " nor " + CommonParams.DF + " are present.");
         }
 
         queryFields.put(defaultField, 1.0F);
-      }
-      else {
+      } else {
         for (Map.Entry<String, Float> queryField : queryFields.entrySet()) {
           if (queryField.getValue() == null) {
-            // Some fields may be specified without a boost, so default the boost to 1.0 since a null value
-            // will not be accepted by SimpleQueryParser.
+            // Some fields may be specified without a boost, so default the boost to 1.0 since a
+            // null value will not be accepted by SimpleQueryParser.
             queryField.setValue(1.0F);
           }
         }
@@ -152,7 +147,9 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
       // Create a SimpleQueryParser using the analyzer from the schema.
       final IndexSchema schema = req.getSchema();
-      parser = new SolrSimpleQueryParser(req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
+      parser =
+          new SolrSimpleQueryParser(
+              req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
 
       // Set the default operator to be either 'AND' or 'OR' for the query.
       QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
@@ -166,15 +163,18 @@ public class SimpleQParserPlugin extends QParserPlugin {
     public Query parse() throws SyntaxError {
       return parser.parse(qstr);
     }
-
   }
 
   private static class SolrSimpleQueryParser extends SimpleQueryParser {
     QParser qParser;
     IndexSchema schema;
 
-    public SolrSimpleQueryParser(Analyzer analyzer, Map<String, Float> weights, int flags,
-                                 QParser qParser, IndexSchema schema) {
+    public SolrSimpleQueryParser(
+        Analyzer analyzer,
+        Map<String, Float> weights,
+        int flags,
+        QParser qParser,
+        IndexSchema schema) {
       super(analyzer, weights, flags);
       this.qParser = qParser;
       this.schema = schema;
@@ -191,7 +191,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
         if (type instanceof TextField) {
           // If the field type is a TextField then use the multi term analyzer.
-          Analyzer analyzer = ((TextField)type).getMultiTermAnalyzer();
+          Analyzer analyzer = ((TextField) type).getMultiTermAnalyzer();
           BytesRef termBytes = TextField.analyzeMultiTerm(field, text, analyzer);
           if (termBytes != null) {
             String term = termBytes.utf8ToString();
@@ -226,7 +226,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
         if (type instanceof TextField) {
           // If the field type is a TextField then use the multi term analyzer.
-          Analyzer analyzer = ((TextField)type).getMultiTermAnalyzer();
+          Analyzer analyzer = ((TextField) type).getMultiTermAnalyzer();
           BytesRef termBytes = TextField.analyzeMultiTerm(field, text, analyzer);
           if (termBytes != null) {
             String term = termBytes.utf8ToString();
@@ -247,8 +247,5 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
       return simplify(bq.build());
     }
-
-
   }
 }
-

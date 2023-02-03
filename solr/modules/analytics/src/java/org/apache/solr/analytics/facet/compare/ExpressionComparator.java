@@ -18,9 +18,7 @@ package org.apache.solr.analytics.facet.compare;
 
 import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
 
-/**
- * A comparator used to sort the facet-value buckets of facet.
- */
+/** A comparator used to sort the facet-value buckets of facet. */
 public class ExpressionComparator<T extends Comparable<T>> extends FacetResultsComparator {
   private final String expression;
 
@@ -33,10 +31,11 @@ public class ExpressionComparator<T extends Comparable<T>> extends FacetResultsC
     this.expression = expression;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public int compare(FacetBucket b1, FacetBucket b2) {
-    T t1 = (T)b1.getResult(expression);
-    T t2 = (T)b2.getResult(expression);
+    T t1 = (T) b1.getResult(expression);
+    T t2 = (T) b2.getResult(expression);
     if (t1 == null || t2 == null) {
       return Boolean.compare(t2 == null, t1 == null) * resultMult;
     } else {

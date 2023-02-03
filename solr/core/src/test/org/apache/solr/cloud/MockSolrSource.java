@@ -22,14 +22,16 @@ import static org.mockito.Mockito.when;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 
-public class MockSolrSource  {
+public class MockSolrSource {
 
-  public static ZkController makeSimpleMock(Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
+  @SuppressWarnings("DirectInvocationOnMock")
+  public static ZkController makeSimpleMock(
+      Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
     ZkController zkControllerMock = mock(ZkController.class);
     final DistributedClusterStateUpdater distributedClusterStateUpdater;
     if (overseer == null) {
-      // When no overseer is passed, the Overseer queue does nothing. Replicate this in how we handle distributed state
-      // updates by doing nothing as well...
+      // When no overseer is passed, the Overseer queue does nothing. Replicate this in how we
+      // handle distributed state updates by doing nothing as well...
       distributedClusterStateUpdater = mock(DistributedClusterStateUpdater.class);
       overseer = mock(Overseer.class);
       when(overseer.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
@@ -41,17 +43,16 @@ public class MockSolrSource  {
     if (reader != null && zkClient == null) {
       zkClient = reader.getZkClient();
     } else {
-      if (zkClient == null) {
-      }
       reader = mock(ZkStateReader.class);
       when(reader.getZkClient()).thenReturn(zkClient);
     }
-     
+
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
     when(zkControllerMock.getZkStateReader()).thenReturn(reader);
     when(zkControllerMock.getZkClient()).thenReturn(zkClient);
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
-    when(zkControllerMock.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
+    when(zkControllerMock.getDistributedClusterStateUpdater())
+        .thenReturn(distributedClusterStateUpdater);
     return zkControllerMock;
   }
 }

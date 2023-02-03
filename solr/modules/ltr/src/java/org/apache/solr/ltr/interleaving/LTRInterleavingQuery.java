@@ -19,20 +19,22 @@ package org.apache.solr.ltr.interleaving;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.search.LTRQuery;
 import org.apache.solr.search.RankQuery;
 
 /**
- * A learning to rank Query with Interleaving, will incapsulate two models, and delegate to it the rescoring
- * of the documents.
- **/
+ * A learning to rank Query with Interleaving, will incapsulate two models, and delegate to it the
+ * rescoring of the documents.
+ */
 public class LTRInterleavingQuery extends LTRQuery {
   private final LTRInterleavingScoringQuery[] rerankingQueries;
   private final Interleaving interlavingAlgorithm;
 
-  public LTRInterleavingQuery(Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries, int rerankDocs) {
+  public LTRInterleavingQuery(
+      Interleaving interleavingAlgorithm,
+      LTRInterleavingScoringQuery[] rerankingQueries,
+      int rerankDocs) {
     super(null, rerankDocs, new LTRInterleavingRescorer(interleavingAlgorithm, rerankingQueries));
     this.rerankingQueries = rerankingQueries;
     this.interlavingAlgorithm = interleavingAlgorithm;
@@ -40,7 +42,8 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   @Override
   public int hashCode() {
-    return 31 * classHash() + (mainQuery.hashCode() + rerankingQueries.hashCode() + reRankDocs);
+    return 31 * classHash()
+        + (mainQuery.hashCode() + Arrays.hashCode(rerankingQueries) + reRankDocs);
   }
 
   @Override
@@ -50,13 +53,14 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   private boolean equalsTo(LTRInterleavingQuery other) {
     return (mainQuery.equals(other.mainQuery)
-        && rerankingQueries.equals(other.rerankingQueries) && (reRankDocs == other.reRankDocs));
+        && Arrays.equals(rerankingQueries, other.rerankingQueries)
+        && (reRankDocs == other.reRankDocs));
   }
 
   @Override
   public RankQuery wrap(Query _mainQuery) {
     super.wrap(_mainQuery);
-    for(LTRInterleavingScoringQuery rerankingQuery: rerankingQueries){
+    for (LTRInterleavingScoringQuery rerankingQuery : rerankingQueries) {
       rerankingQuery.setOriginalQuery(_mainQuery);
     }
     return this;
@@ -64,12 +68,18 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   @Override
   public String toString(String field) {
-    return "{!ltr mainQuery='" + mainQuery.toString() + "' rerankingQueries='"
-        + Arrays.toString(rerankingQueries) + "' reRankDocs=" + reRankDocs + "}";
+    return "{!ltr mainQuery='"
+        + mainQuery.toString()
+        + "' rerankingQueries='"
+        + Arrays.toString(rerankingQueries)
+        + "' reRankDocs="
+        + reRankDocs
+        + "}";
   }
 
   @Override
   protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-    return new LTRInterleavingQuery(interlavingAlgorithm, rerankingQueries, reRankDocs).wrap(rewrittenMainQuery);
+    return new LTRInterleavingQuery(interlavingAlgorithm, rerankingQueries, reRankDocs)
+        .wrap(rewrittenMainQuery);
   }
 }

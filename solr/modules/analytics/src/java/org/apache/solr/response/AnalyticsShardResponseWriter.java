@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Writer;
-
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
@@ -30,21 +29,24 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Writes the reduction data of a analytics shard request to a bit-stream to send to the originating shard.
- * The response must be parsed by the {@link AnalyticsShardResponseParser} initialized with the same analytics request
- * as the shard request was sent.
+ * Writes the reduction data of a analytics shard request to a bit-stream to send to the originating
+ * shard. The response must be parsed by the {@link AnalyticsShardResponseParser} initialized with
+ * the same analytics request as the shard request was sent.
  */
 public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
   public static final String NAME = "analytics_shard_stream";
   public static final String ANALYTICS_MANGER = "analyticsManager";
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
-    ((AnalyticsResponse)response.getResponse()).write(new DataOutputStream(out));;
+  public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
+      throws IOException {
+    ((AnalyticsResponse) response.getResponse()).write(new DataOutputStream(out));
+    ;
   }
 
   @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
     throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
   }
 
@@ -54,8 +56,8 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
   }
 
   /**
-   * Manages the streaming of analytics reduction data if no exception occurred.
-   * Otherwise the exception is streamed over.
+   * Manages the streaming of analytics reduction data if no exception occurred. Otherwise the
+   * exception is streamed over.
    */
   public static class AnalyticsResponse {
     private final AnalyticsRequestManager manager;
@@ -85,5 +87,4 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
       }
     }
   }
-
 }

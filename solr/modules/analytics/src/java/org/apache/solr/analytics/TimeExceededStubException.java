@@ -24,12 +24,12 @@ public final class TimeExceededStubException extends SolrException {
   private static final int HTTP_CODE = 524;
 
   public TimeExceededStubException(Throwable th) {
-    super(HTTP_CODE, 
-        SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, th);
-    setMetadata("cause", CommonParams.TIME_ALLOWED+" is exceeded");
+    super(HTTP_CODE, SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, th);
+    setMetadata("cause", CommonParams.TIME_ALLOWED + " is exceeded");
   }
-  
+
   public static boolean isIt(SolrException e) {
-    return e.code() == HTTP_CODE && SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY.equals(e.getMessage());
+    return e.code() == HTTP_CODE
+        && SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY.equals(e.getMessage());
   }
 }

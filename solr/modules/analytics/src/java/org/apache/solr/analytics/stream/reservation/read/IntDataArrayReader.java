@@ -25,6 +25,7 @@ public class IntDataArrayReader extends ReductionDataArrayReader<IntConsumer> {
   public IntDataArrayReader(DataInput inputStream, IntConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }
+
   @Override
   public void read(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

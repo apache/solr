@@ -25,7 +25,7 @@ public class SpellCheckCorrection {
   public Token getOriginal() {
     return original;
   }
-  
+
   public String getOriginalAsString() {
     if (originalAsString == null && original != null) {
       originalAsString = original.toString();
@@ -53,5 +53,4 @@ public class SpellCheckCorrection {
   public void setNumberOfOccurences(int numberOfOccurences) {
     this.numberOfOccurences = numberOfOccurences;
   }
-
 }

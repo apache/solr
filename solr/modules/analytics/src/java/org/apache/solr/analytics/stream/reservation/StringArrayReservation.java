@@ -19,17 +19,20 @@ package org.apache.solr.analytics.stream.reservation;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-
 import org.apache.solr.analytics.stream.reservation.read.StringDataArrayReader;
 import org.apache.solr.analytics.stream.reservation.write.StringDataArrayWriter;
 
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
+public class StringArrayReservation
+    extends ReductionDataArrayReservation<Consumer<String>, Supplier<String>> {
 
-public class StringArrayReservation extends ReductionDataArrayReservation<Consumer<String>, Supplier<String>> {
-
-  public StringArrayReservation(Consumer<String> applier, IntConsumer sizeApplier, Supplier<String> extractor, IntSupplier sizeExtractor) {
+  public StringArrayReservation(
+      Consumer<String> applier,
+      IntConsumer sizeApplier,
+      Supplier<String> extractor,
+      IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }
 

@@ -18,11 +18,9 @@ package org.apache.solr.search;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.Query;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -30,38 +28,41 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * The {@link XmlQParserPlugin} extends the {@link QParserPlugin} and supports the creation of queries from XML.
- *<p>
- * Example:
+ * The {@link XmlQParserPlugin} extends the {@link QParserPlugin} and supports the creation of
+ * queries from XML.
+ *
+ * <p>Example:
+ *
  * <pre>
-&lt;BooleanQuery fieldName="description"&gt;
-   &lt;Clause occurs="must"&gt;
-      &lt;TermQuery&gt;shirt&lt;/TermQuery&gt;
-   &lt;/Clause&gt;
-   &lt;Clause occurs="mustnot"&gt;
-      &lt;TermQuery&gt;plain&lt;/TermQuery&gt;
-   &lt;/Clause&gt;
-   &lt;Clause occurs="should"&gt;
-      &lt;TermQuery&gt;cotton&lt;/TermQuery&gt;
-   &lt;/Clause&gt;
-   &lt;Clause occurs="must"&gt;
-      &lt;BooleanQuery fieldName="size"&gt;
-         &lt;Clause occurs="should"&gt;
-            &lt;TermsQuery&gt;S M L&lt;/TermsQuery&gt;
-         &lt;/Clause&gt;
-      &lt;/BooleanQuery&gt;
-   &lt;/Clause&gt;
-&lt;/BooleanQuery&gt;
-</pre>
- * You can configure your own custom query builders for additional XML elements.
- * The custom builders need to extend the {@link SolrQueryBuilder} or the
- * {@link SolrSpanQueryBuilder} class.
- *<p>
- * Example solrconfig.xml snippet:
+ * &lt;BooleanQuery fieldName="description"&gt;
+ * &lt;Clause occurs="must"&gt;
+ * &lt;TermQuery&gt;shirt&lt;/TermQuery&gt;
+ * &lt;/Clause&gt;
+ * &lt;Clause occurs="mustnot"&gt;
+ * &lt;TermQuery&gt;plain&lt;/TermQuery&gt;
+ * &lt;/Clause&gt;
+ * &lt;Clause occurs="should"&gt;
+ * &lt;TermQuery&gt;cotton&lt;/TermQuery&gt;
+ * &lt;/Clause&gt;
+ * &lt;Clause occurs="must"&gt;
+ * &lt;BooleanQuery fieldName="size"&gt;
+ * &lt;Clause occurs="should"&gt;
+ * &lt;TermsQuery&gt;S M L&lt;/TermsQuery&gt;
+ * &lt;/Clause&gt;
+ * &lt;/BooleanQuery&gt;
+ * &lt;/Clause&gt;
+ * &lt;/BooleanQuery&gt;
+ * </pre>
+ *
+ * You can configure your own custom query builders for additional XML elements. The custom builders
+ * need to extend the {@link SolrQueryBuilder} or the {@link SolrSpanQueryBuilder} class.
+ *
+ * <p>Example solrconfig.xml snippet:
+ *
  * <pre>&lt;queryParser name="xmlparser" class="XmlQParserPlugin"&gt;
-  &lt;str name="MyCustomQuery"&gt;com.mycompany.solr.search.MyCustomQueryBuilder&lt;/str&gt;
-&lt;/queryParser&gt;
-</pre>
+ * &lt;str name="MyCustomQuery"&gt;com.mycompany.solr.search.MyCustomQueryBuilder&lt;/str&gt;
+ * &lt;/queryParser&gt;
+ * </pre>
  */
 public class XmlQParserPlugin extends QParserPlugin {
   public static final String NAME = "xmlparser";
@@ -69,18 +70,19 @@ public class XmlQParserPlugin extends QParserPlugin {
   private NamedList<?> args;
 
   @Override
-  public void init(NamedList<?> args ) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.args = args;
   }
 
   private class XmlQParser extends QParser {
 
-    public XmlQParser(String qstr, SolrParams localParams,
-        SolrParams params, SolrQueryRequest req) {
+    public XmlQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
     }
 
+    @Override
     public Query parse() throws SyntaxError {
       final String qstr = getString();
       if (qstr == null || qstr.isEmpty()) {
@@ -98,12 +100,11 @@ public class XmlQParserPlugin extends QParserPlugin {
         throw new SyntaxError(e.getMessage() + " in " + req.toString());
       }
     }
-
   }
 
-  public QParser createParser(String qstr, SolrParams localParams,
-      SolrParams params, SolrQueryRequest req) {
+  @Override
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new XmlQParser(qstr, localParams, params, req);
   }
-
 }

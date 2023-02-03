@@ -16,22 +16,22 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.mock;
-
-/**
- * Tests for {@link ClassificationUpdateProcessorFactory}
- */
+/** Tests for {@link ClassificationUpdateProcessorFactory} */
 public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
-  private ClassificationUpdateProcessorFactory cFactoryToTest = new ClassificationUpdateProcessorFactory();
+  private ClassificationUpdateProcessorFactory cFactoryToTest =
+      new ClassificationUpdateProcessorFactory();
   private NamedList<String> args = new NamedList<>();
 
   @Before
@@ -48,14 +48,16 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void init_fullArgs_shouldInitFullClassificationParams() {
     cFactoryToTest.init(args);
-    ClassificationUpdateProcessorParams classificationParams = cFactoryToTest.getClassificationParams();
+    ClassificationUpdateProcessorParams classificationParams =
+        cFactoryToTest.getClassificationParams();
 
     String[] inputFieldNames = classificationParams.getInputFieldNames();
     assertEquals("inputField1", inputFieldNames[0]);
     assertEquals("inputField2", inputFieldNames[1]);
     assertEquals("classField1", classificationParams.getTrainingClassField());
     assertEquals("classFieldX", classificationParams.getPredictedClassField());
-    assertEquals(ClassificationUpdateProcessorFactory.Algorithm.BAYES, classificationParams.getAlgorithm());
+    assertEquals(
+        ClassificationUpdateProcessorFactory.Algorithm.BAYES, classificationParams.getAlgorithm());
     assertEquals(8, classificationParams.getMinDf());
     assertEquals(10, classificationParams.getMinTf());
     assertEquals(9, classificationParams.getK());
@@ -81,8 +83,9 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     cFactoryToTest.init(args);
 
-    ClassificationUpdateProcessorParams classificationParams = cFactoryToTest.getClassificationParams();
-    assertThat(classificationParams.getPredictedClassField(), is("classField1"));
+    ClassificationUpdateProcessorParams classificationParams =
+        cFactoryToTest.getClassificationParams();
+    MatcherAssert.assertThat(classificationParams.getPredictedClassField(), is("classField1"));
   }
 
   @Test
@@ -90,23 +93,29 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     args.removeAll("algorithm");
     args.add("algorithm", "unsupported");
     SolrException e = assertThrows(SolrException.class, () -> cFactoryToTest.init(args));
-    assertEquals("Classification UpdateProcessor Algorithm: 'unsupported' not supported", e.getMessage());
+    assertEquals(
+        "Classification UpdateProcessor Algorithm: 'unsupported' not supported", e.getMessage());
   }
 
   @Test
   public void init_unsupportedFilterQuery_shouldThrowExceptionWithDetailedMessage() {
     assumeWorkingMockito();
-    
+
     UpdateRequestProcessor mockProcessor = mock(UpdateRequestProcessor.class);
     SolrQueryRequest mockRequest = mock(SolrQueryRequest.class);
     SolrQueryResponse mockResponse = mock(SolrQueryResponse.class);
     args.add("knn.filterQuery", "not supported query");
     cFactoryToTest.init(args);
-    SolrException e = assertThrows(SolrException.class, () -> {
-      /* parsing failure happens because of the mocks, fine enough to check a proper exception propagation */
-      cFactoryToTest.getInstance(mockRequest, mockResponse, mockProcessor);
-    });
-    assertEquals("Classification UpdateProcessor Training Filter Query: 'not supported query' is not supported", e.getMessage());
+    SolrException e =
+        assertThrows(
+            SolrException.class,
+            () -> {
+              /* parsing failure happens because of the mocks, fine enough to check a proper exception propagation */
+              cFactoryToTest.getInstance(mockRequest, mockResponse, mockProcessor);
+            });
+    assertEquals(
+        "Classification UpdateProcessor Training Filter Query: 'not supported query' is not supported",
+        e.getMessage());
   }
 
   @Test
@@ -116,9 +125,11 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     args.removeAll("knn.minDf");
     args.removeAll("knn.minTf");
     cFactoryToTest.init(args);
-    ClassificationUpdateProcessorParams classificationParams = cFactoryToTest.getClassificationParams();
+    ClassificationUpdateProcessorParams classificationParams =
+        cFactoryToTest.getClassificationParams();
 
-    assertEquals(ClassificationUpdateProcessorFactory.Algorithm.KNN, classificationParams.getAlgorithm());
+    assertEquals(
+        ClassificationUpdateProcessorFactory.Algorithm.KNN, classificationParams.getAlgorithm());
     assertEquals(1, classificationParams.getMinDf());
     assertEquals(1, classificationParams.getMinTf());
     assertEquals(10, classificationParams.getK());

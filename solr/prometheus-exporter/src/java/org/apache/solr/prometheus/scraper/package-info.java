@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Send the raw requests to Solr endpoints.
- */
+/** Send the raw requests to Solr endpoints. */
 package org.apache.solr.prometheus.scraper;

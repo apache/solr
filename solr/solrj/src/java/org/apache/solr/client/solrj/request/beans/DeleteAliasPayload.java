@@ -20,9 +20,8 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class DeleteAliasPayload implements ReflectMapWriter {
-    @JsonProperty(required = true)
-    public String name;
+  @JsonProperty(required = true)
+  public String name;
 
-    @JsonProperty
-    public String async;
+  @JsonProperty public String async;
 }

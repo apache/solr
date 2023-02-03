@@ -21,35 +21,23 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected ZkTestServer zkServer;
 
   protected Path zkDir;
 
   private SolrZkClient zkClient;
-
-  private ZkStateReader reader;
 
   private NodeConfig cfg;
 
@@ -58,7 +46,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     Path solrHome = tmpDir.resolve("home");
     copyMinConf(new File(solrHome.toFile(), "myCollect"));
     if (leaveOnLocal) {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome.toFile(), "solr.xml"));
+      FileUtils.copyFile(
+          new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"),
+          new File(solrHome.toFile(), "solr.xml"));
     }
 
     ignoreException("No UpdateLog found - cannot sync");
@@ -100,9 +90,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    if (reader != null) {
-      reader.close();
-    }
     zkServer.shutdown();
   }
 
@@ -110,8 +97,10 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testXmlOnBoth() throws Exception {
     try {
       setUpZkAndDiskXml(true, true);
-      assertEquals("Should have gotten a new port the xml file sent to ZK, overrides the copy on disk",
-          cfg.getCloudConfig().getSolrHostPort(), 9045);
+      assertEquals(
+          "Should have gotten a new port the xml file sent to ZK, overrides the copy on disk",
+          cfg.getCloudConfig().getSolrHostPort(),
+          9045);
     } finally {
       closeZK();
     }
@@ -121,8 +110,10 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testXmlInZkOnly() throws Exception {
     try {
       setUpZkAndDiskXml(true, false);
-      assertEquals("Should have gotten a new port the xml file sent to ZK",
-          cfg.getCloudConfig().getSolrHostPort(), 9045);
+      assertEquals(
+          "Should have gotten a new port the xml file sent to ZK",
+          cfg.getCloudConfig().getSolrHostPort(),
+          9045);
     } finally {
       closeZK();
     }
@@ -132,8 +123,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testNotInZkFallbackLocal() throws Exception {
     try {
       setUpZkAndDiskXml(false, true);
-      assertEquals("Should have gotten the default port",
-          cfg.getCloudConfig().getSolrHostPort(), 8983);
+      assertEquals(
+          "Should have gotten the default port", cfg.getCloudConfig().getSolrHostPort(), 8983);
     } finally {
       closeZK();
     }
@@ -143,8 +134,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testNotInZkOrOnDiskFallbackDefault() throws Exception {
     try {
       setUpZkAndDiskXml(false, false);
-      assertEquals("Should have gotten the default port",
-          cfg.getCloudConfig().getSolrHostPort(), 8983);
+      assertEquals(
+          "Should have gotten the default port", cfg.getCloudConfig().getSolrHostPort(), 8983);
     } finally {
       closeZK();
     }
@@ -154,11 +145,15 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testNotInZkOrOnDiskWhenRequired() throws Exception {
     try {
       System.setProperty("solr.solrxml.required", "true");
-      SolrException e = expectThrows(SolrException.class, () -> {
-        System.setProperty("hostPort", "8787");
-        setUpZkAndDiskXml(false, false); // solr.xml not on disk either
-      });
-      assertTrue("Should be failing to create default solr.xml in code",
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                System.setProperty("hostPort", "8787");
+                setUpZkAndDiskXml(false, false); // solr.xml not on disk either
+              });
+      assertTrue(
+          "Should be failing to create default solr.xml in code",
           e.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
@@ -170,25 +165,25 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   public void testOnDiskOnly() throws Exception {
     try {
       setUpZkAndDiskXml(false, true);
-      assertEquals("Should have gotten the default port", cfg.getCloudConfig().getSolrHostPort(), 8983);
+      assertEquals(
+          "Should have gotten the default port", cfg.getCloudConfig().getSolrHostPort(), 8983);
     } finally {
       closeZK();
     }
   }
 
-  // Just a random port, I'm not going to use it but just check that the Solr instance constructed from the XML
-  // file in ZK overrides the default port.
+  // Just a random port, I'm not going to use it but just check that the Solr instance constructed
+  // from the XML file in ZK overrides the default port.
   private static final String XML_FOR_ZK =
-      "<solr>" +
-          "  <solrcloud>" +
-          "    <str name=\"host\">127.0.0.1</str>" +
-          "    <int name=\"hostPort\">9045</int>" +
-          "    <str name=\"hostContext\">${hostContext:solr}</str>" +
-          "  </solrcloud>" +
-          "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">" +
-          "    <int name=\"socketTimeout\">${socketTimeout:120000}</int>" +
-          "    <int name=\"connTimeout\">${connTimeout:15000}</int>" +
-          "  </shardHandlerFactory>" +
-          "</solr>";
-
+      "<solr>"
+          + "  <solrcloud>"
+          + "    <str name=\"host\">127.0.0.1</str>"
+          + "    <int name=\"hostPort\">9045</int>"
+          + "    <str name=\"hostContext\">${hostContext:solr}</str>"
+          + "  </solrcloud>"
+          + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">"
+          + "    <int name=\"socketTimeout\">${socketTimeout:120000}</int>"
+          + "    <int name=\"connTimeout\">${connTimeout:15000}</int>"
+          + "  </shardHandlerFactory>"
+          + "</solr>";
 }

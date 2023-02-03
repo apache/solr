@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Contains feature and model store related classes.
- */
+/** Contains feature and model store related classes. */
 package org.apache.solr.ltr.store;

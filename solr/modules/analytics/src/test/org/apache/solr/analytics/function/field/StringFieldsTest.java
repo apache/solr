@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
@@ -37,15 +36,18 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedStringTest() throws IOException {
     StringField valueField = new StringField("string_s");
-    Map<String,String> values = new HashMap<>();
+    Map<String, String> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      String value = valueField.getString();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              String value = valueField.getString();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleStrings, values, missing);
   }
@@ -53,18 +55,22 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedStringTest() throws IOException {
     StringMultiField valueField = new StringMultiField("string_sm");
-    Map<String,Map<String,Integer>> values = new HashMap<>();
+    Map<String, Map<String, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<String, Integer> doc = new HashMap<>();
-      valueField.streamStrings( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<String, Integer> doc = new HashMap<>();
+              valueField.streamStrings(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiStrings, values, missing, true);
   }

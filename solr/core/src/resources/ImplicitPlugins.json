@@ -27,7 +27,7 @@
       }
     },
     "update":{
-      "class":"solr.UpdateRequestHandlerApi",
+      "class":"solr.V2UpdateRequestHandler",
       "useParams": "_UPDATE_JSON_DOCS"
     },
     "/config": {
@@ -109,6 +109,7 @@
     },
     "/sql": {
       "class": "solr.SQLHandler",
+      "startup": "lazy",
       "useParams":"_SQL",
       "invariants": {
         "distrib": false

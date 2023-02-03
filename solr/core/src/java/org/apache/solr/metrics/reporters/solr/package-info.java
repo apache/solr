@@ -16,7 +16,7 @@
  */
 
 /**
- * This package contains {@link org.apache.solr.metrics.SolrMetricReporter} implementations
- * specific to SolrCloud reporting.
+ * This package contains {@link org.apache.solr.metrics.SolrMetricReporter} implementations specific
+ * to SolrCloud reporting.
  */
 package org.apache.solr.metrics.reporters.solr;

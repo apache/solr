@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.update.processor;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -29,23 +29,19 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
 
 /**
  * @since 3.1
- **/
-public class SignatureUpdateProcessorFactory 
-  extends UpdateRequestProcessorFactory 
-  implements SolrCoreAware {
-  
-
+ */
+public class SignatureUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware {
 
   private List<String> sigFields;
   private String signatureField;
@@ -67,12 +63,12 @@ public class SignatureUpdateProcessorFactory
 
       signatureField = params.get("signatureField", "signatureField");
 
-      signatureClass = params.get("signatureClass",
-          "org.apache.solr.update.processor.Lookup3Signature");
+      signatureClass =
+          params.get("signatureClass", "org.apache.solr.update.processor.Lookup3Signature");
       this.params = params;
 
       Object fields = args.get("fields");
-      sigFields = fields == null ? null: StrUtils.splitSmart((String)fields, ",", true); 
+      sigFields = fields == null ? null : StrUtils.splitSmart((String) fields, ",", true);
       if (sigFields != null) {
         Collections.sort(sigFields);
       }
@@ -83,27 +79,26 @@ public class SignatureUpdateProcessorFactory
   public void inform(SolrCore core) {
     final IndexSchema schema = core.getLatestSchema();
     final SchemaField field = schema.getFieldOrNull(getSignatureField());
-    
+
     if (null == field) {
-      throw new SolrException
-        (ErrorCode.SERVER_ERROR,
-         "Can't use signatureField which does not exist in schema: "
-         + getSignatureField());
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Can't use signatureField which does not exist in schema: " + getSignatureField());
     }
 
-    if (getOverwriteDupes() && ( ! field.indexed() ) ) {
-      throw new SolrException
-        (ErrorCode.SERVER_ERROR,
-         "Can't set overwriteDupes when signatureField is not indexed: "
-         + getSignatureField());
+    if (getOverwriteDupes() && (!field.indexed())) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Can't set overwriteDupes when signatureField is not indexed: " + getSignatureField());
     }
 
-    if (getOverwriteDupes() && (null != core.getCoreDescriptor().getCloudDescriptor()) ) {
+    if (getOverwriteDupes() && (null != core.getCoreDescriptor().getCloudDescriptor())) {
       // Not Safe, see SOLR-3473 + SOLR-15290
-      if ( ! field.equals(schema.getUniqueKeyField()) ) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-                                "Can't use overwriteDupes safely in SolrCloud when signatureField is not the uniqueKeyField: "
-                                + schema.getUniqueKeyField().getName());
+      if (!field.equals(schema.getUniqueKeyField())) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Can't use overwriteDupes safely in SolrCloud when signatureField is not the uniqueKeyField: "
+                + schema.getUniqueKeyField().getName());
       }
     }
   }
@@ -129,18 +124,19 @@ public class SignatureUpdateProcessorFactory
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-      SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
 
     return new SignatureUpdateProcessor(req, rsp, this, next);
-
   }
 
   class SignatureUpdateProcessor extends UpdateRequestProcessor {
     private final SolrQueryRequest req;
 
-    public SignatureUpdateProcessor(SolrQueryRequest req,
-        SolrQueryResponse rsp, SignatureUpdateProcessorFactory factory,
+    public SignatureUpdateProcessor(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        SignatureUpdateProcessorFactory factory,
         UpdateRequestProcessor next) {
       super(next);
       this.req = req;
@@ -153,10 +149,10 @@ public class SignatureUpdateProcessorFactory
         List<String> currDocSigFields = null;
         boolean isPartialUpdate = AtomicUpdateDocumentMerger.isAtomicUpdate(cmd);
         if (sigFields == null || sigFields.size() == 0) {
-          if (isPartialUpdate)  {
-            throw new SolrException
-                (ErrorCode.SERVER_ERROR,
-                    "Can't use SignatureUpdateProcessor with partial updates on signature fields");
+          if (isPartialUpdate) {
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR,
+                "Can't use SignatureUpdateProcessor with partial updates on signature fields");
           }
           Collection<String> docFields = doc.getFieldNames();
           currDocSigFields = new ArrayList<>(docFields.size());
@@ -166,22 +162,24 @@ public class SignatureUpdateProcessorFactory
           currDocSigFields = sigFields;
         }
 
-        Signature sig = req.getCore().getResourceLoader().newInstance(signatureClass, Signature.class);
+        Signature sig =
+            req.getCore().getResourceLoader().newInstance(signatureClass, Signature.class);
         sig.init(params);
 
         for (String field : currDocSigFields) {
           SolrInputField f = doc.getField(field);
           if (f != null) {
-            if (isPartialUpdate)  {
-              throw new SolrException
-                  (ErrorCode.SERVER_ERROR,
-                      "Can't use SignatureUpdateProcessor with partial update request " +
-                          "containing signature field: " + field);
+            if (isPartialUpdate) {
+              throw new SolrException(
+                  ErrorCode.SERVER_ERROR,
+                  "Can't use SignatureUpdateProcessor with partial update request "
+                      + "containing signature field: "
+                      + field);
             }
             sig.add(field);
             Object o = f.getValue();
             if (o instanceof Collection) {
-              for (Object oo : (Collection)o) {
+              for (Object oo : (Collection) o) {
                 sig.add(String.valueOf(oo));
               }
             } else {
@@ -191,12 +189,12 @@ public class SignatureUpdateProcessorFactory
         }
 
         byte[] signature = sig.getSignature();
-        char[] arr = new char[signature.length<<1];
-        for (int i=0; i<signature.length; i++) {
+        char[] arr = new char[signature.length << 1];
+        for (int i = 0; i < signature.length; i++) {
           int b = signature[i];
-          int idx = i<<1;
-          arr[idx]= StrUtils.HEX_DIGITS[(b >> 4) & 0xf];
-          arr[idx+1]= StrUtils.HEX_DIGITS[b & 0xf];
+          int idx = i << 1;
+          arr[idx] = StrUtils.HEX_DIGITS[(b >> 4) & 0xf];
+          arr[idx + 1] = StrUtils.HEX_DIGITS[b & 0xf];
         }
         String sigString = new String(arr);
         doc.addField(signatureField, sigString);
@@ -204,19 +202,14 @@ public class SignatureUpdateProcessorFactory
         if (overwriteDupes) {
           cmd.updateTerm = new Term(signatureField, sigString);
         }
-
       }
 
-      if (next != null)
-        next.processAdd(cmd);
+      if (next != null) next.processAdd(cmd);
     }
-
   }
 
   // for testing
   void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
-
-
 }

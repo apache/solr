@@ -30,22 +30,41 @@ public class TestFilterSolrFeature extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w1", "description", "w1", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w1", "description", "w1", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "w6 w2", "description", "w1 w2",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w6 w2 w3 w4 w5 w8", "popularity", "88888"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2", "popularity", "88888"));
+    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "title",
+            "w2 2asd asdd didid",
+            "description",
+            "w2 2asd asdd didid",
+            "popularity",
+            "2"));
+    assertU(adoc("id", "3", "title", "w1", "description", "w1", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w1", "description", "w1", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "w6 w2", "description", "w1 w2", "popularity", "6"));
+    assertU(
+        adoc(
+            "id",
+            "7",
+            "title",
+            "w1 w2 w3 w4 w5",
+            "description",
+            "w6 w2 w3 w4 w5 w8",
+            "popularity",
+            "88888"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2",
+            "popularity",
+            "88888"));
     assertU(commit());
   }
 
@@ -56,11 +75,13 @@ public class TestFilterSolrFeature extends TestRerankBase {
 
   @Test
   public void testUserTermScoreWithFQ() throws Exception {
-    loadFeature("SomeTermFQ", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=popularity}88888\"]}");
-    loadFeature("SomeEfiFQ", SolrFeature.class.getName(),
-        "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
-    loadModel("Term-modelFQ", LinearModel.class.getName(),
+    loadFeature(
+        "SomeTermFQ", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=popularity}88888\"]}");
+    loadFeature(
+        "SomeEfiFQ", SolrFeature.class.getName(), "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
+    loadModel(
+        "Term-modelFQ",
+        LinearModel.class.getName(),
         new String[] {"SomeTermFQ", "SomeEfiFQ"},
         "{\"weights\":{\"SomeTermFQ\":1.6, \"SomeEfiFQ\":2.0}}");
     final SolrQuery query = new SolrQuery();
@@ -68,8 +89,7 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("fl", "*, score");
     query.add("rows", "3");
     query.add("fq", "{!terms f=title}w1");
-    query.add("rq",
-        "{!ltr model=Term-modelFQ reRankDocs=5 efi.user_query='w5'}");
+    query.add("rq", "{!ltr model=Term-modelFQ reRankDocs=5 efi.user_query='w5'}");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==5");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==3.6");
@@ -79,10 +99,9 @@ public class TestFilterSolrFeature extends TestRerankBase {
   @Test
   public void testBadFeature() throws Exception {
     // Missing q/fq
-    final String feature = getFeatureInJson("badFeature", "test",
-        SolrFeature.class.getName(), "{\"df\":\"foo\"]}");
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==500");
+    final String feature =
+        getFeatureInJson("badFeature", "test", SolrFeature.class.getName(), "{\"df\":\"foo\"]}");
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==500");
   }
 
   @Test
@@ -97,13 +116,12 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
     query.add("fl", "fv:[fv]");
 
-    final String docs0fv_csv= FeatureLoggerTestUtils.toFeatureVector(
-        "matchedTitle","1.0", "popularity","3.0");
+    final String docs0fv_csv =
+        FeatureLoggerTestUtils.toFeatureVector("matchedTitle", "1.0", "popularity", "3.0");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_csv+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='" + docs0fv_csv + "'");
   }
-
 }

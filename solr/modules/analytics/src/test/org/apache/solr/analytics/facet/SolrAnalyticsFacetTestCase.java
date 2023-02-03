@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.analytics.SolrAnalyticsTestCase;
 import org.junit.Before;
 
@@ -54,7 +53,7 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
     fvp.expectedResults.put(expr, result);
   }
 
-  protected void testGrouping(Map<String,String> expressions) {
+  protected void testGrouping(Map<String, String> expressions) {
     try {
       testGrouping("grouping", expressions, facets, results);
     } catch (Exception e) {
@@ -62,7 +61,7 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
     }
   }
 
-  protected void testGrouping(Map<String,String> expressions, boolean sortAscending) {
+  protected void testGrouping(Map<String, String> expressions, boolean sortAscending) {
     try {
       testGrouping("grouping", expressions, facets, results, sortAscending);
     } catch (Exception e) {
@@ -70,7 +69,8 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
     }
   }
 
-  protected void testGrouping(Map<String,String> expressions, String sortExpression, boolean sortAscending) {
+  protected void testGrouping(
+      Map<String, String> expressions, String sortExpression, boolean sortAscending) {
     try {
       testGrouping("grouping", expressions, facets, results, sortExpression, sortAscending);
     } catch (Exception e) {

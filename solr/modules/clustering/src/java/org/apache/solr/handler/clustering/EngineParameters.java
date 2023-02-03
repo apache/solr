@@ -16,24 +16,21 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.apache.solr.common.params.SolrParams;
-
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.solr.common.params.SolrParams;
 
 /**
- * {@link Engine} configuration parameters (and other parameters that
- * may tweak clustering algorithms on a per-request basis).
+ * {@link Engine} configuration parameters (and other parameters that may tweak clustering
+ * algorithms on a per-request basis).
  *
  * @lucene.experimental
  */
 public final class EngineParameters implements Cloneable {
-  /**
-   * Common prefix for configuration of engine settings.
-   */
+  /** Common prefix for configuration of engine settings. */
   private static final String PARAM_PREFIX = "clustering.";
 
   /**
@@ -146,14 +143,12 @@ public final class EngineParameters implements Cloneable {
    */
   private LinkedHashSet<String> fields = new LinkedHashSet<>();
 
-  /**
-   * Non-engine configuration parameters (algorithm parameters).
-   */
+  /** Non-engine configuration parameters (algorithm parameters). */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
 
   /**
-   * Unique-value document identifier field. This is required for clustering since clusters
-   * only reference documents by their ID field's value.
+   * Unique-value document identifier field. This is required for clustering since clusters only
+   * reference documents by their ID field's value.
    */
   private String docIdField;
 
@@ -161,88 +156,87 @@ public final class EngineParameters implements Cloneable {
     extractFrom(params);
   }
 
-  /**
-   * Extract parameter values from the given {@link SolrParams}.
-   */
+  /** Extract parameter values from the given {@link SolrParams}. */
   private EngineParameters extractFrom(SolrParams params) {
-    params.stream().forEachOrdered(e -> {
-      switch (e.getKey()) {
-        case PARAM_MAX_LABELS:
-          maxLabels = params.getInt(PARAM_MAX_LABELS);
-          break;
-        case PARAM_INCLUDE_SUBCLUSTERS:
-          includeSubclusters = params.getBool(PARAM_INCLUDE_SUBCLUSTERS);
-          break;
-        case PARAM_INCLUDE_OTHER_TOPICS:
-          includeOtherTopics = params.getBool(PARAM_INCLUDE_OTHER_TOPICS);
-          break;
-        case PARAM_ALGORITHM:
-          algorithmName = params.get(PARAM_ALGORITHM);
-          break;
-        case PARAM_RESOURCES:
-          resources = params.get(PARAM_RESOURCES);
-          break;
-        case PARAM_LANGUAGE:
-          language = params.get(PARAM_LANGUAGE);
-          break;
-        case PARAM_LANGUAGE_FIELD:
-          languageField = params.get(PARAM_LANGUAGE_FIELD);
-          break;
-        case PARAM_PREFER_QUERY_CONTEXT:
-          preferQueryContext = params.getBool(PARAM_PREFER_QUERY_CONTEXT);
-          break;
-        case PARAM_CONTEXT_COUNT:
-          contextCount = params.getPrimitiveInt(PARAM_CONTEXT_COUNT);
-          break;
-        case PARAM_CONTEXT_SIZE:
-          contextSize = params.getPrimitiveInt(PARAM_CONTEXT_SIZE);
-          break;
-        case PARAM_FIELDS:
-          fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[,]\\s*")));
-          break;
-        default:
-          // Unrecognized parameter. Preserve it.
-          String[] value = e.getValue();
-          if (value != null) {
-            if (value.length == 1) {
-              otherParameters.put(e.getKey(), value[0]);
-            } else {
-              otherParameters.put(e.getKey(), String.join(", ", value));
-            }
-          }
-          break;
-      }
-    });
+    params.stream()
+        .forEachOrdered(
+            e -> {
+              switch (e.getKey()) {
+                case PARAM_MAX_LABELS:
+                  maxLabels = params.getInt(PARAM_MAX_LABELS);
+                  break;
+                case PARAM_INCLUDE_SUBCLUSTERS:
+                  includeSubclusters = params.getBool(PARAM_INCLUDE_SUBCLUSTERS);
+                  break;
+                case PARAM_INCLUDE_OTHER_TOPICS:
+                  includeOtherTopics = params.getBool(PARAM_INCLUDE_OTHER_TOPICS);
+                  break;
+                case PARAM_ALGORITHM:
+                  algorithmName = params.get(PARAM_ALGORITHM);
+                  break;
+                case PARAM_RESOURCES:
+                  resources = params.get(PARAM_RESOURCES);
+                  break;
+                case PARAM_LANGUAGE:
+                  language = params.get(PARAM_LANGUAGE);
+                  break;
+                case PARAM_LANGUAGE_FIELD:
+                  languageField = params.get(PARAM_LANGUAGE_FIELD);
+                  break;
+                case PARAM_PREFER_QUERY_CONTEXT:
+                  preferQueryContext = params.getBool(PARAM_PREFER_QUERY_CONTEXT);
+                  break;
+                case PARAM_CONTEXT_COUNT:
+                  contextCount = params.getPrimitiveInt(PARAM_CONTEXT_COUNT);
+                  break;
+                case PARAM_CONTEXT_SIZE:
+                  contextSize = params.getPrimitiveInt(PARAM_CONTEXT_SIZE);
+                  break;
+                case PARAM_FIELDS:
+                  fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[,]\\s*")));
+                  break;
+                default:
+                  // Unrecognized parameter. Preserve it.
+                  String[] value = e.getValue();
+                  if (value != null) {
+                    if (value.length == 1) {
+                      otherParameters.put(e.getKey(), value[0]);
+                    } else {
+                      otherParameters.put(e.getKey(), String.join(", ", value));
+                    }
+                  }
+                  break;
+              }
+            });
     return this;
   }
 
   /**
-   * @return Maximum number of returned cluster labels (even if the algorithm
-   * returns more).
+   * @return Maximum number of returned cluster labels (even if the algorithm returns more).
    */
   int maxLabels() {
     return maxLabels;
   }
 
   /**
-   * @return If {@code true}, include subclusters in response (if the algorithm
-   * produces hierarchical clustering).
+   * @return If {@code true}, include subclusters in response (if the algorithm produces
+   *     hierarchical clustering).
    */
   boolean includeSubclusters() {
     return includeSubclusters;
   }
 
   /**
-   * @return If {@code true}, include a synthetic cluster called "Other Topics" that
-   * consists of all documents not assigned to any other cluster.
+   * @return If {@code true}, include a synthetic cluster called "Other Topics" that consists of all
+   *     documents not assigned to any other cluster.
    */
   boolean includeOtherTopics() {
     return includeOtherTopics;
   }
 
   /**
-   * @return Name of the clustering algorithm to use (as loaded via the service
-   *    * extension point {@link org.carrot2.clustering.ClusteringAlgorithm}).
+   * @return Name of the clustering algorithm to use (as loaded via the service * extension point
+   *     {@link org.carrot2.clustering.ClusteringAlgorithm}).
    */
   String algorithmName() {
     return algorithmName;
@@ -256,19 +250,19 @@ public final class EngineParameters implements Cloneable {
   }
 
   /**
-   * @return Name of the default language to use for clustering. The corresponding
-   * {@link org.carrot2.language.LanguageComponents} must be available (loaded via
-   * service provider extension).
+   * @return Name of the default language to use for clustering. The corresponding {@link
+   *     org.carrot2.language.LanguageComponents} must be available (loaded via service provider
+   *     extension).
    */
   String language() {
     return language;
   }
 
   /**
-   * @return Name of the field that carries each document's language. {@code null} value
-   * means all documents will be clustered according to the default {@link #language()}.
-   * If not {@code null} and the document's field has a missing value, it will be clustered
-   * using the default {@link #language()} as well.
+   * @return Name of the field that carries each document's language. {@code null} value means all
+   *     documents will be clustered according to the default {@link #language()}. If not {@code
+   *     null} and the document's field has a missing value, it will be clustered using the default
+   *     {@link #language()} as well.
    */
   String languageField() {
     return languageField;
@@ -276,31 +270,32 @@ public final class EngineParameters implements Cloneable {
 
   /**
    * @return Names of all fields whose textual content will be passed to the clustering engine.
-   * Comma or space separated.
+   *     Comma or space separated.
    */
   Set<String> fields() {
     return fields;
   }
 
   /**
-   * @return Returns {@code true} if clustering should try to extract context fragments
-   * around the matching query regions rather than use full field content. Such context snippets
-   * typically cluster well because they carry a more compact and query-related information.
+   * @return Returns {@code true} if clustering should try to extract context fragments around the
+   *     matching query regions rather than use full field content. Such context snippets typically
+   *     cluster well because they carry a more compact and query-related information.
    */
   boolean preferQueryContext() {
     return preferQueryContext;
   }
 
   /**
-   * @return Returns the maximum query context window to use if {@link #preferQueryContext()} is {@code true}.
+   * @return Returns the maximum query context window to use if {@link #preferQueryContext()} is
+   *     {@code true}.
    */
   int contextSize() {
     return contextSize;
   }
 
   /**
-   * @return Returns the maximum number of different, non-contiguous query context snippets from a single field
-   * if {@link #preferQueryContext()} is {@code true}.
+   * @return Returns the maximum number of different, non-contiguous query context snippets from a
+   *     single field if {@link #preferQueryContext()} is {@code true}.
    */
   int contextCount() {
     return contextCount;
@@ -323,8 +318,8 @@ public final class EngineParameters implements Cloneable {
   }
 
   /**
-   * @return Return a copy of the argument with any parameters present in
-   * {@code params} overriding this object defaults.
+   * @return Return a copy of the argument with any parameters present in {@code params} overriding
+   *     this object defaults.
    */
   EngineParameters derivedFrom(SolrParams params) {
     EngineParameters cloned = this.clone();

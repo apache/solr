@@ -18,10 +18,9 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DateValue;
@@ -40,7 +39,8 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     TestLongValue val = new TestLongValue();
 
-    AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -53,13 +53,13 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
 
     // Value exists
     val.setValue(date1.getTime()).setExists(true);
-    assertEquals(date1, func.getDate());
+    assertEquals(date1.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date1.getTime(), func.getLong());
     assertTrue(func.exists());
 
     val.setValue(date2.getTime()).setExists(true);
-    assertEquals(date2, func.getDate());
+    assertEquals(date2.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
@@ -71,7 +71,8 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     TestStringValue val = new TestStringValue();
 
-    AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -101,16 +102,15 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.getLong();
     assertFalse(func.exists());
 
-
     // Value exists
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
-    assertEquals(date1, func.getDate());
+    assertEquals(date1.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date1.getTime(), func.getLong());
     assertTrue(func.exists());
 
     val.setValue("1920-04-15T18:15:45Z").setExists(true);
-    assertEquals(date2, func.getDate());
+    assertEquals(date2.toInstant(), func.getDate().toInstant());
     assertTrue(func.exists());
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
@@ -123,47 +123,54 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestLongValueStream val = new TestLongValueStream();
 
-    AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
 
     // No values
     val.setValues();
-    func.streamDates( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
+    func.streamLongs(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // One value
     val.setValues(date1.getTime());
-    Iterator<Date> values1 = Arrays.asList(date1).iterator();
-    func.streamDates( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    Iterator<Date> values1 = List.of(date1).iterator();
+    func.streamDates(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().toInstant(), value.toInstant());
+        });
     assertFalse(values1.hasNext());
-    Iterator<Long> times1 = Arrays.asList(date1.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(times1.hasNext());
-      assertEquals(times1.next().longValue(), value);
-    });
+    Iterator<Long> times1 = List.of(date1.getTime()).iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(times1.hasNext());
+          assertEquals(times1.next().longValue(), value);
+        });
     assertFalse(times1.hasNext());
 
     // Multiple values
     val.setValues(date1.getTime(), date2.getTime(), date3.getTime());
-    Iterator<Date> values2 = Arrays.asList(date1, date2, date3).iterator();
-    func.streamDates( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    Iterator<Date> values2 = List.of(date1, date2, date3).iterator();
+    func.streamDates(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().toInstant(), value.toInstant());
+        });
     assertFalse(values2.hasNext());
-    Iterator<Long> times2 = Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(times2.hasNext());
-      assertEquals(times2.next().longValue(), value);
-    });
+    Iterator<Long> times2 = List.of(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(times2.hasNext());
+          assertEquals(times2.next().longValue(), value);
+        });
     assertFalse(times2.hasNext());
   }
 
@@ -174,72 +181,85 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestStringValueStream val = new TestStringValueStream();
 
-    AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
 
     // No values
     val.setValues();
-    func.streamDates( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
+    func.streamLongs(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // Incorrect value
     val.setValues("10:30:15Z");
-    func.streamDates( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
+    func.streamLongs(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     val.setValues("01-33T10:30:15Z");
-    func.streamDates( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
+    func.streamLongs(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     val.setValues("1800-01T30:30:15Z");
-    func.streamDates( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDates(
+        value -> {
+          fail("There should be no values to stream");
+        });
+    func.streamLongs(
+        value -> {
+          fail("There should be no values to stream");
+        });
 
     // One value
     val.setValues("1800-01-01T10:30:15Z");
-    Iterator<Date> values1 = Arrays.asList(date1).iterator();
-    func.streamDates( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    Iterator<Date> values1 = List.of(date1).iterator();
+    func.streamDates(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().toInstant(), value.toInstant());
+        });
     assertFalse(values1.hasNext());
-    Iterator<Long> times1 = Arrays.asList(date1.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(times1.hasNext());
-      assertEquals(times1.next().longValue(), value);
-    });
+    Iterator<Long> times1 = List.of(date1.getTime()).iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(times1.hasNext());
+          assertEquals(times1.next().longValue(), value);
+        });
     assertFalse(times1.hasNext());
 
     // Multiple values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
-    Iterator<Date> values2 = Arrays.asList(date1, date2, date3).iterator();
-    func.streamDates( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    Iterator<Date> values2 = List.of(date1, date2, date3).iterator();
+    func.streamDates(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().toInstant(), value.toInstant());
+        });
     assertFalse(values2.hasNext());
-    Iterator<Long> times2 = Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(times2.hasNext());
-      assertEquals(times2.next().longValue(), value);
-    });
+    Iterator<Long> times2 = List.of(date1.getTime(), date2.getTime(), date3.getTime()).iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(times2.hasNext());
+          assertEquals(times2.next().longValue(), value);
+        });
     assertFalse(times2.hasNext());
   }
 }

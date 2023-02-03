@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -41,27 +40,31 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * This feature returns the value of a field in the current document.
- * The field must have stored="true" or docValues="true" properties.
- * Example configuration:
- * <pre>{
-  "name":  "rawHits",
-  "class": "org.apache.solr.ltr.feature.FieldValueFeature",
-  "params": {
-      "field": "hits"
-  }
-}</pre>
+ * This feature returns the value of a field in the current document. The field must have
+ * stored="true" or docValues="true" properties. Example configuration:
  *
- * <p>There are 4 different types of FeatureScorers that a FieldValueFeatureWeight may use.
- * The chosen scorer depends on the field attributes.</p>
+ * <pre>
+ * {
+ *   "name":  "rawHits",
+ *   "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+ *   "params": {
+ *     "field": "hits"
+ *   }
+ * }
+ * </pre>
  *
- * <p>FieldValueFeatureScorer (FVFS): used for stored=true, no matter if docValues=true or docValues=false</p>
+ * <p>There are 4 different types of FeatureScorers that a FieldValueFeatureWeight may use. The
+ * chosen scorer depends on the field attributes.
  *
- * <p>NumericDocValuesFVFS: used for stored=false and docValues=true, if docValueType == NUMERIC</p>
+ * <p>FieldValueFeatureScorer (FVFS): used for stored=true, no matter if docValues=true or
+ * docValues=false
+ *
+ * <p>NumericDocValuesFVFS: used for stored=false and docValues=true, if docValueType == NUMERIC
+ *
  * <p>SortedDocValuesFVFS: used for stored=false and docValues=true, if docValueType == SORTED
  *
- * <p>DefaultValueFVFS: used for stored=false and docValues=true, a fallback scorer that is used on segments
- * where no document has a value set in the field of this feature</p>
+ * <p>DefaultValueFVFS: used for stored=false and docValues=true, a fallback scorer that is used on
+ * segments where no document has a value set in the field of this feature
  */
 public class FieldValueFeature extends Feature {
 
@@ -78,8 +81,8 @@ public class FieldValueFeature extends Feature {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = defaultParamsToMap();
     params.put("field", field);
     return params;
   }
@@ -87,27 +90,33 @@ public class FieldValueFeature extends Feature {
   @Override
   protected void validate() throws FeatureException {
     if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": field must be provided");
+      throw new FeatureException(getClass().getSimpleName() + ": field must be provided");
     }
   }
 
-  public FieldValueFeature(String name, Map<String,Object> params) {
+  public FieldValueFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-          throws IOException {
+  public FeatureWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
 
   public class FieldValueFeatureWeight extends FeatureWeight {
     private final SchemaField schemaField;
 
-    public FieldValueFeatureWeight(IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
+    public FieldValueFeatureWeight(
+        IndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi) {
       super(FieldValueFeature.this, searcher, request, originalQuery, efi);
       if (searcher instanceof SolrIndexSearcher) {
         schemaField = ((SolrIndexSearcher) searcher).getSchema().getFieldOrNull(field);
@@ -128,34 +137,38 @@ public class FieldValueFeature extends Feature {
       if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
 
         final FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
-        final DocValuesType docValuesType = fieldInfo != null ? fieldInfo.getDocValuesType() : DocValuesType.NONE;
+        final DocValuesType docValuesType =
+            fieldInfo != null ? fieldInfo.getDocValuesType() : DocValuesType.NONE;
 
         if (DocValuesType.NUMERIC.equals(docValuesType)) {
-          return new NumericDocValuesFieldValueFeatureScorer(this, context,
-                  DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS), schemaField.getType().getNumberType());
+          return new NumericDocValuesFieldValueFeatureScorer(
+              this,
+              context,
+              DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS),
+              schemaField.getType().getNumberType());
         } else if (DocValuesType.SORTED.equals(docValuesType)) {
-          return new SortedDocValuesFieldValueFeatureScorer(this, context,
-                  DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+          return new SortedDocValuesFieldValueFeatureScorer(
+              this, context, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
         } else if (DocValuesType.NONE.equals(docValuesType)) {
-          // Using a fallback feature scorer because this segment has no documents with a doc value for the current field
-          return new DefaultValueFieldValueFeatureScorer(this, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+          // Using a fallback feature scorer because this segment has no documents with a doc value
+          // for the current field
+          return new DefaultValueFieldValueFeatureScorer(
+              this, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
         }
-        throw new IllegalArgumentException("Doc values type " + docValuesType.name() + " of field " + field
-                + " is not supported");
+        throw new IllegalArgumentException(
+            "Doc values type " + docValuesType.name() + " of field " + field + " is not supported");
       }
-      return new FieldValueFeatureScorer(this, context,
-          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+      return new FieldValueFeatureScorer(
+          this, context, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
     }
 
-    /**
-     * A FeatureScorer that reads the stored value for a field
-     */
+    /** A FeatureScorer that reads the stored value for a field */
     public class FieldValueFeatureScorer extends FeatureScorer {
 
       LeafReaderContext context = null;
 
-      public FieldValueFeatureScorer(FeatureWeight weight,
-          LeafReaderContext context, DocIdSetIterator itr) {
+      public FieldValueFeatureScorer(
+          FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr) {
         super(weight, itr);
         this.context = context;
       }
@@ -164,8 +177,7 @@ public class FieldValueFeature extends Feature {
       public float score() throws IOException {
 
         try {
-          final Document document = context.reader().document(itr.docID(),
-              fieldAsSet);
+          final Document document = context.reader().document(itr.docID(), fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
             return getDefaultValue();
@@ -189,9 +201,7 @@ public class FieldValueFeature extends Feature {
           }
         } catch (final IOException e) {
           throw new FeatureException(
-              e.toString() + ": " +
-                  "Unable to extract feature for "
-                  + name, e);
+              e.toString() + ": " + "Unable to extract feature for " + name, e);
         }
         return getDefaultValue();
       }
@@ -202,15 +212,16 @@ public class FieldValueFeature extends Feature {
       }
     }
 
-    /**
-     * A FeatureScorer that reads the numeric docValues for a field
-     */
+    /** A FeatureScorer that reads the numeric docValues for a field */
     public final class NumericDocValuesFieldValueFeatureScorer extends FeatureScorer {
       private final NumericDocValues docValues;
       private final NumberType numberType;
 
-      public NumericDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
-                                              final DocIdSetIterator itr, final NumberType numberType) {
+      public NumericDocValuesFieldValueFeatureScorer(
+          final FeatureWeight weight,
+          final LeafReaderContext context,
+          final DocIdSetIterator itr,
+          final NumberType numberType) {
         super(weight, itr);
         this.numberType = numberType;
 
@@ -255,14 +266,12 @@ public class FieldValueFeature extends Feature {
       }
     }
 
-    /**
-     * A FeatureScorer that reads the sorted docValues for a field
-     */
+    /** A FeatureScorer that reads the sorted docValues for a field */
     public final class SortedDocValuesFieldValueFeatureScorer extends FeatureScorer {
       private final SortedDocValues docValues;
 
-      public SortedDocValuesFieldValueFeatureScorer(final FeatureWeight weight, final LeafReaderContext context,
-                                              final DocIdSetIterator itr) {
+      public SortedDocValuesFieldValueFeatureScorer(
+          final FeatureWeight weight, final LeafReaderContext context, final DocIdSetIterator itr) {
         super(weight, itr);
 
         SortedDocValues docValues;
@@ -314,12 +323,14 @@ public class FieldValueFeature extends Feature {
     /**
      * A FeatureScorer that always returns the default value.
      *
-     * It is used as a fallback for cases when a segment does not have any documents that contain doc values for a field.
-     * By doing so, we prevent a fallback to the FieldValueFeatureScorer, which would also return the default value but
-     * in a less performant way because it would first try to read the stored fields for the doc (which aren't present).
+     * <p>It is used as a fallback for cases when a segment does not have any documents that contain
+     * doc values for a field. By doing so, we prevent a fallback to the FieldValueFeatureScorer,
+     * which would also return the default value but in a less performant way because it would first
+     * try to read the stored fields for the doc (which aren't present).
      */
     public final class DefaultValueFieldValueFeatureScorer extends FeatureScorer {
-      public DefaultValueFieldValueFeatureScorer(final FeatureWeight weight, final DocIdSetIterator itr) {
+      public DefaultValueFieldValueFeatureScorer(
+          final FeatureWeight weight, final DocIdSetIterator itr) {
         super(weight, itr);
       }
 

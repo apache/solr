@@ -29,14 +29,16 @@ import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
 import com.google.cloud.storage.HmacKey;
+import com.google.cloud.storage.Notification;
+import com.google.cloud.storage.NotificationInfo;
 import com.google.cloud.storage.PostPolicyV4;
 import com.google.cloud.storage.ServiceAccount;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageBatch;
 import com.google.cloud.storage.StorageOptions;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -44,14 +46,17 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Provides a thread-safe wrapper around any {@link Storage} implementations which may not offer thread safety.
+ * Provides a thread-safe wrapper around any {@link Storage} implementations which may not offer
+ * thread safety.
  *
- * The {@link Storage} implementation provided by google-cloud-nio for in-memory testing is thread-unsafe.  This causes
- * a problem for backup-restore tests, which have threads reading and writing cloud-store data from the test threads,
- * overseer nodes, as well as any nodes hosting individual cores.  This class takes a heavyhanded approach to solving
- * this by adding synchronization across all instance methods.  This allows google-cloud-nio's in-memory fake to be used
- * from multiple threads simultaneously as our tests require.
+ * <p>The {@link Storage} implementation provided by google-cloud-nio for in-memory testing is
+ * thread-unsafe. This causes a problem for backup-restore tests, which have threads reading and
+ * writing cloud-store data from the test threads, overseer nodes, as well as any nodes hosting
+ * individual cores. This class takes a heavyhanded approach to solving this by adding
+ * synchronization across all instance methods. This allows google-cloud-nio's in-memory fake to be
+ * used from multiple threads simultaneously as our tests require.
  */
+@SuppressWarnings("try")
 public class ConcurrentDelegatingStorage implements Storage {
 
   private final Storage delegate;
@@ -61,210 +66,385 @@ public class ConcurrentDelegatingStorage implements Storage {
   }
 
   @Override
-  public synchronized Bucket create(BucketInfo bucketInfo, BucketTargetOption... options) { return delegate.create(bucketInfo, options); }
+  public synchronized Bucket create(BucketInfo bucketInfo, BucketTargetOption... options) {
+    return delegate.create(bucketInfo, options);
+  }
 
   @Override
-  public synchronized Blob create(BlobInfo blobInfo, BlobTargetOption... options) { return delegate.create(blobInfo, options); }
+  public synchronized Blob create(BlobInfo blobInfo, BlobTargetOption... options) {
+    return delegate.create(blobInfo, options);
+  }
 
   @Override
-  public synchronized Blob create(BlobInfo blobInfo, byte[] content, BlobTargetOption... options) { return delegate.create(blobInfo, content, options); }
+  public synchronized Blob create(BlobInfo blobInfo, byte[] content, BlobTargetOption... options) {
+    return delegate.create(blobInfo, content, options);
+  }
 
   @Override
-  public synchronized Blob create(BlobInfo blobInfo, byte[] content, int offset, int length, BlobTargetOption... options) { return delegate.create(blobInfo, content, offset, length, options); }
+  public synchronized Blob create(
+      BlobInfo blobInfo, byte[] content, int offset, int length, BlobTargetOption... options) {
+    return delegate.create(blobInfo, content, offset, length, options);
+  }
 
   @Override
-  public synchronized Blob create(BlobInfo blobInfo, InputStream content, BlobWriteOption... options) { return delegate.create(blobInfo, content, options); }
+  public synchronized Blob create(
+      BlobInfo blobInfo, InputStream content, BlobWriteOption... options) {
+    return delegate.create(blobInfo, content, options);
+  }
 
   @Override
-  public synchronized Blob createFrom(BlobInfo blobInfo, Path path, BlobWriteOption... options) throws IOException { return delegate.createFrom(blobInfo, path, options); }
+  public synchronized Blob createFrom(BlobInfo blobInfo, Path path, BlobWriteOption... options)
+      throws IOException {
+    return delegate.createFrom(blobInfo, path, options);
+  }
 
   @Override
-  public synchronized Blob createFrom(BlobInfo blobInfo, Path path, int bufferSize, BlobWriteOption... options) throws IOException { return delegate.createFrom(blobInfo, path, bufferSize, options); }
+  public synchronized Blob createFrom(
+      BlobInfo blobInfo, Path path, int bufferSize, BlobWriteOption... options) throws IOException {
+    return delegate.createFrom(blobInfo, path, bufferSize, options);
+  }
 
   @Override
-  public synchronized Blob createFrom(BlobInfo blobInfo, InputStream content, BlobWriteOption... options) throws IOException { return delegate.createFrom(blobInfo, content, options); }
+  public synchronized Blob createFrom(
+      BlobInfo blobInfo, InputStream content, BlobWriteOption... options) throws IOException {
+    return delegate.createFrom(blobInfo, content, options);
+  }
 
   @Override
-  public synchronized Blob createFrom(BlobInfo blobInfo, InputStream content, int bufferSize, BlobWriteOption... options) throws IOException { return delegate.createFrom(blobInfo, content, bufferSize, options); }
+  public synchronized Blob createFrom(
+      BlobInfo blobInfo, InputStream content, int bufferSize, BlobWriteOption... options)
+      throws IOException {
+    return delegate.createFrom(blobInfo, content, bufferSize, options);
+  }
 
   @Override
-  public synchronized Bucket get(String bucket, BucketGetOption... options) { return delegate.get(bucket, options); }
+  public synchronized Bucket get(String bucket, BucketGetOption... options) {
+    return delegate.get(bucket, options);
+  }
 
   @Override
-  public synchronized Bucket lockRetentionPolicy(BucketInfo bucket, BucketTargetOption... options) { return delegate.lockRetentionPolicy(bucket, options); }
+  public synchronized Bucket lockRetentionPolicy(BucketInfo bucket, BucketTargetOption... options) {
+    return delegate.lockRetentionPolicy(bucket, options);
+  }
 
   @Override
-  public synchronized Blob get(String bucket, String blob, BlobGetOption... options) { return delegate.get(bucket, blob, options); }
+  public synchronized Blob get(String bucket, String blob, BlobGetOption... options) {
+    return delegate.get(bucket, blob, options);
+  }
 
   @Override
-  public synchronized Blob get(BlobId blob, BlobGetOption... options) { return delegate.get(blob, options); }
+  public synchronized Blob get(BlobId blob, BlobGetOption... options) {
+    return delegate.get(blob, options);
+  }
 
   @Override
-  public synchronized Blob get(BlobId blob) { return delegate.get(blob); }
+  public synchronized Blob get(BlobId blob) {
+    return delegate.get(blob);
+  }
 
   @Override
-  public synchronized Page<Bucket> list(BucketListOption... options) { return delegate.list(options); }
+  public synchronized Page<Bucket> list(BucketListOption... options) {
+    return delegate.list(options);
+  }
 
   @Override
-  public synchronized Page<Blob> list(String bucket, BlobListOption... options) { return delegate.list(bucket, options); }
+  public synchronized Page<Blob> list(String bucket, BlobListOption... options) {
+    return delegate.list(bucket, options);
+  }
 
   @Override
-  public synchronized Bucket update(BucketInfo bucketInfo, BucketTargetOption... options) { return delegate.update(bucketInfo, options); }
+  public synchronized Bucket update(BucketInfo bucketInfo, BucketTargetOption... options) {
+    return delegate.update(bucketInfo, options);
+  }
 
   @Override
-  public synchronized Blob update(BlobInfo blobInfo, BlobTargetOption... options) { return delegate.update(blobInfo, options); }
+  public synchronized Blob update(BlobInfo blobInfo, BlobTargetOption... options) {
+    return delegate.update(blobInfo, options);
+  }
 
   @Override
-  public synchronized Blob update(BlobInfo blobInfo) { return delegate.update(blobInfo); }
+  public synchronized Blob update(BlobInfo blobInfo) {
+    return delegate.update(blobInfo);
+  }
 
   @Override
-  public synchronized boolean delete(String bucket, BucketSourceOption... options) { return delegate.delete(bucket, options); }
+  public synchronized boolean delete(String bucket, BucketSourceOption... options) {
+    return delegate.delete(bucket, options);
+  }
 
   @Override
-  public synchronized boolean delete(String bucket, String blob, BlobSourceOption... options) { return delegate.delete(bucket, blob, options); }
+  public synchronized boolean delete(String bucket, String blob, BlobSourceOption... options) {
+    return delegate.delete(bucket, blob, options);
+  }
 
   @Override
-  public synchronized boolean delete(BlobId blob, BlobSourceOption... options) { return delegate.delete(blob, options); }
+  public synchronized boolean delete(BlobId blob, BlobSourceOption... options) {
+    return delegate.delete(blob, options);
+  }
 
   @Override
-  public synchronized boolean delete(BlobId blob) { return delegate.delete(blob); }
+  public synchronized boolean delete(BlobId blob) {
+    return delegate.delete(blob);
+  }
 
   @Override
-  public synchronized Blob compose(ComposeRequest composeRequest) { return delegate.compose(composeRequest); }
+  public synchronized Blob compose(ComposeRequest composeRequest) {
+    return delegate.compose(composeRequest);
+  }
 
   @Override
-  public synchronized CopyWriter copy(CopyRequest copyRequest) { return delegate.copy(copyRequest); }
+  public synchronized CopyWriter copy(CopyRequest copyRequest) {
+    return delegate.copy(copyRequest);
+  }
 
   @Override
-  public synchronized byte[] readAllBytes(String bucket, String blob, BlobSourceOption... options) { return delegate.readAllBytes(bucket, blob, options); }
+  public synchronized byte[] readAllBytes(String bucket, String blob, BlobSourceOption... options) {
+    return delegate.readAllBytes(bucket, blob, options);
+  }
 
   @Override
-  public synchronized byte[] readAllBytes(BlobId blob, BlobSourceOption... options) { return delegate.readAllBytes(blob, options); }
+  public synchronized byte[] readAllBytes(BlobId blob, BlobSourceOption... options) {
+    return delegate.readAllBytes(blob, options);
+  }
 
   @Override
-  public synchronized StorageBatch batch() { return delegate.batch(); }
+  public synchronized StorageBatch batch() {
+    return delegate.batch();
+  }
 
   @Override
-  public synchronized ReadChannel reader(String bucket, String blob, BlobSourceOption... options) { return new ConcurrentReadChannel(this, delegate.reader(bucket, blob, options)); }
+  public synchronized ReadChannel reader(String bucket, String blob, BlobSourceOption... options) {
+    return new ConcurrentReadChannel(this, delegate.reader(bucket, blob, options));
+  }
 
   @Override
-  public synchronized ReadChannel reader(BlobId blob, BlobSourceOption... options) { return new ConcurrentReadChannel(this, delegate.reader(blob, options)); }
+  public synchronized ReadChannel reader(BlobId blob, BlobSourceOption... options) {
+    return new ConcurrentReadChannel(this, delegate.reader(blob, options));
+  }
 
   @Override
-  public synchronized WriteChannel writer(BlobInfo blobInfo, BlobWriteOption... options) { return new ConcurrentWriteChannel(this, delegate.writer(blobInfo, options)); }
+  public void downloadTo(BlobId blob, Path path, BlobSourceOption... options) {
+    delegate.downloadTo(blob, path, options);
+  }
 
   @Override
-  public synchronized WriteChannel writer(URL signedURL) { return new ConcurrentWriteChannel(this, delegate.writer(signedURL)); }
+  public void downloadTo(BlobId blob, OutputStream outputStream, BlobSourceOption... options) {
+    delegate.downloadTo(blob, outputStream, options);
+  }
 
   @Override
-  public synchronized URL signUrl(BlobInfo blobInfo, long duration, TimeUnit unit, SignUrlOption... options) { return delegate.signUrl(blobInfo, duration, unit, options); }
+  public synchronized WriteChannel writer(BlobInfo blobInfo, BlobWriteOption... options) {
+    return new ConcurrentWriteChannel(this, delegate.writer(blobInfo, options));
+  }
 
   @Override
-  public synchronized PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long duration, TimeUnit unit, PostPolicyV4.PostFieldsV4 fields, PostPolicyV4.PostConditionsV4 conditions, PostPolicyV4Option... options) { return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, fields, conditions, options); }
+  public synchronized WriteChannel writer(URL signedURL) {
+    return new ConcurrentWriteChannel(this, delegate.writer(signedURL));
+  }
 
   @Override
-  public synchronized PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long duration, TimeUnit unit, PostPolicyV4.PostFieldsV4 fields, PostPolicyV4Option... options) { return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, fields, options); }
+  public synchronized URL signUrl(
+      BlobInfo blobInfo, long duration, TimeUnit unit, SignUrlOption... options) {
+    return delegate.signUrl(blobInfo, duration, unit, options);
+  }
 
   @Override
-  public synchronized PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long duration, TimeUnit unit, PostPolicyV4.PostConditionsV4 conditions, PostPolicyV4Option... options) { return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, conditions, options); }
+  public synchronized PostPolicyV4 generateSignedPostPolicyV4(
+      BlobInfo blobInfo,
+      long duration,
+      TimeUnit unit,
+      PostPolicyV4.PostFieldsV4 fields,
+      PostPolicyV4.PostConditionsV4 conditions,
+      PostPolicyV4Option... options) {
+    return delegate.generateSignedPostPolicyV4(
+        blobInfo, duration, unit, fields, conditions, options);
+  }
 
   @Override
-  public synchronized PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long duration, TimeUnit unit, PostPolicyV4Option... options) { return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, options); }
+  public synchronized PostPolicyV4 generateSignedPostPolicyV4(
+      BlobInfo blobInfo,
+      long duration,
+      TimeUnit unit,
+      PostPolicyV4.PostFieldsV4 fields,
+      PostPolicyV4Option... options) {
+    return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, fields, options);
+  }
 
   @Override
-  public synchronized List<Blob> get(BlobId... blobIds) { return delegate.get(blobIds); }
+  public synchronized PostPolicyV4 generateSignedPostPolicyV4(
+      BlobInfo blobInfo,
+      long duration,
+      TimeUnit unit,
+      PostPolicyV4.PostConditionsV4 conditions,
+      PostPolicyV4Option... options) {
+    return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, conditions, options);
+  }
 
   @Override
-  public synchronized List<Blob> get(Iterable<BlobId> blobIds) { return delegate.get(blobIds); }
+  public synchronized PostPolicyV4 generateSignedPostPolicyV4(
+      BlobInfo blobInfo, long duration, TimeUnit unit, PostPolicyV4Option... options) {
+    return delegate.generateSignedPostPolicyV4(blobInfo, duration, unit, options);
+  }
 
   @Override
-  public synchronized List<Blob> update(BlobInfo... blobInfos) { return delegate.update(blobInfos); }
+  public synchronized List<Blob> get(BlobId... blobIds) {
+    return delegate.get(blobIds);
+  }
 
   @Override
-  public synchronized List<Blob> update(Iterable<BlobInfo> blobInfos) { return delegate.update(blobInfos); }
+  public synchronized List<Blob> get(Iterable<BlobId> blobIds) {
+    return delegate.get(blobIds);
+  }
 
   @Override
-  public synchronized List<Boolean> delete(BlobId... blobIds) { return delegate.delete(blobIds); }
+  public synchronized List<Blob> update(BlobInfo... blobInfos) {
+    return delegate.update(blobInfos);
+  }
 
   @Override
-  public synchronized List<Boolean> delete(Iterable<BlobId> blobIds) { return delegate.delete(blobIds); }
+  public synchronized List<Blob> update(Iterable<BlobInfo> blobInfos) {
+    return delegate.update(blobInfos);
+  }
 
   @Override
-  public synchronized Acl getAcl(String bucket, Acl.Entity entity, BucketSourceOption... options) { return delegate.getAcl(bucket, entity, options); }
+  public synchronized List<Boolean> delete(BlobId... blobIds) {
+    return delegate.delete(blobIds);
+  }
 
   @Override
-  public synchronized Acl getAcl(String bucket, Acl.Entity entity) { return delegate.getAcl(bucket, entity); }
+  public synchronized List<Boolean> delete(Iterable<BlobId> blobIds) {
+    return delegate.delete(blobIds);
+  }
 
   @Override
-  public synchronized boolean deleteAcl(String bucket, Acl.Entity entity, BucketSourceOption... options) { return delegate.deleteAcl(bucket, entity, options); }
+  public synchronized Acl getAcl(String bucket, Acl.Entity entity, BucketSourceOption... options) {
+    return delegate.getAcl(bucket, entity, options);
+  }
 
   @Override
-  public synchronized boolean deleteAcl(String bucket, Acl.Entity entity) { return delegate.deleteAcl(bucket, entity); }
+  public synchronized Acl getAcl(String bucket, Acl.Entity entity) {
+    return delegate.getAcl(bucket, entity);
+  }
 
   @Override
-  public synchronized Acl createAcl(String bucket, Acl acl, BucketSourceOption... options) { return delegate.createAcl(bucket, acl, options); }
+  public synchronized boolean deleteAcl(
+      String bucket, Acl.Entity entity, BucketSourceOption... options) {
+    return delegate.deleteAcl(bucket, entity, options);
+  }
 
   @Override
-  public synchronized Acl createAcl(String bucket, Acl acl) { return delegate.createAcl(bucket, acl); }
+  public synchronized boolean deleteAcl(String bucket, Acl.Entity entity) {
+    return delegate.deleteAcl(bucket, entity);
+  }
 
   @Override
-  public synchronized Acl updateAcl(String bucket, Acl acl, BucketSourceOption... options) { return delegate.updateAcl(bucket, acl, options); }
+  public synchronized Acl createAcl(String bucket, Acl acl, BucketSourceOption... options) {
+    return delegate.createAcl(bucket, acl, options);
+  }
 
   @Override
-  public synchronized Acl updateAcl(String bucket, Acl acl) { return delegate.updateAcl(bucket, acl); }
+  public synchronized Acl createAcl(String bucket, Acl acl) {
+    return delegate.createAcl(bucket, acl);
+  }
 
   @Override
-  public synchronized List<Acl> listAcls(String bucket, BucketSourceOption... options) { return delegate.listAcls(bucket, options); }
+  public synchronized Acl updateAcl(String bucket, Acl acl, BucketSourceOption... options) {
+    return delegate.updateAcl(bucket, acl, options);
+  }
 
   @Override
-  public synchronized List<Acl> listAcls(String bucket) { return delegate.listAcls(bucket); }
+  public synchronized Acl updateAcl(String bucket, Acl acl) {
+    return delegate.updateAcl(bucket, acl);
+  }
 
   @Override
-  public synchronized Acl getDefaultAcl(String bucket, Acl.Entity entity) { return delegate.getDefaultAcl(bucket, entity); }
+  public synchronized List<Acl> listAcls(String bucket, BucketSourceOption... options) {
+    return delegate.listAcls(bucket, options);
+  }
 
   @Override
-  public synchronized boolean deleteDefaultAcl(String bucket, Acl.Entity entity) { return delegate.deleteDefaultAcl(bucket, entity); }
+  public synchronized List<Acl> listAcls(String bucket) {
+    return delegate.listAcls(bucket);
+  }
 
   @Override
-  public synchronized Acl createDefaultAcl(String bucket, Acl acl) { return delegate.createDefaultAcl(bucket, acl); }
+  public synchronized Acl getDefaultAcl(String bucket, Acl.Entity entity) {
+    return delegate.getDefaultAcl(bucket, entity);
+  }
 
   @Override
-  public synchronized Acl updateDefaultAcl(String bucket, Acl acl) { return delegate.updateDefaultAcl(bucket, acl); }
+  public synchronized boolean deleteDefaultAcl(String bucket, Acl.Entity entity) {
+    return delegate.deleteDefaultAcl(bucket, entity);
+  }
 
   @Override
-  public synchronized List<Acl> listDefaultAcls(String bucket) { return delegate.listDefaultAcls(bucket); }
+  public synchronized Acl createDefaultAcl(String bucket, Acl acl) {
+    return delegate.createDefaultAcl(bucket, acl);
+  }
 
   @Override
-  public synchronized Acl getAcl(BlobId blob, Acl.Entity entity) { return delegate.getAcl(blob, entity); }
+  public synchronized Acl updateDefaultAcl(String bucket, Acl acl) {
+    return delegate.updateDefaultAcl(bucket, acl);
+  }
 
   @Override
-  public synchronized boolean deleteAcl(BlobId blob, Acl.Entity entity) { return delegate.deleteAcl(blob, entity); }
+  public synchronized List<Acl> listDefaultAcls(String bucket) {
+    return delegate.listDefaultAcls(bucket);
+  }
 
   @Override
-  public synchronized Acl createAcl(BlobId blob, Acl acl) { return delegate.createAcl(blob, acl); }
+  public synchronized Acl getAcl(BlobId blob, Acl.Entity entity) {
+    return delegate.getAcl(blob, entity);
+  }
 
   @Override
-  public synchronized Acl updateAcl(BlobId blob, Acl acl) { return delegate.updateAcl(blob, acl); }
+  public synchronized boolean deleteAcl(BlobId blob, Acl.Entity entity) {
+    return delegate.deleteAcl(blob, entity);
+  }
 
   @Override
-  public synchronized List<Acl> listAcls(BlobId blob) { return delegate.listAcls(blob); }
+  public synchronized Acl createAcl(BlobId blob, Acl acl) {
+    return delegate.createAcl(blob, acl);
+  }
 
   @Override
-  public synchronized HmacKey createHmacKey(ServiceAccount serviceAccount, CreateHmacKeyOption... options) { return delegate.createHmacKey(serviceAccount, options); }
+  public synchronized Acl updateAcl(BlobId blob, Acl acl) {
+    return delegate.updateAcl(blob, acl);
+  }
 
   @Override
-  public synchronized Page<HmacKey.HmacKeyMetadata> listHmacKeys(ListHmacKeysOption... options) { return delegate.listHmacKeys(options); }
+  public synchronized List<Acl> listAcls(BlobId blob) {
+    return delegate.listAcls(blob);
+  }
 
   @Override
-  public synchronized HmacKey.HmacKeyMetadata getHmacKey(String accessId, GetHmacKeyOption... options) { return delegate.getHmacKey(accessId, options); }
+  public synchronized HmacKey createHmacKey(
+      ServiceAccount serviceAccount, CreateHmacKeyOption... options) {
+    return delegate.createHmacKey(serviceAccount, options);
+  }
 
   @Override
-  public synchronized void deleteHmacKey(HmacKey.HmacKeyMetadata hmacKeyMetadata, DeleteHmacKeyOption... options) {
+  public synchronized Page<HmacKey.HmacKeyMetadata> listHmacKeys(ListHmacKeysOption... options) {
+    return delegate.listHmacKeys(options);
+  }
+
+  @Override
+  public synchronized HmacKey.HmacKeyMetadata getHmacKey(
+      String accessId, GetHmacKeyOption... options) {
+    return delegate.getHmacKey(accessId, options);
+  }
+
+  @Override
+  public synchronized void deleteHmacKey(
+      HmacKey.HmacKeyMetadata hmacKeyMetadata, DeleteHmacKeyOption... options) {
     delegate.deleteHmacKey(hmacKeyMetadata, options);
   }
 
   @Override
-  public synchronized HmacKey.HmacKeyMetadata updateHmacKeyState(HmacKey.HmacKeyMetadata hmacKeyMetadata, HmacKey.HmacKeyState state, UpdateHmacKeyOption... options) {
+  public synchronized HmacKey.HmacKeyMetadata updateHmacKeyState(
+      HmacKey.HmacKeyMetadata hmacKeyMetadata,
+      HmacKey.HmacKeyState state,
+      UpdateHmacKeyOption... options) {
     return delegate.updateHmacKeyState(hmacKeyMetadata, state, options);
   }
 
@@ -274,18 +454,40 @@ public class ConcurrentDelegatingStorage implements Storage {
   }
 
   @Override
-  public synchronized Policy setIamPolicy(String bucket, Policy policy, BucketSourceOption... options) {
+  public synchronized Policy setIamPolicy(
+      String bucket, Policy policy, BucketSourceOption... options) {
     return delegate.setIamPolicy(bucket, policy, options);
   }
 
   @Override
-  public synchronized List<Boolean> testIamPermissions(String bucket, List<String> permissions, BucketSourceOption... options) {
+  public synchronized List<Boolean> testIamPermissions(
+      String bucket, List<String> permissions, BucketSourceOption... options) {
     return delegate.testIamPermissions(bucket, permissions, options);
   }
 
   @Override
   public synchronized ServiceAccount getServiceAccount(String projectId) {
     return delegate.getServiceAccount(projectId);
+  }
+
+  @Override
+  public Notification createNotification(String bucket, NotificationInfo notificationInfo) {
+    return delegate.createNotification(bucket, notificationInfo);
+  }
+
+  @Override
+  public Notification getNotification(String bucket, String notificationId) {
+    return delegate.getNotification(bucket, notificationId);
+  }
+
+  @Override
+  public List<Notification> listNotifications(String bucket) {
+    return delegate.listNotifications(bucket);
+  }
+
+  @Override
+  public boolean deleteNotification(String bucket, String notificationId) {
+    return delegate.deleteNotification(bucket, notificationId);
   }
 
   @Override
