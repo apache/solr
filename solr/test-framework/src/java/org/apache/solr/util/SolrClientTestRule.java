@@ -121,11 +121,9 @@ public abstract class SolrClientTestRule extends ExternalResource {
     }
 
     req.process(getAdminClient());
-
   }
 
   protected abstract SolrClient getAdminClient();
-
 
   protected abstract void startSolr(Path solrHome);
 

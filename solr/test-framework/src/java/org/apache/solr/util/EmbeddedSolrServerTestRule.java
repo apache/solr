@@ -16,14 +16,11 @@
  */
 package org.apache.solr.util;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
@@ -88,8 +85,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
         .setUpdateShardHandlerConfig(UpdateShardHandlerConfig.TEST_DEFAULT)
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
-
-
 
   /**
    * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
