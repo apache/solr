@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.ClassRule;
 
@@ -26,7 +26,7 @@ public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
   @ClassRule
   public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
-  public static EmbeddedSolrServer getSolrClient() {
+  public static SolrClient getSolrClient() {
     return solrClientTestRule.getSolrClient();
   }
 }
