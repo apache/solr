@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.ClassRule;
 
+@Deprecated // simply use EmbeddedSolrServerTestRule
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
   @ClassRule

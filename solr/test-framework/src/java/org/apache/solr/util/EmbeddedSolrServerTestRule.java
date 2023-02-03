@@ -34,11 +34,14 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   private static final String CORE_DIR_PROP = "coreRootDirectory";
   private EmbeddedSolrServer adminClient = null;
-  private CoreContainer container = null;
 
-  /** Provides an EmbeddedSolrServer instance for administration actions */
-  public EmbeddedSolrServer getAdminClient() {
-    return adminClient;
+  /**
+   * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
+   * necessary
+   */
+  @Override
+  protected void after() {
+    if (adminClient != null) adminClient.getCoreContainer().shutdown();
   }
 
   /**
@@ -73,9 +76,9 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   /** Starts Solr with custom NodeConfig */
   public void startSolr(NodeConfig nodeConfig) {
-    container = new CoreContainer(nodeConfig);
-    container.load();
+    var container = new CoreContainer(nodeConfig);
     adminClient = new EmbeddedSolrServer(container, null);
+    container.load(); // do after setting adminClient so that after() can shutdown the container
   }
 
   /** Returns a NodeConfigBuilder with default settings for test configuration */
@@ -86,13 +89,12 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
-  /**
-   * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
-   * necessary
-   */
-  @Override
-  protected void after() {
-    if (container != null) container.shutdown();
+  /** Provides an EmbeddedSolrServer instance for administration actions */
+  public EmbeddedSolrServer getAdminClient() {
+    if (adminClient == null) {
+      throw new RuntimeException("Solr must be started first");
+    }
+    return adminClient;
   }
 
   /** Returns EmbeddedSolrServer instance for the collection named "collection1" */
@@ -103,6 +105,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
 
   @Override
   public EmbeddedSolrServer getSolrClient(String name) {
-    return new EmbeddedSolrServer(adminClient.getCoreContainer(), name);
+    return new EmbeddedSolrServer(getAdminClient().getCoreContainer(), name);
   }
 }

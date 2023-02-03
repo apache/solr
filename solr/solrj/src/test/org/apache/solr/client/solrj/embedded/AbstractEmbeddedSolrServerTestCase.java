@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import static org.apache.solr.EmbeddedSolrServerTestBase.solrClientTestRule;
-
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +33,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 
+@Deprecated
 public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
   protected static Path SOLR_HOME;

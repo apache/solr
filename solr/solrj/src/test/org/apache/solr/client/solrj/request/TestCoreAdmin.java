@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.SolrTestCaseJ4.resetFactory;
-import static org.apache.solr.SolrTestCaseJ4.useFactory;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
@@ -178,14 +176,14 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testCoreSwap() throws Exception {
     // index marker docs to core0
-    SolrClient cli0 = solrClientTestRule.getSolrClient("core0");
+    SolrClient cli0 = getSolrCore0();
     SolrInputDocument d = new SolrInputDocument("id", "core0-0");
     cli0.add(d);
     d = new SolrInputDocument("id", "core0-1");
     cli0.add(d);
     cli0.commit();
     // index a marker doc to core1
-    SolrClient cli1 = solrClientTestRule.getSolrClient("core1");
+    SolrClient cli1 = getSolrCore1();
     d = new SolrInputDocument("id", "core1-0");
     cli1.add(d);
     cli1.commit();
@@ -226,8 +224,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     CoreAdminRequest.swapCore("core0", "core1", getSolrAdmin());
 
     // assert state after swap
-    cli0 = solrClientTestRule.getSolrClient("core0");
-    cli1 = solrClientTestRule.getSolrClient("core1");
+    cli0 = getSolrCore0();
+    cli1 = getSolrCore1();
 
     rsp = cli0.query(q);
     docs = rsp.getResults();
