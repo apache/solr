@@ -73,7 +73,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
     solrClientTestRule.startSolr(SOLR_HOME);
 
-    cores = solrClientTestRule.getSolrClient().getCoreContainer();
+    cores = solrClientTestRule.getCoreContainer();
   }
 
   @Override
