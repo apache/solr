@@ -2158,6 +2158,35 @@ function mk_writable_dir() {
   fi
 }
 
+# Check whether at least one of lsof/netstat/ss are available
+function get_port_tool() {
+  for tool in 'lsof' 'netstat' 'ss'; do
+      which $tool &> nul
+      if [[ $? -eq 0 ]]; then
+        echo $tool
+        return
+      fi
+  done
+}
+
+# Will get the PID of the java process running on the specified port, if one is running
+# Otherwise empty result. Use get_port_tool to check whether lsof/ss/netstat is installed first
+function check_port_in_use() {
+  local port=$1
+
+  case $(get_port_tool) in
+    lsof)
+      lsof -iTCP:${port} 2>/dev/null | grep "LISTEN" | grep -Eow "java\s*?[0-9]+" | grep -Eow [0-9]+
+      ;;
+    ss)
+      ss -ntpa 2>/dev/null | grep ":${port} " | grep 'LISTEN ' | grep -Eow "\"java\",(pid=)?[0-9]+?" | grep -Eow "[0-9]+"
+      ;;
+    netstat)
+      netstat -nlp 2>/dev/null | grep ":${port} " | grep -Eow " [0-9]+/java" | grep -Eow "[0-9]+"
+      ;;
+  esac
+}
+
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
 
@@ -2312,13 +2341,13 @@ function start_solr() {
 	echo ""
     fi
     # no lsof on cygwin though
-    if lsof -v 2>&1 | grep -q revision; then
+    if [ -n "$(get_port_tool)" ]; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN || :)
+        running=$(check_port_in_use $SOLR_PORT)
         if [ -z "${running:-}" ]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
@@ -2337,7 +2366,7 @@ function start_solr() {
       done) &
       spinner $!
     else
-      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
+      echo -e "NOTE: Please install lsof, netstat, or ss as this script needs to determine if Solr is listening on port $SOLR_PORT."
       sleep 10
       SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
