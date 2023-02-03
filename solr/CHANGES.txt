@@ -132,6 +132,8 @@ Improvements
   properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath` before starting MiniSolrCloudCluster when using
   the Solr test framework. (Tomás Fernández Löbbe)
 
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
+
 Optimizations
 ---------------------
 
