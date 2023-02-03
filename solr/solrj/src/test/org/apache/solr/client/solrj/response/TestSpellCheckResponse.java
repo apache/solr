@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,6 +47,11 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     client = getSolrClient();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    client = null;
   }
 
   static String field = "name";
