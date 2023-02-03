@@ -19,8 +19,10 @@ package org.apache.solr.util;
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.junit.rules.ExternalResource;
 
@@ -100,7 +102,32 @@ public abstract class SolrClientTestRule extends ExternalResource {
     }
   }
 
-  protected abstract void create(NewCollectionBuilder b) throws SolrServerException, IOException;
+  protected void create(NewCollectionBuilder b) throws SolrServerException, IOException {
+
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName(b.getName());
+    req.setInstanceDir(b.getName());
+
+    if (b.getConfigSet() != null) {
+      req.setConfigSet(b.getConfigSet());
+    }
+
+    if (b.getConfigFile() != null) {
+      req.setConfigName(b.getConfigFile());
+    }
+
+    if (b.getSchemaFile() != null) {
+      req.setSchemaName(b.getSchemaFile());
+    }
+
+    req.process(getAdminClient());
+
+  }
+
+  protected abstract SolrClient getAdminClient();
+
+
+  protected abstract void startSolr(Path solrHome);
 
   public void clearIndex() throws SolrServerException, IOException {
     new UpdateRequest().deleteByQuery("*:*").commit(getSolrClient(), null);
