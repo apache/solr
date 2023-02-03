@@ -140,7 +140,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
    * implementation is a no-op. Implementers should not retain object references to the specified
    * searcher.
    */
-  default void bootstrap(SolrIndexSearcher initialSearcher) {
+  default void initialSearcher(SolrIndexSearcher initialSearcher) {
     // no-op
   }
 
