@@ -1429,7 +1429,7 @@ IF "%FG%"=="1" (
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
   REM default to 30 seconds for backwards compatibility.
-  IF "%SOLR_START_WAIT%"=="" (
+  IF "!SOLR_START_WAIT!"=="" (
     set SOLR_START_WAIT=30
   )
   REM now wait to see Solr come online ...
