@@ -1069,6 +1069,11 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testFuncIsnan() throws Exception {
+    assertFuncEquals("isnan(12.3456)");
+    assertFuncEquals("isnan(div(0,0))");
+  }
+
   public void testFuncNot() throws Exception {
     SolrQueryRequest req = req("myField", "field_b", "myTrue", "true");
     try {
