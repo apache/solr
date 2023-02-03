@@ -38,7 +38,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   private static final String CORE_DIR_PROP = "coreRootDirectory";
   private EmbeddedSolrServer adminClient = null;
   private CoreContainer container = null;
-  private boolean clearCoreDirSysProp = false;
 
   /** Provides an EmbeddedSolrServer instance for administration actions */
   public EmbeddedSolrServer getAdminClient() {
@@ -62,9 +61,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
       //  But a test can insist on something if it sets the property.
 
       Properties props = new Properties();
-      if (props.getProperty(CORE_DIR_PROP) == null) {
-        clearCoreDirSysProp = true;
-        //nocommit Results to error No such core: core0
+      if (System.getProperty(CORE_DIR_PROP) == null) {
         props.setProperty(CORE_DIR_PROP, LuceneTestCase.createTempDir("cores").toString());
       }
 
@@ -92,28 +89,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
         .setCoreRootDirectory(LuceneTestCase.createTempDir("cores").toString());
   }
 
-  protected void create(NewCollectionBuilder b) throws SolrServerException, IOException {
 
-    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-    req.setCoreName(b.getName());
-    req.setInstanceDir(b.getName());
-
-    if (b.getConfigSet() != null) {
-      req.setConfigSet(b.getConfigSet());
-    }
-
-    /** Setting config.xml */
-    if (b.getConfigFile() != null) {
-      req.setConfigName(b.getConfigFile());
-    }
-
-    /** Setting schema.xml */
-    if (b.getSchemaFile() != null) {
-      req.setSchemaName(b.getSchemaFile());
-    }
-
-    req.process(adminClient);
-  }
 
   /**
    * Shuts down the EmbeddedSolrServer instance and clears the coreRootDirectory system property if
@@ -122,10 +98,6 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   @Override
   protected void after() {
     if (container != null) container.shutdown();
-
-    if (clearCoreDirSysProp) {
-      System.clearProperty(CORE_DIR_PROP);
-    }
   }
 
   /** Returns EmbeddedSolrServer instance for the collection named "collection1" */
