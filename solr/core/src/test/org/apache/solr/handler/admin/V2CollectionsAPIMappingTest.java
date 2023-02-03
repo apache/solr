@@ -189,25 +189,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testSetAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'set-alias-property': {"
-                + "'name': 'aliasName', "
-                + "'async': 'requestTrackingId', "
-                + "'properties': {'foo':'bar', 'foo2':'bar2'}"
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.ALIASPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertEquals("bar", v1Params.get("property.foo"));
-    assertEquals("bar2", v1Params.get("property.foo2"));
-  }
-
-  @Test
   public void testBackupAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(

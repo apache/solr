@@ -657,7 +657,7 @@ If a key is set with a value that is empty it will be removed.
 
 [source,bash]
 ----
-http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar
+curl -X POST 'http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar'
 ----
 ====
 
@@ -667,12 +667,24 @@ http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
 {
-  "set-alias-property":{
-    "name":"techproducts_alias",
-    "properties": {"foo":"bar"}
-  }
+  "properties": {"foo":"bar"}
+}
+'
+----
+
+====
+
+[example.tab-pane#v2aliasplevelprop]
+====
+[.tab-label]*V2 API* Property level api
+
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
+{
+  "value": "baz"
 }
 '
 ----
