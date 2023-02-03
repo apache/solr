@@ -203,6 +203,8 @@ Build
 
 * SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
 
+* SOLR-16641: Generate gradle.properties from gradlew, if absent (Colvin Cowie)
+
 Other Changes
 ---------------------
 * SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
