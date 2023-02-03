@@ -1437,6 +1437,10 @@ IF "%FG%"=="1" (
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.util.SolrCLI status -maxWaitSecs !SOLR_START_WAIT! -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
+  IF NOT "!ERRORLEVEL!"=="0" (
+      set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
+      goto err
+  )
 )
 
 goto done
