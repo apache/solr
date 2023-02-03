@@ -35,9 +35,11 @@ import org.junit.rules.ExternalResource;
  */
 public abstract class SolrClientTestRule extends ExternalResource {
 
-  public abstract SolrClient getSolrClient();
-
-  public abstract SolrClient getSolrClient(String name);
+  /**
+   * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
+   * used. Otherwise a default testing configuration is used.
+   */
+  public abstract void startSolr(Path solrHome);
 
   public NewCollectionBuilder newCollection(String name) {
     return new NewCollectionBuilder(name);
@@ -121,13 +123,17 @@ public abstract class SolrClientTestRule extends ExternalResource {
     }
 
     req.process(getAdminClient());
-
   }
 
-  protected abstract SolrClient getAdminClient();
+  /** Provides a SolrClient instance for administration actions */
+  public abstract SolrClient getAdminClient();
 
+  /** Provides a SolrClient instance for collection1 */
+  public SolrClient getSolrClient() {
+    return getSolrClient("collection1");
+  }
 
-  protected abstract void startSolr(Path solrHome);
+  public abstract SolrClient getSolrClient(String name);
 
   public void clearIndex() throws SolrServerException, IOException {
     new UpdateRequest().deleteByQuery("*:*").commit(getSolrClient(), null);
