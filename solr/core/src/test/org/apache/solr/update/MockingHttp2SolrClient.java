@@ -54,8 +54,8 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
 
     public Builder(UpdateShardHandlerConfig config) {
       super();
-      this.connectionTimeout(config.getDistributedConnectionTimeout());
-      this.idleTimeout(config.getDistributedSocketTimeout());
+      this.withConnectionTimeout(config.getDistributedConnectionTimeout());
+      this.withIdleTimeout(config.getDistributedSocketTimeout());
     }
 
     @Override
