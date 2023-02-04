@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
 /**
@@ -24,7 +23,6 @@ import org.junit.Test;
  * expected. Implementation moved to AbstractBasicDistributedZk2TestBase as it is used by HDFS
  * contrib module tests.
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZk2Test extends AbstractBasicDistributedZk2TestBase {
 
   @Test
