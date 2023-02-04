@@ -54,7 +54,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-            .setUseHttp1_1(true)
+            .withHttp1_1(true)
             .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
@@ -77,7 +77,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-            .setUseHttp1_1(true)
+            .withHttp1_1(true)
             .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {

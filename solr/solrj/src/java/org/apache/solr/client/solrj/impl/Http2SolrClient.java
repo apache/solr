@@ -1129,15 +1129,15 @@ public class Http2SolrClient extends SolrClient {
     }
 
     /**
-     * @deprecated Please use {@link #setUseHttp1_1(boolean)}
+     * @deprecated Please use {@link #withHttp1_1(boolean)}
      */
     @Deprecated(since = "9.2")
     public Builder useHttp1_1(boolean useHttp1_1) {
-      setUseHttp1_1(useHttp1_1);
+      withHttp1_1(useHttp1_1);
       return this;
     }
 
-    public Builder setUseHttp1_1(boolean useHttp1_1) {
+    public Builder withHttp1_1(boolean useHttp1_1) {
       this.useHttp1_1 = useHttp1_1;
       return this;
     }
