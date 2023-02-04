@@ -20,6 +20,7 @@ package org.apache.solr.jersey;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import java.util.Map;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -79,6 +80,16 @@ public class JerseyApplications {
                   .in(RequestScoped.class);
             }
           });
+
+      setProperties(
+          Map.of(
+              "jersey.config.server.wadl.disableWadl", "true",
+              "jersey.config.beanValidation.disable.server", "true",
+              "jersey.config.server.disableAutoDiscovery", "true",
+              "jersey.config.server.disableJsonProcessing", "true",
+              "jersey.config.server.disableMetainfServicesLookup", "true",
+              "jersey.config.server.disableMoxyJson", "true",
+              "jersey.config.server.resource.validation.disable", "true"));
       // Logging - disabled by default but useful for debugging Jersey execution
       //      setProperties(
       //          Map.of(
