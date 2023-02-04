@@ -292,6 +292,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * number of locks.
      *
      * <p>Defaults to 3.
+     *
      * @deprecated Please use {@link #withParallelCacheRefreshes(int)}
      */
     @Deprecated(since = "9.2")
@@ -314,7 +315,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /**
      * This is the time to wait to refetch the state after getting the same state version from ZK
      *
-     * @deprecated Please use {@link #withRetryExpiryTime(int)}     *
+     * @deprecated Please use {@link #withRetryExpiryTime(int)} *
      */
     @Deprecated(since = "9.2")
     public Builder setRetryExpiryTime(int secs) {

@@ -1097,6 +1097,7 @@ public class Http2SolrClient extends SolrClient {
     /**
      * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
      * to 4
+     *
      * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
      */
     @Deprecated(since = "9.2")
