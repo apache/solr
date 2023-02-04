@@ -154,7 +154,7 @@ public @interface RandomizeSSL {
         //
         // (If it didn't work this way, it would be a pain in the ass to quickly disable SSL for a
         // broad hierarchy of tests)
-        return new SSLRandomizer(0.0D, 0.0D, suppressSSL.toString());
+        return new SSLRandomizer(1.0D, 1.0D, suppressSSL.toString());
       }
 
       final RandomizeSSL randomizeSSL = clazz.getAnnotation(RandomizeSSL.class);
