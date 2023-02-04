@@ -305,19 +305,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
 
-    System.setProperty(
-        "pkiHandlerPrivateKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/priv_key512_pkcs8.pem")
-            .toExternalForm());
-    System.setProperty(
-        "pkiHandlerPublicKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/pub_key512.der")
-            .toExternalForm());
-
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
@@ -931,7 +918,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // If the test case set up Zk, it should still have it as available,
       // otherwise the core close will just be unnecessarily delayed.
       CoreContainer cc = h.getCoreContainer();
-      if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+      if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
           cc.getZkController().getZkClient().exists("/", false);
         } catch (KeeperException e) {
@@ -2614,23 +2601,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
+   * A variant of {@link org.apache.solr.client.solrj.impl.CloudLegacySolrClient.Builder} that will
    * randomize some internal settings.
    */
   @Deprecated
-  public static class CloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
+  public static class RandomizingCloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
 
-    public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
+    public RandomizingCloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
       randomizeCloudSolrClient();
     }
 
-    public CloudSolrClientBuilder(ClusterStateProvider stateProvider) {
+    public RandomizingCloudSolrClientBuilder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
       randomizeCloudSolrClient();
     }
 
-    public CloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
+    public RandomizingCloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         this.zkHosts.add(cluster.getZkServer().getZkAddress());
       } else {
@@ -2664,7 +2651,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty()).build();
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
+        .build();
   }
 
   /**
@@ -2673,7 +2662,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
-    return new CloudSolrClientBuilder(cluster).build();
+    return new RandomizingCloudSolrClientBuilder(cluster).build();
   }
 
   /**
@@ -2682,7 +2671,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
         .build();
   }
@@ -2694,17 +2684,20 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+      return new RandomizingCloudSolrClientBuilder(
+              Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
-  public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+  public static RandomizingCloudSolrClientBuilder newCloudSolrClient(String zkHost) {
+    return new RandomizingCloudSolrClientBuilder(
+        Collections.singletonList(zkHost), Optional.empty());
   }
 
   /**
@@ -2715,13 +2708,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static CloudSolrClient getCloudSolrClient(
       String zkHost, boolean shardLeadersOnly, int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+      return new RandomizingCloudSolrClientBuilder(
+              Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
+        .sendUpdatesToAnyReplica()
         .withSocketTimeout(socketTimeoutMillis)
         .build();
   }
@@ -2737,14 +2732,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+      return new RandomizingCloudSolrClientBuilder(
+              Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
           .withConnectionTimeout(connectionTimeoutMillis)
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
+        .sendUpdatesToAnyReplica()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();
@@ -2758,14 +2755,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static CloudSolrClient getCloudSolrClient(
       String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+      return new RandomizingCloudSolrClientBuilder(
+              Collections.singletonList(zkHost), Optional.empty())
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
@@ -2781,16 +2780,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       int connectionTimeoutMillis,
       int socketTimeoutMillis) {
     if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+      return new RandomizingCloudSolrClientBuilder(
+              Collections.singletonList(zkHost), Optional.empty())
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .withConnectionTimeout(connectionTimeoutMillis)
           .withSocketTimeout(socketTimeoutMillis)
           .build();
     }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
+    return new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();

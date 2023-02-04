@@ -562,7 +562,7 @@ var getAnalysisInfo = function(data, is, name) {
     }
     else if (is.dynamicField) {
         var type = data.relations.df_t[name];
-        analysis.query = "analysis.fieldtype=" + type;
+        analysis.query = "analysis.dynamicfield=" + name;
     }
     else if (is.type) {
         var type = name;

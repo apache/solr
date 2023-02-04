@@ -97,6 +97,9 @@ limitations under the License.
 
           </div>
 
+          <div class="content" ng-show="releaseDaysOld > 365">
+            <p class="warning-msg"><img src="img/ico/exclamation-button.png"/>&nbsp;WARNING: This Solr release is more than a year old. Consider upgrading.</p>
+          </div>
       </div>
 
     </div>
@@ -257,7 +260,7 @@ limitations under the License.
 
           <h2>Security</h2>
 
-          <div class="content">
+          <div class="content" ng-show="isSecurityEnabled">
 
             <ul class="data">
 
@@ -283,7 +286,12 @@ limitations under the License.
 
             </ul>
 
+          </div>
 
+          <div ng-show="!isSecurityEnabled" style="text-align: left">
+            <p class="warning-msg"><img src="img/ico/shield--exclamation.png"/>&nbsp;WARNING: Security is not enabled for this server!</p>
+            <p>See <a href="/solr/#/~security">security screen</a> for how to enable authentication</p>
+            <p>TLS enabled? <img ng-show="tls" src="img/ico/tick.png"/><img ng-show="!tls" src="img/ico/cross.png"/></p>
           </div>
 
       </div>

@@ -60,7 +60,15 @@
   </shardHandlerFactory>
 
   <metrics enabled="${metricsEnabled:true}">
+    <!--    Solr computes JVM metrics for threads. Computing these metrics, esp. computing deadlocks etc.,
+     requires potentially expensive computations, and can be avoided for every metrics call by
+     setting a high caching expiration interval (in seconds).
+      <caching>
+        <int name="threadsIntervalSeconds">5</int>
+      </caching>
+    -->
     <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
   </metrics>
+
 
 </solr>
