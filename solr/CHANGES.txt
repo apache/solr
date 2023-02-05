@@ -126,6 +126,8 @@ Improvements
 * SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
   configured per AbstractUpdateRequest instance.  (hossman)
 
+* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or even a bare property name.  (Eric Pugh)
+
 
 Optimizations
 ---------------------
