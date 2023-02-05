@@ -150,4 +150,9 @@ curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHan
 ----
 
 == Make some Basic search queries
-FIXME
+You can now try searching your documents like:
+
+[source]
+----
+curl 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning'
+----
