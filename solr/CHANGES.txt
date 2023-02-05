@@ -49,6 +49,8 @@ New Features
 
 * SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
+* SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -126,8 +128,13 @@ Improvements
 * SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
   configured per AbstractUpdateRequest instance.  (hossman)
 
-* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or even a bare property name.  (Eric Pugh)
+* SOLR-16635: Resolve crypto keys file path in MiniSolrCloudCluster. This eliminates the need to set the system
+  properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath` before starting MiniSolrCloudCluster when using
+  the Solr test framework. (Tomás Fernández Löbbe)
 
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
+
+* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or even a bare property name.  (Eric Pugh)
 
 Optimizations
 ---------------------
@@ -139,6 +146,8 @@ Optimizations
 * SOLR-15732: queries to missing collection are slow (noble)
 
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
+
+* SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
 
 Bug Fixes
 ---------------------
@@ -207,8 +216,6 @@ Other Changes
 
 * SOLR-16481: Upgrade Bats to 1.8.0 (Kevin Risden)
 
-* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
-
 * SOLR-16467: Upgrade semver4j to 2.2.0 to fix failures with some locales (Kevin Risden)
 
 * SOLR-15718: Remove backcompat feature solr.useUnsafeOverseerResponse (janhoy)
@@ -220,8 +227,6 @@ Other Changes
 * SOLR-15861: ConcurrentUpdateSolrClient should work with ManagedExecutorService (Sammy Chu, Kevin Risden)
 
 * SOLR-16575: splitshard should honour createNodeSet (noble)
-
-* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
 
 * SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
 
@@ -247,17 +252,31 @@ Other Changes
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 
+* SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
 ---------------------
+
 * SOLR-16589: Large fields with large=true can be truncated when using unicode values (Kevin Risden)
 
 * SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
-* SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
-
 * SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16622: Replicas don't come up active after node restart (noble, Ishan Chattopadhyaya)
+
+Other Changes
+---------------------
+
+* SOLR-16443: Upgrade Jackson bom to 2.13.4.20221013 (Kevin Risden)
+
+* SOLR-16568: Upgrade woodstox-core to 6.4.0 (Kira Traynor)
+
+* SOLR-16598: Upgrade Protobuf to 3.21.12 (David Smiley)
+
+* SOLR-16567: Fixed problem with filtering and KNN search, especially when using post-filters (Alessandro Benedetti)
 
 * SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
 
