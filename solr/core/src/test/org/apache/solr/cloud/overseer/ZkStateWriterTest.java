@@ -227,20 +227,31 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand c1 =
             new ZkWriteCommand(
                 "c1",
-                new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+                new DocCollection(
+                    "c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         ZkWriteCommand c2 =
             new ZkWriteCommand(
                 "c2",
-                new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+                new DocCollection(
+                    "c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         ZkWriteCommand c3 =
             new ZkWriteCommand(
                 "c3",
-                new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+                new DocCollection(
+                    "c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
             new ZkWriteCommand(
-                "prs1", new DocCollection("prs1", new HashMap<>(), prsProps, DocRouter.DEFAULT, 0));
+                "prs1",
+                new DocCollection(
+                    "prs1",
+                    new HashMap<>(),
+                    prsProps,
+                    DocRouter.DEFAULT,
+                    0,
+                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                        zkClient, DocCollection.getCollectionPath("prs1"))));
         ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         // First write is flushed immediately
