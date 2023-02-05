@@ -79,7 +79,7 @@ public class S3BackupRepository implements BackupRepository {
   @Override
   public URI createURI(String location) {
     if (StringUtils.isEmpty(location)) {
-      throw new IllegalArgumentException("cannot create URI with an empty location");
+      throw new IllegalArgumentException("Cannot create URI with an empty location");
     }
 
     URI result;
