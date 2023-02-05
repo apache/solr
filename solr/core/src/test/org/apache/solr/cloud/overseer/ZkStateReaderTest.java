@@ -300,7 +300,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     ref = reader.getClusterState().getCollectionRef("c1");
     assertEquals(0, ref.get().getZNodeVersion()); // no change in Znode version
-    assertEquals(3, ref.get().getChildNodesVersion()); // but child version should be 1 now
+    assertEquals(1, ref.get().getChildNodesVersion()); // but child version should be 1 now
 
     prs = ref.get().getPerReplicaStates();
     PerReplicaStatesOps.flipState("r1", Replica.State.ACTIVE, prs)
@@ -314,7 +314,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ref = reader.getClusterState().getCollectionRef("c1");
     assertEquals(0, ref.get().getZNodeVersion()); // no change in Znode version
     // but child version should be 3 now (1 del + 1 add)
-    assertEquals(5, ref.get().getChildNodesVersion());
+    assertEquals(3, ref.get().getChildNodesVersion());
 
     // now delete the collection
     wc = new ZkWriteCommand("c1", null);
@@ -360,7 +360,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ref = reader.getClusterState().getCollectionRef("c1");
 
     // child version should be reset since the state.json node was deleted and re-created
-    assertEquals(3, ref.get().getChildNodesVersion());
+    assertEquals(1, ref.get().getChildNodesVersion());
   }
 
   public void testForciblyRefreshAllClusterState() throws Exception {
