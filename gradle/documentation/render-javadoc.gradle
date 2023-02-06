@@ -29,7 +29,7 @@ allprojects {
     }
 
     dependencies {
-      missingdoclet "org.apache.lucene.tools:missing-doclet"
+      missingdoclet "org.apache.solr.tools:missing-doclet"
     }
 
     ext {

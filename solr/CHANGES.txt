@@ -49,6 +49,8 @@ New Features
 
 * SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
+* SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
+
 Improvements
 ---------------------
 
@@ -126,6 +128,11 @@ Improvements
 * SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
   configured per AbstractUpdateRequest instance.  (hossman)
 
+* SOLR-16635: Resolve crypto keys file path in MiniSolrCloudCluster. This eliminates the need to set the system
+  properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath` before starting MiniSolrCloudCluster when using
+  the Solr test framework. (Tomás Fernández Löbbe)
+
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -137,6 +144,8 @@ Optimizations
 * SOLR-15732: queries to missing collection are slow (noble)
 
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
+
+* SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
 
 Bug Fixes
 ---------------------
@@ -240,6 +249,10 @@ Other Changes
 * SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
+
+* SOLR-16629: Replace Solr thread safety annotations with JCIP. (David Smiley)
+
+* SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
 
 ==================  9.1.1 ==================
 
