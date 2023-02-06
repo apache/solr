@@ -230,6 +230,8 @@ Other Changes
 
 * SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
 
+* SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
