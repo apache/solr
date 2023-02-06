@@ -163,6 +163,8 @@ Bug Fixes
 
 * SOLR-16631: solr.allowUrls (former solr.shardsWhitelist) should treat hostnames in case insensitive way. (Paul Blanchaert via Eric Pugh)
 
+* SOLR-16647: Fix circuit breaker examples in solrconfig.xml (Colvin Cowie via Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
