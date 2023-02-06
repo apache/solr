@@ -26,6 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrVersion;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -54,6 +55,7 @@ public class JerseyApplications {
       register(MessageBodyWriters.JavabinMessageBodyWriter.class);
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(JacksonJsonProvider.class);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
