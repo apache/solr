@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/*
+/**
  *  Iterates over a TupleStream and Ranks the top N tuples for specified start param based on a Comparator.
  *
  *  @since 9.0.0
