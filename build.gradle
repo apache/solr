@@ -28,19 +28,7 @@ plugins {
   id "net.ltgt.errorprone" version "3.0.1" apply false
   id 'com.diffplug.spotless' version "6.5.2" apply false
   id 'com.github.node-gradle.node' version '3.4.0' apply false
-  id 'org.cyclonedx.bom' version '1.7.2'
-}
-
-cyclonedxBom {
-  includeConfigs = ["runtimeClasspath"]
-  skipConfigs = ["compileClasspath", "testCompileClasspath"]
-  projectType = "application"
-  schemaVersion = "1.4"
-  destination = file("build/reports")
-  outputName = "CycloneDX-Sbom"
-  outputFormat = "all"
-  includeBomSerialNumber = true
-  componentVersion = "2.0.0"
+  id 'org.cyclonedx.bom' version '1.7.3'
 }
 
 apply from: file('gradle/globals.gradle')
@@ -162,6 +150,7 @@ apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/dependency-analyze.gradle')
+apply from: file('gradle/validation/cyclonedx-bom.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
