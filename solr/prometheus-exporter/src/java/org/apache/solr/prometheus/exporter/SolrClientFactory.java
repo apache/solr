@@ -38,7 +38,7 @@ public class SolrClientFactory {
     Http2SolrClient http2SolrClient =
         new Http2SolrClient.Builder(solrHost)
             .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(settings.getHttpConnectionTimeout())
+            .withConnectionTimeout(settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS)
             .withResponseParser(new NoOpResponseParser("json"))
             .build();
 
@@ -57,7 +57,8 @@ public class SolrClientFactory {
             .withInternalClientBuilder(
                 new Http2SolrClient.Builder()
                     .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
-                    .withConnectionTimeout(settings.getHttpConnectionTimeout()))
+                    .withConnectionTimeout(
+                        settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS))
             .withResponseParser(new NoOpResponseParser("json"))
             .build();
 

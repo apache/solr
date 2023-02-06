@@ -130,7 +130,7 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient httpClient;
   private volatile Set<String> urlParamNames = Set.of();
   private long idleTimeout;
-  private int requestTimeout;
+  private long requestTimeout;
 
   protected ResponseParser parser = new BinaryResponseParser();
   protected RequestWriter requestWriter = new BinaryRequestWriter();
@@ -160,8 +160,7 @@ public class Http2SolrClient extends SolrClient {
 
     if (builder.idleTimeout != null && builder.idleTimeout > 0) {
       idleTimeout = builder.idleTimeout;
-    }
-    else {
+    } else {
       idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
     }
 
@@ -985,8 +984,8 @@ public class Http2SolrClient extends SolrClient {
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
     private Long idleTimeout;
-    private Integer connectionTimeout;
-    private Integer requestTimeout;
+    private Long connectionTimeout;
+    private Long requestTimeout;
     private Integer maxConnectionsPerHost;
     private String basicAuthUser;
     private String basicAuthPassword;
@@ -1138,29 +1137,29 @@ public class Http2SolrClient extends SolrClient {
     }
 
     /**
-     * @deprecated Please use {@link #withConnectionTimeout(int)}
+     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
      */
     @Deprecated(since = "9.2")
     public Builder connectionTimeout(int connectionTimeout) {
-      withConnectionTimeout(connectionTimeout);
+      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
       return this;
     }
 
-    public Builder withConnectionTimeout(int connectionTimeout) {
-      this.connectionTimeout = connectionTimeout;
+    public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+      this.connectionTimeout = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
       return this;
     }
 
     /**
      * Set a timeout in milliseconds for requests issued by this client.
      *
-     * @deprecated Please use {@link #withRequestTimeout(int)}
+     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
      * @param requestTimeout The timeout in milliseconds
      * @return this Builder.
      */
     @Deprecated(since = "9.2")
     public Builder requestTimeout(int requestTimeout) {
-      this.requestTimeout = requestTimeout;
+      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
       return this;
     }
 
@@ -1170,8 +1169,8 @@ public class Http2SolrClient extends SolrClient {
      * @param requestTimeout The timeout in milliseconds
      * @return this Builder.
      */
-    public Builder withRequestTimeout(int requestTimeout) {
-      this.requestTimeout = requestTimeout;
+    public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
+      this.requestTimeout = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
       return this;
     }
   }

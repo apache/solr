@@ -315,19 +315,19 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /**
      * This is the time to wait to refetch the state after getting the same state version from ZK
      *
-     * @deprecated Please use {@link #withRetryExpiryTime(int)} *
+     * @deprecated Please use {@link #withRetryExpiryTime(long, TimeUnit)}
      */
     @Deprecated(since = "9.2")
     public Builder setRetryExpiryTime(int secs) {
-      this.withRetryExpiryTime(secs);
+      this.withRetryExpiryTime(secs, TimeUnit.SECONDS);
       return this;
     }
 
     /**
      * This is the time to wait to refetch the state after getting the same state version from ZK
      */
-    public Builder withRetryExpiryTime(int secs) {
-      this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+    public Builder withRetryExpiryTime(long expiryTime, TimeUnit unit) {
+      this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(expiryTime, unit);
       return this;
     }
 

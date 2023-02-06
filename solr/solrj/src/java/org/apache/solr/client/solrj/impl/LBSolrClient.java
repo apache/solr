@@ -77,7 +77,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  protected int aliveCheckInterval = LBHttpSolrClient.Builder.CHECK_INTERVAL;
+  protected long aliveCheckInterval = TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS);
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");

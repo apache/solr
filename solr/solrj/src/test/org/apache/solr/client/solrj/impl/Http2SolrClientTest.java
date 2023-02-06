@@ -190,9 +190,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   private Http2SolrClient.Builder getHttp2SolrClientBuilder(
-      String url, int connectionTimeOut, int socketTimeout) {
+      String url, int connectionTimeout, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
-        .withConnectionTimeout(connectionTimeOut)
+        .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
         .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
   }
 
@@ -230,7 +230,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     try (Http2SolrClient client =
         getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
-            .withRequestTimeout(500)
+            .withRequestTimeout(500, TimeUnit.MILLISECONDS)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");

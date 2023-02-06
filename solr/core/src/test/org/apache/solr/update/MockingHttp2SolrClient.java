@@ -22,7 +22,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -56,7 +55,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
 
     public Builder(UpdateShardHandlerConfig config) {
       super();
-      this.withConnectionTimeout(config.getDistributedConnectionTimeout());
+      this.withConnectionTimeout(config.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS);
       this.withIdleTimeout(config.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS);
     }
 
