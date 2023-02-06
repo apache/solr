@@ -51,8 +51,6 @@ New Features
 
 * SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
 
-* SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
-
 Improvements
 ---------------------
 
@@ -253,6 +251,8 @@ Other Changes
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
 
 * SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
+
+* SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
 
 ==================  9.1.1 ==================
 
