@@ -40,6 +40,8 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
   // In 9.x, ending in 10, we depend on SolrJ modules.  Users can opt-out.
   runtimeOnly project(':solr:solrj-streaming')
   runtimeOnly project(':solr:solrj-zookeeper')

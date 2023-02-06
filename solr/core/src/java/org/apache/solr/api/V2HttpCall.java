@@ -40,9 +40,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -72,7 +72,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // class that handle the '/v2' path
-@SolrThreadSafe
+@ThreadSafe
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
