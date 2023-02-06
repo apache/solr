@@ -126,6 +126,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileTree sourceFiles
 
   @Inject
