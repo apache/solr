@@ -51,6 +51,8 @@ New Features
 
 * SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
 
+* SOLR-16608: Ability to compress state.json in Zookeeper (Justin Sweeney via noble)
+
 Improvements
 ---------------------
 
