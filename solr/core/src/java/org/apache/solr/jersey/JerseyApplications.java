@@ -85,6 +85,9 @@ public class JerseyApplications {
 
       setProperties(
           Map.of(
+              // Explicit Jersey logging is disabled by default but useful for debugging
+              // "jersey.config.server.tracing.type", "ALL",
+              // "jersey.config.server.tracing.threshold", "VERBOSE",
               "jersey.config.server.wadl.disableWadl", "true",
               "jersey.config.beanValidation.disable.server", "true",
               "jersey.config.server.disableAutoDiscovery", "true",
@@ -92,13 +95,6 @@ public class JerseyApplications {
               "jersey.config.server.disableMetainfServicesLookup", "true",
               "jersey.config.server.disableMoxyJson", "true",
               "jersey.config.server.resource.validation.disable", "true"));
-      // Logging - disabled by default but useful for debugging Jersey execution
-      //      setProperties(
-      //          Map.of(
-      //              "jersey.config.server.tracing.type",
-      //              "ALL",
-      //              "jersey.config.server.tracing.threshold",
-      //              "VERBOSE"));
     }
   }
 
