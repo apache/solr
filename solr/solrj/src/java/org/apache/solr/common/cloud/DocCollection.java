@@ -160,7 +160,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection copyWith(PerReplicaStates newPerReplicaStates) {
     if (this.prsSupplier != null) {
-      log.info("In-place update of PRS: {}", newPerReplicaStates);
+      log.debug("In-place update of PRS: {}", newPerReplicaStates);
       this.prsSupplier.prs = newPerReplicaStates;
     }
     return this;
