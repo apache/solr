@@ -79,7 +79,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     httpClient =
-        new Http2SolrClient.Builder().withConnectionTimeout(1000).withIdleTimeout(2000).build();
+        new Http2SolrClient.Builder().withConnectionTimeout(1000).withIdleTimeout(2000, TimeUnit.MILLISECONDS).build();
 
     for (int i = 0; i < solr.length; i++) {
       solr[i] =
