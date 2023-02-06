@@ -53,6 +53,8 @@ New Features
 
 * SOLR-16608: Ability to compress state.json in Zookeeper (Justin Sweeney via noble)
 
+* SOLR-16646: New function query operator isnan to verify if value is NaN (Gabriel Magno via Kevin Risden)
+
 Improvements
 ---------------------
 
