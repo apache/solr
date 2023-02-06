@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -192,7 +193,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       String url, int connectionTimeOut, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
         .withConnectionTimeout(connectionTimeOut)
-        .withIdleTimeout(socketTimeout);
+        .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
   }
 
   @Test

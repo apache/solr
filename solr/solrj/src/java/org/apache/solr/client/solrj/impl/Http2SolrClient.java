@@ -129,7 +129,7 @@ public class Http2SolrClient extends SolrClient {
 
   private HttpClient httpClient;
   private volatile Set<String> urlParamNames = Set.of();
-  private int idleTimeout;
+  private long idleTimeout;
   private int requestTimeout;
 
   protected ResponseParser parser = new BinaryResponseParser();
@@ -158,8 +158,12 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = serverBaseUrl;
     }
 
-    if (builder.idleTimeout != null && builder.idleTimeout > 0) idleTimeout = builder.idleTimeout;
-    else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    if (builder.idleTimeout != null && builder.idleTimeout > 0) {
+      idleTimeout = builder.idleTimeout;
+    }
+    else {
+      idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    }
 
     if (builder.http2SolrClient == null) {
       httpClient = createHttpClient(builder);
@@ -980,7 +984,7 @@ public class Http2SolrClient extends SolrClient {
 
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
-    private Integer idleTimeout;
+    private Long idleTimeout;
     private Integer connectionTimeout;
     private Integer requestTimeout;
     private Integer maxConnectionsPerHost;
@@ -1115,16 +1119,16 @@ public class Http2SolrClient extends SolrClient {
     }
 
     /**
-     * @deprecated Please use {@link #withIdleTimeout(int)}
+     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
      */
     @Deprecated(since = "9.2")
     public Builder idleTimeout(int idleConnectionTimeout) {
-      withIdleTimeout(idleConnectionTimeout);
+      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
       return this;
     }
 
-    public Builder withIdleTimeout(int idleConnectionTimeout) {
-      this.idleTimeout = idleConnectionTimeout;
+    public Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+      this.idleTimeout = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
       return this;
     }
 

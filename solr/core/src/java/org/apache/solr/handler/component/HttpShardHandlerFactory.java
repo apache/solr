@@ -283,7 +283,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     this.defaultClient =
         new Http2SolrClient.Builder()
             .withConnectionTimeout(connectionTimeout)
-            .withIdleTimeout(soTimeout)
+            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
