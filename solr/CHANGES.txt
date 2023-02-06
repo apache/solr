@@ -161,6 +161,8 @@ Bug Fixes
 
 * SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
 
+* SOLR-16631: solr.allowUrls (former solr.shardsWhitelist) should treat hostnames in case insensitive way. (Paul Blanchaert via Eric Pugh)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
