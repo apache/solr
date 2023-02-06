@@ -112,6 +112,8 @@ Improvements
 
 * SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
 
+* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or bare property name.  (Eric Pugh)
+
 Optimizations
 ---------------------
 

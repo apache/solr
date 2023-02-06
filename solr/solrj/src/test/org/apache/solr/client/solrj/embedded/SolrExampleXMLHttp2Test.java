@@ -39,7 +39,7 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
 
     Http2SolrClient client =
         new Http2SolrClient.Builder(getServerUrl())
-            .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build();

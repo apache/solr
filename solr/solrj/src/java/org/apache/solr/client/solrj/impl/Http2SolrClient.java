@@ -1096,14 +1096,34 @@ public class Http2SolrClient extends SolrClient {
 
     /**
      * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * by 4
+     * to 4
+     *
+     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
      */
+    @Deprecated(since = "9.2")
     public Builder maxConnectionsPerHost(int max) {
+      withMaxConnectionsPerHost(max);
+      return this;
+    }
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     */
+    public Builder withMaxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
       return this;
     }
 
+    /**
+     * @deprecated Please use {@link #withIdleTimeout(int)}
+     */
+    @Deprecated(since = "9.2")
     public Builder idleTimeout(int idleConnectionTimeout) {
+      withIdleTimeout(idleConnectionTimeout);
+      return this;
+    }
+
+    public Builder withIdleTimeout(int idleConnectionTimeout) {
       this.idleTimeout = idleConnectionTimeout;
       return this;
     }
@@ -1113,8 +1133,30 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    /**
+     * @deprecated Please use {@link #withConnectionTimeout(int)}
+     */
+    @Deprecated(since = "9.2")
     public Builder connectionTimeout(int connectionTimeout) {
+      withConnectionTimeout(connectionTimeout);
+      return this;
+    }
+
+    public Builder withConnectionTimeout(int connectionTimeout) {
       this.connectionTimeout = connectionTimeout;
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @deprecated Please use {@link #withRequestTimeout(int)}
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     */
+    @Deprecated(since = "9.2")
+    public Builder requestTimeout(int requestTimeout) {
+      this.requestTimeout = requestTimeout;
       return this;
     }
 
@@ -1124,7 +1166,7 @@ public class Http2SolrClient extends SolrClient {
      * @param requestTimeout The timeout in milliseconds
      * @return this Builder.
      */
-    public Builder requestTimeout(int requestTimeout) {
+    public Builder withRequestTimeout(int requestTimeout) {
       this.requestTimeout = requestTimeout;
       return this;
     }
