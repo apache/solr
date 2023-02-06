@@ -296,13 +296,24 @@ public class ZkStateWriter {
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection =
                   new DocCollection(
-                      name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
+                      name,
+                      c.getSlicesMap(),
+                      c.getProperties(),
+                      c.getRouter(),
+                      stat.getVersion(),
+                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection =
-                  new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
+                  new DocCollection(
+                      name,
+                      c.getSlicesMap(),
+                      c.getProperties(),
+                      c.getRouter(),
+                      0,
+                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }

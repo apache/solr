@@ -168,8 +168,6 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setSolrCoreCacheFactoryConfig(
-        getPluginInfo(root.get("transientCoreCacheFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -380,6 +378,7 @@ public class SolrXmlConfig {
                 builder.setReplayUpdatesThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
+                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));
                 break;
               case "allowUrls":
@@ -662,6 +661,17 @@ public class SolrXmlConfig {
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
       builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
+    }
+
+    ConfigNode caching = metrics.get("solr/metrics/caching");
+    if (caching != null) {
+      Object threadsCachingIntervalSeconds =
+          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+      builder.setCacheConfig(
+          new MetricsConfig.CacheConfig(
+              threadsCachingIntervalSeconds == null
+                  ? null
+                  : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
     }
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);

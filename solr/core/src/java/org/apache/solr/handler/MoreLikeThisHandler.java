@@ -119,7 +119,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        filters = QueryUtils.parseFilterQueries(req, false);
+        filters = QueryUtils.parseFilterQueries(req);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

@@ -17,13 +17,17 @@
 
 package org.apache.solr.common.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PerReplicaStatesFetcher {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   /**
    * Fetch the latest {@link PerReplicaStates} . It fetches data after checking the {@link
    * Stat#getCversion()} of state.json. If this is not modified, the same object is returned
@@ -48,6 +52,12 @@ public class PerReplicaStatesFetcher {
           SolrException.ErrorCode.SERVER_ERROR,
           "Thread interrupted when loading per-replica states from " + path,
           e);
+    }
+  }
+
+  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
+    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
+      super(() -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
     }
   }
 }

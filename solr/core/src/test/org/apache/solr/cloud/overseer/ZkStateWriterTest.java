@@ -167,17 +167,17 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
-                new ZkWriteCommand(
-                        "prs1",
-                        new DocCollection(
-                                "prs1",
-                                new HashMap<>(),
-                                prsProps,
-                                DocRouter.DEFAULT,
-                                0,
-                                new PerReplicaStatesFetcher.LazyPrsSupplier(
-                                        zkClient, DocCollection.getCollectionPath("c1"))));
-        ZkStateWriter writer =
+            new ZkWriteCommand(
+                "prs1",
+                new DocCollection(
+                    "prs1",
+                    new HashMap<>(),
+                    prsProps,
+                    DocRouter.DEFAULT,
+                    0,
+                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                        zkClient, DocCollection.getCollectionPath("c1"))));
+          ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 
         // First write is flushed immediately
@@ -249,18 +249,20 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
-                new ZkWriteCommand(
-                        "prs1",
-                        new DocCollection(
-                                "prs1",
-                                new HashMap<>(),
-                                prsProps,
-                                DocRouter.DEFAULT,
-                                0,
-                                new PerReplicaStatesFetcher.LazyPrsSupplier(
-                                        zkClient, DocCollection.getCollectionPath("prs1"))));
+            new ZkWriteCommand(
+                "prs1",
+                new DocCollection(
+                    "prs1",
+                    new HashMap<>(),
+                    prsProps,
+                    DocRouter.DEFAULT,
+                    0,
+                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                        zkClient, DocCollection.getCollectionPath("prs1"))));
+                                       zkClient, DocCollection.getCollectionPath("prs1"))));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
+
 
         // First write is flushed immediately
         ClusterState clusterState =

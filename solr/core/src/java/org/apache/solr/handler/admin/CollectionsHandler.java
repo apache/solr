@@ -1342,7 +1342,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_);
+              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
           new ClusterStatus(
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
@@ -1972,14 +1972,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     private static class SplitShardHelper {
       static final CollectionOpCombiner OP_COMBINER =
           (op, req, h) -> {
-            if (!req.getParams()
-                .getBool(SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS))) {
+            String shardName = req.getParams().get(SHARD_ID_PROP);
+            if (shardName == null
+                || !req.getParams()
+                    .getBool(
+                        SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS))) {
               return Collections.singletonList(op);
             }
             // The split.setPreferredLeader prop is true.
             List<CollectionOperation> opSequence = new ArrayList<>();
             String collectionName = req.getParams().get(COLLECTION_PROP);
-            String shardName = req.getParams().get(SHARD_ID_PROP);
             DocCollection collection =
                 h.coreContainer
                     .getZkController()
@@ -2162,7 +2164,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                       replicas.add(shard.getLeader());
                     }
                     for (Replica replica : replicas) {
-                      String state = replica.getStr(ZkStateReader.STATE_PROP);
+                      State state = replica.getState();
                       if (log.isDebugEnabled()) {
                         log.debug(
                             "Checking replica status, collection={} replica={} state={}",
@@ -2171,7 +2173,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                             state);
                       }
                       if (!n.contains(replica.getNodeName())
-                          || !state.equals(Replica.State.ACTIVE.toString())) {
+                          || !state.equals(Replica.State.ACTIVE)) {
                         replicaNotAliveCnt++;
                         return false;
                       }
