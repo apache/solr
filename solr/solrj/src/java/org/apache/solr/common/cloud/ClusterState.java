@@ -26,12 +26,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -227,33 +225,49 @@ public class ClusterState implements JSONWriter.Writable {
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+  public static ClusterState createFromJson(
+      int version, byte[] bytes, Set<String> liveNodes, DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes);
+    return createFromCollectionMap(version, stateMap, liveNodes, prsSupplier);
+  }
+
+  @Deprecated
+  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+    return createFromJson(version, bytes, liveNodes, null);
   }
 
   public static ClusterState createFromCollectionMap(
-      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+      int version,
+      Map<String, Object> stateMap,
+      Set<String> liveNodes,
+      DocCollection.PrsSupplier prsSupplier) {
     Map<String, CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       @SuppressWarnings({"unchecked"})
       DocCollection coll =
-          collectionFromObjects(collectionName, (Map<String, Object>) entry.getValue(), version);
+          collectionFromObjects(
+              collectionName, (Map<String, Object>) entry.getValue(), version, prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
     return new ClusterState(collections, liveNodes);
   }
 
+  @Deprecated
+  public static ClusterState createFromCollectionMap(
+      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+    return createFromCollectionMap(version, stateMap, liveNodes, null);
+  }
+
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(
-      String name, Map<String, Object> objs, int version) {
+  public static DocCollection collectionFromObjects(
+      String name, Map<String, Object> objs, int version, DocCollection.PrsSupplier prsSupplier) {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
@@ -261,9 +275,6 @@ public class ClusterState implements JSONWriter.Writable {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
-      // this collection has replica states stored outside
-      ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
-      if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
@@ -291,7 +302,7 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version);
+    return new DocCollection(name, slices, props, router, version, prsSupplier);
   }
 
   @Override
@@ -424,63 +435,6 @@ public class ClusterState implements JSONWriter.Writable {
 
   public int size() {
     return collectionStates.size();
-  }
-
-  interface ReplicaStatesProvider {
-
-    Optional<ReplicaStatesProvider> get();
-
-    PerReplicaStates getStates();
-  }
-
-  private static final ReplicaStatesProvider EMPTYSTATEPROVIDER =
-      new ReplicaStatesProvider() {
-        @Override
-        public Optional<ReplicaStatesProvider> get() {
-          return Optional.empty();
-        }
-
-        @Override
-        public PerReplicaStates getStates() {
-          throw new RuntimeException("Invalid operation");
-        }
-      };
-
-  private static ThreadLocal<ReplicaStatesProvider> REPLICASTATES_PROVIDER = new ThreadLocal<>();
-
-  public static ReplicaStatesProvider getReplicaStatesProvider() {
-    return (REPLICASTATES_PROVIDER.get() == null)
-        ? EMPTYSTATEPROVIDER
-        : REPLICASTATES_PROVIDER.get();
-  }
-
-  public static void initReplicaStateProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
-    REPLICASTATES_PROVIDER.set(new StatesProvider(replicaStatesSupplier));
-  }
-
-  public static void clearReplicaStateProvider() {
-    REPLICASTATES_PROVIDER.remove();
-  }
-
-  private static class StatesProvider implements ReplicaStatesProvider {
-    private final Supplier<PerReplicaStates> replicaStatesSupplier;
-    private PerReplicaStates perReplicaStates;
-    private boolean isPerReplicaState = false;
-
-    public StatesProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
-      this.replicaStatesSupplier = replicaStatesSupplier;
-    }
-
-    @Override
-    public Optional<ReplicaStatesProvider> get() {
-      return isPerReplicaState ? Optional.of(this) : Optional.empty();
-    }
-
-    @Override
-    public PerReplicaStates getStates() {
-      if (perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
-      return perReplicaStates;
-    }
   }
 
   private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
