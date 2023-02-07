@@ -72,7 +72,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
     assertEquals(count, response.getResults().getNumFound());
   }
 
-  public class DocThread extends Thread {
+  public static class DocThread extends Thread {
 
     final SolrClient client;
     final String name;
