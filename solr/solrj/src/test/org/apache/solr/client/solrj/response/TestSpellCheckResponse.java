@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -42,7 +41,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
+    solrClientTestRule.startSolr();
 
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 

@@ -20,6 +20,7 @@ import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -34,6 +35,11 @@ import org.junit.rules.ExternalResource;
  * external projects that wish to test communicating with Solr, especially for plugin providers.
  */
 public abstract class SolrClientTestRule extends ExternalResource {
+
+  /** Starts the Solr server with empty solrHome. */
+  public void startSolr() {
+    startSolr(LuceneTestCase.createTempDir("solrhome"));
+  }
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
@@ -25,7 +24,7 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     // TODO
-    solrClientTestRule.startSolr(LuceneTestCase.createTempDir("solrhome"));
+    solrClientTestRule.startSolr();
 
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
