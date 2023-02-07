@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -80,8 +81,8 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final HttpSolrClient.Builder httpSolrClientBuilder;
   private volatile Set<String> urlParamNames = new HashSet<>();
 
-  private Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private Long connectionTimeout;
+  private volatile Long soTimeout;
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
@@ -118,10 +119,10 @@ public class LBHttpSolrClient extends LBSolrClient {
       synchronized (this) {
         httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
         if (connectionTimeout != null) {
-          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
+          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
         }
         if (soTimeout != null) {
-          httpSolrClientBuilder.withSocketTimeout(soTimeout);
+          httpSolrClientBuilder.withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS);
         }
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
@@ -135,10 +136,10 @@ public class LBHttpSolrClient extends LBSolrClient {
       final HttpSolrClient.Builder clientBuilder =
           new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
       if (connectionTimeout != null) {
-        clientBuilder.withConnectionTimeout(connectionTimeout);
+        clientBuilder.withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
       }
       if (soTimeout != null) {
-        clientBuilder.withSocketTimeout(soTimeout);
+        clientBuilder.withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS);
       }
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);

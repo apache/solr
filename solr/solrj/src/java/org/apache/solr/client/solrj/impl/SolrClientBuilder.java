@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -33,8 +34,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected ResponseParser responseParser;
   protected RequestWriter requestWriter;
   protected boolean useMultiPartPost;
-  protected Integer connectionTimeoutMillis = 15000;
-  protected Integer socketTimeoutMillis = 120000;
+  protected Long connectionTimeoutMillis = 15000l;
+  protected Long socketTimeoutMillis = 120000l;
   protected boolean followRedirects = false;
   protected Set<String> urlParamNames;
 
@@ -86,13 +87,41 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * Solr servers.
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
+   *
+   * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
    */
+  @Deprecated(since = "9.2")
   public B withConnectionTimeout(int connectionTimeoutMillis) {
+    withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    return getThis();
+  }
+
+  /**
+   * Tells {@link Builder} that created clients should obey the following timeout when connecting to
+   * Solr servers.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
+   */
+  public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     if (connectionTimeoutMillis < 0) {
       throw new IllegalArgumentException("connectionTimeoutMillis must be a non-negative integer.");
     }
 
-    this.connectionTimeoutMillis = connectionTimeoutMillis;
+    this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+    return getThis();
+  }
+
+  /**
+   * Tells {@link Builder} that created clients should set the following read timeout on all
+   * sockets.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
+   *
+   * <p>* @deprecated Please use {@link #withSocketTimeout(long, TimeUnit)}
+   */
+  @Deprecated(since = "9.2")
+  public B withSocketTimeout(int socketTimeoutMillis) {
+    withSocketTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     return getThis();
   }
 
@@ -102,12 +131,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    */
-  public B withSocketTimeout(int socketTimeoutMillis) {
+  public B withSocketTimeout(long socketTimeout, TimeUnit unit) {
     if (socketTimeoutMillis < 0) {
       throw new IllegalArgumentException("socketTimeoutMillis must be a non-negative integer.");
     }
 
-    this.socketTimeoutMillis = socketTimeoutMillis;
+    this.socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(socketTimeout, unit);
     return getThis();
   }
 }

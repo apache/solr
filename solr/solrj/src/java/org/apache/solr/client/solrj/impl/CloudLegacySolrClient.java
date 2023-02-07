@@ -107,11 +107,11 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
 
     if (builder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
+      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     if (builder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -176,10 +176,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
     lbBuilder.withHttpClient(httpClient);
     if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
+      lbBuilder.withConnectionTimeout(
+          cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     }
     if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+      lbBuilder.withSocketTimeout(
+          cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     }
     lbBuilder.withRequestWriter(new BinaryRequestWriter());
     lbBuilder.withResponseParser(new BinaryResponseParser());
