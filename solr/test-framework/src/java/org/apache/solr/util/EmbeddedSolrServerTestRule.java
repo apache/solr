@@ -49,6 +49,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
    * used to configure the server. If not, a new NodeConfig is built with default settings for
    * configuration.
    */
+  @Override
   public void startSolr(Path solrHome) {
     NodeConfig nodeConfig;
     if (Files.exists(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE))) {
@@ -90,6 +91,7 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   }
 
   /** Provides an EmbeddedSolrServer instance for administration actions */
+  @Override
   public EmbeddedSolrServer getAdminClient() {
     if (adminClient == null) {
       throw new RuntimeException("Solr must be started first");
