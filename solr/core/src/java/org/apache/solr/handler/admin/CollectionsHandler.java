@@ -1342,7 +1342,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_);
+              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
           new ClusterStatus(
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
@@ -2164,7 +2164,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                       replicas.add(shard.getLeader());
                     }
                     for (Replica replica : replicas) {
-                      String state = replica.getStr(ZkStateReader.STATE_PROP);
+                      State state = replica.getState();
                       if (log.isDebugEnabled()) {
                         log.debug(
                             "Checking replica status, collection={} replica={} state={}",
@@ -2173,7 +2173,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                             state);
                       }
                       if (!n.contains(replica.getNodeName())
-                          || !state.equals(Replica.State.ACTIVE.toString())) {
+                          || !state.equals(Replica.State.ACTIVE)) {
                         replicaNotAliveCnt++;
                         return false;
                       }
