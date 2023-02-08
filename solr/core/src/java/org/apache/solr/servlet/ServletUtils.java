@@ -314,7 +314,9 @@ public abstract class ServletUtils {
     if (request.getQueryString() != null) {
       spanBuilder.withTag("http.params", request.getQueryString());
     }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr");
+    spanBuilder.withTag(Tags.DB_TYPE, "solr")
+        .withTag("net.host.name", request.getServerName())
+        .withTag("net.host.port", request.getServerPort());
     return spanBuilder.start();
   }
 
