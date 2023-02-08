@@ -654,9 +654,9 @@ An example configuration using the overall and GCS-client properties can be seen
     <str name="location">/default/gcs/backup/location</str>
 
     <int name="gcsClientMaxRetries">5</int>
-    <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
+    <int name="gcsClientHttpInitialRetryDelayMillis">1500</int>
     <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
-    <int name="gcsClientMaxHttpRetryDelayMillis">10000</int>
+    <int name="gcsClientHttpMaxRetryDelayMillis">10000</int>
   </repository>
 </backup>
 ----

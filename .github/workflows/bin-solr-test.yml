@@ -34,8 +34,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-binsolr-
           ${{ runner.os }}-gradle-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
     - name: Test the bin/solr script
       run: ./gradlew integrationTests
     - name: Archive logs

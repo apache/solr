@@ -70,6 +70,13 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGetCurrentOtelConfigAsString() {
+    assertEquals(
+        "OTEL_K1=prop-k1; OTEL_K2=env-k2; OTEL_K3=prop-k3",
+        instance.getCurrentOtelConfigAsString());
+  }
+
+  @Test
   public void testGetEnvOrSysprop() {
     assertEquals("prop-k1", instance.getEnvOrSysprop("OTEL_K1"));
     assertEquals("env-k2", instance.getEnvOrSysprop("OTEL_K2"));
