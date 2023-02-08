@@ -116,8 +116,7 @@ public class SolrZkClient implements Closeable {
         builder.beforeReconnect,
         builder.zkACLProvider,
         builder.higherLevelIsClosed,
-        null
-        );
+        builder.compressor);
   }
 
   private SolrZkClient(
@@ -128,7 +127,7 @@ public class SolrZkClient implements Closeable {
       final OnReconnect onReconnect,
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
-      IsClosed higherLevelIsClosed
+      IsClosed higherLevelIsClosed,
       Compressor compressor) {
 
     if (zkServerAddress == null) {
@@ -1117,6 +1116,8 @@ public class SolrZkClient implements Closeable {
     public ZkACLProvider zkACLProvider;
     public IsClosed higherLevelIsClosed;
 
+    public Compressor compressor;
+
     public Builder url(String server) {
       this.zkServerAddress = server;
       return this;
@@ -1154,6 +1155,11 @@ public class SolrZkClient implements Closeable {
 
     public Builder closedCheck(IsClosed higherLevelIsClosed) {
       this.higherLevelIsClosed = higherLevelIsClosed;
+      return this;
+    }
+
+    public Builder compressor(Compressor c) {
+      this.compressor = c;
       return this;
     }
 

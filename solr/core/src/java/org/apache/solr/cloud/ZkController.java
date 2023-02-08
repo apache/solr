@@ -388,6 +388,7 @@ public class ZkController implements Closeable {
             .beforeConnect(() -> beforeReconnect(descriptorsSupplier))
             .aclProvider(zkACLProvider)
             .closedCheck(cc::isShutDown)
+            .compressor(compressor)
             .build();
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);

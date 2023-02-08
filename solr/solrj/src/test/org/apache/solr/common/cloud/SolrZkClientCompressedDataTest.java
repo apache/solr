@@ -44,7 +44,7 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), 60000);
+      zkClient = new SolrZkClient.Builder().url(server.getZkAddress()).timeout(60000).build();
       ZkController.createClusterZkNodes(zkClient);
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
