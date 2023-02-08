@@ -51,6 +51,10 @@ New Features
 
 * SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
 
+* SOLR-16608: Ability to compress state.json in Zookeeper (Justin Sweeney via noble)
+
+* SOLR-16646: New function query operator isnan to verify if value is NaN (Gabriel Magno via Kevin Risden)
+
 Improvements
 ---------------------
 
@@ -132,6 +136,10 @@ Improvements
   properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath` before starting MiniSolrCloudCluster when using
   the Solr test framework. (Tomás Fernández Löbbe)
 
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
+
+* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or bare property name.  (Eric Pugh)
+
 Optimizations
 ---------------------
 
@@ -183,6 +191,10 @@ Bug Fixes
 
 * SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
 
+* SOLR-16631: solr.allowUrls (former solr.shardsWhitelist) should treat hostnames in case insensitive way. (Paul Blanchaert via Eric Pugh)
+
+* SOLR-16647: Fix circuit breaker examples in solrconfig.xml (Colvin Cowie via Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -202,6 +214,8 @@ Build
 * SOLR-16624: Remove Gradle Groovy version override (Kevin Risden)
 
 * SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
+
+* SOLR-16641: Generate gradle.properties from gradlew, if absent (Colvin Cowie)
 
 Other Changes
 ---------------------
@@ -247,6 +261,12 @@ Other Changes
 * SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
+
+* SOLR-16629: Replace Solr thread safety annotations with JCIP. (David Smiley)
+
+* SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
+
+* SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
 
 ==================  9.1.1 ==================
 

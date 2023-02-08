@@ -831,6 +831,11 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
+    public DocCollection getOrNull() {
+      return cachedDocCollection;
+    }
+
+    @Override
     public boolean isLazilyLoaded() {
       return true;
     }
@@ -1680,25 +1685,41 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  /**
+   * fetch the collection that is already cached. This may return a null if it is not already cached
+   * This is an optimization to avoid fetching state if it is not modified. this is particularly
+   * true for PRS collections where state is rarely modified
+   */
+  private DocCollection fetchCachedCollection(String coll) {
+    String collectionPath = DocCollection.getCollectionPath(coll);
+    DocCollection c = null;
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(coll);
+    if (ref == null) return null;
+    c = ref.getOrNull();
+    if (c == null) return null;
+    Stat stat = null;
+    try {
+      stat = zkClient.exists(collectionPath, null, false);
+    } catch (Exception e) {
+      return null;
+    }
+    if (stat != null) {
+      if (!c.isModified(stat.getVersion(), stat.getCversion())) {
+        // we have the latest collection state
+        return c;
+      }
+      if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
+        // only PRS is modified. just fetch it and return the new collection
+        return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
+      }
+    }
+    return null;
+  }
+
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
     while (true) {
-      ClusterState.initReplicaStateProvider(
-          () -> {
-            try {
-              PerReplicaStates replicaStates =
-                  PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
-              log.debug(
-                  "per-replica-state ver: {} fetched for initializing {} ",
-                  replicaStates.cversion,
-                  collectionPath);
-              return replicaStates;
-            } catch (Exception e) {
-              // TODO
-              throw new RuntimeException(e);
-            }
-          });
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
@@ -1723,8 +1744,6 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
-      } finally {
-        ClusterState.clearReplicaStateProvider();
       }
     }
   }
@@ -1884,6 +1903,8 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
+    DocCollection coll = fetchCachedCollection(collection);
+    if (coll != null && predicate.matches(liveNodes, coll)) return;
 
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
@@ -1937,7 +1958,8 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
-
+    DocCollection coll = fetchCachedCollection(collection);
+    if (coll != null && predicate.test(coll)) return coll;
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();

@@ -20,11 +20,13 @@ package org.apache.solr.jersey;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import java.util.Map;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrVersion;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -53,6 +55,7 @@ public class JerseyApplications {
       register(MessageBodyWriters.JavabinMessageBodyWriter.class);
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(JacksonJsonProvider.class);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
@@ -79,13 +82,19 @@ public class JerseyApplications {
                   .in(RequestScoped.class);
             }
           });
-      // Logging - disabled by default but useful for debugging Jersey execution
-      //      setProperties(
-      //          Map.of(
-      //              "jersey.config.server.tracing.type",
-      //              "ALL",
-      //              "jersey.config.server.tracing.threshold",
-      //              "VERBOSE"));
+
+      setProperties(
+          Map.of(
+              // Explicit Jersey logging is disabled by default but useful for debugging
+              // "jersey.config.server.tracing.type", "ALL",
+              // "jersey.config.server.tracing.threshold", "VERBOSE",
+              "jersey.config.server.wadl.disableWadl", "true",
+              "jersey.config.beanValidation.disable.server", "true",
+              "jersey.config.server.disableAutoDiscovery", "true",
+              "jersey.config.server.disableJsonProcessing", "true",
+              "jersey.config.server.disableMetainfServicesLookup", "true",
+              "jersey.config.server.disableMoxyJson", "true",
+              "jersey.config.server.resource.validation.disable", "true"));
     }
   }
 
