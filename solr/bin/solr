@@ -88,6 +88,7 @@ CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
 # shellcheck disable=SC2164
 SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
+SOLR_TIP_SYM=$(cd "$SOLR_TIP"; pwd -L)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
@@ -110,7 +111,7 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
-# if pid dir is unset, deafult to $solr_tip/bin
+# if pid dir is unset, default to $solr_tip/bin
 : "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
 
 if [ -n "${SOLR_JAVA_HOME:-}" ]; then
@@ -2281,7 +2282,7 @@ function start_solr() {
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
