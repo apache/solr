@@ -38,6 +38,8 @@ If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 `./gradlew check` will assemble Solr and run all validation tasks unit tests.
 
+NOTE: the `check` command requires `perl` and `python3` to be present on your `PATH` to validate documentation.
+
 To build the final Solr artifacts run `./gradlew assemble`.
 
 Lastly, there is developer oriented documentation in `./dev-docs/README.adoc` that

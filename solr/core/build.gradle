@@ -115,8 +115,6 @@ dependencies {
 
   implementation 'commons-cli:commons-cli'
 
-  implementation 'net.jcip:jcip-annotations'
-
   implementation 'org.locationtech.spatial4j:spatial4j'
 
   implementation 'com.fasterxml.jackson.core:jackson-annotations'
@@ -172,6 +170,10 @@ dependencies {
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
   compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
   compileOnly 'org.osgi:osgi.annotation'
+
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
+  // -- Test Dependencies
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 

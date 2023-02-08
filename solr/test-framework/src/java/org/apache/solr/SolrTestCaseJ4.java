@@ -88,7 +88,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
-import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -178,7 +177,6 @@ import org.xml.sax.SAXException;
  * which core is used when loading the schema and solrconfig.xml, simply invoke the {@link
  * #initCore(String, String, String, String)} method.
  */
-@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 // ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
 @SuppressFileSystems("ExtrasFS")
 @RandomizeSSL()
@@ -304,19 +302,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
-
-    System.setProperty(
-        "pkiHandlerPrivateKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/priv_key512_pkcs8.pem")
-            .toExternalForm());
-    System.setProperty(
-        "pkiHandlerPublicKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/pub_key512.der")
-            .toExternalForm());
 
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();

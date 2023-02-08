@@ -381,7 +381,9 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             // No-Op
             return;
           }
-          log.info("Beginning periodic deletion of expired docs");
+          if (log.isInfoEnabled()) {
+            log.info("Beginning periodic deletion of expired docs on core: {}", core.getName());
+          }
 
           UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(deleteChainName);
           UpdateRequestProcessor proc = chain.createProcessor(req, rsp);
@@ -416,7 +418,9 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             }
           }
 
-          log.info("Finished periodic deletion of expired docs");
+          if (log.isInfoEnabled()) {
+            log.info("Finished periodic deletion of expired docs on core: {}", core.getName());
+          }
         } catch (IOException ioe) {
           log.error("IOException in periodic deletion of expired docs: ", ioe);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
