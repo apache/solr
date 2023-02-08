@@ -36,22 +36,24 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static SolrClient client = null;
 
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {}
 
-  public static JettySolrRunner jetty;
+  public static JettySolrRunner jetty = null;
   public static int port;
-  public static SolrClient client = null;
   public static String context;
 
   public static JettySolrRunner createAndStartJetty(
@@ -106,37 +108,14 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public static JettySolrRunner createAndStartJetty(
       String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
-    initCore(null, null, solrHome);
-
-    Path coresDir = createTempDir().resolve("cores");
-
-    Properties props = new Properties();
-    props.setProperty("name", DEFAULT_TEST_CORENAME);
-    props.setProperty("configSet", "collection1");
-    props.setProperty("config", "${solrconfig:solrconfig.xml}");
-    props.setProperty("schema", "${schema:schema.xml}");
-
-    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
-
-    Properties nodeProps = new Properties(nodeProperties);
-    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome);
-
-    jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
-    jetty.start();
-    port = jetty.getLocalPort();
-    log.info("Jetty Assigned Port#{}", port);
+    solrClientTestRule.startSolr(Path.of(solrHome));
+    solrClientTestRule.newCollection().create();
+    jetty = solrClientTestRule.getJetty();
     return jetty;
   }
 
   protected String getServerUrl() {
     return jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
-  }
-
-  @After
-  public synchronized void afterClass() throws Exception {
-    if (client != null) client.close();
-    client = null;
   }
 
   @AfterClass
