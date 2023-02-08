@@ -310,13 +310,15 @@ public abstract class ServletUtils {
             .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
             .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
             .withTag(Tags.HTTP_METHOD, request.getMethod())
-            .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
+            .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
+            .withTag("net.host.name", request.getServerName())
+            .withTag("net.host.port", request.getServerPort())
+            .withTag("net.peer.name", request.getRemoteHost())
+            .withTag("net.peer.port", request.getRemotePort());
     if (request.getQueryString() != null) {
       spanBuilder.withTag("http.params", request.getQueryString());
     }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr")
-        .withTag("net.host.name", request.getServerName())
-        .withTag("net.host.port", request.getServerPort());
+    spanBuilder.withTag(Tags.DB_TYPE, "solr");
     return spanBuilder.start();
   }
 
