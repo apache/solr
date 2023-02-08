@@ -169,6 +169,8 @@ Bug Fixes
 
 * SOLR-16647: Fix circuit breaker examples in solrconfig.xml (Colvin Cowie via Kevin Risden)
 
+* SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
