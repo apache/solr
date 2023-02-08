@@ -185,23 +185,32 @@ public class DenseVectorField extends FloatPointField {
 
   @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
-
-    ArrayList<IndexableField> fields = new ArrayList<>();
-
-    VectorValue vectorValue = new VectorValue(value);
-    if (field.indexed()) {
-      fields.add(createField(field, vectorValue));
-    }
-    if (field.stored()) {
-      if (vectorEncoding.equals(VectorEncoding.FLOAT32)) {
-        for (float vectorElement : vectorValue.getFloatVector()) {
-          fields.add(getStoredField(field, vectorElement));
-        }
-      } else {
-        fields.add(new StoredField(field.getName(), vectorValue.getByteVector()));
+    try {
+      ArrayList<IndexableField> fields = new ArrayList<>();
+      VectorValue vectorValue = new VectorValue(value);
+      if (field.indexed()) {
+        fields.add(createField(field, vectorValue));
       }
+      if (field.stored()) {
+        if (vectorEncoding.equals(VectorEncoding.FLOAT32)) {
+          for (float vectorElement : vectorValue.getFloatVector()) {
+            fields.add(getStoredField(field, vectorElement));
+          }
+        } else {
+          fields.add(new StoredField(field.getName(), vectorValue.getByteVector()));
+        }
+      }
+      return fields;
+    } catch (RuntimeException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error while creating field '"
+              + field
+              + "' from value '"
+              + value
+              + "', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]",
+          e);
     }
-    return fields;
   }
 
   @Override
@@ -338,8 +347,7 @@ public class DenseVectorField extends FloatPointField {
         SolrException.ErrorCode.BAD_REQUEST, "Cannot sort on a Dense Vector field");
   }
 
-  class VectorValue {
-
+  private class VectorValue {
     private final Object rawValue;
     private float[] floatVector;
     private BytesRef byteVector;
