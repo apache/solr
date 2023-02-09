@@ -107,7 +107,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
       assertTrue(
           "Tracer shim not registered with GlobalTracer",
           GlobalTracer.get().toString().contains("ClosableTracerShim"));
-      assertEquals("foo=bar,host.name=my.solr.host", System.getProperty("otel.resource.attributes"));
+      assertEquals(
+          "foo=bar,host.name=my.solr.host", System.getProperty("otel.resource.attributes"));
     } finally {
       cluster.shutdown();
       System.clearProperty("otel.resource.attributes");
