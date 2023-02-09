@@ -45,12 +45,14 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
+
     useRootSchema = random().nextBoolean();
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
-
-    solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
+    System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
+    System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
 
     solrClientTestRule
         .newCollection()

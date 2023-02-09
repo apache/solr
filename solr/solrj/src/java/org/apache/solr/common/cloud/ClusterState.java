@@ -391,14 +391,6 @@ public class ClusterState implements JSONWriter.Writable {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
 
-    /**
-     * return the collection if it is already loaded. lazy references may return null if it is not
-     * loaded already
-     */
-    public DocCollection getOrNull() {
-      return coll;
-    }
-
     public int getCount() {
       return gets.get();
     }
