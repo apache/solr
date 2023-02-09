@@ -197,6 +197,8 @@ Bug Fixes
 
 * SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
 
+* SOLR-16639: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (Naoto Minami)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
