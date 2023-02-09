@@ -80,12 +80,19 @@ IF %ERRORLEVEL% NEQ 0 goto fail
 @rem Setup the command line
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
-@rem Don't fork a daemon mode on initial run that generates local defaults.
-SET GRADLE_DAEMON_CTRL=
-IF NOT EXIST "%DIRNAME%\gradle.properties" SET GRADLE_DAEMON_CTRL=--no-daemon
+@rem START OF SOLR CUSTOMIZATION
+@rem Generate gradle.properties if they don't exist
+IF NOT EXIST "%APP_HOME%\gradle.properties" (
+  @rem local expansion is needed to check ERRORLEVEL inside control blocks.
+  setlocal enableDelayedExpansion
+  "%JAVA_EXE%" --source 11 "%APP_HOME%/buildSrc/src/main/java/org/apache/lucene/gradle/GradlePropertiesGenerator.java" "%APP_HOME%\gradle\template.gradle.properties" "%APP_HOME%\gradle.properties"
+  IF %ERRORLEVEL% NEQ 0 goto fail
+  endlocal
+)
+@rem END OF SOLR CUSTOMIZATION
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %GRADLE_DAEMON_CTRL% %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 
 :end
 @rem End local scope for the variables with windows NT shell

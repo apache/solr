@@ -65,6 +65,9 @@ In Solr 8, it was possible to add docValues to a schema without re-indexing via 
 Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.2
+=== Upgrade to Jetty 10.x
+* Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.
+
 === Jetty Configuration
 * Solr no longer duplicates certain Jetty "server" library dependencies between `server/lib` and `WEB-INF/lib` (jetty-util, jetty-io, etc.).
 This is an improvement to the binary release artifact, but Jetty does not allow web-apps (Solr) to share these libraries by default.
