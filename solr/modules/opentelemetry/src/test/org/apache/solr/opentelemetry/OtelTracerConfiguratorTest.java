@@ -93,6 +93,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception {
+    System.setProperty("otel.resource.attributes", "foo=bar");
+    System.setProperty("host", "my.solr.host");
     // Make sure the batch exporter times out before our thread lingering time of 10s
     instance.setDefaultIfNotConfigured("OTEL_BSP_SCHEDULE_DELAY", "1000");
     instance.setDefaultIfNotConfigured("OTEL_BSP_EXPORT_TIMEOUT", "2000");
@@ -105,8 +107,11 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
       assertTrue(
           "Tracer shim not registered with GlobalTracer",
           GlobalTracer.get().toString().contains("ClosableTracerShim"));
+      assertEquals("foo=bar,host.name=my.solr.host", System.getProperty("otel.resource.attributes"));
     } finally {
       cluster.shutdown();
+      System.clearProperty("otel.resource.attributes");
+      System.clearProperty("host");
     }
   }
 }
