@@ -195,6 +195,8 @@ Bug Fixes
 
 * SOLR-16647: Fix circuit breaker examples in solrconfig.xml (Colvin Cowie via Kevin Risden)
 
+* SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
+
 * SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
 Build
@@ -269,6 +271,9 @@ Other Changes
 * SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
 
 * SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
+
+* SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
+  (Joshua Ouma, David Smiley)
 
 ==================  9.1.1 ==================
 
