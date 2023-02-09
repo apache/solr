@@ -171,6 +171,8 @@ Bug Fixes
 
 * SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
 
+* SOLR-16628: Ensure that InputStreams are closed after Xml parsing (Michael Gibney, David Smiley, Kevin Risden)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
