@@ -173,8 +173,8 @@ public class SolrConfig implements MapSerializable {
     InputStream in;
     String fileName;
 
-    ResourceProvider(SolrResourceLoader loader, String res) throws IOException {
-      this.in = loader.openResource(res);
+    ResourceProvider(InputStream in) throws IOException {
+      this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
@@ -401,8 +401,8 @@ public class SolrConfig implements MapSerializable {
   }
 
   private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
-    try {
-      ResourceProvider rp = new ResourceProvider(loader, name);
+    try (InputStream in = loader.openResource(name)) {
+      ResourceProvider rp = new ResourceProvider(in);
       XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
       return new IndexSchemaFactory.VersionedConfig(
           rp.zkVersion,
