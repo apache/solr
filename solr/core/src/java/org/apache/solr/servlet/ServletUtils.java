@@ -311,10 +311,7 @@ public abstract class ServletUtils {
             .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
             .withTag(Tags.HTTP_METHOD, request.getMethod())
             .withTag(Tags.HTTP_URL, request.getRequestURL().toString())
-            .withTag("net.host.name", request.getServerName())
-            .withTag("net.host.port", request.getServerPort())
-            .withTag("net.peer.name", request.getRemoteHost())
-            .withTag("net.peer.port", request.getRemotePort());
+            .withTag(Tags.PEER_HOSTNAME, request.getServerName());
     if (request.getQueryString() != null) {
       spanBuilder.withTag("http.params", request.getQueryString());
     }

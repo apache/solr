@@ -20,15 +20,16 @@ import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentracing.Tracer;
+import org.apache.solr.core.TracerConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.solr.core.TracerConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * OpenTracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP
@@ -46,6 +47,12 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
+
+    // User-configurable trace attributes. Comma separated list of key=value. We always append current host name
+    String resourceAttributes = getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES");
+    resourceAttributes = resourceAttributes == null ? "" : resourceAttributes + ",";
+    resourceAttributes += "host.name=" + System.getProperty("host");
+    System.setProperty(envNameToSyspropName("OTEL_RESOURCE_ATTRIBUTES"), resourceAttributes);
 
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
