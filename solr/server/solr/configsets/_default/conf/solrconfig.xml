@@ -352,9 +352,9 @@
 
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
-         be.  Query strings that specify more clauses then this will result in an error.
+         be.  Query strings that specify more clauses than this will result in an error.
 
-         If this per-collection limit is greater then the global `maxBooleanClauses` limit
+         If this per-collection limit is greater than the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
       -->
