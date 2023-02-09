@@ -87,8 +87,9 @@ done
 CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
 # shellcheck disable=SC2164
-SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 SOLR_TIP_SYM=$(cd "$SOLR_TIP"; pwd -L)
+# shellcheck disable=SC2164
+SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
