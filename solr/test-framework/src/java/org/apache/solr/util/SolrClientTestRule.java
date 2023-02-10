@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -71,8 +72,11 @@ public abstract class SolrClientTestRule extends ExternalResource {
       // Without this, managed resources might be written to
       // conf/conf/_schema_analysis_stopwords_english.json because SolrResourceLoader points to the
       // wrong dir.
-      if (configSet != null && configSet.endsWith("/conf")) {
-        configSet = configSet.substring(0, configSet.length() - "/conf".length());
+      if (configSet != null) {
+        final var confSuffix = FileSystems.getDefault().getSeparator() + "conf";
+        if (configSet.endsWith(confSuffix)) {
+          configSet = configSet.substring(0, configSet.length() - confSuffix.length());
+        }
       }
 
       this.configSet = configSet;
