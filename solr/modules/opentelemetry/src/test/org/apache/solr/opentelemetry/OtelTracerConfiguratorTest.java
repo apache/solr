@@ -18,6 +18,7 @@ package org.apache.solr.opentelemetry;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import io.opentracing.util.GlobalTracer;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -108,7 +109,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
           "Tracer shim not registered with GlobalTracer",
           GlobalTracer.get().toString().contains("ClosableTracerShim"));
       assertEquals(
-          "foo=bar,host.name=my.solr.host", System.getProperty("otel.resource.attributes"));
+          List.of("host.name=my.solr.host", "foo=bar"),
+          List.of(System.getProperty("otel.resource.attributes").split(",")));
     } finally {
       cluster.shutdown();
       System.clearProperty("otel.resource.attributes");

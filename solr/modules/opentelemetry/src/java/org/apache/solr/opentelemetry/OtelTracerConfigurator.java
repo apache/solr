@@ -21,6 +21,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentracing.Tracer;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -46,13 +47,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
-
-    // User-configurable trace attributes. Comma separated list of key=value. We always append
-    // current host name
-    String resourceAttributes = getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES");
-    resourceAttributes = resourceAttributes == null ? "" : resourceAttributes + ",";
-    resourceAttributes += "host.name=" + System.getProperty("host");
-    System.setProperty(envNameToSyspropName("OTEL_RESOURCE_ATTRIBUTES"), resourceAttributes);
+    addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
 
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
@@ -71,6 +66,26 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
     Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
     return new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
+  }
+
+  /**
+   * Add explicit tags statically to all traces, independent of request. Attributes with same name
+   * supplied in ENV or SysProp will take precedence over attributes added in code.
+   */
+  void addOtelResourceAttributes(Map<String, String> attrsToAdd) {
+    String commaSepAttrs = getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES");
+    Map<String, String> attrs = new HashMap<>(attrsToAdd);
+    if (commaSepAttrs != null) {
+      attrs.putAll(
+          Arrays.stream(commaSepAttrs.split(","))
+              .map(e -> e.strip().split("="))
+              .collect(Collectors.toMap(kv -> kv[0], kv -> kv[1])));
+    }
+    System.setProperty(
+        envNameToSyspropName("OTEL_RESOURCE_ATTRIBUTES"),
+        attrs.entrySet().stream()
+            .map(e -> e.getKey() + "=" + e.getValue())
+            .collect(Collectors.joining(",")));
   }
 
   /** Prepares a string with all configuration K/V pairs sorted and semicolon separated */
