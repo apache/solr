@@ -54,8 +54,21 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   @Override
   public void startSolr(Path solrHome) {
+    startSolr(
+        solrHome,
+        new Properties(),
+        JettyConfig.builder()
+            .withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig())
+            .build());
+  }
+
+  public void startSolr(Path solrHome, JettyConfig jettyConfig) {
+    startSolr(solrHome, new Properties(), jettyConfig);
+  }
+
+  public void startSolr(Path solrHome, Properties nodeProps, JettyConfig jettyConfig) {
     try {
-      jetty = createSolr(solrHome);
+      jetty = createSolr(solrHome, nodeProps, jettyConfig);
       jetty.start();
       int port = jetty.getLocalPort();
       log.info("Jetty Assigned Port#{}", port);
@@ -65,30 +78,8 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     }
   }
 
-  private JettySolrRunner createSolr(Path solrHome) throws Exception {
-    Properties nodeProperties = new Properties();
-    JettyConfig jettyConfig =
-        JettyConfig.builder()
-            .withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig())
-            .build();
-    //
-    //    SolrTestCaseJ4.initCore(null, null, solrHome.toString());
-    //
-    //    Path coresDir = LuceneTestCase.createTempDir().resolve("cores");
-
-    //    Properties props = new Properties();
-    //    props.setProperty("name", SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
-    //    props.setProperty("configSet", "collection1");
-    //    props.setProperty("config", "${solrconfig:solrconfig.xml}");
-    //    props.setProperty("schema", "${schema:schema.xml}");
-
-    //    SolrTestCaseJ4.writeCoreProperties(
-    //        coresDir.resolve("core"), props, SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
-
-    Properties nodeProps = new Properties(nodeProperties);
-    //    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    //    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
-
+  private JettySolrRunner createSolr(Path solrHome, Properties nodeProps, JettyConfig jettyConfig)
+      throws Exception {
     return new JettySolrRunner(solrHome.toString(), nodeProps, jettyConfig);
   }
 

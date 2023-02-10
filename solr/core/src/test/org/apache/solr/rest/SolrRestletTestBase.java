@@ -16,7 +16,6 @@
  */
 package org.apache.solr.rest;
 
-import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -40,10 +39,10 @@ public abstract class SolrRestletTestBase extends RestTestBase {
   @BeforeClass
   public static void init() throws Exception {
 
-    Path tempDir = createTempDir();
-    Path coresDir = tempDir.resolve("cores");
+    //    Path tempDir = createTempDir();
+    //    Path coresDir = tempDir.resolve("cores");
 
-    System.setProperty("coreRootDirectory", coresDir.toString());
+    //    System.setProperty("coreRootDirectory", coresDir.toString());
     System.setProperty("configSetBaseDir", TEST_HOME());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -54,7 +53,7 @@ public abstract class SolrRestletTestBase extends RestTestBase {
     props.setProperty("schema", "schema-rest.xml");
     props.setProperty("configSet", "collection1");
 
-    writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
+    //    writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
     createJettyAndHarness(
         TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }

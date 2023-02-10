@@ -18,11 +18,8 @@ package org.apache.solr;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -76,16 +73,23 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
             .withServlets(extraServlets)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-
+    ;
     Properties nodeProps = new Properties();
-    if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
     if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
     if (System.getProperty("solr.data.dir") == null
         && System.getProperty("solr.hdfs.home") == null) {
       nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
+    System.setProperty("solr.test.sys.prop2", "anyValue"); // TODO Why not set nodeProps
 
-    return createAndStartJetty(solrHome, nodeProps, jettyConfig);
+    solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
+    solrClientTestRule
+        .newCollection()
+        .withConfigFile(configFile)
+        .withSchemaFile(schemaFile)
+        .create();
+    jetty = solrClientTestRule.getJetty();
+    return jetty;
   }
 
   public static JettySolrRunner createAndStartJetty(
@@ -95,7 +99,11 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
   public static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
       throws Exception {
-    return createAndStartJetty(solrHome, new Properties(), jettyConfig);
+
+    solrClientTestRule.startSolr(Path.of(solrHome), jettyConfig);
+    solrClientTestRule.newCollection().create();
+    jetty = solrClientTestRule.getJetty();
+    return jetty;
   }
 
   public static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
@@ -108,7 +116,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public static JettySolrRunner createAndStartJetty(
       String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
-    solrClientTestRule.startSolr(Path.of(solrHome));
+    solrClientTestRule.startSolr(Path.of(solrHome), nodeProperties, jettyConfig);
     solrClientTestRule.newCollection().create();
     jetty = solrClientTestRule.getJetty();
     return jetty;
@@ -179,12 +187,12 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
       Properties props = new Properties();
       props.setProperty("name", "collection1");
-      try (Writer writer =
-          new OutputStreamWriter(
-              Files.newOutputStream(collection1Dir.resolve("core.properties")),
-              StandardCharsets.UTF_8)) {
-        props.store(writer, null);
-      }
+      //      try (Writer writer =
+      //          new OutputStreamWriter(
+      //              Files.newOutputStream(collection1Dir.resolve("core.properties")),
+      //              StandardCharsets.UTF_8)) {
+      //        props.store(writer, null);
+      //      }
       return tempSolrHome.toString();
     } catch (RuntimeException e) {
       throw e;
