@@ -438,9 +438,6 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
-    if (collection.isPerReplicaState() && oldReplica != null) {
-      if (!isAnyPropertyChanged(replica, oldReplica)) return ZkWriteCommand.NO_OP;
-    }
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
