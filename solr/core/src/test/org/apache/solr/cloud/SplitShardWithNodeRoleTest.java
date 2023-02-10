@@ -1,5 +1,6 @@
 package org.apache.solr.cloud;
 
+import java.util.Locale;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,8 +37,11 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
     String overseerLeader = getOverseerLeader(zkClient());
     String msg =
         String.format(
+            Locale.ROOT,
             "Overseer leader should be from overseer %d or %d  node but %s",
-            overseer1.getLocalPort(), overseer2.getLocalPort(), overseerLeader);
+            overseer1.getLocalPort(),
+            overseer2.getLocalPort(),
+            overseerLeader);
     assertTrue(
         msg,
         overseerLeader.contains(String.valueOf(overseer1.getLocalPort()))
