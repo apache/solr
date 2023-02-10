@@ -78,6 +78,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     if (commaSepAttrs != null) {
       attrs.putAll(
           Arrays.stream(commaSepAttrs.split(","))
+              .filter(e -> e.contains("="))
               .map(e -> e.strip().split("="))
               .collect(Collectors.toMap(kv -> kv[0], kv -> kv[1])));
     }
