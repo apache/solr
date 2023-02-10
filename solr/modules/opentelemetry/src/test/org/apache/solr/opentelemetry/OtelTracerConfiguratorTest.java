@@ -94,7 +94,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception {
-    System.setProperty("otel.resource.attributes", "foo=bar");
+    System.setProperty("otel.resource.attributes", "foo=bar,ILLEGAL-LACKS-VALUE,");
     System.setProperty("host", "my.solr.host");
     // Make sure the batch exporter times out before our thread lingering time of 10s
     instance.setDefaultIfNotConfigured("OTEL_BSP_SCHEDULE_DELAY", "1000");
