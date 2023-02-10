@@ -357,7 +357,7 @@ public class DenseVectorField extends FloatPointField {
     }
 
     public BytesRef getByteVector() {
-      if (byteVector != null) {
+      if (byteVector == null) {
         getFloatVector();
         byteVector = new BytesRef(new byte[floatVector.length]);
         for (int j = 0; j < byteVector.length; j++) {

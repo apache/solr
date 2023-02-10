@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
@@ -473,6 +474,80 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
           "Function queries are not supported for Dense Vector fields.",
           req("q", "*:*", "fl", "id,field(vector)"),
           SolrException.ErrorCode.BAD_REQUEST);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector", Arrays.asList(1.1, 2.2, 3.3, 4.4));
+      doc.addField("vector_byte_encoding", Arrays.asList(5.5, 6.6, 7.7, 8.8));
+      doc.addField("string_field", "test");
+
+      assertU(adoc(doc));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]",
+          "/response/docs/[0]/vector_byte_encoding==[5,6,7,8]",
+          "/response/docs/[0]/string_field==test");
+
+      SolrInputDocument updateDoc = new SolrInputDocument();
+      updateDoc.addField("id", "0");
+      updateDoc.addField("string_field", ImmutableMap.of("set", "other test"));
+      assertU(adoc(updateDoc));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]",
+          "/response/docs/[0]/vector_byte_encoding==[5,6,7,8]",
+          "/response/docs/[0]/string_field=='other test'");
+
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorFieldOnAtomicUpdate_shouldBeUpdatedCorrectly() throws Exception {
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector", Arrays.asList(1.1, 2.2, 3.3, 4.4));
+      doc.addField("vector_byte_encoding", Arrays.asList(5.5, 6.6, 7.7, 8.8));
+      doc.addField("string_field", "test");
+
+      assertU(adoc(doc));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]",
+          "/response/docs/[0]/vector_byte_encoding==[5,6,7,8]",
+          "/response/docs/[0]/string_field==test");
+
+      SolrInputDocument updateDoc = new SolrInputDocument();
+      updateDoc.addField("id", "0");
+      updateDoc.addField("vector", ImmutableMap.of("set", Arrays.asList(9.2, 2.2, 3.3, 5.2)));
+      updateDoc.addField(
+          "vector_byte_encoding", ImmutableMap.of("set", Arrays.asList(8.1, 3.2, 1.3, 3.2)));
+      assertU(adoc(updateDoc));
+      assertU(commit());
+
+      assertJQ(
+          req("q", "id:0", "fl", "*"),
+          "/response/docs/[0]/vector==[9.2,2.2,3.3,5.2]",
+          "/response/docs/[0]/vector_byte_encoding==[8,3,1,3]",
+          "/response/docs/[0]/string_field=='test'");
+
     } finally {
       deleteCore();
     }
