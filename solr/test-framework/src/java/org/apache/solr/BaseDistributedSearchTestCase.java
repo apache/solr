@@ -51,8 +51,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -65,6 +63,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -534,16 +534,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    try {
-      // setup the client...
-      String baseUrl = buildUrl(port);
-      if (baseUrl.endsWith("/")) {
-        return getHttpSolrClient(baseUrl + DEFAULT_TEST_CORENAME);
-      } else {
-        return getHttpSolrClient(baseUrl + "/" + DEFAULT_TEST_CORENAME);
-      }
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    return getHttpSolrClient(getServerUrl(port));
+  }
+
+  protected String getServerUrl(int port) {
+    String baseUrl = buildUrl(port);
+    if (baseUrl.endsWith("/")) {
+      return baseUrl + DEFAULT_TEST_CORENAME;
+    } else {
+      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
     }
   }
 

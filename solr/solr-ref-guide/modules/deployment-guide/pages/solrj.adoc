@@ -56,6 +56,8 @@ compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-full-versi
 
 If you want to use `CloudSolrClient` _and_ have it talk directly to ZooKeeper, you will need to add a dependency on the `solr-solrj-zookeeper` artifact.
 
+If you want to build and use xref:query-guide:streaming-expressions.adoc[Streaming Expressions] classes in your Java code, you will need to add a dependency on the `solr-solrj-streaming` artifact.
+
 === Adding SolrJ to the Classpath Manually
 
 If you are not using one of the above build system, it's still easy to add SolrJ to your build.

@@ -219,8 +219,8 @@ _Query Circuit Breakers_
 
 See xref:deployment-guide:circuit-breakers.adoc[] for more details
 
-* `query.useCircuitBreakers`
-* `query.memoryCircuitBreakerThresholdPct`
+* `query.memEnabled`
+* `query.memThreshold`
 
 *RequestDispatcher Settings*
 

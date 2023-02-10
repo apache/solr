@@ -64,6 +64,24 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.2
+=== Upgrade to Jetty 10.x
+* Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.
+
+=== Jetty Configuration
+* Solr no longer duplicates certain Jetty "server" library dependencies between `server/lib` and `WEB-INF/lib` (jetty-util, jetty-io, etc.).
+This is an improvement to the binary release artifact, but Jetty does not allow web-apps (Solr) to share these libraries by default.
+The `server/contexts/solr-jetty-context.xml` now explicitly removes these restrictions, allowing Solr to share these "server" jars which now live in `server/lib/ext`.
+* The "Transient Cores" feature is now deprecated.
+
+=== Tracing
+* A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
+  At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
+  Users should start migrating to the new module to prepare for a smooth transition.
+
+== Solr 9.1.1
+* Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
+
 == Solr 9.1
 === Querying and Indexing
 * Added Lucene91HnswVectorsFormat codec for DenseVectorField. In order to use the new codec, reindex is necessary.

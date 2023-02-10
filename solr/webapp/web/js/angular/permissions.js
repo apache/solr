@@ -38,17 +38,19 @@ const permissions = {
 }
 
 /**
- * Returns true if all required permissions are available. Also returns true if RBAC is not enabled
+ * Returns true if all required permissions are available. Also returns true if RBAC is not enabled,
+ * or user has the 'all' permission.
  * @param requiredPermissions the permission(s) to check for, can be a single or array
  * @param userPermissions the actual permissions of current user
  * @returns {boolean}
  */
-var hasAllRequiredPermissions = function (requiredPermissions, userPermissions) {
+let hasAllRequiredPermissions = function (requiredPermissions, userPermissions) {
   if (!Array.isArray(requiredPermissions)) {
     requiredPermissions = [requiredPermissions];
   }
   if (userPermissions !== undefined) {
-    return requiredPermissions.every(elem => userPermissions.indexOf(elem) > -1);
+    return userPermissions.includes(permissions.ALL_PERM)
+      || requiredPermissions.every(elem => userPermissions.indexOf(elem) > -1);
   } else {
     // RBAC not enabled, always return true
     return true;

@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -58,7 +57,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   @Test
   public void doBlobHandlerTest() throws Exception {
 
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
       CollectionAdminResponse response1;
       CollectionAdminRequest.Create createCollectionRequest =
           CollectionAdminRequest.createCollection(".system", 1, 2);

@@ -24,9 +24,8 @@ description = 'Solr webapp'
 
 configurations {
   war {}
-  serverLib {}
-  solrJettyClientLib {}
-  solrCore {}
+  serverLib
+  solrCore
 }
 
 dependencies {
@@ -34,8 +33,7 @@ dependencies {
   serverLib project(path: ":solr:server", configuration: "libExt")
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")
-  solrJettyClientLib project(path: ":solr:core", configuration: "jettyClientImplementation")
-  implementation(configurations.solrCore - configurations.serverLib + configurations.solrJettyClientLib)
+  implementation(configurations.solrCore - configurations.serverLib)
 }
 
 war {

@@ -34,14 +34,14 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,12 +66,7 @@ public final class ReplicationTestHelper {
   }
 
   public static SolrClient createNewSolrClient(String baseUrl) {
-    try {
-      // set up the client...
-      return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
   }
 
   public static int index(SolrClient s, Object... fields) throws Exception {

@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -203,6 +204,23 @@ public class PackageStoreAPI {
           List<String> signatures = readSignatures(req, buf);
           MetaData meta = _createJsonMetaData(buf, signatures);
           PackageStore.FileType type = packageStore.getType(path, true);
+          boolean[] returnAfter = new boolean[] {false};
+          if (type == PackageStore.FileType.FILE) {
+            // a file already exist at the same path
+            packageStore.get(
+                path,
+                fileEntry -> {
+                  if (meta.equals(fileEntry.meta)) {
+                    // the file content is same too. this is an idempotent put
+                    // do not throw an error
+                    returnAfter[0] = true;
+                    rsp.add(CommonParams.FILE, path);
+                    rsp.add("message", "File with same metadata exists ");
+                  }
+                },
+                true);
+          }
+          if (returnAfter[0]) return;
           if (type != PackageStore.FileType.NOFILE) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST, "Path already exists " + path);
@@ -388,6 +406,22 @@ public class PackageStoreAPI {
       if (!otherAttribs.isEmpty()) {
         otherAttribs.forEach(ew.getBiConsumer());
       }
+    }
+
+    @Override
+    public int hashCode() {
+      return sha512.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that instanceof MetaData) {
+        MetaData metaData = (MetaData) that;
+        return Objects.equals(sha512, metaData.sha512)
+            && Objects.equals(signatures, metaData.signatures)
+            && Objects.equals(otherAttribs, metaData.otherAttribs);
+      }
+      return false;
     }
   }
 

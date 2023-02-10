@@ -49,6 +49,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -61,6 +62,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -76,14 +78,19 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceNotFoundException;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SafeXMLParsing;
@@ -482,6 +489,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     Elevation elevation = getElevation(rb);
     if (elevation != null) {
       setQuery(rb, elevation);
+      setFilters(rb, elevation);
       setSort(rb, elevation);
     }
 
@@ -551,6 +559,108 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       rb.setQuery(queryBuilder.build());
     }
+  }
+
+  /**
+   * Updates any filters that have been tagged for exclusion. Filters can be tagged for exclusion
+   * via the syntax fq={!tag=t1}field1:value1&elevate.excludeTags=t1 This method modifies each
+   * "excluded" filter so that it becomes a boolean OR of the original filter with an "include
+   * query" that matches the elevated documents by their IDs. To be clear, the "excluded" filters
+   * are not ignored entirely, but rather broadened so that the elevated documents are allowed
+   * through.
+   */
+  private void setFilters(ResponseBuilder rb, Elevation elevation) {
+    SolrParams params = rb.req.getParams();
+
+    String tagStr = params.get(QueryElevationParams.ELEVATE_EXCLUDE_TAGS);
+    if (StringUtils.isEmpty(tagStr)) {
+      // the parameter that specifies tags for exclusion was not provided or had no value
+      return;
+    }
+
+    List<String> excludeTags = StrUtils.splitSmart(tagStr, ',');
+    excludeTags.removeIf(s -> StringUtils.isBlank(s));
+    if (excludeTags.isEmpty()) {
+      // the parameter that specifies tags for exclusion was provided but the tag names were blank
+      return;
+    }
+
+    List<Query> filters = rb.getFilters();
+    if (filters == null || filters.isEmpty()) {
+      // no filters were provided
+      return;
+    }
+
+    Set<Query> excludeSet = QueryUtils.getTaggedQueries(rb.req, excludeTags);
+    if (excludeSet.isEmpty()) {
+      // no filters were tagged
+      return;
+    }
+
+    List<Query> updatedFilters = new ArrayList<Query>();
+
+    for (Query filter : filters) {
+
+      // filters that weren't tagged for exclusion are left unchanged
+      if (!excludeSet.contains(filter)) {
+        updatedFilters.add(filter);
+        continue;
+      }
+
+      // if a collapse filter was tagged for exclusion, throw an Exception; the desired semantics of
+      // tagging a collapse filter this way is unclear; furthermore, CollapsingPostFilter is a
+      // special case that cannot be included as a clause in a BooleanQuery; its createWeight()
+      // method would throw an UnsupportedOperationException when called by the BooleanQuery's own
+      // createWeight()
+      if (filter instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "collapse filter cannot be tagged for exclusion");
+      }
+
+      // we're looking at a filter that has been tagged for exclusion; first, figure out whether it
+      // avoids the cache; if the original filter had the Local Param "cache" and/or "cost", it will
+      // be an ExtendedQuery; unless it specifically had cache=false, it's cacheable
+      boolean avoidCache =
+          (filter instanceof ExtendedQuery) && !((ExtendedQuery) filter).getCache();
+
+      // transform the filter into a boolean OR of the original filter with the "include query"
+      // matching the elevated docs
+      BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+      if (avoidCache || filter instanceof FilterQuery) {
+        // if the original filter avoids the cache, we add it to the BooleanQuery as-is; we do the
+        // same if the filter is _already_ a FilterQuery -- there's no need to wrap it in another;
+        // note that FilterQuery.getCache() returns false, so in this scenario, avoidCache will be
+        // true and the instanceof check is not necessary; however, it is left in place for clarity
+        // and as a failsafe in case the behavior of FilterQuery.getCache() should ever change
+        queryBuilder.add(filter, BooleanClause.Occur.SHOULD);
+      } else {
+        // the original filter is cacheable and not already a FilterQuery; wrap it in a FilterQuery
+        // so that it always consults the filter cache even though it will be represented as a
+        // clause within a larger non-caching BooleanQuery
+        queryBuilder.add(new FilterQuery(filter), BooleanClause.Occur.SHOULD);
+      }
+      queryBuilder.add(elevation.includeQuery, BooleanClause.Occur.SHOULD);
+      BooleanQuery updatedFilter = queryBuilder.build();
+
+      // we don't want to cache the BooleanQuery that we've built from the original filter and the
+      // elevated doc ids; the first clause of the BooleanQuery will be a FilterQuery if the
+      // original filter was cacheable, and FilterQueries always consult the cache; the second
+      // clause is a set of doc ids that should be fast on its own
+      WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
+      wrappedUpdatedFilter.setCache(false);
+
+      // if the original filter is an ExtendedQuery, it may have a user-provided cost; this cost
+      // would be ignored for nested queries so we copy it to the outer WrappedQuery; this allows it
+      // serve as a tiebreaker for filters that produce the same internal cost in the case where the
+      // user-provided cost is >= 100
+      if (filter instanceof ExtendedQuery) {
+        wrappedUpdatedFilter.setCost(((ExtendedQuery) filter).getCost());
+      }
+
+      updatedFilters.add(wrappedUpdatedFilter);
+    }
+
+    rb.setFilters(updatedFilters);
   }
 
   private void setSort(ResponseBuilder rb, Elevation elevation) throws IOException {

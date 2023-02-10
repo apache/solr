@@ -19,13 +19,12 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -47,7 +45,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -71,6 +68,7 @@ import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -350,31 +348,35 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   protected void corruptIndexFiles() throws IOException {
-    Collection<Slice> slices = getCollectionState(getCollectionName()).getSlices();
-    Slice slice = slices.iterator().next();
-    JettySolrRunner leaderNode = cluster.getReplicaJetty(slice.getLeader());
+    List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
+    Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
+    JettySolrRunner leaderNode = cluster.getReplicaJetty(leader);
 
-    SolrCore solrCore = leaderNode.getCoreContainer().getCore(slice.getLeader().getCoreName());
-    Set<String> fileNames =
-        new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
-    File indexFolder = new File(solrCore.getIndexDir());
-    File fileGetCorrupted =
-        Stream.of(Objects.requireNonNull(indexFolder.listFiles()))
-            .filter(x -> fileNames.contains(x.getName()))
-            .findAny()
-            .get();
-    try (FileInputStream fis = new FileInputStream(fileGetCorrupted)) {
-      byte[] contents = fis.readAllBytes();
-      for (int i = 1; i < 5; i++) {
-        byte key = (byte) (contents.length - CodecUtil.footerLength() - i);
+    final Path fileToCorrupt;
+    try (SolrCore solrCore = leaderNode.getCoreContainer().getCore(leader.getCoreName())) {
+      Set<String> fileNames =
+          new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
+      final List<Path> indexFiles;
+      try (Stream<Path> indexFolderFiles = Files.list(Path.of(solrCore.getIndexDir()))) {
+        indexFiles =
+            indexFolderFiles
+                .filter(x -> fileNames.contains(x.getFileName().toString()))
+                .sorted()
+                .collect(Collectors.toList());
+      }
+      if (indexFiles.isEmpty()) {
+        return;
+      }
+      fileToCorrupt = indexFiles.get(random().nextInt(indexFiles.size()));
+    }
+    final byte[] contents = Files.readAllBytes(fileToCorrupt);
+    for (int i = 1; i < 5; i++) {
+      int key = contents.length - CodecUtil.footerLength() - i;
+      if (key >= 0) {
         contents[key] = (byte) (contents[key] + 1);
       }
-      try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
-        fos.write(contents);
-      }
-    } finally {
-      solrCore.close();
     }
+    Files.write(fileToCorrupt, contents);
   }
 
   private void addDummyFileToIndex(BackupRepository repository, URI indexDir, String fileName)

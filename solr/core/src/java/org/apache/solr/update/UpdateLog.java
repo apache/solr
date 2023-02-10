@@ -1808,7 +1808,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       versionInfo.unblockUpdates();
     }
 
-    if (recoveryExecutor.isShutdown()) {
+    if (ExecutorUtil.isShutdown(recoveryExecutor)) {
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);

@@ -508,7 +508,7 @@ public class SolrDocumentFetcher {
                   public void stringField(FieldInfo fieldInfo, String value) throws IOException {
                     Objects.requireNonNull(value, "String value should not be null");
                     bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
-                    bytesRef.length = value.length();
+                    bytesRef.length = bytesRef.bytes.length;
                     done = true;
                   }
 
