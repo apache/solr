@@ -136,8 +136,8 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   private static VersionedConfig loadConfig(
       InputStream schemaInputStream, SolrResourceLoader loader, String name) {
-    try {
-      InputStream is = (schemaInputStream == null ? loader.openResource(name) : schemaInputStream);
+    try (InputStream is =
+        (schemaInputStream == null ? loader.openResource(name) : schemaInputStream)) {
       ConfigNode node = getParsedSchema(is, loader, name);
       int version =
           is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream
