@@ -1,4 +1,7 @@
 {
+  "racerd-ignore-classes" : [
+    "org.apache.solr.common.util.ObjectReleaseTracker"
+  ],
   "quandary-sources": [
     {
       "procedure": "javax.servlet.http.HttpServletRequest.getParameter",
