@@ -126,7 +126,6 @@ import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.handler.admin.api.CoreAdminAPIBase;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
@@ -1097,17 +1096,17 @@ public class CoreContainer {
                       .in(Singleton.class);
                 }
               })
-              .register(
-                      new AbstractBinder() {
-                        @Override
-                        protected void configure() {
-                          bindFactory(
-                                  new InjectionFactories.SingletonFactory<>(
-                                          coreAdminHandler.getCoreAdminAsyncTracker()))
-                                  .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
-                                  .in(Singleton.class);
-                        }
-                      });
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(
+                          new InjectionFactories.SingletonFactory<>(
+                              coreAdminHandler.getCoreAdminAsyncTracker()))
+                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                      .in(Singleton.class);
+                }
+              });
       jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
     }
 
