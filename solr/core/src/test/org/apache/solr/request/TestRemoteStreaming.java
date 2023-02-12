@@ -32,11 +32,11 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -116,8 +116,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("stream.url", makeDeleteAllUrl());
-    SolrException se = expectThrows(SolrException.class, () -> getSolrClient().query(query));
-    assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
+    try (SolrClient solrClient = createNewSolrClient()) {
+      SolrException se = expectThrows(SolrException.class, () -> solrClient.query(query));
+      assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
+    }
   }
 
   /** Compose an HTTP GET url that will delete all the data. */

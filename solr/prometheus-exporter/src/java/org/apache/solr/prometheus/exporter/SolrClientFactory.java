@@ -36,11 +36,10 @@ public class SolrClientFactory {
   public Http2SolrClient createStandaloneSolrClient(String solrHost) {
     Http2SolrClient http2SolrClient =
         new Http2SolrClient.Builder(solrHost)
-            .idleTimeout(settings.getHttpReadTimeout())
-            .connectionTimeout(settings.getHttpConnectionTimeout())
+            .withIdleTimeout(settings.getHttpReadTimeout())
+            .withConnectionTimeout(settings.getHttpConnectionTimeout())
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    http2SolrClient.setParser(new NoOpResponseParser("json"));
 
     return http2SolrClient;
   }
@@ -56,11 +55,10 @@ public class SolrClientFactory {
                 Optional.ofNullable(parser.getChrootPath()))
             .withInternalClientBuilder(
                 new Http2SolrClient.Builder()
-                    .idleTimeout(settings.getHttpReadTimeout())
-                    .connectionTimeout(settings.getHttpConnectionTimeout()))
+                    .withIdleTimeout(settings.getHttpReadTimeout())
+                    .withConnectionTimeout(settings.getHttpConnectionTimeout()))
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    client.setParser(new NoOpResponseParser("json"));
 
     client.connect();
 

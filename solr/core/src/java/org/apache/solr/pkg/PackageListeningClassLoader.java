@@ -87,11 +87,13 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
    */
   public SolrPackageLoader.SolrPackage.Version findPackageVersion(
       PluginInfo.ClassName cName, boolean registerListener) {
+    SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(cName.pkg);
+    if (p == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "No such package: " + cName.pkg);
+    }
     SolrPackageLoader.SolrPackage.Version theVersion =
-        coreContainer
-            .getPackageLoader()
-            .getPackage(cName.pkg)
-            .getLatest(pkgVersionSupplier.apply(cName.pkg));
+        p.getLatest(pkgVersionSupplier.apply(cName.pkg));
     if (registerListener) {
       classNameVsPackageName.put(cName.original, cName.pkg);
       PackageAPI.PkgVersion pkgVersion = theVersion.getPkgVersion();

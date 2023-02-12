@@ -62,7 +62,6 @@ public abstract class LBSolrClient extends SolrClient {
   // defaults
   protected static final Set<Integer> RETRY_CODES =
       new HashSet<>(Arrays.asList(404, 403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT =
       5; // number of times we'll ping dead servers not in the server list
 
@@ -78,14 +77,12 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  protected int aliveCheckInterval = LBHttpSolrClient.Builder.CHECK_INTERVAL;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
-
-  protected Set<String> queryParams = new HashSet<>();
 
   static {
     solrQuery.setRows(0);
@@ -320,23 +317,6 @@ public abstract class LBSolrClient extends SolrClient {
     return new ServerWrapper(baseUrl);
   }
 
-  public Set<String> getQueryParams() {
-    return queryParams;
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
-  }
-
-  public void addQueryParams(String queryOnlyParam) {
-    this.queryParams.add(queryOnlyParam);
-  }
-
   public static String normalize(String server) {
     if (server.endsWith("/")) server = server.substring(0, server.length() - 1);
     return server;
@@ -462,14 +442,16 @@ public abstract class LBSolrClient extends SolrClient {
    * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
    * this to set that interval
    *
-   * @param interval time in milliseconds
+   * @param aliveCheckInterval time in milliseconds
+   * @deprecated use {@link LBHttpSolrClient.Builder#setAliveCheckInterval(int)} instead
    */
-  public void setAliveCheckInterval(int interval) {
-    if (interval <= 0) {
+  @Deprecated
+  public void setAliveCheckInterval(int aliveCheckInterval) {
+    if (aliveCheckInterval <= 0) {
       throw new IllegalArgumentException(
-          "Alive check interval must be " + "positive, specified value = " + interval);
+          "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
     }
-    this.interval = interval;
+    this.aliveCheckInterval = aliveCheckInterval;
   }
 
   private void startAliveCheckExecutor() {
@@ -483,8 +465,8 @@ public abstract class LBSolrClient extends SolrClient {
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.interval,
-              this.interval,
+              this.aliveCheckInterval,
+              this.aliveCheckInterval,
               TimeUnit.MILLISECONDS);
         }
       }
@@ -512,7 +494,9 @@ public abstract class LBSolrClient extends SolrClient {
    * @param parser Default Response Parser chosen to parse the response if the parser were not
    *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated Pass in a configured {@link SolrClient} instead
    */
+  @Deprecated
   public void setParser(ResponseParser parser) {
     this.parser = parser;
   }
@@ -521,7 +505,9 @@ public abstract class LBSolrClient extends SolrClient {
    * Changes the {@link RequestWriter} that will be used for the internal SolrServer objects.
    *
    * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
+   * @deprecated Pass in a configured {@link SolrClient} instead
    */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }

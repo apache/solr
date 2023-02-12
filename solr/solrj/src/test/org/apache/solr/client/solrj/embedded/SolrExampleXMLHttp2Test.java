@@ -24,6 +24,10 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.BeforeClass;
 
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the xml codec for
+ * communication.
+ */
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -32,15 +36,13 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      Http2SolrClient client =
-          new Http2SolrClient.Builder(url).connectionTimeout(DEFAULT_CONNECTION_TIMEOUT).build();
-      client.setParser(new XMLResponseParser());
-      client.setRequestWriter(new RequestWriter());
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+
+    Http2SolrClient client =
+        new Http2SolrClient.Builder(getServerUrl())
+            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build();
+    return client;
   }
 }

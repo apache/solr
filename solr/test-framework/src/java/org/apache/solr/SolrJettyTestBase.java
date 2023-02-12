@@ -31,9 +31,9 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -129,6 +129,10 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return jetty;
   }
 
+  protected String getServerUrl() {
+    return jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
+  }
+
   @After
   public synchronized void afterClass() throws Exception {
     if (client != null) client.close();
@@ -151,19 +155,12 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Create a new solr client. If createJetty was called, an http implementation will be created,
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the client...
-      final String url = jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME;
-      final SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      return client;
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return getHttpSolrClient(getServerUrl());
   }
 
   public HttpClient getHttpClient() {

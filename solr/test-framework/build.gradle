@@ -66,6 +66,13 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-server'
   api 'org.eclipse.jetty:jetty-servlet'
   implementation 'org.eclipse.jetty:jetty-util'
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  implementation 'org.eclipse.jetty.http2:http2-server'
+  implementation 'org.eclipse.jetty.http2:http2-common'
 
   implementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   implementation 'junit:junit'

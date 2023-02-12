@@ -27,8 +27,9 @@ compileJava.enabled(false)
 configurations {
   libExt
   serverLib
+  solrCore
   runtimeClasspath {
-    extendsFrom serverLib, libExt
+    extendsFrom serverLib, libExt, solrCore
   }
   startJar
   webapp
@@ -89,6 +90,8 @@ dependencies {
   startJar('org.eclipse.jetty:jetty-start::shaded', {
     transitive false
   })
+
+  solrCore project(":solr:core")
 }
 
 // Add the following non-standard configurations to JAR validation.
@@ -113,11 +116,12 @@ task assemblePackaging(type: Sync) {
     include "README.md"
   })
 
-  from(configurations.libExt, {
+  // Add in the intersection of serverLib and solrCore
+  from(configurations.libExt + (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
     into "lib/ext"
   })
 
-  from(configurations.serverLib - configurations.libExt, {
+  from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
     into "lib/"
   })
 
