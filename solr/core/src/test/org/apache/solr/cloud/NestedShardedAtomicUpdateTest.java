@@ -39,7 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
-  private static final String DEFAULT_COLLECTION = "col1";
   private static CloudSolrClient cloudClient;
   private static List<SolrClient> clients; // not CloudSolrClient
 
@@ -51,13 +50,14 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
     cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
 
     cloudClient = cluster.getSolrClient();
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    cloudClient.setDefaultCollection(DEFAULT_TEST_COLLECTION_NAME);
 
-    CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, 4, 1).process(cloudClient);
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, 4, 1)
+        .process(cloudClient);
 
     clients = new ArrayList<>();
     ClusterState clusterState = cloudClient.getClusterState();
-    for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
+    for (Replica replica : clusterState.getCollection(DEFAULT_TEST_COLLECTION_NAME).getReplicas()) {
       clients.add(getHttpSolrClient(replica.getCoreUrl()));
     }
   }
@@ -70,7 +70,12 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
   @Test
   public void doRootShardRoutingTest() throws Exception {
     assertEquals(
-        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+        4,
+        cloudClient
+            .getClusterState()
+            .getCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .getSlices()
+            .size());
     final String[] ids = {"3", "4", "5", "6"};
 
     assertEquals(
@@ -149,7 +154,12 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
   @Test
   public void doNestedInplaceUpdateTest() throws Exception {
     assertEquals(
-        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+        4,
+        cloudClient
+            .getClusterState()
+            .getCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .getSlices()
+            .size());
     final String[] ids = {"3", "4", "5", "6"};
 
     assertEquals(
@@ -269,7 +279,12 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
   @Test
   public void sendWrongRouteParam() throws Exception {
     assertEquals(
-        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+        4,
+        cloudClient
+            .getClusterState()
+            .getCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .getSlices()
+            .size());
     final String rootId = "1";
 
     SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");

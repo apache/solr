@@ -42,15 +42,17 @@ import org.junit.Test;
 public class TestReqParamsAPI extends SolrCloudTestCase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
-  private static String COLL_NAME = "collection1";
-
   private void setupHarnesses() {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       RestTestHarness harness =
-          new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
+          new RestTestHarness(
+              () -> jettySolrRunner.getBaseUrl().toString() + "/" + DEFAULT_TEST_COLLECTION_NAME);
       if (random().nextBoolean()) {
         harness.setServerProvider(
-            () -> jettySolrRunner.getBaseUrl().toString() + "/____v2/c/" + COLL_NAME);
+            () ->
+                jettySolrRunner.getBaseUrl().toString()
+                    + "/____v2/c/"
+                    + DEFAULT_TEST_COLLECTION_NAME);
       }
       restTestHarnesses.add(harness);
     }
@@ -63,9 +65,9 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLL_NAME, 1, 2);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 2);
   }
 
   @Test
@@ -82,7 +84,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection coll = cloudClient.getClusterState().getCollection(COLL_NAME);
+    DocCollection coll = cloudClient.getClusterState().getCollection(DEFAULT_TEST_COLLECTION_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -106,7 +108,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config", payload);
 
     AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
-        COLL_NAME, ZkStateReader.from(cloudClient), false, true, 90);
+        DEFAULT_TEST_COLLECTION_NAME, ZkStateReader.from(cloudClient), false, true, 90);
 
     payload =
         " {\n"

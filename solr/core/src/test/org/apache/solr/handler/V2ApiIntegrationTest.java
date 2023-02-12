@@ -43,7 +43,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private static String COLL_NAME = "collection1";
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -52,9 +51,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+    CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLL_NAME, 1, 2);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 2);
   }
 
   @Test
@@ -83,18 +82,20 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testException() {
-    String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
+    String notFoundPath = "/c/" + DEFAULT_TEST_COLLECTION_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(
         new DelegationTokenResponse.JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new BinaryResponseParser(), 404, notFoundPath, incorrectPayload);
-    testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(
+        new XMLResponseParser(), 400, "/c/" + DEFAULT_TEST_COLLECTION_NAME, incorrectPayload);
+    testException(
+        new BinaryResponseParser(), 400, "/c/" + DEFAULT_TEST_COLLECTION_NAME, incorrectPayload);
     testException(
         new DelegationTokenResponse.JsonMapResponseParser(),
         400,
-        "/c/" + COLL_NAME,
+        "/c/" + DEFAULT_TEST_COLLECTION_NAME,
         incorrectPayload);
   }
 
@@ -106,14 +107,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     Map<?, ?> result =
         resAsMap(
             cluster.getSolrClient(),
-            new V2Request.Builder("/c/" + COLL_NAME + "/_introspect").withParams(params).build());
+            new V2Request.Builder("/c/" + DEFAULT_TEST_COLLECTION_NAME + "/_introspect")
+                .withParams(params)
+                .build());
     assertEquals(
         "Command not found!", Utils.getObjectByPath(result, false, "/spec[0]/commands/XXXX"));
   }
 
   @Test
   public void testWTParam() throws Exception {
-    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    V2Request request =
+        new V2Request.Builder("/c/" + DEFAULT_TEST_COLLECTION_NAME + "/get/_introspect").build();
     // TODO: If possible do this in a better way
     request.setResponseParser(new NoOpResponseParser("bleh"));
 
@@ -147,7 +151,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     NamedList<?> resp =
         cluster
             .getSolrClient()
-            .request(new V2Request.Builder("/c/" + COLL_NAME + "/_introspect").build());
+            .request(
+                new V2Request.Builder("/c/" + DEFAULT_TEST_COLLECTION_NAME + "/_introspect")
+                    .build());
     List<?> warnings = resp.getAll("WARNING");
     assertEquals(1, warnings.size());
   }
@@ -177,15 +183,18 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
-    V2Request req1 = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
-    assertEquals(COLL_NAME, req1.getCollection());
+    V2Request req1 =
+        new V2Request.Builder("/c/" + DEFAULT_TEST_COLLECTION_NAME + "/get/_introspect").build();
+    assertEquals(DEFAULT_TEST_COLLECTION_NAME, req1.getCollection());
     Map<?, ?> result = resAsMap(client, req1);
     assertEquals(
         "/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result =
         resAsMap(
             client,
-            new V2Request.Builder("/collections/" + COLL_NAME + "/get/_introspect").build());
+            new V2Request.Builder(
+                    "/collections/" + DEFAULT_TEST_COLLECTION_NAME + "/get/_introspect")
+                .build());
     assertEquals(
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
@@ -194,7 +203,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     Map<String, Object> backupParams = new HashMap<>();
     backupPayload.put("backup-collection", backupParams);
     backupParams.put("name", "backup_test");
-    backupParams.put("collection", COLL_NAME);
+    backupParams.put("collection", DEFAULT_TEST_COLLECTION_NAME);
     backupParams.put("location", tempDir);
     cluster
         .getJettySolrRunners()
@@ -210,7 +219,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testSelect() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     final V2Response v2Response =
-        new V2Request.Builder("/c/" + COLL_NAME + "/select")
+        new V2Request.Builder("/c/" + DEFAULT_TEST_COLLECTION_NAME + "/select")
             .withMethod(SolrRequest.METHOD.GET)
             .withParams(params("q", "-*:*"))
             .build()

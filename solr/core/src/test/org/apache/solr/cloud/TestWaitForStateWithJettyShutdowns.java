@@ -40,16 +40,18 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testWaitForStateAfterShutDown() throws Exception {
-    final String col_name = "test_col";
+
     final MiniSolrCloudCluster cluster =
         new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
-      CollectionAdminRequest.createCollection(col_name, "_default", 1, 1)
+      CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "_default", 1, 1)
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      cluster.getZkStateReader().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
+      cluster
+          .getZkStateReader()
+          .waitForState(DEFAULT_TEST_COLLECTION_NAME, 30, TimeUnit.SECONDS, clusterShape(1, 1));
 
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
@@ -63,7 +65,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       log.info("Now check if waitForState will recognize we already have the expected state");
       cluster
           .getZkStateReader()
-          .waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
+          .waitForState(
+              DEFAULT_TEST_COLLECTION_NAME, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
 
     } finally {
       cluster.shutdown();
@@ -71,7 +74,6 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   }
 
   public void testWaitForStateBeforeShutDown() throws Exception {
-    final String col_name = "test_col";
     final ExecutorService executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             1, new SolrNamedThreadFactory("background_executor"));
@@ -79,13 +81,17 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
         new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
-      CollectionAdminRequest.createCollection(col_name, "_default", 1, 1)
+      CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "_default", 1, 1)
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
       cluster
           .getZkStateReader()
-          .waitForState(col_name, 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
+          .waitForState(
+              DEFAULT_TEST_COLLECTION_NAME,
+              30,
+              TimeUnit.SECONDS,
+              SolrCloudTestCase.clusterShape(1, 1));
 
       // HACK implementation detail...
       //
@@ -104,7 +110,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
                   cluster
                       .getZkStateReader()
                       .waitForState(
-                          col_name,
+                          DEFAULT_TEST_COLLECTION_NAME,
                           180,
                           TimeUnit.SECONDS,
                           new LatchCountingPredicateWrapper(latch, clusterShape(1, 0)));
