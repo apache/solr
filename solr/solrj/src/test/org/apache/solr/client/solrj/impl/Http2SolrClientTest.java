@@ -192,7 +192,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   private Http2SolrClient.Builder getHttp2SolrClientBuilder(
       String url, int connectionTimeOut, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
-        .withConnectionTimeout(connectionTimeOut)
+        .withConnectionTimeout(connectionTimeOut, TimeUnit.MILLISECONDS)
         .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
   }
 
