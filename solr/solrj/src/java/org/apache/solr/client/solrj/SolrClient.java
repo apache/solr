@@ -54,6 +54,10 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   private DocumentObjectBinder binder;
 
+  public SolrClient collectionScopedClient(String collection) {
+    return collection == null ? this : new DefaultCollectionSolrClient(this, collection);
+  }
+
   /**
    * Adds a collection of documents
    *
