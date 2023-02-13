@@ -64,8 +64,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   private boolean shutdownClient;
   private boolean shutdownExecutor;
-  private int pollQueueTime = 250;
-  private int stallTime;
+  private long pollQueueTimeMillis;
+  private long stallTimeMillis;
   private final boolean streamDeletes;
   private volatile boolean closed;
   private volatile CountDownLatch lock = null; // used to block everything
@@ -103,7 +103,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return size() == 0;
     }
 
-    public E poll(int timeout, TimeUnit unit) throws InterruptedException {
+    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
       E e = queue.poll(timeout, unit);
       if (e == null) {
         return null;
@@ -149,19 +149,22 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
-    this.pollQueueTime = builder.pollQueueTime;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
+    this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
-    int minimalStallTime = pollQueueTime * 2;
-    if (minimalStallTime > this.stallTime) {
-      this.stallTime = minimalStallTime;
+    long minimalStallTimeMillis = pollQueueTimeMillis * 2;
+    if (minimalStallTimeMillis > this.stallTimeMillis) {
+      this.stallTimeMillis = minimalStallTimeMillis;
     }
 
-    if (stallTime < pollQueueTime * 2) {
+    if (stallTimeMillis < pollQueueTimeMillis * 2) {
       throw new RuntimeException(
-          "Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
+          "Invalid stallTime: "
+              + stallTimeMillis
+              + "ms, must be 2x > pollQueueTime "
+              + pollQueueTimeMillis);
     }
 
     if (builder.executorService != null) {
@@ -227,7 +230,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           try {
             Update update;
             notifyQueueAndRunnersIfEmptyQueue();
-            update = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+            update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
 
             if (update == null) {
               break;
@@ -248,7 +251,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 out.flush();
 
                 notifyQueueAndRunnersIfEmptyQueue();
-                upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                upd = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
               }
               responseListener = out.getResponseListener();
             }
@@ -454,7 +457,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Request processing has stalled for "
                         + currentStallTime
@@ -513,7 +516,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Task queue processing has stalled for "
                         + currentStallTime
@@ -607,7 +610,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           lastStallTime = System.nanoTime();
         } else {
           long currentStallTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-          if (currentStallTime > stallTime) {
+          if (currentStallTime > stallTimeMillis) {
             throw new IOException(
                 "Task queue processing has stalled for "
                     + currentStallTime
@@ -699,17 +702,18 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   /**
-   * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
+   * @param pollQueueTimeMillis time for an open connection to wait for updates when the queue is
+   *     empty.
    * @deprecated use {@link ConcurrentUpdateHttp2SolrClient.Builder#setPollQueueTime(int)} instead
    */
   @Deprecated
-  public void setPollQueueTime(int pollQueueTime) {
-    this.pollQueueTime = pollQueueTime;
+  public void setPollQueueTime(int pollQueueTimeMillis) {
+    this.pollQueueTimeMillis = pollQueueTimeMillis;
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
-    int minimalStallTime = pollQueueTime * 2;
-    if (minimalStallTime > this.stallTime) {
-      this.stallTime = minimalStallTime;
+    int minimalStallTime = pollQueueTimeMillis * 2;
+    if (minimalStallTime > this.stallTimeMillis) {
+      this.stallTimeMillis = minimalStallTime;
     }
   }
 
@@ -722,7 +726,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected ExecutorService executorService;
     protected boolean streamDeletes;
     protected boolean closeHttp2Client;
-    private int pollQueueTime;
+    private long pollQueueTimeMillis;
 
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
@@ -808,10 +812,21 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
 
     /**
+     * @param pollQueueTimeMillis time for an open connection to wait for updates when the queue is
+     *     empty.
+     * @deprecated Please use {@link #setPollQueueTime(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Builder setPollQueueTime(int pollQueueTimeMillis) {
+      setPollQueueTime(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
      * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
      */
-    public Builder setPollQueueTime(int pollQueueTime) {
-      this.pollQueueTime = pollQueueTime;
+    public Builder setPollQueueTime(long pollQueueTime, TimeUnit unit) {
+      this.pollQueueTimeMillis = TimeUnit.MILLISECONDS.convert(pollQueueTime, unit);
       return this;
     }
 
