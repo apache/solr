@@ -69,6 +69,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -729,6 +730,14 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
+  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+    if (containerHandlers.getJerseyEndpoints() == null) {
+      return;
+    }
+
+    containerHandlers.getJerseyEndpoints().register(clazz);
+  }
+
   // -------------------------------------------------------------------
   // Initialization / Cleanup
   // -------------------------------------------------------------------
@@ -798,9 +807,7 @@ public class CoreContainer {
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-
-      ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
-      registerV2ApiIfEnabled(zookeeperReadAPI);
+      registerV2ApiIfEnabled(ZookeeperReadAPI.class);
     }
 
     MDCLoggingContext.setNode(this);
