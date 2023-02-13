@@ -337,7 +337,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
             "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
       this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
-      ;
       return this;
     }
 
