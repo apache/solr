@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
@@ -49,7 +50,10 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     try {
       server.run();
       try (SolrZkClient zkClient =
-          new SolrZkClient.Builder().url(server.getZkAddress()).timeout(TIMEOUT).build()) {
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
         DistributedCollectionLockFactory collLockFactory =
             new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
 

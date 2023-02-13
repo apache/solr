@@ -352,8 +352,8 @@ public class MiniSolrCloudCluster {
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       if (!zkClient.exists("/solr/solr.xml", true)) {
         zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
@@ -631,9 +631,9 @@ public class MiniSolrCloudCluster {
   public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       ZkMaintenanceUtils.uploadToZK(
           zkClient,

@@ -414,10 +414,10 @@ public class ZkStateReader implements SolrCloseable {
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
     this.zkClient =
         new SolrZkClient.Builder()
-            .url(zkServerAddress)
-            .timeout(zkClientTimeout)
-            .connTimeOut(zkClientConnectTimeout)
-            .reconnectListener(
+            .withUrl(zkServerAddress)
+            .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withReconnectListener(
                 () -> {
                   // on reconnect, reload cloud info
                   try {

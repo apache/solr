@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -93,16 +94,16 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     this.zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
 
     if (log.isInfoEnabled()) {
@@ -420,7 +421,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> new SolrZkClient.Builder().url("----------:33332").timeout(100).build());
+            () ->
+                new SolrZkClient.Builder()
+                    .withUrl("----------:33332")
+                    .withTimeout(100, TimeUnit.MILLISECONDS)
+                    .build());
     zkClient.close();
   }
 
@@ -478,8 +483,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     boolean excepted = false;
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkAddress())
-            .timeout(AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(
+                AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       zkClient.getData("/", null, null, true);
     } catch (KeeperException.NoAuthException e) {

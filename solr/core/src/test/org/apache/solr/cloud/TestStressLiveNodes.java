@@ -82,7 +82,10 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static SolrZkClient newSolrZkClient() {
     assertNotNull(ZK_SERVER_ADDR);
     // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient.Builder().url(ZK_SERVER_ADDR).timeout(15000).build();
+    return new SolrZkClient.Builder()
+        .withUrl(ZK_SERVER_ADDR)
+        .withTimeout(15000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */

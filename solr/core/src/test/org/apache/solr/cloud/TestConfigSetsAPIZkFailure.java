@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.io.FileUtils;
 import org.apache.jute.InputArchive;
@@ -117,9 +118,9 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(solrCluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(AbstractZkTestCase.TIMEOUT)
+            .withUrl(solrCluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     try {
 

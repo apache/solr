@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -1118,47 +1119,47 @@ public class SolrZkClient implements Closeable {
 
     public Compressor compressor;
 
-    public Builder url(String server) {
+    public Builder withUrl(String server) {
       this.zkServerAddress = server;
       return this;
     }
 
-    public Builder timeout(int i) {
-      this.zkClientTimeout = i;
+    public Builder withTimeout(int i, TimeUnit unit) {
+      this.zkClientTimeout = (int) unit.toMillis(i);
       return this;
     }
 
-    public Builder connTimeOut(int i) {
-      this.zkClientConnectTimeout = i;
+    public Builder withConnTimeOut(int i, TimeUnit unit) {
+      this.zkClientConnectTimeout = (int) unit.toMillis(i);
       return this;
     }
 
-    public Builder reconnectListener(OnReconnect onReconnect) {
+    public Builder withReconnectListener(OnReconnect onReconnect) {
       this.onReconnect = onReconnect;
       return this;
     }
 
-    public Builder connStrategy(ZkClientConnectionStrategy strat) {
+    public Builder withConnStrategy(ZkClientConnectionStrategy strat) {
       this.connectionStrategy = strat;
       return this;
     }
 
-    public Builder beforeConnect(BeforeReconnect beforeReconnect) {
+    public Builder withBeforeConnect(BeforeReconnect beforeReconnect) {
       this.beforeReconnect = beforeReconnect;
       return this;
     }
 
-    public Builder aclProvider(ZkACLProvider zkACLProvider) {
+    public Builder withAclProvider(ZkACLProvider zkACLProvider) {
       this.zkACLProvider = zkACLProvider;
       return this;
     }
 
-    public Builder closedCheck(IsClosed higherLevelIsClosed) {
+    public Builder withClosedCheck(IsClosed higherLevelIsClosed) {
       this.higherLevelIsClosed = higherLevelIsClosed;
       return this;
     }
 
-    public Builder compressor(Compressor c) {
+    public Builder withCompressor(Compressor c) {
       this.compressor = c;
       return this;
     }

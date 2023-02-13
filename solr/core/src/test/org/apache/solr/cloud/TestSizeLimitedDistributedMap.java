@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -36,7 +37,10 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map =
           new SizeLimitedDistributedMap(
@@ -79,7 +83,10 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     int numResponsesToStore = TEST_NIGHTLY ? Overseer.NUM_RESPONSES_TO_STORE : 100;
 
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().url(zkServer.getZkHost()).timeout(10000).build()) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map =
           new SizeLimitedDistributedMap(

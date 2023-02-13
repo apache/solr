@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
@@ -211,9 +212,9 @@ public class NodeConfig {
       startUpZkTimeOut *= 1000;
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .url(zkHost)
-              .timeout(startUpZkTimeOut)
-              .connTimeOut(startUpZkTimeOut)
+              .withUrl(zkHost)
+              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");

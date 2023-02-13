@@ -47,6 +47,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.script.ScriptEngineManager;
@@ -211,9 +212,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, untrustedConfigsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       assertTrue(isTrusted(zkClient, configsetName, trustedConfigsetSuffix));
       assertFalse(isTrusted(zkClient, configsetName, untrustedConfigsetSuffix));
@@ -313,9 +314,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .url(cluster.getZkServer().getZkAddress())
-              .timeout(AbstractZkTestCase.TIMEOUT)
-              .connTimeOut(AbstractZkTestCase.TIMEOUT)
+              .withUrl(cluster.getZkServer().getZkAddress())
+              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
         assertFalse(getConfigSetService().checkConfigExists(configSetName));
 
@@ -440,9 +441,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build();
 
     // Create dummy config files in zookeeper
@@ -496,9 +497,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testUploadDisabled(boolean v2) throws Exception {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
 
       ignoreException("Configset upload feature is disabled");
@@ -525,9 +526,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configSetName = "legacy-managed-schema";
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build();
     try {
       long statusCode = uploadConfigSet(configSetName, "", null, zkClient, true);
@@ -584,9 +585,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       int solrconfigZkVersion =
           getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
@@ -625,9 +626,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       String configPath = "/configs/" + configsetName + configsetSuffix;
       List<String> extraFiles =
@@ -672,9 +673,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       String configPath = "/configs/" + configsetName + configsetSuffix;
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true));
@@ -703,9 +704,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       int solrconfigZkVersion =
@@ -821,9 +822,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       int solrconfigZkVersion =
           getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
@@ -879,9 +880,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       assertEquals(
           0,
@@ -972,9 +973,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
       assertEquals(
@@ -1014,9 +1015,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       assertEquals(
           0,
@@ -1102,9 +1103,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       for (String fileType : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
         ignoreException("is forbidden for use in configSets");
@@ -1151,9 +1152,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       // New file with trusted request
 
@@ -1287,9 +1288,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String configsetSuffixUntrusted = "testSinglePathNewConfig-2-" + v2;
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       // New file with trusted request
       assertEquals(
@@ -1476,9 +1477,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws Exception {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(45000)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(45000, TimeUnit.MILLISECONDS)
             .build()) {
       long statusCode = uploadConfigSet(configSetName, suffix, username, zkClient, true);
       assertEquals(0l, statusCode);
@@ -1920,9 +1921,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws IOException, SolrServerException {
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(AbstractZkTestCase.TIMEOUT)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     try {
       assertEquals(assertExists, getConfigSetService().checkConfigExists(configSet));
@@ -1944,9 +1945,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(cluster.getZkServer().getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
-            .connTimeOut(AbstractZkTestCase.TIMEOUT)
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     try {
       // test empty

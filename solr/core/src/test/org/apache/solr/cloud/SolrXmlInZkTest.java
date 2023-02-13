@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -64,8 +65,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
 
     if (toZk) {

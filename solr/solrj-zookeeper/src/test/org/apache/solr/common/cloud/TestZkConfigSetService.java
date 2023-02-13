@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -75,7 +76,10 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     zkServer.ensurePathExists("/solr");
 
     try (SolrZkClient zkClient =
-        new SolrZkClient.Builder().url(zkServer.getZkAddress("/solr")).timeout(10000).build()) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/solr"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
       assertEquals(0, configSetService.listConfigs().size());
@@ -224,7 +228,10 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     // Client with no auth whatsoever can't even get the list of configs
     try (SolrZkClient client =
-        new SolrZkClient.Builder().url(zkServer.getZkAddress("/acl")).timeout(10000).build()) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/acl"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       configSetService.listConfigs();
       fail("Should have thrown an ACL exception");
@@ -243,8 +250,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     zkClient.makePath("/solr", false, true);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
@@ -259,7 +266,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       String zkAddress,
       final ZkACLProvider aclProvider,
       final ZkCredentialsProvider credentialsProvider) {
-    return new SolrZkClient(new SolrZkClient.Builder().url(zkAddress).timeout(10000)) {
+    return new SolrZkClient(
+        new SolrZkClient.Builder().withUrl(zkAddress).withTimeout(10000, TimeUnit.MILLISECONDS)) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
         return credentialsProvider;

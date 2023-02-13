@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
 import org.apache.solr.SolrTestCaseJ4;
@@ -394,8 +395,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     getDelegationToken(null, "bar", solrClientPrimary);
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(miniCluster.getZkServer().getZkAddress())
-            .timeout(1000)
+            .withUrl(miniCluster.getZkServer().getZkAddress())
+            .withTimeout(1000, TimeUnit.MILLISECONDS)
             .build()) {
       assertTrue(zkClient.exists("/security/zkdtsm", true));
       assertTrue(zkClient.exists("/security/token", true));

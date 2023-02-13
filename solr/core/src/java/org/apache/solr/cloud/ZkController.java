@@ -381,14 +381,14 @@ public class ZkController implements Closeable {
 
     zkClient =
         new SolrZkClient.Builder()
-            .url(zkServerAddress)
-            .timeout(clientTimeout)
-            .connTimeOut(zkClientConnectTimeout)
-            .connStrategy(strat)
-            .beforeConnect(() -> beforeReconnect(descriptorsSupplier))
-            .aclProvider(zkACLProvider)
-            .closedCheck(cc::isShutDown)
-            .compressor(compressor)
+            .withUrl(zkServerAddress)
+            .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withConnStrategy(strat)
+            .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
+            .withAclProvider(zkACLProvider)
+            .withClosedCheck(cc::isShutDown)
+            .withCompressor(compressor)
             .build();
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -1193,9 +1193,9 @@ public class ZkController implements Closeable {
 
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
-            .url(zkHost.substring(0, zkHost.indexOf("/")))
-            .timeout(60000)
-            .connTimeOut(30000)
+            .withUrl(zkHost.substring(0, zkHost.indexOf("/")))
+            .withTimeout(60000, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
             .build();
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {

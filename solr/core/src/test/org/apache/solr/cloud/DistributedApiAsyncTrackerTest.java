@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -37,8 +38,8 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     zkServer.run();
     zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
   }
 
@@ -113,8 +114,8 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient transientZkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);
@@ -178,8 +179,8 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient transientZkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);

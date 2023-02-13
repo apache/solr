@@ -1261,9 +1261,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     // Upload a bad configset
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(zkServer.getZkHost())
-            .timeout(ZkTestServer.TIMEOUT)
-            .connTimeOut(ZkTestServer.TIMEOUT)
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     ZkTestServer.putConfig(
         "badconf",

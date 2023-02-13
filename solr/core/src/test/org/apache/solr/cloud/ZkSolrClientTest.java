@@ -60,8 +60,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient =
           new SolrZkClient.Builder()
-              .url(server.getZkAddress())
-              .timeout(AbstractZkTestCase.TIMEOUT)
+              .withUrl(server.getZkAddress())
+              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
               .build();
     }
 
@@ -92,8 +92,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient =
           new SolrZkClient.Builder()
-              .url(conn.getServer().getZkHost())
-              .timeout(AbstractZkTestCase.TIMEOUT)
+              .withUrl(conn.getServer().getZkHost())
+              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
               .build();
       try {
         assertTrue(zkClient.exists("/solr", true));
@@ -126,8 +126,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     server.run();
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
-            .url(server.getZkAddress())
-            .timeout(AbstractZkTestCase.TIMEOUT)
+            .withUrl(server.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
 
       String shardsPath = "/collections/collection1/shards";
