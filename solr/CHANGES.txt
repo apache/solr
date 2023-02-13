@@ -34,6 +34,8 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
+* SOLR-16540: Fix errors importing main and branch_9x into eclipse (Alex Deparvu)
+
 ==================  9.2.0 ==================
 
 New Features

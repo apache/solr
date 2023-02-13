@@ -58,6 +58,9 @@ allprojects {
             include "**/*.gradle"
             exclude ".gradle/**"
 
+            // Exclude Eclipse
+            exclude ".metadata"
+
             // Include selected patterns from any source folders. We could make this
             // relative to source sets but it seems to be of little value - all our source sets
             // live under 'src' anyway.

@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
-public class SSLConfigurationsTest extends SolrTestCaseJ4 {
+public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
   private Map<String, String> envs;
   private SSLConfigurations sut;
 
