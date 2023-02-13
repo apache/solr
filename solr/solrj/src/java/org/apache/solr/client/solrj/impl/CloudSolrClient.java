@@ -105,7 +105,7 @@ public abstract class CloudSolrClient extends SolrClient {
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   public static final String STATE_VERSION = "_stateVer_";
-  protected long retryExpiryTime =
+  protected long retryExpiryTimeNano =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   private static final Set<String> NON_ROUTABLE_PARAMS =
       Set.of(
@@ -232,7 +232,7 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   @Deprecated
   public void setRetryExpiryTime(int secs) {
-    this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+    this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
 
   protected final StateCache collectionStateCache = new StateCache();
@@ -257,7 +257,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     boolean shouldRetry() {
       if (maybeStale) { // we are not sure if it is stale so check with retry time
-        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTime)) {
+        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTimeNano)) {
           return true; // we retried a while back. and we could not get anything new.
           // it's likely that it is not going to be available now also.
         }
