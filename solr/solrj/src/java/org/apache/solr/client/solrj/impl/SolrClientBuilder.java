@@ -103,8 +103,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
    */
   public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-    if (connectionTimeoutMillis < 0) {
-      throw new IllegalArgumentException("connectionTimeoutMillis must be a non-negative integer.");
+    if (connectionTimeout < 0) {
+      throw new IllegalArgumentException("connectionTimeout must be a non-negative integer.");
     }
 
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
@@ -121,7 +121,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    */
   @Deprecated(since = "9.2")
   public B withSocketTimeout(int socketTimeoutMillis) {
-    withSocketTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS);
     return getThis();
   }
 
@@ -132,8 +132,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    */
   public B withSocketTimeout(long socketTimeout, TimeUnit unit) {
-    if (socketTimeoutMillis < 0) {
-      throw new IllegalArgumentException("socketTimeoutMillis must be a non-negative integer.");
+    if (socketTimeout < 0) {
+      throw new IllegalArgumentException("socketTimeout must be a non-negative integer.");
     }
 
     this.socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(socketTimeout, unit);
