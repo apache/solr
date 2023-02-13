@@ -158,8 +158,8 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = serverBaseUrl;
     }
 
-    if (builder.idleTimeout != null && builder.idleTimeout > 0) {
-      idleTimeout = builder.idleTimeout;
+    if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
+      idleTimeout = builder.idleTimeoutMillis;
     } else {
       idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
     }
@@ -183,10 +183,10 @@ public class Http2SolrClient extends SolrClient {
     if (builder.responseParser != null) {
       parser = builder.responseParser;
     }
-    if (builder.requestTimeout == null) {
+    if (builder.requestTimeoutMillis == null) {
       requestTimeout = -1;
     } else {
-      requestTimeout = builder.requestTimeout;
+      requestTimeout = builder.requestTimeoutMillis;
     }
     httpClient.setFollowRedirects(builder.followRedirects);
     this.urlParamNames = builder.urlParamNames;
@@ -274,7 +274,8 @@ public class Http2SolrClient extends SolrClient {
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
 
-    if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+    if (builder.connectionTimeoutMillis != null)
+      httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     try {
       httpClient.start();
@@ -983,9 +984,9 @@ public class Http2SolrClient extends SolrClient {
 
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
-    private Long idleTimeout;
-    private Long connectionTimeout;
-    private Long requestTimeout;
+    private Long idleTimeoutMillis;
+    private Long connectionTimeoutMillis;
+    private Long requestTimeoutMillis;
     private Integer maxConnectionsPerHost;
     private String basicAuthUser;
     private String basicAuthPassword;
@@ -1127,7 +1128,7 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
-      this.idleTimeout = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
+      this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
       return this;
     }
 
@@ -1146,7 +1147,7 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-      this.connectionTimeout = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+      this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
       return this;
     }
 
@@ -1170,7 +1171,7 @@ public class Http2SolrClient extends SolrClient {
      * @return this Builder.
      */
     public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
-      this.requestTimeout = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
+      this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
       return this;
     }
   }

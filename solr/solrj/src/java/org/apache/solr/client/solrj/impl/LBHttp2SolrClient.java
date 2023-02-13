@@ -317,7 +317,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
-    private long aliveCheckInterval = TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS);
+    private long aliveCheckIntervalMillis =
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
@@ -335,7 +336,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
         throw new IllegalArgumentException(
             "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
-      this.aliveCheckInterval = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
       ;
       return this;
     }
@@ -343,7 +344,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.aliveCheckInterval = this.aliveCheckInterval;
+      solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
       return solrClient;
     }
   }

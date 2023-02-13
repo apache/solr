@@ -34,8 +34,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected ResponseParser responseParser;
   protected RequestWriter requestWriter;
   protected boolean useMultiPartPost;
-  protected Long connectionTimeoutMillis = 15000l;
-  protected Long socketTimeoutMillis = 120000l;
+  protected Long connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(15, TimeUnit.SECONDS);
+  protected Long socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(120, TimeUnit.SECONDS);
   protected boolean followRedirects = false;
   protected Set<String> urlParamNames;
 
