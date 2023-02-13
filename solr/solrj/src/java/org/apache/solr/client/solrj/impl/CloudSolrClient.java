@@ -239,25 +239,25 @@ public abstract class CloudSolrClient extends SolrClient {
 
   class ExpiringCachedDocCollection {
     final DocCollection cached;
-    final long cachedAt;
+    final long cachedAtNano;
     // This is the time at which the collection is retried and got the same old version
-    volatile long retriedAt = -1;
+    volatile long retriedAtNano = -1;
     // flag that suggests that this is potentially to be rechecked
     volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
-      this.cachedAt = System.nanoTime();
+      this.cachedAtNano = System.nanoTime();
     }
 
     boolean isExpired(long timeToLiveMs) {
-      return (System.nanoTime() - cachedAt)
+      return (System.nanoTime() - cachedAtNano)
           > TimeUnit.NANOSECONDS.convert(timeToLiveMs, TimeUnit.MILLISECONDS);
     }
 
     boolean shouldRetry() {
       if (maybeStale) { // we are not sure if it is stale so check with retry time
-        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTimeNano)) {
+        if ((retriedAtNano == -1 || (System.nanoTime() - retriedAtNano) > retryExpiryTimeNano)) {
           return true; // we retried a while back. and we could not get anything new.
           // it's likely that it is not going to be available now also.
         }
@@ -266,7 +266,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     void setRetriedAt() {
-      retriedAt = System.nanoTime();
+      retriedAtNano = System.nanoTime();
     }
   }
 

@@ -86,8 +86,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-    this.retryExpiryTimeNano = builder.retryExpiryTime;
-    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
+    this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
+    this.collectionStateCache.timeToLiveMs = TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -199,7 +199,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected long retryExpiryTime =
+    protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
 

@@ -129,8 +129,8 @@ public class Http2SolrClient extends SolrClient {
 
   private HttpClient httpClient;
   private volatile Set<String> urlParamNames = Set.of();
-  private long idleTimeout;
-  private long requestTimeout;
+  private long idleTimeoutMillis;
+  private long requestTimeoutMillis;
 
   protected ResponseParser parser = new BinaryResponseParser();
   protected RequestWriter requestWriter = new BinaryRequestWriter();
@@ -159,9 +159,9 @@ public class Http2SolrClient extends SolrClient {
     }
 
     if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
-      idleTimeout = builder.idleTimeoutMillis;
+      idleTimeoutMillis = builder.idleTimeoutMillis;
     } else {
-      idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+      idleTimeoutMillis = HttpClientUtil.DEFAULT_SO_TIMEOUT;
     }
 
     if (builder.http2SolrClient == null) {
@@ -184,9 +184,9 @@ public class Http2SolrClient extends SolrClient {
       parser = builder.responseParser;
     }
     if (builder.requestTimeoutMillis == null) {
-      requestTimeout = -1;
+      requestTimeoutMillis = -1;
     } else {
-      requestTimeout = builder.requestTimeoutMillis;
+      requestTimeoutMillis = builder.requestTimeoutMillis;
     }
     httpClient.setFollowRedirects(builder.followRedirects);
     this.urlParamNames = builder.urlParamNames;
@@ -269,7 +269,7 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
-    httpClient.setIdleTimeout(idleTimeout);
+    httpClient.setIdleTimeout(idleTimeoutMillis);
 
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
@@ -316,7 +316,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public long getIdleTimeout() {
-    return idleTimeout;
+    return idleTimeoutMillis;
   }
 
   public static class OutStream implements Closeable {
@@ -495,7 +495,7 @@ public class Http2SolrClient extends SolrClient {
     try {
       InputStreamResponseListener listener = new InputStreamResponseListener();
       req.send(listener);
-      Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
+      Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
       return processErrorsAndResponse(solrRequest, parser, response, is);
@@ -568,10 +568,10 @@ public class Http2SolrClient extends SolrClient {
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
-    if (requestTimeout > 0) {
-      req.timeout(requestTimeout, TimeUnit.MILLISECONDS);
+    if (requestTimeoutMillis > 0) {
+      req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
     } else {
-      req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
+      req.timeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     }
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
