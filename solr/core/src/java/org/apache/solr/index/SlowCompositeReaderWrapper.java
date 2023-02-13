@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
@@ -45,8 +47,9 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -329,6 +332,17 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  public TermVectors termVectors() throws IOException {
+    return in.termVectors();
+  }
+
+  @Override
+  public StoredFields storedFields() throws IOException {
+    ensureOpen();
+    return in.storedFields();
+  }
+
+  @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.numDocs();
@@ -359,14 +373,26 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public VectorValues getVectorValues(String field) {
+  public FloatVectorValues getFloatVectorValues(String field) {
     ensureOpen();
-    return VectorValues.EMPTY;
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ByteVectorValues getByteVectorValues(String field) {
+    ensureOpen();
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public TopDocs searchNearestVectors(
-      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
+      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) {
+    return null;
+  }
+
+  @Override
+  public TopDocs searchNearestVectors(
+      String field, byte[] target, int k, Bits acceptDocs, int visitedLimit) {
     return null;
   }
 

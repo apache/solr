@@ -63,7 +63,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
     try {
-      mapDirectory.setUseUnmap(unmapHack);
+      System.setProperty(MMapDirectory.ENABLE_UNMAP_HACK_SYSPROP, String.valueOf(unmapHack));
     } catch (IllegalArgumentException e) {
       log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
     }

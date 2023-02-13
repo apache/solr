@@ -42,7 +42,7 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) throws IOException {
     RunUpdateProcessor runUpdateProcessor = new RunUpdateProcessor(req, next);
     UpdateRequestProcessorChain preRun = req.getCore().getUpdateProcessingChain(PRE_RUN_CHAIN_NAME);
     if (preRun != null) {

@@ -60,7 +60,8 @@ class ClassificationUpdateProcessor extends UpdateRequestProcessor {
       ClassificationUpdateProcessorParams classificationParams,
       UpdateRequestProcessor next,
       IndexReader indexReader,
-      IndexSchema schema) {
+      IndexSchema schema)
+      throws IOException {
     super(next);
     this.trainingClassField = classificationParams.getTrainingClassField();
     this.predictedClassField = classificationParams.getPredictedClassField();

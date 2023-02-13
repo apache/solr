@@ -1940,7 +1940,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
             ThreadLocal.withInitial(
                 () -> {
-                  var proc = processorChain.createProcessor(req, rsp);
+                  UpdateRequestProcessor proc;
+                  try {
+                    proc = processorChain.createProcessor(req, rsp);
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
                   procPool.add(proc);
                   return proc;
                 });

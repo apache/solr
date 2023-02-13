@@ -238,7 +238,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   private UpdateRequestProcessor createRunUpdateProcessor(
-      SolrQueryRequest req, SolrQueryResponse rsp) {
+      SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     return new RunUpdateProcessorFactory().getInstance(req, rsp, null);
   }
 

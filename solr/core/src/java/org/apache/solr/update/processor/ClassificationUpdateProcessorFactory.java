@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
 
+import java.io.IOException;
 import java.util.Locale;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -140,7 +141,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   @Override
   public UpdateRequestProcessor getInstance(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) throws IOException {
     String trainingFilterQueryString = (params.get(KNN_FILTER_QUERY));
     try {
       if (trainingFilterQueryString != null && !trainingFilterQueryString.isEmpty()) {

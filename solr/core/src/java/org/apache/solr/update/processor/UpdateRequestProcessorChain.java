@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -207,7 +208,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
    * @see UpdateRequestProcessorFactory#getInstance
    * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM
    */
-  public UpdateRequestProcessor createProcessor(SolrQueryRequest req, SolrQueryResponse rsp) {
+  public UpdateRequestProcessor createProcessor(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     final String distribPhase =
         req.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     final boolean skipToDistrib = distribPhase != null;
@@ -221,7 +223,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
       SolrQueryRequest req,
       SolrQueryResponse rsp,
       boolean skipToDistrib,
-      UpdateRequestProcessor last) {
+      UpdateRequestProcessor last)
+      throws IOException {
     boolean afterDistrib = true; // we iterate backwards, so true to start
 
     for (int i = chain.size() - 1; i >= 0; i--) {
@@ -386,7 +389,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
 
       @Override
       public UpdateRequestProcessor getInstance(
-          SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+          SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next)
+          throws IOException {
         return holder.get().getInstance(req, rsp, next);
       }
     }
