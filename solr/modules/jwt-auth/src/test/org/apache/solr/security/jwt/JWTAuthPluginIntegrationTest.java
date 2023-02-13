@@ -163,10 +163,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
-            + "  \"scope\":\"solr:admin\",\n"
-            + "  \"redirect_uris\":[],\n"
-            + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
-            + "  \"client_id\":\"solr-cluster\"}",
+            + "\"scope\":\"solr:admin\",\n"
+            + "\"redirect_uris\":[],\n"
+            + "\"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
+            + "\"client_id\":\"solr-cluster\"}",
         authData);
     myCluster.shutdown();
   }
@@ -185,10 +185,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
-            + "  \"scope\":\"solr:admin\",\n"
-            + "  \"redirect_uris\":[],\n"
-            + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
-            + "  \"client_id\":\"solr-cluster\"}",
+            + "\"scope\":\"solr:admin\",\n"
+            + "\"redirect_uris\":[],\n"
+            + "\"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
+            + "\"client_id\":\"solr-cluster\"}",
         authData);
     myCluster.shutdown();
   }
