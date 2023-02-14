@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
@@ -257,7 +258,13 @@ public class ZkCLI implements CLIO {
       }
       SolrZkClient zkClient = null;
       try {
-        zkClient = new SolrZkClient(zkServerAddress, 30000, 30000, () -> {});
+        zkClient =
+            new SolrZkClient.Builder()
+                .withUrl(zkServerAddress)
+                .withTimeout(30000, TimeUnit.MILLISECONDS)
+                .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+                .withReconnectListener(() -> {})
+                .build();
 
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {

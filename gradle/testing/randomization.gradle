@@ -36,22 +36,17 @@ buildscript {
 
 class SecurityArgumentProvider implements CommandLineArgumentProvider {
   @Internal
-  File commonSolrDir
+  Directory commonSolrDir
 
   @InputFile
   @PathSensitive(PathSensitivity.RELATIVE)
-  File javaSecurityPolicy
-
-  SecurityArgumentProvider(File commonSolrDir, File javaSecurityPolicy) {
-    this.commonSolrDir = commonSolrDir
-    this.javaSecurityPolicy = javaSecurityPolicy
-  }
+  RegularFile javaSecurityPolicy
 
   @Override
   Iterable<String> asArguments() {
     [
-        "-Dcommon-solr.dir=$commonSolrDir",
-        "-Djava.security.policy=$javaSecurityPolicy"
+        "-Dcommon-solr.dir=${commonSolrDir.getAsFile()}",
+        "-Djava.security.policy=${javaSecurityPolicy.getAsFile()}"
     ]
   }
 }
@@ -206,9 +201,14 @@ allprojects {
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
-          def commonSolrDir = project(":solr").projectDir
-          def javaSecurityPolicy = file("${resources}/policies/solr-tests.policy")
-          jvmArgumentProviders.add(new SecurityArgumentProvider(commonSolrDir, javaSecurityPolicy))
+          def commonSolrDir = project(':solr').layout.projectDirectory
+          def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
+          jvmArgumentProviders.add(
+              new SecurityArgumentProvider(
+                  commonSolrDir: commonSolrDir,
+                  javaSecurityPolicy: javaSecurityPolicy
+              )
+          )
           systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()

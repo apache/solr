@@ -119,10 +119,12 @@ allprojects {
         jvmArgs '--illegal-access=deny'
       }
 
+      def loggingConfigFile = layout.projectDirectory.file("${resources}/logging.properties")
+      def tempDir = layout.projectDirectory.dir(testsTmpDir.toString())
       jvmArgumentProviders.add(
           new LoggingFileArgumentProvider(
-              loggingConfigFile: file("${resources}/logging.properties"),
-              tempDir: testsTmpDir
+              loggingConfigFile: loggingConfigFile,
+              tempDir: tempDir
           )
       )
 
@@ -186,16 +188,16 @@ allprojects {
 class LoggingFileArgumentProvider implements CommandLineArgumentProvider {
   @InputFile
   @PathSensitive(PathSensitivity.RELATIVE)
-  File loggingConfigFile
+  RegularFile loggingConfigFile
 
   @Internal
-  File tempDir
+  Directory tempDir
 
   @Override
   Iterable<String> asArguments() {
     [
-        "-Djava.util.logging.config.file=$loggingConfigFile",
-        "-DtempDir=$tempDir"
+        "-Djava.util.logging.config.file=${loggingConfigFile.getAsFile()}",
+        "-DtempDir=${tempDir.getAsFile()}"
     ]
   }
 }

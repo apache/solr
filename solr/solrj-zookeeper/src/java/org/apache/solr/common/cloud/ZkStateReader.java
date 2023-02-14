@@ -413,29 +413,27 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
     this.zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            zkClientTimeout,
-            zkClientConnectTimeout,
-            // on reconnect, reload cloud info
-            new OnReconnect() {
-              @Override
-              public void command() {
-                try {
-                  ZkStateReader.this.createClusterStateWatchersAndUpdate();
-                } catch (KeeperException e) {
-                  log.error("A ZK error has occurred", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.error("Interrupted", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-                }
-              }
-            });
+        new SolrZkClient.Builder()
+            .withUrl(zkServerAddress)
+            .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withReconnectListener(
+                () -> {
+                  // on reconnect, reload cloud info
+                  try {
+                    this.createClusterStateWatchersAndUpdate();
+                  } catch (KeeperException e) {
+                    log.error("A ZK error has occurred", e);
+                    throw new ZooKeeperException(
+                        ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+                  } catch (InterruptedException e) {
+                    // Restore the interrupted status
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted", e);
+                    throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+                  }
+                })
+            .build();
     this.closeClient = true;
     this.securityNodeListener = null;
 
@@ -829,11 +827,6 @@ public class ZkStateReader implements SolrCloseable {
           lastUpdateTime = System.nanoTime();
         }
       }
-      return cachedDocCollection;
-    }
-
-    @Override
-    public DocCollection getOrNull() {
       return cachedDocCollection;
     }
 
@@ -1687,37 +1680,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  /**
-   * fetch the collection that is already cached. This may return a null if it is not already cached
-   * This is an optimization to avoid fetching state if it is not modified. this is particularly
-   * true for PRS collections where state is rarely modified
-   */
-  private DocCollection fetchCachedCollection(String coll) {
-    String collectionPath = DocCollection.getCollectionPath(coll);
-    DocCollection c = null;
-    ClusterState.CollectionRef ref = clusterState.getCollectionRef(coll);
-    if (ref == null) return null;
-    c = ref.getOrNull();
-    if (c == null) return null;
-    Stat stat = null;
-    try {
-      stat = zkClient.exists(collectionPath, null, false);
-    } catch (Exception e) {
-      return null;
-    }
-    if (stat != null) {
-      if (!c.isModified(stat.getVersion(), stat.getCversion())) {
-        // we have the latest collection state
-        return c;
-      }
-      if (c.isPerReplicaState() && c.getChildNodesVersion() < stat.getCversion()) {
-        // only PRS is modified. just fetch it and return the new collection
-        return c.copyWith(PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
-      }
-    }
-    return null;
-  }
-
   private DocCollection fetchCollectionState(String coll, Watcher watcher)
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
@@ -1905,8 +1867,6 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
-    DocCollection coll = fetchCachedCollection(collection);
-    if (coll != null && predicate.matches(liveNodes, coll)) return;
 
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
@@ -1960,8 +1920,7 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
-    DocCollection coll = fetchCachedCollection(collection);
-    if (coll != null && predicate.test(coll)) return coll;
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
