@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -80,8 +81,8 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final HttpSolrClient.Builder httpSolrClientBuilder;
   private volatile Set<String> urlParamNames = new HashSet<>();
 
-  private Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private Long connectionTimeoutMillis;
+  private Long soTimeoutMillis;
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
@@ -92,10 +93,10 @@ public class LBHttpSolrClient extends LBSolrClient {
         builder.httpClient == null
             ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()]))
             : builder.httpClient;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
+    this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
-    this.aliveCheckInterval = builder.aliveCheckInterval;
+    this.aliveCheckIntervalMillis = builder.aliveCheckInterval;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -117,11 +118,12 @@ public class LBHttpSolrClient extends LBSolrClient {
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
         httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        if (connectionTimeout != null) {
-          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
+        if (connectionTimeoutMillis != null) {
+          httpSolrClientBuilder.withConnectionTimeout(
+              connectionTimeoutMillis, TimeUnit.MILLISECONDS);
         }
-        if (soTimeout != null) {
-          httpSolrClientBuilder.withSocketTimeout(soTimeout);
+        if (soTimeoutMillis != null) {
+          httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
         }
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
@@ -134,11 +136,11 @@ public class LBHttpSolrClient extends LBSolrClient {
     } else {
       final HttpSolrClient.Builder clientBuilder =
           new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
-      if (connectionTimeout != null) {
-        clientBuilder.withConnectionTimeout(connectionTimeout);
+      if (connectionTimeoutMillis != null) {
+        clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
       }
-      if (soTimeout != null) {
-        clientBuilder.withSocketTimeout(soTimeout);
+      if (soTimeoutMillis != null) {
+        clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
       }
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
