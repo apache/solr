@@ -82,7 +82,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   private volatile Set<String> urlParamNames = new HashSet<>();
 
   private Long connectionTimeoutMillis;
-  private volatile Long soTimeoutMillis;
+  private Long soTimeoutMillis;
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
