@@ -213,6 +213,8 @@ Bug Fixes
 
 * SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
+* SOLR-16656 rid parameter missing from query logs in Solr 9.x (Alex Deparvu)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
