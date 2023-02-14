@@ -413,29 +413,27 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
     this.zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            zkClientTimeout,
-            zkClientConnectTimeout,
-            // on reconnect, reload cloud info
-            new OnReconnect() {
-              @Override
-              public void command() {
-                try {
-                  ZkStateReader.this.createClusterStateWatchersAndUpdate();
-                } catch (KeeperException e) {
-                  log.error("A ZK error has occurred", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.error("Interrupted", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-                }
-              }
-            });
+        new SolrZkClient.Builder()
+            .withUrl(zkServerAddress)
+            .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withReconnectListener(
+                () -> {
+                  // on reconnect, reload cloud info
+                  try {
+                    this.createClusterStateWatchersAndUpdate();
+                  } catch (KeeperException e) {
+                    log.error("A ZK error has occurred", e);
+                    throw new ZooKeeperException(
+                        ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+                  } catch (InterruptedException e) {
+                    // Restore the interrupted status
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted", e);
+                    throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+                  }
+                })
+            .build();
     this.closeClient = true;
     this.securityNodeListener = null;
 

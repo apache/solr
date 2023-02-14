@@ -20,6 +20,7 @@ package org.apache.solr.common.cloud;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cloud.ZkController;
@@ -44,7 +45,11 @@ public class SolrZkClientCompressedDataTest extends SolrTestCase {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), 60000);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(60000, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
