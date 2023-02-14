@@ -438,6 +438,14 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
+    if (collection.isPerReplicaState() && oldReplica != null) {
+      if (!isAnyPropertyChanged(replica, oldReplica)) {
+        // For replica state(active, leader), we need to return this cmd so that overseer will fetch
+        // the prs state
+        return new ZkWriteCommand(collectionName, newCollection, null, false);
+      }
+    }
+
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
@@ -445,6 +453,9 @@ public class ReplicaMutator {
     if (!Objects.equals(replica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
     if (!Objects.equals(replica.getCoreName(), oldReplica.getCoreName())) return true;
     if (!Objects.equals(replica.getNodeName(), oldReplica.getNodeName())) return true;
+    if (!Objects.equals(
+        replica.get(ZkStateReader.FORCE_SET_STATE_PROP),
+        oldReplica.get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
     return false;
   }
 

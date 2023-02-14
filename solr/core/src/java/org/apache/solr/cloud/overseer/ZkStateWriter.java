@@ -31,7 +31,6 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
@@ -278,54 +277,50 @@ public class ZkStateWriter {
           }
 
           // Update the state.json file if needed
-          if (!cmd.persistJsonState) continue;
-          if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be cleaned by
-            // delete collection cmd
-            log.debug("going to delete state.json {}", path);
-            reader.getZkClient().clean(path);
-          } else {
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
-            if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
-              data = compressor.compressBytes(data);
-            }
-            if (reader.getZkClient().exists(path, true)) {
-              if (log.isDebugEnabled()) {
-                log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
-              }
-              Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
-              DocCollection newCollection =
-                  new DocCollection(
-                      name,
-                      c.getSlicesMap(),
-                      c.getProperties(),
-                      c.getRouter(),
-                      stat.getVersion(),
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
-              clusterState = clusterState.copyWith(name, newCollection);
+          if (cmd.persistJsonState) {
+            if (c == null) {
+              // let's clean up the state.json of this collection only, the rest should be cleaned
+              // by
+              // delete collection cmd
+              log.debug("going to delete state.json {}", path);
+              reader.getZkClient().clean(path);
             } else {
-              log.debug("going to create_collection {}", path);
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-              DocCollection newCollection =
-                  new DocCollection(
-                      name,
-                      c.getSlicesMap(),
-                      c.getProperties(),
-                      c.getRouter(),
-                      0,
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
-              clusterState = clusterState.copyWith(name, newCollection);
+              byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+              if (minStateByteLenForCompression > -1
+                  && data.length > minStateByteLenForCompression) {
+                data = compressor.compressBytes(data);
+              }
+              if (reader.getZkClient().exists(path, true)) {
+                if (log.isDebugEnabled()) {
+                  log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
+                }
+                Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
+                DocCollection newCollection =
+                    new DocCollection(
+                        name,
+                        c.getSlicesMap(),
+                        c.getProperties(),
+                        c.getRouter(),
+                        stat.getVersion(),
+                        new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                clusterState = clusterState.copyWith(name, newCollection);
+              } else {
+                log.debug("going to create_collection {}", path);
+                reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+                DocCollection newCollection =
+                    new DocCollection(
+                        name,
+                        c.getSlicesMap(),
+                        c.getProperties(),
+                        c.getRouter(),
+                        0,
+                        new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                clusterState = clusterState.copyWith(name, newCollection);
+              }
             }
           }
 
-          // When dealing with a per replica collection that did not do any update to the per
-          // replica states znodes but did update state.json, we add then remove a dummy node to
-          // change the cversion of the parent znode. This is not needed by Solr, there's no code
-          // watching the children and not watching the state.json node itself. It would be useful
-          // for external code watching the collection's Zookeeper state.json node children but not
-          // the node itself.
           if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
-            PerReplicaStatesOps.touchChildren().persist(path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
               clusterState =
