@@ -142,7 +142,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
         throws InterruptedException, IOException, KeeperException {
       this.overseers = overseers;
       this.nodeName = nodeName;
-      zkClient = new SolrZkClient(zkAddress, TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkAddress)
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
 
       ZkController.createClusterZkNodes(zkClient);
 
@@ -1829,7 +1833,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private SolrZkClient electNewOverseer(String address)
       throws InterruptedException, IOException, KeeperException, NoSuchFieldException,
           SecurityException, IllegalAccessException {
-    SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(address)
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClients.add(zkClient);
     ZkStateReader reader = new ZkStateReader(zkClient);
     readers.add(reader);
@@ -1875,7 +1883,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     if (zkClient == null) {
       SolrZkClient newZkClient =
-          new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       doAnswer(
               new Answer<Void>() {
                 @Override
