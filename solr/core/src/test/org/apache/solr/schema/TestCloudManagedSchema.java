@@ -69,7 +69,8 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
           collectionSchema);
     }
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder().withUrl(zkServer.getZkHost() + ":30000)").build()) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
       String fileContent =
           getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
