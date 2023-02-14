@@ -140,6 +140,9 @@ Improvements
 
 * SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or bare property name.  (Eric Pugh)
 
+* SOLR-16595: Standardize Builder methods handling of times to use require a TimeUnit to be passed in.  Deprecated methods that
+  do not specify a TimeUnit.  (Eric Pugh)
+
 Optimizations
 ---------------------
 

@@ -86,8 +86,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     } else {
       this.stateProvider = builder.stateProvider;
     }
-    this.retryExpiryTime = builder.retryExpiryTime;
-    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
+    this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
+    this.collectionStateCache.timeToLiveMs =
+        TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -107,11 +108,11 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
 
     if (builder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
+      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     if (builder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -176,10 +177,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
     lbBuilder.withHttpClient(httpClient);
     if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
+      lbBuilder.withConnectionTimeout(
+          cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
     }
     if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+      lbBuilder.withSocketTimeout(
+          cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     }
     lbBuilder.withRequestWriter(new BinaryRequestWriter());
     lbBuilder.withResponseParser(new BinaryResponseParser());
@@ -197,7 +200,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected long retryExpiryTime =
+    protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
 
