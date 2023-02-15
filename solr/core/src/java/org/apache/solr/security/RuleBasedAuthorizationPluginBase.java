@@ -120,7 +120,21 @@ public abstract class RuleBasedAuthorizationPluginBase
     return flag.rsp;
   }
 
-  /** Retrieves permission names for a given set of roles */
+  /**
+   * Retrieves permission names for a given set of roles.
+   *
+   * <p>There are two special role names that can be used in the roles list:
+   *
+   * <ul>
+   *   <li><code>null</code> meaning permission granted for all requests, even without a role
+   *   <li><code>"*"</code> meaning any role will grant the permission
+   * </ul>
+   *
+   * In order to obtain all permissions a user has based on the user's roles, you also need to
+   * include these two special roles to get the full list.
+   *
+   * @param roles a collection of role names.
+   */
   public Set<String> getPermissionNamesForRoles(Collection<String> roles) {
     if (roles == null) {
       return Set.of();
