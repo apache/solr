@@ -77,7 +77,8 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  protected int aliveCheckInterval = LBHttpSolrClient.Builder.CHECK_INTERVAL;
+  protected long aliveCheckIntervalMillis =
+      TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -442,16 +443,18 @@ public abstract class LBSolrClient extends SolrClient {
    * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
    * this to set that interval
    *
-   * @param aliveCheckInterval time in milliseconds
+   * @param aliveCheckIntervalMillis time in milliseconds
    * @deprecated use {@link LBHttpSolrClient.Builder#setAliveCheckInterval(int)} instead
    */
   @Deprecated
-  public void setAliveCheckInterval(int aliveCheckInterval) {
-    if (aliveCheckInterval <= 0) {
+  public void setAliveCheckInterval(int aliveCheckIntervalMillis) {
+    if (aliveCheckIntervalMillis <= 0) {
       throw new IllegalArgumentException(
-          "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+          "Alive check interval must be "
+              + "positive, specified value = "
+              + aliveCheckIntervalMillis);
     }
-    this.aliveCheckInterval = aliveCheckInterval;
+    this.aliveCheckIntervalMillis = aliveCheckIntervalMillis;
   }
 
   private void startAliveCheckExecutor() {
@@ -465,8 +468,8 @@ public abstract class LBSolrClient extends SolrClient {
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.aliveCheckInterval,
-              this.aliveCheckInterval,
+              this.aliveCheckIntervalMillis,
+              this.aliveCheckIntervalMillis,
               TimeUnit.MILLISECONDS);
         }
       }
