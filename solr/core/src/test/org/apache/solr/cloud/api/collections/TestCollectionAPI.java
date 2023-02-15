@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -52,6 +51,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
@@ -1260,7 +1260,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void testRecreateCollectionAfterFailure() throws Exception {
     // Upload a bad configset
     SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT, ZkTestServer.TIMEOUT, null);
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkTestServer.putConfig(
         "badconf",
         zkClient,

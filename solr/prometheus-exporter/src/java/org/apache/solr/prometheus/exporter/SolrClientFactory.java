@@ -18,6 +18,7 @@
 package org.apache.solr.prometheus.exporter;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -36,11 +37,10 @@ public class SolrClientFactory {
   public Http2SolrClient createStandaloneSolrClient(String solrHost) {
     Http2SolrClient http2SolrClient =
         new Http2SolrClient.Builder(solrHost)
-            .idleTimeout(settings.getHttpReadTimeout())
-            .connectionTimeout(settings.getHttpConnectionTimeout())
+            .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS)
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    http2SolrClient.setParser(new NoOpResponseParser("json"));
 
     return http2SolrClient;
   }
@@ -56,11 +56,11 @@ public class SolrClientFactory {
                 Optional.ofNullable(parser.getChrootPath()))
             .withInternalClientBuilder(
                 new Http2SolrClient.Builder()
-                    .idleTimeout(settings.getHttpReadTimeout())
-                    .connectionTimeout(settings.getHttpConnectionTimeout()))
+                    .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
+                    .withConnectionTimeout(
+                        settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS))
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    client.setParser(new NoOpResponseParser("json"));
 
     client.connect();
 

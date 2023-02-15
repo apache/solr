@@ -47,6 +47,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
@@ -105,6 +106,7 @@ import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
@@ -130,6 +132,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -242,6 +245,13 @@ import org.slf4j.LoggerFactory;
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * Boolean system property to automatically set the preferred leaders at collection creation and
+   * during shard split. Default false. Otherwise, the caller needs to set it for each {@link
+   * CollectionAdminRequest#splitShard(String) SplitShard} request.
+   */
+  public static final String AUTO_PREFERRED_LEADERS = "solr.autoPreferredLeaders";
+
   protected final CoreContainer coreContainer;
   private final Optional<DistributedCollectionConfigSetCommandRunner>
       distributedCollectionConfigSetCommandRunner;
@@ -303,7 +313,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
-    CoreContainer cores = checkErrors();
+    checkCoreContainer();
 
     // Pick the action
     SolrParams params = req.getParams();
@@ -326,24 +336,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     CollectionOperation operation = CollectionOperation.get(action);
-    invokeAction(req, rsp, cores, action, operation);
+    for (CollectionOperation op : operation.getCombinedOps(req, this)) {
+      invokeOperation(req, rsp, op);
+      if (rsp.getException() != null) {
+        log.warn("Operation {} failed with exception, skipping subsequent operations", op);
+        break;
+      }
+    }
     rsp.setHttpCaching(false);
   }
 
-  protected CoreContainer checkErrors() {
-    CoreContainer cores = getCoreContainer();
-    AdminAPIBase.validateZooKeeperAwareCoreContainer(cores);
-    return cores;
+  protected void checkCoreContainer() {
+    AdminAPIBase.validateZooKeeperAwareCoreContainer(getCoreContainer());
   }
 
   @SuppressWarnings({"unchecked"})
-  void invokeAction(
-      SolrQueryRequest req,
-      SolrQueryResponse rsp,
-      CoreContainer cores,
-      CollectionAction action,
-      CollectionOperation operation)
+  void invokeOperation(SolrQueryRequest req, SolrQueryResponse rsp, CollectionOperation operation)
       throws Exception {
+    log.debug("Invoking {}", operation);
     if (!coreContainer.isZooKeeperAware()) {
       throw new SolrException(
           BAD_REQUEST, "Invalid request. collections can be accessed only in SolrCloud mode");
@@ -374,10 +384,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches
     // fired and now see the collection.
-    if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-      if (rsp.getException() == null) {
-        waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
-      }
+    if (operation.equals(CollectionOperation.CREATE_OP)
+        && asyncId == null
+        && rsp.getException() == null) {
+      waitForActiveCollection(zkProps.getStr(NAME), getCoreContainer(), overseerResponse);
     }
   }
 
@@ -889,7 +899,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         SPLITSHARD,
         DEFAULT_COLLECTION_OP_TIMEOUT * 5,
         (req, rsp, h) -> {
-          String name = req.getParams().required().get(COLLECTION_PROP);
           // TODO : add support for multiple shards
           String shard = req.getParams().get(SHARD_ID_PROP);
           String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
@@ -934,8 +943,76 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   NUM_SUB_SHARDS,
                   SPLIT_FUZZ,
                   SPLIT_BY_PREFIX,
-                  FOLLOW_ALIASES);
+                  FOLLOW_ALIASES,
+                  CREATE_NODE_SET_PARAM,
+                  SPLIT_SET_PREFERRED_LEADERS);
           return copyPropertiesWithPrefix(req.getParams(), map, PROPERTY_PREFIX);
+        },
+        SplitShardHelper.OP_COMBINER),
+    /**
+     * Waits for a shard split to complete. Waits until the shard state is switched to INACTIVE (in
+     * ReplicaMutator.checkAndCompleteShardSplit). At the same time, the sub-shards states become
+     * ACTIVE.
+     */
+    WAIT_FOR_SHARD_SPLIT_OP(
+        null,
+        (req, rsp, h) -> {
+          String collectionName = req.getParams().get(COLLECTION_PROP);
+          String shardName = req.getParams().get(SHARD_ID_PROP);
+          log.info("Waiting for shard {} split to complete", shardName);
+          long startTime = System.nanoTime();
+          h.coreContainer
+              .getZkController()
+              .getZkStateReader()
+              .waitForState(
+                  collectionName,
+                  1,
+                  TimeUnit.HOURS,
+                  collection -> {
+                    Slice splitSlice = collection.getSlice(shardName);
+                    boolean splitComplete =
+                        splitSlice == null || splitSlice.getState().equals(Slice.State.INACTIVE);
+                    if (splitComplete) {
+                      if (log.isInfoEnabled()) {
+                        log.info(
+                            "Shard {} split completed in {} ms",
+                            shardName,
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+                      }
+                    }
+                    return splitComplete;
+                  });
+          return null;
+        }),
+    /** Waits for the shard preferred leader to become the leader. */
+    WAIT_FOR_PREFERRED_LEADER_OP(
+        null,
+        (req, rsp, h) -> {
+          String collectionName = req.getParams().get(COLLECTION_PROP);
+          String shardName = req.getParams().get(SHARD_ID_PROP);
+          log.info("Waiting for shard {} preferred leader to become the leader", shardName);
+          long startTime = System.nanoTime();
+          h.coreContainer
+              .getZkController()
+              .getZkStateReader()
+              .waitForState(
+                  collectionName,
+                  5,
+                  TimeUnit.MINUTES,
+                  collection -> {
+                    boolean isLeader =
+                        SplitShardHelper.isPreferredLeaderCurrentLeader(collection, shardName, h);
+                    if (isLeader) {
+                      if (log.isInfoEnabled()) {
+                        log.info(
+                            "Shard {} preferred leader is leader in {} ms",
+                            shardName,
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+                      }
+                    }
+                    return isLeader;
+                  });
+          return null;
         }),
     DELETESHARD_OP(
         DELETESHARD,
@@ -1266,7 +1343,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_);
+              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
           new ClusterStatus(
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
@@ -1298,19 +1375,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, addReplicaPropResponse);
           return null;
         }),
-    // XXX should this command support followAliases?
     DELETEREPLICAPROP_OP(
         DELETEREPLICAPROP,
         (req, rsp, h) -> {
-          Map<String, Object> map =
-              copy(
-                  req.getParams().required(),
-                  null,
-                  COLLECTION_PROP,
-                  PROPERTY_PROP,
-                  SHARD_ID_PROP,
-                  REPLICA_PROP);
-          return copy(req.getParams(), map, PROPERTY_PROP);
+          final var api = new DeleteReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final var deleteReplicaPropResponse =
+              DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, req.getParams());
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
+          return null;
         }),
     // XXX should this command support followAliases?
     BALANCESHARDUNIQUE_OP(
@@ -1866,28 +1938,93 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     public final CollectionOp fun;
     final CollectionAction action;
     final long timeOut;
+    final CollectionOpCombiner opCombiner;
 
     CollectionOperation(CollectionAction action, CollectionOp fun) {
-      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, fun);
+      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, fun, CollectionOpCombiner.SINGLE_OP);
     }
 
-    CollectionOperation(CollectionAction action, long timeOut, CollectionOp fun) {
+    CollectionOperation(
+        CollectionAction action, long timeOut, CollectionOp fun, CollectionOpCombiner opCombiner) {
       this.action = action;
       this.timeOut = timeOut;
       this.fun = fun;
+      this.opCombiner = opCombiner;
+      if (action != null) {
+        OperationMap.map.put(action, this);
+      }
     }
 
     public static CollectionOperation get(CollectionAction action) {
-      for (CollectionOperation op : values()) {
-        if (op.action == action) return op;
+      CollectionOperation op = OperationMap.map.get(action);
+      if (op == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No such action " + action);
       }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action " + action);
+      return op;
+    }
+
+    List<CollectionOperation> getCombinedOps(SolrQueryRequest req, CollectionsHandler h) {
+      return opCombiner.getCombinedOps(this, req, h);
     }
 
     @Override
     public Map<String, Object> execute(
         SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
       return fun.execute(req, rsp, h);
+    }
+
+    private static class OperationMap {
+      static final Map<CollectionAction, CollectionOperation> map =
+          new EnumMap<>(CollectionAction.class);
+    }
+
+    private static class SplitShardHelper {
+      static final CollectionOpCombiner OP_COMBINER =
+          (op, req, h) -> {
+            String shardName = req.getParams().get(SHARD_ID_PROP);
+            if (shardName == null
+                || !req.getParams()
+                    .getBool(
+                        SPLIT_SET_PREFERRED_LEADERS, Boolean.getBoolean(AUTO_PREFERRED_LEADERS))) {
+              return Collections.singletonList(op);
+            }
+            // The split.setPreferredLeader prop is true.
+            List<CollectionOperation> opSequence = new ArrayList<>();
+            String collectionName = req.getParams().get(COLLECTION_PROP);
+            DocCollection collection =
+                h.coreContainer
+                    .getZkController()
+                    .getZkStateReader()
+                    .getClusterState()
+                    .getCollection(collectionName);
+            // Ensure we split a preferred leader to help cluster balancing.
+            if (!isPreferredLeaderCurrentLeader(collection, shardName, h)) {
+              // A replica of the shard is defined as preferred leader, but is not the current
+              // leader yet.
+              opSequence.add(REBALANCELEADERS_OP); // Rebalance the leader on shard.
+              opSequence.add(WAIT_FOR_PREFERRED_LEADER_OP); // Wait for the rebalancing completion.
+            }
+            opSequence.add(op); // Split the shard and set the sub-shards preferred leaders.
+            opSequence.add(WAIT_FOR_SHARD_SPLIT_OP); // Wait for the shard split completion.
+            opSequence.add(REBALANCELEADERS_OP); // Rebalance the leaders on the sub-shards.
+            return opSequence;
+          };
+
+      static boolean isPreferredLeaderCurrentLeader(
+          DocCollection collection, String shardName, CollectionsHandler h) {
+        Slice slice = collection.getSlice(shardName);
+        if (slice == null) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "Shard '" + shardName + "' does not exist, no action taken.");
+        }
+        for (Replica replica : slice.getReplicas()) {
+          if (replica.getBool(PROPERTY_PREFIX + "preferredleader", false)) {
+            return replica.equals(slice.getLeader());
+          }
+        }
+        // No replicas have the preferred leader property.
+        return true;
+      }
     }
   }
 
@@ -2036,7 +2173,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                       replicas.add(shard.getLeader());
                     }
                     for (Replica replica : replicas) {
-                      String state = replica.getStr(ZkStateReader.STATE_PROP);
+                      State state = replica.getState();
                       if (log.isDebugEnabled()) {
                         log.debug(
                             "Checking replica status, collection={} replica={} state={}",
@@ -2045,7 +2182,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                             state);
                       }
                       if (!n.contains(replica.getNodeName())
-                          || !state.equals(Replica.State.ACTIVE.toString())) {
+                          || !state.equals(Replica.State.ACTIVE)) {
                         replicaNotAliveCnt++;
                         return false;
                       }
@@ -2075,6 +2212,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throws Exception;
   }
 
+  interface CollectionOpCombiner {
+
+    CollectionOpCombiner SINGLE_OP = (op, req, h) -> Collections.singletonList(op);
+
+    List<CollectionOperation> getCombinedOps(
+        CollectionOperation op, SolrQueryRequest req, CollectionsHandler h);
+  }
+
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
@@ -2082,7 +2227,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(AddReplicaPropertyAPI.class, DeleteNodeAPI.class, ReplaceNodeAPI.class);
+    return List.of(
+        AddReplicaPropertyAPI.class,
+        DeleteReplicaPropertyAPI.class,
+        ReplaceNodeAPI.class,
+        DeleteNodeAPI.class);
   }
 
   @Override
@@ -2097,7 +2246,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));

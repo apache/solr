@@ -1069,6 +1069,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testFuncIsnan() throws Exception {
+    SolrQueryRequest req = req("num", "12.3456", "zero", "0");
+    try {
+      assertFuncEquals(req, "isnan(12.3456)", "isnan(12.3456)", "isnan($num)");
+      assertFuncEquals(req, "isnan(div(0,0))", "isnan(div($zero,$zero))");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testFuncNot() throws Exception {
     SolrQueryRequest req = req("myField", "field_b", "myTrue", "true");
     try {
@@ -1288,6 +1298,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertU(commit());
     try {
       assertQueryEquals("mlt", "{!mlt qf=lowerfilt}1", "{!mlt qf=lowerfilt v=1}");
+    } finally {
+      delQ("*:*");
+      assertU(commit());
+    }
+  }
+
+  public void testQueryMLTContent() throws Exception {
+    assertU(adoc("id", "1", "lowerfilt", "sample data", "standardfilt", "sample data"));
+    assertU(commit());
+    try {
+      assertQueryEquals(
+          "mlt_content",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0 v='sample data'}",
+          "{!qf=lowerfilt mindf=0 mintf=0}sample data");
+      SolrQueryRequest req = req(new String[] {"df", "text"});
+      try {
+        QueryUtils.checkUnequal(
+            QParser.getParser("{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data", req)
+                .getQuery(),
+            QParser.getParser(
+                    "{!mlt_content qf=lowerfilt qf=standardfilt mindf=0 mintf=0}sample data", req)
+                .getQuery());
+      } finally {
+        req.close();
+      }
+
     } finally {
       delQ("*:*");
       assertU(commit());

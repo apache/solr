@@ -229,14 +229,11 @@ public class QueryUtils {
    * Parse the filter queries in Solr request
    *
    * @param req Solr request
-   * @param fixNegativeQueries if true, negative queries are rewritten by adding a MatchAllDocs
-   *     query clause
    * @return and array of Query. If the request does not contain filter queries, returns an empty
    *     list.
    * @throws SyntaxError if an error occurs during parsing
    */
-  public static List<Query> parseFilterQueries(SolrQueryRequest req, boolean fixNegativeQueries)
-      throws SyntaxError {
+  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws SyntaxError {
 
     String[] filterQueriesStr = req.getParams().getParams(CommonParams.FQ);
 
@@ -247,9 +244,6 @@ public class QueryUtils {
           QParser fqp = QParser.getParser(fq, req);
           fqp.setIsFilter(true);
           Query query = fqp.getQuery();
-          if (fixNegativeQueries) {
-            query = makeQueryable(query);
-          }
           filters.add(query);
         }
       }

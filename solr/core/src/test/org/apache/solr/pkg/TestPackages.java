@@ -45,7 +45,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -68,6 +67,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -94,7 +94,7 @@ public class TestPackages extends SolrCloudTestCase {
     System.setProperty("enable.packages", "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("conf2"))
+        .addConfig("conf", configset("conf3"))
         .addConfig("conf1", configset("schema-package"))
         .configure();
   }

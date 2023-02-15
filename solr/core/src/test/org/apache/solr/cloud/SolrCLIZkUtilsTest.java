@@ -30,6 +30,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
@@ -48,7 +49,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     zkAddr = cluster.getZkServer().getZkAddress();
-    zkClient = new SolrZkClient(zkAddr, 30000);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkAddr)
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build();
   }
 
   @AfterClass

@@ -413,29 +413,27 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
     this.zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            zkClientTimeout,
-            zkClientConnectTimeout,
-            // on reconnect, reload cloud info
-            new OnReconnect() {
-              @Override
-              public void command() {
-                try {
-                  ZkStateReader.this.createClusterStateWatchersAndUpdate();
-                } catch (KeeperException e) {
-                  log.error("A ZK error has occurred", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.error("Interrupted", e);
-                  throw new ZooKeeperException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-                }
-              }
-            });
+        new SolrZkClient.Builder()
+            .withUrl(zkServerAddress)
+            .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withReconnectListener(
+                () -> {
+                  // on reconnect, reload cloud info
+                  try {
+                    this.createClusterStateWatchersAndUpdate();
+                  } catch (KeeperException e) {
+                    log.error("A ZK error has occurred", e);
+                    throw new ZooKeeperException(
+                        ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+                  } catch (InterruptedException e) {
+                    // Restore the interrupted status
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted", e);
+                    throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+                  }
+                })
+            .build();
     this.closeClient = true;
     this.securityNodeListener = null;
 
@@ -1686,21 +1684,6 @@ public class ZkStateReader implements SolrCloseable {
       throws KeeperException, InterruptedException {
     String collectionPath = DocCollection.getCollectionPath(coll);
     while (true) {
-      ClusterState.initReplicaStateProvider(
-          () -> {
-            try {
-              PerReplicaStates replicaStates =
-                  PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
-              log.debug(
-                  "per-replica-state ver: {} fetched for initializing {} ",
-                  replicaStates.cversion,
-                  collectionPath);
-              return replicaStates;
-            } catch (Exception e) {
-              // TODO
-              throw new RuntimeException(e);
-            }
-          });
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
@@ -1725,8 +1708,6 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
-      } finally {
-        ClusterState.clearReplicaStateProvider();
       }
     }
   }
@@ -2252,7 +2233,7 @@ public class ZkStateReader implements SolrCloseable {
           try {
             final Stat stat =
                 getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
-            setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
+            setIfNewer(new SolrZkClient.NodeData(stat, modAliasesJson));
             return;
           } catch (KeeperException.BadVersionException e) {
             log.debug("{}", e, e);
@@ -2289,12 +2270,12 @@ public class ZkStateReader implements SolrCloseable {
      * @return true if an update was performed
      */
     public boolean update() throws KeeperException, InterruptedException {
-      log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      if (log.isDebugEnabled()) {
+        log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
+      }
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getZooKeeper().sync(ALIASES, null, null);
-      Stat stat = new Stat();
-      final byte[] data = zkClient.getData(ALIASES, null, stat, true);
-      return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+      return setIfNewer(zkClient.getNode(ALIASES, null, true));
     }
 
     // ZK Watcher interface
@@ -2308,11 +2289,7 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Aliases: updating");
 
         // re-register the watch
-        Stat stat = new Stat();
-        final byte[] data = zkClient.getData(ALIASES, this, stat, true);
-        // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but
-        // not a big deal
-        setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
+        setIfNewer(zkClient.getNode(ALIASES, this, true));
       } catch (NoNodeException e) {
         // /aliases.json will not always exist
       } catch (KeeperException.ConnectionLossException
@@ -2333,22 +2310,29 @@ public class ZkStateReader implements SolrCloseable {
      * Update the internal aliases reference with a new one, provided that its ZK version has
      * increased.
      *
-     * @param newAliases the potentially newer version of Aliases
+     * @param n the node data
      * @return true if aliases have been updated to a new version, false otherwise
      */
-    private boolean setIfNewer(Aliases newAliases) {
-      assert newAliases.getZNodeVersion() >= 0;
+    private boolean setIfNewer(SolrZkClient.NodeData n) {
+      assert n.stat.getVersion() >= 0;
       synchronized (this) {
-        int cmp = Integer.compare(aliases.getZNodeVersion(), newAliases.getZNodeVersion());
+        int cmp = Integer.compare(aliases.getZNodeVersion(), n.stat.getVersion());
         if (cmp < 0) {
-          log.debug("Aliases: cmp={}, new definition is: {}", cmp, newAliases);
-          aliases = newAliases;
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Aliases: cmp={}, new definition is: {}",
+                cmp,
+                Aliases.fromJSON(n.data, n.stat.getVersion()));
+          }
+          aliases = Aliases.fromJSON(n.data, n.stat.getVersion());
           this.notifyAll();
           return true;
         } else {
-          log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
-          assert cmp != 0 || Arrays.equals(aliases.toJSON(), newAliases.toJSON())
-              : aliases + " != " + newAliases;
+          if (log.isDebugEnabled()) {
+            log.debug("Aliases: cmp={}, not overwriting ZK version.", cmp);
+          }
+          assert cmp != 0 || Arrays.equals(aliases.toJSON(), n.data)
+              : aliases + " != " + Aliases.fromJSON(n.data, n.stat.getVersion());
           return false;
         }
       }

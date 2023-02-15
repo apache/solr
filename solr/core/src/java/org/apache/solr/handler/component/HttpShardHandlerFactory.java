@@ -282,13 +282,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
     this.defaultClient =
         new Http2SolrClient.Builder()
-            .connectionTimeout(connectionTimeout)
-            .idleTimeout(soTimeout)
+            .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
-            .maxConnectionsPerHost(maxConnectionsPerHost)
+            .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 

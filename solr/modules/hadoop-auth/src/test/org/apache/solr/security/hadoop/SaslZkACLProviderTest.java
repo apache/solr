@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -178,7 +179,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientWithACLs extends SolrZkClient {
 
     public SolrZkClientWithACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -191,7 +195,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientNoACLs extends SolrZkClient {
 
     public SolrZkClientNoACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override

@@ -23,18 +23,6 @@ apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
-configurations {
-  // jettyClientImplementation should be used for all jetty client libraries used by the Solr Server.
-  // These libraries must be available in the WEB-INF/lib, as well as server/lib.
-  // Jetty does not allow for these specific libraries to be accessed from the webapp, if they only live in server/lib.
-  // Note: because of SolrEmbedded, this is not all jetty libraries.
-  // (Solr Core requires the jetty server libraries because of embedded Solr, however the webapp does not use these)
-  jettyClientImplementation
-  implementation {
-    extendsFrom jettyClientImplementation
-  }
-}
-
 resolve {
   classpath = sourceSets.main.runtimeClasspath
   outputDir = file("build/generated/openapi")
@@ -77,21 +65,6 @@ dependencies {
   })
   implementation 'io.dropwizard.metrics:metrics-jmx'
   implementation 'io.dropwizard.metrics:metrics-jvm'
-
-  // Jetty (both for client and server, which is only used by EmbeddedSolrServer)
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
-  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
-    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
-  })
-  jettyClientImplementation('org.eclipse.jetty:jetty-http')
-  jettyClientImplementation('org.eclipse.jetty:jetty-io')
-  implementation 'org.eclipse.jetty:jetty-rewrite'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  jettyClientImplementation('org.eclipse.jetty:jetty-util')
-
-  jettyClientImplementation('org.eclipse.jetty.http2:http2-common')
-  implementation 'org.eclipse.jetty.http2:http2-server'
 
   implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
@@ -152,9 +125,10 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  compileOnlyApi 'org.eclipse.jetty.toolchain:jetty-servlet-api'
-
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty:jetty-http'
+  implementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
@@ -197,6 +171,10 @@ dependencies {
   compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
   compileOnly 'org.osgi:osgi.annotation'
 
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
+  // -- Test Dependencies
+
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
   testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"
@@ -207,6 +185,9 @@ dependencies {
   testImplementation project(':solr:test-framework')
 
   testImplementation 'org.apache.lucene:lucene-test-framework'
+
+  testImplementation 'org.eclipse.jetty:jetty-server'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
 
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'

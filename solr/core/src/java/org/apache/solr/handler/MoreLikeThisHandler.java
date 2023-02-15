@@ -119,7 +119,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        filters = QueryUtils.parseFilterQueries(req, false);
+        filters = QueryUtils.parseFilterQueries(req);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -218,6 +218,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         } else {
           final ResponseBuilder responseBuilder =
               new ResponseBuilder(req, rsp, Collections.emptyList());
+          responseBuilder.setQuery(mlt.getRealMLTQuery());
           SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder);
           FacetComponent.FacetContext.initContext(responseBuilder);
           rsp.add("facet_counts", FacetComponent.getFacetCounts(f));

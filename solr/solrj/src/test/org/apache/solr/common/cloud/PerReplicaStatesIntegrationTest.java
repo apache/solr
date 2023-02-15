@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -39,7 +39,13 @@ import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
 @LogLevel(
-    "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;org.apache.solr.cloud.Overseer=INFO;org.apache.solr.common.cloud=INFO;org.apache.solr.cloud.api.collections=INFO;org.apache.solr.cloud.overseer=INFO")
+    "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
+        + "org.apache.solr.handler.admin.CollectionsHandler=DEBUG;"
+        + "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;"
+        + "org.apache.solr.cloud.Overseer=INFO;"
+        + "org.apache.solr.common.cloud=INFO;"
+        + "org.apache.solr.cloud.api.collections=INFO;"
+        + "org.apache.solr.cloud.overseer=INFO")
 public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

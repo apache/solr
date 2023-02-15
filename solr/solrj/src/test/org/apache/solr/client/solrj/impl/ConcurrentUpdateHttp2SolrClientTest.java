@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -67,8 +67,8 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
                     serverUrl, http2Client, successCounter, errorCounter, errors)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
+                .setPollQueueTime(0, TimeUnit.MILLISECONDS)
                 .build()) {
-      concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
@@ -172,8 +172,8 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
             new ConcurrentUpdateHttp2SolrClient.Builder(jetty.getBaseUrl().toString(), http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
+                .setPollQueueTime(0, TimeUnit.MILLISECONDS)
                 .build()) {
-      concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
