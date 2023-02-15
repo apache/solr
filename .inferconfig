@@ -1,6 +1,7 @@
 {
   "racerd-ignore-classes" : [
-    "org.apache.solr.common.util.ObjectReleaseTracker"
+    "org.apache.solr.common.util.ObjectReleaseTracker",
+    "org.noggit.CharArr.NullCharArr"
   ],
   "quandary-sources": [
     {
