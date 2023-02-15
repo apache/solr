@@ -385,6 +385,7 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withConnStrategy(strat)
+            .withReconnectListener(() -> onReconnect(descriptorsSupplier))
             .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
             .withAclProvider(zkACLProvider)
             .withClosedCheck(cc::isShutDown)
@@ -423,7 +424,7 @@ public class ZkController implements Closeable {
 
   private void beforeReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
     try {
-      this.overseer.close();
+      overseer.close();
     } catch (Exception e) {
       log.error("Error trying to stop any Overseer threads", e);
     }
