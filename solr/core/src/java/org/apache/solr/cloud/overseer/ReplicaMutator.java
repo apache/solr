@@ -453,9 +453,6 @@ public class ReplicaMutator {
     if (!Objects.equals(replica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
     if (!Objects.equals(replica.getCoreName(), oldReplica.getCoreName())) return true;
     if (!Objects.equals(replica.getNodeName(), oldReplica.getNodeName())) return true;
-    if (!Objects.equals(
-        replica.get(ZkStateReader.FORCE_SET_STATE_PROP),
-        oldReplica.get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
     return false;
   }
 
