@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -67,7 +68,7 @@ public class DeleteNodeAPI extends AdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteNode(
-      @Parameter(description = "The node to be removed.", required = true) @PathParam("nodeName")
+      @Parameter(description = "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.", required = true) @PathParam("nodeName")
           String nodeName,
       @RequestBody(description = "Contains user provided parameters", required = true)
           DeleteNodeRequestBody requestBody)
@@ -93,13 +94,13 @@ public class DeleteNodeAPI extends AdminAPIBase {
       throws Exception {
     final RequiredSolrParams requiredParams = params.required();
     final DeleteNodeRequestBody requestBody = new DeleteNodeRequestBody(params.get(ASYNC));
-    return apiInstance.deleteNode(requiredParams.get("node"), requestBody);
+    return apiInstance.deleteNode(requiredParams.get(NODE), requestBody);
   }
 
   public static ZkNodeProps createRemoteMessage(
       String nodeName, DeleteNodeRequestBody requestBody) {
     Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put("node", nodeName);
+    remoteMessage.put(NODE, nodeName);
     if (requestBody != null) {
       if (requestBody.async != null) {
         remoteMessage.put(ASYNC, requestBody.async);
