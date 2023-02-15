@@ -25,6 +25,8 @@ import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -119,7 +121,7 @@ public abstract class RuleBasedAuthorizationPluginBase
   }
 
   /** Retrieves permission names for a given set of roles */
-  public Set<String> getPermissionNamesForRoles(Set<String> roles) {
+  public Set<String> getPermissionNamesForRoles(Collection<String> roles) {
     if (roles == null) {
       return Set.of();
     }
@@ -340,11 +342,11 @@ public abstract class RuleBasedAuthorizationPluginBase
         perms.add(permission);
       }
     }
-    if (permission.role != null) {
-      for (String r : permission.role) {
-        Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
-        rm.add(permission);
-      }
+    Collection<String> roles =
+        permission.role != null ? permission.role : Collections.singletonList(null);
+    for (String r : roles) {
+      Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
+      rm.add(permission);
     }
   }
 
