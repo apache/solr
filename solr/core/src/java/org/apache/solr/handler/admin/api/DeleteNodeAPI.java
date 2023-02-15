@@ -68,7 +68,11 @@ public class DeleteNodeAPI extends AdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteNode(
-      @Parameter(description = "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.", required = true) @PathParam("nodeName")
+      @Parameter(
+              description =
+                  "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.",
+              required = true)
+          @PathParam("nodeName")
           String nodeName,
       @RequestBody(description = "Contains user provided parameters", required = true)
           DeleteNodeRequestBody requestBody)
