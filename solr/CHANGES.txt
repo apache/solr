@@ -119,6 +119,9 @@ Improvements
 
 * SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
 
+* SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
+  `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
