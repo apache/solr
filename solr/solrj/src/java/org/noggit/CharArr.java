@@ -18,7 +18,6 @@
 package org.noggit;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.CharBuffer;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.NotThreadSafe;
@@ -96,11 +95,6 @@ public class CharArr implements CharSequence, Appendable {
     return buf[start++];
   }
 
-  public int read(char cbuf[], int off, int len) {
-    // TODO
-    return 0;
-  }
-
   public void unsafeWrite(char b) {
     buf[end++] = b;
   }
@@ -158,13 +152,9 @@ public class CharArr implements CharSequence, Appendable {
     end += len;
   }
 
-  public void flush() {}
-
   public final void reset() {
     start = end = 0;
   }
-
-  public void close() {}
 
   public char[] toCharArray() {
     char newbuf[] = new char[size()];
@@ -190,16 +180,11 @@ public class CharArr implements CharSequence, Appendable {
     if (sz > 0) cb.put(buf, start, sz);
     start = end;
     while (true) {
-      fill();
       int s = size();
       if (s == 0) return sz == 0 ? -1 : sz;
       sz += s;
       cb.put(buf, start, s);
     }
-  }
-
-  public int fill() throws IOException {
-    return 0; // or -1?
   }
 
   //////////////// Appendable methods /////////////
@@ -221,9 +206,11 @@ public class CharArr implements CharSequence, Appendable {
   }
 
   @Immutable
-  static class NullCharArr extends CharArr {
-    public NullCharArr() {
-      super(new char[1], 0, 0);
+  static final class NullCharArr extends CharArr {
+    NullCharArr() {
+      this.buf = new char[0];
+      this.start = 0;
+      this.end = 0;
     }
 
     @Override
@@ -234,12 +221,6 @@ public class CharArr implements CharSequence, Appendable {
 
     @Override
     public void unsafeWrite(int b) {}
-
-    @Override
-    public void write(char b) {}
-
-    @Override
-    public void write(char b[], int off, int len) {}
 
     @Override
     public void reserve(int num) {}
@@ -258,55 +239,29 @@ public class CharArr implements CharSequence, Appendable {
     }
 
     @Override
+    public int read(CharBuffer cb) {
+      return -1;
+    }
+
+    @Override
     public void write(String s, int stringOffset, int len) {}
+
+    @Override
+    public void set(char[] arr, int start, int end) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setStart(int start) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setEnd(int end) {
+      throw new UnsupportedOperationException();
+    }
   }
 
   // IDEA: a subclass that refills the array from a reader?
-  static class CharArrReader extends CharArr {
-    protected final Reader in;
-
-    public CharArrReader(Reader in, int size) {
-      super(size);
-      this.in = in;
-    }
-
-    @Override
-    public int read() throws IOException {
-      if (start >= end) fill();
-      return start >= end ? -1 : buf[start++];
-    }
-
-    @Override
-    public int read(CharBuffer cb) throws IOException {
-      // empty the buffer and then read direct
-      int sz = size();
-      if (sz > 0) cb.put(buf, start, end);
-      int sz2 = in.read(cb);
-      if (sz2 >= 0) return sz + sz2;
-      return sz > 0 ? sz : -1;
-    }
-
-    @Override
-    public int fill() throws IOException {
-      if (start >= end) {
-        reset();
-      } else if (start > 0) {
-        System.arraycopy(buf, start, buf, 0, size());
-        end = size();
-        start = 0;
-      }
-      /*
-      // fill fully or not???
-      do {
-        int sz = in.read(buf,end,buf.length-end);
-        if (sz==-1) return;
-        end+=sz;
-      } while (end < buf.length);
-      */
-
-      int sz = in.read(buf, end, buf.length - end);
-      if (sz > 0) end += sz;
-      return sz;
-    }
-  }
+  // (see source control history)
 }
