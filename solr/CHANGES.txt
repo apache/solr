@@ -282,6 +282,8 @@ Other Changes
 * SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
   (Joshua Ouma, David Smiley)
 
+* SOLR-16660: Deprecate analytics component (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
