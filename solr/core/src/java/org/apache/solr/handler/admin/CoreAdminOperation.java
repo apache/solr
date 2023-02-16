@@ -288,7 +288,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
                 it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
         final CoreSnapshotAPI.ListSnapshotsResponse response =
-            coreSnapshotAPI.listSnapshots(coreName, null);
+            coreSnapshotAPI.listSnapshots(coreName);
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });

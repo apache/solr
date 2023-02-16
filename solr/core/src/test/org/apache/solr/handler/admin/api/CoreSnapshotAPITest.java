@@ -108,8 +108,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
       snapshotsToCleanup.add(snapshotName);
     }
 
-    final CoreSnapshotAPI.ListSnapshotsResponse response =
-        coreSnapshotAPI.listSnapshots(coreName, null);
+    final CoreSnapshotAPI.ListSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
     assertEquals(5, response.snapshots.size());
   }
@@ -122,7 +121,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              coreSnapshotAPI.listSnapshots(nonExistentCoreName, null);
+              coreSnapshotAPI.listSnapshots(nonExistentCoreName);
             });
     assertEquals(400, solrException.code());
     assertTrue(
@@ -142,8 +141,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
     assertEquals(coreName, deleteResponse.coreName);
     assertEquals(snapshotName, deleteResponse.commitName);
 
-    final CoreSnapshotAPI.ListSnapshotsResponse response =
-        coreSnapshotAPI.listSnapshots(coreName, null);
+    final CoreSnapshotAPI.ListSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
     assertEquals(0, response.snapshots.size());
   }

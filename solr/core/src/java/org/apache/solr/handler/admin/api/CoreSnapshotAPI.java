@@ -153,16 +153,14 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
               description = "The name of the core for which to retrieve snapshots.",
               required = true)
           @PathParam("coreName")
-          String coreName,
-      @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
-          String taskId)
+          String coreName)
       throws Exception {
     final ListSnapshotsResponse response = instantiateJerseyResponse(ListSnapshotsResponse.class);
 
     return handlePotentiallyAsynchronousTask(
         response,
         coreName,
-        taskId,
+        null, // 'list' operations are never asynchronous
         "listSnapshots",
         () -> {
           try (SolrCore core = coreContainer.getCore(coreName)) {
@@ -192,7 +190,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
         });
   }
 
-  /** The Response for {@link CoreSnapshotAPI}'s {@link #listSnapshots(String, String)} */
+  /** The Response for {@link CoreSnapshotAPI}'s {@link #listSnapshots(String)} */
   public static class ListSnapshotsResponse extends SolrJerseyResponse {
     @Schema(description = "The collection of snapshots found for the requested core.")
     @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)
