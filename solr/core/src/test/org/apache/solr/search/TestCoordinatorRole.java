@@ -294,6 +294,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         assertEquals(nrtCore, hostCore);
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
+
+        // TODO what is expected here? why are we just bailing? Can't the following code just be removed...
         if (true) return;
 
         // next phase: just toggle a bunch
@@ -336,6 +338,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         start = new Date().getTime();
         try {
           do {
+            // TODO - What is expected here? equals not doing anything? hostCore=?
             pullCore.equals(
                 hostCore =
                     getHostCoreName(
@@ -387,6 +390,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery("*:*");
     q.add("fl", "id,desc_s,_core_:[core]").add(OMIT_HEADER, TRUE);
     p.accept(q);
+    // TODO why is this building a string instead of using the proper SolrClient???
     StringBuilder sb =
         new StringBuilder(qaNode).append("/").append(COLL).append("/select?wt=javabin");
     q.forEach(e -> sb.append("&").append(e.getKey()).append("=").append(e.getValue()[0]));
