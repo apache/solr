@@ -399,6 +399,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             (SimpleOrderedMap)
                 Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
         docs = (SolrDocumentList) rsp.get("response");
+        assertNotNull("Docs should not be null. Response was: " + rsp, docs);
         if (docs.size() > 0) {
           found = true;
           break;
