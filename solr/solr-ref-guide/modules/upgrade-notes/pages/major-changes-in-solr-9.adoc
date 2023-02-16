@@ -79,6 +79,9 @@ The `server/contexts/solr-jetty-context.xml` now explicitly removes these restri
   At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
   Users should start migrating to the new module to prepare for a smooth transition.
 
+=== Docker
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+
 == Solr 9.1.1
 * Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
 

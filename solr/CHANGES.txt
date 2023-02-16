@@ -117,6 +117,8 @@ Improvements
 * SOLR-16595: Standardize Builder methods handling of times to use require a TimeUnit to be passed in.  Deprecated methods that
   do not specify a TimeUnit.  (Eric Pugh)
 
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
+
 Optimizations
 ---------------------
 
