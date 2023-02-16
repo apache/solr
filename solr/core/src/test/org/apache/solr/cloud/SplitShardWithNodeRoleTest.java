@@ -22,7 +22,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -51,7 +50,7 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
 
-    Set<String> overseerNodes =  new HashSet<>();
+    Set<String> overseerNodes = new HashSet<>();
     System.setProperty(NodeRoles.NODE_ROLES_PROP, "data:off,overseer:preferred");
     try {
       overseerNodes.add(cluster.startJettySolrRunner().getNodeName());
@@ -62,19 +61,17 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
     final CountDownLatch latch = new CountDownLatch(1);
     Watcher watcher = createOverseerWatcher(overseerNodes, latch);
     cluster.getZkStateReader().getZkClient().getChildren(Overseer.OVERSEER_ELECT, watcher, true);
-    if(overseerNodes.contains( getOverseerLeader(zkClient()))){
+    if (overseerNodes.contains(getOverseerLeader(zkClient()))) {
       latch.countDown();
     }
-    if(!latch.await(10, TimeUnit.SECONDS)){
+    if (!latch.await(10, TimeUnit.SECONDS)) {
       fail(
-              String.format(
-                      Locale.ROOT,
-                      "Overseer leader should be from overseer %s  node but %s",
-                      overseerNodes,
-                      getOverseerLeader(zkClient())));
-
+          String.format(
+              Locale.ROOT,
+              "Overseer leader should be from overseer %s  node but %s",
+              overseerNodes,
+              getOverseerLeader(zkClient())));
     }
-
   }
 
   private static Watcher createOverseerWatcher(Set<String> overseerNodes, CountDownLatch latch) {
@@ -82,7 +79,7 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
       @Override
       public void process(WatchedEvent event) {
         log.info("watcher fired");
-        if(overseerNodes.contains( getOverseerLeader(zkClient()))){
+        if (overseerNodes.contains(getOverseerLeader(zkClient()))) {
           latch.countDown();
           return;
         }
