@@ -1962,7 +1962,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         Path confPath =
@@ -2038,7 +2038,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String confName = cli.getOptionValue("confname");
@@ -2121,7 +2121,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
           throw new SolrServerException(
@@ -2187,7 +2187,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
@@ -2253,7 +2253,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
@@ -2317,7 +2317,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String src = cli.getOptionValue("src");
@@ -2400,7 +2400,7 @@ public class SolrCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
         String src = cli.getOptionValue("src");
