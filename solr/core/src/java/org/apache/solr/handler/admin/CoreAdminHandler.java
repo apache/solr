@@ -18,9 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
