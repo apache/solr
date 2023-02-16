@@ -380,25 +380,17 @@ public class ZkController implements Closeable {
             : cc.getResourceLoader().newInstance(stateCompressionProviderClass, Compressor.class);
 
     zkClient =
-        new SolrZkClient(
-            zkServerAddress,
-            clientTimeout,
-            zkClientConnectTimeout,
-            strat,
-            () -> onReconnect(descriptorsSupplier),
-            () -> {
-              try {
-                this.overseer.close();
-              } catch (Exception e) {
-                log.error("Error trying to stop any Overseer threads", e);
-              }
-              closeOutstandingElections(descriptorsSupplier);
-              markAllAsNotLeader(descriptorsSupplier);
-            },
-            zkACLProvider,
-            cc::isShutDown,
-            compressor);
-
+        new SolrZkClient.Builder()
+            .withUrl(zkServerAddress)
+            .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withConnStrategy(strat)
+            .withReconnectListener(() -> onReconnect(descriptorsSupplier))
+            .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
+            .withAclProvider(zkACLProvider)
+            .withClosedCheck(cc::isShutDown)
+            .withCompressor(compressor)
+            .build();
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
 
@@ -428,6 +420,16 @@ public class ZkController implements Closeable {
             ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
             zkStateReader);
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void beforeReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+    try {
+      overseer.close();
+    } catch (Exception e) {
+      log.error("Error trying to stop any Overseer threads", e);
+    }
+    closeOutstandingElections(descriptorsSupplier);
+    markAllAsNotLeader(descriptorsSupplier);
   }
 
   private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier)
@@ -1191,7 +1193,11 @@ public class ZkController implements Closeable {
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
 
     SolrZkClient tmpClient =
-        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000);
+        new SolrZkClient.Builder()
+            .withUrl(zkHost.substring(0, zkHost.indexOf("/")))
+            .withTimeout(60000, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+            .build();
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);

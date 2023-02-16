@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
@@ -354,12 +355,13 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   @Test
   public void testZNodePaths() throws Exception {
     getDelegationToken(null, USER_1, primarySolrClient);
-    SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(), 1000);
-    try {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(1000, TimeUnit.MILLISECONDS)
+            .build()) {
       assertTrue(zkClient.exists("/security/zkdtsm", true));
       assertTrue(zkClient.exists("/security/token", true));
-    } finally {
-      zkClient.close();
     }
   }
 

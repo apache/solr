@@ -140,6 +140,12 @@ Improvements
 
 * SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or bare property name.  (Eric Pugh)
 
+* SOLR-16595: Standardize Builder methods handling of times to use require a TimeUnit to be passed in.  Deprecated methods that
+  do not specify a TimeUnit.  (Eric Pugh)
+
+* SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
+  `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -198,6 +204,12 @@ Bug Fixes
 * SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
 
 * SOLR-16628: Ensure that InputStreams are closed after Xml parsing (Michael Gibney, David Smiley, Kevin Risden)
+
+* SOLR-16639: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (Naoto Minami)
+
+* SOLR-16658: List of permissions returned to Admin UI is not complete (janhoy)
+
+* SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
 Build
 ---------------------

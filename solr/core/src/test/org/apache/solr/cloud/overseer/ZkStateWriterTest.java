@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -77,7 +78,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
@@ -141,7 +146,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
@@ -220,7 +229,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
@@ -301,7 +314,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
@@ -350,7 +367,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
@@ -450,7 +471,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withConnTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
 
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
