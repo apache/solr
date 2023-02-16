@@ -70,12 +70,13 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
    *
    * @param solrJerseyResponse the response that the calling methods expects to return.
    * @param coreName the name of the core that work is being done against.
-   * @param taskId an id provided for registering async work.
+   * @param taskId an id provided for registering async work (if null, the task is executed
+   *     synchronously)
    * @param actionName a name for the action being done.
    * @param supplier the work that the calling method wants done.
    * @return the supplied T solrJerseyResponse
    */
-  public <T extends SolrJerseyResponse> T handle(
+  public <T extends SolrJerseyResponse> T handlePotentiallyAsynchronousTask(
       T solrJerseyResponse, String coreName, String taskId, String actionName, Supplier<T> supplier)
       throws Exception {
     try {

@@ -81,7 +81,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
       throws Exception {
     final CreateSnapshotResponse response = instantiateJerseyResponse(CreateSnapshotResponse.class);
 
-    return handle(
+    return handlePotentiallyAsynchronousTask(
         response,
         coreName,
         taskId,
@@ -159,7 +159,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
       throws Exception {
     final ListSnapshotsResponse response = instantiateJerseyResponse(ListSnapshotsResponse.class);
 
-    return handle(
+    return handlePotentiallyAsynchronousTask(
         response,
         coreName,
         taskId,
@@ -236,7 +236,7 @@ public class CoreSnapshotAPI extends CoreAdminAPIBase {
       throws Exception {
     final DeleteSnapshotResponse response = instantiateJerseyResponse(DeleteSnapshotResponse.class);
 
-    return handle(
+    return handlePotentiallyAsynchronousTask(
         response,
         coreName,
         taskId,
