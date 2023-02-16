@@ -60,8 +60,6 @@ import org.slf4j.LoggerFactory;
 public class TestCoordinatorRole extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final long DEFAULT_TOLERANCE = 500;
-
   public void testSimple() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
