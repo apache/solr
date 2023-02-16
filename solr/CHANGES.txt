@@ -209,6 +209,8 @@ Bug Fixes
 
 * SOLR-16658: List of permissions returned to Admin UI is not complete (janhoy)
 
+* SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
