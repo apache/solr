@@ -219,7 +219,9 @@ public class NodeConfig {
               .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
-          DeprecationLog.log("solrxml-zookeeper", "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
+          DeprecationLog.log(
+              "solrxml-zookeeper",
+              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);
