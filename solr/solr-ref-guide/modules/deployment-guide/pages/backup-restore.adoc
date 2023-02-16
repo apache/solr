@@ -308,7 +308,7 @@ curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproduc
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the core and snapshot names are part of the path instead of query parameters.
+With the v2 API the core name appears in the path, instead of as a query parameter.
 
 [source,bash]
 ----
