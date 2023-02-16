@@ -82,7 +82,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertEquals(10, rsp.getResults().getNumFound());
 
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
-      JettySolrRunner coordinatorJetty = null;
+      final JettySolrRunner coordinatorJetty;
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
