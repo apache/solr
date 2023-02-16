@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
-
 import java.util.function.Supplier;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
@@ -31,7 +27,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.slf4j.MDC;
 
 /**
  * A common parent for admin Core Jersey-based APIs.
@@ -87,55 +82,19 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
       final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
           new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId);
 
-      if (taskId != null) {
-        // Put the tasks into the maps for tracking
-        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(taskId)
-            || coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(taskId)
-            || coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(taskId)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Duplicate request with the same requestid found.");
-        }
-
-        coreAdminAsyncTracker.addTask(RUNNING, taskObject);
-      }
-
       MDCLoggingContext.setCoreName(coreName);
       TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         return supplier.get();
       } else {
-        try {
-          MDC.put("CoreAdminAPIBase.taskId", taskId);
-          MDC.put("CoreAdminAPIBase.action", actionName);
-          coreAdminAsyncTracker
-              .getParallelExecutor()
-              .execute(
-                  () -> {
-                    boolean exceptionCaught = false;
-                    try {
-                      T response = supplier.get();
-
-                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-
-                      taskObject.setRspObject(rsp);
-                      taskObject.setOperationRspObject(rsp);
-                    } catch (Exception e) {
-                      exceptionCaught = true;
-                      taskObject.setRspObjectFromException(e);
-                    } finally {
-                      coreAdminAsyncTracker.removeTask("running", taskObject.taskId);
-                      if (exceptionCaught) {
-                        coreAdminAsyncTracker.addTask("failed", taskObject, true);
-                      } else {
-                        coreAdminAsyncTracker.addTask("completed", taskObject, true);
-                      }
-                    }
-                  });
-        } finally {
-          MDC.remove("CoreAdminAPIBase.taskId");
-          MDC.remove("CoreAdminAPIBase.action");
-        }
+        coreAdminAsyncTracker.submitAsyncTask(
+            taskObject,
+            actionName,
+            () -> {
+              T response = supplier.get();
+              V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+              return rsp;
+            });
       }
     } catch (CoreAdminAPIBaseException e) {
       throw e.trueException;

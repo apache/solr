@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
@@ -199,18 +200,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final CoreAdminAsyncTracker.TaskObject taskObject =
           new CoreAdminAsyncTracker.TaskObject(taskId);
 
-      if (taskId != null) {
-        // Put the tasks into the maps for tracking
-        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(taskId)
-            || coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(taskId)
-            || coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(taskId)) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
-        }
-
-        coreAdminAsyncTracker.addTask(RUNNING, taskObject);
-      }
-
       // Pick the action
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
       CoreAdminOp op = opMap.get(action);
@@ -232,32 +221,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       if (taskId == null) {
         callInfo.call();
       } else {
-        try {
-          MDC.put("CoreAdminHandler.asyncId", taskId);
-          MDC.put("CoreAdminHandler.action", action);
-          coreAdminAsyncTracker.parallelExecutor.execute(
-              () -> {
-                boolean exceptionCaught = false;
-                try {
-                  callInfo.call();
-                  taskObject.setRspObject(callInfo.rsp);
-                  taskObject.setOperationRspObject(callInfo.rsp);
-                } catch (Exception e) {
-                  exceptionCaught = true;
-                  taskObject.setRspObjectFromException(e);
-                } finally {
-                  coreAdminAsyncTracker.removeTask("running", taskObject.taskId);
-                  if (exceptionCaught) {
-                    coreAdminAsyncTracker.addTask("failed", taskObject, true);
-                  } else {
-                    coreAdminAsyncTracker.addTask("completed", taskObject, true);
-                  }
-                }
-              });
-        } finally {
-          MDC.remove("CoreAdminHandler.asyncId");
-          MDC.remove("CoreAdminHandler.action");
-        }
+        coreAdminAsyncTracker.submitAsyncTask(
+            taskObject,
+            action,
+            () -> {
+              callInfo.call();
+              return callInfo.rsp;
+            });
       }
     } finally {
       rsp.setHttpCaching(false);
@@ -462,12 +432,37 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       return requestStatusMap.get(key);
     }
 
-    public ExecutorService getParallelExecutor() {
-      return parallelExecutor;
+    public void submitAsyncTask(
+        TaskObject taskObject, String action, Callable<SolrQueryResponse> task)
+        throws SolrException {
+      ensureTaskIdNotInUse(taskObject.taskId);
+      addTask(RUNNING, taskObject);
+
+      try {
+        MDC.put("CoreAdminHandler.asyncId", taskObject.taskId);
+        MDC.put("CoreAdminHandler.action", action);
+        parallelExecutor.execute(
+            () -> {
+              boolean exceptionCaught = false;
+              try {
+                final SolrQueryResponse response = task.call();
+                taskObject.setRspObject(response);
+                taskObject.setOperationRspObject(response);
+              } catch (Exception e) {
+                exceptionCaught = true;
+                taskObject.setRspObjectFromException(e);
+              } finally {
+                finishTask(taskObject, !exceptionCaught);
+              }
+            });
+      } finally {
+        MDC.remove("CoreAdminHandler.asyncId");
+        MDC.remove("CoreAdminHandler.action");
+      }
     }
 
     /** Helper method to add a task to a tracking type. */
-    public void addTask(String type, TaskObject o, boolean limit) {
+    private void addTask(String type, TaskObject o, boolean limit) {
       synchronized (getRequestStatusMap(type)) {
         if (limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
           String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
@@ -477,17 +472,31 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
     }
 
-    public void addTask(String type, TaskObject o) {
+    private void addTask(String type, TaskObject o) {
       synchronized (getRequestStatusMap(type)) {
         getRequestStatusMap(type).put(o.taskId, o);
       }
     }
 
     /** Helper method to remove a task from a tracking map. */
-    public void removeTask(String map, String taskId) {
+    private void removeTask(String map, String taskId) {
       synchronized (getRequestStatusMap(map)) {
         getRequestStatusMap(map).remove(taskId);
       }
+    }
+
+    private void ensureTaskIdNotInUse(String taskId) throws SolrException {
+      if (getRequestStatusMap(RUNNING).containsKey(taskId)
+          || getRequestStatusMap(COMPLETED).containsKey(taskId)
+          || getRequestStatusMap(FAILED).containsKey(taskId)) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
+      }
+    }
+
+    private void finishTask(TaskObject taskObject, boolean successful) {
+      removeTask(RUNNING, taskObject.taskId);
+      addTask(successful ? COMPLETED : FAILED, taskObject, true);
     }
 
     /**
