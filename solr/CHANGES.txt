@@ -146,6 +146,10 @@ Improvements
 * SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
   `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
 
+* SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
+  `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
+  `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
