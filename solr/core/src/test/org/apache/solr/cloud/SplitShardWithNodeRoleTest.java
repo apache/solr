@@ -16,17 +16,29 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.NodeRoles;
-import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
@@ -39,29 +51,56 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
 
-    JettySolrRunner overseer1 = null;
-    JettySolrRunner overseer2 = null;
+    Set<String> overseerNodes =  new HashSet<>();
     System.setProperty(NodeRoles.NODE_ROLES_PROP, "data:off,overseer:preferred");
     try {
-      overseer1 = cluster.startJettySolrRunner();
-      overseer2 = cluster.startJettySolrRunner();
+      overseerNodes.add(cluster.startJettySolrRunner().getNodeName());
+      overseerNodes.add(cluster.startJettySolrRunner().getNodeName());
     } finally {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
+    final CountDownLatch latch = new CountDownLatch(1);
+    Watcher watcher = createOverseerWatcher(overseerNodes, latch);
+    cluster.getZkStateReader().getZkClient().getChildren(Overseer.OVERSEER_ELECT, watcher, true);
+    if(overseerNodes.contains( getOverseerLeader(zkClient()))){
+      latch.countDown();
+    }
+    if(!latch.await(10, TimeUnit.SECONDS)){
+      fail(
+              String.format(
+                      Locale.ROOT,
+                      "Overseer leader should be from overseer %s  node but %s",
+                      overseerNodes,
+                      getOverseerLeader(zkClient())));
 
-    Thread.sleep(10000);
-    String overseerLeader = getOverseerLeader(zkClient());
-    String msg =
-        String.format(
-            Locale.ROOT,
-            "Overseer leader should be from overseer %d or %d  node but %s",
-            overseer1.getLocalPort(),
-            overseer2.getLocalPort(),
-            overseerLeader);
-    assertTrue(
-        msg,
-        overseerLeader.contains(String.valueOf(overseer1.getLocalPort()))
-            || overseerLeader.contains(String.valueOf(overseer2.getLocalPort())));
+    }
+
+  }
+
+  private static Watcher createOverseerWatcher(Set<String> overseerNodes, CountDownLatch latch) {
+    return new Watcher() {
+      @Override
+      public void process(WatchedEvent event) {
+        log.info("watcher fired");
+        if(overseerNodes.contains( getOverseerLeader(zkClient()))){
+          latch.countDown();
+          return;
+        }
+        try {
+          cluster.getZkStateReader().getZkClient().getChildren(Overseer.OVERSEER_ELECT, this, true);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
+
+  protected static String getOverseerLeader(SolrZkClient zkClient) {
+    try {
+      return OverseerTaskProcessor.getLeaderNode(zkClient);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test

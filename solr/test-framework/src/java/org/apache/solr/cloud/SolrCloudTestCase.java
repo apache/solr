@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -39,7 +37,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
@@ -48,7 +45,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -264,22 +260,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
               + collection.toString());
     Collections.shuffle(shards, random());
     return shards.get(0);
-  }
-
-  protected static String getOverseerLeader(SolrZkClient zkClient) {
-    org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-    final String path = Overseer.OVERSEER_ELECT + "/leader";
-    byte[] data;
-    try {
-      data = zkClient.getData(path, null, stat, true);
-      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(data);
-      return (String) m.get(ID);
-    } catch (AlreadyClosedException e) {
-      return null;
-    } catch (Exception e) {
-      log.warn("Error communicating with ZooKeeper", e);
-      return null;
-    }
   }
 
   /** Get a (reproducibly) random replica from a {@link Slice} */
