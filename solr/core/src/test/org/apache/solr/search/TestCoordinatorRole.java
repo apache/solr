@@ -405,10 +405,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       } catch (SolrException ex) {
         // we know we're doing tricky things that might cause transient errors
         // TODO: all these query requests go to the QA node -- should QA propagate internal request
-        // errors
-        //  to the external client (and the external client retry?) or should QA attempt to failover
-        // transparently
-        //  in the event of an error?
+        // errors to the external client (and the external client retry?) or should QA attempt to
+        // failover transparently in the event of an error?
         if (i < 5) {
           log.info("swallowing transient error", ex);
         } else {
