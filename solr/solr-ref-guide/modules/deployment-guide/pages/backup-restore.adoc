@@ -348,7 +348,7 @@ You can trigger a delete snapshot with an HTTP command like this (replace "techp
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
+curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
 
 ----
 ====
