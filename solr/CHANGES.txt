@@ -285,6 +285,8 @@ Other Changes
 * SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
   (Joshua Ouma, David Smiley)
 
+* SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes

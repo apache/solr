@@ -497,9 +497,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.permissions = permissions;
-  $scope.isPermitted = function (permissions) {
-    return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
-  }
 
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
@@ -532,6 +529,8 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         permissions.READ_PERM,
         permissions.UPDATE_PERM
       ]);
+
+      $scope.canEditColl = $scope.isPermitted(permissions.COLL_EDIT_PERM);
 
       var currentCollectionName = $route.current.params.core;
       delete $scope.currentCollection;
@@ -590,6 +589,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.page = page;
     $scope.currentUser = sessionStorage.getItem("auth.username");
     $scope.http401 = sessionStorage.getItem("http401");
+    $scope.isPermitted = function (permissions) {
+      return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
+    }
   };
 
   $scope.isMultiDestAlias = function(selectedColl) {
