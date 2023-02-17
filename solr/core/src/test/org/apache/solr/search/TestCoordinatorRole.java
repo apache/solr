@@ -334,16 +334,16 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         start = new Date().getTime();
         try {
           do {
-            // TODO - What is expected here? equals not doing anything? hostCore=?
-            pullCore.equals(
-                hostCore =
-                    getHostCoreName(
-                        COLL,
-                        qaJettyBase,
-                        p -> {
-                          p.set(CommonParams.Q, "id:345");
-                          p.add("shards.preference", "replica.type:NRT");
-                        }));
+            if (pullCore.equals(
+                getHostCoreName(
+                    COLL,
+                    qaJettyBase,
+                    p -> {
+                      p.set(CommonParams.Q, "id:345");
+                      p.add("shards.preference", "replica.type:NRT");
+                    }))) {
+              done.set(true);
+            }
             count++;
             Thread.sleep(100);
           } while (!done.get());
