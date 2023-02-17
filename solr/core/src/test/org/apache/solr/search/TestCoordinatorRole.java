@@ -176,8 +176,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             executor.submit(
                 () -> {
                   // we manipulate the jetty instances in a separate thread to more closely mimic
-                  // the behavior we'd
-                  // see irl.
+                  // the behavior we'd see irl.
                   try {
                     Thread.sleep(establishBaselineMs);
                     log.info("stopping NRT jetty ...");
@@ -188,10 +187,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     nrtJettyF.start(true);
                     log.info("NRT jetty restarted.");
                     // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
-                    // state
-                    // used for query request routing has expired (60s). But here we force a return
-                    // to NRT
-                    // by stopping the PULL replica after a brief delay ...
+                    // state used for query request routing has expired (60s). But here we force a
+                    // return to NRT by stopping the PULL replica after a brief delay ...
                     Thread.sleep(pullServiceTimeMs);
                     log.info("stopping PULL jetty ...");
                     pullJettyF.stop();
@@ -221,11 +218,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             establishBaselineMs,
             now - individualRequestStart);
         // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
-        // very fast,
-        // because our QA-based client already knows both replicas are active, the index is stable,
-        // so the moment
-        // the client finds NRT is down it should be able to failover immediately and transparently
-        // to PULL.
+        // very fast, because our QA-based client already knows both replicas are active, the index
+        // is stable, so the moment the client finds NRT is down it should be able to failover
+        // immediately and transparently to PULL.
         assertEquals(
             "when we break out of the NRT query loop, should be b/c routed to PULL",
             pullCore,
@@ -258,14 +253,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             nrtDowntimeMs,
             count);
         // NRT replica is back up, registered as available with Zk, and availability info has been
-        // pulled down by
-        // our PULL-replica-based `client`, forwarded indexing command to NRT, index/commit
-        // completed. All of this
-        // accounts for the 3000ms tolerance allowed for below. This is not a strict value, and if
-        // it causes failures
-        // regularly we should feel free to increase the tolerance; but it's meant to provide a
-        // stable baseline from
-        // which to detect regressions.
+        // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
+        // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
+        // This is not a strict value, and if it causes failures regularly we should feel free to
+        // increase the tolerance; but it's meant to provide a stable baseline from which to detect
+        // regressions.
         count = 0;
         start = new Date().getTime();
         individualRequestStart = start;
