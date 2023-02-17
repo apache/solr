@@ -60,8 +60,7 @@ class ClassificationUpdateProcessor extends UpdateRequestProcessor {
       ClassificationUpdateProcessorParams classificationParams,
       UpdateRequestProcessor next,
       IndexReader indexReader,
-      IndexSchema schema)
-      throws IOException {
+      IndexSchema schema) {
     super(next);
     this.trainingClassField = classificationParams.getTrainingClassField();
     this.predictedClassField = classificationParams.getPredictedClassField();
@@ -78,17 +77,21 @@ class ClassificationUpdateProcessor extends UpdateRequestProcessor {
     }
     switch (classificationAlgorithm) {
       case KNN:
-        classifier =
-            new KNearestNeighborDocumentClassifier(
-                indexReader,
-                null,
-                classificationParams.getTrainingFilterQuery(),
-                classificationParams.getK(),
-                classificationParams.getMinDf(),
-                classificationParams.getMinTf(),
-                trainingClassField,
-                field2analyzer,
-                inputFieldNamesWithBoost);
+        try {
+          classifier =
+              new KNearestNeighborDocumentClassifier(
+                  indexReader,
+                  null,
+                  classificationParams.getTrainingFilterQuery(),
+                  classificationParams.getK(),
+                  classificationParams.getMinDf(),
+                  classificationParams.getMinTf(),
+                  trainingClassField,
+                  field2analyzer,
+                  inputFieldNamesWithBoost);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
         break;
       case BAYES:
         classifier =
