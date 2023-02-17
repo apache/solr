@@ -290,10 +290,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
 
-        // TODO what is expected here? why are we just bailing? Can't the following code just be
-        // removed...
-        if (true) return;
-
         // next phase: just toggle a bunch
         // TODO: could separate this out into a different test method, but this should suffice for
         // now
