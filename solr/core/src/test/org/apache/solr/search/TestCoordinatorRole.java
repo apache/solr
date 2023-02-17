@@ -32,9 +32,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -48,9 +49,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -151,17 +150,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       assertNotNull(nrtJetty);
       assertNotNull(pullJetty);
-      try (HttpSolrClient client = (HttpSolrClient) pullJetty.newClient()) {
+      try (SolrClient client = pullJetty.newClient()) {
         client.add(COLL, sid);
         client.commit(COLL);
         assertEquals(
             nrtCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:NRT")));
+                COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:NRT")));
         assertEquals(
             pullCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:PULL")));
+                COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:PULL")));
         // Now , kill NRT jetty
         JettySolrRunner nrtJettyF = nrtJetty;
         JettySolrRunner pullJettyF = pullJetty;
@@ -207,10 +206,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         while (nrtCore.equals(
             hostCore =
                 getHostCoreName(
-                    COLL,
-                    qaJettyBase,
-                    client,
-                    p -> p.add("shards.preference", "replica.type:NRT")))) {
+                    COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:NRT")))) {
           count++;
           individualRequestStart = new Date().getTime();
         }
@@ -275,7 +271,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 getHostCoreName(
                     COLL,
                     qaJettyBase,
-                    client,
                     p -> {
                       p.set(CommonParams.Q, "id:345");
                       p.add("shards.preference", "replica.type:NRT");
@@ -295,7 +290,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
 
-        // TODO what is expected here? why are we just bailing? Can't the following code just be removed...
+        // TODO what is expected here? why are we just bailing? Can't the following code just be
+        // removed...
         if (true) return;
 
         // next phase: just toggle a bunch
@@ -344,7 +340,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     getHostCoreName(
                         COLL,
                         qaJettyBase,
-                        client,
                         p -> {
                           p.set(CommonParams.Q, "id:345");
                           p.add("shards.preference", "replica.type:NRT");
@@ -381,44 +376,41 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private String getHostCoreName(
-      String COLL, String qaNode, HttpSolrClient solrClient, Consumer<SolrQuery> p)
+  private String getHostCoreName(String COLL, String qaNode, Consumer<SolrQuery> p)
       throws Exception {
-
     boolean found = false;
-    SolrQuery q = new SolrQuery("*:*");
-    q.add("fl", "id,desc_s,_core_:[core]").add(OMIT_HEADER, TRUE);
+    SolrQuery q =
+        new SolrQuery(
+            CommonParams.Q, "*:*",
+            CommonParams.FL, "id,desc_s,_core_:[core]",
+            OMIT_HEADER, TRUE,
+            CommonParams.WT, CommonParams.JAVABIN);
     p.accept(q);
-    // TODO why is this building a string instead of using the proper SolrClient???
-    StringBuilder sb =
-        new StringBuilder(qaNode).append("/").append(COLL).append("/select?wt=javabin");
-    q.forEach(e -> sb.append("&").append(e.getKey()).append("=").append(e.getValue()[0]));
     SolrDocumentList docs = null;
-    for (int i = 0; i < 100; i++) {
-      try {
-        SimpleOrderedMap rsp =
-            (SimpleOrderedMap)
-                Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
-        docs = (SolrDocumentList) rsp.get("response");
-        assertNotNull("Docs should not be null. Response was: " + rsp, docs);
-        if (docs.size() > 0) {
-          found = true;
-          break;
+    try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
+      for (int i = 0; i < 100; i++) {
+        try {
+          QueryResponse queryResponse = solrClient.query(COLL, q);
+          docs = queryResponse.getResults();
+          assertNotNull("Docs should not be null. Query response was: " + queryResponse, docs);
+          if (docs.size() > 0) {
+            found = true;
+            break;
+          }
+        } catch (SolrException ex) {
+          // we know we're doing tricky things that might cause transient errors
+          // TODO: all these query requests go to the QA node -- should QA propagate internal
+          // request errors to the external client (and the external client retry?) or should QA
+          // attempt to failover transparently in the event of an error?
+          if (i < 5) {
+            log.info("swallowing transient error", ex);
+          } else {
+            log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
+            fail("initial error time threshold exceeded");
+          }
         }
-      } catch (SolrException ex) {
-        // we know we're doing tricky things that might cause transient errors
-        // TODO: all these query requests go to the QA node -- should QA propagate internal request
-        // errors to the external client (and the external client retry?) or should QA attempt to
-        // failover transparently in the event of an error?
-        if (i < 5) {
-          log.info("swallowing transient error", ex);
-        } else {
-          log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
-          fail("initial error time threshold exceeded");
-        }
+        Thread.sleep(100);
       }
-      Thread.sleep(100);
     }
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
