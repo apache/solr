@@ -5,7 +5,7 @@
     "org.noggit.CharArr.NullCharArr"
   ],
   "external-java-packages": [
-    "org.slf4j."
+    "org.slf4j"
   ],
   "quandary-sources": [
     {
