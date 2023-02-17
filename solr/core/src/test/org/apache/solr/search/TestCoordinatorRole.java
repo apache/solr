@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.NodeRoles;
@@ -156,11 +157,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         assertEquals(
             nrtCore,
             getHostCoreName(
-                COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:NRT")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")));
         assertEquals(
             pullCore,
             getHostCoreName(
-                COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:PULL")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:PULL")));
         // Now , kill NRT jetty
         JettySolrRunner nrtJettyF = nrtJetty;
         JettySolrRunner pullJettyF = pullJetty;
@@ -206,7 +207,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         while (nrtCore.equals(
             hostCore =
                 getHostCoreName(
-                    COLL, qaJettyBase, p -> p.add("shards.preference", "replica.type:NRT")))) {
+                    COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
           count++;
           individualRequestStart = new Date().getTime();
         }
@@ -273,7 +274,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     qaJettyBase,
                     p -> {
                       p.set(CommonParams.Q, "id:345");
-                      p.add("shards.preference", "replica.type:NRT");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
                     }))) {
           count++;
           Thread.sleep(100);
@@ -336,7 +337,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     qaJettyBase,
                     p -> {
                       p.set(CommonParams.Q, "id:345");
-                      p.add("shards.preference", "replica.type:NRT");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
                     }))) {
               done.set(true);
             }
