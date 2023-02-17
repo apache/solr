@@ -207,7 +207,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         while (nrtCore.equals(
             hostCore =
                 getHostCoreName(
-                    COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
+                    COLL,
+                    qaJettyBase,
+                    p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
           count++;
           individualRequestStart = new Date().getTime();
         }
