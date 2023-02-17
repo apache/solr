@@ -381,10 +381,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     boolean found = false;
     SolrQuery q =
         new SolrQuery(
-            CommonParams.Q, "*:*",
-            CommonParams.FL, "id,desc_s,_core_:[core]",
-            OMIT_HEADER, TRUE,
-            CommonParams.WT, CommonParams.JAVABIN);
+            CommonParams.Q,
+            "*:*",
+            CommonParams.FL,
+            "id,desc_s,_core_:[core]",
+            OMIT_HEADER,
+            TRUE,
+            CommonParams.WT,
+            CommonParams.JAVABIN);
     p.accept(q);
     SolrDocumentList docs = null;
     try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
