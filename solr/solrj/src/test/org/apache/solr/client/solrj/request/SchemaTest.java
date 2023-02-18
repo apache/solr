@@ -112,13 +112,15 @@ public class SchemaTest extends RestTestBase {
   @Before
   public void init() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(
-        new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
+    File collectionDir = new File(tmpSolrHome, "collection1");
+    collectionDir.mkdir();
+    FileUtils.copyDirectory(new File(getFile("solrj/solr/collection1").toString()), collectionDir);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
+
 
     createJettyAndHarness(
         tmpSolrHome.getAbsolutePath(),
@@ -131,10 +133,8 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }

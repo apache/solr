@@ -85,6 +85,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
     solrClientTestRule
         .newCollection()
+//        .withConfigSet("collection1")
         .withConfigFile(configFile)
         .withSchemaFile(schemaFile)
         .create();

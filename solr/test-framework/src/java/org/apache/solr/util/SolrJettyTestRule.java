@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -36,7 +37,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     if (adminClient != null) {
       try {
         adminClient.close();
-      } catch (Exception e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
@@ -50,6 +51,10 @@ public class SolrJettyTestRule extends SolrClientTestRule {
       }
       jetty = null;
     }
+  }
+
+  public void reset() throws Exception {
+    after();
   }
 
   @Override
@@ -73,7 +78,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
       int port = jetty.getLocalPort();
       log.info("Jetty Assigned Port#{}", port);
       adminClient = SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl().toString());
-    } catch (Exception e) {
+    } catch (Exception e) {// TODO Execption dont wrap
       throw new RuntimeException(e);
     }
   }
@@ -84,16 +89,14 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   public JettySolrRunner getJetty() {
-    return jetty;
+    if(jetty == null)
+      throw new IllegalStateException();
+    return jetty;// TODO throw illegal exception
   }
 
   @Override
   public SolrClient getSolrClient(String name) {
-    try {
-      throw new Exception("Unimplemented");
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    throw new UnsupportedOperationException();// TODO Client needed
   }
 
   @Override
