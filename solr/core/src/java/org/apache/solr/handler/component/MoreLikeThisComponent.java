@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -102,7 +103,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           NamedList<NamedList<?>> temp = new NamedList<>();
           for (DocIterator iterator = rb.getResults().docList.iterator(); iterator.hasNext(); ) {
             int id = iterator.nextDoc();
-            final List<MoreLikeThisHandler.InterestingTerm> terms = mlt.getInterestingTerms(id);
+            final List<MoreLikeThisHandler.InterestingTerm> terms = mlt.getInterestingTerms(mlt.getBoostedMLTQuery(id), -1);
             if (terms.isEmpty()) {
               continue;
             }
@@ -169,7 +170,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     final CharsRef val =
         schema.getField(field).getType().indexedToReadable(term1.bytes(), reuseChar);
     reuseStr.append("{!term f=");
-    reuseStr.append(field);
+    reuseStr.append(ClientUtils.encodeLocalParamVal(field));
     reuseStr.append("}");
     reuseStr.append(val);
     return reuseStr.toString();
@@ -409,12 +410,8 @@ public class MoreLikeThisComponent extends SearchComponent {
     SimpleOrderedMap<Object> interestingTermsResponse = null;
     MoreLikeThisParams.TermStyle interestingTermsConfig =
         MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
-    List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
-        (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
-            ? null
-            : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
 
-    if (interestingTerms != null) {
+    if (interestingTermsConfig != MoreLikeThisParams.TermStyle.NONE) {
       interestingTermsResponse = new SimpleOrderedMap<>();
     }
 
@@ -423,7 +420,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
 
       DocListAndSet similarDocuments =
-          mltHelper.getMoreLikeThis(id, 0, rows, null, interestingTerms, flags);
+          mltHelper.getMoreLikeThis(id, 0, rows, null, flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
       mltResponse.add(name, similarDocuments.docList);
 
@@ -444,6 +441,9 @@ public class MoreLikeThisComponent extends SearchComponent {
       }
 
       if (interestingTermsResponse != null) {
+        List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
+                mltHelper.getInterestingTerms(mltHelper.getBoostedMLTQuery(),
+                        mltHelper.getMoreLikeThis().getMaxQueryTerms());
         if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
           SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
           for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {

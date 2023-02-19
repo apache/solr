@@ -129,8 +129,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
 
       // Hold on to the interesting terms if relevant
       TermStyle termStyle = TermStyle.get(params.get(MoreLikeThisParams.INTERESTING_TERMS));
-      List<InterestingTerm> interesting =
-          (termStyle == TermStyle.NONE) ? null : new ArrayList<>(mlt.mlt.getMaxQueryTerms());
 
       DocListAndSet mltDocs = null;
 
@@ -158,7 +156,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         // Find documents MoreLikeThis - either with a reader or a query
         // --------------------------------------------------------------------------------
         if (reader != null) {
-          mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters, interesting, flags);
+          mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters, flags);
         } else if (q != null) {
           // Matching options
           boolean includeMatch = params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true);
@@ -176,7 +174,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           if (iterator.hasNext()) {
             // do a MoreLikeThis query for each document in results
             int id = iterator.nextDoc();
-            mltDocs = mlt.getMoreLikeThis(id, start, rows, filters, interesting, flags);
+            mltDocs = mlt.getMoreLikeThis(id, start, rows, filters, flags);
           }
         } else {
           throw new SolrException(
@@ -194,7 +192,9 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
       rsp.addResponse(mltDocs.docList);
 
-      if (interesting != null) {
+      if (termStyle != TermStyle.NONE) {
+        final List<InterestingTerm> interesting = mlt.getInterestingTerms(mlt.getBoostedMLTQuery(),
+                mlt.mlt.getMaxQueryTerms());
         if (termStyle == TermStyle.DETAILS) {
           NamedList<Float> it = new NamedList<>();
           for (InterestingTerm t : interesting) {
@@ -350,14 +350,14 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     }
 
     private Query rawMLTQuery;
-    private Query boostedMLTQuery;
+    private BooleanQuery boostedMLTQuery;
     private BooleanQuery realMLTQuery;
 
     public Query getRawMLTQuery() {
       return rawMLTQuery;
     }
 
-    public Query getBoostedMLTQuery() {
+    public BooleanQuery getBoostedMLTQuery() {
       return boostedMLTQuery;
     }
 
@@ -365,7 +365,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       return realMLTQuery;
     }
 
-    private Query getBoostedQuery(Query mltquery) {
+    private BooleanQuery getBoostedQuery(Query mltquery) {
       BooleanQuery boostedQuery = (BooleanQuery) mltquery;
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
@@ -391,10 +391,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     }
 
     public DocListAndSet getMoreLikeThis(
-        int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags)
+        int id, int start, int rows, List<Query> filters, int flags)
         throws IOException {
       Document doc = reader.document(id);
-      final Query boostedQuery = getBoostedMLTQuery(id, terms);
+      final Query boostedQuery = getBoostedMLTQuery(id);
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
@@ -418,21 +418,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       return results;
     }
 
-    public List<InterestingTerm> getInterestingTerms(int docid) throws IOException {
-      final ArrayList<InterestingTerm> interestingTerms = new ArrayList<>();
-      getBoostedMLTQuery(docid, interestingTerms);
-      return interestingTerms;
-    }
     /**
-     * Sets {@link #boostedMLTQuery} and return, also put interesting terms into terms list if
-     * provided non-null. Sorry. It lacks of perfection and overall sense.
+     * Sets {@link #boostedMLTQuery} and returns it
      */
-    private Query getBoostedMLTQuery(int id, List<InterestingTerm> terms) throws IOException {
+    public BooleanQuery getBoostedMLTQuery(int id) throws IOException {
       rawMLTQuery = mlt.like(id);
       boostedMLTQuery = getBoostedQuery(rawMLTQuery);
-      if (terms != null) {
-        fillInterestingTermsFromMLTQuery(boostedMLTQuery, terms);
-      }
       return boostedMLTQuery;
     }
 
@@ -441,7 +432,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         int start,
         int rows,
         List<Query> filters,
-        List<InterestingTerm> terms,
         int flags)
         throws IOException {
       // SOLR-5351: if only check against a single field, use the reader directly. Otherwise we
@@ -463,14 +453,9 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         for (String field : fields) {
           multifieldDoc.put(field, streamValue);
         }
-
         rawMLTQuery = mlt.like(multifieldDoc);
       }
-
       boostedMLTQuery = getBoostedQuery(rawMLTQuery);
-      if (terms != null) {
-        fillInterestingTermsFromMLTQuery(boostedMLTQuery, terms);
-      }
       DocListAndSet results = new DocListAndSet();
       if (this.needDocSet) {
         results = searcher.getDocListAndSet(boostedMLTQuery, filters, null, start, rows, flags);
@@ -479,10 +464,18 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
       return results;
     }
-
-    private void fillInterestingTermsFromMLTQuery(Query query, List<InterestingTerm> terms) {
-      Collection<BooleanClause> clauses = ((BooleanQuery) query).clauses();
+    /**
+     * Yields terms with boosts from the boosted MLT query.
+     * @param maxTerms how many terms to return, negative value let to return all
+     */
+    public List<InterestingTerm> getInterestingTerms(BooleanQuery boostedMLTQuery, int maxTerms) {
+      assert boostedMLTQuery!=null : "strictly expecting it's set";
+      Collection<BooleanClause> clauses = boostedMLTQuery.clauses();
+      List<InterestingTerm> output = new ArrayList<>(maxTerms<0 ? clauses.size() : maxTerms);
       for (BooleanClause o : clauses) {
+        if (maxTerms>-1 && output.size()>=maxTerms) {
+          break;
+        }
         Query q = o.getQuery();
         float boost = 1f;
         if (q instanceof BoostQuery) {
@@ -493,10 +486,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         InterestingTerm it = new InterestingTerm();
         it.boost = boost;
         it.term = ((TermQuery) q).getTerm();
-        terms.add(it);
+        output.add(it);
       }
       // alternatively we could use
       // mltquery.extractTerms( terms );
+      return output;
     }
 
     public MoreLikeThis getMoreLikeThis() {
