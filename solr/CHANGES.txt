@@ -146,6 +146,8 @@ Improvements
 * SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
   `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
 
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
+
 Optimizations
 ---------------------
 
@@ -208,6 +210,8 @@ Bug Fixes
 * SOLR-16639: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (Naoto Minami)
 
 * SOLR-16658: List of permissions returned to Admin UI is not complete (janhoy)
+
+* SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
 Build
 ---------------------
@@ -284,6 +288,8 @@ Other Changes
 
 * SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
   (Joshua Ouma, David Smiley)
+
+* SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
 
 ==================  9.1.1 ==================
 

@@ -79,6 +79,17 @@ The `server/contexts/solr-jetty-context.xml` now explicitly removes these restri
   At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
   Users should start migrating to the new module to prepare for a smooth transition.
 
+=== Docker
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+
+=== Streaming Expressions
+* Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
+This change will only affect users that have used streaming expression classes in clients outside
+of Solr. Streaming expressions sent to the /stream handler will still operate exactly as before.
+External clients using streaming expression classes will need to update their depenencies to reference
+the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
+
+
 == Solr 9.1.1
 * Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
 
