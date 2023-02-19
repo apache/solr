@@ -299,32 +299,7 @@ public class PerReplicaStatesOps {
         .init(rs);
   }
 
-  /**
-   * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of state.json is
-   * updated
-   */
-  public static PerReplicaStatesOps touchChildren() {
-    PerReplicaStatesOps result =
-        new PerReplicaStatesOps(
-            prs -> {
-              List<PerReplicaStates.Operation> operations = new ArrayList<>(2);
-              PerReplicaStates.State st =
-                  new PerReplicaStates.State(
-                      ".dummy." + System.nanoTime(), Replica.State.DOWN, Boolean.FALSE, 0);
-              operations.add(
-                  new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, st));
-              operations.add(
-                  new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
-              if (log.isDebugEnabled()) {
-                log.debug("touchChildren {}", operations);
-              }
-              return operations;
-            });
-    result.ops = result.refresh(null);
-    return result;
-  }
-
-  PerReplicaStatesOps init(PerReplicaStates rs) {
+    PerReplicaStatesOps init(PerReplicaStates rs) {
     if (rs == null) return null;
     get(rs);
     return this;
