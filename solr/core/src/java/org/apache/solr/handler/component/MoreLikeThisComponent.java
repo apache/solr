@@ -103,7 +103,8 @@ public class MoreLikeThisComponent extends SearchComponent {
           NamedList<NamedList<?>> temp = new NamedList<>();
           for (DocIterator iterator = rb.getResults().docList.iterator(); iterator.hasNext(); ) {
             int id = iterator.nextDoc();
-            final List<MoreLikeThisHandler.InterestingTerm> terms = mlt.getInterestingTerms(mlt.getBoostedMLTQuery(id), -1);
+            final List<MoreLikeThisHandler.InterestingTerm> terms =
+                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(id), -1);
             if (terms.isEmpty()) {
               continue;
             }
@@ -419,8 +420,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
 
-      DocListAndSet similarDocuments =
-          mltHelper.getMoreLikeThis(id, 0, rows, null, flags);
+      DocListAndSet similarDocuments = mltHelper.getMoreLikeThis(id, 0, rows, null, flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
       mltResponse.add(name, similarDocuments.docList);
 
@@ -442,8 +442,8 @@ public class MoreLikeThisComponent extends SearchComponent {
 
       if (interestingTermsResponse != null) {
         List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
-                mltHelper.getInterestingTerms(mltHelper.getBoostedMLTQuery(),
-                        mltHelper.getMoreLikeThis().getMaxQueryTerms());
+            mltHelper.getInterestingTerms(
+                mltHelper.getBoostedMLTQuery(), mltHelper.getMoreLikeThis().getMaxQueryTerms());
         if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
           SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
           for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
