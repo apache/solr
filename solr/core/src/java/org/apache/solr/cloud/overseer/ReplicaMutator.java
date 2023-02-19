@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -438,17 +437,7 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
-    if (collection.isPerReplicaState() && oldReplica != null) {
-      if (!isAnyPropertyChanged(replica, oldReplica)) return ZkWriteCommand.NO_OP;
-    }
     return new ZkWriteCommand(collectionName, newCollection);
-  }
-
-  private boolean isAnyPropertyChanged(Replica replica, Replica oldReplica) {
-    if (!Objects.equals(replica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
-    if (!Objects.equals(replica.getCoreName(), oldReplica.getCoreName())) return true;
-    if (!Objects.equals(replica.getNodeName(), oldReplica.getNodeName())) return true;
-    return false;
   }
 
   private DocCollection checkAndCompleteShardSplit(
