@@ -31,7 +31,6 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
@@ -318,14 +317,7 @@ public class ZkStateWriter {
             }
           }
 
-          // When dealing with a per replica collection that did not do any update to the per
-          // replica states znodes but did update state.json, we add then remove a dummy node to
-          // change the cversion of the parent znode. This is not needed by Solr, there's no code
-          // watching the children and not watching the state.json node itself. It would be useful
-          // for external code watching the collection's Zookeeper state.json node children but not
-          // the node itself.
           if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
-            PerReplicaStatesOps.touchChildren().persist(path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
               clusterState =
