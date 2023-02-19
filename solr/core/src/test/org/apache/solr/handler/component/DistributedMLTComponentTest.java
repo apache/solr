@@ -389,7 +389,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
       Long actual = ((SolrDocumentList) entry.getValue()).getNumFound();
       assertEquals("MLT mismatch for id=" + key, expected, actual);
     }
-    // test bost mlt.qf
+    // test boost mlt.qf
     query(
         "q",
         "lowerfilt:moon",
