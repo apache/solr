@@ -38,6 +38,7 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.DefaultCollectionSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -515,18 +516,19 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     try {
       cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
       cloudClient.connect();
-      cloudClient.setDefaultCollection(collectionName);
+      //cloudClient = new DefaultCollectionSolrClient(cloudClient,collectionName);
+      //cloudClient.setDefaultCollection(collectionName);
 
       int numDocs = 10;
       for (int d = 0; d < numDocs; d++) {
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField("id", "doc" + d);
         doc.setField("str_s", "a");
-        cloudClient.add(doc);
+        cloudClient.add(collectionName,doc);
       }
-      cloudClient.commit();
+      cloudClient.commit(collectionName);
 
-      QueryResponse qr = cloudClient.query(new SolrQuery("str_s:a"));
+      QueryResponse qr = cloudClient.query(collectionName, new SolrQuery("str_s:a"));
       if (qr.getResults().getNumFound() != numDocs) {
         fail(
             "Expected "
