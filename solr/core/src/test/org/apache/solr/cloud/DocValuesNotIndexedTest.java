@@ -154,7 +154,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         multiUpdateRequest.process(cluster.getSolrClient(), COLLECTION);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
 
-    //cluster.getSolrClient().setDefaultCollection(COLLECTION);
+    // cluster.getSolrClient().setDefaultCollection(COLLECTION);
   }
 
   @AfterClass
@@ -165,7 +165,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   @Before
   public void clean() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
-    client.deleteByQuery(COLLECTION,"*:*");
+    client.deleteByQuery(COLLECTION, "*:*");
     client.commit(COLLECTION);
     resetFields(fieldsToTestSingle);
     resetFields(fieldsToTestMulti);
