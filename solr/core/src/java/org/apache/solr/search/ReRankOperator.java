@@ -34,10 +34,6 @@ public enum ReRankOperator {
     return null;
   }
 
-  public boolean isEqual(String s) {
-    return s != null && toString().equals(s.toUpperCase(Locale.ROOT));
-  }
-
   public String toLower() {
     return toString().toLowerCase(Locale.ROOT);
   }
