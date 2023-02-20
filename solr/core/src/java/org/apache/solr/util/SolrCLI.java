@@ -210,10 +210,7 @@ public class SolrCLI implements CLIO {
       try (var cloudSolrClient =
           new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
-
-        String collection = cli.getOptionValue("collection");
-        if (collection != null) cloudSolrClient.setDefaultCollection(collection);
-
+        
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
       }
