@@ -103,7 +103,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           break;
         default:
           scoreCombiner = null;
-          throw new IllegalArgumentException("Unexpected:" + reRankOperator);
+          throw new IllegalArgumentException("Unexpected: reRankOperator=" + reRankOperator);
       }
     }
 
