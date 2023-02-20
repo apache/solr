@@ -92,7 +92,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
-    cloudClient.setDefaultCollection(name);
+    //cloudClient.setDefaultCollection(name);
     return name;
   }
 
@@ -102,7 +102,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final String collectionName = createAndSetNewDefaultCollection();
 
     // add a doc, update it, and delete it
-    addUpdateDelete("doc1");
+    addUpdateDelete(collectionName,"doc1");
     assertEquals(0, cloudClient.query(params("q", "*:*")).getResults().getNumFound());
 
     // add 2 docs in a single request
@@ -115,31 +115,31 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         (new UpdateRequest().deleteById("doc2").deleteById("doc3"))
             .process(cloudClient)
             .getStatus());
-    assertEquals(0, cloudClient.commit().getStatus());
+    assertEquals(0, cloudClient.commit(collectionName).getStatus());
 
-    assertEquals(0, cloudClient.query(params("q", "*:*")).getResults().getNumFound());
+    assertEquals(0, cloudClient.query(collectionName,params("q", "*:*")).getResults().getNumFound());
 
     // add a doc that we will then delete later after adding two other docs (all before next
     // commit).
     assertEquals(
-        0, cloudClient.add(sdoc("id", "doc4", "content_s", "will_delete_later")).getStatus());
-    assertEquals(0, cloudClient.add(sdocs(sdoc("id", "doc5"), sdoc("id", "doc6"))).getStatus());
-    assertEquals(0, cloudClient.deleteById("doc4").getStatus());
-    assertEquals(0, cloudClient.commit().getStatus());
+        0, cloudClient.add(collectionName,sdoc("id", "doc4", "content_s", "will_delete_later")).getStatus());
+    assertEquals(0, cloudClient.add(collectionName,sdocs(sdoc("id", "doc5"), sdoc("id", "doc6"))).getStatus());
+    assertEquals(0, cloudClient.deleteById(collectionName,"doc4").getStatus());
+    assertEquals(0, cloudClient.commit(collectionName).getStatus());
 
-    assertEquals(0, cloudClient.query(params("q", "id:doc4")).getResults().getNumFound());
-    assertEquals(1, cloudClient.query(params("q", "id:doc5")).getResults().getNumFound());
-    assertEquals(1, cloudClient.query(params("q", "id:doc6")).getResults().getNumFound());
-    assertEquals(2, cloudClient.query(params("q", "*:*")).getResults().getNumFound());
+    assertEquals(0, cloudClient.query(collectionName,params("q", "id:doc4")).getResults().getNumFound());
+    assertEquals(1, cloudClient.query(collectionName,params("q", "id:doc5")).getResults().getNumFound());
+    assertEquals(1, cloudClient.query(collectionName,params("q", "id:doc6")).getResults().getNumFound());
+    assertEquals(2, cloudClient.query(collectionName,params("q", "*:*")).getResults().getNumFound());
 
-    checkShardConsistency(params("q", "*:*", "rows", "9999", "_trace", "post_doc_5_6"));
+    checkShardConsistency(collectionName, params("q", "*:*", "rows", "9999", "_trace", "post_doc_5_6"));
 
     // delete everything....
-    assertEquals(0, cloudClient.deleteByQuery("*:*").getStatus());
-    assertEquals(0, cloudClient.commit().getStatus());
-    assertEquals(0, cloudClient.query(params("q", "*:*")).getResults().getNumFound());
+    assertEquals(0, cloudClient.deleteByQuery(collectionName,"*:*").getStatus());
+    assertEquals(0, cloudClient.commit(collectionName).getStatus());
+    assertEquals(0, cloudClient.query(collectionName,params("q", "*:*")).getResults().getNumFound());
 
-    checkShardConsistency(params("q", "*:*", "rows", "9999", "_trace", "delAll"));
+    checkShardConsistency(collectionName, params("q", "*:*", "rows", "9999", "_trace", "delAll"));
   }
 
   public void testDeleteByIdImplicitRouter() throws Exception {
@@ -497,24 +497,24 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   }
 
   /** NOTE: uses the cluster's CloudSolrClient and assumes default collection has been set */
-  private void addUpdateDelete(String docId) throws Exception {
+  private void addUpdateDelete(String collectionName, String docId) throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
 
     // add the doc, confirm we can query it...
-    assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "originalcontent")).getStatus());
-    assertEquals(0, cloudClient.commit().getStatus());
+    assertEquals(0, cloudClient.add(collectionName,sdoc("id", docId, "content_t", "originalcontent")).getStatus());
+    assertEquals(0, cloudClient.commit(collectionName).getStatus());
 
-    assertEquals(1, cloudClient.query(params("q", "id:" + docId)).getResults().getNumFound());
+    assertEquals(1, cloudClient.query(collectionName,params("q", "id:" + docId)).getResults().getNumFound());
     assertEquals(
-        1, cloudClient.query(params("q", "content_t:originalcontent")).getResults().getNumFound());
+        1, cloudClient.query(collectionName,params("q", "content_t:originalcontent")).getResults().getNumFound());
     assertEquals(
         1,
         cloudClient
-            .query(params("q", "content_t:originalcontent AND id:" + docId))
+            .query(collectionName,params("q", "content_t:originalcontent AND id:" + docId))
             .getResults()
             .getNumFound());
 
-    checkShardConsistency(params("q", "id:" + docId, "rows", "99", "_trace", "original_doc"));
+    checkShardConsistency(collectionName,params("q", "id:" + docId, "rows", "99", "_trace", "original_doc"));
 
     // update doc
     assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "updatedcontent")).getStatus());
@@ -735,7 +735,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
    * @see #cluster
    * @see CloudInspectUtil#showDiff
    */
-  private void checkShardConsistency(final SolrParams params) throws Exception {
+  private void checkShardConsistency(String collectionName, final SolrParams params) throws Exception {
     // TODO: refactor into static in CloudInspectUtil w/ DocCollection param?
     // TODO: refactor to take in a BiFunction<QueryResponse,QueryResponse,Boolean> ?
 
@@ -744,7 +744,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         cluster
             .getSolrClient()
             .getClusterState()
-            .getCollection(cluster.getSolrClient().getDefaultCollection());
+            .getCollection(collectionName);
     log.info("Checking shard consistency via: {}", perReplicaParams);
     for (Map.Entry<String, Slice> entry : collection.getActiveSlicesMap().entrySet()) {
       final String shardName = entry.getKey();
