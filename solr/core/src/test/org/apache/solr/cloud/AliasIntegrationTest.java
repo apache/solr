@@ -33,6 +33,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.DefaultCollectionSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -892,8 +893,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // new CloudSolrClient (random shardLeadersOnly)
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         if (random().nextBoolean()) {
-          solrClient.setDefaultCollection(collectionList);
-          responseConsumer.accept(solrClient.query(null, solrQuery));
+          // solrClient = new DefaultCollectionSolrClient(solrClient, collectionList);
+          DefaultCollectionSolrClient defaultCollectionSolrClient =
+              new DefaultCollectionSolrClient(solrClient, collectionList);
+          // solrClient.setDefaultCollection(collectionList);
+          responseConsumer.accept(defaultCollectionSolrClient.query(solrQuery));
         } else {
           responseConsumer.accept(solrClient.query(collectionList, solrQuery));
         }
