@@ -28,7 +28,7 @@ public enum ReRankOperator {
       try {
         return ReRankOperator.valueOf(p.toUpperCase(Locale.ROOT));
       } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid reRankOperator");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid reRankOperator: " + p);
       }
     }
     return null;
