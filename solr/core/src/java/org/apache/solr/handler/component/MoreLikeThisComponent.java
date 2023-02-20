@@ -103,16 +103,16 @@ public class MoreLikeThisComponent extends SearchComponent {
           NamedList<NamedList<?>> temp = new NamedList<>();
           for (DocIterator iterator = rb.getResults().docList.iterator(); iterator.hasNext(); ) {
             int id = iterator.nextDoc();
-            final List<MoreLikeThisHandler.InterestingTerm> terms =
+            final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
                 mlt.getInterestingTerms(mlt.getBoostedMLTQuery(id), -1);
-            if (terms.isEmpty()) {
+            if (interestingTerms.isEmpty()) {
               continue;
             }
             final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
             final Document document = rb.req.getSearcher().doc(id);
             final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
             final NamedList<String> mltQ =
-                putMLTIntoParamList(rb.req.getSchema(), terms, uniqueKey, uniqueVal);
+                mltViaQueryParams(rb.req.getSchema(), interestingTerms, uniqueKey, uniqueVal);
             temp.add(uniqueVal, mltQ);
           }
           rb.rsp.add("moreLikeThis", temp);
@@ -130,7 +130,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
   }
 
-  private static NamedList<String> putMLTIntoParamList(
+  private static NamedList<String> mltViaQueryParams(
       IndexSchema schema,
       List<MoreLikeThisHandler.InterestingTerm> terms,
       String uniqueField,
