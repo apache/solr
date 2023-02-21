@@ -195,10 +195,7 @@ public class TestRerankBase extends RestTestBase {
       restTestHarness.close();
       restTestHarness = null;
     }
-    if (null != getJetty()) {
-      getJetty().stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
