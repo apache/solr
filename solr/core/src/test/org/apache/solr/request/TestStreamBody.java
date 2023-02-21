@@ -67,10 +67,7 @@ public class TestStreamBody extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (getJetty() != null) {
-      getJetty().stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (client != null) {
       client.close();
       client = null;

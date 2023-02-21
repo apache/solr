@@ -50,10 +50,7 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (getJetty() != null) {
-      getJetty().stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     client = null;
     if (restTestHarness != null) {
       restTestHarness.close();

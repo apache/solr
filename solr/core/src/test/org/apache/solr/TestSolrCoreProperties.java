@@ -79,11 +79,10 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     if (System.getProperty("solr.data.dir") == null) {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
-    jetty =
-        new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
+
+    new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
 
     getJetty().start();
-    port = getJetty().getLocalPort();
 
     // createJetty(homeDir.getAbsolutePath(), null, null);
   }

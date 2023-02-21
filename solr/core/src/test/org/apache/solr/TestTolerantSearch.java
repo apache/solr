@@ -104,10 +104,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       collection2.close();
       collection2 = null;
     }
-    if (null != getJetty()) {
-      getJetty().stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();
   }
