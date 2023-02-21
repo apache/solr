@@ -533,8 +533,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         permissions.UPDATE_PERM
       ]);
 
-      $scope.canEditColl = $scope.isPermitted(permissions.COLL_EDIT_PERM);
-
       var currentCollectionName = $route.current.params.core;
       delete $scope.currentCollection;
       if ($scope.isCloudEnabled) {
