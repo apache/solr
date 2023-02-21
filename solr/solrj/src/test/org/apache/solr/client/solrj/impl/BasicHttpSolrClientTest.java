@@ -618,7 +618,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
     // verify compressed response can be handled
-    try (SolrClient client = getHttpSolrClient(getJetty().getBaseUrl().toString() + "/collection1")) {
+    try (SolrClient client =
+        getHttpSolrClient(getJetty().getBaseUrl().toString() + "/collection1")) {
       QueryResponse response = client.query(new SolrQuery("foo"));
       assertEquals(0, response.getStatus());
     }

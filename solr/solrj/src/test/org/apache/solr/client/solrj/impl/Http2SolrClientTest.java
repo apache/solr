@@ -875,7 +875,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
-      client = new Http2SolrClient.Builder(getJetty().getBaseUrl().toString() + "/debug/foo").build();
+      client =
+          new Http2SolrClient.Builder(getJetty().getBaseUrl().toString() + "/debug/foo").build();
       fail("Expecting exception");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("Unable to instantiate"));
