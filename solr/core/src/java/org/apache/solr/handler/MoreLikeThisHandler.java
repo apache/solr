@@ -459,8 +459,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     /**
      * Yields terms with boosts from the boosted MLT query.
      *
-     * @param maxTerms how many terms to return, a negative value means all terms are
-     *     returned
+     * @param maxTerms how many terms to return, a negative value means all terms are returned
      */
     public List<InterestingTerm> getInterestingTerms(BooleanQuery boostedMLTQuery, int maxTerms) {
       assert boostedMLTQuery != null : "strictly expecting it's set";

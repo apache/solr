@@ -102,14 +102,14 @@ public class MoreLikeThisComponent extends SearchComponent {
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
           NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
           for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
-            int docNum = results.nextDoc();
+            int docId = results.nextDoc();
             final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
-                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(docNum), -1);
+                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(docId), -1);
             if (interestingTerms.isEmpty()) {
               continue;
             }
             final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
-            final Document document = rb.req.getSearcher().doc(docNum);
+            final Document document = rb.req.getSearcher().doc(docId);
             final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
             final NamedList<String> mltQ =
                 mltViaQueryParams(rb.req.getSchema(), interestingTerms, uniqueKey, uniqueVal);
