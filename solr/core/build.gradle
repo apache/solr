@@ -171,6 +171,10 @@ dependencies {
   compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
   compileOnly 'org.osgi:osgi.annotation'
 
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
+  // -- Test Dependencies
+
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
   testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"

@@ -248,7 +248,7 @@ set by the `GC_TUNE` environment variable and further down the list the overridi
 == I'm confused about the different invocations of Solr -- help?
 
 The different invocations of the Solr docker image can look confusing, because the name of the image is "solr" and the Solr command is also "solr", and the image interprets various arguments in special ways.
-I'll illustrate the various invocations:
+Let's illustrate the various invocations:
 
 To run an arbitrary command in the image:
 

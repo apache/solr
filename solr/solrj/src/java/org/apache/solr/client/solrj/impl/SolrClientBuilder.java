@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -28,14 +29,15 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 @Deprecated(since = "9.0")
 public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
+  protected int timeToLiveSeconds = 60;
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
   protected RequestWriter requestWriter;
   protected boolean useMultiPartPost;
-  protected Integer connectionTimeoutMillis = 15000;
-  protected Integer socketTimeoutMillis = 120000;
+  protected Long connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(15, TimeUnit.SECONDS);
+  protected Long socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(120, TimeUnit.SECONDS);
   protected boolean followRedirects = false;
-  protected Set<String> queryParams;
+  protected Set<String> urlParamNames;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
@@ -70,8 +72,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * @param queryParams set of param keys to only send via the query string Note that the param will
    *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
    */
-  public B withQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public B withTheseParamNamesInTheUrl(Set<String> queryParams) {
+    this.urlParamNames = queryParams;
     return getThis();
   }
 
@@ -85,13 +87,41 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    * Solr servers.
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
+   *
+   * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
    */
+  @Deprecated(since = "9.2")
   public B withConnectionTimeout(int connectionTimeoutMillis) {
-    if (connectionTimeoutMillis < 0) {
-      throw new IllegalArgumentException("connectionTimeoutMillis must be a non-negative integer.");
+    withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    return getThis();
+  }
+
+  /**
+   * Tells {@link Builder} that created clients should obey the following timeout when connecting to
+   * Solr servers.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
+   */
+  public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+    if (connectionTimeout < 0) {
+      throw new IllegalArgumentException("connectionTimeout must be a non-negative integer.");
     }
 
-    this.connectionTimeoutMillis = connectionTimeoutMillis;
+    this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+    return getThis();
+  }
+
+  /**
+   * Tells {@link Builder} that created clients should set the following read timeout on all
+   * sockets.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
+   *
+   * <p>* @deprecated Please use {@link #withSocketTimeout(long, TimeUnit)}
+   */
+  @Deprecated(since = "9.2")
+  public B withSocketTimeout(int socketTimeoutMillis) {
+    withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS);
     return getThis();
   }
 
@@ -101,12 +131,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    */
-  public B withSocketTimeout(int socketTimeoutMillis) {
-    if (socketTimeoutMillis < 0) {
-      throw new IllegalArgumentException("socketTimeoutMillis must be a non-negative integer.");
+  public B withSocketTimeout(long socketTimeout, TimeUnit unit) {
+    if (socketTimeout < 0) {
+      throw new IllegalArgumentException("socketTimeout must be a non-negative integer.");
     }
 
-    this.socketTimeoutMillis = socketTimeoutMillis;
+    this.socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(socketTimeout, unit);
     return getThis();
   }
 }

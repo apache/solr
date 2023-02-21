@@ -38,6 +38,7 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.SafeXMLParsing;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
@@ -119,9 +120,10 @@ public class XmlConfigFile { // formerly simply "Config"
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
+    InputStream in = null;
     try {
       if (is == null && fileSupplier != null) {
-        InputStream in = fileSupplier.apply(name);
+        in = fileSupplier.apply(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
           log.debug("loaded config {} with version {} ", name, zkVersion);
@@ -138,6 +140,9 @@ public class XmlConfigFile { // formerly simply "Config"
     } catch (SAXException e) {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      // XML Parser should close but in exceptional cases might not; so let's be safe
+      IOUtils.closeQuietly(in);
     }
     if (substituteProps != null) {
       DOMUtil.substituteProperties(doc, getSubstituteProperties());

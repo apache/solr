@@ -288,6 +288,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='8']");
   }
 
+  @Test
   public void knnQueryUsedInFilter_shouldFilterResultsBeforeTheQueryExecution() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     assertQ(
@@ -301,6 +302,23 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void knnQueryUsedInFilters_shouldFilterResultsBeforeTheQueryExecution() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fq",
+            "id:(4 20)",
+            "fl",
+            "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='4']");
   }
 
   @Test
@@ -344,7 +362,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             CommonParams.Q,
             "{!knn f=vector topK=10}" + vectorToSearch,
             "fq",
-            "{!frange l=0.99}$q",
+            "{!frange cache=false l=0.99}$q",
             "fl",
             "*,score"),
         "//result[@numFound='5']",

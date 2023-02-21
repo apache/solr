@@ -449,8 +449,10 @@ Tags will not affect a query unless they are referenced by some other part of th
 == Faceting Nested Documents
 
 This paragraph binds many features together.
-Basically it's an example of filter exclusions for nested documents when facets are counted over child document  fields, but facet counts roll up in parent document counts.
-Let's go on item by item:
+Basically it's an example of filter exclusions for nested documents when facets are counted over child
+document fields, but facet counts roll up in parent document counts.  A typical scenario where you might
+need to do this is if you are displaying filters for products (parents) with SKUs with various colour/size
+options (children). Let's go on item by item:
 
 * _Filter exclusion_ is usually necessary when multiple filter values can be applied to each field.
 This is also also known as drill-sideways facets.

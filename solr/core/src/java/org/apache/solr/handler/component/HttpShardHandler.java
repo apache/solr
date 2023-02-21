@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
@@ -38,7 +39,6 @@ import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
@@ -52,7 +52,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 
-@SolrThreadUnsafe
+@NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link

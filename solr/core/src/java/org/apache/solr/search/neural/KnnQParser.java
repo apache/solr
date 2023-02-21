@@ -76,7 +76,7 @@ public class KnnQParser extends QParser {
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(), parsedVectorToSearch, topK, null);
   }
-  
+
   /**
    * Parses a String vector.
    *
@@ -84,7 +84,6 @@ public class KnnQParser extends QParser {
    * @return a float array
    */
   private static float[] parseVector(String value, int dimension) {
-
     if (!value.startsWith("[") || !value.endsWith("]")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

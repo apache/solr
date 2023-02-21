@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * usage goes below the threshold, it will start allowing queries again.
  *
  * <p>The memory threshold is defined as a percentage of the maximum memory allocated -- see
- * memoryCircuitBreakerThresholdPct in solrconfig.xml.
+ * memThreshold in solrconfig.xml.
  */
 public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

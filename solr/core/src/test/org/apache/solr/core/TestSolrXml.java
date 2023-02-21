@@ -172,20 +172,29 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testIntAsLongBad() {
     String bad = "" + TestUtil.nextLong(random(), Integer.MAX_VALUE, Long.MAX_VALUE);
-    String solrXml = "<solr><long name=\"transientCacheSize\">" + bad + "</long></solr>";
-
+    String solrXml =
+        "<solr><updateshardhandler>"
+            + "<long name=\"maxUpdateConnections\">"
+            + bad
+            + "</long>"
+            + "</updateshardhandler></solr>";
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
-        "Error parsing 'transientCacheSize', value '" + bad + "' cannot be parsed",
+        "Error parsing 'maxUpdateConnections', value '" + bad + "' cannot be parsed as int",
         thrown.getMessage());
   }
 
   public void testIntAsLongOk() {
     int ok = random().nextInt();
-    String solrXml = "<solr><long name=\"transientCacheSize\">" + ok + "</long></solr>";
+    String solrXml =
+        "<solr><updateshardhandler>"
+            + "<long name=\"maxUpdateConnections\">"
+            + ok
+            + "</long>"
+            + "</updateshardhandler></solr>";
     NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
-    assertEquals(ok, cfg.getTransientCacheSize());
+    assertEquals(ok, cfg.getUpdateShardHandlerConfig().getMaxUpdateConnections());
   }
 
   public void testMultiCloudSectionError() {

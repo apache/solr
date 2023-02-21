@@ -78,7 +78,11 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    httpClient = new Http2SolrClient.Builder().connectionTimeout(1000).idleTimeout(2000).build();
+    httpClient =
+        new Http2SolrClient.Builder()
+            .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
+            .build();
 
     for (int i = 0; i < solr.length; i++) {
       solr[i] =
@@ -118,16 +122,18 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   public void testSimple() throws Exception {
-    String[] s = new String[solr.length];
+    String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
-      s[i] = solr[i].getUrl();
+      solrUrls[i] = solr[i].getUrl();
     }
-    try (LBHttp2SolrClient client = getLBHttp2SolrClient(httpClient, s)) {
-      client.setAliveCheckInterval(500);
+    try (LBHttp2SolrClient client =
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
       QueryResponse resp = null;
-      for (String ignored : s) {
+      for (String ignored : solrUrls) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -138,7 +144,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       solr[1].jetty.stop();
       solr[1].jetty = null;
       names.clear();
-      for (String ignored : s) {
+      for (String ignored : solrUrls) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -151,7 +157,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       // Wait for the alive check to complete
       Thread.sleep(1200);
       names.clear();
-      for (String ignored : s) {
+      for (String ignored : solrUrls) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -165,9 +171,14 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   public void testTwoServers() throws Exception {
+    String[] solrUrls = new String[2];
+    for (int i = 0; i < 2; i++) {
+      solrUrls[i] = solr[i].getUrl();
+    }
     try (LBHttp2SolrClient client =
-        getLBHttp2SolrClient(httpClient, solr[0].getUrl(), solr[1].getUrl())) {
-      client.setAliveCheckInterval(500);
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
       solr[0].jetty.stop();
@@ -195,20 +206,22 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   public void testReliability() throws Exception {
-    String[] s = new String[solr.length];
+    String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
-      s[i] = solr[i].getUrl();
+      solrUrls[i] = solr[i].getUrl();
     }
 
-    try (LBHttp2SolrClient client = getLBHttp2SolrClient(httpClient, s)) {
-      client.setAliveCheckInterval(500);
+    try (LBHttp2SolrClient client =
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
 
       // Kill a server and test again
       solr[1].jetty.stop();
       solr[1].jetty = null;
 
       // query the servers
-      for (String value : s) client.query(new SolrQuery("*:*"));
+      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
 
       // Start the killed server once again
       solr[1].startJetty();
