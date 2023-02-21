@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import static org.apache.lucene.tests.util.LuceneTestCase.createTempDir;
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 import static org.apache.solr.SolrTestCaseJ4.initCore;
 import static org.apache.solr.SolrTestCaseJ4.writeCoreProperties;
 
@@ -52,13 +53,18 @@ public class SolrJettyTestRule extends SolrClientTestRule {
       try {
         jetty.stop();
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        try {
+          throw new IOException(e);
+        } catch (IOException ex) {
+          throw new RuntimeException(ex);
+        }
       }
       jetty = null;
     }
   }
 
-  public void reset() throws Exception {
+  @Deprecated // Prefer not to have this.
+  public void reset() {
     after();
   }
 
@@ -99,9 +105,13 @@ public class SolrJettyTestRule extends SolrClientTestRule {
       jetty.start();
       int port = jetty.getLocalPort();
       log.info("Jetty Assigned Port#{}", port);
-      adminClient = SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl().toString());
+      adminClient = getHttpSolrClient(jetty.getBaseUrl().toString());
     } catch (Exception e) {
-      log.error(e.toString());
+      try {
+        throw new IOException();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
     }
   }
 
@@ -112,7 +122,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   @Override
   public SolrClient getSolrClient(String name) {
-    throw new UnsupportedOperationException(); // TODO Client needed
+    return getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
   }
 
   @Override

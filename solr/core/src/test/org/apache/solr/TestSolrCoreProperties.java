@@ -22,13 +22,13 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 
 /**
@@ -80,7 +80,8 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
 
-    new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
+    solrClientTestRule.startSolr(
+        Path.of(homeDir.getAbsolutePath()), nodeProperties, buildJettyConfig("/solr"));
 
     getJetty().start();
 

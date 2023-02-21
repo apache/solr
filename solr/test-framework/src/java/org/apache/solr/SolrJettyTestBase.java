@@ -125,7 +125,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
   public synchronized SolrClient getSolrClient() {
     if (client == null) {
-      client = createNewSolrClient();
+      client = solrClientTestRule.getSolrClient();
     }
     return client;
   }
@@ -136,7 +136,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(getServerUrl());
+    return getSolrClient();
   }
 
   public HttpClient getHttpClient() {
