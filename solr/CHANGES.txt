@@ -148,6 +148,10 @@ Improvements
 
 * SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
 
+* SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
+  `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
+  `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
+
 Optimizations
 ---------------------
 

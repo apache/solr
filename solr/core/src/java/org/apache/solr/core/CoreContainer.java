@@ -1095,6 +1095,17 @@ public class CoreContainer {
                       .to(SolrNodeKeyPair.class)
                       .in(Singleton.class);
                 }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(
+                          new InjectionFactories.SingletonFactory<>(
+                              coreAdminHandler.getCoreAdminAsyncTracker()))
+                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                      .in(Singleton.class);
+                }
               });
       jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
     }
