@@ -264,6 +264,8 @@ Other Changes
 
 * SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
 
+* SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
