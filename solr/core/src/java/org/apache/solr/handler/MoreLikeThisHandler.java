@@ -418,8 +418,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     }
 
     /** Sets {@link #boostedMLTQuery} and returns it */
-    public BooleanQuery getBoostedMLTQuery(int id) throws IOException {
-      rawMLTQuery = mlt.like(id);
+    public BooleanQuery getBoostedMLTQuery(int docNum) throws IOException {
+      rawMLTQuery = mlt.like(docNum);
       boostedMLTQuery = getBoostedQuery(rawMLTQuery);
       return boostedMLTQuery;
     }
@@ -459,7 +459,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     /**
      * Yields terms with boosts from the boosted MLT query.
      *
-     * @param maxTerms how many terms to return, negative value let to return all
+     * @param maxTerms how many terms to return, a negative value means all terms are
+     *     returned
      */
     public List<InterestingTerm> getInterestingTerms(BooleanQuery boostedMLTQuery, int maxTerms) {
       assert boostedMLTQuery != null : "strictly expecting it's set";

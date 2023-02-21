@@ -100,22 +100,22 @@ public class MoreLikeThisComponent extends SearchComponent {
           }
           MoreLikeThisHandler.MoreLikeThisHelper mlt =
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
-          NamedList<NamedList<?>> temp = new NamedList<>();
-          for (DocIterator iterator = rb.getResults().docList.iterator(); iterator.hasNext(); ) {
-            int id = iterator.nextDoc();
+          NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
+          for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
+            int docNum = results.nextDoc();
             final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
-                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(id), -1);
+                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(docNum), -1);
             if (interestingTerms.isEmpty()) {
               continue;
             }
             final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
-            final Document document = rb.req.getSearcher().doc(id);
+            final Document document = rb.req.getSearcher().doc(docNum);
             final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
             final NamedList<String> mltQ =
                 mltViaQueryParams(rb.req.getSchema(), interestingTerms, uniqueKey, uniqueVal);
-            temp.add(uniqueVal, mltQ);
+            mltQueryByDocKey.add(uniqueVal, mltQ);
           }
-          rb.rsp.add("moreLikeThis", temp);
+          rb.rsp.add("moreLikeThis", mltQueryByDocKey);
         } else {
           NamedList<DocList> sim =
               getMoreLikeThese(rb, rb.req.getSearcher(), rb.getResults().docList, flags);
