@@ -131,8 +131,8 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
+    if (getJetty() != null) {
+      getJetty().stop();
       jetty = null;
     }
     if (restTestHarness != null) {

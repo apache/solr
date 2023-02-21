@@ -61,14 +61,14 @@ public class TestStreamBody extends RestTestBase {
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
-          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+          () -> getJetty().getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
+    if (getJetty() != null) {
+      getJetty().stop();
       jetty = null;
     }
     if (client != null) {

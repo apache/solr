@@ -65,8 +65,8 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
+    if (getJetty() != null) {
+      getJetty().stop();
       jetty = null;
     }
     client = null;

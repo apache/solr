@@ -61,13 +61,13 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     systemSetPropertySolrDisableUrlAllowList("true");
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
-    String url = jetty.getBaseUrl().toString();
+    String url = getJetty().getBaseUrl().toString();
 
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
 
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    String urlCollection1 = getJetty().getBaseUrl().toString() + "/" + "collection1";
+    String urlCollection2 = getJetty().getBaseUrl().toString() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
@@ -101,8 +101,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       collection2.close();
       collection2 = null;
     }
-    if (null != jetty) {
-      jetty.stop();
+    if (null != getJetty()) {
+      getJetty().stop();
       jetty = null;
     }
     resetExceptionIgnores();

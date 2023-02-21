@@ -129,6 +129,10 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return jetty;
   }
 
+  public static JettySolrRunner getJetty() {
+    return jetty;
+  }
+
   protected String getServerUrl() {
     return jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }

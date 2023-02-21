@@ -48,12 +48,12 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
     // stealing the first made jetty
-    yetty = jetty;
+    yetty = getJetty();
     barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
 
     createAndStartJetty(legacyExampleCollection1SolrHome());
 
-    fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
+    fooUrl = getJetty().getBaseUrl().toString() + "/" + "collection1";
   }
 
   @AfterClass
@@ -67,7 +67,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   public void testPoolSize() throws SolrServerException, IOException {
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
 
-    final String fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
+    final String fooUrl = getJetty().getBaseUrl().toString() + "/" + "collection1";
     final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     CloseableHttpClient httpClient =
         HttpClientUtil.createClient(

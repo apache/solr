@@ -275,7 +275,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    String urlString = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update";
+    String urlString = getJetty().getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update";
 
     HttpURLConnection conn = null;
     URL url = new URL(urlString);
@@ -328,7 +328,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";
-    int port = jetty.getLocalPort();
+    int port = getJetty().getLocalPort();
 
     try (Socket socket = new Socket(hostName, port);
         OutputStream out = new BufferedOutputStream(socket.getOutputStream());

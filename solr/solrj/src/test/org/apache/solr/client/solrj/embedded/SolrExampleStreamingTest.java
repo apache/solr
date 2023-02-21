@@ -55,7 +55,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     // TODO these failures are not the same as recorded by the client
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
+    final String serverUrl = getJetty().getBaseUrl().toString() + "/collection1";
     try (ConcurrentUpdateSolrClient concurrentClient =
         new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
             .withQueueSize(2)

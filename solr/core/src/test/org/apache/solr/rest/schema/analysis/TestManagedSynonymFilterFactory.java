@@ -59,8 +59,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
+    if (null != getJetty()) {
+      getJetty().stop();
       jetty = null;
     }
     if (null != tmpSolrHome) {

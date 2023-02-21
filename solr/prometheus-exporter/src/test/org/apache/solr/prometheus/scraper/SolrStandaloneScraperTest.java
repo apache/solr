@@ -81,8 +81,8 @@ public class SolrStandaloneScraperTest extends RestTestBase {
       executor.shutdownNow();
       executor = null;
     }
-    if (null != jetty) {
-      jetty.stop();
+    if (null != getJetty()) {
+      getJetty().stop();
       jetty = null;
     }
     solrScraper = null;

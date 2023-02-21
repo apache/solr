@@ -78,7 +78,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
           new RESTfulServerProvider() {
             @Override
             public String getBaseURL() {
-              return jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
+              return getJetty().getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
             }
           });
     }
@@ -86,8 +86,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
+    if (getJetty() != null) {
+      getJetty().stop();
       jetty = null;
     }
     if (restTestHarness != null) {
@@ -1459,7 +1459,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(
       String fieldname, Class<T> expected, Consumer<T>... validators) {
-    CoreContainer cc = jetty.getCoreContainer();
+    CoreContainer cc = getJetty().getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
       assertNotNull(simfac);
