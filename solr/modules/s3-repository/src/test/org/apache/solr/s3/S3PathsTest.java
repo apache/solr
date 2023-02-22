@@ -39,6 +39,8 @@ public class S3PathsTest extends AbstractS3ClientTest {
     pushContent("/simple-file", "blah");
     assertTrue("File should exist without a leading slash", client.pathExists("simple-file"));
     assertTrue("File should exist with a leading slash", client.pathExists("/simple-file"));
+
+    assertFalse("File should not be considered a directory", client.isDirectory("/simple-file"));
   }
 
   /** Simple tests with a directory. */
