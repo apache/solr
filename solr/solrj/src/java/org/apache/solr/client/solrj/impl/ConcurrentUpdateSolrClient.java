@@ -105,8 +105,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.client =
         new HttpSolrClient.Builder(builder.baseSolrUrl)
             .withHttpClient(builder.httpClient)
-            .withConnectionTimeout(builder.connectionTimeoutMillis)
-            .withSocketTimeout(builder.socketTimeoutMillis)
+            .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
             .withFollowRedirects(false)
             .withTheseParamNamesInTheUrl(builder.urlParamNames)
             .build();
@@ -114,8 +114,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
+    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException(
