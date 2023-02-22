@@ -169,8 +169,7 @@ public class BackupCoreAPI extends JerseyResource {
           Integer.parseInt(rsp.get("uploadedIndexFileCount").toString());
       backupCoreResponse.uploadedIndexFileMB =
           Double.parseDouble(rsp.get("uploadedIndexFileMB").toString());
-      if(rsp.get("shard") != null)
-        backupCoreResponse.shard = rsp.get("shard").toString();
+      if (rsp.get("shard") != null) backupCoreResponse.shard = rsp.get("shard").toString();
     }
     return backupCoreResponse;
   }

@@ -105,16 +105,17 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.client =
         new HttpSolrClient.Builder(builder.baseSolrUrl)
             .withHttpClient(builder.httpClient)
-            .withConnectionTimeout(builder.connectionTimeoutMillis)
-            .withSocketTimeout(builder.socketTimeoutMillis)
+            .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
             .withFollowRedirects(false)
+            .withTheseParamNamesInTheUrl(builder.urlParamNames)
             .build();
     this.queue = new LinkedBlockingQueue<>(builder.queueSize);
     this.threadCount = builder.threadCount;
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
+    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException(
@@ -140,15 +141,26 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return this.client.getQueryParams();
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return this.client.getUrlParamNames();
   }
 
   /**
    * Expert Method.
    *
    * @param queryParams set of param keys to only send via the query string
+   * @deprecated use {@link ConcurrentUpdateSolrClient.Builder#withTheseParamNamesInTheUrl(Set)}
+   *     instead
    */
+  @Deprecated
   public void setQueryParams(Set<String> queryParams) {
     this.client.setQueryParams(queryParams);
   }

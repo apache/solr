@@ -163,9 +163,9 @@ public class DistributedCollectionConfigSetCommandRunner {
   }
 
   /**
-   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeAction} does not enqueue to
-   * overseer queue and instead calls this method, this method is expected to do the equivalent of
-   * what Overseer does in {@link
+   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeOperation} does not enqueue
+   * to overseer queue and instead calls this method, this method is expected to do the equivalent
+   * of what Overseer does in {@link
    * org.apache.solr.cloud.OverseerConfigSetMessageHandler#processMessage}.
    *
    * <p>The steps leading to that call in the Overseer execution path are (and the equivalent is
@@ -235,9 +235,9 @@ public class DistributedCollectionConfigSetCommandRunner {
   }
 
   /**
-   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeAction} does not enqueue to
-   * overseer queue and instead calls this method, this method is expected to do the equivalent of
-   * what Overseer does in {@link
+   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeOperation} does not enqueue
+   * to overseer queue and instead calls this method, this method is expected to do the equivalent
+   * of what Overseer does in {@link
    * org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler#processMessage}.
    *
    * <p>The steps leading to that call in the Overseer execution path are (and the equivalent is

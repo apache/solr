@@ -95,7 +95,6 @@ public class BackupRepositoryFactory {
     if (defaultBackupRepoPlugin != null) {
       return newInstance(loader, defaultBackupRepoPlugin.name);
     }
-
     LocalFileSystemRepository repo = new LocalFileSystemRepository();
     repo.init(new NamedList<>());
     return repo;

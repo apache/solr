@@ -31,11 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -92,9 +94,7 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
-  @Deprecated
-  // This should be part of the transientCacheConfig, remove in 7.0
-  private final int transientCacheSize;
+  @Deprecated private final int transientCacheSize;
 
   private final boolean useSchemaCache;
 
@@ -103,8 +103,6 @@ public class NodeConfig {
   private final PluginInfo[] backupRepositoryPlugins;
 
   private final MetricsConfig metricsConfig;
-
-  private final PluginInfo transientCacheConfig;
 
   private final PluginInfo tracerConfig;
 
@@ -141,7 +139,6 @@ public class NodeConfig {
       Properties solrProperties,
       PluginInfo[] backupRepositoryPlugins,
       MetricsConfig metricsConfig,
-      PluginInfo transientCacheConfig,
       PluginInfo tracerConfig,
       boolean fromZookeeper,
       String defaultZkHost,
@@ -176,7 +173,6 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
@@ -215,9 +211,17 @@ public class NodeConfig {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkHost)
+              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
+          DeprecationLog.log(
+              "solrxml-zookeeper",
+              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);
@@ -376,10 +380,6 @@ public class NodeConfig {
 
   public MetricsConfig getMetricsConfig() {
     return metricsConfig;
-  }
-
-  public PluginInfo getTransientCachePluginInfo() {
-    return transientCacheConfig;
   }
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
@@ -556,17 +556,12 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
-
-    @Deprecated
-    // Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
-    private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
-
+    @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
-    private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
@@ -579,8 +574,6 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
-
-    public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
@@ -705,7 +698,7 @@ public class NodeConfig {
       return this;
     }
 
-    // Remove in Solr 7.0
+    // Remove in Solr 10.0
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
@@ -734,11 +727,6 @@ public class NodeConfig {
 
     public NodeConfigBuilder setMetricsConfig(MetricsConfig metricsConfig) {
       this.metricsConfig = metricsConfig;
-      return this;
-    }
-
-    public NodeConfigBuilder setSolrCoreCacheFactoryConfig(PluginInfo transientCacheConfig) {
-      this.transientCacheConfig = transientCacheConfig;
       return this;
     }
 
@@ -816,7 +804,6 @@ public class NodeConfig {
           solrProperties,
           backupRepositoryPlugins,
           metricsConfig,
-          transientCacheConfig,
           tracerConfig,
           fromZookeeper,
           defaultZkHost,

@@ -1170,6 +1170,21 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         req("q", "id:1", "fl", "t:not(testfunc(false)),f:not(true)"),
         "/response/docs/[0]=={'t':true, 'f':false}");
 
+    // test isnan operator
+    assertJQ(
+        req(
+            "q",
+            "id:1",
+            "fl",
+            "f1:isnan(12.3456)",
+            "fl",
+            "f2:isnan(0)",
+            "fl",
+            "t1:isnan(div(0,0))",
+            "fl",
+            "t2:isnan(sqrt(-1))"),
+        "/response/docs/[0]=={'f1':false, 'f2':false, 't1':true, 't2':true}");
+
     // test fields evaluated as booleans in wrapping functions
     assertJQ(
         req("q", "id:1", "fl", "a:not(foo_ti), b:if(foo_tf,'TT','FF'), c:and(true,foo_tf)"),

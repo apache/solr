@@ -527,8 +527,8 @@ public class LTRScoringQuery extends Query implements Accountable {
       public ModelScorer(Weight weight, List<Feature.FeatureWeight.FeatureScorer> featureScorers) {
         super(weight);
         docInfo = new DocInfo();
-        for (final Feature.FeatureWeight.FeatureScorer subSocer : featureScorers) {
-          subSocer.setDocInfo(docInfo);
+        for (final Feature.FeatureWeight.FeatureScorer subScorer : featureScorers) {
+          subScorer.setDocInfo(docInfo);
         }
         if (featureScorers.size() <= 1) {
           // future enhancement: allow the use of dense features in other cases
@@ -593,7 +593,7 @@ public class LTRScoringQuery extends Query implements Accountable {
         @Override
         public float score() throws IOException {
           final DisiWrapper topList = subScorers.topList();
-          // If target doc we wanted to advance to matches the actual doc
+          // If target doc we wanted to advance to match the actual doc
           // the underlying features advanced to, perform the feature
           // calculations,
           // otherwise just continue with the model's scoring process with empty
@@ -648,7 +648,7 @@ public class LTRScoringQuery extends Query implements Accountable {
 
           @Override
           public final int advance(int target) throws IOException {
-            // If target doc we wanted to advance to matches the actual doc
+            // If target doc we wanted to advance to match the actual doc
             // the underlying features advanced to, perform the feature
             // calculations,
             // otherwise just continue with the model's scoring process with

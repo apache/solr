@@ -22,12 +22,12 @@
 #SOLR_JAVA_HOME=""
 
 # This controls the number of seconds that the solr script will wait for
-# Solr to stop gracefully.  If the graceful stop fails, the script will
+# Solr to stop gracefully. If the graceful stop fails, the script will
 # forcibly stop Solr.
 #SOLR_STOP_WAIT="180"
 
 # This controls the number of seconds that the solr script will wait for
-# Solr to start.  If the start fails, the script will give up waiting and
+# Solr to start. If the start fails, the script will give up waiting and
 # display the last few lines of the logfile.
 #SOLR_START_WAIT="$SOLR_STOP_WAIT"
 
@@ -281,3 +281,7 @@
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 # SOLR_MODULES=extraction,ltr
+
+# Configure the default replica placement plugin to use if one is not configured in cluster properties
+# See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+#SOLR_PLACEMENTPLUGIN_DEFAULT=simple
