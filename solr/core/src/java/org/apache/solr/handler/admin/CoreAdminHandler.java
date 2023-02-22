@@ -34,10 +34,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -54,6 +56,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
@@ -89,16 +92,8 @@ import org.slf4j.MDC;
 public class CoreAdminHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
-  protected final Map<String, Map<String, TaskObject>> requestStatusMap;
+  protected final CoreAdminAsyncTracker coreAdminAsyncTracker;
 
-  protected ExecutorService parallelExecutor =
-      ExecutorUtil.newMDCAwareFixedThreadPool(
-          50, new SolrNamedThreadFactory("parallelCoreAdminExecutor"));
-
-  protected static int MAX_TRACKED_REQUESTS = 100;
-  public static String RUNNING = "running";
-  public static String COMPLETED = "completed";
-  public static String FAILED = "failed";
   public static String RESPONSE_STATUS = "STATUS";
   public static String RESPONSE_MESSAGE = "msg";
   public static String OPERATION_RESPONSE = "response";
@@ -108,11 +103,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // Unlike most request handlers, CoreContainer initialization
     // should happen in the constructor...
     this.coreContainer = null;
-    HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
-    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
-    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
-    requestStatusMap = Collections.unmodifiableMap(map);
+    this.coreAdminAsyncTracker = new CoreAdminAsyncTracker();
   }
 
   /**
@@ -122,11 +113,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    */
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-    map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
-    map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
-    map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
-    requestStatusMap = Collections.unmodifiableMap(map);
+    this.coreAdminAsyncTracker = new CoreAdminAsyncTracker();
   }
 
   @Override
@@ -140,9 +127,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    parallelExecutor =
+    coreAdminAsyncTracker.parallelExecutor =
         MetricUtils.instrumentedExecutorService(
-            parallelExecutor,
+            coreAdminAsyncTracker.parallelExecutor,
             this,
             solrMetricsContext.getMetricRegistry(),
             SolrMetricManager.mkName(
@@ -188,6 +175,15 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return this.coreContainer;
   }
 
+  /**
+   * The instance of CoreAdminAsyncTracker owned by this handler.
+   *
+   * @return a {@link CoreAdminAsyncTracker} instance.
+   */
+  public CoreAdminAsyncTracker getCoreAdminAsyncTracker() {
+    return coreAdminAsyncTracker;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
@@ -198,19 +194,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
       // boolean doPersist = false;
       final String taskId = req.getParams().get(CommonAdminParams.ASYNC);
-      final TaskObject taskObject = new TaskObject(taskId);
-
-      if (taskId != null) {
-        // Put the tasks into the maps for tracking
-        if (getRequestStatusMap(RUNNING).containsKey(taskId)
-            || getRequestStatusMap(COMPLETED).containsKey(taskId)
-            || getRequestStatusMap(FAILED).containsKey(taskId)) {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
-        }
-
-        addTask(RUNNING, taskObject);
-      }
+      final CoreAdminAsyncTracker.TaskObject taskObject =
+          new CoreAdminAsyncTracker.TaskObject(taskId);
 
       // Pick the action
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
@@ -233,32 +218,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       if (taskId == null) {
         callInfo.call();
       } else {
-        try {
-          MDC.put("CoreAdminHandler.asyncId", taskId);
-          MDC.put("CoreAdminHandler.action", action);
-          parallelExecutor.execute(
-              () -> {
-                boolean exceptionCaught = false;
-                try {
-                  callInfo.call();
-                  taskObject.setRspObject(callInfo.rsp);
-                  taskObject.setOperationRspObject(callInfo.rsp);
-                } catch (Exception e) {
-                  exceptionCaught = true;
-                  taskObject.setRspObjectFromException(e);
-                } finally {
-                  removeTask("running", taskObject.taskId);
-                  if (exceptionCaught) {
-                    addTask("failed", taskObject, true);
-                  } else {
-                    addTask("completed", taskObject, true);
-                  }
-                }
-              });
-        } finally {
-          MDC.remove("CoreAdminHandler.asyncId");
-          MDC.remove("CoreAdminHandler.action");
-        }
+        coreAdminAsyncTracker.submitAsyncTask(
+            taskObject,
+            action,
+            () -> {
+              callInfo.call();
+              return callInfo.rsp;
+            });
       }
     } finally {
       rsp.setHttpCaching(false);
@@ -363,72 +329,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return coreAction.isRead ? CORE_READ_PERM : CORE_EDIT_PERM;
   }
 
-  /**
-   * Helper class to manage the tasks to be tracked. This contains the taskId, request and the
-   * response (if available).
-   */
-  static class TaskObject {
-    String taskId;
-    String rspInfo;
-    Object operationRspInfo;
-
-    public TaskObject(String taskId) {
-      this.taskId = taskId;
-    }
-
-    public String getRspObject() {
-      return rspInfo;
-    }
-
-    public void setRspObject(SolrQueryResponse rspObject) {
-      this.rspInfo = rspObject.getToLogAsString("TaskId: " + this.taskId);
-    }
-
-    public void setRspObjectFromException(Exception e) {
-      this.rspInfo = e.getMessage();
-    }
-
-    public Object getOperationRspObject() {
-      return operationRspInfo;
-    }
-
-    public void setOperationRspObject(SolrQueryResponse rspObject) {
-      this.operationRspInfo = rspObject.getResponse();
-    }
-  }
-
-  /** Helper method to add a task to a tracking type. */
-  void addTask(String type, TaskObject o, boolean limit) {
-    synchronized (getRequestStatusMap(type)) {
-      if (limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
-        String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
-        getRequestStatusMap(type).remove(key);
-      }
-      addTask(type, o);
-    }
-  }
-
-  private void addTask(String type, TaskObject o) {
-    synchronized (getRequestStatusMap(type)) {
-      getRequestStatusMap(type).put(o.taskId, o);
-    }
-  }
-
-  /** Helper method to remove a task from a tracking map. */
-  private void removeTask(String map, String taskId) {
-    synchronized (getRequestStatusMap(map)) {
-      getRequestStatusMap(map).remove(taskId);
-    }
-  }
-
-  /** Helper method to get a request status map given the name. */
-  Map<String, TaskObject> getRequestStatusMap(String key) {
-    return requestStatusMap.get(key);
-  }
-
   /** Method to ensure shutting down of the ThreadPool Executor. */
   public void shutdown() {
-    if (parallelExecutor != null) ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+    if (coreAdminAsyncTracker.parallelExecutor != null) coreAdminAsyncTracker.shutdown();
   }
 
   private static final Map<String, CoreAdminOp> opMap = new HashMap<>();
@@ -477,6 +380,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return apis;
   }
 
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CoreSnapshotAPI.class);
+  }
+
   static {
     for (CoreAdminOperation op : CoreAdminOperation.values())
       opMap.put(op.action.toString().toLowerCase(Locale.ROOT), op);
@@ -492,5 +400,134 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      *     SolrException.ErrorCode.SERVER_ERROR.
      */
     void execute(CallInfo it) throws Exception;
+  }
+
+  public static class CoreAdminAsyncTracker {
+    private static final int MAX_TRACKED_REQUESTS = 100;
+    public static final String RUNNING = "running";
+    public static final String COMPLETED = "completed";
+    public static final String FAILED = "failed";
+    public final Map<String, Map<String, TaskObject>> requestStatusMap;
+
+    private ExecutorService parallelExecutor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            50, new SolrNamedThreadFactory("parallelCoreAdminAPIBaseExecutor"));
+
+    public CoreAdminAsyncTracker() {
+      HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
+      map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
+      map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
+      map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
+      requestStatusMap = Collections.unmodifiableMap(map);
+    }
+
+    public void shutdown() {
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+    }
+
+    public Map<String, TaskObject> getRequestStatusMap(String key) {
+      return requestStatusMap.get(key);
+    }
+
+    public void submitAsyncTask(
+        TaskObject taskObject, String action, Callable<SolrQueryResponse> task)
+        throws SolrException {
+      ensureTaskIdNotInUse(taskObject.taskId);
+      addTask(RUNNING, taskObject);
+
+      try {
+        MDC.put("CoreAdminHandler.asyncId", taskObject.taskId);
+        MDC.put("CoreAdminHandler.action", action);
+        parallelExecutor.execute(
+            () -> {
+              boolean exceptionCaught = false;
+              try {
+                final SolrQueryResponse response = task.call();
+                taskObject.setRspObject(response);
+                taskObject.setOperationRspObject(response);
+              } catch (Exception e) {
+                exceptionCaught = true;
+                taskObject.setRspObjectFromException(e);
+              } finally {
+                finishTask(taskObject, !exceptionCaught);
+              }
+            });
+      } finally {
+        MDC.remove("CoreAdminHandler.asyncId");
+        MDC.remove("CoreAdminHandler.action");
+      }
+    }
+
+    /** Helper method to add a task to a tracking type. */
+    private void addTask(String type, TaskObject o, boolean limit) {
+      synchronized (getRequestStatusMap(type)) {
+        if (limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
+          String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
+          getRequestStatusMap(type).remove(key);
+        }
+        addTask(type, o);
+      }
+    }
+
+    private void addTask(String type, TaskObject o) {
+      synchronized (getRequestStatusMap(type)) {
+        getRequestStatusMap(type).put(o.taskId, o);
+      }
+    }
+
+    /** Helper method to remove a task from a tracking map. */
+    private void removeTask(String map, String taskId) {
+      synchronized (getRequestStatusMap(map)) {
+        getRequestStatusMap(map).remove(taskId);
+      }
+    }
+
+    private void ensureTaskIdNotInUse(String taskId) throws SolrException {
+      if (getRequestStatusMap(RUNNING).containsKey(taskId)
+          || getRequestStatusMap(COMPLETED).containsKey(taskId)
+          || getRequestStatusMap(FAILED).containsKey(taskId)) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
+      }
+    }
+
+    private void finishTask(TaskObject taskObject, boolean successful) {
+      removeTask(RUNNING, taskObject.taskId);
+      addTask(successful ? COMPLETED : FAILED, taskObject, true);
+    }
+
+    /**
+     * Helper class to manage the tasks to be tracked. This contains the taskId, request and the
+     * response (if available).
+     */
+    public static class TaskObject {
+      public String taskId;
+      public String rspInfo;
+      public Object operationRspInfo;
+
+      public TaskObject(String taskId) {
+        this.taskId = taskId;
+      }
+
+      public String getRspObject() {
+        return rspInfo;
+      }
+
+      public void setRspObject(SolrQueryResponse rspObject) {
+        this.rspInfo = rspObject.getToLogAsString("TaskId: " + this.taskId);
+      }
+
+      public void setRspObjectFromException(Exception e) {
+        this.rspInfo = e.getMessage();
+      }
+
+      public Object getOperationRspObject() {
+        return operationRspInfo;
+      }
+
+      public void setOperationRspObject(SolrQueryResponse rspObject) {
+        this.operationRspInfo = rspObject.getResponse();
+      }
+    }
   }
 }

@@ -42,13 +42,13 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLO
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
-import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
@@ -57,7 +57,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -70,10 +69,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
@@ -219,21 +217,26 @@ public enum CoreAdminOperation implements CoreAdminOp {
         String requestId = params.required().get(CoreAdminParams.REQUESTID);
         log().info("Checking request status for : " + requestId);
 
-        if (it.handler.getRequestStatusMap(RUNNING).containsKey(requestId)) {
+        final CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
+            it.handler.getCoreAdminAsyncTracker();
+        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, RUNNING);
-        } else if (it.handler.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
+        } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, COMPLETED);
           it.rsp.add(
               RESPONSE_MESSAGE,
-              it.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+              coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
           it.rsp.add(
               OPERATION_RESPONSE,
-              it.handler.getRequestStatusMap(COMPLETED).get(requestId).getOperationRspObject());
-        } else if (it.handler.getRequestStatusMap(FAILED).containsKey(requestId)) {
+              coreAdminAsyncTracker
+                  .getRequestStatusMap(COMPLETED)
+                  .get(requestId)
+                  .getOperationRspObject());
+        } else if (coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, FAILED);
           it.rsp.add(
               RESPONSE_MESSAGE,
-              it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
+              coreAdminAsyncTracker.getRequestStatusMap(FAILED).get(requestId).getRspObject());
         } else {
           it.rsp.add(RESPONSE_STATUS, "notfound");
           it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");
@@ -277,31 +280,17 @@ public enum CoreAdminOperation implements CoreAdminOp {
       LISTSNAPSHOTS,
       it -> {
         final SolrParams params = it.req.getParams();
-        String cname = params.required().get(CoreAdminParams.CORE);
+        final String coreName = params.required().get(CoreAdminParams.CORE);
 
-        CoreContainer cc = it.handler.getCoreContainer();
+        final CoreContainer coreContainer = it.handler.getCoreContainer();
+        final CoreSnapshotAPI coreSnapshotAPI =
+            new CoreSnapshotAPI(
+                it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-        try (SolrCore core = cc.getCore(cname)) {
-          if (core == null) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-          }
+        final CoreSnapshotAPI.ListSnapshotsResponse response =
+            coreSnapshotAPI.listSnapshots(coreName);
 
-          SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-          @SuppressWarnings({"rawtypes"})
-          NamedList result = new NamedList();
-          for (String name : mgr.listSnapshots()) {
-            Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
-            if (metadata.isPresent()) {
-              NamedList<String> props = new NamedList<>();
-              props.add(
-                  SolrSnapshotManager.GENERATION_NUM,
-                  String.valueOf(metadata.get().getGenerationNumber()));
-              props.add(SolrSnapshotManager.INDEX_DIR_PATH, metadata.get().getIndexDirPath());
-              result.add(name, props);
-            }
-          }
-          it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, result);
-        }
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });
 
   final CoreAdminParams.CoreAdminAction action;
