@@ -2,7 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "dependencyDashboard": false,
   "enabledManagers": ["gradle"],
-  "ignorePaths": ["gradle/**", "solr/**", "buildSrc/**", "dev-docs/solr-missing-doclet/**"],
+  "includePaths": ["versions.props", "build.gradle"],
   "postUpgradeTasks": {
     "commands": ["./gradlew updateLicenses"],
     "fileFilters": ["solr/licenses/*.sha1"],
