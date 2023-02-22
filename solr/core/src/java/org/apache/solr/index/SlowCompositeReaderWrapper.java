@@ -386,13 +386,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public TopDocs searchNearestVectors(
-      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) {
+      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
     return null;
   }
 
   @Override
   public TopDocs searchNearestVectors(
-      String field, byte[] target, int k, Bits acceptDocs, int visitedLimit) {
+      String field, byte[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
     return null;
   }
 
