@@ -83,8 +83,6 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     solrClientTestRule.startSolr(
         Path.of(homeDir.getAbsolutePath()), nodeProperties, buildJettyConfig("/solr"));
 
-    getJetty().start();
-
     // createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
