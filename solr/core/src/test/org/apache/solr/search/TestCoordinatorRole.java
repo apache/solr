@@ -32,9 +32,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,10 +48,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -82,7 +82,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertEquals(10, rsp.getResults().getNumFound());
 
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
-      JettySolrRunner coordinatorJetty = null;
+      final JettySolrRunner coordinatorJetty;
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
@@ -151,17 +151,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       assertNotNull(nrtJetty);
       assertNotNull(pullJetty);
-      try (HttpSolrClient client = (HttpSolrClient) pullJetty.newClient()) {
+      try (SolrClient client = pullJetty.newClient()) {
         client.add(COLL, sid);
         client.commit(COLL);
         assertEquals(
             nrtCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:NRT")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")));
         assertEquals(
             pullCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:PULL")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:PULL")));
         // Now , kill NRT jetty
         JettySolrRunner nrtJettyF = nrtJetty;
         JettySolrRunner pullJettyF = pullJetty;
@@ -176,8 +176,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             executor.submit(
                 () -> {
                   // we manipulate the jetty instances in a separate thread to more closely mimic
-                  // the behavior we'd
-                  // see irl.
+                  // the behavior we'd see irl.
                   try {
                     Thread.sleep(establishBaselineMs);
                     log.info("stopping NRT jetty ...");
@@ -188,10 +187,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     nrtJettyF.start(true);
                     log.info("NRT jetty restarted.");
                     // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
-                    // state
-                    // used for query request routing has expired (60s). But here we force a return
-                    // to NRT
-                    // by stopping the PULL replica after a brief delay ...
+                    // state used for query request routing has expired (60s). But here we force a
+                    // return to NRT by stopping the PULL replica after a brief delay ...
                     Thread.sleep(pullServiceTimeMs);
                     log.info("stopping PULL jetty ...");
                     pullJettyF.stop();
@@ -209,8 +206,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 getHostCoreName(
                     COLL,
                     qaJettyBase,
-                    client,
-                    p -> p.add("shards.preference", "replica.type:NRT")))) {
+                    p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
           count++;
           individualRequestStart = new Date().getTime();
         }
@@ -222,11 +218,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             establishBaselineMs,
             now - individualRequestStart);
         // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
-        // very fast,
-        // because our QA-based client already knows both replicas are active, the index is stable,
-        // so the moment
-        // the client finds NRT is down it should be able to failover immediately and transparently
-        // to PULL.
+        // very fast, because our QA-based client already knows both replicas are active, the index
+        // is stable, so the moment the client finds NRT is down it should be able to failover
+        // immediately and transparently to PULL.
         assertEquals(
             "when we break out of the NRT query loop, should be b/c routed to PULL",
             pullCore,
@@ -259,14 +253,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             nrtDowntimeMs,
             count);
         // NRT replica is back up, registered as available with Zk, and availability info has been
-        // pulled down by
-        // our PULL-replica-based `client`, forwarded indexing command to NRT, index/commit
-        // completed. All of this
-        // accounts for the 3000ms tolerance allowed for below. This is not a strict value, and if
-        // it causes failures
-        // regularly we should feel free to increase the tolerance; but it's meant to provide a
-        // stable baseline from
-        // which to detect regressions.
+        // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
+        // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
+        // This is not a strict value, and if it causes failures regularly we should feel free to
+        // increase the tolerance; but it's meant to provide a stable baseline from which to detect
+        // regressions.
         count = 0;
         start = new Date().getTime();
         individualRequestStart = start;
@@ -275,10 +266,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 getHostCoreName(
                     COLL,
                     qaJettyBase,
-                    client,
                     p -> {
                       p.set(CommonParams.Q, "id:345");
-                      p.add("shards.preference", "replica.type:NRT");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
                     }))) {
           count++;
           Thread.sleep(100);
@@ -294,7 +284,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         assertEquals(nrtCore, hostCore);
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
-        if (true) return;
 
         // next phase: just toggle a bunch
         // TODO: could separate this out into a different test method, but this should suffice for
@@ -336,16 +325,16 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         start = new Date().getTime();
         try {
           do {
-            pullCore.equals(
-                hostCore =
-                    getHostCoreName(
-                        COLL,
-                        qaJettyBase,
-                        client,
-                        p -> {
-                          p.set(CommonParams.Q, "id:345");
-                          p.add("shards.preference", "replica.type:NRT");
-                        }));
+            if (pullCore.equals(
+                getHostCoreName(
+                    COLL,
+                    qaJettyBase,
+                    p -> {
+                      p.set(CommonParams.Q, "id:345");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
+                    }))) {
+              done.set(true);
+            }
             count++;
             Thread.sleep(100);
           } while (!done.get());
@@ -378,44 +367,45 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private String getHostCoreName(
-      String COLL, String qaNode, HttpSolrClient solrClient, Consumer<SolrQuery> p)
+  private String getHostCoreName(String COLL, String qaNode, Consumer<SolrQuery> p)
       throws Exception {
-
     boolean found = false;
-    SolrQuery q = new SolrQuery("*:*");
-    q.add("fl", "id,desc_s,_core_:[core]").add(OMIT_HEADER, TRUE);
+    SolrQuery q =
+        new SolrQuery(
+            CommonParams.Q,
+            "*:*",
+            CommonParams.FL,
+            "id,desc_s,_core_:[core]",
+            OMIT_HEADER,
+            TRUE,
+            CommonParams.WT,
+            CommonParams.JAVABIN);
     p.accept(q);
-    StringBuilder sb =
-        new StringBuilder(qaNode).append("/").append(COLL).append("/select?wt=javabin");
-    q.forEach(e -> sb.append("&").append(e.getKey()).append("=").append(e.getValue()[0]));
     SolrDocumentList docs = null;
-    for (int i = 0; i < 100; i++) {
-      try {
-        SimpleOrderedMap rsp =
-            (SimpleOrderedMap)
-                Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
-        docs = (SolrDocumentList) rsp.get("response");
-        if (docs.size() > 0) {
-          found = true;
-          break;
+    try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
+      for (int i = 0; i < 100; i++) {
+        try {
+          QueryResponse queryResponse = solrClient.query(COLL, q);
+          docs = queryResponse.getResults();
+          assertNotNull("Docs should not be null. Query response was: " + queryResponse, docs);
+          if (docs.size() > 0) {
+            found = true;
+            break;
+          }
+        } catch (SolrException ex) {
+          // we know we're doing tricky things that might cause transient errors
+          // TODO: all these query requests go to the QA node -- should QA propagate internal
+          // request errors to the external client (and the external client retry?) or should QA
+          // attempt to failover transparently in the event of an error?
+          if (i < 5) {
+            log.info("swallowing transient error", ex);
+          } else {
+            log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
+            fail("initial error time threshold exceeded");
+          }
         }
-      } catch (SolrException ex) {
-        // we know we're doing tricky things that might cause transient errors
-        // TODO: all these query requests go to the QA node -- should QA propagate internal request
-        // errors
-        //  to the external client (and the external client retry?) or should QA attempt to failover
-        // transparently
-        //  in the event of an error?
-        if (i < 5) {
-          log.info("swallowing transient error", ex);
-        } else {
-          log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
-          fail("initial error time threshold exceeded");
-        }
+        Thread.sleep(100);
       }
-      Thread.sleep(100);
     }
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
