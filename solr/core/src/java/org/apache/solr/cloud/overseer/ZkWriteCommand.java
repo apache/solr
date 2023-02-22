@@ -50,6 +50,14 @@ public class ZkWriteCommand {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + ": " + (this == NO_OP ? "no-op" : name + "=" + collection);
+    return getClass().getSimpleName()
+        + ": "
+        + (this == NO_OP ? "no-op" : name + "=" + this.name)
+        + " pjs: "
+        + this.persistJsonState
+        + ", prs: "
+        + this.isPerReplicaStateCollection
+        + " , ops:"
+        + this.ops;
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -122,13 +123,16 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
     DocCollection c =
         ClusterState.createFromCollectionMap(
-                0, (Map<String, Object>) Utils.fromJSON(node.data), Collections.emptySet())
+                0, (Map<String, Object>) Utils.fromJSON(node.data), Collections.emptySet(), null)
             .getCollection(collectionName);
 
+    Set<String> knownKeys =
+        Set.of("core", "leader", "node_name", "base_url", "state", "type", "force_set_state");
     c.forEachReplica(
         (s, replica) -> {
-          assertFalse(replica.getProperties().containsKey("collection"));
-          assertFalse(replica.getProperties().containsKey("shard"));
+          for (String k : replica.getProperties().keySet()) {
+            assertTrue(knownKeys.contains(k));
+          }
         });
   }
 

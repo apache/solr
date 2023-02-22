@@ -146,6 +146,12 @@ Improvements
 * SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
   `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
 
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
+
+* SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
+  `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
+  `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -208,6 +214,14 @@ Bug Fixes
 * SOLR-16639: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (Naoto Minami)
 
 * SOLR-16658: List of permissions returned to Admin UI is not complete (janhoy)
+
+* SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
+
+* SOLR-16653: Shard split on PRS collections with NRT + PULL replicas lead to down replicas (Hitesh Khamesra via noble)
+
+* SOLR-16670: Fix directory/file check in S3Repository (Houston Putman, Hakan Özler)
+
+* SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
 
 Build
 ---------------------
@@ -286,6 +300,12 @@ Other Changes
 
 * SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
   (Joshua Ouma, David Smiley)
+
+* SOLR-16660: Deprecate analytics component (janhoy)
+
+* SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
+
+* SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
 
 ==================  9.1.1 ==================
 

@@ -26,6 +26,7 @@ configure(rootProject) {
     published = [
         ":solr:core",
         ":solr:solrj",
+        ":solr:solrj-streaming",
         ":solr:solrj-zookeeper",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
