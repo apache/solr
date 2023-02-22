@@ -70,7 +70,7 @@ public class SolrStartup {
       tmpSolrHome = Files.createTempDirectory("solrstartup-perthreadstate-jsr").toAbsolutePath();
 
       final Path configsetsDir = tmpSolrHome.resolve("configsets");
-      final Path defaultConfigsetDir = Path.of(configsetsDir.toString(), "defaultConfigSet");
+      final Path defaultConfigsetDir = configsetsDir.resolve("defaultConfigSet");
       Files.createDirectories(defaultConfigsetDir);
       PathUtils.copyDirectory(
           Path.of("src/resources/configs/minimal/conf"),
