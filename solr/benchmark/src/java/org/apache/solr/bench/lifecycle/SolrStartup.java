@@ -69,7 +69,7 @@ public class SolrStartup {
     public void bootstrapJettyServer() throws Exception {
       tmpSolrHome = Files.createTempDirectory("solrstartup-perthreadstate-jsr").toAbsolutePath();
 
-      final Path configsetsDir = Path.of(tmpSolrHome.toString(), "configsets");
+      final Path configsetsDir = tmpSolrHome.resolve("configsets");
       final Path defaultConfigsetDir = Path.of(configsetsDir.toString(), "defaultConfigSet");
       Files.createDirectories(defaultConfigsetDir);
       PathUtils.copyDirectory(
