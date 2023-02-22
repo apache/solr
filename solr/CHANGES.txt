@@ -191,6 +191,8 @@ Bug Fixes
 
 * SOLR-16670: Fix directory/file check in S3Repository (Houston Putman, Hakan Özler)
 
+* SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
