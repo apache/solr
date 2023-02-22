@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dependencyDashboard": false,
+  "enabledManagers": ["gradle"],
+  "ignorePaths": ["gradle/**", "solr/**", "buildSrc/**", "dev-docs/solr-missing-doclet/**"],
+  "postUpgradeTasks": {
+    "commands": ["./gradlew updateLicenses"],
+    "fileFilters": ["solr/licenses/*.sha1"],
+    "executionMode": "branch"
+  },
+  "packageRules": [
+    {
+      "matchDatasources": ["maven"],
+      "matchPackageNames": ["commons-collections:commons-collections", "commons-io:commons-io", "commons-lang:commons-lang"],
+      "versioning": "regex:^(?<major>\\d{1,4})\\.(?<minor>\\d+)(\\.(?<patch>\\d+))?$"
+    },
+    {
+      "matchPackagePrefixes": ["software.amazon.awssdk"],
+      "extends": ["schedule:monthly"]
+    },
+    {
+      "matchPackageNames": ["solr:modules", "HH:mm"],
+      "enabled": false
+    }
+  ],
+  "schedule": [
+    "every sunday"
+  ],
+  "prConcurrentLimit": 5
+}
