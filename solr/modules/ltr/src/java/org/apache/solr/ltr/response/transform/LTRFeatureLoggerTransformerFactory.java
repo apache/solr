@@ -366,10 +366,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         Set<Integer> pickedInterleavingDocIds =
             ((LTRInterleavingScoringQuery) rerankingQueriesFromContext[i])
                 .getPickedInterleavingDocIds();
-        if (pickedInterleavingDocIds == null) {
-          return;
-        }
-        if (pickedInterleavingDocIds.contains(docid)) {
+        if (pickedInterleavingDocIds != null &&
+            pickedInterleavingDocIds.contains(docid)) {
           rerankingQuery = rerankingQueries[i];
           rerankingModelWeight = modelWeights[i];
         }
