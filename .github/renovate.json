@@ -26,5 +26,6 @@
   "schedule": [
     "every sunday"
   ],
+  "labels": ["dependencies"],
   "prConcurrentLimit": 5
 }
