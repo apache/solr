@@ -83,8 +83,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
       nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
 
-    solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
-    return getJetty();
+    return createAndStartJetty(solrHome, nodeProps, jettyConfig);
   }
 
   public static JettySolrRunner createAndStartJetty(
@@ -95,12 +94,36 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   public static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
       throws Exception {
 
-    solrClientTestRule.startSolr(Path.of(solrHome), jettyConfig);
-    return getJetty();
+    return createAndStartJetty(solrHome, new Properties(), jettyConfig);
   }
 
   public static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
-    solrClientTestRule.startSolr(Path.of(solrHome));
+    return createAndStartJetty(
+        solrHome,
+        new Properties(),
+        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
+  }
+
+  public static JettySolrRunner createAndStartJetty(
+      String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+
+    initCore(null, null, solrHome);
+
+    Path coresDir = createTempDir().resolve("cores");
+
+    Properties props = new Properties();
+    props.setProperty("name", DEFAULT_TEST_CORENAME);
+    props.setProperty("configSet", "collection1");
+    props.setProperty("config", "${solrconfig:solrconfig.xml}");
+    props.setProperty("schema", "${schema:schema.xml}");
+
+    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
+
+    Properties nodeProps = new Properties(nodeProperties);
+    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome);
+
+    solrClientTestRule.startSolr(Path.of(solrHome), nodeProps, jettyConfig);
     return getJetty();
   }
 

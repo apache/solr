@@ -16,11 +16,8 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.lucene.tests.util.LuceneTestCase.createTempDir;
 import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
 import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
-import static org.apache.solr.SolrTestCaseJ4.initCore;
-import static org.apache.solr.SolrTestCaseJ4.writeCoreProperties;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -78,30 +75,10 @@ public class SolrJettyTestRule extends SolrClientTestRule {
             .build());
   }
 
-  public void startSolr(Path solrHome, JettyConfig jettyConfig) {
-    startSolr(solrHome, new Properties(), jettyConfig);
-  }
-
   public void startSolr(Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) {
 
     try {
-      initCore(null, null, solrHome.toString());
-
-      Path coresDir = createTempDir().resolve("cores");
-
-      Properties props = new Properties();
-      props.setProperty("name", DEFAULT_TEST_CORENAME);
-      props.setProperty("configSet", "collection1");
-      props.setProperty("config", "${solrconfig:solrconfig.xml}");
-      props.setProperty("schema", "${schema:schema.xml}");
-
-      writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
-
-      Properties nodeProps = new Properties(nodeProperties);
-      nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-      nodeProps.setProperty("configSetBaseDir", solrHome.toString());
-
-      jetty = new JettySolrRunner(solrHome.toString(), nodeProps, jettyConfig);
+      jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig);
       jetty.start();
       int port = jetty.getLocalPort();
       log.info("Jetty Assigned Port#{}", port);
