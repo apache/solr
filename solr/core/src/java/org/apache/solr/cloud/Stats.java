@@ -17,8 +17,8 @@
 package org.apache.solr.cloud;
 
 import com.codahale.metrics.Timer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -89,7 +89,7 @@ public class Stats {
       stat = new Stat();
       stats.put(op, stat);
     }
-    LinkedList<FailedOp> failedOps = stat.failureDetails;
+    ArrayDeque<FailedOp> failedOps = stat.failureDetails;
     synchronized (failedOps) {
       if (failedOps.size() >= MAX_STORED_FAILURES) {
         failedOps.removeFirst();
@@ -101,7 +101,7 @@ public class Stats {
   public List<FailedOp> getFailureDetails(String operation) {
     Stat stat = stats.get(operation.toLowerCase(Locale.ROOT));
     if (stat == null || stat.failureDetails.isEmpty()) return null;
-    LinkedList<FailedOp> failedOps = stat.failureDetails;
+    ArrayDeque<FailedOp> failedOps = stat.failureDetails;
     synchronized (failedOps) {
       ArrayList<FailedOp> ret = new ArrayList<>(failedOps);
       return ret;
@@ -124,13 +124,13 @@ public class Stats {
     public final AtomicInteger success;
     public final AtomicInteger errors;
     public final Timer requestTime;
-    public final LinkedList<FailedOp> failureDetails;
+    public final ArrayDeque<FailedOp> failureDetails;
 
     public Stat() {
       this.success = new AtomicInteger();
       this.errors = new AtomicInteger();
       this.requestTime = new Timer();
-      this.failureDetails = new LinkedList<>();
+      this.failureDetails = new ArrayDeque<>();
     }
   }
 

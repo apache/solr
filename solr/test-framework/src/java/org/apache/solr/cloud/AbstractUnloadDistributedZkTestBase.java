@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,10 +26,9 @@ import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,20 +43,26 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrPaths;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
-public abstract class AbstractUnloadDistributedZkTestBase
-    extends AbstractBasicDistributedZkTestBase {
+public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDistribZkTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public AbstractUnloadDistributedZkTestBase() {
     super();
+    fixShardCount(4); // needs at least 4 servers
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }
@@ -69,9 +75,11 @@ public abstract class AbstractUnloadDistributedZkTestBase
           allowPath.clear();
           allowPath.add(SolrPaths.ALL_PATH); // Allow non-standard core instance path
         });
+    log.info("###Starting testCoreUnloadAndLeaders");
     testCoreUnloadAndLeaders(); // long
+    log.info("###Starting testUnloadOfCores");
     testUnloadLotsOfCores(); // long
-
+    log.info("###Starting testUnloadShardAndCollection");
     testUnloadShardAndCollection();
   }
 
@@ -152,7 +160,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
     final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
     final String unloadCmdCoreName2 = (unloadInOrder ? coreName2 : coreName1);
 
-    try (HttpSolrClient adminClient = getHttpSolrClient(buildUrl(jettys.get(0).getLocalPort()))) {
+    try (SolrClient adminClient = getHttpSolrClient(buildUrl(jettys.get(0).getLocalPort()))) {
       // now unload one of the two
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(unloadCmdCoreName1);
@@ -234,7 +242,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (HttpSolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
+      try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 =
@@ -262,7 +270,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
     // so that we start with some versions when we reload...
     TestInjection.skipIndexWriterCommitOnClose = true;
 
-    try (HttpSolrClient addClient =
+    try (SolrClient addClient =
         getHttpSolrClient(
             jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 30000)) {
 
@@ -277,8 +285,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
     // collectionClient.commit();
 
     // unload the leader
-    try (HttpSolrClient collectionClient =
-        getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
+    try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -302,7 +309,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
     // ensure there is a leader
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
-    try (HttpSolrClient addClient =
+    try (SolrClient addClient =
         getHttpSolrClient(
             jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 30000, 90000)) {
 
@@ -325,8 +332,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
 
     // unload the leader again
     leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
-    try (HttpSolrClient collectionClient =
-        getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
+    try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -357,7 +363,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
 
     long found1, found3;
 
-    try (HttpSolrClient adminClient =
+    try (SolrClient adminClient =
         getHttpSolrClient(
             jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 15000, 30000)) {
       adminClient.commit();
@@ -366,7 +372,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
       found1 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (HttpSolrClient adminClient =
+    try (SolrClient adminClient =
         getHttpSolrClient(
             jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 15000, 30000)) {
       adminClient.commit();
@@ -375,7 +381,7 @@ public abstract class AbstractUnloadDistributedZkTestBase
       found3 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (HttpSolrClient adminClient =
+    try (SolrClient adminClient =
         getHttpSolrClient(
             jettys.get(3).getBaseUrl() + "/unloadcollection_shard1_replica4", 15000, 30000)) {
       adminClient.commit();
@@ -391,7 +397,8 @@ public abstract class AbstractUnloadDistributedZkTestBase
 
   private void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
+    int shards = TEST_NIGHTLY ? 2 : 1;
+    try (final SolrClient adminClient = jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
       ThreadPoolExecutor executor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
@@ -403,10 +410,16 @@ public abstract class AbstractUnloadDistributedZkTestBase
               new SolrNamedThreadFactory("testExecutor"));
       try {
         // create the cores
-        createCollectionInOneInstance(
-            adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
+        AbstractBasicDistributedZkTestBase.createCollectionInOneInstance(
+            adminClient, jetty.getNodeName(), executor, "multiunload", shards, numReplicas);
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
+
+      if (TEST_NIGHTLY == false) {
+        // with nightly tests, we can try doing the unloads before the creates are done
+        // it still works, but takes much longer since we end up waiting for a timeout
+        waitForRecoveriesToFinish("multiunload", false);
       }
 
       executor =

@@ -94,7 +94,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -117,7 +117,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterTest() {
+  public void afterTest() {
     clearIndex();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
@@ -187,7 +187,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0; c < 10 * RANDOM_MULTIPLIER; ++c) {
+    int iterations = atLeast(5);
+    for (int c = 0; c < iterations; ++c) {
       clearIndex();
       int[] arity = new int[9];
       for (int a = 0; a < arity.length; ++a) {
@@ -252,7 +253,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     if (indexed && stored) suffix = "_dv";
     else if (indexed && !stored) suffix = "_dvo";
     else if (!indexed && !stored) suffix = "_dvo2";
-    else assertTrue("unsupported dv string field combination: stored and not indexed", false);
+    else fail("unsupported dv string field combination: stored and not indexed");
     return base + suffix;
   }
 

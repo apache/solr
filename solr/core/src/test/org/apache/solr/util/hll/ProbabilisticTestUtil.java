@@ -39,7 +39,7 @@ public class ProbabilisticTestUtil {
 
   /** Extracts the HLL register index from a raw value. */
   public static short getRegisterIndex(final long rawValue, final int log2m) {
-    final long mBitsMask = (1 << log2m) - 1;
+    final long mBitsMask = (1L << log2m) - 1;
     final short j = (short) (rawValue & mBitsMask);
     return j;
   }

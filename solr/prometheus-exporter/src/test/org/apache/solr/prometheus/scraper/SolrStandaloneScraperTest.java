@@ -20,12 +20,11 @@ package org.apache.solr.prometheus.scraper;
 import io.prometheus.client.Collector;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -44,7 +43,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;
   private static ExecutorService executor;
-  private static HttpSolrClient solrClient;
+  private static Http2SolrClient solrClient;
 
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
@@ -64,13 +63,11 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     configuration =
         Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
-    solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
-    solrScraper = new SolrStandaloneScraper(solrClient, executor);
-
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    solrClient.setParser(responseParser);
+    solrClient =
+        new Http2SolrClient.Builder(restTestHarness.getAdminURL())
+            .withResponseParser(new NoOpResponseParser("json"))
+            .build();
+    solrScraper = new SolrStandaloneScraper(solrClient, executor, "test");
 
     Helpers.indexAllDocs(solrClient);
   }
@@ -113,10 +110,9 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals("solr_ping", samples.name);
     assertEquals(1, samples.samples.size());
     assertEquals(1.0, samples.samples.get(0).value, 0.001);
-    assertEquals(Collections.singletonList("base_url"), samples.samples.get(0).labelNames);
+    assertEquals(List.of("base_url", "cluster_id"), samples.samples.get(0).labelNames);
     assertEquals(
-        Collections.singletonList(restTestHarness.getAdminURL()),
-        samples.samples.get(0).labelValues);
+        List.of(restTestHarness.getAdminURL(), "test"), samples.samples.get(0).labelValues);
   }
 
   @Test
@@ -139,8 +135,10 @@ public class SolrStandaloneScraperTest extends RestTestBase {
 
     assertEquals(1, replicaSamples.size());
 
-    assertEquals(1, replicaSamples.size());
     assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
+
+    assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
+    assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
   }
 
   @Test

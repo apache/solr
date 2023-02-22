@@ -37,6 +37,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -494,6 +496,7 @@ public class JavaBinCodec implements PushWriter {
 
   public final BinEntryWriter ew = new BinEntryWriter();
 
+  @Override
   public void writeMap(MapWriter val) throws IOException {
     writeTag(MAP_ENTRY_ITER);
     val.writeMap(ew);
@@ -1093,6 +1096,12 @@ public class JavaBinCodec implements PushWriter {
     } else if (val == END_OBJ) {
       writeTag(END);
       return true;
+    } else if (val instanceof LongAdder) {
+      daos.writeLong(((LongAdder) val).longValue());
+      return true;
+    } else if (val instanceof LongAccumulator) {
+      daos.writeLong(((LongAccumulator) val).longValue());
+      return true;
     }
     return false;
   }
@@ -1187,7 +1196,7 @@ public class JavaBinCodec implements PushWriter {
       writeTag(NULL);
       return;
     }
-    Integer idx = stringsMap == null ? null : stringsMap.get(s);
+    Integer idx = stringsMap == null ? null : stringsMap.get(s.toString());
     if (idx == null) idx = 0;
     writeTag(EXTERN_STRING, idx);
     if (idx == 0) {

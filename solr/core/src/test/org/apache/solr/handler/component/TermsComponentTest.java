@@ -717,15 +717,15 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
               totBuff,
               minSegBuff);
       MutableValueInt v = (MutableValueInt) iter.getMutableValue();
-      int i = 0;
+      long i = 0;
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], v.value);
+        assertEquals(vals[(int) i], v.value);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -737,11 +737,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], lv.value);
+        assertEquals(vals[(int) i], lv.value);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -753,11 +753,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], fv.value, 0);
+        assertEquals(vals[(int) i], fv.value, 0);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       totBuff = random().nextInt(50) + 1;
       minSegBuff = random().nextInt(10) + 1;
@@ -769,11 +769,11 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       for (; ; ) {
         long count = iter.getNextCount();
         if (count < 0) break;
-        assertEquals(vals[i], dv.value, 0);
+        assertEquals(vals[(int) i], dv.value, 0);
         i += count;
         // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
       }
-      assert (i == nvals);
+      assertEquals(i, nvals);
 
       assertQ(
           req(

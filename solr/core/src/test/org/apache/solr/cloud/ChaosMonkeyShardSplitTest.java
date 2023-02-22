@@ -23,12 +23,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -47,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test split phase that occurs when a Collection API split call is made. */
-@Slow
 @Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
@@ -63,6 +60,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.retries.to.followers");
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
@@ -127,7 +125,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       // SolrQuery("*:*")).getResults().getNumFound();
 
       // Wait until new leader is elected
-      while (deadJetty == leaderJetty) {
+      while (deadJetty.equals(leaderJetty)) {
         updateMappingsFromZk(this.jettys, this.clients);
         leaderJetty = shardToLeaderJetty.get("shard1");
       }
@@ -192,13 +190,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Exception e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Exception e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Exception t) {
@@ -216,28 +214,21 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   }
 
   private void waitTillRecovered() throws Exception {
-    for (int i = 0; i < 30; i++) {
-      Thread.sleep(3000);
-      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-      zkStateReader.forceUpdateCollection("collection1");
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection1 = clusterState.getCollection("collection1");
-      Slice slice = collection1.getSlice("shard1");
-      Collection<Replica> replicas = slice.getReplicas();
-      boolean allActive = true;
-      for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName())
-            || replica.getState() != Replica.State.ACTIVE) {
-          allActive = false;
-          break;
-        }
-      }
-      if (allActive) {
-        return;
-      }
-    }
-    printLayout();
-    fail("timeout waiting to see recovered node");
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+    zkStateReader.waitForState(
+        "collection1",
+        90,
+        TimeUnit.SECONDS,
+        (n, c) -> {
+          Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
+          for (Replica replica : replicas) {
+            if (n.contains(replica.getNodeName()) == false
+                || replica.getState() != Replica.State.ACTIVE) {
+              return false;
+            }
+          }
+          return true;
+        });
   }
 
   // skip the randoms - they can deadlock...
@@ -256,7 +247,11 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    */
   private SolrZkClient electNewOverseer(String address)
       throws KeeperException, InterruptedException {
-    SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(address)
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
     UpdateShardHandler updateShardHandler =

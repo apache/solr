@@ -28,7 +28,7 @@ public class ConfigSet {
 
   private final String name;
 
-  private final SolrConfig solrconfig;
+  private final SolrConfig solrConfig;
   private volatile IndexSchema schema;
 
   private final SchemaSupplier schemaSupplier;
@@ -44,7 +44,7 @@ public class ConfigSet {
       NamedList<?> properties,
       boolean trusted) {
     this.name = name;
-    this.solrconfig = solrConfig;
+    this.solrConfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
     schema = schemaSupplier.get(true);
     this.properties = properties;
@@ -56,7 +56,7 @@ public class ConfigSet {
   }
 
   public SolrConfig getSolrConfig() {
-    return solrconfig;
+    return solrConfig;
   }
 
   /**

@@ -198,30 +198,32 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
         "schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));
     assertNull("'sku*' should not be (or match) a dynamic field", schema.getDynamicPattern("sku*"));
 
-    assertTrue(
-        "schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
+    assertEquals(
+        "schema should contain dynamic field '*_s'", "*_s", schema.getDynamicPattern("*_s"));
 
     final String subsetPattern = "*_dest_sub_s";
     final String dynamicPattern1 = schema.getDynamicPattern(subsetPattern);
-    assertTrue(
+    assertEquals(
         "'"
             + subsetPattern
             + "' should match dynamic field '*_s', but instead matches '"
             + dynamicPattern1
             + "'",
-        dynamicPattern1.equals("*_s"));
+        "*_s",
+        dynamicPattern1);
 
     final String dest_sub_no_ast_s = "dest_sub_no_ast_s";
     assertFalse(
         schema.getFields().containsKey(dest_sub_no_ast_s)); // Should not be an explicit field
     final String dynamicPattern2 = schema.getDynamicPattern(dest_sub_no_ast_s);
-    assertTrue(
+    assertEquals(
         "'"
             + dest_sub_no_ast_s
             + "' should match dynamic field '*_s', but instead matches '"
             + dynamicPattern2
             + "'",
-        dynamicPattern2.equals("*_s"));
+        "*_s",
+        dynamicPattern2);
 
     assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "sku2", "AAM46"));
     assertU(commit());
@@ -270,8 +272,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
         "'testing123_*' should not be (or match) a dynamic or explicit field",
         schema.getFieldOrNull("testing123_*"));
 
-    assertTrue(
-        "schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
+    assertEquals(
+        "schema should contain dynamic field '*_s'", "*_s", schema.getDynamicPattern("*_s"));
 
     assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
     assertU(commit());

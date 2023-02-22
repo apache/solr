@@ -17,4 +17,4 @@
 package org.apache.solr.cloud;
 
 public class VMParamsZkACLAndCredentialsProvidersTest
-    extends AbstractVMParamsZkACLAndCredentialsProvidersTestBase {}
+    extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}

@@ -68,6 +68,6 @@ public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalytic
         request.groupings.get("df2").facets.get("long.dotfield");
     assertNotNull("Range facet param should be parsed for dotted field", analyticsFacetRequest);
     assertEquals("30", ((AnalyticsRangeFacetRequest) analyticsFacetRequest).end);
-    assertEquals(true, ((AnalyticsRangeFacetRequest) analyticsFacetRequest).hardend);
+    assertTrue(((AnalyticsRangeFacetRequest) analyticsFacetRequest).hardend);
   }
 }

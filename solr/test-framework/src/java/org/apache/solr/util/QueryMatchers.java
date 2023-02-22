@@ -66,7 +66,7 @@ public class QueryMatchers {
    * @param query the query string to match against
    */
   public static Matcher<Query> stringQuery(String query) {
-    return new TypeSafeDiagnosingMatcher<Query>() {
+    return new TypeSafeDiagnosingMatcher<>() {
       @Override
       protected boolean matchesSafely(Query item, Description mismatchDescription) {
         return is(query).matches(item.toString());
@@ -133,7 +133,7 @@ public class QueryMatchers {
 
   public static Matcher<BooleanClause> booleanClause(
       Matcher<? extends Query> query, BooleanClause.Occur occur) {
-    return new TypeSafeDiagnosingMatcher<BooleanClause>() {
+    return new TypeSafeDiagnosingMatcher<>() {
       @Override
       protected boolean matchesSafely(BooleanClause item, Description mismatchDescription) {
         boolean match = true;

@@ -119,10 +119,10 @@ public class HttpClientUtilTest extends SolrTestCase {
     assertEquals(Boolean.FALSE, HttpClientUtil.toBooleanObject("FALSE"));
     assertEquals(Boolean.FALSE, HttpClientUtil.toBooleanObject("fALSE"));
 
-    assertEquals(null, HttpClientUtil.toBooleanObject("t"));
-    assertEquals(null, HttpClientUtil.toBooleanObject("f"));
-    assertEquals(null, HttpClientUtil.toBooleanObject("foo"));
-    assertEquals(null, HttpClientUtil.toBooleanObject(null));
+    assertNull(HttpClientUtil.toBooleanObject("t"));
+    assertNull(HttpClientUtil.toBooleanObject("f"));
+    assertNull(HttpClientUtil.toBooleanObject("foo"));
+    assertNull(HttpClientUtil.toBooleanObject(null));
   }
 
   @Test

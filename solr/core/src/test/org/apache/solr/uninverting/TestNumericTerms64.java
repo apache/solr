@@ -100,7 +100,7 @@ public class TestNumericTerms64 extends SolrTestCase {
       field4.setLongValue(val);
       field2.setLongValue(val);
 
-      val = l - (noDocs / 2);
+      val = (long) l - (noDocs / 2);
       writer.addDocument(doc);
     }
     Map<String, Type> map = new HashMap<>();

@@ -60,7 +60,7 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testSeveralZkHostsSpecifiedTogether() throws IOException {
-    final ArrayList<String> zkHosts = new ArrayList<String>();
+    final ArrayList<String> zkHosts = new ArrayList<>();
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
     try (CloudSolrClient createdClient = new Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {

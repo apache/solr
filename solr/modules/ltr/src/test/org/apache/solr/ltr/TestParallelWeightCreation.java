@@ -60,7 +60,7 @@ public class TestParallelWeightCreation extends TestRerankBase {
       msg1 = iae.getMessage();
       ;
     }
-    assertTrue(msg1.equals("numThreadsPerRequest cannot be less than 1"));
+    assertEquals("numThreadsPerRequest cannot be less than 1", msg1);
 
     // set totalPoolThreads to 1 and numThreadsPerRequest to 2 and verify that an exception is
     // thrown
@@ -70,6 +70,6 @@ public class TestParallelWeightCreation extends TestRerankBase {
     } catch (IllegalArgumentException iae) {
       msg2 = iae.getMessage();
     }
-    assertTrue(msg2.equals("numThreadsPerRequest cannot be greater than totalPoolThreads"));
+    assertEquals("numThreadsPerRequest cannot be greater than totalPoolThreads", msg2);
   }
 }

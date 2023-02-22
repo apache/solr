@@ -37,7 +37,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.MultipartConfigElement;
@@ -63,9 +62,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -356,7 +352,7 @@ public class SolrRequestParsers {
       boolean supportCharsetParam)
       throws IOException {
     CharsetDecoder charsetDecoder = supportCharsetParam ? null : getCharsetDecoder(charset);
-    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<>() : null;
+    final List<Object> buffer = supportCharsetParam ? new ArrayList<>() : null;
     long len = 0L, keyPos = 0L, valuePos = 0L;
     final ByteArrayOutputStream keyStream = new ByteArrayOutputStream(),
         valueStream = new ByteArrayOutputStream();
@@ -476,9 +472,7 @@ public class SolrRequestParsers {
   }
 
   private static void decodeBuffer(
-      final LinkedList<Object> input,
-      final Map<String, String[]> map,
-      CharsetDecoder charsetDecoder) {
+      final List<Object> input, final Map<String, String[]> map, CharsetDecoder charsetDecoder) {
     for (final Iterator<Object> it = input.iterator(); it.hasNext(); ) {
       final byte[] keyBytes = (byte[]) it.next();
       it.remove();
@@ -613,7 +607,7 @@ public class SolrRequestParsers {
           new MultipartConfigElement(
               null, // temp dir (null=default)
               -1, // maxFileSize  (-1=none)
-              uploadLimitKB * 1024, // maxRequestSize
+              uploadLimitKB * 1024L, // maxRequestSize
               100 * 1024); // fileSizeThreshold after which will go to disk
     }
 
@@ -624,9 +618,10 @@ public class SolrRequestParsers {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Not multipart content! " + req.getContentType());
       }
-      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a
-      // Jetty class
-      req.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+      // Magic way to tell Jetty dynamically we want multi-part processing.
+      // This is taken from:
+      // https://github.com/eclipse/jetty.project/blob/jetty-10.0.12/jetty-server/src/main/java/org/eclipse/jetty/server/Request.java#L144
+      req.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
       MultiMapSolrParams params = parseQueryString(req.getQueryString());
 
@@ -643,12 +638,6 @@ public class SolrRequestParsers {
         }
       }
       return params;
-    }
-
-    static boolean isMultipart(HttpServletRequest req) {
-      // Jetty utilities
-      return MimeTypes.Type.MULTIPART_FORM_DATA.is(
-          HttpFields.valueParameters(req.getContentType(), null));
     }
 
     /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
@@ -670,9 +659,14 @@ public class SolrRequestParsers {
     }
   }
 
+  public static boolean isMultipart(HttpServletRequest req) {
+    String ct = req.getContentType();
+    return ct != null && ct.startsWith("multipart/form-data");
+  }
+
   /** Clean up any files created by MultiPartInputStream. */
   static void cleanupMultipartFiles(HttpServletRequest request) {
-    if (!MultipartRequestParser.isMultipart(request)) {
+    if (!SolrRequestParsers.isMultipart(request)) {
       return;
     }
 
@@ -840,11 +834,16 @@ public class SolrRequestParsers {
           return parseQueryString(req.getQueryString());
         }
 
+        // This happens when Jetty redirected a request that initially had no content body
+        if (contentType.equals("application/octet-stream") && req.getContentLength() == 0) {
+          return parseQueryString(req.getQueryString());
+        }
+
         // OK, we have a BODY at this point
 
         boolean schemaRestPath = false;
         int idx = uri.indexOf("/schema");
-        if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
+        if ((idx >= 0 && uri.endsWith("/schema")) || uri.contains("/schema/")) {
           schemaRestPath = true;
         }
 
@@ -872,7 +871,7 @@ public class SolrRequestParsers {
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (MultipartRequestParser.isMultipart(req)) {
+      if (isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

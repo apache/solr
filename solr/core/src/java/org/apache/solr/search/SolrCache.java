@@ -143,6 +143,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
   // init and have the cache implementation save it.
 
   /** Frees any non-memory resources */
+  @Override
   default void close() throws IOException {
     SolrInfoBean.super.close();
   }

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.Cluster;
@@ -28,7 +27,6 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -73,7 +71,6 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
             }));
   }
 
-  @LuceneTestCase.AwaitsFix(bugUrl = "https://github.com/carrot2/carrot2/issues/149")
   @Test
   @ShardsFixed(num = 2)
   public void testStcAlgorithm() throws Exception {
@@ -107,7 +104,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     QueryResponse response = query(true, params);
 
     ClusteringResponse clusteringResponse = response.getClusteringResponse();
-    Assert.assertNotNull(clusteringResponse);
+    assertNotNull(clusteringResponse);
 
     return clusteringResponse.getClusters();
   }

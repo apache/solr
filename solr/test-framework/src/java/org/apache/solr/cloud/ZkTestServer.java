@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.JMException;
 import org.apache.solr.SolrTestCaseJ4;
@@ -191,7 +192,7 @@ public class ZkTestServer {
         String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
         Arrays.sort(
             maxKeys,
-            new Comparator<String>() {
+            new Comparator<>() {
               private final Comparator<Long> valComp = Comparator.<Long>naturalOrder().reversed();
 
               @Override
@@ -441,10 +442,20 @@ public class ZkTestServer {
 
   private void init(boolean solrFormat) throws Exception {
     try {
-      rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000);
+      rootClient =
+          new SolrZkClient.Builder()
+              .withUrl(getZkHost())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .build();
     } catch (Exception e) {
       log.error("error making rootClient, trying one more time", e);
-      rootClient = new SolrZkClient(getZkHost(), TIMEOUT, 30000);
+      rootClient =
+          new SolrZkClient.Builder()
+              .withUrl(getZkHost())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .build();
     }
 
     if (solrFormat) {
@@ -452,7 +463,12 @@ public class ZkTestServer {
       makeSolrZkNode();
     }
 
-    chRootClient = new SolrZkClient(getZkAddress(), AbstractZkTestCase.TIMEOUT, 30000);
+    chRootClient =
+        new SolrZkClient.Builder()
+            .withUrl(getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+            .build();
   }
 
   public String getZkHost() {
@@ -484,10 +500,14 @@ public class ZkTestServer {
    * @throws IOException if an IO exception occurs
    */
   public void ensurePathExists(String path) throws IOException {
-    try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
+    try (SolrZkClient client =
+        new SolrZkClient.Builder()
+            .withUrl(getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
     } catch (InterruptedException | KeeperException e) {
-      e.printStackTrace();
+      log.error("Error checking path {}", path, e);
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
     }
   }

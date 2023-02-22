@@ -111,12 +111,20 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
-      return Arrays.<Object[]>asList(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
-    }
+      return Collections.singleton(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
+    } else if (TEST_NIGHTLY) {
+      // wrap each enum val in an Object[] and return as Iterable
+      return () ->
+          Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+    } else {
+      // pick a single random method and test it
+      FacetField.FacetMethod[] methods = FacetField.FacetMethod.values();
 
-    // wrap each enum val in an Object[] and return as Iterable
-    return () ->
-        Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+      // can't use LuceneTestCase.random() because we're not in the runner context yet
+      String seed = System.getProperty("tests.seed", "");
+      return Collections.singleton(
+          new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
+    }
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -210,8 +218,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i = 0; i < honda_model_counts.length - 1; i++) {
       idx.add(i);
     }
-    Collections.sort(
-        idx,
+    idx.sort(
         (o1, o2) -> {
           int cmp = honda_model_counts[o2] - honda_model_counts[o1];
           return cmp == 0 ? o1 - o2 : cmp;
@@ -3568,7 +3575,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets=={ 'count':6, " + "f1:{  buckets:[{ val:batman, count:1, x:1}]}" + " } ");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3586,7 +3593,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3605,7 +3612,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);

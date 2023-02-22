@@ -25,6 +25,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.LogListener;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.slf4j.MDC;
 
@@ -75,7 +76,7 @@ public class TestRequestId extends SolrTestCaseJ4 {
           var reqEvent = reqLog.getQueue().poll();
           assertNotNull(reqEvent);
           assertEquals("yyy", reqEvent.getContextData().getValue("rid"));
-          assertThat(
+          MatcherAssert.assertThat(
               reqEvent.getMessage().getFormattedMessage(),
               containsString("status=" + ErrorCode.BAD_REQUEST.code));
         }

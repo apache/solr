@@ -93,7 +93,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       SolrParams[] baseParamsSet =
           new SolrParams[] {
             // NOTE: doTestFieldStatisticsResult needs the full list of possible tags to exclude
-            params("stats.field", f, "stats", "true"),
+            params(StatsParams.STATS_FIELD, f, StatsParams.STATS, "true"),
             params(
                 "stats.field",
                 "{!ex=fq1,fq2}" + f,
@@ -471,16 +471,15 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, f);
-    args.put("f." + f + ".stats.calcdistinct", "true");
-    args.put("indent", "true");
-
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", f, "stats", "true", "f." + f + ".stats.calcdistinct", "true"),
+          params(
+              StatsParams.STATS_FIELD,
+              f,
+              StatsParams.STATS,
+              "true",
+              "f." + f + ".stats.calcdistinct",
+              "true"),
           params(
               "json.facet", // note: no distinctValues support
               "{min:'min("
@@ -511,7 +510,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // string field cardinality
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", "{!cardinality=true}" + f, "stats", "true"),
+          params(StatsParams.STATS_FIELD, "{!cardinality=true}" + f, StatsParams.STATS, "true"),
           params("json.facet", "{cardinality:'hll(" + f + ")'}")
         }) {
       assertQ(
@@ -524,7 +523,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // stats over a string function
     for (SolrParams baseParams :
         new SolrParams[] {
-          params("stats.field", "{!func}" + strFunc, "stats", "true"),
+          params(StatsParams.STATS_FIELD, "{!func}" + strFunc, StatsParams.STATS, "true"),
           params(
               "json.facet", // note: no function support for unique
               "{min:'min("
@@ -1019,9 +1018,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: foo_ss no longer multivalued",
         foo_ss.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: foo_ss's fieldtype no longer single valued",
-        !foo_ss.getType().isMultiValued());
+        foo_ss.getType().isMultiValued());
 
     assertQEx(
         "no failure trying to get stats facet on foo_ss",
@@ -1078,9 +1077,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1128,9 +1127,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1186,9 +1185,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -1311,9 +1310,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer multivalued",
         catDocValues.multiValued());
-    assertTrue(
+    assertFalse(
         "schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued",
-        !catDocValues.getType().isMultiValued());
+        catDocValues.getType().isMultiValued());
     assertTrue(
         "schema no longer satisfies test requirements: cat_docValues no longer has docValues",
         catDocValues.hasDocValues());
@@ -2347,18 +2346,22 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       intCombos = new Combinations(all.length, comboSize);
     }
 
+    @Override
     public Iterator<EnumSet<Stat>> iterator() {
       return new Iterator<EnumSet<Stat>>() {
         final Iterator<int[]> wrapped = intCombos.iterator();
 
+        @Override
         public void remove() {
           wrapped.remove();
         }
 
+        @Override
         public boolean hasNext() {
           return wrapped.hasNext();
         }
 
+        @Override
         public EnumSet<Stat> next() {
           EnumSet<Stat> result = EnumSet.noneOf(Stat.class);
           int[] indexes = wrapped.next();

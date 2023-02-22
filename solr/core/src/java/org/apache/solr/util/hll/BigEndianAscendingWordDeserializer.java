@@ -65,7 +65,7 @@ class BigEndianAscendingWordDeserializer implements IWordDeserializer {
     this.bytePadding = bytePadding;
 
     final int dataBytes = (bytes.length - bytePadding);
-    final long dataBits = (dataBytes * BITS_PER_BYTE);
+    final long dataBits = ((long) dataBytes * BITS_PER_BYTE);
 
     this.wordCount = (int) (dataBits / wordLength);
 

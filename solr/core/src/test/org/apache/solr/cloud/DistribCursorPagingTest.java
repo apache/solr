@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.CursorPagingTest;
@@ -58,7 +57,6 @@ import org.junit.Test;
  *
  * @see CursorPagingTest
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 

@@ -34,28 +34,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 /** Loads {@code solr.xml}. */
@@ -96,16 +95,20 @@ public class SolrXmlConfig {
     return results;
   }
 
-  public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
+  public static NodeConfig fromConfig(
+      Path solrHome,
+      Properties substituteProperties,
+      boolean fromZookeeper,
+      ConfigNode root,
+      SolrResourceLoader loader) {
 
-    checkForIllegalConfig(config);
+    checkForIllegalConfig(root);
 
     // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that
     // tell us what zkHost was used to read it (either via webapp context attribute, or that
     // SolrDispatchFilter filled in for us from system properties)
     assert ((!fromZookeeper)
-        || (null != config.getSubstituteProperties()
-            && null != config.getSubstituteProperties().getProperty(ZK_HOST)));
+        || (null != substituteProperties && null != substituteProperties.getProperty(ZK_HOST)));
 
     // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost
     // property, we're going to use that as our "default" and only *directly* check the system
@@ -116,34 +119,41 @@ public class SolrXmlConfig {
     // try and load solr.xml from ZK, and should have put the sys prop value in the node properties
     // for us)
     final String defaultZkHost =
-        wrapAndSetZkHostFromSysPropIfNeeded(config.getSubstituteProperties()).getProperty(ZK_HOST);
+        wrapAndSetZkHostFromSysPropIfNeeded(substituteProperties).getProperty(ZK_HOST);
 
     CloudConfig cloudConfig = null;
     UpdateShardHandlerConfig deprecatedUpdateConfig = null;
 
-    if (config.getNodeList("solr/solrcloud", false).getLength() > 0) {
+    if (root.get("solrcloud").exists()) {
       NamedList<Object> cloudSection =
-          readNodeListAsNamedList(config, "solr/solrcloud/*[@name]", "<solrcloud>");
+          readNodeListAsNamedList(root.get("solrcloud"), "<solrcloud>");
       deprecatedUpdateConfig = loadUpdateConfig(cloudSection, false);
-      cloudConfig = fillSolrCloudSection(cloudSection, config, defaultZkHost);
+      cloudConfig = fillSolrCloudSection(cloudSection, defaultZkHost);
     }
 
-    NamedList<Object> entries = readNodeListAsNamedList(config, "solr/*[@name]", "<solr>");
+    NamedList<Object> entries = readNodeListAsNamedList(root, "<solr>");
     String nodeName = (String) entries.remove("nodeName");
     if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
+
+    // It should goes inside the fillSolrSection method but
+    // since it is arranged as a separate section it is placed here
+    Map<String, String> coreAdminHandlerActions =
+        readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
+            .asMap()
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(item -> item.getKey(), item -> item.getValue().toString()));
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
       updateConfig =
           loadUpdateConfig(
-              readNodeListAsNamedList(
-                  config, "solr/updateshardhandler/*[@name]", "<updateshardhandler>"),
+              readNodeListAsNamedList(root.get("updateshardhandler"), "<updateshardhandler>"),
               true);
     } else {
       updateConfig =
           loadUpdateConfig(
-              readNodeListAsNamedList(
-                  config, "solr/updateshardhandler/*[@name]", "<updateshardhandler>"),
+              readNodeListAsNamedList(root.get("updateshardhandler"), "<updateshardhandler>"),
               false);
       if (updateConfig != null) {
         throw new SolrException(
@@ -155,20 +165,20 @@ public class SolrXmlConfig {
 
     NodeConfig.NodeConfigBuilder configBuilder =
         new NodeConfig.NodeConfigBuilder(nodeName, solrHome);
-    configBuilder.setSolrResourceLoader(config.getResourceLoader());
+    configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
-    configBuilder.setShardHandlerFactoryConfig(getShardHandlerFactoryPluginInfo(config));
-    configBuilder.setSolrCoreCacheFactoryConfig(getTransientCoreCacheFactoryPluginInfo(config));
-    configBuilder.setTracerConfig(getTracerPluginInfo(config));
-    configBuilder.setLogWatcherConfig(
-        loadLogWatcherConfig(config, "solr/logging/*[@name]", "solr/logging/watcher/*[@name]"));
-    configBuilder.setSolrProperties(loadProperties(config));
+    configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
+    configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
+    configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
+    configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
-    configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
-    configBuilder.setMetricsConfig(getMetricsConfig(config));
+    configBuilder.setBackupRepositoryPlugins(
+        getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
-    return fillSolrSection(configBuilder, entries);
+    configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
+    return fillSolrSection(configBuilder, root);
   }
 
   public static NodeConfig fromFile(Path solrHome, Path configFile, Properties substituteProps) {
@@ -222,7 +232,12 @@ public class SolrXmlConfig {
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
-        return fromConfig(solrHome, config, fromZookeeper);
+        return fromConfig(
+            solrHome,
+            substituteProps,
+            fromZookeeper,
+            new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement())),
+            loader);
       }
     } catch (SolrException exc) {
       throw exc;
@@ -235,29 +250,31 @@ public class SolrXmlConfig {
     return fromFile(solrHome, solrHome.resolve(SOLR_XML_FILE), substituteProps);
   }
 
-  private static void checkForIllegalConfig(XmlConfigFile config) {
-    failIfFound(config, "solr/@coreLoadThreads");
-    failIfFound(config, "solr/@persistent");
-    failIfFound(config, "solr/@sharedLib");
-    failIfFound(config, "solr/@zkHost");
-    failIfFound(config, "solr/cores");
+  private static void checkForIllegalConfig(ConfigNode root) {
+    failIfFound(root.attr("coreLoadThreads"), "solr/@coreLoadThreads");
+    failIfFound(root.attr("persistent"), "solr/@persistent");
+    failIfFound(root.attr("sharedLib"), "solr/@sharedLib");
+    failIfFound(root.attr("zkHost"), "solr/@zkHost");
+    failIfFound(root.attr("zkHost"), "solr/@zkHost");
+    failIfFound(root.get("cores").exists() ? "" : null, "solr/cores");
 
-    assertSingleInstance("solrcloud", config);
-    assertSingleInstance("logging", config);
-    assertSingleInstance("logging/watcher", config);
-    assertSingleInstance("backup", config);
+    assertSingleInstance(root.getAll("solrcloud"), "solrcloud");
+    assertSingleInstance(root.getAll("logging"), "logging");
+    assertSingleInstance(root.get("logging").getAll("watcher"), "logging/watcher");
+    assertSingleInstance(root.getAll("backup"), "backup");
+    assertSingleInstance(root.getAll("coreAdminHandlerActions"), "coreAdminHandlerActions");
   }
 
-  private static void assertSingleInstance(String section, XmlConfigFile config) {
-    if (config.getNodeList("/solr/" + section, false).getLength() > 1)
+  private static void assertSingleInstance(List<ConfigNode> l, String section) {
+    if (l.size() > 1)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Multiple instances of " + section + " section found in solr.xml");
   }
 
-  private static void failIfFound(XmlConfigFile config, String xPath) {
+  private static void failIfFound(String val, String xPath) {
 
-    if (config.getVal(xPath, false) != null) {
+    if (val != null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Should not have found "
@@ -266,35 +283,21 @@ public class SolrXmlConfig {
     }
   }
 
-  private static Properties loadProperties(XmlConfigFile config) {
-    try {
-      Node node = ((NodeList) config.evaluate("solr", XPathConstants.NODESET)).item(0);
-      XPath xpath = config.getXPath();
-      NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
-      Properties properties = new Properties(config.getSubstituteProperties());
-      for (int i = 0; i < props.getLength(); i++) {
-        Node prop = props.item(i);
-        properties.setProperty(
-            DOMUtil.getAttr(prop, NAME),
-            PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
-      }
-      return properties;
-    } catch (XPathExpressionException e) {
-      log.warn("Error parsing solr.xml: ", e);
-      return null;
-    }
+  private static Properties loadProperties(ConfigNode cfg, Properties substituteProperties) {
+    Properties properties = new Properties(substituteProperties);
+    cfg.forEachChild(
+        it -> {
+          if (it.name().equals("property")) {
+            properties.setProperty(it.attr(NAME), it.attr("value"));
+          }
+          return Boolean.TRUE;
+        });
+
+    return properties;
   }
 
-  private static NamedList<Object> readNodeListAsNamedList(
-      XmlConfigFile config, String path, String section) {
-    NodeList nodes = config.getNodeList(path, false);
-    if (nodes == null) {
-      return null;
-    }
-    return checkForDuplicates(section, DOMUtil.nodesToNamedList(nodes));
-  }
-
-  private static NamedList<Object> checkForDuplicates(String section, NamedList<Object> nl) {
+  private static NamedList<Object> readNodeListAsNamedList(ConfigNode cfg, String section) {
+    NamedList<Object> nl = DOMUtil.readNamedListChildren(cfg);
     Set<String> keys = new HashSet<>();
     for (Map.Entry<String, Object> entry : nl) {
       if (!keys.add(entry.getKey()))
@@ -315,77 +318,83 @@ public class SolrXmlConfig {
     }
   }
 
-  private static NodeConfig fillSolrSection(
-      NodeConfig.NodeConfigBuilder builder, NamedList<Object> nl) {
+  private static NodeConfig fillSolrSection(NodeConfig.NodeConfigBuilder builder, ConfigNode root) {
 
-    for (Map.Entry<String, Object> entry : nl) {
-      String name = entry.getKey();
-      if (entry.getValue() == null) continue;
-      String value = entry.getValue().toString();
-      switch (name) {
-        case "adminHandler":
-          builder.setCoreAdminHandlerClass(value);
-          break;
-        case "collectionsHandler":
-          builder.setCollectionsAdminHandlerClass(value);
-          break;
-        case "healthCheckHandler":
-          builder.setHealthCheckHandlerClass(value);
-          break;
-        case "infoHandler":
-          builder.setInfoHandlerClass(value);
-          break;
-        case "configSetsHandler":
-          builder.setConfigSetsHandlerClass(value);
-          break;
-        case "configSetService":
-          builder.setConfigSetServiceClass(value);
-          break;
-        case "coreRootDirectory":
-          builder.setCoreRootDirectory(value);
-          break;
-        case "solrDataHome":
-          builder.setSolrDataHome(value);
-          break;
-        case "maxBooleanClauses":
-          builder.setBooleanQueryMaxClauseCount(parseInt(name, value));
-          break;
-        case "managementPath":
-          builder.setManagementPath(value);
-          break;
-        case "sharedLib":
-          builder.setSharedLibDirectory(value);
-          break;
-        case "modules":
-          builder.setModules(value);
-          break;
-        case "allowPaths":
-          builder.setAllowPaths(separatePaths(value));
-          break;
-        case "configSetBaseDir":
-          builder.setConfigSetBaseDirectory(value);
-          break;
-        case "shareSchema":
-          builder.setUseSchemaCache(Boolean.parseBoolean(value));
-          break;
-        case "coreLoadThreads":
-          builder.setCoreLoadThreads(parseInt(name, value));
-          break;
-        case "replayUpdatesThreads":
-          builder.setReplayUpdatesThreads(parseInt(name, value));
-          break;
-        case "transientCacheSize":
-          builder.setTransientCacheSize(parseInt(name, value));
-          break;
-        case "allowUrls":
-          builder.setAllowUrls(separateStrings(value));
-          break;
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Unknown configuration value in solr.xml: " + name);
-      }
-    }
+    forEachNamedListEntry(
+        root,
+        it -> {
+          if (it.name().equals("null")) return;
+          try {
+            switch (it.attr(NAME)) {
+              case "adminHandler":
+                builder.setCoreAdminHandlerClass(it.txt());
+                break;
+              case "collectionsHandler":
+                builder.setCollectionsAdminHandlerClass(it.txt());
+                break;
+              case "healthCheckHandler":
+                builder.setHealthCheckHandlerClass(it.txt());
+                break;
+              case "infoHandler":
+                builder.setInfoHandlerClass(it.txt());
+                break;
+              case "configSetsHandler":
+                builder.setConfigSetsHandlerClass(it.txt());
+                break;
+              case "configSetService":
+                builder.setConfigSetServiceClass(it.txt());
+                break;
+              case "coreRootDirectory":
+                builder.setCoreRootDirectory(it.txt());
+                break;
+              case "solrDataHome":
+                builder.setSolrDataHome(it.txt());
+                break;
+              case "maxBooleanClauses":
+                builder.setBooleanQueryMaxClauseCount(it.intVal(-1));
+                break;
+              case "managementPath":
+                builder.setManagementPath(it.txt());
+                break;
+              case "sharedLib":
+                builder.setSharedLibDirectory(it.txt());
+                break;
+              case "modules":
+                builder.setModules(it.txt());
+                break;
+              case "allowPaths":
+                builder.setAllowPaths(separatePaths(it.txt()));
+                break;
+              case "configSetBaseDir":
+                builder.setConfigSetBaseDirectory(it.txt());
+                break;
+              case "shareSchema":
+                builder.setUseSchemaCache(it.boolVal(false));
+                break;
+              case "coreLoadThreads":
+                builder.setCoreLoadThreads(it.intVal(-1));
+                break;
+              case "replayUpdatesThreads":
+                builder.setReplayUpdatesThreads(it.intVal(-1));
+                break;
+              case "transientCacheSize":
+                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
+                builder.setTransientCacheSize(it.intVal(-1));
+                break;
+              case "allowUrls":
+                builder.setAllowUrls(separateStrings(it.txt()));
+                break;
+              default:
+                throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR,
+                    "Unknown configuration value in solr.xml: " + it.attr(NAME));
+            }
+          } catch (NumberFormatException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error parsing '" + it.attr(NAME) + "', value '" + it.txt() + "' cannot be parsed");
+          }
+        });
 
     return builder.build();
   }
@@ -486,8 +495,7 @@ public class SolrXmlConfig {
         section + " section missing required entry '" + key + "'");
   }
 
-  private static CloudConfig fillSolrCloudSection(
-      NamedList<Object> nl, XmlConfigFile config, String defaultZkHost) {
+  private static CloudConfig fillSolrCloudSection(NamedList<Object> nl, String defaultZkHost) {
 
     int hostPort =
         parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
@@ -529,6 +537,9 @@ public class SolrXmlConfig {
         case "zkCredentialsProvider":
           builder.setZkCredentialsProviderClass(value);
           break;
+        case "zkCredentialsInjector":
+          builder.setZkCredentialsInjectorClass(value);
+          break;
         case "createCollectionWaitTimeTillActive":
           builder.setCreateCollectionWaitTimeTillActive(parseInt(name, value));
           break;
@@ -547,6 +558,12 @@ public class SolrXmlConfig {
         case "distributedCollectionConfigSetExecution":
           builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
           break;
+        case "minStateByteLenForCompression":
+          builder.setMinStateByteLenForCompression(parseInt(name, value));
+          break;
+        case "stateCompressor":
+          builder.setStateCompressorClass(value);
+          break;
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -557,16 +574,14 @@ public class SolrXmlConfig {
     return builder.build();
   }
 
-  private static LogWatcherConfig loadLogWatcherConfig(
-      XmlConfigFile config, String loggingPath, String watcherPath) {
+  private static LogWatcherConfig loadLogWatcherConfig(ConfigNode logging) {
 
     String loggingClass = null;
     boolean enabled = true;
     int watcherQueueSize = 50;
     String watcherThreshold = null;
 
-    for (Map.Entry<String, Object> entry :
-        readNodeListAsNamedList(config, loggingPath, "<logging>")) {
+    for (Map.Entry<String, Object> entry : readNodeListAsNamedList(logging, "<logging>")) {
       String name = entry.getKey();
       String value = entry.getValue().toString();
       switch (name) {
@@ -583,7 +598,7 @@ public class SolrXmlConfig {
     }
 
     for (Map.Entry<String, Object> entry :
-        readNodeListAsNamedList(config, watcherPath, "<watcher>")) {
+        readNodeListAsNamedList(logging.get("watcher"), "<watcher>")) {
       String name = entry.getKey();
       String value = entry.getValue().toString();
       switch (name) {
@@ -602,63 +617,65 @@ public class SolrXmlConfig {
     return new LogWatcherConfig(enabled, loggingClass, watcherThreshold, watcherQueueSize);
   }
 
-  private static PluginInfo getShardHandlerFactoryPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/shardHandlerFactory", false);
-    return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
+  static void forEachNamedListEntry(ConfigNode cfg, Consumer<ConfigNode> fun) {
+    cfg.forEachChild(
+        it -> {
+          if (DOMUtil.NL_TAGS.contains(it.name())) {
+            fun.accept(it);
+          }
+          return Boolean.TRUE;
+        });
   }
 
-  private static PluginInfo[] getBackupRepositoryPluginInfos(XmlConfigFile config) {
-    NodeList nodes = (NodeList) config.evaluate("solr/backup/repository", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return new PluginInfo[0];
-    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
-    for (int i = 0; i < nodes.getLength(); i++) {
-      configs[i] = new PluginInfo(nodes.item(i), "BackupRepositoryFactory", true, true);
+  private static PluginInfo[] getBackupRepositoryPluginInfos(List<ConfigNode> cfg) {
+    if (cfg.isEmpty()) {
+      return new PluginInfo[0];
     }
+
+    PluginInfo[] configs = new PluginInfo[cfg.size()];
+    for (int i = 0; i < cfg.size(); i++) {
+      ConfigNode c = cfg.get(i);
+      configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
+    }
+
     return configs;
   }
 
-  private static MetricsConfig getMetricsConfig(XmlConfigFile config) {
+  private static MetricsConfig getMetricsConfig(ConfigNode metrics) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    Node node = config.getNode("solr/metrics", false);
-    // enabled by default
-    boolean enabled = true;
-    if (node != null) {
-      enabled = Boolean.parseBoolean(DOMUtil.getAttrOrDefault(node, "enabled", "true"));
-    }
+    boolean enabled = metrics.boolAttr("enabled", true);
     builder.setEnabled(enabled);
     if (!enabled) {
       log.info("Metrics collection is disabled.");
       return builder.build();
     }
-    node = config.getNode("solr/metrics/suppliers/counter", false);
-    if (node != null) {
-      builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/suppliers/meter", false);
-    if (node != null) {
-      builder = builder.setMeterSupplier(new PluginInfo(node, "meterSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/suppliers/timer", false);
-    if (node != null) {
-      builder = builder.setTimerSupplier(new PluginInfo(node, "timerSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/suppliers/histogram", false);
-    if (node != null) {
-      builder =
-          builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/missingValues", false);
-    ;
-    if (node != null) {
-      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(node);
+
+    builder.setCounterSupplier(getPluginInfo(metrics.get("suppliers").get("counter")));
+    builder.setMeterSupplier(getPluginInfo(metrics.get("suppliers").get("meter")));
+    builder.setTimerSupplier(getPluginInfo(metrics.get("suppliers").get("timer")));
+    builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
+
+    if (metrics.get("missingValues").exists()) {
+      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(metrics.get("missingValues"));
       builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
       builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
     }
 
-    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
-    Set<String> hiddenSysProps = getHiddenSysProps(config);
+    ConfigNode caching = metrics.get("solr/metrics/caching");
+    if (caching != null) {
+      Object threadsCachingIntervalSeconds =
+          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+      builder.setCacheConfig(
+          new MetricsConfig.CacheConfig(
+              threadsCachingIntervalSeconds == null
+                  ? null
+                  : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
+    }
+
+    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
+    Set<String> hiddenSysProps = getHiddenSysProps(metrics);
     return builder
         .setMetricReporterPlugins(reporterPlugins)
         .setHiddenSysProps(hiddenSysProps)
@@ -679,21 +696,18 @@ public class SolrXmlConfig {
     return o;
   }
 
-  private static PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) {
-    NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
+  private static PluginInfo[] getMetricReporterPluginInfos(ConfigNode metrics) {
     List<PluginInfo> configs = new ArrayList<>();
     boolean hasJmxReporter = false;
-    if (nodes != null && nodes.getLength() > 0) {
-      for (int i = 0; i < nodes.getLength(); i++) {
-        // we don't require class in order to support predefined replica and node reporter classes
-        PluginInfo info = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
-        String clazz = info.className;
-        if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
-          hasJmxReporter = true;
-        }
-        configs.add(info);
+    for (ConfigNode node : metrics.getAll("reporter")) {
+      PluginInfo info = getPluginInfo(node);
+      String clazz = info.className;
+      if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
+        hasJmxReporter = true;
       }
+      configs.add(info);
     }
+
     // if there's an MBean server running but there was no JMX reporter then add a default one
     MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
     if (mBeanServer != null && !hasJmxReporter) {
@@ -709,19 +723,15 @@ public class SolrXmlConfig {
     return configs.toArray(new PluginInfo[configs.size()]);
   }
 
-  private static Set<String> getHiddenSysProps(XmlConfigFile config) {
-    NodeList nodes =
-        (NodeList) config.evaluate("solr/metrics/hiddenSysProps/str", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) {
-      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
-    }
+  private static Set<String> getHiddenSysProps(ConfigNode metrics) {
+    ConfigNode p = metrics.get("hiddenSysProps");
+    if (!p.exists()) return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
     Set<String> props = new HashSet<>();
-    for (int i = 0; i < nodes.getLength(); i++) {
-      String prop = DOMUtil.getText(nodes.item(i));
-      if (prop != null && !prop.trim().isEmpty()) {
-        props.add(prop.trim());
-      }
-    }
+    p.forEachChild(
+        it -> {
+          if (it.name().equals("str") && !StringUtils.isEmpty(it.txt())) props.add(it.txt());
+          return Boolean.TRUE;
+        });
     if (props.isEmpty()) {
       return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
     } else {
@@ -729,13 +739,8 @@ public class SolrXmlConfig {
     }
   }
 
-  private static PluginInfo getTransientCoreCacheFactoryPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/transientCoreCacheFactory", false);
-    return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
-  }
-
-  private static PluginInfo getTracerPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/tracerConfig", false);
-    return (node == null) ? null : new PluginInfo(node, "tracerConfig", false, true);
+  private static PluginInfo getPluginInfo(ConfigNode cfg) {
+    if (cfg == null || !cfg.exists()) return null;
+    return new PluginInfo(cfg, cfg.name(), false, true);
   }
 }

@@ -29,7 +29,6 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinParentQParser;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 
 public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
@@ -49,7 +48,7 @@ public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
               childQuery,
               BlockJoinParentQParser.getCachedBitSetProducer(req, parentQuery),
               ScoreMode.Max);
-      Assert.assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value);
+      assertEquals(6, req.getSearcher().search(tpbjq, 10).totalHits.value);
     }
   }
 }

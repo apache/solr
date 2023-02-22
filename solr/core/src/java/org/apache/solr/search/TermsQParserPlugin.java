@@ -27,7 +27,21 @@ import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.AutomatonQuery;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -186,6 +200,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       this.fieldName = field;
     }
 
+    @Override
     public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost)
         throws IOException {
       if (!(searcher instanceof SolrIndexSearcher)) {
@@ -211,6 +226,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       }
 
       return new ConstantScoreWeight(this, boost) {
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           if (!matchesAtLeastOneTerm) {
             return null;
@@ -227,6 +243,7 @@ public class TermsQParserPlugin extends QParserPlugin {
               this.score(),
               scoreMode,
               new TwoPhaseIterator(segmentDocValues) {
+                @Override
                 public boolean matches() throws IOException {
                   topLevelDocValues.advanceExact(docBase + approximation.docID());
                   for (long ord = topLevelDocValues.nextOrd();
@@ -240,12 +257,14 @@ public class TermsQParserPlugin extends QParserPlugin {
                   return false;
                 }
 
+                @Override
                 public float matchCost() {
                   return 10.0F;
                 }
               });
         }
 
+        @Override
         public boolean isCacheable(LeafReaderContext ctx) {
           return DocValues.isCacheable(ctx, new String[] {fieldName});
         }

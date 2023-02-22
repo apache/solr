@@ -144,7 +144,7 @@ public class CorePropertiesLocator implements CoresLocator {
           this.rootDirectory,
           options,
           maxDepth,
-          new SimpleFileVisitor<Path>() {
+          new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {
@@ -194,10 +194,14 @@ public class CorePropertiesLocator implements CoresLocator {
   }
 
   protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
-
-    Path instanceDir = propertiesFile.getParent();
-    Properties coreProperties = new Properties();
+    if (Files.notExists(propertiesFile)) {
+      // This can happen in tests, see CoreContainer#reloadCoreDescriptor
+      log.info("Could not load core descriptor from {} because it does not exist", propertiesFile);
+      return null;
+    }
     try (InputStream fis = Files.newInputStream(propertiesFile)) {
+      Path instanceDir = propertiesFile.getParent();
+      Properties coreProperties = new Properties();
       coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
       String name = createName(coreProperties, instanceDir);
       Map<String, String> propMap = new HashMap<>();

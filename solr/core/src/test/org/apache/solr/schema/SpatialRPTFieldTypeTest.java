@@ -36,7 +36,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -61,7 +61,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() {
+  public void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
@@ -159,7 +159,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
 
     rptFieldType.setTypeName("location_rpt");
     rptMap.put("geo", "true");
@@ -282,7 +282,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     if (fieldType == null) {
       fieldType = new SpatialRecursivePrefixTreeFieldType();
     }
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
     if (distanceUnits != null) rptMap.put("distanceUnits", distanceUnits);
     rptMap.put("geo", "true");
     if (format != null) {

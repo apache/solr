@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
@@ -65,11 +66,11 @@ public class MacroExpander {
       List<String> newValues = null;
       for (String v : values) {
         String newV = expand(v);
-        if (newV != v) {
+        if (!Objects.equals(newV, v)) {
           if (newValues == null) {
             newValues = new ArrayList<>(values.length);
             for (String vv : values) {
-              if (vv == v) break;
+              if (Objects.equals(vv, v)) break;
               newValues.add(vv);
             }
           }
@@ -80,11 +81,11 @@ public class MacroExpander {
       }
 
       if (newValues != null) {
-        values = newValues.toArray(new String[newValues.size()]);
+        values = newValues.toArray(new String[0]);
         changed = true;
       }
 
-      if (k != newK) {
+      if (!Objects.equals(k, newK)) {
         changed = true;
       }
 

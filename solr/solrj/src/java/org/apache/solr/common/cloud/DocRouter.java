@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +27,7 @@ import java.util.Map;
 import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.noggit.JSONWriter;
@@ -40,7 +39,7 @@ import org.noggit.JSONWriter;
  */
 public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
-  public static final DocRouter DEFAULT = new CompositeIdRouter();
+  public static final DocRouter DEFAULT;
 
   public static DocRouter getDocRouter(String routerName) {
     DocRouter router = routerMap.get(routerName);
@@ -52,7 +51,7 @@ public abstract class DocRouter {
   public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     @SuppressWarnings({"rawtypes"})
-    Map m = (Map) coll.get(DOC_ROUTER);
+    Map m = (Map) coll.get(CollectionStateProps.DOC_ROUTER);
     if (m == null) return null;
     return (String) m.get("field");
   }
@@ -80,11 +79,11 @@ public abstract class DocRouter {
     // to "plain" if it doesn't have any properties.
     routerMap.put(null, plain); // back compat with 4.0
     routerMap.put(PlainIdRouter.NAME, plain);
-    routerMap.put(
-        CompositeIdRouter.NAME,
-        DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
+    routerMap.put(CompositeIdRouter.NAME, new CompositeIdRouter());
     routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
     // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
+
+    DEFAULT = routerMap.get(DEFAULT_NAME);
   }
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
@@ -110,6 +109,7 @@ public abstract class DocRouter {
       return max;
     }
 
+    @Override
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
     }
@@ -136,7 +136,7 @@ public abstract class DocRouter {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj.getClass() != getClass()) return false;
+      if (!(obj instanceof Range)) return false;
       Range other = (Range) obj;
       return this.min == other.min && this.max == other.max;
     }

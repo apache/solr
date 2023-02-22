@@ -18,7 +18,10 @@ package org.apache.solr.handler.sql;
 
 import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;

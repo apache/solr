@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.net.URL;
 import java.util.Locale;
@@ -38,9 +37,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /**
  * @since solr 1.3
@@ -48,8 +44,6 @@ import org.junit.rules.TestRule;
 public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
   static final String context = "/test";
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   Server server;
 

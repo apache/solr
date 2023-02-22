@@ -48,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,6 +60,7 @@ import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
@@ -117,16 +119,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           sortSpec = parser.getSortSpec(true);
         }
 
-        String[] fqs = req.getParams().getParams(CommonParams.FQ);
-        if (fqs != null && fqs.length != 0) {
-          filters = new ArrayList<>();
-          for (String fq : fqs) {
-            if (fq != null && fq.trim().length() != 0) {
-              QParser fqp = QParser.getParser(fq, req);
-              filters.add(fqp.getQuery());
-            }
-          }
-        }
+        filters = QueryUtils.parseFilterQueries(req);
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -223,7 +216,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (mltDocs.docSet == null) {
           rsp.add("facet_counts", null);
         } else {
-          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params);
+          final ResponseBuilder responseBuilder =
+              new ResponseBuilder(req, rsp, Collections.emptyList());
+          responseBuilder.setQuery(mlt.getRealMLTQuery());
+          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder);
+          FacetComponent.FacetContext.initContext(responseBuilder);
           rsp.add("facet_counts", FacetComponent.getFacetCounts(f));
         }
       }

@@ -17,8 +17,8 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.SolrTestCase;
@@ -79,7 +79,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testResponse() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertEquals("response initial value", null, response.getResponse());
+    assertNull("response initial value", response.getResponse());
     final Object newValue =
         (random().nextBoolean() ? (random().nextBoolean() ? "answer" : Integer.valueOf(42)) : null);
     response.addResponse(newValue);
@@ -251,15 +251,14 @@ public class TestSolrQueryResponse extends SolrTestCase {
     assertFalse(it.hasNext());
     response.addHttpHeader("key1", "value1");
     assertTrue(response.httpHeaders().hasNext());
-    assertEquals(Arrays.asList("value1"), response.removeHttpHeaders("key1"));
+    assertEquals(List.of("value1"), List.copyOf(response.removeHttpHeaders("key1")));
     assertFalse(response.httpHeaders().hasNext());
 
     response.addHttpHeader("key1", "value2");
     response.addHttpHeader("key1", "value3");
     response.addHttpHeader("key2", "value4");
     assertTrue(response.httpHeaders().hasNext());
-    assertEquals(
-        Arrays.asList(new String[] {"value2", "value3"}), response.removeHttpHeaders("key1"));
+    assertEquals(List.of("value2", "value3"), List.copyOf(response.removeHttpHeaders("key1")));
     assertNull(response.removeHttpHeaders("key1"));
     assertEquals("key2", response.httpHeaders().next().getKey());
   }
@@ -267,7 +266,7 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testException() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertEquals("exception initial value", null, response.getException());
+    assertNull("exception initial value", response.getException());
     final Exception newValue =
         (random().nextBoolean()
             ? (random().nextBoolean() ? new ArithmeticException() : new IOException())
@@ -279,20 +278,20 @@ public class TestSolrQueryResponse extends SolrTestCase {
   @Test
   public void testResponseHeader() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertEquals("responseHeader initially present", null, response.getResponseHeader());
+    assertNull("responseHeader initially present", response.getResponseHeader());
     final NamedList<Object> newValue = new SimpleOrderedMap<>();
     newValue.add("key1", "value1");
     response.add("key2", "value2");
     response.addResponseHeader(newValue);
     assertEquals("responseHeader new value", newValue, response.getResponseHeader());
     response.removeResponseHeader();
-    assertEquals("responseHeader removed value", null, response.getResponseHeader());
+    assertNull("responseHeader removed value", response.getResponseHeader());
   }
 
   @Test
   public void testHttpCaching() {
     final SolrQueryResponse response = new SolrQueryResponse();
-    assertEquals("httpCaching initial value", true, response.isHttpCaching());
+    assertTrue("httpCaching initial value", response.isHttpCaching());
     final boolean newValue = random().nextBoolean();
     response.setHttpCaching(newValue);
     assertEquals("httpCaching new value", newValue, response.isHttpCaching());

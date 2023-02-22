@@ -52,7 +52,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -164,9 +163,9 @@ public class DistributedCollectionConfigSetCommandRunner {
   }
 
   /**
-   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeAction} does not enqueue to
-   * overseer queue and instead calls this method, this method is expected to do the equivalent of
-   * what Overseer does in {@link
+   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeOperation} does not enqueue
+   * to overseer queue and instead calls this method, this method is expected to do the equivalent
+   * of what Overseer does in {@link
    * org.apache.solr.cloud.OverseerConfigSetMessageHandler#processMessage}.
    *
    * <p>The steps leading to that call in the Overseer execution path are (and the equivalent is
@@ -186,7 +185,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    */
   public void runConfigSetCommand(
       SolrQueryResponse rsp,
-      ConfigSetsHandler.ConfigSetOperation operation,
+      ConfigSetParams.ConfigSetAction action,
       Map<String, Object> result,
       long timeoutMs)
       throws Exception {
@@ -197,8 +196,6 @@ public class DistributedCollectionConfigSetCommandRunner {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more Config Set API tasks may be executed");
     }
-
-    ConfigSetParams.ConfigSetAction action = operation.getAction();
 
     // never null
     String configSetName = (String) result.get(NAME);
@@ -238,9 +235,9 @@ public class DistributedCollectionConfigSetCommandRunner {
   }
 
   /**
-   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeAction} does not enqueue to
-   * overseer queue and instead calls this method, this method is expected to do the equivalent of
-   * what Overseer does in {@link
+   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeOperation} does not enqueue
+   * to overseer queue and instead calls this method, this method is expected to do the equivalent
+   * of what Overseer does in {@link
    * org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler#processMessage}.
    *
    * <p>The steps leading to that call in the Overseer execution path are (and the equivalent is

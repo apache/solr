@@ -41,6 +41,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SyntaxError;
@@ -71,6 +72,7 @@ public class AnalyticsHandler extends RequestHandlerBase
     AnalyticsRequestParser.init();
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     SolrQueryTimeoutImpl.set(req);
@@ -129,15 +131,7 @@ public class AnalyticsHandler extends RequestHandlerBase
     queries.add(query);
 
     // Filter Params
-    String[] fqs = req.getParams().getParams(CommonParams.FQ);
-    if (fqs != null) {
-      for (String fq : fqs) {
-        if (fq != null && fq.trim().length() != 0) {
-          QParser fqp = QParser.getParser(fq, req);
-          queries.add(fqp.getQuery());
-        }
-      }
-    }
+    queries.addAll(QueryUtils.parseFilterQueries(req));
     return req.getSearcher().getDocSet(queries);
   }
 

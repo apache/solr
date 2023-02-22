@@ -16,13 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
 /*
  * Implementation moved to AbstractRecoveryZkTestBase as it is used by HDFS contrib tests.
  */
-@Slow
 public class RecoveryZkTest extends AbstractRecoveryZkTestBase {
 
   @Test

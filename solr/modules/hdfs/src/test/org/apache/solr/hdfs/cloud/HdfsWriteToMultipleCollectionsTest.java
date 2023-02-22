@@ -30,18 +30,17 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.blockcache.BlockCache;
 import org.apache.solr.hdfs.store.blockcache.BlockDirectory;
@@ -53,7 +52,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 @Nightly
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -95,6 +93,7 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     fixShardCount(3);
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

@@ -224,7 +224,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
     }
     orderedExecutor.shutdownAndAwaitTermination();
-    assertTrue(base.equals(run));
+    assertEquals(base, run);
   }
 
   private static class IntBox {
@@ -247,7 +247,8 @@ public class OrderedExecutorTest extends SolrTestCase {
               isRunning.countDown();
               blockingLatch.await();
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              Thread.currentThread().interrupt();
+              log.error("interrupted", e);
             }
           });
 

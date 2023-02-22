@@ -238,7 +238,7 @@ docker run -d -p 8983:8983 -e SOLR_HEAP=800m solr
 ----
 
 You can also mount your own config file.
-Do no modify the values that are set at the end of the file.
+Do not modify the values that are set at the end of the file.
 
 === Extending the Image
 

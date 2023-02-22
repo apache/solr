@@ -82,10 +82,12 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     return idx;
   }
 
+  @Override
   public boolean hasNext() {
     return docIterator.hasNext();
   }
 
+  @Override
   public SolrDocument next() {
     int id = docIterator.nextDoc();
     idx++;

@@ -46,7 +46,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -169,7 +168,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new LinkedList<>();
+    final List<String> collections = new ArrayList<>();
     Map<String, ClusterState.CollectionRef> states =
         zkStateReader().getClusterState().getCollectionStates();
     for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
@@ -670,7 +669,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   ManagedIndexSchema deleteNestedDocsFieldsIfNeeded(ManagedIndexSchema schema, boolean persist) {
-    List<String> toDelete = new LinkedList<>();
+    List<String> toDelete = new ArrayList<>();
     if (schema.hasExplicitField(ROOT_FIELD_NAME)) {
       toDelete.add(ROOT_FIELD_NAME);
     }

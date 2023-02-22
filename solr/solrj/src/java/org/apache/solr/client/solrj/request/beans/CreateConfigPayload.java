@@ -21,9 +21,12 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class CreateConfigPayload implements ReflectMapWriter {
+  public static final String DEFAULT_CONFIGSET =
+      "_default"; // TODO Better location for this in SolrJ?
+
   @JsonProperty(required = true)
   public String name;
 
-  @JsonProperty public String baseConfigSet;
+  @JsonProperty public String baseConfigSet = DEFAULT_CONFIGSET;
   @JsonProperty public Map<String, Object> properties;
 }

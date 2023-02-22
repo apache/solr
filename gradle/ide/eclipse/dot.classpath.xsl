@@ -37,6 +37,7 @@
         <xsl:sort select="string(starts-with(text(), 'lucene/'))" order="descending" lang="en"/>
         <xsl:sort select="string(starts-with(text(), 'solr/core/'))" order="descending" lang="en"/>
         <xsl:sort select="string(starts-with(text(), 'solr/solrj/'))" order="descending" lang="en"/>
+        <xsl:sort select="string(starts-with(text(), 'solr/solrj-zookeeper/'))" order="descending" lang="en"/>
         <xsl:sort select="string(starts-with(text(), 'solr/test-framework/'))" order="descending" lang="en"/>
         <xsl:sort select="string(starts-with(text(), 'solr/'))" order="descending" lang="en"/>
         <!-- all others in one group above are sorted by path name: -->

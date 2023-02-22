@@ -173,8 +173,8 @@ public class TestStressLucene extends TestRTGBase {
                       verbose("reopen result", newReader);
 
                       synchronized (globalLock) {
-                        assert newReader.getRefCount() > 0;
-                        assert reader.getRefCount() > 0;
+                        assertTrue(newReader.getRefCount() > 0);
+                        assertTrue(reader.getRefCount() > 0);
 
                         // install the new reader if it's newest (and check the current version
                         // since another reader may have already been installed)

@@ -95,7 +95,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, ComplexPhraseQParserPlugin.NAME);
     args.put(CommonParams.FL, "id");
@@ -175,7 +175,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testPhraseHighlighter() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
 
     args.put(QueryParsing.DEFTYPE, ComplexPhraseQParserPlugin.NAME);
     args.put(CommonParams.FL, "id");

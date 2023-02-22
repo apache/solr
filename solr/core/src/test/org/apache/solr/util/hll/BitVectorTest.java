@@ -72,20 +72,20 @@ public class BitVectorTest extends SolrTestCase {
       final LongIterator registerIterator3 = vector3.registerIterator();
       final LongIterator registerIterator4 = vector4.registerIterator();
       for (int i = 0; i < 128 /*2^7*/; i++) {
-        assertEquals(registerIterator1.hasNext(), true);
-        assertEquals(registerIterator2.hasNext(), true);
-        assertEquals(registerIterator3.hasNext(), true);
-        assertEquals(registerIterator4.hasNext(), true);
+        assertTrue(registerIterator1.hasNext());
+        assertTrue(registerIterator2.hasNext());
+        assertTrue(registerIterator3.hasNext());
+        assertTrue(registerIterator4.hasNext());
 
         assertEquals(registerIterator1.next(), 0x1F);
         assertEquals(registerIterator2.next(), (i & 0x1F));
         assertEquals(registerIterator3.next(), ((127 - i) & 0x1F));
         assertEquals(registerIterator4.next(), 0x15);
       }
-      assertEquals(registerIterator1.hasNext(), false /*no more*/);
-      assertEquals(registerIterator2.hasNext(), false /*no more*/);
-      assertEquals(registerIterator3.hasNext(), false /*no more*/);
-      assertEquals(registerIterator4.hasNext(), false /*no more*/);
+      assertFalse(registerIterator1.hasNext());
+      assertFalse(registerIterator2.hasNext());
+      assertFalse(registerIterator3.hasNext());
+      assertFalse(registerIterator4.hasNext());
     }
 
     { // scoped locally for sanity

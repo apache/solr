@@ -31,11 +31,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -46,6 +45,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -89,7 +89,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Call this to configure a cluster of n nodes.
+   * Call this to configure a cluster of n nodes. It will be shut down automatically after the
+   * tests.
    *
    * <p>NB you must call {@link MiniSolrCloudCluster.Builder#configure()} to start the cluster
    *
@@ -291,7 +292,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static CoreStatus getCoreStatus(Replica replica)
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
-    try (HttpSolrClient client =
+    try (SolrClient client =
         getHttpSolrClient(
             jetty.getBaseUrl().toString(),
             ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {

@@ -54,7 +54,7 @@ public class TestObjectBuilder extends SolrTestCaseJ4 {
   }
 
   public static Map<String, Object> O(Object... lst) {
-    LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+    LinkedHashMap<String, Object> map = new LinkedHashMap<>();
     for (int i = 0; i < lst.length; i += 2) {
       map.put(lst[i].toString(), lst[i + 1]);
     }

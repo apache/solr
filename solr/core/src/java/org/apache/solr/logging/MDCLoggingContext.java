@@ -108,6 +108,16 @@ public class MDCLoggingContext {
     }
   }
 
+  public static String getNodeName() {
+    String s = MDC.get(NODE_NAME_PROP);
+    if (s == null) return null;
+    if (s.startsWith("n:")) {
+      return s.substring(2);
+    } else {
+      return null;
+    }
+  }
+
   /** Sets multiple information from the params. REMEMBER TO CALL {@link #clear()} in a finally! */
   public static void setCore(SolrCore core) {
     CoreContainer coreContainer = core == null ? null : core.getCoreContainer();

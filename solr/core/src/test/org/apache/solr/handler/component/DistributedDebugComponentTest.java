@@ -31,7 +31,6 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -73,7 +72,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (HttpSolrClient nodeClient = getHttpSolrClient(url)) {
+    try (SolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
@@ -199,7 +198,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       }
       q.setQuery(qs);
 
-      Set<String> shards = new HashSet<String>(Arrays.asList(shard1, shard2));
+      Set<String> shards = new HashSet<>(Arrays.asList(shard1, shard2));
       if (random().nextBoolean()) {
         shards.remove(shard1);
       } else if (random().nextBoolean()) {
@@ -207,7 +206,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       }
       q.set("shards", String.join(",", shards));
 
-      List<String> debug = new ArrayList<String>(10);
+      List<String> debug = new ArrayList<>(10);
 
       boolean all = false;
       final boolean timing = random().nextBoolean();
@@ -465,7 +464,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     for (String element : elements) {
       String value = namedList.get(element);
       assertNotNull("Expected element '" + element + "' but was not found", value);
-      assertTrue("Expected element '" + element + "' but was empty", !value.isEmpty());
+      assertFalse("Expected element '" + element + "' but was empty", value.isEmpty());
     }
   }
 }

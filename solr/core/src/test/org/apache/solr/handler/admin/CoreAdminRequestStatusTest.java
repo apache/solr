@@ -44,68 +44,70 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4 {
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    Path instDir;
-    try (SolrCore template = cores.getCore("collection1")) {
-      assertNotNull(template);
-      instDir = template.getCoreDescriptor().getInstanceDir();
-    }
+    try {
+      Path instDir;
+      try (SolrCore template = cores.getCore("collection1")) {
+        assertNotNull(template);
+        instDir = template.getCoreDescriptor().getInstanceDir();
+      }
 
-    assertTrue("instDir doesn't exist: " + instDir, Files.exists(instDir));
-    final File instPropFile = new File(workDir, "instProp");
-    FileUtils.copyDirectory(instDir.toFile(), instPropFile);
+      assertTrue("instDir doesn't exist: " + instDir, Files.exists(instDir));
+      final File instPropFile = new File(workDir, "instProp");
+      FileUtils.copyDirectory(instDir.toFile(), instPropFile);
 
-    // create a new core (using CoreAdminHandler) w/ properties
+      // create a new core (using CoreAdminHandler) w/ properties
 
-    SolrQueryResponse resp = new SolrQueryResponse();
-    admin.handleRequestBody(
-        req(
-            CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.INSTANCE_DIR,
-            instPropFile.getAbsolutePath(),
-            CoreAdminParams.NAME,
-            "dummycore",
-            CommonAdminParams.ASYNC,
-            "42"),
-        resp);
-    assertNull("Exception on create", resp.getException());
+      SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody(
+          req(
+              CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.CREATE.toString(),
+              CoreAdminParams.INSTANCE_DIR,
+              instPropFile.getAbsolutePath(),
+              CoreAdminParams.NAME,
+              "dummycore",
+              CommonAdminParams.ASYNC,
+              "42"),
+          resp);
+      assertNull("Exception on create", resp.getException());
 
-    int maxRetries = 10;
+      int maxRetries = 10;
 
-    while (maxRetries-- > 0) {
+      while (maxRetries-- > 0) {
+        resp = new SolrQueryResponse();
+        admin.handleRequestBody(
+            req(
+                CoreAdminParams.ACTION,
+                CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
+                CoreAdminParams.REQUESTID,
+                "42"),
+            resp);
+        if (resp.getValues().get("STATUS") != null
+            && resp.getValues().get("STATUS").equals("completed")) break;
+        Thread.sleep(1000);
+      }
+
+      assertEquals(
+          "The status of request was expected to be completed",
+          "completed",
+          resp.getValues().get("STATUS"));
+
       resp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
               CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
               CoreAdminParams.REQUESTID,
-              "42"),
+              "9999999"),
           resp);
-      if (resp.getValues().get("STATUS") != null
-          && resp.getValues().get("STATUS").equals("completed")) break;
-      Thread.sleep(1000);
+
+      assertEquals(
+          "Was expecting it to be invalid but found a task with the id.",
+          "notfound",
+          resp.getValues().get("STATUS"));
+    } finally {
+      admin.shutdown();
+      admin.close();
     }
-
-    assertEquals(
-        "The status of request was expected to be completed",
-        "completed",
-        resp.getValues().get("STATUS"));
-
-    resp = new SolrQueryResponse();
-    admin.handleRequestBody(
-        req(
-            CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-            CoreAdminParams.REQUESTID,
-            "9999999"),
-        resp);
-
-    assertEquals(
-        "Was expecting it to be invalid but found a task with the id.",
-        "notfound",
-        resp.getValues().get("STATUS"));
-
-    admin.shutdown();
-    admin.close();
   }
 }

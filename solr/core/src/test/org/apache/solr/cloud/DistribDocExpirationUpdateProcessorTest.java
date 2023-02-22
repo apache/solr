@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -50,11 +50,12 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test of {@link DocExpirationUpdateProcessorFactory} in a cloud setup */
-@Slow // Has to do some sleeping to wait for a future expiration
+@LuceneTestCase.Nightly // Has to do some sleeping to wait for a future expiration
 public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,7 +75,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /** Modifies the request to inlcude authentication params if needed, returns the request */
   private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
-      assert null != PASS;
+      assertNotNull(PASS);
       req.setBasicAuthCredentials(USER, PASS);
     }
     return req;
@@ -129,17 +130,19 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
+  @Test
   public void testNoAuth() throws Exception {
     setupCluster(false);
     runTest();
   }
 
+  @Test
   public void testBasicAuth() throws Exception {
     setupCluster(true);
 
-    // sanity check that our cluster really does require authentication
+    // check that our cluster really does require authentication
     assertEquals(
-        "sanity check of non authenticated request",
+        "check of unauthenticated request",
         401,
         expectThrows(
                 SolrException.class,
@@ -152,7 +155,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
                               params(
                                   "q", "*:*",
                                   "rows", "0",
-                                  "_trace", "no_auth_sanity_check"))
+                                  "_trace", "no_auth_check"))
                           .getResults()
                           .getNumFound();
                 })
@@ -249,7 +252,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     final Set<String> shardsThatChange = new HashSet<>();
 
     int coresCompared = 0;
-    int totalDocsOnAllShards = 0;
+    long totalDocsOnAllShards = 0;
     final DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
@@ -312,7 +315,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (HttpSolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");
@@ -381,8 +384,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
         final String coreName,
         final long indexVersion,
         final long numDocs) {
-      assert null != shardName;
-      assert null != coreName;
+      assertNotNull(shardName);
+      assertNotNull(coreName);
 
       this.shardName = shardName;
       this.coreName = coreName;

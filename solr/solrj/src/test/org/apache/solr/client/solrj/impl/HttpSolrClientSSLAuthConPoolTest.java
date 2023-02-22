@@ -30,6 +30,6 @@ public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest 
     for (URL u : urls) {
       assertEquals("expect https urls ", "https", u.getProtocol());
     }
-    assertFalse("expect different urls " + Arrays.toString(urls), urls[0].equals(urls[1]));
+    assertNotEquals("expect different urls " + Arrays.toString(urls), urls[0], urls[1]);
   }
 }

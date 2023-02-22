@@ -59,12 +59,12 @@ requireExp           ; Fails requests that lacks an `exp` (expiry time) claim   
 algAllowlist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
-rolesClaim           ; What claim id to pull user roles from. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
+rolesClaim           ; What claim id to pull user roles from. Both top-level claim and nested claim is supported. Use `someClaim.child` syntax to address a claim `child` nested within the `someClaim` object. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
 trustedCerts         ; One or more X.509 SSL certificates in plaintext PEM or PKCS#7 formats, that should be trusted when talking to IdPs. Newlines must be replaced with `\n`. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
-trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
+trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. Can also be an array of file paths. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
 issuers              ; List of issuers (Identity providers) to  support. See section <<issuer-configuration,Issuer configuration>> for configuration syntax ;
 |===
 
@@ -193,7 +193,7 @@ This is both more secure and also lets you trust self-signed certificates.
 It also has the benefit of working even if Solr is not started in SSL mode.
 
 Please configure either the `trustedCerts` or `trustedCertsFile` option.
-Configuring both will cause an error.
+Configuring both will cause an error. If `trustedCertsFile` is an array of strings, Solr will parse certificates from all files.
 
 === Multiple Authentication Schemes
 

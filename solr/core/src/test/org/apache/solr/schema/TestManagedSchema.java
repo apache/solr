@@ -50,7 +50,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -77,7 +77,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() {
+  public void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");

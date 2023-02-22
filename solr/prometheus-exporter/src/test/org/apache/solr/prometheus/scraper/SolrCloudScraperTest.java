@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -56,20 +56,16 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
   private SolrCloudScraper createSolrCloudScraper() {
     var solrClient =
-        new CloudLegacySolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    solrClient.setParser(responseParser);
 
     solrClient.connect();
 
     SolrClientFactory factory = new SolrClientFactory(PrometheusExporterSettings.builder().build());
 
-    return new SolrCloudScraper(solrClient, executor, factory);
+    return new SolrCloudScraper(solrClient, executor, factory, "test");
   }
 
   private ClusterState getClusterState() {
@@ -119,10 +115,9 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(1, collection1Metrics.samples.size());
 
     assertEquals(1.0, collection1Metrics.samples.get(0).value, 0.001);
+    assertEquals(List.of("zk_host", "cluster_id"), collection1Metrics.samples.get(0).labelNames);
     assertEquals(
-        Collections.singletonList("zk_host"), collection1Metrics.samples.get(0).labelNames);
-    assertEquals(
-        Collections.singletonList(cluster.getZkServer().getZkAddress()),
+        List.of(cluster.getZkServer().getZkAddress(), "test"),
         collection1Metrics.samples.get(0).labelValues);
   }
 
@@ -183,7 +178,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     for (Collector.MetricFamilySamples.Sample sample : shardLeaderSamples.samples) {
       assertEquals("solr_collections_shard_leader", sample.name);
       assertEquals(
-          Arrays.asList("collection", "shard", "replica", "core", "type", "zk_host"),
+          Arrays.asList("collection", "shard", "replica", "core", "type", "zk_host", "cluster_id"),
           sample.labelNames);
       assertEquals(
           leaderCoreNames.contains(sample.labelValues.get(3)) ? 1.0 : 0.0, sample.value, 0.001);
@@ -203,6 +198,9 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
           metricsByHost.get(replica.getBaseUrl()).asList();
       assertEquals(1, replicaSamples.size());
       assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
+
+      assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
+      assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
     }
   }
 

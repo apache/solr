@@ -18,6 +18,7 @@ package org.apache.solr.search.function.distance;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -123,12 +124,12 @@ public class HaversineFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (this.getClass() != o.getClass()) return false;
+    if (!(o instanceof HaversineFunction)) return false;
     HaversineFunction other = (HaversineFunction) o;
-    return this.name().equals(other.name())
-        && p1.equals(other.p1)
-        && p2.equals(other.p2)
-        && radius == other.radius;
+    return Objects.equals(this.name(), other.name())
+        && Objects.equals(p1, other.p1)
+        && Objects.equals(p2, other.p2)
+        && (radius == other.radius);
   }
 
   @Override

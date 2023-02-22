@@ -18,16 +18,26 @@
 package org.apache.solr.api;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /** The interface that is implemented by a request handler to support the V2 end point */
 public interface ApiSupport {
 
   /**
-   * It is possible to support multiple v2 apis by a single requesthandler
+   * Returns any (non-JAX-RS annotated) APIs associated with this request handler.
    *
-   * @return the list of v2 api implementations
+   * @see #getJerseyResources()
    */
   Collection<Api> getApis();
+
+  /**
+   * Returns any JAX-RS annotated v2 APIs associated with this request handler.
+   *
+   * @see #getApis()
+   */
+  default Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return Collections.emptySet();
+  }
 
   /** Whether this should be made available at the regular legacy path */
   default Boolean registerV1() {

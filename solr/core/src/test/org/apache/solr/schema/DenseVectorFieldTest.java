@@ -24,7 +24,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.hamcrest.MatcherAssert;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
@@ -145,6 +144,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField type3 = (DenseVectorField) vector3.getType();
       MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       MatcherAssert.assertThat(type3.getDimension(), is(5));
+
       MatcherAssert.assertThat(type3.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
       MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
@@ -155,8 +155,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       DenseVectorField typeDefault = (DenseVectorField) vectorDefault.getType();
       MatcherAssert.assertThat(
           typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      MatcherAssert.assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
       MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
-      assertNull(typeDefault.getKnnAlgorithm());
       MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
       MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
     } finally {
@@ -167,7 +167,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_NotAList_shouldThrowException() {
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Single string value should throw an exception",
             SolrException.class,
             () -> {
@@ -180,7 +180,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 + " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
 
     thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Single float value should throw an exception",
             SolrException.class,
             () -> {
@@ -198,7 +198,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {
@@ -217,7 +217,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect vector dimension should throw an exception",
             SolrException.class,
             () -> {
@@ -234,7 +234,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTest = new DenseVectorField(3);
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {

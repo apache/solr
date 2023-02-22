@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,7 +66,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
         expected = IndexOrDocValuesQuery.class;
       }
     }
-    assertThat(q, Matchers.instanceOf(expected));
+    MatcherAssert.assertThat(q, Matchers.instanceOf(expected));
   }
 
   @Test
@@ -95,7 +96,7 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(2, qa.size());
     final Collection<String> qaStrings =
         qa.stream().map(q -> q.toString()).collect(Collectors.toList());
-    org.hamcrest.MatcherAssert.assertThat(qaStrings, hasItem("text:foo"));
+    MatcherAssert.assertThat(qaStrings, hasItem("text:foo"));
   }
 
   @Test

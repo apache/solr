@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
@@ -39,10 +40,10 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -51,14 +52,19 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
+import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +72,43 @@ import org.junit.Test;
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
 
+  private CountingListener listener;
+
   private boolean forceV2;
+
+  /**
+   * A package listener that will count how many times it has been triggered. Useful to wait for
+   * changes accross multiple cores.
+   *
+   * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
+   * block until <code>num</code> cores have been notified.
+   */
+  static class CountingListener implements PackageListeners.Listener {
+    private Semaphore changeCalled = new Semaphore(0);
+
+    @Override
+    public String packageName() {
+      return null; // will fire on all package changes
+    }
+
+    @Override
+    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+      return null; // only used to print meta information
+    }
+
+    @Override
+    public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
+      changeCalled.release();
+    }
+
+    public void reset() {
+      changeCalled.drainPermits();
+    }
+
+    public boolean waitFor(int num) throws InterruptedException {
+      return changeCalled.tryAcquire(num, 10, TimeUnit.SECONDS);
+    }
+  }
 
   @Before
   public void setup() throws Exception {
@@ -75,9 +117,26 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     forceV2 = random().nextBoolean();
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
-    cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
+    cluster =
+        configureCluster(nodes)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
+
+    String coll = getSaferTestName();
+    CollectionAdminRequest.createCollection(coll, "conf1", 1, nodes)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(coll, 1, nodes); // 1 replica per node
+
+    listener = new CountingListener();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      jetty.getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+      CoreContainer cc = jetty.getCoreContainer();
+      cc.getContainerPluginsRegistry().setPhaser(phaser);
+      cc.getCores()
+          .forEach(
+              c -> {
+                c.getPackageListeners().addListener(listener);
+              });
     }
   }
 
@@ -87,6 +146,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testApi() throws Exception {
     int version = phaser.getPhase();
@@ -152,17 +212,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      RemoteExecutionException e =
-          assertThrows(
-              RemoteExecutionException.class,
-              () -> getPlugin("/my-random-prefix/their/plugin").call());
-      assertEquals(404, e.code());
-      assertThat(
-          e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("Could not load plugin at"));
-      assertEquals(1, errors.getCount());
-    }
+    RemoteExecutionException e =
+        assertThrows(
+            RemoteExecutionException.class,
+            () -> getPlugin("/my-random-prefix/their/plugin").call());
+    assertEquals(404, e.code());
+    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
     plugin.name = "clusterSingleton";
@@ -240,7 +296,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
-    Package.AddVersion add = new Package.AddVersion();
+    listener.reset();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = singletonList(FILE1);
@@ -251,6 +308,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             .withPayload(singletonMap("add", add))
             .build();
     addPkgVersionReq.process(cluster.getSolrClient());
+    assertTrue(
+        "core package listeners did not notify",
+        listener.waitFor(cluster.getJettySolrRunners().size()));
 
     waitForAllNodesToSync(
         "/cluster/package",
@@ -403,7 +463,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       method = GET,
       path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
-  public class C2 {}
+  public static class C2 {}
 
   @EndPoint(
       method = GET,
@@ -437,7 +497,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
-    return () -> req.process(cluster.getSolrClient());
+    return () -> {
+      V2Response rsp = req.process(cluster.getSolrClient());
+      return rsp;
+    };
   }
 
   private V2Request postPlugin(Object payload) {

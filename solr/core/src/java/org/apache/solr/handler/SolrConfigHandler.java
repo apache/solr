@@ -213,13 +213,12 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp.add(
                 ZNODEVER,
                 Map.of(
-                    ConfigOverlay.NAME,
-                        req.getCore().getSolrConfig().getOverlay().getZnodeVersion(),
+                    ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getVersion(),
                     RequestParams.NAME,
                         req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;
             int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
-            int actualVersion = req.getCore().getSolrConfig().getOverlay().getZnodeVersion();
+            int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
             if (expectedVersion > actualVersion) {
               log.info(
                   "expecting overlay version {} but my version is {}",
@@ -589,7 +588,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         int latestVersion =
             ZkController.persistConfigResourceToZooKeeper(
                 (ZkSolrResourceLoader) loader,
-                overlay.getZnodeVersion(),
+                overlay.getVersion(),
                 ConfigOverlay.RESOURCE_NAME,
                 overlay.toByteArray(),
                 true);

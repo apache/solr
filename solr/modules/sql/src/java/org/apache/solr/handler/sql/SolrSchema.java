@@ -87,8 +87,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = cloudSolrClient.getClusterState();
 
     final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
 
@@ -97,7 +96,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
       builder.put(collection, new SolrTable(this, collection));
     }
 
-    Aliases aliases = zkStateReader.getAliases();
+    Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
     for (String alias : aliases.getCollectionAliasListMap().keySet()) {
       // don't create duplicate entries
       if (!collections.contains(alias)) {

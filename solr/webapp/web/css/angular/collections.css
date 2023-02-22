@@ -148,6 +148,12 @@ limitations under the License.
   background-image: url( ../../img/ico/cross.png );
 }
 
+button.disabled
+{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 #content #collections #navigation #add span
 {
   background-image: url( ../../img/ico/plus-button.png );
@@ -379,4 +385,13 @@ limitations under the License.
 #content #collections #shard-data {
   float: left;
   width: 65%;
+}
+
+.replication-factor {
+    /* some style when the element is active */
+}
+
+.replication-factor[disabled] {
+    /* styles when the element is disabled */
+    color: #c0c0c0;
 }

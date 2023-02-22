@@ -274,13 +274,26 @@ The `knn` query parser can be used with filter queries:
 
 [IMPORTANT]
 ====
-When using `knn` in these scenarios make sure you have a clear understanding of how filter queries work in Apache Solr:
+Filter queries are executed as pre-filters: the main query refines the sub-set of search results derived from the application of all the filter queries combined as 'MUST' clauses(boolean AND).
 
-The Ranked List of document IDs resulting from the main query `q` is intersected with the set of document IDs deriving from each filter query `fq`.
+This means that in
+[source,text]
+&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
+The results are prefiltered by the topK knn retrieval and then only the documents from this subset, matching the query 'q=id:(1 2 3)' are returned.
+
+In
+[source,text]
+&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+
+The results are prefiltered by the fq=id:(1 2 3) and then only the documents from this subset are considered as candidates for the topK knn retrieval.
+
+If you want to run some of the filter queries as post-filters you can follow the standard approach for post-filtering in Apache Solr, using the cache and cost local parameters.
 
 e.g.
 
-Ranked List from `q`=`[ID1, ID4, ID2, ID10]` <intersects> Set from `fq`=`{ID3, ID2, ID9, ID4}` = `[ID4,ID2]`
+[source,text]
+&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq={!frange cache=false l=0.99}$q
 ====
 
 

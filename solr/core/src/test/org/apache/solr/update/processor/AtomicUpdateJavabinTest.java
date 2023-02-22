@@ -68,6 +68,7 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -423,7 +424,7 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
 
     final NamedList<Object> rawResponse = response.getResponse();
-    assertTrue(rawResponse.get("doc") != null);
+    assertNotNull(rawResponse.get("doc"));
     assertTrue(rawResponse.get("doc") instanceof SolrDocument);
     final SolrDocument doc = (SolrDocument) rawResponse.get("doc");
     final Collection<Object> valuesAfterUpdate = doc.getFieldValues(fieldName);

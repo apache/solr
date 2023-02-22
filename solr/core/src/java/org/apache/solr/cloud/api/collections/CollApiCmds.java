@@ -29,7 +29,40 @@ import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEALIAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEBACKUP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_SHARD_TASK;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REINDEXCOLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RENAME;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -152,6 +185,7 @@ public class CollApiCmds {
   }
 
   public static class MockOperationCmd implements CollectionApiCommand {
+    @Override
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
     public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
         throws InterruptedException {
@@ -174,6 +208,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
@@ -198,6 +233,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -242,6 +278,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -263,7 +300,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -275,6 +312,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -291,7 +329,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -303,6 +341,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       if (StringUtils.isBlank(message.getStr(COLLECTION_PROP))
@@ -338,6 +377,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
 
@@ -370,7 +410,7 @@ public class CollApiCmds {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(message));
+        ccc.offerStateUpdate(message);
       }
 
       try {

@@ -331,6 +331,11 @@ See https://cwiki.apache.org/confluence/display/solr/SolrClassification for more
 
 {solr-javadocs}/core/org/apache/solr/update/processor/IgnoreLargeDocumentProcessorFactory.html[IgnoreLargeDocumentProcessorFactory]:: Allows you to prevent large documents with size more than `limit` (in KB) from getting indexed.
 It can help to prevent unexpected problems on indexing as well as on recovering because of very large documents.
++
+By default, this processor will abort the update request and send an error back to users if it encounters a document that exceed its configured limit.
+Documents processed prior to the offender are indexed by Solr; documents following the offender are left unprocessed.
++
+Alternatively, the processor offers a "permissive" mode (`permissiveMode=true`) which skips the offending document and logs a warning, but doesn't abort the remainder of the batch or return an error to users.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 

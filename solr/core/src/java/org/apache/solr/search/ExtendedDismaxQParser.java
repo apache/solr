@@ -21,12 +21,10 @@ import com.google.common.collect.Multimaps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -545,7 +543,7 @@ public class ExtendedDismaxQParser extends QParser {
 
   /** Parses all function queries */
   protected List<Query> getBoostFunctions() throws SyntaxError {
-    List<Query> boostFunctions = new LinkedList<>();
+    List<Query> boostFunctions = new ArrayList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
         if (null == boostFunc || "".equals(boostFunc)) continue;
@@ -565,7 +563,7 @@ public class ExtendedDismaxQParser extends QParser {
 
   /** Parses all boost queries */
   protected List<Query> getBoostQueries() throws SyntaxError {
-    List<Query> boostQueries = new LinkedList<>();
+    List<Query> boostQueries = new ArrayList<>();
     if (config.hasBoostParams()) {
       for (String qs : config.boostParams) {
         if (qs.trim().length() == 0) continue;
@@ -949,10 +947,8 @@ public class ExtendedDismaxQParser extends QParser {
     RANGE
   }
 
-  static final RuntimeException unknownField = new RuntimeException("UnknownField");
-
-  static {
-    unknownField.fillInStackTrace();
+  static RuntimeException unknownField() {
+    return new RuntimeException("UnknownField");
   }
 
   /**
@@ -1192,7 +1188,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
 
@@ -1267,7 +1263,7 @@ public class ExtendedDismaxQParser extends QParser {
         if (exceptions) {
           FieldType ft = schema.getFieldTypeNoEx(field);
           if (ft == null && null == MagicFieldName.get(field)) {
-            throw unknownField;
+            throw unknownField();
           }
         }
         return getQuery();
@@ -1566,11 +1562,14 @@ public class ExtendedDismaxQParser extends QParser {
       if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
-      Collections.sort(dynUserFields);
       dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
-      Collections.sort(negDynUserFields);
+      Arrays.sort(dynamicUserFields);
+      // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
+      // rather than Collections.sort() then converting to an array, since Collections.sort()
+      // copies to an array first, then sets each collection member from the array.
       negativeDynamicUserFields =
           negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      Arrays.sort(negativeDynamicUserFields);
     }
 
     /**

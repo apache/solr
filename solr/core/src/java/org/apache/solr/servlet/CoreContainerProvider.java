@@ -23,12 +23,15 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -37,6 +40,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -57,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Group;
@@ -88,7 +93,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private RateLimitManager rateLimitManager;
   private final CountDownLatch init = new CountDownLatch(1);
   private String registryName;
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
   // AFAIK the only reason we need this is to support JettySolrRunner for tests. In tests we might
   // have multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real
   // server.
@@ -225,7 +229,7 @@ public class CoreContainerProvider implements ServletContextListener {
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit);
+      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
@@ -281,6 +285,37 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
     }
+    try {
+      RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
+      Optional<String> crashOnOutOfMemoryErrorArg =
+          mx.getInputArguments().stream()
+              .filter(x -> x.startsWith("-XX:+CrashOnOutOfMemoryError"))
+              .findFirst();
+      if (crashOnOutOfMemoryErrorArg.isPresent()) {
+        String errorFileArg =
+            mx.getInputArguments().stream()
+                .filter(x -> x.startsWith("-XX:ErrorFile"))
+                .findFirst()
+                .orElse("-XX:ErrorFile=hs_err_%p.log");
+        String errorFilePath =
+            errorFileArg
+                .substring(errorFileArg.indexOf('=') + 1)
+                .replace("%p", String.valueOf(mx.getPid()));
+        String logMessage =
+            "Solr started with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
+                + "The cause of the OOME will be logged in the crash file at the following path: {}";
+        log.info(logMessage, errorFilePath);
+      }
+    } catch (Exception e) {
+      String logMessage =
+          String.format(
+              Locale.ROOT,
+              "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
+                  + "Unable to get the specific file due to an exception."
+                  + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
+              System.getProperty("solr.log.dir"));
+      log.info(logMessage, e);
+    }
   }
 
   private String solrVersion() {
@@ -325,6 +360,7 @@ public class CoreContainerProvider implements ServletContextListener {
    *
    * @return the Solr home, absolute and normalized.
    */
+  @SuppressWarnings("BanJNDI")
   private static Path computeSolrHome(ServletContext servletContext) {
 
     // start with explicit check of servlet config...
@@ -377,7 +413,7 @@ public class CoreContainerProvider implements ServletContextListener {
     return coreContainer;
   }
 
-  private void setupJvmMetrics(CoreContainer coresInit) {
+  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
@@ -392,11 +428,28 @@ public class CoreContainerProvider implements ServletContextListener {
           registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(
           registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(
-          registryName,
-          new ThreadStatesGaugeSet(),
-          ResolutionStrategy.IGNORE,
-          "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+
+      if (config.getCacheConfig() != null
+          && config.getCacheConfig().threadsIntervalSeconds != null) {
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Threads metrics will be cached for {} seconds",
+              config.getCacheConfig().threadsIntervalSeconds);
+        }
+        metricManager.registerAll(
+            registryName,
+            new CachedThreadStatesGaugeSet(
+                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      } else {
+        metricManager.registerAll(
+            registryName,
+            new ThreadStatesGaugeSet(),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      }
+
       MetricsMap sysprops =
           new MetricsMap(
               map ->
@@ -442,10 +495,6 @@ public class CoreContainerProvider implements ServletContextListener {
     this.rateLimitManager = rateLimitManager;
   }
 
-  public boolean isV2Enabled() {
-    return isV2Enabled;
-  }
-
   private static class ContextInitializationKey {
     private final ServletContext ctx;
     private final CountDownLatch initializing = new CountDownLatch(1);
@@ -477,7 +526,7 @@ public class CoreContainerProvider implements ServletContextListener {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ContextInitializationKey)) return false;
       ContextInitializationKey that = (ContextInitializationKey) o;
       return ctx.equals(that.ctx);
     }

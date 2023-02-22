@@ -70,7 +70,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       int cleanupSize = maxSize / 10;
 
       final PriorityQueue<Long> priorityQueue =
-          new PriorityQueue<Long>(cleanupSize) {
+          new PriorityQueue<>(cleanupSize) {
             @Override
             protected boolean lessThan(Long a, Long b) {
               return (a > b);
@@ -91,9 +91,13 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       for (String child : children) {
         Long id = childToModificationZxid.get(child);
         if (id != null && id <= topElementMzxId) {
-          zookeeper.delete(dir + "/" + child, -1, true);
-          if (onOverflowObserver != null)
-            onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+          try {
+            zookeeper.delete(dir + "/" + child, -1, true);
+            if (onOverflowObserver != null)
+              onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+          } catch (KeeperException.NoNodeException ignored) {
+            // this could happen if multiple threads try to clean the same map
+          }
         }
       }
     }

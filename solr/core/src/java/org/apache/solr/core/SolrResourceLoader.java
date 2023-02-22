@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -62,7 +63,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -358,11 +359,11 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return Files.newInputStream(inConfigDir);
+        return new SolrFileInputStream(inConfigDir);
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return Files.newInputStream(inInstanceDir);
+        return new SolrFileInputStream(inInstanceDir);
       }
     }
 
@@ -599,6 +600,7 @@ public class SolrResourceLoader
   private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
@@ -710,6 +712,7 @@ public class SolrResourceLoader
   }
 
   /** Tell all {@link SolrCoreAware} instances about the SolrCore */
+  @Override
   public void inform(SolrCore core) {
     if (getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
@@ -894,14 +897,14 @@ public class SolrResourceLoader
     if (info.cName.pkg == null) return findClass(info.className, type);
     return _classLookup(
         info,
-        (Function<PackageLoader.Package.Version, Class<? extends T>>)
+        (Function<SolrPackageLoader.SolrPackage.Version, Class<? extends T>>)
             ver -> ver.getLoader().findClass(info.cName.className, type),
         registerCoreReloadListener);
   }
 
   private <T> T _classLookup(
       PluginInfo info,
-      Function<PackageLoader.Package.Version, T> fun,
+      Function<SolrPackageLoader.SolrPackage.Version, T> fun,
       boolean registerCoreReloadListener) {
     PluginInfo.ClassName cName = info.cName;
     if (registerCoreReloadListener) {
@@ -982,4 +985,21 @@ public class SolrResourceLoader
   // This is to verify if this requires to use the schema classloader for classes loaded from
   // packages
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+
+  public static class SolrFileInputStream extends FilterInputStream {
+    private final long lastModified;
+
+    public SolrFileInputStream(Path filePath) throws IOException {
+      this(Files.newInputStream(filePath), Files.getLastModifiedTime(filePath).toMillis());
+    }
+
+    public SolrFileInputStream(InputStream delegate, long lastModified) {
+      super(delegate);
+      this.lastModified = lastModified;
+    }
+
+    public long getLastModified() {
+      return lastModified;
+    }
+  }
 }

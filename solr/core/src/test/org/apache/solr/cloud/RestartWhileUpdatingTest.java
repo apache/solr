@@ -17,14 +17,12 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Test;
 
 /**
  * Implementation moved to AbstractRestartWhileUpdatingTestBase because it is used by HDFS contrib
  * module tests
  */
-@Slow
 @Nightly
 public class RestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTestBase {
 

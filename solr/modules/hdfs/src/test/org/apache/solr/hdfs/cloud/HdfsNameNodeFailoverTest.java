@@ -20,7 +20,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
@@ -29,7 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
+@LuceneTestCase.Nightly
 @ThreadLeakFilters(
     defaultFilters = true,
     filters = {
@@ -68,6 +68,7 @@ public class HdfsNameNodeFailoverTest extends AbstractBasicDistributedZkTestBase
     fixShardCount(TEST_NIGHTLY ? 7 : random().nextInt(2) + 1);
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }

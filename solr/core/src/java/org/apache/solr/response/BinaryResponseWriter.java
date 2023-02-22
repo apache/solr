@@ -251,7 +251,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     @Override
     public Iterator<Entry<String, Object>> iterator() {
       Iterator<Entry<String, Object>> it = _fields.entrySet().iterator();
-      return new Iterator<Entry<String, Object>>() {
+      return new Iterator<>() {
         @Override
         public boolean hasNext() {
           return it.hasNext();

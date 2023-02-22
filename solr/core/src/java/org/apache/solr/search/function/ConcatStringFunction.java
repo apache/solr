@@ -31,6 +31,7 @@ public class ConcatStringFunction extends MultiStringFunction {
     super(sources);
   }
 
+  @Override
   protected String name() {
     return NAME;
   }

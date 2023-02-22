@@ -36,6 +36,7 @@ import org.apache.solr.handler.component.PhrasesIdentificationComponent.Phrase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -98,7 +99,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final Phrase lazy = phrases.get(phrases.size() - 1 - 2);
       final String debug = lazy.toString();
 
-      assertEquals(debug, "lAZy", lazy.getSubSequence());
+      assertEquals(debug, "lAZy", lazy.getSubSequence().toString());
       assertEquals(debug, 10, lazy.getPositionStart());
       assertEquals(debug, 11, lazy.getPositionEnd());
       assertEquals(debug, 1, lazy.getPositionLength());
@@ -116,7 +117,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final Phrase brown_fox = phrases.get((7 * 3) + 1);
       final String debug = brown_fox.toString();
 
-      assertEquals(debug, "brown FOX", brown_fox.getSubSequence());
+      assertEquals(debug, "brown FOX", brown_fox.getSubSequence().toString());
       assertEquals(debug, 4, brown_fox.getPositionStart());
       assertEquals(debug, 6, brown_fox.getPositionEnd());
       assertEquals(debug, 2, brown_fox.getPositionLength());
@@ -133,7 +134,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final Phrase daq = phrases.get(2);
       final String debug = daq.toString();
 
-      assertEquals(debug, "did  a Quick", daq.getSubSequence());
+      assertEquals(debug, "did  a Quick", daq.getSubSequence().toString());
       assertEquals(debug, 1, daq.getPositionStart());
       assertEquals(debug, 4, daq.getPositionEnd());
       assertEquals(debug, 3, daq.getPositionLength());
@@ -150,7 +151,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final Phrase qbfp = phrases.get((7 * 2) + 3);
       final String debug = qbfp.toString();
 
-      assertEquals(debug, "Quick    brown FOX perniciously", qbfp.getSubSequence());
+      assertEquals(debug, "Quick    brown FOX perniciously", qbfp.getSubSequence().toString());
       assertEquals(debug, 3, qbfp.getPositionStart());
       assertEquals(debug, 7, qbfp.getPositionEnd());
       assertEquals(debug, 4, qbfp.getPositionLength());
@@ -191,7 +192,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           final Phrase brown_fox = phrases.get(1);
           final String debug = brown_fox.toString();
 
-          assertEquals(debug, "brown FOX", brown_fox.getSubSequence());
+          assertEquals(debug, "brown FOX", brown_fox.getSubSequence().toString());
           assertEquals(debug, 1, brown_fox.getPositionStart());
           assertEquals(debug, 3, brown_fox.getPositionEnd());
           assertEquals(debug, 2, brown_fox.getPositionLength());
@@ -208,7 +209,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           final Phrase fox = phrases.get(2);
           final String debug = fox.toString();
 
-          assertEquals(debug, "FOX", fox.getSubSequence());
+          assertEquals(debug, "FOX", fox.getSubSequence().toString());
           assertEquals(debug, 2, fox.getPositionStart());
           assertEquals(debug, 3, fox.getPositionEnd());
           assertEquals(debug, 1, fox.getPositionLength());
@@ -238,7 +239,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       final int inputPositionLength,
       final int maxIndexedPositionLength,
       final int maxQueryPositionLength) {
-    assert 0 < phrases.size() : "Don't use this method if phrases might be empty";
+    assertTrue("Don't use this method if phrases might be empty", 0 < phrases.size());
 
     assertEmptyStream(
         "no phrase should be longer then " + maxQueryPositionLength + " positions",
@@ -345,7 +346,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     BiConsumer<Integer, List<Phrase>> assertions =
         (mult, phrases) -> {
           final Phrase brown_fox = phrases.get(1);
-          assertEquals("BROWN fox", brown_fox.getSubSequence());
+          assertEquals("BROWN fox", brown_fox.getSubSequence().toString());
 
           assertEquals(mult * 1, brown_fox.getTTF("multigrams_title"));
           assertEquals(mult * 1, brown_fox.getDocFreq("multigrams_title"));
@@ -356,7 +357,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           assertEquals(mult * 2, brown_fox.getConjunctionDocCount("multigrams_body"));
 
           final Phrase fox_lazy = phrases.get(6);
-          assertEquals("fox lAzY", fox_lazy.getSubSequence());
+          assertEquals("fox lAzY", fox_lazy.getSubSequence().toString());
 
           assertEquals(mult * 0, fox_lazy.getTTF("multigrams_title"));
           assertEquals(mult * 0, fox_lazy.getDocFreq("multigrams_title"));
@@ -367,7 +368,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           assertEquals(mult * 2, fox_lazy.getConjunctionDocCount("multigrams_body"));
 
           final Phrase bfld = phrases.get(3);
-          assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence());
+          assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence().toString());
 
           expectThrows(
               SolrException.class,
@@ -395,7 +396,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
           final Phrase xyz = phrases.get(phrases.size() - 1);
 
-          assertEquals("xxxyyyzzz", xyz.getSubSequence());
+          assertEquals("xxxyyyzzz", xyz.getSubSequence().toString());
           assertEquals(mult * 0, xyz.getTTF("multigrams_title"));
           assertEquals(mult * 0, xyz.getDocFreq("multigrams_title"));
           assertEquals(mult * 0, xyz.getConjunctionDocCount("multigrams_title"));
@@ -468,21 +469,23 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
     // "brown fox" should score positively in both fields, and overall...
     final Phrase brown_fox = phrases.get(8);
-    assertEquals("BROWN fox", brown_fox.getSubSequence());
-    assertThat(
+    assertEquals("BROWN fox", brown_fox.getSubSequence().toString());
+    MatcherAssert.assertThat(
         brown_fox.toString(), brown_fox.getFieldScore("multigrams_title"), greaterThan(0.0D));
-    assertThat(brown_fox.toString(), brown_fox.getFieldScore("multigrams_body"), greaterThan(0.0D));
-    assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
+    MatcherAssert.assertThat(
+        brown_fox.toString(), brown_fox.getFieldScore("multigrams_body"), greaterThan(0.0D));
+    MatcherAssert.assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
 
     // "we lazy" does appear in a title value, but should score poorly given how often the terms
     // are used in other contexts, and should score -1 against body -- but because of our weights,
     // that shouldn't bring down the total
     final Phrase we_lazy = phrases.get(phrases.size() - 2);
-    assertEquals("we lAzY", we_lazy.getSubSequence());
+    assertEquals("we lAzY", we_lazy.getSubSequence().toString());
     assertEquals(we_lazy.toString(), -1.0D, we_lazy.getFieldScore("multigrams_body"), 0.0D);
 
-    assertThat(we_lazy.toString(), we_lazy.getFieldScore("multigrams_title"), lessThan(0.0D));
-    assertThat(we_lazy.toString(), we_lazy.getTotalScore(), lessThan(0.0D));
+    MatcherAssert.assertThat(
+        we_lazy.toString(), we_lazy.getFieldScore("multigrams_title"), lessThan(0.0D));
+    MatcherAssert.assertThat(we_lazy.toString(), we_lazy.getTotalScore(), lessThan(0.0D));
     assertEquals(
         we_lazy.toString(),
         we_lazy.getFieldScore("multigrams_title"),
@@ -493,17 +496,18 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     // value it should score -1 against body -- but because of our weights, that shouldn't bring
     // down the total
     final Phrase wawl = phrases.get(phrases.size() - 7);
-    assertEquals("why are we lAzY", wawl.getSubSequence());
+    assertEquals("why are we lAzY", wawl.getSubSequence().toString());
     assertEquals(wawl.toString(), -1.0D, wawl.getFieldScore("multigrams_body"), 0.0D);
-    assertThat(wawl.toString(), wawl.getFieldScore("multigrams_title"), greaterThan(0.0D));
-    assertThat(wawl.toString(), wawl.getTotalScore(), greaterThan(0.0D));
+    MatcherAssert.assertThat(
+        wawl.toString(), wawl.getFieldScore("multigrams_title"), greaterThan(0.0D));
+    MatcherAssert.assertThat(wawl.toString(), wawl.getTotalScore(), greaterThan(0.0D));
     assertEquals(
         wawl.toString(), wawl.getFieldScore("multigrams_title"), wawl.getTotalScore(), 0.0D);
 
     // "brown fox why are we" is longer then the max indexed phrase, and none of it's
     // (longest) sub phrases exists in either field -- so all of its scores should be -1
     final Phrase bfwaw = phrases.get(11);
-    assertEquals("BROWN fox why are we", bfwaw.getSubSequence());
+    assertEquals("BROWN fox why are we", bfwaw.getSubSequence().toString());
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getFieldScore("multigrams_title"), 0.0D);
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getFieldScore("multigrams_body"), 0.0D);
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getTotalScore(), 0.0D);
@@ -529,8 +533,8 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       // phrases that span the stop word should have valid scores from the field that doesn't care
       // about stop words, but the stopword field should reject them
       final Phrase why_the_lazy = phrases.get(2);
-      assertEquals("why the lazy", why_the_lazy.getSubSequence());
-      assertThat(
+      assertEquals("why the lazy", why_the_lazy.getSubSequence().toString());
+      MatcherAssert.assertThat(
           why_the_lazy.toString(),
           why_the_lazy.getFieldScore("multigrams_title"),
           greaterThan(0.0D));
@@ -541,8 +545,8 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           0.0D);
 
       final Phrase the_lazy_dog = phrases.get(8);
-      assertEquals("the lazy dog", the_lazy_dog.getSubSequence());
-      assertThat(
+      assertEquals("the lazy dog", the_lazy_dog.getSubSequence().toString());
+      MatcherAssert.assertThat(
           the_lazy_dog.toString(),
           the_lazy_dog.getFieldScore("multigrams_title"),
           greaterThan(0.0D));
@@ -555,14 +559,14 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       // sanity check that good scores are still possible with stopwords
       // "brown fox" should score positively in both fields, and overall...
       final Phrase brown_fox = phrases.get(phrases.size() - 2);
-      assertEquals("brown fox", brown_fox.getSubSequence());
-      assertThat(
+      assertEquals("brown fox", brown_fox.getSubSequence().toString());
+      MatcherAssert.assertThat(
           brown_fox.toString(), brown_fox.getFieldScore("multigrams_title"), greaterThan(0.0D));
-      assertThat(
+      MatcherAssert.assertThat(
           brown_fox.toString(),
           brown_fox.getFieldScore("multigrams_title_stop"),
           greaterThan(0.0D));
-      assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
+      MatcherAssert.assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
     }
 
     { // now flip things: our analysisField filters stopwords,
@@ -593,14 +597,14 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       // sanity check that good scores are still possible with stopwords
       // "brown fox" should score positively in both fields, and overall...
       final Phrase brown_fox = phrases.get(phrases.size() - 2);
-      assertEquals("brown fox", brown_fox.getSubSequence());
-      assertThat(
+      assertEquals("brown fox", brown_fox.getSubSequence().toString());
+      MatcherAssert.assertThat(
           brown_fox.toString(), brown_fox.getFieldScore("multigrams_title"), greaterThan(0.0D));
-      assertThat(
+      MatcherAssert.assertThat(
           brown_fox.toString(),
           brown_fox.getFieldScore("multigrams_title_stop"),
           greaterThan(0.0D));
-      assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
+      MatcherAssert.assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
     }
   }
 

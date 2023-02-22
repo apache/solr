@@ -67,7 +67,8 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
             25,
             10,
             SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
-            Helpers.loadConfiguration(scrapeConfiguration));
+            Helpers.loadConfiguration(scrapeConfiguration),
+            "test");
 
     solrExporter.start();
     httpClient = HttpClients.createDefault();

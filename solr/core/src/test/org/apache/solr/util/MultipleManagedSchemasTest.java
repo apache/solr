@@ -21,25 +21,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class MultipleManagedSchemasTest extends SolrCloudTestCase {
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void setUpCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "false");
     configureCluster(1).configure();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (cluster != null) {
-      cluster.shutdown();
-    }
-    super.tearDown();
   }
 
   @Test

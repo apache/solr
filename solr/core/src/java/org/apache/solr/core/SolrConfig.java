@@ -49,7 +49,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -71,7 +70,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -109,6 +108,7 @@ public class SolrConfig implements MapSerializable {
 
   private int znodeVersion;
   ConfigNode root;
+  int rootDataHashCode;
   private final SolrResourceLoader resourceLoader;
   private Properties substituteProperties;
 
@@ -173,14 +173,18 @@ public class SolrConfig implements MapSerializable {
     InputStream in;
     String fileName;
 
-    ResourceProvider(InputStream in) {
+    ResourceProvider(InputStream in) throws IOException {
       this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
         this.fileName = zkin.fileName;
+      } else if (in instanceof SolrResourceLoader.SolrFileInputStream) {
+        SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
+        zkVersion = (int) sfin.getLastModified();
+        hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
       }
     }
 
@@ -213,33 +217,19 @@ public class SolrConfig implements MapSerializable {
     this.substituteProperties = substitutableProperties;
     getOverlay(); // just in case it is not initialized
     // insist we have non-null substituteProperties; it might get overlaid
-    Map<String, IndexSchemaFactory.VersionedConfig> configCache = null;
-    if (loader.getCoreContainer() != null && loader.getCoreContainer().getObjectCache() != null) {
-      configCache =
-          (Map<String, IndexSchemaFactory.VersionedConfig>)
-              loader
-                  .getCoreContainer()
-                  .getObjectCache()
-                  .computeIfAbsent(
-                      ConfigSetService.ConfigResource.class.getName(),
-                      s -> new ConcurrentHashMap<>());
-      ResourceProvider rp = new ResourceProvider(loader.openResource(name));
-      IndexSchemaFactory.VersionedConfig cfg =
-          rp.fileName == null ? null : configCache.get(rp.fileName);
-      if (cfg != null) {
-        if (rp.hash != -1) {
-          if (rp.hash == cfg.version) {
-            log.debug("LOADED_FROM_CACHE");
-            root = cfg.data;
-          } else {
-            readXml(loader, name, configCache, rp);
-          }
-        }
-      }
-    }
-    if (root == null) {
-      readXml(loader, name, configCache, new ResourceProvider(loader.openResource(name)));
-    }
+
+    IndexSchemaFactory.VersionedConfig cfg =
+        IndexSchemaFactory.getFromCache(
+            name,
+            loader,
+            () -> {
+              if (loader.getCoreContainer() == null) return null;
+              return loader.getCoreContainer().getObjectCache();
+            },
+            () -> readXml(loader, name));
+    this.root = cfg.data;
+    this.znodeVersion = cfg.version;
+
     ConfigNode.SUBSTITUTES.set(
         key -> {
           if (substitutableProperties != null && substitutableProperties.containsKey(key)) {
@@ -250,6 +240,9 @@ public class SolrConfig implements MapSerializable {
           }
         });
     try {
+      // This will hash the solrconfig.xml and user properties.
+      rootDataHashCode = this.root.txt().hashCode();
+
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
       String val =
@@ -407,17 +400,15 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private void readXml(
-      SolrResourceLoader loader,
-      String name,
-      Map<String, IndexSchemaFactory.VersionedConfig> configCache,
-      ResourceProvider rp)
-      throws IOException {
-    XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
-    root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
-    this.znodeVersion = rp.zkVersion;
-    if (configCache != null && rp.fileName != null) {
-      configCache.put(rp.fileName, new IndexSchemaFactory.VersionedConfig(rp.hash, root));
+  private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
+    try (InputStream in = loader.openResource(name)) {
+      ResourceProvider rp = new ResourceProvider(in);
+      XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
+      return new IndexSchemaFactory.VersionedConfig(
+          rp.zkVersion,
+          new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -434,7 +425,7 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
+    if (Objects.equals(version, Version.LATEST) && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
               + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
@@ -593,9 +584,15 @@ public class SolrConfig implements MapSerializable {
         return new ConfigOverlay(Collections.emptyMap(), -1);
       }
 
-      int version = 0; // will be always 0 for file based resourceLoader
+      int version = 0;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.debug("Config overlay loaded. version : {} ", version);
+      }
+      if (in instanceof SolrResourceLoader.SolrFileInputStream) {
+        // We should be ok, it is unlikely that a configOverlay is loaded decades apart and has the
+        // same version after casting to an int
+        version = (int) ((SolrResourceLoader.SolrFileInputStream) in).getLastModified();
         log.debug("Config overlay loaded. version : {} ", version);
       }
       @SuppressWarnings("unchecked")
@@ -1136,7 +1133,7 @@ public class SolrConfig implements MapSerializable {
       return null;
     }
     Object o = p.get().get(pkg);
-    if (o == null || PackageLoader.LATEST.equals(o)) return null;
+    if (o == null || SolrPackageLoader.LATEST.equals(o)) return null;
     return o.toString();
   }
 
@@ -1178,5 +1175,17 @@ public class SolrConfig implements MapSerializable {
 
   public ConfigNode get(String name, Predicate<ConfigNode> test) {
     return root.get(name, test);
+  }
+
+  /**
+   * Generates a String ID to represent the {@link SolrConfig}
+   *
+   * <p>Relies on the name of the SolrConfig, {@link String#hashCode()} to generate a "unique" id
+   * for the solr.xml data (including substitutions), and the version of the overlay. These 3 pieces
+   * of data should combine to make a "unique" identifier for SolrConfigs, since those are
+   * ultimately all inputs to modifying the solr.xml result.
+   */
+  public String effectiveId() {
+    return getName() + "-" + znodeVersion + "-" + rootDataHashCode;
   }
 }

@@ -20,6 +20,7 @@ import static org.hamcrest.core.Is.is;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.spelling.suggest.SuggesterParams;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -160,7 +161,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
                       SuggesterParams.SUGGEST_Q,
                       "examp"));
             });
-    assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
+    MatcherAssert.assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
 
     // When not building, no exception is thrown
     assertQ(

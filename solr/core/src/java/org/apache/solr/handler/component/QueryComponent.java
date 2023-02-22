@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -85,6 +86,7 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -113,6 +115,7 @@ import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransfo
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,13 +204,8 @@ public class QueryComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        for (String fq : fqs) {
-          if (fq != null && fq.trim().length() != 0) {
-            QParser fqp = QParser.getParser(fq, req);
-            fqp.setIsFilter(true);
-            filters.add(fqp.getQuery());
-          }
-        }
+        filters.addAll(QueryUtils.parseFilterQueries(req));
+
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request
         // if filter cache is disabled
@@ -300,9 +298,7 @@ public class QueryComponent extends SearchComponent {
               && (schemaField.getType() instanceof SortableTextField) == false) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                String.format(
-                    Locale.ROOT,
-                    "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode."));
+                "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode.");
           }
         }
       }
@@ -918,13 +914,23 @@ public class QueryComponent extends SearchComponent {
           }
         } else {
           responseHeader =
-              (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+              (NamedList<?>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(
+                      rb, srsp, "responseHeader", false);
+          if (responseHeader == null) {
+            continue;
+          }
           final Object rhste =
               responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
           if (rhste != null) {
             nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
           }
-          docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+          docs =
+              (SolrDocumentList)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
+          if (docs == null) {
+            continue;
+          }
           nl.add("numFound", docs.getNumFound());
           nl.add("numFoundExact", docs.getNumFoundExact());
           nl.add("maxScore", docs.getMaxScore());
@@ -943,11 +949,18 @@ public class QueryComponent extends SearchComponent {
       }
 
       if (docs == null) { // could have been initialized in the shards info block above
-        docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+        docs =
+            Objects.requireNonNull(
+                (SolrDocumentList)
+                    SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
       }
 
       if (responseHeader == null) { // could have been initialized in the shards info block above
-        responseHeader = (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+        responseHeader =
+            Objects.requireNonNull(
+                (NamedList<?>)
+                    SolrResponseUtil.getSubsectionFromShardResponse(
+                        rb, srsp, "responseHeader", false));
       }
 
       final boolean thisResponseIsPartial;
@@ -978,7 +991,8 @@ public class QueryComponent extends SearchComponent {
 
       @SuppressWarnings("unchecked")
       NamedList<List<Object>> sortFieldValues =
-          (NamedList<List<Object>>) (srsp.getSolrResponse().getResponse().get("sort_values"));
+          (NamedList<List<Object>>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "sort_values", true);
       if (null == sortFieldValues) {
         sortFieldValues = new NamedList<>();
       }
@@ -1291,7 +1305,10 @@ public class QueryComponent extends SearchComponent {
         }
         {
           NamedList<?> responseHeader =
-              (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+              Objects.requireNonNull(
+                  (NamedList<?>)
+                      SolrResponseUtil.getSubsectionFromShardResponse(
+                          rb, srsp, "responseHeader", false));
           if (Boolean.TRUE.equals(
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -1302,7 +1319,9 @@ public class QueryComponent extends SearchComponent {
           }
         }
         SolrDocumentList docs =
-            (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+            Objects.requireNonNull(
+                (SolrDocumentList)
+                    SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
         for (SolrDocument doc : docs) {
           Object id = doc.getFieldValue(keyFieldName);
           ShardDoc sdoc = rb.resultIds.get(id.toString());

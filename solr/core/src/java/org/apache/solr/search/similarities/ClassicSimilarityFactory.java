@@ -18,7 +18,7 @@ package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity; // javadoc
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 

@@ -173,13 +173,13 @@ public class DocTermOrds implements Accountable {
     // can cache the mem size since it shouldn't change
     if (memsz != 0) return memsz;
     long sz = 8 * 8 + 32; // local fields
-    if (index != null) sz += index.length * 4;
+    if (index != null) sz += index.length * 4L;
     if (tnums != null) {
       for (byte[] arr : tnums) if (arr != null) sz += arr.length;
     }
     if (indexedTermsArray != null) {
       // assume 8 byte references?
-      sz += 8 + 8 + 8 + 8 + (indexedTermsArray.length << 3) + sizeOfIndexedStrings;
+      sz += 8 + 8 + 8 + 8 + ((long) indexedTermsArray.length << 3) + sizeOfIndexedStrings;
     }
     memsz = sz;
     return sz;
@@ -603,7 +603,7 @@ public class DocTermOrds implements Accountable {
   private final class OrdWrappedTermsEnum extends BaseTermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
-    private long ord = -indexInterval - 1; // force "real" seek
+    private long ord = -indexInterval - 1L; // force "real" seek
 
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
@@ -667,7 +667,7 @@ public class DocTermOrds implements Accountable {
         // we hit the term exactly... lucky us!
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
         assert term != null;
         return SeekStatus.FOUND;
@@ -696,7 +696,7 @@ public class DocTermOrds implements Accountable {
         // seek to the right block
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(indexedTermsArray[startIdx]);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
         assert term != null; // should be non-null since it's in the index
       }
@@ -728,7 +728,7 @@ public class DocTermOrds implements Accountable {
         final int idx = (int) (targetOrd >>> indexIntervalBits);
         final BytesRef base = indexedTermsArray[idx];
         // System.out.println("  do seek term=" + base.utf8ToString());
-        ord = idx << indexIntervalBits;
+        ord = (long) idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
         final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
@@ -808,6 +808,29 @@ public class DocTermOrds implements Accountable {
       return buffer[bufferUpto++];
     }
 
+    @Override
+    public int docValueCount() {
+      if (arr == null) {
+        // This value was inlined, and then read into a single buffer
+        return bufferLength;
+      } else {
+        // scan logic taken from read()
+        int start = index[doc] & 0x7fffffff;
+        int cursor = start;
+        for (; ; ) {
+          int delta = 0;
+          for (; ; ) {
+            byte b = arr[cursor++];
+            delta = (delta << 7) | (b & 0x7f);
+            if ((b & 0x80) == 0) break;
+          }
+          if (delta == 0) break;
+        }
+
+        return cursor - start - 1;
+      }
+    }
+
     /**
      * Buffer must be at least 5 ints long. Returns number of term ords placed into buffer; if this
      * count is less than buffer.length then that is the end.
@@ -831,7 +854,7 @@ public class DocTermOrds implements Accountable {
           code >>>= 8;
         }
       } else {
-        // code is a pointer
+        // upto is a pointer into the array
         for (; ; ) {
           int delta = 0;
           for (; ; ) {
@@ -929,7 +952,7 @@ public class DocTermOrds implements Accountable {
             assert te.ord() >= 0;
             return -te.ord() - 1;
           default: /* END */
-            return -numTerms() - 1;
+            return -numTerms() - 1L;
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

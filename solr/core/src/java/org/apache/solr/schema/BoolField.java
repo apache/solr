@@ -291,8 +291,7 @@ public class BoolField extends PrimitiveFieldType {
 
     @Override
     public boolean equals(Object o) {
-      return o.getClass() == BoolFieldSource.class
-          && this.field.equals(((BoolFieldSource) o).field);
+      return (o instanceof BoolFieldSource) && this.field.equals(((BoolFieldSource) o).field);
     }
 
     private static final int hcode = OrdFieldSource.class.hashCode();

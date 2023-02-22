@@ -29,7 +29,6 @@ public class OverseerStatusTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
-    ;
   }
 
   @Test

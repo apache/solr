@@ -20,12 +20,11 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -33,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,8 +49,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
 
@@ -119,7 +118,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client =
+      SolrClient client =
           new Builder(replica.getCoreUrl())
               .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();

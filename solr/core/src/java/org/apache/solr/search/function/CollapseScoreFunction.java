@@ -25,22 +25,22 @@ import org.apache.solr.search.CollapsingQParserPlugin.CollapseScore;
 
 public class CollapseScoreFunction extends ValueSource {
 
+  @Override
   public String description() {
     return "CollapseScoreFunction";
   }
 
+  @Override
   public boolean equals(Object o) {
-    if (o instanceof CollapseScoreFunction) {
-      return true;
-    } else {
-      return false;
-    }
+    return o instanceof CollapseScoreFunction;
   }
 
+  @Override
   public int hashCode() {
     return 1213241257;
   }
 
+  @Override
   public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
       throws IOException {
     return new CollapseScoreFunctionValues(context);
@@ -55,18 +55,22 @@ public class CollapseScoreFunction extends ValueSource {
       assert null != this.cscore;
     }
 
+    @Override
     public int intVal(int doc) {
       return 0;
     }
 
+    @Override
     public String toString(int doc) {
       return Float.toString(cscore.score);
     }
 
+    @Override
     public float floatVal(int doc) {
       return cscore.score;
     }
 
+    @Override
     public double doubleVal(int doc) {
       return 0.0D;
     }

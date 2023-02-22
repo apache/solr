@@ -36,7 +36,6 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -91,6 +90,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     updateRequestHandler.init(null);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != monitor) {
@@ -104,15 +104,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAdds() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add a large number of docs - should trigger a commit
     int numDocsToAdd = 500;
@@ -128,15 +126,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRedundantDeletes() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add docs
     int numDocsToAdd = 150;
@@ -171,15 +167,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeletes() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add docs
     int numDocsToAdd = 500;
@@ -269,7 +263,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
 
     // if non enpty, then at least one offer failed (queues full)
-    private StringBuffer fail = new StringBuffer();
+    private final StringBuilder fail = new StringBuilder();
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
@@ -279,7 +273,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     @Override
     public void postCommit() {
       Long now = System.nanoTime();
-      if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
+      if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
     }
 
     @Override

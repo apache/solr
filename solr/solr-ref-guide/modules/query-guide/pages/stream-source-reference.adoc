@@ -290,7 +290,7 @@ uses the More Like This query parser plugin.
 * `qf`: (Mandatory) The query field used to compare documents.
 * `k`: (Mandatory) The number of nearest neighbors to return.
 * `fl`: (Mandatory) The field list to return.
-* `mindf`: (Optional) The minimum number of occurrences in the corpus to be included in the search.
+* `mindf`: (Optional, default is 5) The minimum number of occurrences in the corpus to be included in the search.
 * `maxdf`: (Optional) The maximum number of occurrences in the corpus to be included in the search.
 * `minwl`: (Optional) The minimum world length of to be included in the search.
 * `maxwl`: (Optional) The maximum world length of to be included in the search.

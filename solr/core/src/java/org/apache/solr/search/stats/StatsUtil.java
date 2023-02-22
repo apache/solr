@@ -290,7 +290,7 @@ public class StatsUtil {
     if (data == null || data.trim().length() == 0) {
       return null;
     }
-    Map<String, CollectionStats> map = new HashMap<String, CollectionStats>();
+    Map<String, CollectionStats> map = new HashMap<>();
     String[] entries = data.split(ENTRY_SEPARATOR);
     for (String es : entries) {
       CollectionStats stats = colStatsFromString(es);

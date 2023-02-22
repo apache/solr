@@ -89,7 +89,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   @Test
-  @Slow
   public void testNonEnglish() throws Exception {
     // test to document the expected behavior with non-english text for categories
     // the present expectation is that non-latin text and many accented latin characters
@@ -174,7 +173,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertEquals(expected, aliasNumFound);
   }
 
-  @Slow
   @Test
   public void test() throws Exception {
     String configName = getSaferTestName();
@@ -245,7 +243,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     return ship.replaceAll("\\$", "_");
   }
 
-  @Slow
   @Test
   public void testMustMatch() throws Exception {
     String configName = getSaferTestName();
@@ -299,7 +296,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertInvariants(colVogon, colHoG);
   }
 
-  @Slow
   @Test
   public void testInvalidMustMatch() throws Exception {
     String configName = getSaferTestName();
@@ -339,7 +335,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
         e.getMessage().contains("router.mustMatch must be a valid regular expression"));
   }
 
-  @Slow
   @Test
   public void testMaxCardinality() throws Exception {
     String configName = getSaferTestName();
@@ -397,7 +392,6 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
    *
    * @throws Exception when it blows up unexpectedly :)
    */
-  @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
@@ -472,9 +466,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
             .get(getAlias());
     observedCols = new ArrayList<>(observedCols);
     observedCols.sort(String::compareTo); // don't really care about the order here.
-    assert !observedCols.isEmpty();
+    assertFalse(observedCols.isEmpty());
 
-    int numFoundViaCollections = 0;
+    long numFoundViaCollections = 0;
     for (String col : observedCols) {
       final QueryResponse colResponse =
           solrClient.query(

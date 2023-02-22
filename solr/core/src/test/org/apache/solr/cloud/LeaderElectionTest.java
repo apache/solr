@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -42,13 +41,10 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.TestableZooKeeper;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,12 +57,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private volatile boolean stopStress = false;
 
-  @BeforeClass
-  public static void beforeClass() {}
-
-  @AfterClass
-  public static void afterClass() {}
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -76,14 +66,18 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.setTheTickTime(1000);
     server.run();
 
-    zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(server.getZkAddress())
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
     zkClient.makePath("/collections/collection1", true);
     zkClient.makePath("/collections/collection2", true);
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(
@@ -116,7 +110,13 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     LeaderElector elector;
 
     public ElectorSetup(OnReconnect onReconnect) {
-      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, TIMEOUT, onReconnect);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withReconnectListener(onReconnect)
+              .build();
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
@@ -546,12 +546,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                       server.expire(zk.getSessionId());
                     }
                   } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("error expiring session", e);
                   }
                   Thread.sleep(500);
-
                 } catch (Exception e) {
-
+                  log.error("error expiring session", e);
                 }
               }
             });

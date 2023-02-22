@@ -51,4 +51,25 @@
     <packageUrl regex="true">^pkg:maven/org\.carrot2\.shaded/carrot2\-guava@.*$</packageUrl>
     <cpe>cpe:/a:google:guava</cpe>
   </suppress>
+  <suppress>
+    <notes><![CDATA[Apache Calcite Avatica has separate releases from Apache Calcite]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.apache\.calcite\.avatica/.*@.*$</packageUrl>
+    <cpe>cpe:/a:apache:calcite</cpe>
+  </suppress>
+  <suppress>
+    <notes><![CDATA[jetty-servlet-api has separate releases from Jetty itself]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.eclipse\.jetty\.toolchain/jetty\-servlet\-api@.*$</packageUrl>
+    <cpe>cpe:/a:eclipse:jetty</cpe>
+    <cpe>cpe:/a:jetty:jetty</cpe>
+  </suppress>
+  <suppress>
+    <notes><![CDATA[hadoop-shaded-guava-1.1.1.jar is not Apache Hadoop 1.1.1]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.apache\.hadoop\.thirdparty/hadoop\-shaded\-guava@.*$</packageUrl>
+    <cpe>cpe:/a:apache:hadoop:1.1.1</cpe>
+  </suppress>
+  <suppress>
+    <notes><![CDATA[hadoop-client-runtime-3.*.jar is not Apache Hadoop 1.1.1]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.apache\.hadoop/hadoop\-client\-runtime@3.*$</packageUrl>
+    <cpe>cpe:/a:apache:hadoop:1.1.1</cpe>
+  </suppress>
 </suppressions>

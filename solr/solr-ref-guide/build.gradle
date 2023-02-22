@@ -17,7 +17,13 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
+apply plugin: 'java'
+
 description = 'Solr Reference Guide'
+
+/*
+ Antora Logic - Building the ref-guide
+ */
 
 def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
 
@@ -120,7 +126,9 @@ task buildLocalAntoraYaml {
             ["dep_version_tika", "org.apache.tika", "tika-core"],
             ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+            ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
 
         copy {
@@ -502,4 +510,38 @@ task buildOfficialSite(type: NpxTask) {
         project.logger.lifecycle("The generated official ref-guide can be found at:")
         project.logger.lifecycle("\t${project.ext.siteDir}")
     }
+}
+
+/*
+ Compiling, Testing and Validation for the java examples in the Solr Ref Guide
+ */
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ['modules/configuration-guide/examples', 'modules/deployment-guide/examples', 'modules/getting-started/examples', 'modules/indexing-guide/examples', 'modules/query-guide/examples']
+        }
+    }
+}
+
+dependencies {
+    // For the SolrJ examples
+    testImplementation project(":solr:core")
+    testImplementation project(":solr:solrj")
+    testImplementation project(":solr:test-framework")
+    testImplementation 'junit:junit'
+}
+
+// Copy all the test resource files from SolrJ to the build/resources/test directory
+// of the examples so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs.
+tasks.register('copySolrjTestResources', Copy) {
+    from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
+        exclude '**/*.java'
+    }
+    into sourceSets.test.output.resourcesDir
+}
+
+tasks.named('processTestResources').configure {
+    dependsOn copySolrjTestResources
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode.*;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import java.io.IOException;
 import org.apache.solr.common.SolrException;

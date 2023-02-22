@@ -82,7 +82,10 @@ distributions {
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
-        include "README.md"
+      })
+
+      from(projectDir, {
+        include "README.txt"
       })
 
       from ('static/lib', {
@@ -156,15 +159,16 @@ assemble.dependsOn installDist
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "bats",
-                     "ztombol/bats-support",
-                     "ztombol/bats-assert",
+  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
+                     "https://github.com/bats-core/bats-assert#v2.0.0",
+                     "https://github.com/bats-core/bats-file#v0.3.0",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
 }
 
 task integrationTests(type: BatsTask) {

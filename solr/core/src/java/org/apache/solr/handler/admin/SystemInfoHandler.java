@@ -28,12 +28,14 @@ import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -339,7 +341,10 @@ public class SystemInfoHandler extends RequestHandlerBase {
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
-        info.add("permissions", rbap.getPermissionNamesForRoles(roles));
+        info.add(
+            "permissions",
+            rbap.getPermissionNamesForRoles(
+                Stream.concat(roles.stream(), Stream.of("*", null)).collect(Collectors.toSet())));
       }
     }
 
@@ -402,7 +407,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   }
 
   private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
-    List<String> list = new LinkedList<>();
+    List<String> list = new ArrayList<>();
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")

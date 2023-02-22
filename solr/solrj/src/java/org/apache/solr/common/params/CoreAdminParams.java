@@ -144,6 +144,9 @@ public abstract class CoreAdminParams {
   /** A parameter to specify the name of the commit to be stored during the backup operation. */
   public static final String COMMIT_NAME = "commitName";
 
+  /** A parameter to specify the name of the snapshot to be stored during the backup operation. */
+  public static final String SNAPSHOT_NAME = "snapshotName";
+
   /** A boolean parameter specifying if a core is being created as part of a new collection */
   public static final String NEW_COLLECTION = "newCollection";
 
@@ -173,7 +176,6 @@ public abstract class CoreAdminParams {
     REJOINLEADERELECTION,
     // internal API used by force shard leader election
     FORCEPREPAREFORLEADERSHIP,
-    INVOKE,
     // Internal APIs to backup and restore a core
     BACKUPCORE,
     RESTORECORE,

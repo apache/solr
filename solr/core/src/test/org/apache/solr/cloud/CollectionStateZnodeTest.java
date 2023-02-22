@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -51,10 +50,10 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     assertTrue(
         "Collection path does not exist",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
 
     Stat stat = new Stat();
-    zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
+    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat, true);
 
     DocCollection c = getCollectionState(collectionName);
 
@@ -69,6 +68,6 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
     assertFalse(
         "collection state should not exist",
-        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
   }
 }

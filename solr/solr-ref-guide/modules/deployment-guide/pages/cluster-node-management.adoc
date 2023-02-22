@@ -60,8 +60,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster
 
+----
 ====
 --
 
@@ -162,9 +165,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
         "health": "GREEN",
         "aliases":["both_collections"]
       },
-      "collection2":{
-        "..."
-      }
+      "collection2":{"key": "value"}
     },
     "aliases":{ "both_collections":"collection1,collection2" },
     "roles":{
@@ -229,7 +230,6 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 +
 The name of the property.
 Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
-If the xref:distributed-tracing.adoc[Jaeger tracing module] has been enabled, the property `samplePercentage` is also available.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
@@ -496,7 +496,16 @@ http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=sourc
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
+    {
+      "targetNodeName": "localhost:8983_solr",
+      "waitForFinalState": "false",
+      "async": "async"
+    }
+'
+----
 
 ====
 --
@@ -578,7 +587,14 @@ http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
+    {
+      "async": "someAsyncId"
+    }
+'
+----
 
 ====
 --
@@ -840,9 +856,8 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
       "95thPcRequestTime":0.519016,
       "99thPcRequestTime":0.519016,
       "999thPcRequestTime":0.519016},
-    "removeshard",{
-      "..."
-  }],
+    "removeshard",{}
+  ],
   "collection_operations":[
     "splitshard",{
       "requests":1,
@@ -870,7 +885,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   ],
   "overseer_queue":[
     "..."
-  ],
-  "..."
+  ]
  }
 ----

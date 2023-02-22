@@ -70,8 +70,7 @@ import org.slf4j.LoggerFactory;
  *       <ul>
  *         <li>{@code am_i_leader} (Overseer checking it is still the elected Overseer as it
  *             processes cluster state update messages)
- *         <li>{@code configset_}<i>{@code <config set operation>}</i> (from {@link
- *             org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation})
+ *         <li>{@code configset_}<i>{@code <config set operation>}</i>
  *         <li>Cluster state change operation names from {@link
  *             org.apache.solr.common.params.CollectionParams.CollectionAction} (not all of them!)
  *             and {@link org.apache.solr.cloud.overseer.OverseerAction} (the complete list: {@code

@@ -1367,4 +1367,8 @@ public class SolrMetricManager {
       }
     }
   }
+
+  public MetricsConfig getMetricsConfig() {
+    return metricsConfig;
+  }
 }

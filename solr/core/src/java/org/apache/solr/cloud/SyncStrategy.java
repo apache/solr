@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
@@ -361,7 +362,7 @@ public class SyncStrategy {
               recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
               recoverRequestCmd.setCoreName(coreName);
 
-              try (HttpSolrClient client =
+              try (SolrClient client =
                   new HttpSolrClient.Builder(baseUrl)
                       .withHttpClient(SyncStrategy.this.client)
                       .withConnectionTimeout(30000)

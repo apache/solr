@@ -555,14 +555,14 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws Exception {
     final int expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
-    int totalNumFound = 0;
+    long totalNumFound = 0;
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases()
             .process(solrClient)
             .getAliasesAsLists()
             .get(getSaferTestName());
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     for (String category : categories) {
       List<String> cats =

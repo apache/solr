@@ -17,7 +17,12 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.util.CommandOperation;
 

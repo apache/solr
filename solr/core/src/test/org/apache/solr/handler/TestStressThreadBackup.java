@@ -19,9 +19,9 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -139,6 +139,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
            * Override default backup impl to hit ReplicationHandler, and then poll that same handler
            * until success
            */
+          @Override
           public void makeBackup(final String backupName, final String snapName) throws Exception {
             final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             ModifiableSolrParams p =
@@ -170,6 +171,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
+          @Override
           public void run() {
             try {
               int docIdCounter = 0;
@@ -204,7 +206,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
-      final Queue<String> namedSnapshots = new LinkedList<>();
+      final Queue<String> namedSnapshots = new ArrayDeque<>();
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
       // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...
@@ -243,8 +245,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // and how few iterations we have left
         if (3 < namedSnapshots.size()
             && random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
-
-          assert 0 < namedSnapshots.size() : "Something broke the conditional";
           final String snapshotName = namedSnapshots.poll();
           final String backupName = "backup_as_of_" + snapshotName;
           log.info("Creating {} from {} in iter={}", backupName, snapshotName, i);

@@ -19,7 +19,17 @@ apply plugin: 'java-library'
 
 description = 'JWT / OpenID Connect / OAuth2 authentication plugin'
 
+// This is a hacky way to use permitTestUnusedDeclared with bom declared dependencies.
+// See https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
+configurations {
+  constraintsOnly
+  permitTestUnusedDeclared.extendsFrom constraintsOnly
+  implementation.extendsFrom constraintsOnly
+}
+
 dependencies {
+  constraintsOnly(platform("com.fasterxml.jackson:jackson-bom"))
+
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
@@ -27,10 +37,10 @@ dependencies {
 
   implementation 'commons-io:commons-io'
   implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'javax.servlet:javax.servlet-api'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation ('com.google.guava:guava') { transitive = false }
   implementation 'org.slf4j:slf4j-api'
 
@@ -42,14 +52,11 @@ dependencies {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testImplementation('no.nav.security:mock-oauth2-server', {
-    exclude group: "ch.qos.logback", module: "logback-core"
     exclude group: "io.netty", module: "netty-all"
-    exclude group: "ch.qos.logback", module: "logback-classic"
   })
   // required by mock-oauth2-server
   testImplementation 'com.fasterxml.jackson.core:jackson-databind'
-  // Not working currently https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
-  //permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
+  permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
 
   testImplementation 'com.nimbusds:nimbus-jose-jwt'
   testImplementation 'com.squareup.okhttp3:mockwebserver'

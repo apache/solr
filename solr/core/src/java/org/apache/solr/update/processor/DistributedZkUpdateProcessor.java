@@ -67,7 +67,6 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
@@ -1067,7 +1066,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           return nodes;
         }
 
-        String routeKey = SolrIndexSplitter.getRouteKey(id);
+        String routeKey = compositeIdRouter.getRouteKeyNoSuffix(id);
         if (routeKey != null) {
           RoutingRule rule = routingRules.get(routeKey + "!");
           if (rule != null) {
@@ -1245,6 +1244,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   // TODO: optionally fail if n replicas are not reached...
+  @Override
   protected void doDistribFinish() {
     clusterState = zkController.getClusterState();
 
@@ -1261,12 +1261,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // send in a background thread
 
     cmdDistrib.finish();
-    List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+    List<SolrCmdDistributor.SolrError> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 
-    List<SolrCmdDistributor.Error> errorsForClient = new ArrayList<>(errors.size());
+    List<SolrCmdDistributor.SolrError> errorsForClient = new ArrayList<>(errors.size());
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
-    for (final SolrCmdDistributor.Error error : errors) {
+    for (final SolrCmdDistributor.SolrError error : errors) {
 
       if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
         // if it's a forward, any fail is a problem -

@@ -22,18 +22,16 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.SnapShooter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.Slow
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -64,8 +62,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     // TODO make this configurable on StoppableIndexingThread
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
-    int[] maxDocList = new int[] {300, 500, 700};
-    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    int maxDoc = atLeast(300);
 
     StoppableIndexingThread indexThread =
         new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
@@ -123,7 +120,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
-    assertTrue(!oldIndexDir1.isDirectory());
-    assertTrue(!oldIndexDir2.isDirectory());
+    assertFalse(oldIndexDir1.isDirectory());
+    assertFalse(oldIndexDir2.isDirectory());
   }
 }

@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
@@ -43,7 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.NavigableObject;
@@ -58,7 +59,7 @@ import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
@@ -79,7 +80,11 @@ public class PackageManager implements Closeable {
   public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
-    this.zkClient = new SolrZkClient(zkHost, 30000);
+    this.zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build();
     log.info("Done initializing a zkClient instance...");
   }
 
@@ -136,7 +141,7 @@ public class PackageManager implements Closeable {
     // Delete the package by calling the Package API and remove the Jar
 
     PackageUtils.printGreen("Executing Package API to remove this package...");
-    Package.DelVersion del = new Package.DelVersion();
+    PackagePayload.DelVersion del = new PackagePayload.DelVersion();
     del.version = version;
     del.pkg = packageName;
 
@@ -449,7 +454,7 @@ public class PackageManager implements Closeable {
             "{set:{PKG_VERSIONS:{"
                 + packageInstance.name
                 + ": '"
-                + (pegToLatest ? PackageLoader.LATEST : packageInstance.version)
+                + (pegToLatest ? SolrPackageLoader.LATEST : packageInstance.version)
                 + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -526,7 +531,7 @@ public class PackageManager implements Closeable {
             "{update:{PKG_VERSIONS:{'"
                 + packageInstance.name
                 + "' : '"
-                + (pegToLatest ? PackageLoader.LATEST : packageInstance.version)
+                + (pegToLatest ? SolrPackageLoader.LATEST : packageInstance.version)
                 + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -897,7 +902,7 @@ public class PackageManager implements Closeable {
     }
     if (version == null
         || version.equalsIgnoreCase(PackageUtils.LATEST)
-        || version.equalsIgnoreCase(PackageLoader.LATEST)) {
+        || version.equalsIgnoreCase(SolrPackageLoader.LATEST)) {
       return latest;
     } else return null;
   }
@@ -1101,7 +1106,7 @@ public class PackageManager implements Closeable {
 
   /**
    * Given a package, return a map of collections where this package is installed to the installed
-   * version (which can be {@link PackageLoader#LATEST})
+   * version (which can be {@link SolrPackageLoader#LATEST})
    */
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;

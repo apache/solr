@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
  * and compares the docvalues facet results to the indexed facet results as if it were just another
  * faceting method.
  */
-@Slow
 @SolrTestCaseJ4.SuppressPointFields(
     bugUrl = "Test explicitly compares Trie to Points, randomization defeats the point")
 @SolrTestCaseJ4.SuppressSSL
@@ -55,17 +53,14 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
 
-    assertEquals(
+    assertFalse(
         "DocValues: Schema assumptions are broken",
-        false,
         h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
 
     assertEquals(

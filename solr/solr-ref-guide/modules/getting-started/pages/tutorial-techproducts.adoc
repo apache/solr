@@ -1,4 +1,4 @@
-= Exercise 1 Index Techproducts Data
+= Exercise 1: Index Techproducts Data
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

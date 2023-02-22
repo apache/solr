@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -54,7 +55,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private HttpSolrClient clientToLeader;
+  private SolrClient clientToLeader;
 
   private boolean doFingerprint;
 

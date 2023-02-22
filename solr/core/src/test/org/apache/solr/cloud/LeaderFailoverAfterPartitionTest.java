@@ -22,14 +22,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * Tests leader-initiated recovery scenarios after a leader node fails and one of the replicas is
  * out-of-sync.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
@@ -48,6 +46,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     super();
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
@@ -68,14 +67,15 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(testCollectionName),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
 
     // ok, now introduce a network partition between the leader and the replica
     SocketProxy proxy0 = null;
@@ -127,11 +127,11 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // doc should be on leader and 1 replica
     sendDoc(5);
 
-    try (HttpSolrClient server = getHttpSolrClient(leader, testCollectionName)) {
+    try (SolrClient server = getHttpSolrClient(leader, testCollectionName)) {
       assertDocExists(server, "5");
     }
 
-    try (HttpSolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
+    try (SolrClient server = getHttpSolrClient(notLeaders.get(1), testCollectionName)) {
       assertDocExists(server, "5");
     }
 
@@ -161,12 +161,13 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
             + printClusterStateInfo(testCollectionName),
         newLeader);
 
-    assertTrue(
+    assertNotEquals(
         "Expected node "
             + shouldNotBeNewLeaderNode
             + " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "
             + printClusterStateInfo(testCollectionName),
-        !shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
+        shouldNotBeNewLeaderNode,
+        newLeader.getNodeName());
 
     proxy0.reopen();
 

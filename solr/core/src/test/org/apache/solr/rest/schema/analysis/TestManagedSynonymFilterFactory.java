@@ -58,7 +58,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
+  public void after() throws Exception {
     if (null != jetty) {
       jetty.stop();
       jetty = null;

@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,7 +48,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -247,8 +245,9 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                           info.version,
                           returnedVersion);
                     } catch (RuntimeException e) {
-                      if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                          || e.getMessage() != null && e.getMessage().contains("Conflict")) {
+                      if (e.getMessage() != null
+                          && (e.getMessage().contains("version conflict")
+                              || e.getMessage().contains("Conflict"))) {
                         // It's okay for a leader to reject a concurrent request
                         log.warn("Conflict during {}, rejected id={}, {}", delType, id, e);
                         returnedVersion = null;
@@ -302,8 +301,9 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                             returnedVersion);
 
                       } catch (RuntimeException e) {
-                        if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                            || e.getMessage() != null && e.getMessage().contains("Conflict")) {
+                        if (e.getMessage() != null
+                            && (e.getMessage().contains("version conflict")
+                                || e.getMessage().contains("Conflict"))) {
                           // It's okay for a leader to reject a concurrent request
                           log.warn("Conflict during full update, rejected id={}, {}", id, e);
                           returnedVersion = null;
@@ -333,8 +333,9 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                             val2,
                             returnedVersion);
                       } catch (RuntimeException e) {
-                        if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                            || e.getMessage() != null && e.getMessage().contains("Conflict")) {
+                        if (e.getMessage() != null
+                            && (e.getMessage().contains("version conflict")
+                                || e.getMessage().contains("Conflict"))) {
                           // It's okay for a leader to reject a concurrent request
                           log.warn("Conflict during partial update, rejected id={}, {}", id, e);
                         } else if (e.getMessage() != null
@@ -487,7 +488,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   } else {
                     fail(
                         String.format(
-                            Locale.ENGLISH, "There were more than one result: {}", response));
+                            Locale.ENGLISH, "There were more than one result: %s", response));
                   }
                 }
               } catch (Throwable e) {
@@ -602,7 +603,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     public DocInfo(long version, int val1, long val2) {
       // must either be real positive version, or negative deleted version/indicator
-      assert version != 0;
+      assertNotEquals(0, version);
       this.version = version;
       this.intFieldValue = val1;
       this.longFieldValue = val2;

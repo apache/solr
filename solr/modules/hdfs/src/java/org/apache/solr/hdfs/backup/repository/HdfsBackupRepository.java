@@ -104,6 +104,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (this.fileSystem != null) {
       this.fileSystem.close();

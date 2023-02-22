@@ -18,11 +18,13 @@ package org.apache.solr.handler.component;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.spelling.SpellCheckCollation;
 
 public class SpellCheckMergeData {
@@ -41,6 +43,25 @@ public class SpellCheckMergeData {
   // The original terms from the user's query.
   public Set<String> originalTerms = null;
   public int totalNumberShardResponses = 0;
+
+  /**
+   * Removes the original word from all maps where original words are used as keys, as well as any
+   * collations that contain this original word as a misspelling
+   */
+  public void removeOriginal(final String original) {
+    origVsFreq.remove(original);
+    origVsShards.remove(original);
+    origVsSuggested.remove(original);
+
+    final Iterator<Map.Entry<String, SpellCheckCollation>> iter = collations.entrySet().iterator();
+    iter.forEachRemaining(
+        e -> {
+          final NamedList<String> misspellings = e.getValue().getMisspellingsAndCorrections();
+          if (null != misspellings && null != misspellings.get(original)) {
+            iter.remove();
+          }
+        });
+  }
 
   public boolean isOriginalToQuery(String term) {
     if (originalTerms == null) {

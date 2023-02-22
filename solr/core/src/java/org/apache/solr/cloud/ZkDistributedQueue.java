@@ -381,6 +381,7 @@ public class ZkDistributedQueue implements DistributedQueue {
                     Map<String, Object> fo = new HashMap<>();
                     fo.put("req", failedOp.req);
                     fo.put("resp", failedOp.resp);
+                    failed.add(fo);
                   });
               statsMap.put(op, statMap);
             });

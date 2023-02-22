@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.handler.component.*;
+import org.apache.solr.handler.component.SearchHandler;
 
 @Deprecated
 public class StandardRequestHandler extends SearchHandler {

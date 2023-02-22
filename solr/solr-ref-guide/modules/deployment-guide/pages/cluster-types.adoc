@@ -88,7 +88,7 @@ As long as one replica of each relevant shard is available, a user query or inde
 
 == User-Managed Mode
 
-Solr's user-managed mode requires that cluster coordination activities that SolrCloud uses ZooKeeper for must performed manually or with local scripts.
+Solr's user-managed mode requires that cluster coordination activities that SolrCloud normally uses ZooKeeper for are performed manually or with local scripts.
 
 If the corpus of documents is too large for a single-sharded index, the logic to create shards is entirely left to the user.
 There are no automated or programmatic ways for Solr to create shards during indexing.

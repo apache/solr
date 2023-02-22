@@ -30,10 +30,12 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
 
+  @Override
   public String getContentType(SolrQueryRequest req, SolrQueryResponse res) {
     return "application/xml";
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse res) throws IOException {
 
     Exception e1 = res.getException();

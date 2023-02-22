@@ -26,7 +26,7 @@ import org.apache.lucene.search.similarities.BasicModelIn;
 import org.apache.lucene.search.similarities.BasicModelIne;
 import org.apache.lucene.search.similarities.DFRSimilarity;
 import org.apache.lucene.search.similarities.Normalization;
-import org.apache.lucene.search.similarities.Normalization.NoNormalization; // javadoc
+import org.apache.lucene.search.similarities.Normalization.NoNormalization;
 import org.apache.lucene.search.similarities.NormalizationH1;
 import org.apache.lucene.search.similarities.NormalizationH2;
 import org.apache.lucene.search.similarities.NormalizationH3;

@@ -41,6 +41,9 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +68,8 @@ public class ZkContainer {
 
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+
+  private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
 
@@ -152,6 +157,23 @@ public class ZkContainer {
         }
 
         this.zkController = zkController;
+        MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
+        metricProducer =
+            new SolrMetricProducer() {
+              SolrMetricsContext ctx;
+
+              @Override
+              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+                ctx = parentContext.getChildContext(this);
+                ctx.gauge(
+                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+              }
+
+              @Override
+              public SolrMetricsContext getSolrMetricsContext() {
+                return ctx;
+              }
+            };
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -248,5 +270,9 @@ public class ZkContainer {
 
   public ExecutorService getCoreZkRegisterExecutorService() {
     return coreZkRegister;
+  }
+
+  public SolrMetricProducer getZkMetricsProducer() {
+    return this.metricProducer;
   }
 }

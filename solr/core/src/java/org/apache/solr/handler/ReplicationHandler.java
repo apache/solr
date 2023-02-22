@@ -183,6 +183,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return new CommitVersionInfo(generation, version);
     }
 
+    @Override
     public String toString() {
       return "generation=" + generation + ",version=" + version;
     }
@@ -1125,7 +1126,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               currFileSizeDownloaded = (Long) currentFile.get("bytesDownloaded");
               bytesDownloaded += currFileSizeDownloaded;
               if (currFileSize > 0)
-                percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
+                percentDownloaded = (float) (currFileSizeDownloaded * 100) / currFileSize;
             }
           }
           follower.add("filesDownloaded", filesDownloaded);
@@ -1145,7 +1146,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 ((bytesToDownload - bytesDownloaded) * elapsed) / bytesDownloaded;
           float totalPercent = 0;
           long downloadSpeed = 0;
-          if (bytesToDownload > 0) totalPercent = (bytesDownloaded * 100) / bytesToDownload;
+          if (bytesToDownload > 0) totalPercent = (float) (bytesDownloaded * 100) / bytesToDownload;
           if (elapsed > 0) downloadSpeed = (bytesDownloaded / elapsed);
           if (currFile != null) follower.add("currentFile", currFile);
           follower.add("currentFileSize", NumberUtils.readableSize(currFileSize));
@@ -1628,9 +1629,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // Throw exception on directory traversal attempts
-    protected String validateFilenameOrError(String filename) {
-      if (filename != null) {
-        Path filePath = Paths.get(filename);
+    protected String validateFilenameOrError(String fileName) {
+      if (fileName != null) {
+        Path filePath = Paths.get(fileName);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -1640,7 +1641,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (filePath.isAbsolute()) {
           throw new SolrException(ErrorCode.FORBIDDEN, "File name must be relative");
         }
-        return filename;
+        return fileName;
       } else return null;
     }
 
@@ -1681,6 +1682,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
+    @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
@@ -1807,6 +1809,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
       return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
@@ -1819,6 +1822,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a conf file read from config directory
       return core.getResourceLoader().getConfigPath().resolve(cfileName);

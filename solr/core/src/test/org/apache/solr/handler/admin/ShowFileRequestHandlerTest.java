@@ -89,7 +89,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     SolrClient client = getSolrClient();
     // assertQ(req("qt", "/admin/file"));
     // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
-    QueryRequest request = new QueryRequest(params("file", "managed-schema"));
+    QueryRequest request = new QueryRequest(params("file", "managed-schema.xml"));
     request.setPath("/admin/file");
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(

@@ -26,18 +26,19 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.routing.NoOpReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
@@ -51,7 +52,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 
-@SolrThreadUnsafe
+@NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
@@ -148,7 +149,7 @@ public class HttpShardHandler extends ShardHandler {
 
     pending.incrementAndGet();
     // if there are no shards available for a slice, urls.size()==0
-    if (urls.size() == 0) {
+    if (urls.isEmpty()) {
       // TODO: what's the right error code here? We should use the same thing when
       // all of the servers for a shard are down.
       SolrException exception =
@@ -189,6 +190,7 @@ public class HttpShardHandler extends ShardHandler {
                 responses.add(srsp);
               }
 
+              @Override
               public void onFailure(Throwable throwable) {
                 ssr.elapsedTime =
                     TimeUnit.MILLISECONDS.convert(
@@ -273,7 +275,7 @@ public class HttpShardHandler extends ShardHandler {
     final String shards = params.get(ShardParams.SHARDS);
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
-    CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
+    CloudDescriptor cloudDescriptor = req.getCloudDescriptor();
     ZkController zkController = req.getCoreContainer().getZkController();
 
     final ReplicaListTransformer replicaListTransformer =
@@ -318,14 +320,26 @@ public class HttpShardHandler extends ShardHandler {
         // be an optimization?
       }
 
-      for (int i = 0; i < rb.slices.length; i++) {
-        if (!ShardParams.getShardsTolerantAsBool(params)
-            && replicaSource.getReplicasBySlice(i).isEmpty()) {
-          // stop the check when there are no replicas available for a shard
-          // todo fix use of slices[i] which can be null if user specified urls in shards param
-          throw new SolrException(
-              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "no servers hosting shard: " + rb.slices[i]);
+      if (!ShardParams.getShardsTolerantAsBool(params)) {
+        for (int i = 0; i < rb.slices.length; i++) {
+          if (replicaSource.getReplicasBySlice(i).isEmpty()) {
+            final ReplicaSource allActiveReplicaSource =
+                new CloudReplicaSource.Builder()
+                    .params(params)
+                    .zkStateReader(zkController.getZkStateReader())
+                    .allowListUrlChecker(AllowListUrlChecker.ALLOW_ALL)
+                    .replicaListTransformer(NoOpReplicaListTransformer.INSTANCE)
+                    .collection(cloudDescriptor.getCollectionName())
+                    .onlyNrt(false)
+                    .build();
+            final String adjective =
+                (allActiveReplicaSource.getReplicasBySlice(i).isEmpty() ? "active" : "eligible");
+            // stop the check when there are no replicas available for a shard
+            // todo fix use of slices[i] which can be null if user specified urls in shards param
+            throw new SolrException(
+                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                "no " + adjective + " servers hosting shard: " + rb.slices[i]);
+          }
         }
       }
     } else {
@@ -395,6 +409,7 @@ public class HttpShardHandler extends ShardHandler {
     return false;
   }
 
+  @Override
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
   }

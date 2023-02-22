@@ -83,6 +83,24 @@ public class ExecutorUtil {
     void clean(AtomicReference<Object> ctx);
   }
 
+  public static boolean isShutdown(ExecutorService pool) {
+    try {
+      return pool.isShutdown();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  public static boolean isTerminated(ExecutorService pool) {
+    try {
+      return pool.isTerminated();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
@@ -96,15 +114,27 @@ public class ExecutorUtil {
   }
 
   public static void awaitTermination(ExecutorService pool) {
-    boolean shutdown = false;
-    while (!shutdown) {
-      try {
-        // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
-      } catch (InterruptedException ie) {
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
+    awaitTermination(pool, 60, TimeUnit.SECONDS);
+  }
+
+  // Used in testing to not have to wait the full 60 seconds.
+  static void awaitTermination(ExecutorService pool, long timeout, TimeUnit unit) {
+    try {
+      // Wait a while for existing tasks to terminate.
+      if (!pool.awaitTermination(timeout, unit)) {
+        // We want to force shutdown any remaining threads.
+        pool.shutdownNow();
+        // Wait again for forced threads to stop.
+        if (!pool.awaitTermination(timeout, unit)) {
+          log.error("Threads from pool {} did not forcefully stop.", pool);
+          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
+        }
       }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
   }
 

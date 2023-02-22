@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,8 +36,11 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkShardTermsTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -223,7 +227,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
                       Thread.sleep(random().nextInt(200));
                       zkShardTerms.setTermEqualsToLeader(replica);
                     } catch (InterruptedException e) {
-                      e.printStackTrace();
+                      Thread.currentThread().interrupt();
+                      log.error("interrupted", e);
                     }
                   }
                 }

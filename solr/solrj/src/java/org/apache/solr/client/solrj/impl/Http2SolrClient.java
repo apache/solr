@@ -32,12 +32,12 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +48,8 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -75,6 +77,7 @@ import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProtocolHandlers;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -93,6 +96,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -124,12 +128,13 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private HttpClient httpClient;
-  private volatile Set<String> queryParams = Collections.emptySet();
-  private int idleTimeout;
+  private volatile Set<String> urlParamNames = Set.of();
+  private long idleTimeoutMillis;
+  private long requestTimeoutMillis;
 
-  private ResponseParser parser = new BinaryResponseParser();
-  private volatile RequestWriter requestWriter = new BinaryRequestWriter();
-  private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
+  protected ResponseParser parser = new BinaryResponseParser();
+  protected RequestWriter requestWriter = new BinaryRequestWriter();
+  private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
   private String serverBaseUrl;
@@ -139,6 +144,7 @@ public class Http2SolrClient extends SolrClient {
   private boolean shutdownExecutor;
 
   private final String basicAuthAuthorizationStr;
+  private AuthenticationStoreHolder authenticationStore;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null) {
@@ -152,8 +158,11 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = serverBaseUrl;
     }
 
-    if (builder.idleTimeout != null && builder.idleTimeout > 0) idleTimeout = builder.idleTimeout;
-    else idleTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
+      idleTimeoutMillis = builder.idleTimeoutMillis;
+    } else {
+      idleTimeoutMillis = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    }
 
     if (builder.http2SolrClient == null) {
       httpClient = createHttpClient(builder);
@@ -168,6 +177,19 @@ public class Http2SolrClient extends SolrClient {
     } else {
       basicAuthAuthorizationStr = null;
     }
+    if (builder.requestWriter != null) {
+      requestWriter = builder.requestWriter;
+    }
+    if (builder.responseParser != null) {
+      parser = builder.responseParser;
+    }
+    if (builder.requestTimeoutMillis == null) {
+      requestTimeoutMillis = -1;
+    } else {
+      requestTimeoutMillis = builder.requestTimeoutMillis;
+    }
+    httpClient.setFollowRedirects(builder.followRedirects);
+    this.urlParamNames = builder.urlParamNames;
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -200,32 +222,36 @@ public class Http2SolrClient extends SolrClient {
     }
 
     SslContextFactory.Client sslContextFactory;
-    boolean sslEnabled;
     if (builder.sslConfig == null) {
-      sslEnabled =
-          System.getProperty("javax.net.ssl.keyStore") != null
-              || System.getProperty("javax.net.ssl.trustStore") != null;
-      sslContextFactory = sslEnabled ? getDefaultSslContextFactory() : null;
+      sslContextFactory = getDefaultSslContextFactory();
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
-      sslEnabled = true;
     }
+
+    ClientConnector clientConnector = new ClientConnector();
+    clientConnector.setReuseAddress(true);
+    clientConnector.setSslContextFactory(sslContextFactory);
+    clientConnector.setSelectors(2);
 
     HttpClientTransport transport;
     if (builder.useHttp1_1) {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      transport = new HttpClientTransportOverHTTP(2);
-      httpClient =
-          sslEnabled ? new HttpClient(transport, sslContextFactory) : new HttpClient(transport);
-      if (builder.maxConnectionsPerHost != null)
+
+      transport = new HttpClientTransportOverHTTP(clientConnector);
+      httpClient = new HttpClient(transport);
+      if (builder.maxConnectionsPerHost != null) {
         httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+      }
     } else {
-      log.debug("Create Http2SolrClient with HTTP/2 transport");
-      HTTP2Client http2client = new HTTP2Client();
+      if (log.isDebugEnabled()) {
+        log.debug("Create Http2SolrClient with HTTP/2 transport");
+      }
+
+      HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
-      httpClient = new HttpClient(transport, sslContextFactory);
+      httpClient = new HttpClient(transport);
       httpClient.setMaxConnectionsPerDestination(4);
     }
 
@@ -236,9 +262,14 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
+    httpClient.setIdleTimeout(idleTimeoutMillis);
 
-    httpClient.setIdleTimeout(idleTimeout);
-    if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
+    this.authenticationStore = new AuthenticationStoreHolder();
+    httpClient.setAuthenticationStore(this.authenticationStore);
+
+    if (builder.connectionTimeoutMillis != null)
+      httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
+
     try {
       httpClient.start();
     } catch (Exception e) {
@@ -249,12 +280,12 @@ public class Http2SolrClient extends SolrClient {
     return httpClient;
   }
 
+  @Override
   public void close() {
     // we wait for async requests, so far devs don't want to give sugar for this
     asyncTracker.waitForComplete();
     try {
       if (closeClient) {
-        httpClient.setStopTimeout(1000);
         httpClient.stop();
         httpClient.destroy();
       }
@@ -269,12 +300,16 @@ public class Http2SolrClient extends SolrClient {
     assert ObjectReleaseTracker.release(this);
   }
 
+  public void setAuthenticationStore(AuthenticationStore authenticationStore) {
+    this.authenticationStore.updateAuthenticationStore(authenticationStore);
+  }
+
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
   public long getIdleTimeout() {
-    return idleTimeout;
+    return idleTimeoutMillis;
   }
 
   public static class OutStream implements Closeable {
@@ -387,7 +422,9 @@ public class Http2SolrClient extends SolrClient {
     outStream.flush();
   }
 
+  @SuppressWarnings("StaticAssignmentOfThrowable")
   private static final Exception CANCELLED_EXCEPTION = new Exception();
+
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
   public Cancellable asyncRequest(
@@ -447,22 +484,24 @@ public class Http2SolrClient extends SolrClient {
     final ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
 
+    Throwable abortCause = null;
     try {
       InputStreamResponseListener listener = new InputStreamResponseListener();
       req.send(listener);
-      Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
+      Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-
       return processErrorsAndResponse(solrRequest, parser, response, is);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      abortCause = e;
       throw new RuntimeException(e);
     } catch (TimeoutException e) {
       throw new SolrServerException(
-          "Timeout occured while waiting response from server at: " + req.getURI(), e);
+          "Timeout occurred while waiting response from server at: " + req.getURI(), e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
+      abortCause = cause;
       if (cause instanceof ConnectException) {
         throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
       }
@@ -470,9 +509,16 @@ public class Http2SolrClient extends SolrClient {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
         throw new SolrServerException(
-            "IOException occured when talking to server at: " + getBaseURL(), cause);
+            "IOException occurred when talking to server at: " + getBaseURL(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (SolrServerException | RuntimeException sse) {
+      abortCause = sse;
+      throw sse;
+    } finally {
+      if (abortCause != null) {
+        req.abort(abortCause);
+      }
     }
   }
 
@@ -515,7 +561,11 @@ public class Http2SolrClient extends SolrClient {
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
-    req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
+    if (requestTimeoutMillis > 0) {
+      req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
+    } else {
+      req.timeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+    }
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
@@ -627,7 +677,7 @@ public class Http2SolrClient extends SolrClient {
                 contentWriter.getContentType(), ByteBuffer.wrap(baos.getbuf(), 0, baos.size())));
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
-        ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
         Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
         return fillContentStream(req, streams, wparams, isMultipart);
@@ -669,13 +719,13 @@ public class Http2SolrClient extends SolrClient {
         for (ContentStream contentStream : streams) {
           String contentType = contentStream.getContentType();
           if (contentType == null) {
-            contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+            contentType = "multipart/form-data"; // default
           }
           String name = contentStream.getName();
           if (name == null) {
             name = "";
           }
-          HttpFields fields = new HttpFields();
+          HttpFields.Mutable fields = HttpFields.build(1);
           fields.add(HttpHeader.CONTENT_TYPE, contentType);
           content.addFilePart(
               name,
@@ -753,13 +803,17 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
-      String procCt = processor.getContentType();
-      if (procCt != null) {
-        String procMimeType =
-            MimeTypes.getContentTypeWithoutCharset(procCt).trim().toLowerCase(Locale.ROOT);
-        if (!procMimeType.equals(mimeType)) {
+      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+        final Collection<String> processorMimeTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (!processorMimeTypes.contains(mimeType)) {
           // unexpected mime type
-          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
+          final String allSupportedTypes = String.join(", ", processorMimeTypes);
+          String prefix =
+              "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
           String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
@@ -842,10 +896,34 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  /**
+   * Choose the {@link RequestWriter} to use.
+   *
+   * <p>By default, {@link BinaryRequestWriter} is used.
+   *
+   * <p>Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
+   */
+  @Deprecated
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }
 
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+
+  /**
+   * Configure whether the client should follow redirects or not.
+   *
+   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
+   * Solr installation, something is configured wrong somewhere.
+   *
+   * @deprecated use {@link Http2SolrClient.Builder#withFollowRedirects(boolean)}
+   *     Redirects(boolean)} instead
+   */
+  @Deprecated
   public void setFollowRedirects(boolean follow) {
     httpClient.setFollowRedirects(follow);
   }
@@ -899,14 +977,19 @@ public class Http2SolrClient extends SolrClient {
 
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
-    private Integer idleTimeout;
-    private Integer connectionTimeout;
+    private Long idleTimeoutMillis;
+    private Long connectionTimeoutMillis;
+    private Long requestTimeoutMillis;
     private Integer maxConnectionsPerHost;
     private String basicAuthUser;
     private String basicAuthPassword;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
+    private boolean followRedirects = false;
     protected String baseSolrUrl;
     private ExecutorService executor;
+    protected RequestWriter requestWriter;
+    protected ResponseParser responseParser;
+    private Set<String> urlParamNames = Set.of();
 
     public Builder() {}
 
@@ -956,6 +1039,23 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    public Builder withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+
+    public Builder withFollowRedirects(boolean followRedirects) {
+      this.followRedirects = followRedirects;
+      return this;
+    }
+
     public Builder withExecutor(ExecutorService executor) {
       this.executor = executor;
       return this;
@@ -979,16 +1079,49 @@ public class Http2SolrClient extends SolrClient {
     }
 
     /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * by 4
+     * Expert Method
+     *
+     * @param urlParamNames set of param keys that are only sent via the query string. Note that the
+     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+     *     query params.
+     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
      */
+    public Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+      this.urlParamNames = urlParamNames;
+      return this;
+    }
+
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     *
+     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
+     */
+    @Deprecated(since = "9.2")
     public Builder maxConnectionsPerHost(int max) {
+      withMaxConnectionsPerHost(max);
+      return this;
+    }
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     */
+    public Builder withMaxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
       return this;
     }
 
+    /**
+     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
     public Builder idleTimeout(int idleConnectionTimeout) {
-      this.idleTimeout = idleConnectionTimeout;
+      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    public Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+      this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
       return this;
     }
 
@@ -997,25 +1130,69 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    public Builder connectionTimeout(int connectionTimeOut) {
-      this.connectionTimeout = connectionTimeOut;
+    /**
+     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Builder connectionTimeout(int connectionTimeout) {
+      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+      this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     */
+    @Deprecated(since = "9.2")
+    public Builder requestTimeout(int requestTimeout) {
+      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     */
+    public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
+      this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
       return this;
     }
   }
 
+  /**
+   * @deprecated use {@link #getUrlParamNames()}
+   */
+  @Deprecated
   public Set<String> getQueryParams() {
-    return queryParams;
+    return getUrlParamNames();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
    * Expert Method
    *
-   * @param queryParams set of param keys to only send via the query string Note that the param will
-   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
+   * @param urlParamNames set of param keys that are only sent via the query string. Note that the
+   *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+   *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
+   * @deprecated use {@link Http2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
    */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  @Deprecated
+  public void setUrlParamNames(Set<String> urlParamNames) {
+    this.urlParamNames = urlParamNames;
   }
 
   private ModifiableSolrParams calculateQueryParams(
@@ -1039,8 +1216,17 @@ public class Http2SolrClient extends SolrClient {
     return parser;
   }
 
-  public void setParser(ResponseParser processor) {
-    parser = processor;
+  /**
+   * Note: This setter method is <b>not thread-safe</b>.
+   *
+   * @param parser Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
+   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
+   * @deprecated use {@link Http2SolrClient.Builder#withResponseParser(ResponseParser)} instead
+   */
+  @Deprecated
+  public void setParser(ResponseParser parser) {
+    this.parser = parser;
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {

@@ -33,7 +33,7 @@
 
        <schemaFactory class="ManagedIndexSchemaFactory">
          <bool name="mutable">true</bool>
-         <str name="managedSchemaResourceName">managed-schema</str>
+         <str name="managedSchemaResourceName">managed-schema.xml</str>
        </schemaFactory>
 
        When ManagedIndexSchemaFactory is specified, Solr will load the schema from

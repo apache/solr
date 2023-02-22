@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
@@ -52,6 +53,20 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir, parent);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
+  }
+
+  public Pair<String, Integer> getZkResourceInfo(String resource) {
+    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
+    try {
+      Stat stat = zkController.getZkClient().exists(file, null, true);
+      if (stat != null) {
+        return new Pair<>(file, stat.getVersion());
+      } else {
+        return null;
+      }
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   /**

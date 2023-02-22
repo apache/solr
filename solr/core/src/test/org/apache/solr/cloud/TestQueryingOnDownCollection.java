@@ -102,7 +102,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
         error.getMessage().contains("No active replicas found for collection: " + COLLECTION_NAME));
 
     // run same set of tests on v2 client which uses V2HttpCall
-    Http2SolrClient v2Client =
+    SolrClient v2Client =
         new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
 
     error =

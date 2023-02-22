@@ -407,8 +407,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2);
-      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2);
+      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
+      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         int a = lower;
         lower = upper;
@@ -543,7 +543,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // only test equality:
     Query q1 = LegacyNumericRangeQuery.newIntRange("test14", 4, 10, 20, true, true);
     Query q2 = LegacyNumericRangeQuery.newLongRange("test14", 4, 10L, 20L, true, true);
-    assertFalse(q1.equals(q2));
-    assertFalse(q2.equals(q1));
+    assertNotEquals(q1, q2);
+    assertNotEquals(q2, q1);
   }
 }

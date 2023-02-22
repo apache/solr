@@ -1,5 +1,6 @@
 = Solr Upgrade Notes
-:page-children: major-changes-in-solr-9, \
+:page-children: major-changes-in-solr-10, \
+    major-changes-in-solr-9, \
     major-changes-in-solr-8, \
     major-changes-in-solr-7, \
     major-changes-in-solr-6
@@ -33,6 +34,13 @@ That file includes all the changes and updates
 that may affect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[].
+
+// DO NOT ADD MINOR VERSION INFO HERE; see child pages
+
+Zookeeper Credentials support now follows a new paradigm.
+Old classes, such as `VMParamsAllAndReadonlyDigestZkACLProvider` and `VMParamsSingleSetCredentialsDigestZkCredentialsProvider`, are deprecated but still supported until at least `10.0`.
+Users are encouraged to upgrade to the non-deprecated classes before the next major version release.
+Please refer to xref:deployment-guide:zookeeper-access-control.adoc#solr-to-zookeeper-acls-workflow[] for more information.
 
 == Upgrading to 9.0 from 8.x Releases
 

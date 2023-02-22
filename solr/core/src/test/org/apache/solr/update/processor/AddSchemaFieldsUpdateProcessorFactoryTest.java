@@ -43,7 +43,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -342,7 +342,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   }
 
   @After
-  private void deleteCoreAndTempSolrHomeDirectory() {
+  public void deleteCoreAndTempSolrHomeDirectory() {
     deleteCore();
   }
 }

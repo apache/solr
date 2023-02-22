@@ -101,10 +101,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             int v = -Long.compare(o1.count, o2.count) * sortMul;
             return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
           };
-      Collections.sort(sortedBuckets, comparator);
+      sortedBuckets.sort(comparator);
     } else if ("index".equals(sort.sortVariable)) {
       comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
-      Collections.sort(sortedBuckets, comparator);
+      sortedBuckets.sort(comparator);
     } else {
       final String key = sort.sortVariable;
 
@@ -136,7 +136,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         }
       }
       Collections.sort(lst);
-      Collections.sort(nulls, (o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
+      nulls.sort((o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
 
       ArrayList<FacetBucket> out = new ArrayList<>(buckets.size());
       for (SortVal sv : lst) {
@@ -271,8 +271,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     for (FacetBucket bucket : bucketList) {
       if (numBucketsToCheck-- <= 0) break;
       // if this bucket is missing,
-      assert thisMissing == false
-          || thisMissing == true && mcontext.getShardFlag(bucket.bucketNumber) == false;
+      assert !thisMissing || !mcontext.getShardFlag(bucket.bucketNumber);
       boolean saw = !thisMissing && mcontext.getShardFlag(bucket.bucketNumber);
       if (!saw && !returnedAllBuckets) {
         // we didn't see the bucket for this shard, and it's possible that the shard has it

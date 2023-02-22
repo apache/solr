@@ -44,6 +44,7 @@ import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
+import org.apache.solr.util.SolrResponseUtil;
 
 /** Concrete implementation for merging {@link TopGroups} instances from shard responses. */
 public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
@@ -122,8 +123,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         continue; // continue if there was an error and we're tolerant.
       }
       NamedList<NamedList<?>> secondPhaseResult =
-          (NamedList<NamedList<?>>) srsp.getSolrResponse().getResponse().get("secondPhase");
-      if (secondPhaseResult == null) continue;
+          (NamedList<NamedList<?>>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "secondPhase", false);
+      if (secondPhaseResult == null) {
+        continue;
+      }
       Map<String, ?> result =
           serializer.transformToNative(
               secondPhaseResult, groupSort, withinGroupSort, srsp.getShard());

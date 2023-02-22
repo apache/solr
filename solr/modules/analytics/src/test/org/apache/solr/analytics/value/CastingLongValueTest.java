@@ -16,8 +16,8 @@
  */
 package org.apache.solr.analytics.value;
 
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream.ExpressionType;
 import org.apache.solr.analytics.value.FillableTestValue.TestLongValue;
@@ -30,72 +30,62 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   public void doubleCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof DoubleValue);
-    DoubleValue casted = (DoubleValue) val;
-
     val.setValue(20L).setExists(true);
-    assertEquals(20.0, casted.getDouble(), .00001);
-    assertTrue(casted.exists());
+    assertEquals(20.0, ((DoubleValue) val).getDouble(), .00001);
+    assertTrue(((DoubleValue) val).exists());
 
     val.setValue(1234L).setExists(true);
-    assertEquals(1234.0, casted.getDouble(), .00001);
-    assertTrue(casted.exists());
+    assertEquals(1234.0, ((DoubleValue) val).getDouble(), .00001);
+    assertTrue(((DoubleValue) val).exists());
   }
 
   @Test
   public void stringCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof StringValue);
-    StringValue casted = (StringValue) val;
-
     val.setValue(20L).setExists(true);
-    assertEquals("20", casted.getString());
-    assertTrue(casted.exists());
+    assertEquals("20", ((StringValue) val).getString());
+    assertTrue(((StringValue) val).exists());
 
     val.setValue(1234L).setExists(true);
-    assertEquals("1234", casted.getString());
-    assertTrue(casted.exists());
+    assertEquals("1234", ((StringValue) val).getString());
+    assertTrue(((StringValue) val).exists());
   }
 
   @Test
   public void objectCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof AnalyticsValue);
-    AnalyticsValue casted = (AnalyticsValue) val;
-
     val.setValue(20L).setExists(true);
-    assertEquals(20L, casted.getObject());
-    assertTrue(casted.exists());
+    assertEquals(20L, ((AnalyticsValue) val).getObject());
+    assertTrue(((AnalyticsValue) val).exists());
 
     val.setValue(1234L).setExists(true);
-    assertEquals(1234L, casted.getObject());
-    assertTrue(casted.exists());
+    assertEquals(1234L, ((AnalyticsValue) val).getObject());
+    assertTrue(((AnalyticsValue) val).exists());
   }
 
   @Test
   public void longStreamCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof LongValueStream);
-    LongValueStream casted = (LongValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamLongs(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((LongValueStream) val)
+        .streamLongs(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(20L).setExists(true);
-    Iterator<Long> values = Arrays.asList(20L).iterator();
-    casted.streamLongs(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next().longValue(), value);
-        });
+    Iterator<Long> values = List.of(20L).iterator();
+    ((LongValueStream) val)
+        .streamLongs(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next().longValue(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -103,24 +93,23 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   public void doubleStreamCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof DoubleValueStream);
-    DoubleValueStream casted = (DoubleValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((DoubleValueStream) val)
+        .streamDoubles(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(20L).setExists(true);
-    Iterator<Double> values = Arrays.asList(20.0).iterator();
-    casted.streamDoubles(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value, .00001);
-        });
+    Iterator<Double> values = List.of(20.0).iterator();
+    ((DoubleValueStream) val)
+        .streamDoubles(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value, .00001);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -128,24 +117,23 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   public void stringStreamCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(20L).setExists(true);
-    Iterator<String> values = Arrays.asList("20").iterator();
-    casted.streamStrings(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    Iterator<String> values = List.of("20").iterator();
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -153,24 +141,23 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   public void objectStreamCastingTest() {
     TestLongValue val = new TestLongValue();
 
-    assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream) val;
-
     // No values
     val.setExists(false);
-    casted.streamObjects(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValue(20L).setExists(true);
-    Iterator<Object> values = Arrays.<Object>asList(20L).iterator();
-    casted.streamObjects(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    Iterator<Object> values = List.<Object>of(20L).iterator();
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 

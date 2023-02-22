@@ -111,8 +111,8 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("some-schema-file-name", v1Params.get(SCHEMA));
     assertEquals("some-config-file-name", v1Params.get(CONFIG));
     assertEquals("someConfigSetName", v1Params.get(CONFIGSET));
-    assertEquals(true, v1Params.getPrimitiveBool(LOAD_ON_STARTUP));
-    assertEquals(true, v1Params.getPrimitiveBool(TRANSIENT));
+    assertTrue(v1Params.getPrimitiveBool(LOAD_ON_STARTUP));
+    assertTrue(v1Params.getPrimitiveBool(TRANSIENT));
     assertEquals("someShardName", v1Params.get(SHARD));
     assertEquals("someCollectionName", v1Params.get(COLLECTION));
     assertEquals("TLOG", v1Params.get(REPLICA_TYPE));
@@ -121,7 +121,7 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("role1,role2", v1Params.get(ROLES));
     assertEquals("val1", v1Params.get("property.prop1"));
     assertEquals("val2", v1Params.get("property.prop2"));
-    assertEquals(true, v1Params.getPrimitiveBool(NEW_COLLECTION));
+    assertTrue(v1Params.getPrimitiveBool(NEW_COLLECTION));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 
@@ -133,7 +133,7 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
     assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
     assertEquals("someCore", v1Params.get(CORE));
-    assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
+    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
   }
 
   @Test
@@ -143,6 +143,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
     assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
     assertNull("Expected 'core' parameter to be null", v1Params.get(CORE));
-    assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
+    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
   }
 }

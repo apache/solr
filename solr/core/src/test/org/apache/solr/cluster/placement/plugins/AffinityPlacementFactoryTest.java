@@ -18,7 +18,13 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,8 +35,14 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.DeleteReplicasRequest;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -87,7 +99,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     String collectionName = "basicCollection";
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(2);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
     nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
 
@@ -135,7 +147,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(8);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < nodeBuilders.size(); i++) {
       if (i == LOW_SPACE_NODE_INDEX) {
         nodeBuilders
@@ -220,7 +232,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coresOnNode = 10;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
       nodeBuilder.setCoreCount(coresOnNode).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
@@ -295,7 +307,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // One of the NRT has fewer cores than the other
     // The TLOG/PULL replica on AZ1 doesn't have much free disk space
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       final String az;
       final int numcores;
@@ -399,7 +411,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Count cores == node index, and AZ's are: AZ0, AZ0, AZ0, AZ1, AZ1, AZ1, AZ2, AZ2, AZ2.
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       nodeBuilders
           .get(i)
@@ -459,7 +471,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coreCount = 0;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
       nodeBuilder.setCoreCount(coreCount++).setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1));
@@ -793,7 +805,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+      assertNotEquals("should not put any replicas on " + smallNode, rp.getNode(), smallNode);
     }
   }
 
@@ -931,7 +943,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void testNodeType() throws Exception {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
       nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_" + (i % 3));
     }
@@ -1054,7 +1066,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
   public void testScalability() throws Exception {
     // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+
     // minutes
@@ -1076,8 +1087,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
     runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    if (TEST_NIGHTLY) {
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+    }
 
     log.info("==== numReplicas ====");
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);
@@ -1094,7 +1107,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(numNodes);
-    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < numNodes; i++) {
       nodeBuilders.get(i).setCoreCount(0).setFreeDiskGB((double) numNodes);
     }

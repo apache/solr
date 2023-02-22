@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.RankField;
 import org.apache.solr.search.RankQParserPlugin.RankQParser;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 public class RankQParserPluginTest extends SolrTestCaseJ4 {
@@ -312,7 +313,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     QParser parser = getRankQParser(localParams, req());
     Query q = parser.parse();
     assertNotNull(q);
-    assertThat(q.toString(), CoreMatchers.equalTo(expectedToString));
+    MatcherAssert.assertThat(q.toString(), CoreMatchers.equalTo(expectedToString));
   }
 
   private String expectedFeatureQueryToString(String fieldName, String function, float boost) {
@@ -345,7 +346,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   private void assertSyntaxError(
       String assertionMsg, String expectedExceptionMsg, ThrowingRunnable runnable) {
     SyntaxError se = expectThrows(SyntaxError.class, assertionMsg, runnable);
-    assertThat(se.getMessage(), CoreMatchers.containsString(expectedExceptionMsg));
+    MatcherAssert.assertThat(se.getMessage(), CoreMatchers.containsString(expectedExceptionMsg));
   }
 
   private RankQParser getRankQParser(SolrParams localParams, SolrQueryRequest req)

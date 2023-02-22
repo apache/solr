@@ -262,6 +262,18 @@ One simple way to populate `id_prefix` is a copyField in the schema:
   </fieldtype>
 ----
 
+`split.setPreferredLeaders`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the SPLITSHARD command sets the preferred leader property on one replica of each sub-shard,
+automatically when splitting a shard. The preferred leaders are distributed evenly among the nodes.
+It is also possible to change the default value of this parameter to `true` by setting the system property
+`solr.autoPreferredLeaders` to `true`.
+
 Current implementation details and limitations:
 
 * Prefix size is calculated using number of documents with the prefix.
@@ -273,6 +285,12 @@ Current implementation details and limitations:
 The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number.
 For example, "shard1" will become "shard1_0" and "shard1_1".
 If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Miscellaneous Configuration
+
+When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
+This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
+It is already disabled by default for xref:solr-on-hdfs.adoc[HDFS].
 
 [[createshard]]
 == CREATESHARD: Create a Shard

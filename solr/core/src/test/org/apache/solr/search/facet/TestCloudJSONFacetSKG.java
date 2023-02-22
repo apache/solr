@@ -31,13 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -47,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
@@ -76,7 +74,6 @@ import org.slf4j.LoggerFactory;
  * @see TestCloudJSONFacetJoinDomain
  * @see TestCloudJSONFacetSKGEquiv
  */
-@Slow
 public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -111,11 +108,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
@@ -207,7 +204,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -243,12 +240,12 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
+    for (SolrClient client : CLIENTS) {
       client.close();
     }
     CLIENTS.clear();
@@ -357,7 +354,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   private static String buildORQuery(String... clauses) {
-    assert 0 < clauses.length;
+    assertTrue(0 < clauses.length);
     return "(" + String.join(" OR ", clauses) + ")";
   }
 
@@ -584,7 +581,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * @param options can set any of options used in a term facet other than field or (sub) facets
      */
     public TermFacet(final String field, final Map<String, Object> options) {
-      assert null != field;
+      assertNotNull(field);
       this.field = field;
 
       jsonData.putAll(options);
@@ -626,8 +623,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static String toJSONFacetParamValue(final Map<String, TermFacet> facets) {
-      assert null != facets;
-      assert !facets.isEmpty();
+      assertNotNull(facets);
+      assertFalse(facets.isEmpty());
 
       // see class javadocs for why we always want processEmpty
       final Map<String, Object> jsonData = map("processEmpty", true);
@@ -703,8 +700,9 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // never used a prefix on a numeric field
         return null;
       }
-      assert (facetField.contains("multi_s") || facetField.contains("solo_s"))
-          : "possible facet fields have changed, breaking test";
+      assertTrue(
+          "possible facet fields have changed, breaking test",
+          facetField.contains("multi_s") || facetField.contains("solo_s"));
 
       switch (r.nextInt(5)) {
         case 0:
@@ -902,7 +900,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

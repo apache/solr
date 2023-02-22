@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -63,7 +62,6 @@ import org.junit.Test;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
-@Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   private static long docsSeed; // see indexDocs()
 
@@ -278,7 +276,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Verify that the index directory contains only 1 index commit (which is not the same as the
       // snapshotted commit).
       Collection<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
-      assertTrue(commits.size() == 1);
+      assertEquals(1, commits.size());
       assertFalse(
           commits.stream()
               .filter(x -> x.getGeneration() == metaData.getGenerationNumber())
@@ -312,20 +310,21 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst().isPresent());
   }
 
+  @SuppressWarnings("unchecked")
   private Collection<SnapshotMetaData> listSnapshots(SolrClient adminClient, String coreName)
       throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
     NamedList<?> resp = adminClient.request(req);
-    assertTrue(resp.get("snapshots") instanceof NamedList);
-    NamedList<?> apiResult = (NamedList<?>) resp.get("snapshots");
+    assertTrue(resp.get("snapshots") instanceof Map);
+    Map<String, Object> apiResult = (Map<String, Object>) resp.get("snapshots");
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
-    for (int i = 0; i < apiResult.size(); i++) {
-      String commitName = apiResult.getName(i);
-      String indexDirPath = (String) ((NamedList<?>) apiResult.get(commitName)).get("indexDirPath");
-      long genNumber =
-          Long.parseLong((String) ((NamedList<?>) apiResult.get(commitName)).get("generation"));
+    for (Map.Entry<String, Object> entry : apiResult.entrySet()) {
+      final String commitName = entry.getKey();
+      final String indexDirPath =
+          (String) ((Map<String, Object>) entry.getValue()).get("indexDirPath");
+      final long genNumber = (Long) ((Map<String, Object>) entry.getValue()).get("generation");
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

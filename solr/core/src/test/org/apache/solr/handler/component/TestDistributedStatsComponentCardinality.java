@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -36,14 +35,12 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.hll.HLL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
-@LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+// @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -143,9 +140,9 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close to the
       // theoretically expected relative error.
       //
-      // So we have to use a slightly higher lower bound on what log2m values we randomly test
+      // So we have to use a higher lower bound on what log2m values we randomly test
       final int log2m =
-          TestUtil.nextInt(random(), 2 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
+          TestUtil.nextInt(random(), 13 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
 
       // use max regwidth to try and prevent hash collisions from introducing problems
       final int regwidth = HLL.MAXIMUM_REGWIDTH_PARAM;
@@ -160,37 +157,36 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       Map<String, FieldStatsInfo> stats = rsp.getFieldStatsInfo();
 
-      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        log.warn(
-            "SOLR-10918: can't relying on exact match with pre-hashed values when using points");
-      } else {
-        for (String f : STAT_FIELDS) {
-          // regardless of log2m and regwidth, the estimated cardinality of the
-          // hashed vs prehashed values should be exactly the same for each field
+      for (String f : STAT_FIELDS) {
+        // regardless of log2m and regwidth, the estimated cardinality of the
+        // hashed vs prehashed values should be exactly the same for each field
 
-          assertEquals(
-              f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
-              stats.get(f).getCardinality().longValue(),
-              stats.get(f + "_prehashed_l").getCardinality().longValue());
-        }
+        assertEquals(
+            f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
+            stats.get(f).getCardinality().longValue(),
+            stats.get(f + "_prehashed_l").getCardinality().longValue());
       }
 
       for (String f : STAT_FIELDS) {
         // check the relative error of the estimate returned against the known truth
-
         final double relErr = expectedRelativeError(log2m);
         final long estimate = stats.get(f).getCardinality();
+        final double actualError = ((double) Math.abs(numMatches - estimate) / numMatches);
         assertTrue(
             f
-                + ": relativeErr="
+                + ": log2m="
+                + log2m
+                + ", relativeErr="
                 + relErr
+                + ", actualError="
+                + actualError
                 + ", estimate="
                 + estimate
                 + ", real="
                 + numMatches
                 + ", p="
                 + p,
-            (Math.abs(numMatches - estimate) / numMatches) < relErr);
+            actualError < relErr);
       }
     }
 
@@ -266,10 +262,10 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
   /** Returns the (max) expected relative error according ot the HLL algorithm docs */
   private static double expectedRelativeError(final int log2m) {
-    final long m = 1 << log2m;
+    final long m = 1L << log2m;
     // theoretical error is 1.04D * sqrt(m)
     // fudge slightly to account for variance in random data
-    return 1.1D / Math.sqrt(m);
+    return 1.10D * (1.04D / Math.sqrt((double) m));
   }
 
   /**

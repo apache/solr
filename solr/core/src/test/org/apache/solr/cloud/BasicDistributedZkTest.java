@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.junit.Test;
 
@@ -25,7 +24,6 @@ import org.junit.Test;
  * expected. Implementation moved to AbstractBasicDistributedZkTestBase as it is used by many HDFS
  * contrib tests.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZkTest extends AbstractBasicDistributedZkTestBase {
 

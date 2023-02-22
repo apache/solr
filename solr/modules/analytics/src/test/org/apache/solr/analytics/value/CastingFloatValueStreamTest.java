@@ -28,24 +28,23 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   public void doubleStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
 
-    assertTrue(val instanceof DoubleValueStream);
-    DoubleValueStream casted = (DoubleValueStream) val;
-
     // No values
     val.setValues();
-    casted.streamDoubles(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((DoubleValueStream) val)
+        .streamDoubles(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
     Iterator<Double> values = Arrays.asList(20.0, -3.32, 42.5).iterator();
-    casted.streamDoubles(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value, .00001);
-        });
+    ((DoubleValueStream) val)
+        .streamDoubles(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value, .00001);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -53,24 +52,23 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   public void stringStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
 
-    assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream) val;
-
     // No values
     val.setValues();
-    casted.streamStrings(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
     Iterator<String> values = Arrays.asList("20.0", "-3.32", "42.5").iterator();
-    casted.streamStrings(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    ((StringValueStream) val)
+        .streamStrings(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 
@@ -78,24 +76,23 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   public void objectStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
 
-    assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream) val;
-
     // No values
     val.setValues();
-    casted.streamObjects(
-        value -> {
-          assertTrue("There should be no values to stream", false);
-        });
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              fail("There should be no values to stream");
+            });
 
     // Multiple Values
     val.setValues(20F, -3.32F, 42.5F);
     Iterator<Object> values = Arrays.<Object>asList(20F, -3.32F, 42.5F).iterator();
-    casted.streamObjects(
-        value -> {
-          assertTrue(values.hasNext());
-          assertEquals(values.next(), value);
-        });
+    ((AnalyticsValueStream) val)
+        .streamObjects(
+            value -> {
+              assertTrue(values.hasNext());
+              assertEquals(values.next(), value);
+            });
     assertFalse(values.hasNext());
   }
 

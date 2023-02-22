@@ -37,7 +37,8 @@ __pycache__
 *~
 
 # Ignore lucene included build
-lucene/
+/lucene
 
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
+.gradletasknamecache

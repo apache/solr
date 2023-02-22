@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,7 +37,6 @@ import org.junit.Test;
  * @since solr 4.1
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
-@Slow
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
   private String requestHandlerName;

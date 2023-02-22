@@ -315,7 +315,7 @@ public class ManagedModelStore extends ManagedResource
   }
 
   private static LinkedHashMap<String, Object> toFeatureMap(Feature feature, Normalizer norm) {
-    final LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(2, 1.0f);
+    final LinkedHashMap<String, Object> map = new LinkedHashMap<>(2, 1.0f);
     map.put(NAME_KEY, feature.getName());
     map.put(NORM_KEY, toNormalizerMap(norm));
     return map;

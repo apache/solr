@@ -21,14 +21,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCase;
 
-public class ModuleUtilsTest extends TestCase {
+public class ModuleUtilsTest extends SolrTestCase {
   private Path mockRootDir;
   private final Set<String> expectedMods = Set.of("mod1", "mod2");
 
   @Override
   public void setUp() throws Exception {
+    super.setUp();
     mockRootDir = setupMockInstallDir(expectedMods);
   }
 
@@ -64,12 +65,13 @@ public class ModuleUtilsTest extends TestCase {
   public void testResolveModules() {
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
-        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1"));
-    assertEquals(Collections.emptySet(), ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(""));
+        Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1")));
+    assertEquals(
+        Collections.emptySet(), Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("")));
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
-        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null));
+        Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null)));
     System.clearProperty("solr.modules");
   }
 

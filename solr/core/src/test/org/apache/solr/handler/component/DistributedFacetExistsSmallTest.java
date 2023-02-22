@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 
 public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCase {
@@ -220,13 +221,13 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
   private void assertResponse(QueryResponse rsp) {
     final FacetField facetField = rsp.getFacetField(FLD);
 
-    assertThat(facetField.getValueCount(), is(6));
+    MatcherAssert.assertThat(facetField.getValueCount(), is(6));
     final List<FacetField.Count> counts = facetField.getValues();
     for (FacetField.Count count : counts) {
-      assertThat("Count for: " + count.getName(), count.getCount(), is(1L));
+      MatcherAssert.assertThat("Count for: " + count.getName(), count.getCount(), is(1L));
     }
-    assertThat(counts.get(0).getName(), is("AAA"));
-    assertThat(counts.get(1).getName(), is("B"));
-    assertThat(counts.get(2).getName(), is("BB"));
+    MatcherAssert.assertThat(counts.get(0).getName(), is("AAA"));
+    MatcherAssert.assertThat(counts.get(1).getName(), is("B"));
+    MatcherAssert.assertThat(counts.get(2).getName(), is("BB"));
   }
 }

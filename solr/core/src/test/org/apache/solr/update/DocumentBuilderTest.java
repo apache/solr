@@ -40,7 +40,6 @@ import org.apache.solr.schema.FieldType;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -315,6 +314,34 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMultipleCopyFieldMaxChars() {
+    SolrCore core = h.getCore();
+
+    String testValue = "this is more than 10 characters";
+    String truncatedValue = "this is mo";
+
+    // maxChars with a string value
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("title", testValue);
+
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+    assertEquals(testValue, out.get("no_max_chars"));
+    assertEquals(testValue, out.get("large_max_chars"));
+
+    // maxChars with a ByteArrayUtf8CharSequence
+    doc = new SolrInputDocument();
+    doc.addField("title", new ByteArrayUtf8CharSequence(testValue));
+
+    out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+    assertEquals(testValue, out.get("no_max_chars"));
+    assertEquals(testValue, out.get("large_max_chars"));
+  }
+
+  @Test
   public void denseVector_shouldReturnOneIndexableFieldAndOneStoredFieldPerVectorElement() {
     SolrCore core = h.getCore();
 
@@ -385,7 +412,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector3", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect destination field type should raise exception",
             SolrException.class,
             () -> {
@@ -406,7 +433,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector4", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect destination dimension should raise exception",
             SolrException.class,
             () -> {

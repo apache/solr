@@ -31,6 +31,10 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update
+ * client for communication.
+ */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @BeforeClass
@@ -40,12 +44,13 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient = new Http2SolrClient.Builder().build();
-    solrClient.setParser(new XMLResponseParser());
-    solrClient.setRequestWriter(new RequestWriter());
+    Http2SolrClient solrClient =
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build();
     ConcurrentUpdateHttp2SolrClient concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
             .withQueueSize(2)
@@ -82,8 +87,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     }
 
     if (0 != failures.size()) {
-      assertEquals(
-          failures.size() + " Unexpected Exception, starting with...", null, failures.get(0));
+      assertNull(failures.size() + " Unexpected Exception, starting with...", failures.get(0));
     }
   }
 

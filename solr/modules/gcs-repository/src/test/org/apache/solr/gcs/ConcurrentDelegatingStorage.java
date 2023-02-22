@@ -29,6 +29,8 @@ import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
 import com.google.cloud.storage.HmacKey;
+import com.google.cloud.storage.Notification;
+import com.google.cloud.storage.NotificationInfo;
 import com.google.cloud.storage.PostPolicyV4;
 import com.google.cloud.storage.ServiceAccount;
 import com.google.cloud.storage.Storage;
@@ -36,6 +38,7 @@ import com.google.cloud.storage.StorageBatch;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -53,6 +56,7 @@ import java.util.concurrent.TimeUnit;
  * synchronization across all instance methods. This allows google-cloud-nio's in-memory fake to be
  * used from multiple threads simultaneously as our tests require.
  */
+@SuppressWarnings("try")
 public class ConcurrentDelegatingStorage implements Storage {
 
   private final Storage delegate;
@@ -216,6 +220,16 @@ public class ConcurrentDelegatingStorage implements Storage {
   @Override
   public synchronized ReadChannel reader(BlobId blob, BlobSourceOption... options) {
     return new ConcurrentReadChannel(this, delegate.reader(blob, options));
+  }
+
+  @Override
+  public void downloadTo(BlobId blob, Path path, BlobSourceOption... options) {
+    delegate.downloadTo(blob, path, options);
+  }
+
+  @Override
+  public void downloadTo(BlobId blob, OutputStream outputStream, BlobSourceOption... options) {
+    delegate.downloadTo(blob, outputStream, options);
   }
 
   @Override
@@ -454,6 +468,26 @@ public class ConcurrentDelegatingStorage implements Storage {
   @Override
   public synchronized ServiceAccount getServiceAccount(String projectId) {
     return delegate.getServiceAccount(projectId);
+  }
+
+  @Override
+  public Notification createNotification(String bucket, NotificationInfo notificationInfo) {
+    return delegate.createNotification(bucket, notificationInfo);
+  }
+
+  @Override
+  public Notification getNotification(String bucket, String notificationId) {
+    return delegate.getNotification(bucket, notificationId);
+  }
+
+  @Override
+  public List<Notification> listNotifications(String bucket) {
+    return delegate.listNotifications(bucket);
+  }
+
+  @Override
+  public boolean deleteNotification(String bucket, String notificationId) {
+    return delegate.deleteNotification(bucket, notificationId);
   }
 
   @Override

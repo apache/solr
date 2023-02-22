@@ -20,6 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,9 +29,12 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -48,7 +52,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -58,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.http.HttpEntity;
@@ -66,8 +70,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -76,19 +78,13 @@ import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkOperation;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 public class Utils {
 
@@ -180,7 +176,7 @@ public class Utils {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
       BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
       jbc.marshal(o, baos);
-      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
+      return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
   }
 
@@ -311,6 +307,11 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8, int offset, int length) {
+    return fromJSON(utf8, offset, length, STANDARDOBJBUILDER);
+  }
+
+  public static Object fromJSON(
+      byte[] utf8, int offset, int length, Function<JSONParser, ObjectBuilder> fun) {
     if (utf8 == null || utf8.length == 0 || length == 0) {
       return Collections.emptyMap();
     }
@@ -325,7 +326,7 @@ public class Utils {
             | JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT
             | JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return STANDARDOBJBUILDER.apply(parser).getValStrict();
+      return fun.apply(parser).getValStrict();
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
@@ -630,7 +631,7 @@ public class Utils {
                   public MapWriter.EntryWriter put(CharSequence k, Object v) {
                     if (result[0] != null) return this;
                     if (idx < 0) {
-                      if (k.equals(key)) result[0] = v;
+                      if (key.contentEquals(k)) result[0] = v;
                     } else {
                       if (++count == idx) result[0] = new MapWriterEntry<>(k, v);
                     }
@@ -675,45 +676,6 @@ public class Utils {
   public static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {}
-  }
-
-  @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path)
-      throws InterruptedException, IOException, KeeperException {
-    VersionedData data = null;
-    try {
-      data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
-    }
-    if (data == null || data.getData() == null || data.getData().length == 0)
-      return Collections.emptyMap();
-    return (Map<String, Object>) Utils.fromJSON(data.getData());
-  }
-
-  /**
-   * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
-   *
-   * @param zkClient the zookeeper client
-   * @param path the path to the znode being read
-   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see
-   *     {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
-   * @return a Map if the node exists and contains valid JSON or an empty map if znode does not
-   *     exist or has a null data
-   */
-  @SuppressWarnings({"unchecked"})
-  public static Map<String, Object> getJson(
-      SolrZkClient zkClient, String path, boolean retryOnConnLoss)
-      throws KeeperException, InterruptedException {
-    try {
-      byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
-      if (bytes != null && bytes.length > 0) {
-        return (Map<String, Object>) Utils.fromJSON(bytes);
-      }
-    } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyMap();
-    }
-    return Collections.emptyMap();
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern.compile("(\\S*?)\\[([-]?\\d+)\\]");
@@ -827,16 +789,6 @@ public class Utils {
     return unit.convert(timeSource.getTimeNs() - NANOSECONDS.convert(start, unit), NANOSECONDS);
   }
 
-  public static String getMDCNode() {
-    String s = MDC.get(ZkStateReader.NODE_NAME_PROP);
-    if (s == null) return null;
-    if (s.startsWith("n:")) {
-      return s.substring(2);
-    } else {
-      return null;
-    }
-  }
-
   public static <T> T handleExp(Logger logger, T def, Callable<T> c) {
     try {
       return c.call();
@@ -916,10 +868,50 @@ public class Utils {
     return result;
   }
 
-  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) throws IOException {
+  /**
+   * Convert the input object to a map, writing only those fields annotated with a {@link
+   * JsonProperty} annotation
+   *
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
+   * @param o the object to be converted
+   */
+  public static void reflectWrite(MapWriter.EntryWriter ew, Object o) {
+    reflectWrite(
+        ew,
+        o,
+        field -> field.getAnnotation(JsonProperty.class) != null,
+        null, // No catch-all/unknown-field support for objects annotated with our mimic
+        // annotations.
+        field -> {
+          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
+          return prop.value().isEmpty() ? field.getName() : prop.value();
+        });
+  }
+
+  public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
+
+  /**
+   * Convert an input object to a map, writing only those fields that match a provided {@link
+   * Predicate}
+   *
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
+   * @param o the object to be converted
+   * @param fieldFilterer a predicate used to identify which fields of the object to write
+   * @param catchAllAnnotation the annotation used to identify a method that can return a Map of
+   *     "catch-all" properties. Method is expected to be named "unknownProperties"
+   * @param fieldNamer a callback that allows changing field names
+   */
+  public static void reflectWrite(
+      MapWriter.EntryWriter ew,
+      Object o,
+      Predicate<Field> fieldFilterer,
+      Class<? extends Annotation> catchAllAnnotation,
+      Function<Field, String> fieldNamer) {
     List<FieldWriter> fieldWriters = null;
     try {
-      fieldWriters = getReflectData(o.getClass());
+      fieldWriters = getReflectData(o.getClass(), fieldFilterer, catchAllAnnotation, fieldNamer);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
@@ -933,56 +925,154 @@ public class Utils {
     }
   }
 
-  private static List<FieldWriter> getReflectData(Class<?> c) throws IllegalAccessException {
+  private static List<FieldWriter> getReflectData(
+      Class<?> c,
+      Predicate<Field> fieldFilterer,
+      Class<? extends Annotation> catchAllAnnotation,
+      Function<Field, String> fieldNamer)
+      throws IllegalAccessException {
     boolean sameClassLoader = c.getClassLoader() == Utils.class.getClassLoader();
     // we should not cache the class references of objects loaded from packages because they will
     // not get garbage collected
     // TODO fix that later
-    List<FieldWriter> reflectData = sameClassLoader ? storedReflectData.get(c) : null;
-    if (reflectData == null) {
-      ArrayList<FieldWriter> l = new ArrayList<>();
-      MethodHandles.Lookup lookup = MethodHandles.publicLookup();
-      for (Field field : lookup.accessClass(c).getFields()) {
-        JsonProperty prop = field.getAnnotation(JsonProperty.class);
-        if (prop == null) continue;
-        int modifiers = field.getModifiers();
-        if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
-          String fname = prop.value().isEmpty() ? field.getName() : prop.value();
-          try {
-            if (field.getType() == int.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), int.class);
-              l.add((ew, inst) -> ew.put(fname, (int) mh.invoke(inst)));
-            } else if (field.getType() == long.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), long.class);
-              l.add((ew, inst) -> ew.put(fname, (long) mh.invoke(inst)));
-            } else if (field.getType() == boolean.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), boolean.class);
-              l.add((ew, inst) -> ew.put(fname, (boolean) mh.invoke(inst)));
-            } else if (field.getType() == double.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), double.class);
-              l.add((ew, inst) -> ew.put(fname, (double) mh.invoke(inst)));
-            } else if (field.getType() == float.class) {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), float.class);
-              l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
-            } else {
-              MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
-              l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
-            }
-          } catch (NoSuchFieldException e) {
-            // this is unlikely
-            throw new RuntimeException(e);
-          }
-        }
-      }
-
+    List<FieldWriter> cachedReflectData = sameClassLoader ? storedReflectData.get(c) : null;
+    MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+    if (cachedReflectData == null) {
+      cachedReflectData = addTraditionalFieldWriters(c, lookup, fieldFilterer, fieldNamer);
       if (sameClassLoader) {
-        storedReflectData.put(c, reflectData = Collections.unmodifiableList(new ArrayList<>(l)));
+        storedReflectData.put(c, Collections.unmodifiableList(new ArrayList<>(cachedReflectData)));
       }
     }
-    return reflectData;
+
+    // Add in any 'catch-all' methods used to support additional or unknown properties.
+    // (These can't be cached, as they would change request-by-request.)
+    final List<FieldWriter> mutableFieldWriters = new ArrayList<>(cachedReflectData);
+    addCatchAllFieldWriter(mutableFieldWriters, catchAllAnnotation, lookup, c);
+    return Collections.unmodifiableList(mutableFieldWriters);
   }
 
-  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
+  private static List<FieldWriter> addTraditionalFieldWriters(
+      Class<?> c,
+      MethodHandles.Lookup lookup,
+      Predicate<Field> fieldFilterer,
+      Function<Field, String> fieldNamer)
+      throws IllegalAccessException {
+
+    final ArrayList<FieldWriter> fieldWriters = new ArrayList<>();
+    for (Field field : lookup.accessClass(c).getFields()) {
+      if (!fieldFilterer.test(field)) continue;
+      int modifiers = field.getModifiers();
+      if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
+        final String fname = fieldNamer.apply(field);
+        try {
+          if (field.getType() == int.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), int.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (int) mh.invoke(inst)));
+          } else if (field.getType() == long.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), long.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (long) mh.invoke(inst)));
+          } else if (field.getType() == boolean.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), boolean.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (boolean) mh.invoke(inst)));
+          } else if (field.getType() == double.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), double.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (double) mh.invoke(inst)));
+          } else if (field.getType() == float.class) {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), float.class);
+            fieldWriters.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
+          } else {
+            MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
+            fieldWriters.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
+          }
+        } catch (NoSuchFieldException e) {
+          // this is unlikely
+          throw new RuntimeException(e);
+        }
+      }
+    }
+    return fieldWriters;
+  }
+
+  // Look for a method titled $CATCH_ALL_PROPERTIES_METHOD_NAME annotated with the expected flag
+  // annotation that returns a Map of "unknown properties" that should also be written out.
+  private static void addCatchAllFieldWriter(
+      List<FieldWriter> fieldWriters,
+      Class<? extends Annotation> catchAllAnnotation,
+      MethodHandles.Lookup lookup,
+      Class<?> c)
+      throws IllegalAccessException {
+
+    if (catchAllAnnotation != null) {
+      try {
+        final Method catchAllMethod =
+            lookup.accessClass(c).getDeclaredMethod(CATCH_ALL_PROPERTIES_METHOD_NAME);
+        if (catchAllMethod.getAnnotation(catchAllAnnotation) != null) {
+          final MethodType catchAllMethodType = MethodType.methodType(Map.class);
+          final MethodHandle catchAllHandle =
+              lookup.findVirtual(c, CATCH_ALL_PROPERTIES_METHOD_NAME, catchAllMethodType);
+          fieldWriters.add(
+              (ew, inst) -> {
+                final Map<String, Object> unknownProperties =
+                    (Map<String, Object>) catchAllHandle.invoke(inst);
+                for (Map.Entry<String, Object> entry : unknownProperties.entrySet()) {
+                  ew.put(entry.getKey(), entry.getValue());
+                }
+              });
+        }
+      } catch (NoSuchMethodException e) {
+        // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
+      }
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
+    try {
+      m.writeMap(
+          new MapWriter.EntryWriter() {
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              return writeEntry(k, v);
+            }
+
+            private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
+              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+              if (v instanceof Iterable) {
+                List lst = new ArrayList();
+                for (Object vv : (Iterable) v) {
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  lst.add(vv);
+                }
+                v = lst;
+              }
+              if (v instanceof Map) {
+                Map map = new LinkedHashMap();
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
+                  Object vv = entry.getValue();
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  map.put(entry.getKey(), vv);
+                }
+                v = map;
+              }
+              map.put(k == null ? null : k.toString(), v);
+              // note: It'd be nice to assert that there is no previous value at 'k' but it's
+              // possible the passed map is already populated and the intention is to overwrite.
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return map;
+  }
+
+  private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
+      new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;

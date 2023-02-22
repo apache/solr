@@ -126,18 +126,23 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       tuples = testTuples.iterator();
     }
 
+    @Override
     public StreamComparator getStreamSort() {
       return null;
     }
 
+    @Override
     public void close() {}
 
+    @Override
     public void open() {}
 
+    @Override
     public List<TupleStream> children() {
       return null;
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if (tuples.hasNext()) {
@@ -150,8 +155,10 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       }
     }
 
+    @Override
     public void setStreamContext(StreamContext streamContext) {}
 
+    @Override
     public Explanation toExplanation(StreamFactory factory) {
       return null;
     }

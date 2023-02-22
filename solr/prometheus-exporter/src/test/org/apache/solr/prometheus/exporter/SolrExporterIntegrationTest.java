@@ -18,12 +18,9 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Before;
 import org.junit.Test;
 
-// @org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13786")
-@Slow
 public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Override

@@ -329,6 +329,8 @@ public class S3StorageClient {
       String contentType = objectMetadata.contentType();
 
       return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
+    } catch (NoSuchKeyException nske) {
+      return false;
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }

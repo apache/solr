@@ -18,7 +18,7 @@ package org.apache.solr.util;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.regex.*;
+import java.util.regex.Pattern;
 
 /** Accepts any file whose name matches the pattern */
 public final class RegexFileFilter implements FileFilter {

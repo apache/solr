@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Stats component calculates simple statistics on numeric field values
@@ -86,25 +86,19 @@ public class StatsComponent extends SearchComponent {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
     Map<String, StatsValues> allStatsValues = rb._statsInfo.getAggregateStatsValues();
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList<NamedList<NamedList<?>>> stats = null;
-      try {
-        stats =
-            (NamedList<NamedList<NamedList<?>>>) srsp.getSolrResponse().getResponse().get("stats");
-      } catch (Exception e) {
-        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-          continue; // looks like a shard did not return anything
-        }
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to read stats info for shard: " + srsp.getShard(),
-            e);
+      @SuppressWarnings("unchecked")
+      NamedList<NamedList<NamedList<?>>> stats =
+          (NamedList<NamedList<NamedList<?>>>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "stats", false);
+      ;
+      if (stats == null) {
+        continue;
       }
 
       NamedList<NamedList<?>> stats_fields = unwrapStats(stats);

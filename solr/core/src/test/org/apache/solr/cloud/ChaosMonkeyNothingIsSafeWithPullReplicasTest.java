@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -55,6 +55,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   private final int numPullReplicas;
   private final int numRealtimeOrTlogReplicas;
 
+  @Override
   protected int getPullReplicaCount() {
     return numPullReplicas;
   }
@@ -87,10 +88,12 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
   private final boolean runFullThrottle;
 
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
@@ -354,7 +357,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
-    Set<String> addFails = new HashSet<String>();
+    Set<String> addFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       addFails.addAll(thread.getAddFails());
       //      addFails.addAll(thread.getAddFailsMinRf());
@@ -363,7 +366,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   }
 
   private Set<String> getDeleteFails(List<StoppableIndexingThread> threads) {
-    Set<String> deleteFails = new HashSet<String>();
+    Set<String> deleteFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       deleteFails.addAll(thread.getDeleteFails());
       //      deleteFails.addAll(thread.getDeleteFailsMinRf());

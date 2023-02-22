@@ -101,6 +101,7 @@ class SingleValueSortDoc extends SortDoc {
     }
   }
 
+  @Override
   public String toString() {
     return ord + ":" + docBase + ":" + docId + ":val=" + value1.toString();
   }

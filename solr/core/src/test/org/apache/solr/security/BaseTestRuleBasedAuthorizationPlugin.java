@@ -16,7 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -28,6 +31,7 @@ import java.io.StringReader;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +55,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Before;
 import org.junit.Test;
@@ -539,7 +544,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionAllowsActionsWhenUserHasCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "dev", "admin");
@@ -560,7 +565,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",
@@ -586,7 +591,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionAllowsActionsWhenAssociatedRoleIsWildcard() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "*");
@@ -607,7 +612,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",
@@ -633,7 +638,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testAllPermissionDeniesActionsWhenUserIsNotCorrectRole() {
     SolrRequestHandler handler = new UpdateRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     setUserRole("dev", "dev");
     setUserRole("admin", "admin");
     addPermission("all", "admin");
@@ -654,7 +659,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    MatcherAssert.assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(
         Map.of(
             "resource",
@@ -714,6 +719,12 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       assertEquals(
           Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"),
           plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
+      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(null));
+      assertEquals(
+          Set.of("collection-admin-read"),
+          plugin.getPermissionNamesForRoles(Collections.singletonList(null)));
+      assertEquals(
+          Set.of("freeforall"), plugin.getPermissionNamesForRoles(Collections.singletonList("*")));
     } catch (IOException e) {
       ; // swallow error, otherwise you have to add a _lot_ of exceptions to methods.
     }

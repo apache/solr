@@ -17,12 +17,12 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,16 +32,16 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    solrClientTestRule.startSolr();
+
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
-    assertU(optimize());
+    solrClientTestRule.clearIndex();
   }
 
   @Test
@@ -64,11 +64,11 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     QueryRequest request = new QueryRequest(query);
     List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 
-    Assert.assertNotNull(terms);
-    Assert.assertEquals(terms.size(), 1);
+    assertNotNull(terms);
+    assertEquals(terms.size(), 1);
 
     Term term = terms.get(0);
-    Assert.assertEquals(term.getTerm(), "samsung");
-    Assert.assertEquals(term.getFrequency(), 1);
+    assertEquals(term.getTerm(), "samsung");
+    assertEquals(term.getFrequency(), 1);
   }
 }

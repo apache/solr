@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * a ZkStateReader detects the correct set.
  */
 @ThreadLeakLingering(linger = 10)
-@Slow
+@LuceneTestCase.Nightly
 public class TestStressLiveNodes extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -59,7 +59,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static final int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
@@ -72,7 +72,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -82,7 +82,10 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static SolrZkClient newSolrZkClient() {
     assertNotNull(ZK_SERVER_ADDR);
     // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient(ZK_SERVER_ADDR, 15000);
+    return new SolrZkClient.Builder()
+        .withUrl(ZK_SERVER_ADDR)
+        .withTimeout(15000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
@@ -244,6 +247,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       this.client = newSolrZkClient();
     }
     /** returns the number of nodes actually added w/o error */
+    @Override
     public Integer call() {
       running = true;
       // NOTE: test includes 'running'

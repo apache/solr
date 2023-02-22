@@ -4,7 +4,7 @@
 - Analysis [5]
 - Applications [5]
 - Software [5]
-- Business [4]
+- Businesses [4]
 - Predictive [4]
 - Process [4]
 - Hidden Predictive Information [2]

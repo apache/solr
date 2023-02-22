@@ -16,7 +16,10 @@
  */
 package org.apache.solr.cluster.placement;
 
-import static org.apache.solr.cluster.placement.Builders.*;
+import static org.apache.solr.cluster.placement.Builders.ClusterBuilder;
+import static org.apache.solr.cluster.placement.Builders.CollectionBuilder;
+import static org.apache.solr.cluster.placement.Builders.newClusterBuilder;
+import static org.apache.solr.cluster.placement.Builders.newCollectionBuilder;
 
 import java.util.List;
 import java.util.Optional;

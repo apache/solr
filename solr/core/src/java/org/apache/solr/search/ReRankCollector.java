@@ -80,6 +80,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
+  @Override
   public int getTotalHits() {
     return mainCollector.getTotalHits();
   }
@@ -94,6 +95,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     return this.mainCollector.scoreMode();
   }
 
+  @Override
   public TopDocs topDocs(int start, int howMany) {
 
     try {
@@ -180,6 +182,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
     }
 
+    @Override
     public int compare(ScoreDoc doc1, ScoreDoc doc2) {
       float score1 = doc1.score;
       float score2 = doc2.score;

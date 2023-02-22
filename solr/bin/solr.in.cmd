@@ -25,6 +25,16 @@ REM to use, but you can set a specific path for Solr to use without
 REM affecting other Java applications on your server/workstation.
 REM set SOLR_JAVA_HOME=
 
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to stop gracefully. If the graceful stop fails, the script will
+REM forcibly stop Solr.
+REM set SOLR_STOP_WAIT=180
+
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to start. If the start fails you should inspect the Solr log files
+REM for more information.
+REM set SOLR_START_WAIT=30
+
 REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
@@ -175,11 +185,23 @@ REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
 
 REM Settings for ZK ACL
-REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
-REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector ^
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM optionally, you can use using a a Java properties file 'zkDigestCredentialsFile'
+REM ...
+REM   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
+REM ...
+
+REM Use a custom injector to inject ZK credentials into DigestZkACLProvider
+REM -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.ZkCredentialsInjector
+REM  ...
+REM  -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName
+REM ...
 
 REM Jetty GZIP module enabled by default
 REM set SOLR_GZIP_ENABLED=true
@@ -225,3 +247,7 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
 
 REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 REM set SOLR_MODULES=extraction,ltr
+
+REM Configure the default replica placement plugin to use if one is not configured in cluster properties
+REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
