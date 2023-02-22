@@ -17,8 +17,6 @@
 package org.apache.solr.ltr.response.transform;
 
 import java.io.IOException;
-import java.util.Set;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -101,11 +99,9 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
 
     private void implTransform(SolrDocument doc, int docid) {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
-      if (rerankingQueries.length > 1) {
-        Set<Integer> pickedInterleavingDocIds = rerankingQueries[1].getPickedInterleavingDocIds();
-        if (pickedInterleavingDocIds != null && pickedInterleavingDocIds.contains(docid)) {
-          rerankingQuery = rerankingQueries[1];
-        }
+      if (rerankingQueries.length > 1
+          && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
+        rerankingQuery = rerankingQueries[1];
       }
       doc.addField(name, rerankingQuery.getScoringModelName());
     }

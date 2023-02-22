@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ScoreMode;
@@ -363,11 +362,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
       LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
       for (int i = 1; i < rerankingQueries.length; i++) {
-        Set<Integer> pickedInterleavingDocIds =
-            ((LTRInterleavingScoringQuery) rerankingQueriesFromContext[i])
-                .getPickedInterleavingDocIds();
-        if (pickedInterleavingDocIds != null &&
-            pickedInterleavingDocIds.contains(docid)) {
+        if (((LTRInterleavingScoringQuery) rerankingQueriesFromContext[i])
+            .getPickedInterleavingDocIds()
+            .contains(docid)) {
           rerankingQuery = rerankingQueries[i];
           rerankingModelWeight = modelWeights[i];
         }

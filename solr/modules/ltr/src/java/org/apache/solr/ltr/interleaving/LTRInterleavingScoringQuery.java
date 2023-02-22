@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.interleaving;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.ltr.LTRScoringQuery;
@@ -25,7 +26,7 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 public class LTRInterleavingScoringQuery extends LTRScoringQuery {
 
   // Model was picked for this Docs
-  private Set<Integer> pickedInterleavingDocIds;
+  private Set<Integer> pickedInterleavingDocIds = Collections.emptySet();
 
   public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel) {
     super(ltrScoringModel);
