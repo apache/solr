@@ -17,11 +17,10 @@
 
 package org.apache.solr.bench.lifecycle;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -54,8 +53,8 @@ public class SolrStartup {
 
   @Benchmark
   public void startSolr(PerThreadState threadState) throws Exception {
-    threadState.solrRunner.start(
-        false); // 'false' tells Jetty to not go out of its way to reuse any previous ports
+    // 'false' tells Jetty to not go out of its way to reuse any previous ports
+    threadState.solrRunner.start(false);
   }
 
   @State(Scope.Thread)
@@ -63,21 +62,22 @@ public class SolrStartup {
 
     private static final int NUM_CORES = 10;
 
-    public File tmpSolrHome;
+    public Path tmpSolrHome;
     public JettySolrRunner solrRunner;
 
     @Setup(Level.Trial)
     public void bootstrapJettyServer() throws Exception {
-      tmpSolrHome =
-          Files.createTempDirectory("solrstartup-perthreadstate-jsr").toFile().getAbsoluteFile();
-      final File configsetsDir = new File(tmpSolrHome, "configsets");
-      Files.createDirectory(configsetsDir.toPath());
-      FileUtils.copyDirectory(
-          new File("src/resources/configs/minimal/conf"),
-          new File(configsetsDir, "/defaultConfigSet/conf"));
-      FileUtils.copyFile(new File("src/resources/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+      tmpSolrHome = Files.createTempDirectory("solrstartup-perthreadstate-jsr").toAbsolutePath();
 
-      solrRunner = new JettySolrRunner(tmpSolrHome.getAbsolutePath(), buildJettyConfig("/solr"));
+      final Path configsetsDir = Path.of(tmpSolrHome.toString(), "configsets");
+      final Path defaultConfigsetDir = Path.of(configsetsDir.toString(), "defaultConfigSet");
+      Files.createDirectories(defaultConfigsetDir);
+      PathUtils.copyDirectory(
+          Path.of("src/resources/configs/minimal/conf"),
+          Path.of(defaultConfigsetDir.toString(), "/conf"));
+      PathUtils.copyFileToDirectory(Path.of("src/resources/solr.xml"), tmpSolrHome);
+
+      solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig("/solr"));
       solrRunner.start(false);
       try (SolrClient client = solrRunner.newClient()) {
         for (int i = 0; i < NUM_CORES; i++) {
@@ -111,7 +111,7 @@ public class SolrStartup {
         solrRunner.stop();
       }
 
-      IOUtils.rm(Path.of(tmpSolrHome.toURI()));
+      IOUtils.rm(tmpSolrHome);
     }
 
     private static JettyConfig buildJettyConfig(String context) {
