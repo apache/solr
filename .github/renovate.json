@@ -20,7 +20,7 @@
     {
       "description": "Group these together in same PR",
       "matchPackagePatterns": ["org.apache.httpcomponents"],
-      "groupName": "httpcomponents"
+      "groupName": "org.apache.httpcomponents"
     },
     {
       "description": "Test-dependencies are checked less often than the shipped deps",
