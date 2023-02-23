@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -569,6 +570,57 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(2, out.getNumFound());
     assertEquals(0, out.get(0).size());
     assertEquals(0, out.get(1).size());
+  }
+
+  @Test
+  public void testMatchAllPaging() throws Exception {
+    SolrClient client = getSolrClient();
+
+    // Empty the database...
+    client.deleteByQuery("*:*"); // delete everything!
+    if (random().nextBoolean()) {
+      client.commit();
+    }
+    // Add eleven docs
+    List<SolrInputDocument> docs = new ArrayList<>();
+    for (int i = 0; i < 11; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id" + i);
+      doc.addField("name", "doc" + i);
+      doc.addField("price", "" + i);
+      docs.add(doc);
+      if (rarely()) {
+        client.commit();
+      }
+    }
+    client.add(docs);
+    if (random().nextBoolean()) {
+      client.commit();
+    } else {
+      client.optimize();
+    }
+    final List<String> sorts = Arrays.asList("_docid_", "id", "name", "price", null);
+    Collections.shuffle(sorts, random());
+    final List<Integer> starts = Arrays.asList(0, 1, 2, 10, 11, 12);
+    Collections.shuffle(starts, random());
+    for (String sort : sorts.subList(0, 1 + random().nextInt(sorts.size() - 1))) {
+      final SolrQuery query = new SolrQuery("*:*");
+      if (sort != null) {
+        query.setSort(sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+      }
+      for (int start : starts.subList(0, 1 + random().nextInt(starts.size() - 1))) {
+        if (start > 0 || random().nextBoolean()) {
+          query.setStart(start);
+        }
+        SolrDocumentList results = client.query(query).getResults();
+        assertEquals(11, results.getNumFound());
+        assertEquals("page from " + start, Math.max(Math.min(10, 11 - start), 0), results.size());
+        for (SolrDocument doc : results) {
+          assertTrue(doc.containsKey("id") && doc.containsKey("name") && doc.containsKey("price"));
+          break;
+        }
+      }
+    }
   }
 
   private String randomTestString(int maxLength) {
