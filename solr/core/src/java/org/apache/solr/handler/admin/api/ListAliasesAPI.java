@@ -38,12 +38,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * V2 APIs for listing aliases
- *
- * <p>This API <code>GET /api/aliases</code> is analogous to the v1 <code>GET /api/cluster/aliases
- * </code> API.
- */
+/** V2 APIs for managing and inspecting collection aliases */
 @Path("/aliases")
 public class ListAliasesAPI extends AdminAPIBase {
 
@@ -55,16 +50,22 @@ public class ListAliasesAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  /**
+   * V2 API for listing all aliases known by Solr.
+   *
+   * <p>This API <code>GET /api/aliases</code> is analogous to the v1 <code>GET /api/cluster/aliases
+   * </code> API.
+   */
   @GET
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_READ_PERM)
   @Operation(
       summary = "List the existing collection aliases.",
       tags = {"aliases"})
-  public GetAliasesResponse getAliases() throws Exception {
+  public ListAliasesResponse getAliases() throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
-    final GetAliasesResponse response = instantiateJerseyResponse(GetAliasesResponse.class);
+    final ListAliasesResponse response = instantiateJerseyResponse(ListAliasesResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
 
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
@@ -98,14 +99,13 @@ public class ListAliasesAPI extends AdminAPIBase {
   @Operation(
       summary = "Get details for a specific collection alias.",
       tags = {"aliases"})
-  public GetAliaseByNameResponse getAliasByName(
+  public GetAliasByNameResponse getAliasByName(
       @Parameter(description = "Alias name.", required = true) @PathParam("aliasName")
           String aliasName)
       throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
-    final GetAliaseByNameResponse response =
-        instantiateJerseyResponse(GetAliaseByNameResponse.class);
+    final GetAliasByNameResponse response = instantiateJerseyResponse(GetAliasByNameResponse.class);
     response.alias = aliasName;
 
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
@@ -121,8 +121,8 @@ public class ListAliasesAPI extends AdminAPIBase {
     return response;
   }
 
-  /** Response for {@link ListAliasesAPI}. */
-  public static class GetAliasesResponse extends SolrJerseyResponse {
+  /** Response for {@link ListAliasesAPI#getAliases()}. */
+  public static class ListAliasesResponse extends SolrJerseyResponse {
     @JsonProperty("aliases")
     public Map<String, String> aliases;
 
@@ -130,8 +130,8 @@ public class ListAliasesAPI extends AdminAPIBase {
     public Map<String, Map<String, String>> properties;
   }
 
-  /** Response for {@link ListAliasesAPI}. */
-  public static class GetAliaseByNameResponse extends SolrJerseyResponse {
+  /** Response for {@link ListAliasesAPI#getAliasByName(String)}. */
+  public static class GetAliasByNameResponse extends SolrJerseyResponse {
     @JsonProperty("name")
     public String alias;
 

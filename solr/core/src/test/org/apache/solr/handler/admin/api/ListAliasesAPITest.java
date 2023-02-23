@@ -27,7 +27,7 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReader.AliasesManager;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.ListAliasesAPI.GetAliasesResponse;
+import org.apache.solr.handler.admin.api.ListAliasesAPI.ListAliasesResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -82,7 +82,7 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
             .cloneWithCollectionAliasProperties("alias1", "pkey1", "pvalA");
     when(zkStateReader.getAliases()).thenReturn(aliases);
 
-    GetAliasesResponse response = getAliasesAPI.getAliases();
+    ListAliasesResponse response = getAliasesAPI.getAliases();
     assertEquals(aliases.getCollectionAliasMap(), response.aliases);
     assertEquals(
         aliases.getCollectionAliasProperties("alias0"),
