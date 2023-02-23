@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabled": true,
   "dependencyDashboard": false,
   "enabledManagers": ["gradle"],
   "includePaths": ["versions.props", "build.gradle"],
