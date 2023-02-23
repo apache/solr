@@ -223,6 +223,8 @@ Bug Fixes
 
 * SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
 
+* SOLR-16669: Http2SolrClient now defaults checkPeerName to True, as the documentation specified (Houston Putman)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
