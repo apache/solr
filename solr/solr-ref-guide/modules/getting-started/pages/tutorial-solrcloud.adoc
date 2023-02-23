@@ -200,14 +200,12 @@ bin/solr start -cloud -s solr.home/solr -p <port num> -z <zk hosts string>
 ----
 
 Notice that the above requires you to create a Solr home directory.
-You either need to copy `solr.xml` to the `solr_home` directory, or keep in centrally in ZooKeeper `/solr.xml`.
 
 Example (with directory structure) that adds a node to an example started with "bin/solr -e cloud":
 
 [source,bash]
 ----
 mkdir -p example/cloud/node3/solr
-cp server/solr/solr.xml example/cloud/node3/solr
 bin/solr start -cloud -s example/cloud/node3/solr -p 8987 -z localhost:9983
 ----
 

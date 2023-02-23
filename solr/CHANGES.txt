@@ -296,8 +296,12 @@ Other Changes
 
 * SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
 
+* SOLR-15959: Deprecate loading of solr.xml from Zookeeper (janhoy)
+
 * SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
   (Joshua Ouma, David Smiley)
+
+* SOLR-16660: Deprecate analytics component (janhoy)
 
 * SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
 
