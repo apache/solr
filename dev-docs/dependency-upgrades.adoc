@@ -39,7 +39,7 @@ In order to upgrade a dependency, you need to run through a number of steps:
 == Renovate bot Pull Requests
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
 files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
-changes resulting from `--write-locks` and `updateLicenses`.
+changes resulting from `gradle --write-locks` and `updateLicenses`.
 
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
 For many dependencies, a changelog is included in the PR text, which may help guide the upgrade decision.
@@ -54,11 +54,6 @@ churn from frequently-updated dependencies by delaying merge until a few weeks b
 choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`
 
 === Configuring renovate.json
-While the bot runs on a Github account external to the project, the bot behavior can be tailored by editing
-`.github/renovate.json` in this project. See https://docs.renovatebot.com[Renovatebot docs] for available options.
-
-To disable, change the line `"enabled": true` to `false`. To change the schedule for when new PRs are created,
-change the https://docs.renovatebot.com/configuration-options/#schedule[`"schedule"` setting].
-
-=== Maintaining the bot itself
-If you want to help maintain the bot itself, check out https://github.com/solrbot/renovate-github-action.
+While the bot runs on a https://github.com/solrbot/renovate-github-action[GitHub repo external to the project],
+the bot behavior can be tailored by editing `.github/renovate.json` in this project.
+See https://docs.renovatebot.com[Renovatebot docs] for available options.
