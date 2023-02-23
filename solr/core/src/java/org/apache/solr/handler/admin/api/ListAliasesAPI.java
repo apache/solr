@@ -116,7 +116,7 @@ public class ListAliasesAPI extends AdminAPIBase {
 
     Aliases aliases = zkStateReader.getAliases();
     if (aliases != null) {
-      response.collections = aliases.getCollectionAliasListMap().getOrDefault(aliases, List.of());
+      response.collections = aliases.getCollectionAliasListMap().getOrDefault(aliasName, List.of());
       response.properties = aliases.getCollectionAliasProperties(aliasName);
     }
 

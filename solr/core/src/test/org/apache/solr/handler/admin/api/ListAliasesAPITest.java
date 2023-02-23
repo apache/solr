@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
@@ -27,6 +28,7 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReader.AliasesManager;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.ListAliasesAPI.GetAliasByNameResponse;
 import org.apache.solr.handler.admin.api.ListAliasesAPI.ListAliasesResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -90,6 +92,25 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
     assertEquals(
         aliases.getCollectionAliasProperties("alias1"),
         response.properties.getOrDefault("alias1", Map.of()));
+    assertNull(response.error);
+  }
+
+  @Test
+  public void testGetAliasByName() throws Exception {
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    Aliases aliases =
+        Aliases.EMPTY
+            .cloneWithCollectionAlias("alias0", "colA")
+            .cloneWithCollectionAlias("alias1", "colB")
+            .cloneWithCollectionAliasProperties("alias1", "pkey1", "pvalA");
+    when(zkStateReader.getAliases()).thenReturn(aliases);
+
+    GetAliasByNameResponse response = getAliasesAPI.getAliasByName("alias1");
+    assertEquals("alias1", response.alias);
+    assertEquals(List.of("colB"), response.collections);
+    assertEquals(Map.of("pkey1", "pvalA"), response.properties);
+
     assertNull(response.error);
   }
 }
