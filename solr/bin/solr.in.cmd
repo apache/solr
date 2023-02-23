@@ -25,6 +25,16 @@ REM to use, but you can set a specific path for Solr to use without
 REM affecting other Java applications on your server/workstation.
 REM set SOLR_JAVA_HOME=
 
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to stop gracefully. If the graceful stop fails, the script will
+REM forcibly stop Solr.
+REM set SOLR_STOP_WAIT=180
+
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to start. If the start fails you should inspect the Solr log files
+REM for more information.
+REM set SOLR_START_WAIT=30
+
 REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
