@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -115,6 +116,7 @@ public class ListAliasesAPI extends AdminAPIBase {
 
     Aliases aliases = zkStateReader.getAliases();
     if (aliases != null) {
+      response.collections = aliases.getCollectionAliasListMap().getOrDefault(aliases, List.of());
       response.properties = aliases.getCollectionAliasProperties(aliasName);
     }
 
@@ -134,6 +136,9 @@ public class ListAliasesAPI extends AdminAPIBase {
   public static class GetAliasByNameResponse extends SolrJerseyResponse {
     @JsonProperty("name")
     public String alias;
+
+    @JsonProperty("collections")
+    public List<String> collections;
 
     @JsonProperty("properties")
     public Map<String, String> properties;
