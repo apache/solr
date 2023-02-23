@@ -1268,12 +1268,10 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
-    String endpointIdentificationAlgorithm = "HTTPS";
     // Check if TLS is enabled before trying to disable verify client host name
-    if (null != System.getProperty("solr.jetty.https.port")) {
-      endpointIdentificationAlgorithm = System.getProperty("solr.jetty.ssl.verifyClientHostName");
+    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
+      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
     }
-    sslContextFactory.setEndpointIdentificationAlgorithm(endpointIdentificationAlgorithm);
 
     return sslContextFactory;
   }
