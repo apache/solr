@@ -620,7 +620,7 @@ curl -X GET http://localhost:8983/api/aliases
 
 [source,bash]
 ----
-url -X GET http://localhost:8983/api/aliases/testalias2
+curl -X GET http://localhost:8983/api/aliases/testalias2
 ----
 
 *Output*
@@ -633,6 +633,10 @@ url -X GET http://localhost:8983/api/aliases/testalias2
     "QTime": 1
   },
   "name": "testalias2",
+  "collections": [
+    "collection2",
+    "collection1"
+  ],
   "properties": {
     "someKey": "someValue"
   }
