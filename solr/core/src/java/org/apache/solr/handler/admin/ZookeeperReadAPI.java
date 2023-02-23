@@ -24,6 +24,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +62,7 @@ import org.apache.zookeeper.data.Stat;
  *
  * @lucene.experimental
  */
-@Path("/cluster/zk/")
+@Path("/cluster/zookeeper/")
 public class ZookeeperReadAPI extends AdminAPIBase {
   @Inject
   public ZookeeperReadAPI(
@@ -74,7 +75,9 @@ public class ZookeeperReadAPI extends AdminAPIBase {
   @Path("/data{zkPath:.+}")
   @Produces({RawResponseWriter.CONTENT_TYPE, MediaType.APPLICATION_JSON})
   @PermissionName(ZK_READ_PERM)
-  public ZooKeeperFileResponse readNode(@PathParam("zkPath") String zkPath) {
+  public ZooKeeperFileResponse readNode(
+      @Parameter(description = "The path of the node to read from ZooKeeper") @PathParam("zkPath")
+          String zkPath) {
     zkPath = sanitizeZkPath(zkPath);
     return readNodeAndAddToResponse(zkPath);
   }
@@ -100,11 +103,19 @@ public class ZookeeperReadAPI extends AdminAPIBase {
 
   /** List the children of a certain zookeeper znode */
   @GET
-  @Path("/ls{zkPath:.*}")
+  @Path("/children{zkPath:.*}")
   @Produces({"application/json", "application/javabin"})
   @PermissionName(ZK_READ_PERM)
   public ListZkChildrenResponse listNodes(
-      @PathParam("zkPath") String zkPath, @QueryParam("c") Boolean c) throws Exception {
+      @Parameter(description = "The path of the ZooKeeper node to stat and list children of")
+          @PathParam("zkPath")
+          String zkPath,
+      @Parameter(
+              description =
+                  "Controls whether stat information for child nodes is included in the response. 'true' by default.")
+          @QueryParam("children")
+          Boolean includeChildren)
+      throws Exception {
     final ListZkChildrenResponse listResponse =
         instantiateJerseyResponse(ListZkChildrenResponse.class);
 
@@ -112,7 +123,7 @@ public class ZookeeperReadAPI extends AdminAPIBase {
     try {
       Stat stat = coreContainer.getZkController().getZkClient().exists(zkPath, null, true);
       listResponse.stat = new AnnotatedStat(stat);
-      if (c != null && !c.booleanValue()) {
+      if (includeChildren != null && !includeChildren.booleanValue()) {
         return listResponse;
       }
       List<String> l =
@@ -189,8 +200,7 @@ public class ZookeeperReadAPI extends AdminAPIBase {
     // TODO Currently the list response (when child information is fetched) consists primarily of an
     //  object with only one key - the name of the root node - with separate objects under there for
     //  each child.  The additional nesting under the root node doesn't serve much purpose afaict
-    // and
-    //  should be removed.
+    //  and should be removed.
     private Map<String, Map<String, AnnotatedStat>> unknownFields = new HashMap<>();
 
     @JsonAnyGetter
@@ -251,6 +261,8 @@ public class ZookeeperReadAPI extends AdminAPIBase {
       this.pzxid = stat.getPzxid();
       this.dataLength = stat.getDataLength();
     }
+
+    public AnnotatedStat() {}
   }
 
   private static final String EMPTY = "empty";
