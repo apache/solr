@@ -604,11 +604,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     final List<Integer> starts = Arrays.asList(0, 1, 2, 10, 11, 12);
     Collections.shuffle(starts, random());
     for (String sort : sorts.subList(0, 1 + random().nextInt(sorts.size() - 1))) {
-      final SolrQuery query = new SolrQuery("*:*");
-      if (sort != null) {
-        query.setSort(sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
-      }
       for (int start : starts.subList(0, 1 + random().nextInt(starts.size() - 1))) {
+        final SolrQuery query = new SolrQuery("*:*");
+        if (sort != null) {
+          query.setSort(sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+        }
         if (start > 0 || random().nextBoolean()) {
           query.setStart(start);
         }
