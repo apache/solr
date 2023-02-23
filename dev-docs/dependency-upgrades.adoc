@@ -26,7 +26,7 @@ Read the `help/dependencies.txt` file for an in-depth explanation of how gradle 
 https://github.com/palantir/gradle-consistent-versions[Gradle consistent-versions] plugin.
 
 == Manual dependency upgrades
-In order to upgrade a dependency, you need to run through a number of steps
+In order to upgrade a dependency, you need to run through a number of steps:
 
 1. Identify the available versions from e.g. https://search.maven.org[Maven Central]
 2. Update the version in `versions.props` file
@@ -38,7 +38,7 @@ In order to upgrade a dependency, you need to run through a number of steps
 
 == Renovate bot Pull Requests
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
-files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and include
+files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
 changes resulting from `--write-locks` and `updateLicenses`.
 
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
@@ -51,7 +51,7 @@ that will get its own separate Pull Request, so you can choose.
 If an upgrade is decided, simply merge (and backport) the PR. To skip an upgrade, close the PR. If a PR is left open,
 it will be re-used and auto updated whenever a newer patch- or minor version gets available. Thus, one can reduce
 churn from frequently-updated dependencies by delaying merge until a few weeks before a new release. One can also
-choose to change to a less frequent schedule or disable the bot or by editing `renovate.json`
+choose to change to a less frequent schedule or disable the bot, by editing `renovate.json`
 
 === Configuring renovate.json
 While the bot runs on a Github account external to the project, the bot behavior can be tailored by editing
