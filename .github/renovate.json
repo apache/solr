@@ -4,7 +4,7 @@
   "enabled": true,
   "dependencyDashboard": false,
   "enabledManagers": ["gradle"],
-  "includePaths": ["versions.props", "build.gradle"],
+  "includePaths": ["versions.*", "build.gradle"],
   "postUpgradeTasks": {
     "commands": ["./gradlew updateLicenses"],
     "fileFilters": ["solr/licenses/*.sha1"],
