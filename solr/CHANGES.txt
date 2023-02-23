@@ -309,6 +309,8 @@ Other Changes
 
 * SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
 
+* SOLR-16672: Simplify SolrCLI Healthcheck command's logic for obtaining a target collection (Eric Pugh)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
