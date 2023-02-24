@@ -41,7 +41,6 @@
   "schedule": [
     "* 8-20 * * *"
   ],
-  "labels": ["dependencies"],
   "prConcurrentLimit": 5,
   "prHourlyLimit": 5,
   "stabilityDays": 5

@@ -18,11 +18,6 @@ github:
     merge:  false
     rebase: false
 
-  # Projects may assign external (non-committer) collaborators the triage role for their repository.
-  # The triage role allows people to assign, edit, and close issues and pull requests, without giving them write access to the code.
-  collaborators:
-    - solrbot
-
 notifications:
   commits:      commits@solr.apache.org
   issues:       issues@solr.apache.org
