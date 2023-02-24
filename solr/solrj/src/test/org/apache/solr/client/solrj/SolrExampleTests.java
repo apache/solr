@@ -592,7 +592,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       if (rarely()) {
         client.add(docs);
         client.commit();
-        // docs.clear();
+        docs.clear();
       }
     }
     client.add(docs);
