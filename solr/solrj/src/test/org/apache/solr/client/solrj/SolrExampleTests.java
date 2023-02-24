@@ -583,7 +583,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     }
     // Add eleven docs
     List<SolrInputDocument> docs = new ArrayList<>();
-    for (int i = 0; i < 11; i++) {
+    final int docsTotal = CommonParams.ROWS_DEFAULT + 1;
+    for (int i = 0; i < docsTotal; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "id" + i);
       doc.addField("name", "doc" + i);
@@ -603,7 +604,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     }
     final List<String> sorts = Arrays.asList("_docid_", "id", "name", "price", null);
     Collections.shuffle(sorts, random());
-    final List<Integer> starts = Arrays.asList(0, 1, 2, 10, 11, 12);
+    final List<Integer> starts =
+        Arrays.asList(0, 1, 2, CommonParams.ROWS_DEFAULT, docsTotal, CommonParams.ROWS_DEFAULT + 2);
     Collections.shuffle(starts, random());
     for (String sort : sorts.subList(0, 1 + random().nextInt(sorts.size() - 1))) {
       for (int start : starts.subList(0, 1 + random().nextInt(starts.size() - 1))) {
@@ -614,9 +616,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         if (start > 0 || random().nextBoolean()) {
           query.setStart(start);
         }
+        if (usually()) {
+          query.setRows(CommonParams.ROWS_DEFAULT);
+        }
         SolrDocumentList results = client.query(query).getResults();
-        assertEquals(11, results.getNumFound());
-        assertEquals("page from " + start, Math.max(Math.min(CommonParams.ROWS_DEFAULT, 11 - start), 0), results.size());
+        assertEquals(docsTotal, results.getNumFound());
+        assertEquals(
+            "page from " + start,
+            Math.max(Math.min(CommonParams.ROWS_DEFAULT, docsTotal - start), 0),
+            results.size());
         for (SolrDocument doc : results) {
           assertTrue(doc.containsKey("id") && doc.containsKey("name") && doc.containsKey("price"));
           break;
