@@ -616,7 +616,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         }
         SolrDocumentList results = client.query(query).getResults();
         assertEquals(11, results.getNumFound());
-        assertEquals("page from " + start, Math.max(Math.min(10, 11 - start), 0), results.size());
+        assertEquals("page from " + start, Math.max(Math.min(CommonParams.ROWS_DEFAULT, 11 - start), 0), results.size());
         for (SolrDocument doc : results) {
           assertTrue(doc.containsKey("id") && doc.containsKey("name") && doc.containsKey("price"));
           break;
