@@ -590,7 +590,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       doc.addField("price", "" + i);
       docs.add(doc);
       if (rarely()) {
+        client.add(docs);
         client.commit();
+        // docs.clear();
       }
     }
     client.add(docs);
