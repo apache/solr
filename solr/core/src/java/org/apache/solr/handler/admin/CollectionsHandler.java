@@ -672,8 +672,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETE_OP(
         DELETE,
         (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, NAME);
-          return copy(req.getParams(), map, FOLLOW_ALIASES);
+          final RequiredSolrParams requiredParams = req.getParams().required();
+          final DeleteCollectionAPI deleteCollectionAPI =
+              new DeleteCollectionAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse deleteCollResponse =
+              deleteCollectionAPI.deleteCollection(
+                  requiredParams.get(NAME),
+                  req.getParams().getBool(FOLLOW_ALIASES),
+                  req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteCollResponse);
+
+          return null;
         }),
     // XXX should this command support followAliases?
     RELOAD_OP(
@@ -2229,6 +2238,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
         ReplaceNodeAPI.class,
         DeleteNodeAPI.class);
@@ -2245,7 +2255,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
