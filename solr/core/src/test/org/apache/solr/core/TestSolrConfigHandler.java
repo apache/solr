@@ -54,6 +54,7 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -143,7 +144,7 @@ public class TestSolrConfigHandler extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    client = null;
+    SolrJettyTestRule.client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }

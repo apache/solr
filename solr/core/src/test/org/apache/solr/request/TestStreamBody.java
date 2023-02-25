@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
@@ -68,9 +69,9 @@ public class TestStreamBody extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    if (client != null) {
-      client.close();
-      client = null;
+    if (SolrJettyTestRule.getClient() != null) {
+      SolrJettyTestRule.getClient().close();
+      SolrJettyTestRule.client = null;
     }
     if (restTestHarness != null) {
       restTestHarness.close();
@@ -97,7 +98,7 @@ public class TestStreamBody extends RestTestBase {
           }
         };
     try {
-      queryRequest.process(getSolrClient());
+      queryRequest.process(solrClientTestRule.getSolrClient());
       fail();
     } catch (SolrException se) {
       assertTrue(
@@ -121,10 +122,11 @@ public class TestStreamBody extends RestTestBase {
           }
         };
     SolrException se =
-        expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
+        expectThrows(
+            SolrException.class, () -> queryRequest.process(solrClientTestRule.getSolrClient()));
     assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
     enableStreamBody();
-    queryRequest.process(getSolrClient());
+    queryRequest.process(solrClientTestRule.getSolrClient());
   }
 
   // Enables stream.body through Config API

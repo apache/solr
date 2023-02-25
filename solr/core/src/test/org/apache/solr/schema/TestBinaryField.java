@@ -78,7 +78,7 @@ public class TestBinaryField extends SolrJettyTestBase {
   }
 
   public void testSimple() throws Exception {
-    try (SolrClient client = getSolrClient()) {
+    try (SolrClient client = solrClientTestRule.getSolrClient(TestBinaryField.this)) {
       byte[] buf = new byte[10];
       for (int i = 0; i < 10; i++) {
         buf[i] = (byte) i;

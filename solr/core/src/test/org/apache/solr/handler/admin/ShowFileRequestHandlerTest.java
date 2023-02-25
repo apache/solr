@@ -51,7 +51,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void test404ViaHttp() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     QueryRequest request = new QueryRequest(params("file", "does-not-exist-404.txt"));
     request.setPath("/admin/file");
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
@@ -75,7 +75,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     // assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends
     // SolrTestCaseJ4
     QueryRequest request = new QueryRequest();
@@ -86,7 +86,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     // assertQ(req("qt", "/admin/file"));
     // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest(params("file", "managed-schema.xml"));
@@ -145,7 +145,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testIllegalContentType() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     QueryRequest request =
         new QueryRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setPath("/admin/file");
@@ -154,7 +154,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testAbsoluteFilename() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     final QueryRequest request =
         new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setPath("/admin/file"); // absolute path not allowed
@@ -163,7 +163,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testEscapeConfDir() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     final QueryRequest request =
         new QueryRequest(
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
@@ -174,7 +174,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testPathTraversalFilename() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(ShowFileRequestHandlerTest.this);
     final QueryRequest request =
         new QueryRequest(
             params(

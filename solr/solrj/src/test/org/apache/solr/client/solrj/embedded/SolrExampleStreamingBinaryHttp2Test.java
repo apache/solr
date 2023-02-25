@@ -55,7 +55,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
   @Test
   public void testQueryAndStreamResponse() throws Exception {
     // index a simple document with one child
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient();
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();

@@ -76,7 +76,7 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
   public void testGetAllFieldsIncludeDynamic() throws Exception {
     List<Map<String, Object>> fields =
         new SchemaRequest.Fields(params("includeDynamic", "true"))
-            .process(getSolrClient())
+            .process(solrClientTestRule.getSolrClient())
             .getFields();
 
     Set<String> lookingForNames =

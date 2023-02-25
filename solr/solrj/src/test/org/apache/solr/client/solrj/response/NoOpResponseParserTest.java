@@ -61,7 +61,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   @Before
   public void doBefore() throws IOException, SolrServerException {
     // add document and commit, and ensure it's there
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(NoOpResponseParserTest.this);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);

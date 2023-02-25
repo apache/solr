@@ -75,7 +75,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -99,7 +99,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testFieldMutating() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
