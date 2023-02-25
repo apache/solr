@@ -47,9 +47,9 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     String v = "how now brown cow";
-    assertU(adoc("id","1", "text",v,  "text_np", v, "#foo_s", v));
+    assertU(adoc("id", "1", "new_id_s", "10", "text", v, "text_np", v, "#foo_s", v));
     v = "now cow";
-    assertU(adoc("id","2", "text",v,  "text_np", v));
+    assertU(adoc("id", "2", "new_id_s", "20", "text", v, "text_np", v));
     assertU(commit());
   }
 
@@ -62,7 +62,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         ,"*[count(//doc/str)=1] "
         ,"*//doc[1]/str[1][.='1'] "
         );
-    
+
     // rename
     assertQ(req("q","id:1", "fl","xxx:id")
         ,"//*[@numFound='1'] "
@@ -85,12 +85,17 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         );
 
     // two copies
-    assertQ(req("q","id:1", "fl","xxx:id,yyy:id")
-        ,"//*[@numFound='1'] "
-        ,"*[count(//doc/str)=2] "
-        ,"*//doc[1]/str[1][.='1'] "
-        ,"*//doc[1]/str[2][.='1'] "
-        );
+    assertQ(
+        req("q", "id:1", "fl", "xxx:id,yyy:id"),
+        "//*[@numFound='1'] ",
+        "*[count(//doc/str)=2] ",
+        "*//doc[1]/str[1][.='1'] ",
+        "*//doc[1]/str[2][.='1'] ");
+
+    assertQ(
+        req("q", "id:1", "fl", "old_id:id,id:new_id_s"),
+        "//*[@numFound='1'] ",
+        "*//doc[1]/arr[@name='id']/str[.='10'] ");
   }
 
   @Test
@@ -379,7 +384,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument} respects
    * the {@link ReturnFields} and doesn't unneccessarily convert Fields that aren't needed.
    * <p>
-   * This is important because {@link SolrDocumentFetcher} may return additional fields 
+   * This is important because {@link SolrDocumentFetcher} may return additional fields
    * (lazy or otherwise) if the document has been cached.
    * </p>
    */
@@ -399,7 +404,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     allFieldNames.append(",store_rpt");
     docIn.add(new StringField("subword","bar",Store.YES)); // single value in multi-value field
     allFieldNames.append(",subword");
-    docIn.add(new StringField("uniq","xxx",Store.YES)); 
+    docIn.add(new StringField("uniq","xxx",Store.YES));
     docIn.add(new StringField("uniq","yyy",Store.YES)); // multi-value in multi-valued field
     allFieldNames.append(",uniq");
     for (int i = 0; i < 20; i++) {
@@ -435,7 +440,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       assertTrue(debug, docOut.get("subword") instanceof List);
       assertTrue(debug, docOut.get("uniq") instanceof List);
     }
-    
+
     // all source fields should be in the output
     // behavior should be ultimately be consistent for all of these ReturnField instances
     // (globbing or requesting more fields then doc has)
@@ -446,7 +451,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req("fl","*,score")),
             new SolrReturnFields(req("fl","id,subword,uniq,foo_*,store_*")),
             new SolrReturnFields(req("fl",allFieldNames+",bogus1,bogus2,bogus3")))) {
-      
+
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
       final String debug = rf.toString() + " => " +docOut.toString();
       assertEquals(debug, 24, docOut.size());
@@ -458,10 +463,10 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         assertTrue(debug, docOut.get("foo_" + i + "_s1") instanceof StringField);
       }
     }
-    
+
   }
 
-  
+
   public void testWhitespace() {
     Random r = random();
     final int iters = atLeast(30);
@@ -472,11 +477,11 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
       final String id = randomWhitespace(r, 0, 3) +
         (aliasId ? "aliasId:" : "") +
-        "id" + 
+        "id" +
         randomWhitespace(r, 1, 3);
       final String foo_i = randomWhitespace(r, 0, 3) +
         (aliasFoo ? "aliasFoo:" : "") +
-        "foo_i" + 
+        "foo_i" +
         randomWhitespace(r, 0, 3);
 
       final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
@@ -499,10 +504,10 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   private static final char[] WHITESPACE_CHARACTERS = new char[] {
     // :TODO: is this list exhaustive?
     '\u0009',
-    '\n',    
+    '\n',
     '\u000B',
     '\u000C',
-    '\r',    
+    '\r',
     '\u001C',
     '\u001D',
     '\u001E',
@@ -531,7 +536,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
     // in the future.  if that happens, fail early with a clera msg, even if java asserts
     // (used in randomWhitespace) are disbled
-    
+
     for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
       char c = WHITESPACE_CHARACTERS[offset];
       if (! Character.isWhitespace(c) ) {
@@ -539,10 +544,10 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
   /**
-   * Returns a random string in the specified length range consisting 
-   * entirely of whitespace characters 
+   * Returns a random string in the specified length range consisting
+   * entirely of whitespace characters
    * @see #WHITESPACE_CHARACTERS
    */
   public static String randomWhitespace(Random r, int minLength, int maxLength) {
