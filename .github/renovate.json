@@ -39,9 +39,9 @@
     }
   ],
   "schedule": [
-    "* 8-20 * * *"
+    "* * * * SUN"
   ],
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 5,
+  "prConcurrentLimit": 30,
+  "prHourlyLimit": 10,
   "stabilityDays": 5
 }
