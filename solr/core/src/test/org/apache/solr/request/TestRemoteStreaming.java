@@ -62,7 +62,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   @Before
   public void doBefore() throws IOException, SolrServerException {
     // add document and commit, and ensure it's there
-    SolrClient client = solrClientTestRule.getSolrClient(TestRemoteStreaming.this);
+    SolrClient client = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
@@ -135,7 +135,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   private boolean searchFindsIt() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1234");
-    QueryResponse rsp = solrClientTestRule.getSolrClient(TestRemoteStreaming.this).query(query);
+    QueryResponse rsp = getSolrClient().query(query);
     return rsp.getResults().getNumFound() != 0;
   }
 }

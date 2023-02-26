@@ -38,6 +38,7 @@ import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  public static SolrClient client = null;
   public static String context;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -133,9 +135,22 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }
 
+  @After
+  public synchronized void afterClass() throws Exception {
+    if (client != null) client.close();
+    client = null;
+  }
+
   @AfterClass
   public static void afterSolrJettyTestBase() throws Exception {
     solrClientTestRule.reset();
+  }
+
+  public synchronized SolrClient getSolrClient() {
+    if (client == null) {
+      client = solrClientTestRule.getSolrClient();
+    }
+    return client;
   }
 
   /**
@@ -144,11 +159,11 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return solrClientTestRule.getSolrClient();
+    return getSolrClient();
   }
 
   public HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) solrClientTestRule.getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
     return client.getHttpClient();
   }
 

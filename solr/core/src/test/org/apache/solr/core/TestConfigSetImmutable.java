@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class TestConfigSetImmutable extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    SolrJettyTestRule.client = null;
+    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }

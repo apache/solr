@@ -1202,8 +1202,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
     assertEquals(
         0,
-        solrClientTestRule
-            .getSolrClient()
+        getSolrClient()
             .add(
                 Arrays.asList(
                     sdoc("id", "1", fieldName, "xxx aaa"),
@@ -1211,11 +1210,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
                     sdoc("id", "3", fieldName, "xxx bbb zzz")))
             .getStatus());
 
-    assertEquals(0, solrClientTestRule.getSolrClient().commit().getStatus());
+    assertEquals(0, getSolrClient().commit().getStatus());
     {
       SolrDocumentList docs =
-          solrClientTestRule
-              .getSolrClient()
+          getSolrClient()
               .query(params("q", fieldName + ":xxx", "sort", fieldName + " asc, id desc"))
               .getResults();
 
@@ -1227,8 +1225,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     }
     {
       SolrDocumentList docs =
-          solrClientTestRule
-              .getSolrClient()
+          getSolrClient()
               .query(params("q", fieldName + ":xxx", "sort", fieldName + " desc, id asc"))
               .getResults();
 
@@ -1242,18 +1239,18 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Test
   public void testAddNewFieldAndQuery() throws Exception {
-    solrClientTestRule.getSolrClient().add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
+    getSolrClient().add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
 
-    solrClientTestRule.getSolrClient().commit(true, true);
+    getSolrClient().commit(true, true);
     Map<String, Object> attrs = new HashMap<>();
     attrs.put("name", "newstringtestfield");
     attrs.put("type", "string");
 
-    new SchemaRequest.AddField(attrs).process(solrClientTestRule.getSolrClient());
+    new SchemaRequest.AddField(attrs).process(getSolrClient());
 
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField("newstringtestfield");
-    int size = solrClientTestRule.getSolrClient().query(query).getResults().size();
+    int size = getSolrClient().query(query).getResults().size();
     assertEquals(1, size);
   }
 

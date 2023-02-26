@@ -39,7 +39,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
   @Test
   public void testCommitWithinOnAdd() throws Exception {
     // make sure it is empty...
-    SolrClient client = solrClientTestRule.getSolrClient(SolrExampleTestsBase.this);
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -114,7 +114,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
   @Test
   public void testCommitWithinOnDelete() throws Exception {
     // make sure it is empty...
-    SolrClient client = solrClientTestRule.getSolrClient(SolrExampleTestsBase.this);
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -158,7 +158,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
   @Test
   public void testAddDelete() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient(SolrExampleTestsBase.this);
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -206,7 +206,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
   @Test
   public void testStreamingRequest() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient(SolrExampleTestsBase.this);
+    SolrClient client = getSolrClient();
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
@@ -255,8 +255,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
   protected QueryResponse assertNumFound(String query, int num)
       throws SolrServerException, IOException {
-    QueryResponse rsp =
-        solrClientTestRule.getSolrClient(SolrExampleTestsBase.this).query(new SolrQuery(query));
+    QueryResponse rsp = getSolrClient().query(new SolrQuery(query));
     if (num != rsp.getResults().getNumFound()) {
       fail(
           "expected: "

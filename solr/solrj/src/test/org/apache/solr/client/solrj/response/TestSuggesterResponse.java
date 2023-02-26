@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,7 +44,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
 
   @Before
   public void setUpClient() {
-    solrClientTestRule.getSolrClient(TestSuggesterResponse.this);
+    getSolrClient();
   }
 
   static String field = "cat";
@@ -120,8 +119,8 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    SolrJettyTestRule.getClient().deleteByQuery("*:*");
-    SolrJettyTestRule.getClient().commit(true, true);
+    client.deleteByQuery("*:*");
+    client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -131,10 +130,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    SolrJettyTestRule.getClient().add(doc);
-    SolrJettyTestRule.getClient().add(doc2);
-    SolrJettyTestRule.getClient().add(doc3);
-    SolrJettyTestRule.getClient().commit(true, true);
+    client.add(doc);
+    client.add(doc2);
+    client.add(doc3);
+    client.commit(true, true);
   }
 
   /*

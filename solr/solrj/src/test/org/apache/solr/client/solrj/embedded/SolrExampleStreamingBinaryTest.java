@@ -49,7 +49,7 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
   @Test
   public void testQueryAndStreamResponse() throws Exception {
     // index a simple document with one child
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();

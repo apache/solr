@@ -48,7 +48,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -876,7 +875,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
-      SolrJettyTestRule.client =
+      client =
           new Http2SolrClient.Builder(getJetty().getBaseUrl().toString() + "/debug/foo").build();
       fail("Expecting exception");
     } catch (RuntimeException e) {

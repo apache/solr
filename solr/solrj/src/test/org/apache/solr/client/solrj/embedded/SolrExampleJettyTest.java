@@ -65,7 +65,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    try (SolrClient client = solrClientTestRule.getSolrClient()) {
+    try (SolrClient client = getSolrClient()) {
       client.deleteByQuery("*:*");
       client.commit();
       assertNumFound("*:*", 0); // make sure it got in
@@ -82,7 +82,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
           httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
       assertEquals(200, response.getStatusLine().getStatusCode());
       client.commit();
-      QueryResponse rsp = solrClientTestRule.getSolrClient().query(new SolrQuery("*:*"));
+      QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
       assertEquals(2, rsp.getResults().getNumFound());
 
       SolrDocument doc = rsp.getResults().get(0);
@@ -112,7 +112,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     doc.addField("id", "1");
     doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
 
-    try (SolrClient client = solrClientTestRule.getSolrClient()) {
+    try (SolrClient client = getSolrClient()) {
       client.add(doc);
       client.commit();
       long start = System.nanoTime();

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.embedded.JettyConfig;
@@ -33,16 +32,8 @@ import org.slf4j.LoggerFactory;
 
 public class SolrJettyTestRule extends SolrClientTestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private SolrClient client = null;
   private JettySolrRunner jetty;
   private SolrClient adminClient = null;
-
-  private ConcurrentHashMap<String, SolrClient> clients =
-      new ConcurrentHashMap<>(); // TODO close them
-
-  public SolrClient getClient() {
-    return client;
-  }
 
   @Override
   protected void after() {
@@ -56,24 +47,16 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     adminClient = null;
 
     if (jetty != null) {
-
       try {
         jetty.stop();
-      } catch (RuntimeException e) {
-        throw e;
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        try {
+          throw new IOException(e);
+        } catch (IOException ex) {
+          throw new RuntimeException(ex);
+        }
       }
       jetty = null;
-    }
-
-    if (client != null) {
-      try {
-        client.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      client = null;
     }
   }
 
@@ -94,17 +77,19 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   public void startSolr(Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) {
 
-    jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig);
     try {
+      jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig);
       jetty.start();
-    } catch (RuntimeException e) {
-      throw e;
+      int port = jetty.getLocalPort();
+      log.info("Jetty Assigned Port#{}", port);
+      adminClient = getHttpSolrClient(jetty.getBaseUrl().toString());
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      try {
+        throw new IOException();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
     }
-    int port = jetty.getLocalPort();
-    log.info("Jetty Assigned Port#{}", port);
-    adminClient = getHttpSolrClient(jetty.getBaseUrl().toString());
   }
 
   public JettySolrRunner getJetty() {
@@ -114,13 +99,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   @Override
   public SolrClient getSolrClient(String name) {
-    if (clients.containsKey(name)) {
-      return clients.get(name);
-    } else {
-      clients.put(
-          name, getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME));
-      return getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
-    }
+    return getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
   }
 
   @Override

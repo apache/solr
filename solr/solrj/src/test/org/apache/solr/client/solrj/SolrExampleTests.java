@@ -100,7 +100,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Before
   public void emptyCollection() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     // delete everything!
     client.deleteByQuery("*:*");
     client.commit();
@@ -110,7 +110,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Monster("Only useful to verify the performance of serialization+ deserialization")
   // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
   public void testQueryPerf() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
@@ -289,13 +289,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.add(docs);
     client.commit();
     // this sets the cache
-    QueryResponse rsp = solrClientTestRule.getSolrClient().query(new SolrQuery("*:*").setRows(20));
+    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
 
     RTimer timer = new RTimer();
     int count = 10000;
     log.info("Started perf test....");
     for (int i = 0; i < count; i++) {
-      rsp = solrClientTestRule.getSolrClient().query(new SolrQuery("*:*").setRows(20));
+      rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
     }
 
     if (log.isInfoEnabled()) {
@@ -307,7 +307,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Test
   @SuppressWarnings({"rawtypes"})
   public void testExampleConfig() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -451,7 +451,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   /** query the example */
   @Test
   public void testAddRetrieve() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -499,7 +499,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testFailOnVersionConflicts() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -546,7 +546,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   /** Get empty results */
   @Test
   public void testGetEmptyResults() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -599,7 +599,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     Random random = random();
     int numIterations = atLeast(3);
 
-    try (SolrClient client = solrClientTestRule.getSolrClient()) {
+    try (SolrClient client = getSolrClient()) {
 
       for (int iteration = 0; iteration < numIterations; iteration++) {
 
@@ -637,7 +637,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testErrorHandling() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
@@ -694,7 +694,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testAugmentFields() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -749,7 +749,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void testRawFields() throws Exception {
     String rawJson = "{ \"raw\": 1.234, \"id\":\"111\" }";
     String rawXml = "<hello>this is <some/><xml/></hello>";
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -858,7 +858,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testContentStreamRequest() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -907,7 +907,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Override
   @Test
   public void testStreamingRequest() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -924,7 +924,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testMultiContentWriterRequest() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -955,7 +955,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testMultiContentStreamRequest() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -977,7 +977,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testLukeHandler() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1007,7 +1007,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testStatistics() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1115,7 +1115,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testPingHandler() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1128,7 +1128,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testFaceting() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1201,7 +1201,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testPivotFacetsStats() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1491,7 +1491,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testPivotFacetsStatsNotSupported() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1558,7 +1558,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testPivotFacetsQueries() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -1724,7 +1724,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Test
   @SuppressWarnings({"rawtypes"})
   public void testPivotFacetsRanges() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -2024,7 +2024,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private void doPivotFacetTest(boolean missing) throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -2258,7 +2258,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testChineseDefaults() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
     client.commit();
@@ -2282,7 +2282,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testRealtimeGet() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     // Empty the database...
     client.deleteByQuery("*:*"); // delete everything!
@@ -2322,7 +2322,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     // no versions
     // Use a simple float field.  "price"->"price_c" has problems: SOLR-15357 & SOLR-15358
     final String field = "price_f";
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     SolrInputDocument doc = new SolrInputDocument();
@@ -2405,7 +2405,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testUpdateMultiValuedField() throws Exception {
-    SolrClient solrClient = solrClientTestRule.getSolrClient();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "123");
     solrClient.add(doc);
@@ -2440,7 +2440,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testSetNullUpdates() throws Exception {
-    SolrClient solrClient = solrClientTestRule.getSolrClient();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testSetNullUpdates");
     doc.addField("single_s", "test-value");
@@ -2464,7 +2464,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   public void testSetNullUpdateOrder() throws Exception {
-    SolrClient solrClient = solrClientTestRule.getSolrClient();
+    SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testSetNullUpdateOrder");
     doc.addField("single_s", "test-value");
@@ -2490,7 +2490,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testQueryWithParams() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     SolrQuery q = new SolrQuery("query");
     q.setParam("debug", true);
     QueryResponse resp = client.query(q);
@@ -2502,7 +2502,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testChildDoctransformer() throws IOException, SolrServerException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
 
@@ -2677,7 +2677,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testExpandComponent() throws IOException, SolrServerException {
-    SolrClient server = solrClientTestRule.getSolrClient();
+    SolrClient server = getSolrClient();
     server.deleteByQuery("*:*");
 
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
@@ -2733,7 +2733,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testFieldGlobbing() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "testFieldGlobbing");
@@ -2827,7 +2827,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testMoreLikeThis() throws Exception {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     for (int i = 0; i < 20; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -2938,7 +2938,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void testAddChildToChildFreeDoc()
       throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException,
           SecurityException, NoSuchFieldException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
     SolrInputDocument docToUpdate = new SolrInputDocument();
@@ -2981,7 +2981,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void testDeleteParentDoc()
       throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException,
           SecurityException, NoSuchFieldException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
     SolrInputDocument docToDelete = new SolrInputDocument();

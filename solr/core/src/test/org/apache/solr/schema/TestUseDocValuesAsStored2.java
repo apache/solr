@@ -23,7 +23,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.rest.schema.TestBulkSchemaAPI;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.After;
 import org.junit.Before;
 
@@ -52,7 +51,7 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    SolrJettyTestRule.client = null;
+    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }
