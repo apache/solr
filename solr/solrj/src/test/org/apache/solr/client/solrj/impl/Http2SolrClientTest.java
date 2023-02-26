@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -875,7 +876,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
-      client =
+      SolrClient client =
           new Http2SolrClient.Builder(getJetty().getBaseUrl().toString() + "/debug/foo").build();
       fail("Expecting exception");
     } catch (RuntimeException e) {
