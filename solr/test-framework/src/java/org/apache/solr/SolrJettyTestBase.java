@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  public static String context;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -62,8 +61,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
       throws Exception {
     // creates the data dir
 
-    context = context == null ? "/solr" : context;
-    SolrJettyTestBase.context = context;
+    if (context == null) {
+      context = "/solr";
+    }
 
     JettyConfig jettyConfig =
         JettyConfig.builder()
@@ -129,10 +129,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return solrClientTestRule.getJetty();
   }
 
-  public static SolrClient getClient() {
-    return solrClientTestRule.getClient();
-  }
-
   protected String getServerUrl() {
     return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }
@@ -142,11 +138,8 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     solrClientTestRule.reset();
   }
 
-  public synchronized SolrClient getSolrClient() {
-    if (getClient() == null) {
-      return solrClientTestRule.getSolrClient();
-    }
-    return getClient();
+  public SolrClient getSolrClient() {
+    return solrClientTestRule.getSolrClient();
   }
 
   public HttpClient getHttpClient() {
