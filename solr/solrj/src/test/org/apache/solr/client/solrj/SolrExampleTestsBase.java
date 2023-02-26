@@ -41,7 +41,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return getSolrClient(); // TODO Close the clients in the subclasses
+    return getHttpSolrClient(getServerUrl()); // TODO Close the clients in the subclasses
   }
 
   /** query the example */
