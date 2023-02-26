@@ -68,10 +68,7 @@ public class TestStreamBody extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    if (client != null) {
-      client.close();
-      client = null;
-    }
+
     if (restTestHarness != null) {
       restTestHarness.close();
       restTestHarness = null;

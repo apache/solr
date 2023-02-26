@@ -38,7 +38,6 @@ import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -47,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  public static SolrClient client = null;
   public static String context;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -131,14 +129,12 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return solrClientTestRule.getJetty();
   }
 
-  protected String getServerUrl() {
-    return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
+  public static SolrClient getClient() {
+    return solrClientTestRule.getClient();
   }
 
-  @After
-  public synchronized void afterClass() throws Exception {
-    if (client != null) client.close();
-    client = null;
+  protected String getServerUrl() {
+    return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }
 
   @AfterClass
@@ -147,19 +143,10 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   public synchronized SolrClient getSolrClient() {
-    if (client == null) {
-      client = solrClientTestRule.getSolrClient();
+    if (getClient() == null) {
+      return solrClientTestRule.getSolrClient();
     }
-    return client;
-  }
-
-  /**
-   * Create a new solr client. If createJetty was called, a http implementation will be created,
-   * otherwise an embedded implementation will be created. Subclasses should override for other
-   * options.
-   */
-  public SolrClient createNewSolrClient() {
-    return getSolrClient();
+    return getClient();
   }
 
   public HttpClient getHttpClient() {

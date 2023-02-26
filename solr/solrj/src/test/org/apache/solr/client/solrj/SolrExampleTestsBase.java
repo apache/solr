@@ -35,6 +35,15 @@ import org.junit.Test;
 
 public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
+  /**
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * otherwise an embedded implementation will be created. Subclasses should override for other
+   * options.
+   */
+  public SolrClient createNewSolrClient() {
+    return getSolrClient(); // TODO Close the clients in the subclasses
+  }
+
   /** query the example */
   @Test
   public void testCommitWithinOnAdd() throws Exception {

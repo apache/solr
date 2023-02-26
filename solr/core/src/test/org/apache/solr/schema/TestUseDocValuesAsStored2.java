@@ -51,7 +51,7 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
   @After
   public void after() throws Exception {
     solrClientTestRule.reset();
-    client = null;
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }

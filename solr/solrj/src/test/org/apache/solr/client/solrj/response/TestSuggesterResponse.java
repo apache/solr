@@ -119,8 +119,8 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    client.deleteByQuery("*:*");
-    client.commit(true, true);
+    getClient().deleteByQuery("*:*");
+    getClient().commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -130,10 +130,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    client.add(doc);
-    client.add(doc2);
-    client.add(doc3);
-    client.commit(true, true);
+    getClient().add(doc);
+    getClient().add(doc2);
+    getClient().add(doc3);
+    getClient().commit(true, true);
   }
 
   /*
