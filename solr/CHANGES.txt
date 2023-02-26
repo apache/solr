@@ -270,7 +270,7 @@ Other Changes
 
 * SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
 
-* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+* SOLR-16562: Upgrade to Caffeine 3.1.4 (Kevin Risden)
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
