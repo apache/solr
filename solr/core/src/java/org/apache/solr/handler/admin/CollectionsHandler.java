@@ -218,6 +218,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
@@ -1329,19 +1330,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          NamedList<Object> results = new NamedList<>();
-          Map<String, DocCollection> collections =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getClusterState()
-                  .getCollectionsMap();
-          List<String> collectionList = new ArrayList<>(collections.keySet());
-          Collections.sort(collectionList);
-          // XXX should we add aliases here?
-          results.add("collections", collectionList);
-          SolrResponse response = new OverseerSolrResponse(results);
-          rsp.getValues().addAll(response.getResponse());
+          final ListCollectionsAPI listCollectionsAPI = new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
     /**
@@ -2240,6 +2231,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AddReplicaPropertyAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
+        ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
         DeleteNodeAPI.class);
   }

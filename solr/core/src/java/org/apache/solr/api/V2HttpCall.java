@@ -138,7 +138,7 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if ("c".equals(prefix) || "collections".equals(prefix)) {
+      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
         DocCollection collection =

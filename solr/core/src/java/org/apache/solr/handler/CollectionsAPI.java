@@ -72,16 +72,6 @@ public class CollectionsAPI {
 
   @EndPoint(
       path = {"/c", "/collections"},
-      method = GET,
-      permission = COLL_READ_PERM)
-  public void getCollections(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(ACTION, CollectionAction.LIST.toLower());
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
-  }
-
-  @EndPoint(
-      path = {"/c", "/collections"},
       method = POST,
       permission = COLL_EDIT_PERM)
   public class CollectionsCommands {
