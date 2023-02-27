@@ -81,7 +81,6 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     Comparator<FacetBucket> comp = sort.getComparator();
     facetResults.sort(comp);
-
     // apply the limit
     if (sort.getLimit() > 0) {
       if (sort.getOffset() > 0) {

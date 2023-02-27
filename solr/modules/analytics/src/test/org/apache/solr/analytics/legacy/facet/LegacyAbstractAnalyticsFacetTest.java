@@ -310,7 +310,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
         Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args)).toArray(String[]::new));
   }
 
-  public static final String[] BASEPARMS =
+  private static final String[] BASEPARMS =
       new String[] {"q", "*:*", "indent", "true", "olap", "true", "rows", "0"};
 
   public static String[] fileToStringArr(Class<?> clazz, String fileName)
