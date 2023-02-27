@@ -140,6 +140,7 @@ allprojects { prj ->
             '-Xep:IdentityHashMapBoxing:ERROR',
             // '-Xep:IgnoredPureGetter:OFF', // we don't use these annotations
             // '-Xep:Immutable:OFF', // we don't use this annotation
+            // '-Xep:ImpossibleNullComparison:OFF', // we don't use protobuf
             '-Xep:Incomparable:ERROR',
             // '-Xep:IncompatibleArgumentType:OFF', // we don't use this annotation
             // '-Xep:IncompatibleModifiers:OFF', // we don't use this annotation
@@ -167,6 +168,7 @@ allprojects { prj ->
             '-Xep:JUnitParameterMethodNotFound:ERROR',
             '-Xep:JavaxInjectOnAbstractMethod:ERROR',
             '-Xep:JodaToSelf:ERROR',
+            // '-Xep:LenientFormatStringValidation:OFF' // we don't use these google libraries
             '-Xep:LiteByteStringUtf8:ERROR',
             '-Xep:LocalDateTemporalAmount:ERROR',
             '-Xep:LockOnBoxedPrimitive:ERROR',
@@ -249,6 +251,7 @@ allprojects { prj ->
 
             // On by Default : WARNING
 
+            // '-Xep:ASTHelpersSuggestions:OFF', // we don't use ASTHelpers
             '-Xep:AlmostJavadoc:WARN',
             // '-Xep:AlreadyChecked:OFF', // todo check if useful or comment why not
             // '-Xep:AmbiguousMethodReference:OFF', // todo check if useful or comment why not
@@ -310,6 +313,7 @@ allprojects { prj ->
             // '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:ExtendsObject:WARN',
             '-Xep:FallThrough:WARN',
+            '-Xep:Finalize:WARN', // catches actual finalizers that don't call super
             // '-Xep:Finally:OFF', // todo check if useful or comment why not
             '-Xep:FloatCast:WARN',
             '-Xep:FloatingPointAssertionWithinEpsilon:WARN',
@@ -326,9 +330,11 @@ allprojects { prj ->
             '-Xep:ImmutableEnumChecker:WARN',
             '-Xep:InconsistentCapitalization:WARN',
             '-Xep:InconsistentHashCode:WARN',
+            // '-Xep:IgnoredPureGetter:OFF', // we don't use these google libraries
             '-Xep:IncorrectMainMethod:WARN',
             '-Xep:IncrementInForLoopAndHeader:WARN',
             '-Xep:InheritDoc:WARN',
+            // '-Xep:InjectOnBugCheckers:OFF', // we don't use this annotation
             // '-Xep:InjectInvalidTargetingOnScopingAnnotation:OFF', // we don't use this annotation
             '-Xep:InjectOnConstructorOfAbstractClass:WARN',
             '-Xep:InjectScopeAnnotationOnInterfaceOrAbstractClass:WARN',
@@ -369,6 +375,7 @@ allprojects { prj ->
             '-Xep:JodaPlusMinusLong:WARN',
             '-Xep:JodaTimeConverterManager:WARN',
             '-Xep:JodaWithDurationAddedLong:WARN',
+            // '-Xep:LabelledBreakTarget:OFF', // stylistic
             '-Xep:LiteEnumValueOf:WARN',
             '-Xep:LiteProtoToString:WARN',
             '-Xep:LockNotBeforeTry:WARN',
@@ -377,7 +384,7 @@ allprojects { prj ->
             '-Xep:LongFloatConversion:WARN',
             '-Xep:LoopOverCharArray:WARN',
             '-Xep:MalformedInlineTag:WARN',
-            '-Xep:MathAbsoluteRandom:WARN',
+            '-Xep:MathAbsoluteNegative:WARN',
             // '-Xep:MemoizeConstantVisitorStateLookups:OFF', // we don't use this class
             '-Xep:MissingCasesInEnumSwitch:WARN',
             '-Xep:MissingFail:WARN',
@@ -396,6 +403,7 @@ allprojects { prj ->
             '-Xep:NarrowingCompoundAssignment:WARN',
             // '-Xep:NegativeCharLiteral:OFF', // todo check if useful or comment why not
             '-Xep:NestedInstanceOfConditions:WARN',
+            '-Xep:NewFileSystem:WARN',
             // '-Xep:NonAtomicVolatileUpdate:OFF', // todo check if useful or comment why not
             // '-Xep:NonCanonicalType:OFF', // todo check if useful or comment why not
             '-Xep:NonOverridingEquals:WARN',
@@ -465,10 +473,12 @@ allprojects { prj ->
             '-Xep:UnnecessaryMethodInvocationMatcher:WARN',
             '-Xep:UnnecessaryMethodReference:WARN',
             // '-Xep:UnnecessaryParentheses:OFF', // style preference that we don't want to enforce
+            // '-Xep:UnqualifiedYield:OFF', // javac takes care
             '-Xep:UnrecognisedJavadocTag:WARN',
             '-Xep:UnsafeFinalization:WARN',
             '-Xep:UnsafeReflectiveConstructionCast:WARN',
             '-Xep:UnsynchronizedOverridesSynchronized:WARN',
+            '-Xep:UnusedLabel:WARN',
             // '-Xep:UnusedMethod:OFF', // todo check if useful or comment why not
             '-Xep:UnusedNestedClass:WARN',
             '-Xep:UnusedTypeParameter:WARN',

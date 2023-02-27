@@ -41,7 +41,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
