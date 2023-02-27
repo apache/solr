@@ -607,28 +607,39 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     final List<Integer> starts =
         Arrays.asList(0, 1, 2, CommonParams.ROWS_DEFAULT, docsTotal, CommonParams.ROWS_DEFAULT + 2);
     Collections.shuffle(starts, random());
-    for (String sort : sorts.subList(0, 1 + random().nextInt(sorts.size() - 1))) {
-      for (int start : starts.subList(0, 1 + random().nextInt(starts.size() - 1))) {
-        final SolrQuery query = new SolrQuery("*:*");
-        if (sort != null) {
-          query.setSort(sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+    final List<String> queries = Arrays.asList("*:*", "id:[* TO *]", "{!prefix f=name}doc");
+    Collections.shuffle(queries, random());
+    for (String queryVal : queries) {
+      for (String sort : sorts) {
+        if (rarely()) {
+          continue; // shortcut to run faster
         }
-        if (start > 0 || random().nextBoolean()) {
-          query.setStart(start);
-        }
-        if (usually()) {
-          query.setRows(CommonParams.ROWS_DEFAULT);
-        }
-        SolrDocumentList results = client.query(query).getResults();
-        assertEquals(docsTotal, results.getNumFound());
-        assertEquals(
-            "page from " + start,
-            Math.max(Math.min(CommonParams.ROWS_DEFAULT, docsTotal - start), 0),
-            results.size());
-        for (SolrDocument doc : results) {
-          assertTrue(doc.containsKey("id"));
-          assertTrue(doc.containsKey("name"));
-          assertTrue(doc.containsKey("price"));
+        for (int start : starts) {
+          final SolrQuery query = new SolrQuery(queryVal);
+          if (sort != null) {
+            query.setSort(
+                sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+          }
+          if (start > 0 || random().nextBoolean()) {
+            query.setStart(start);
+          }
+          if (usually()) {
+            query.setRows(CommonParams.ROWS_DEFAULT);
+          }
+          SolrDocumentList results = client.query(query).getResults();
+          assertEquals(docsTotal, results.getNumFound());
+          assertEquals(
+              "page from " + start,
+              Math.max(Math.min(CommonParams.ROWS_DEFAULT, docsTotal - start), 0),
+              results.size());
+          for (SolrDocument doc : results) {
+            assertTrue(doc.containsKey("id"));
+            assertTrue(doc.containsKey("name"));
+            assertTrue(doc.containsKey("price"));
+          }
+          if (rarely()) {
+            break; // shortcut to run faster
+          }
         }
       }
     }
