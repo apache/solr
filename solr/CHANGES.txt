@@ -237,7 +237,7 @@ Build
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
-* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+* SOLR-16578: Upgrade to errorprone 2.18.0 (Kevin Risden)
 
 * SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
