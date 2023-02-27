@@ -398,7 +398,7 @@ allprojects { prj ->
             '-Xep:ModifySourceCollectionInStream:WARN',
             '-Xep:MultipleParallelOrSequentialCalls:WARN',
             '-Xep:MultipleUnaryOperatorsInMethodCall:WARN',
-            // '-Xep:MutablePublicArray:OFF', // todo check if useful or comment why not - this should be possible...
+            '-Xep:MutablePublicArray:WARN',
             '-Xep:NarrowCalculation:WARN',
             '-Xep:NarrowingCompoundAssignment:WARN',
             // '-Xep:NegativeCharLiteral:OFF', // todo check if useful or comment why not
