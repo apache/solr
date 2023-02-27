@@ -193,8 +193,6 @@ Bug Fixes
 
 * SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
-* SOLR-16653: Shard split on PRS collections with NRT + PULL replicas lead to down replicas (Hitesh Khamesra via noble)
-
 * SOLR-16670: Fix directory/file check in S3Repository (Houston Putman, Hakan Özler)
 
 * SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
