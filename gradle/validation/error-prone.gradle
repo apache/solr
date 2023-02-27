@@ -147,8 +147,8 @@ allprojects { prj ->
             '-Xep:IndexOfChar:ERROR',
             '-Xep:InexactVarargsConditional:ERROR',
             '-Xep:InfiniteRecursion:ERROR',
-            '-Xep:InjectMoreThanOneScopeAnnotationOnClass:ERROR', // todo - check if we use this annotation?
-            '-Xep:InjectOnMemberAndConstructor:ERROR', // todo - check if we use this annotation?
+            '-Xep:InjectMoreThanOneScopeAnnotationOnClass:ERROR',
+            '-Xep:InjectOnMemberAndConstructor:ERROR',
             // '-Xep:InlineMeValidator:OFF', // we don't use this annotation
             '-Xep:InstantTemporalUnit:ERROR',
             '-Xep:InvalidJavaTimeConstant:ERROR',
@@ -176,7 +176,7 @@ allprojects { prj ->
             '-Xep:LossyPrimitiveCompare:ERROR',
             '-Xep:MathRoundIntLong:ERROR',
             // '-Xep:MislabeledAndroidString:OFF', // we don't use android
-            '-Xep:MisplacedScopeAnnotations:ERROR', // todo - check if we use this annotation?
+            '-Xep:MisplacedScopeAnnotations:ERROR',
             // '-Xep:MissingSuperCall:OFF', // we don't use this annotation
             // '-Xep:MissingTestCall:OFF', // we don't use this annotation
             '-Xep:MisusedDayOfYear:ERROR',
@@ -184,7 +184,7 @@ allprojects { prj ->
             '-Xep:MixedDescriptors:ERROR',
             '-Xep:MockitoUsage:ERROR',
             '-Xep:ModifyingCollectionWithItself:ERROR',
-            '-Xep:MoreThanOneInjectableConstructor:ERROR', // todo - check if we use this annotation?
+            '-Xep:MoreThanOneInjectableConstructor:ERROR',
             // '-Xep:MustBeClosedChecker:OFF', // we don't use this annotation
             '-Xep:NCopiesOfChar:ERROR',
             '-Xep:NoCanIgnoreReturnValueOnClasses:ERROR',
@@ -197,7 +197,7 @@ allprojects { prj ->
             '-Xep:OptionalEquality:ERROR',
             '-Xep:OptionalMapUnusedValue:ERROR',
             '-Xep:OptionalOfRedundantMethod:ERROR',
-            '-Xep:OverlappingQualifierAndScopeAnnotation:ERROR', // todo - check if we use this annotation?
+            '-Xep:OverlappingQualifierAndScopeAnnotation:ERROR',
             '-Xep:OverridesJavaxInjectableMethod:ERROR',
             '-Xep:PackageInfo:ERROR',
             '-Xep:ParametersButNotParameterized:ERROR',
@@ -218,7 +218,7 @@ allprojects { prj ->
             // '-Xep:RectIntersectReturnValueIgnored:OFF', // we don't use android
             // '-Xep:RequiredModifiers:OFF', // we don't use this annotation
             // '-Xep:RestrictedApiChecker:OFF', // we don't use this annotation
-            // '-Xep:ReturnValueIgnored:OFF', // todo check if useful or comment why not
+            // '-Xep:ReturnValueIgnored:OFF', // todo there are problems that should be fixed
             '-Xep:SelfAssignment:ERROR',
             '-Xep:SelfComparison:ERROR',
             '-Xep:SelfEquals:ERROR',
@@ -261,7 +261,7 @@ allprojects { prj ->
             '-Xep:AssertEqualsArgumentOrderChecker:WARN',
             '-Xep:AssertThrowsMultipleStatements:WARN',
             '-Xep:AssertionFailureIgnored:WARN',
-            '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN', // todo - check if we use this annotation?
+            '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN',
             // '-Xep:AutoValueFinalMethods:OFF', // we don't use autovalue
             // '-Xep:AutoValueImmutableFields:OFF', // we don't use autovalue
             // '-Xep:AutoValueSubclassLeaked:OFF', // we don't use autovalue
@@ -314,7 +314,7 @@ allprojects { prj ->
             '-Xep:ExtendsObject:WARN',
             '-Xep:FallThrough:WARN',
             '-Xep:Finalize:WARN', // catches actual finalizers that don't call super
-            // '-Xep:Finally:OFF', // todo check if useful or comment why not
+            //'-Xep:Finally:OFF', // todo there are problems that should be fixed
             '-Xep:FloatCast:WARN',
             '-Xep:FloatingPointAssertionWithinEpsilon:WARN',
             '-Xep:FloatingPointLiteralPrecision:WARN',
@@ -322,7 +322,7 @@ allprojects { prj ->
             // '-Xep:FloggerStringConcatenation:OFF', // we don't use flogger
             // '-Xep:FragmentInjection:OFF', // we don't use android
             // '-Xep:FragmentNotInstantiable:OFF', // we don't use android
-            // '-Xep:FutureReturnValueIgnored:OFF', // todo check if useful or comment why not
+            // '-Xep:FutureReturnValueIgnored:OFF', // todo there are problems that should be fixed
             '-Xep:GetClassOnEnum:WARN',
             '-Xep:HidingField:WARN',
             '-Xep:IdentityHashMapUsage:WARN',
