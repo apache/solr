@@ -405,7 +405,7 @@ allprojects { prj ->
             '-Xep:NestedInstanceOfConditions:WARN',
             '-Xep:NewFileSystem:WARN',
             // '-Xep:NonAtomicVolatileUpdate:OFF', // todo check if useful or comment why not
-            // '-Xep:NonCanonicalType:OFF', // todo check if useful or comment why not
+            '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
