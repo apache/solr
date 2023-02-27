@@ -626,8 +626,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             Math.max(Math.min(CommonParams.ROWS_DEFAULT, docsTotal - start), 0),
             results.size());
         for (SolrDocument doc : results) {
-          assertTrue(doc.containsKey("id") && doc.containsKey("name") && doc.containsKey("price"));
-          break;
+          assertTrue(doc.containsKey("id"));
+          assertTrue(doc.containsKey("name"));
+          assertTrue(doc.containsKey("price"));
         }
       }
     }
