@@ -333,6 +333,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public TermVectors termVectors() throws IOException {
+    ensureOpen();
     return in.termVectors();
   }
 
