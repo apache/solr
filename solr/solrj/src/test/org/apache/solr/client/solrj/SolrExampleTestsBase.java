@@ -51,7 +51,9 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
 
   @Override
   public SolrClient getSolrClient() {
-    client = createNewSolrClient();
+    if (client == null) {
+      client = createNewSolrClient();
+    }
     return client;
   }
 
@@ -61,7 +63,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(getServerUrl()); // TODO Close the clients in the subclasses
+    return getHttpSolrClient(getServerUrl());
   }
 
   /** query the example */
