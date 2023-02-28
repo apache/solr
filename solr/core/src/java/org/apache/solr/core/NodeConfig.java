@@ -31,11 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -209,9 +211,17 @@ public class NodeConfig {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkHost)
+              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
+          DeprecationLog.log(
+              "solrxml-zookeeper",
+              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);

@@ -27,7 +27,7 @@ apply plugin: 'base'
 def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version) }"
 def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}") }"
-def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-focal') }"
+def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-jammy') }"
 def officialDockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}") }"
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"

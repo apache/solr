@@ -538,7 +538,7 @@
             }
           </str>
           <str>
-            $jq:node-thread-pool(completed_total, select(.key | endswith(".completed")), count)
+            $jq:node-thread-pool(completed_total, select(.key | endswith(".completed")) | select(.value | type=="object"), count)
           </str>
           <str>
             $jq:node-thread-pool(running, select(.key | endswith(".running")), object.value, GAUGE)

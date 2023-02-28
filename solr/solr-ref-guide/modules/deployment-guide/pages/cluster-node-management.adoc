@@ -590,7 +590,14 @@ http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
+    {
+      "async": "someAsyncId"
+    }
+'
+----
 
 ====
 --

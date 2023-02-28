@@ -193,6 +193,8 @@ grant {
 
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.install.symDir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.install.symDir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${jetty.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${jetty.home}${/}-", "read,write,delete,readlink";

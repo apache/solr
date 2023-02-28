@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -74,7 +75,11 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
     zkServer.ensurePathExists("/solr");
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress("/solr"), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/solr"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(zkClient);
 
       assertEquals(0, configSetService.listConfigs().size());
@@ -222,7 +227,11 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     }
 
     // Client with no auth whatsoever can't even get the list of configs
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkAddress("/acl"), 10000)) {
+    try (SolrZkClient client =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress("/acl"))
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       configSetService.listConfigs();
       fail("Should have thrown an ACL exception");
@@ -239,7 +248,11 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.makePath("/solr", false, true);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
     assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
@@ -253,7 +266,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       String zkAddress,
       final ZkACLProvider aclProvider,
       final ZkCredentialsProvider credentialsProvider) {
-    return new SolrZkClient(zkAddress, 10000) {
+    return new SolrZkClient(
+        new SolrZkClient.Builder().withUrl(zkAddress).withTimeout(10000, TimeUnit.MILLISECONDS)) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
         return credentialsProvider;
