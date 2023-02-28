@@ -213,8 +213,6 @@ Bug Fixes
 
 * SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
-SOLR-16653: Shard split on PRS collections with NRT + PULL replicas lead to down replicas (Hitesh Khamesra via noble)
-
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
