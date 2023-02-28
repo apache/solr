@@ -41,6 +41,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// nocommit: Fails
 /**
  * A test for parsing Solr response from query by NoOpResponseParser.
  *

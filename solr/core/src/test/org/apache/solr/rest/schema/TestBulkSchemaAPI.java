@@ -54,6 +54,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// nocommit: Fails with  java.lang.IllegalStateException: Connection pool shut down
 public class TestBulkSchemaAPI extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
