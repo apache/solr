@@ -211,9 +211,6 @@ public class SolrCLI implements CLIO {
           new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
 
-        String collection = cli.getOptionValue("collection");
-        if (collection != null) cloudSolrClient.setDefaultCollection(collection);
-
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
       }
@@ -592,7 +589,7 @@ public class SolrCLI implements CLIO {
    * Tries a simple HEAD request and throws SolrException in case of Authorization error
    *
    * @param url the url to do a HEAD request to
-   * @param httpClient the http client to use (make sure it has authentication optinos set)
+   * @param httpClient the http client to use (make sure it has authentication options set)
    * @return the HTTP response code
    * @throws SolrException if auth/autz problems
    * @throws IOException if connection failure
@@ -1273,7 +1270,7 @@ public class SolrCLI implements CLIO {
 
       SolrQuery q = new SolrQuery("*:*");
       q.setRows(0);
-      QueryResponse qr = cloudSolrClient.query(q);
+      QueryResponse qr = cloudSolrClient.query(collection, q);
       String collErr = null;
       long docCount = -1;
       try {

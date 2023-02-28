@@ -222,16 +222,16 @@ public class Http2SolrClient extends SolrClient {
     }
 
     SslContextFactory.Client sslContextFactory;
-    boolean sslEnabled;
     if (builder.sslConfig == null) {
-      sslEnabled =
-          System.getProperty("javax.net.ssl.keyStore") != null
-              || System.getProperty("javax.net.ssl.trustStore") != null;
-      sslContextFactory = sslEnabled ? getDefaultSslContextFactory() : null;
+      sslContextFactory = getDefaultSslContextFactory();
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
-      sslEnabled = true;
     }
+
+    ClientConnector clientConnector = new ClientConnector();
+    clientConnector.setReuseAddress(true);
+    clientConnector.setSslContextFactory(sslContextFactory);
+    clientConnector.setSelectors(2);
 
     HttpClientTransport transport;
     if (builder.useHttp1_1) {
@@ -239,22 +239,15 @@ public class Http2SolrClient extends SolrClient {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
 
-      ClientConnector clientConnector = new ClientConnector();
-      clientConnector.setReuseAddress(true);
-      clientConnector.setSslContextFactory(sslContextFactory);
-      clientConnector.setSelectors(2);
       transport = new HttpClientTransportOverHTTP(clientConnector);
-
       httpClient = new HttpClient(transport);
-
-      if (builder.maxConnectionsPerHost != null)
+      if (builder.maxConnectionsPerHost != null) {
         httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+      }
     } else {
-      log.debug("Create Http2SolrClient with HTTP/2 transport");
-      ClientConnector clientConnector = new ClientConnector();
-      clientConnector.setReuseAddress(true);
-      clientConnector.setSslContextFactory(sslContextFactory);
-      clientConnector.setSelectors(2);
+      if (log.isDebugEnabled()) {
+        log.debug("Create Http2SolrClient with HTTP/2 transport");
+      }
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
@@ -1248,10 +1241,7 @@ public class Http2SolrClient extends SolrClient {
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
-      sslCheckPeerName = false;
-    }
+    boolean sslCheckPeerName = !"false".equalsIgnoreCase(checkPeerNameStr);
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
 
@@ -1275,8 +1265,11 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
-    sslContextFactory.setEndpointIdentificationAlgorithm(
-        System.getProperty("solr.jetty.ssl.verifyClientHostName"));
+    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
+      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+    } else {
+      sslContextFactory.setEndpointIdentificationAlgorithm(null);
+    }
 
     return sslContextFactory;
   }
