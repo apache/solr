@@ -201,6 +201,9 @@ Bug Fixes
 
 * SOLR-16679: Fix solr.jetty.ssl.verifyClientHostName logging (Kevin Risden)
 
+* SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax 
+  (Mikhail Khludnev)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
