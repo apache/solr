@@ -1241,10 +1241,7 @@ public class Http2SolrClient extends SolrClient {
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
-      sslCheckPeerName = false;
-    }
+    boolean sslCheckPeerName = !"false".equalsIgnoreCase(checkPeerNameStr);
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
 
@@ -1268,8 +1265,11 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
-    sslContextFactory.setEndpointIdentificationAlgorithm(
-        System.getProperty("solr.jetty.ssl.verifyClientHostName"));
+    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
+      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+    } else {
+      sslContextFactory.setEndpointIdentificationAlgorithm(null);
+    }
 
     return sslContextFactory;
   }

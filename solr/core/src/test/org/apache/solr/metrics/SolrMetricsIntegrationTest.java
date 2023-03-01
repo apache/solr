@@ -260,7 +260,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         assertNotNull(zkMmetrics.get(k));
       }
       Utils.executeGET(
-          httpClient, j.getBaseURLV2() + "/cluster/zk/ls/live_nodes", Utils.JSONCONSUMER);
+          httpClient,
+          j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
+          Utils.JSONCONSUMER);
       @SuppressWarnings("unchecked")
       Map<String, Object> zkMmetricsNew =
           (Map<String, Object>)

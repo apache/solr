@@ -152,6 +152,10 @@ Improvements
   `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
   `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
 
+* SOLR-16488: The paths of the v2 "ZooKeeper read" APIs have been tweaked slightly to be more intuitive. "get node data" is now available
+  at `GET /api/cluster/zookeeper/data/<path>`, and "list node children" is now available at `GET /api/cluster/zookeeper/children/<path>`
+  (Jason Gerlowski, Joshua Ouma)
+
 Optimizations
 ---------------------
 
@@ -217,13 +221,18 @@ Bug Fixes
 
 * SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
 
-* SOLR-16653: Shard split on PRS collections with NRT + PULL replicas lead to down replicas (Hitesh Khamesra via noble)
-
 * SOLR-16670: Fix directory/file check in S3Repository (Houston Putman, Hakan Özler)
 
 * SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
 
-* SOLR-16656: rid parameter missing from query logs in Solr 9.x (Alex Deparvu)
+* SOLR-16669: Http2SolrClient now defaults checkPeerName to True, as the documentation specified (Houston Putman)
+
+* SOLR-16679: Fix solr.jetty.ssl.verifyClientHostName logging (Kevin Risden)
+
+* SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax 
+  (Mikhail Khludnev)
+
+* SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
 
 Build
 ---------------------
@@ -237,7 +246,7 @@ Build
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
-* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+* SOLR-16578: Upgrade to errorprone 2.18.0 (Kevin Risden)
 
 * SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
@@ -270,7 +279,7 @@ Other Changes
 
 * SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
 
-* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+* SOLR-16562: Upgrade to Caffeine 3.1.4 (Kevin Risden)
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
@@ -308,6 +317,8 @@ Other Changes
 * SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
 
 * SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
+
+* SOLR-16672: Simplify SolrCLI Healthcheck command's logic for obtaining a target collection (Eric Pugh)
 
 ==================  9.1.1 ==================
 
