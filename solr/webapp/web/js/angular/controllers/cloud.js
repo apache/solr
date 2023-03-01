@@ -670,10 +670,8 @@ var graphSubController = function ($scope, Zookeeper, Collections) {
                 params.filter = filter;
             }
 
-            //Zookeeper.clusterState(params, function (data) {
             Collections.status(function (data) {
-                    //var state = $.parseJSON(data.znode.data);
-                    var state = data.cluster.collections;
+                    var collections = data.cluster.collections;
 
                     var leaf_count = 0;
                     var graph_data = {
@@ -681,15 +679,15 @@ var graphSubController = function ($scope, Zookeeper, Collections) {
                         children: []
                     };
 
-                    for (var c in state) {
+                    for (var c in collections) {
                         var shards = [];
-                        for (var s in state[c].shards) {
-                            var shard_status = state[c].shards[s].state;
+                        for (var s in collections[c].shards) {
+                            var shard_status = collections[c].shards[s].state;
                             shard_status = shard_status == 'inactive' ? 'shard-inactive' : shard_status;
                             var nodes = [];
-                            for (var n in state[c].shards[s].replicas) {
+                            for (var n in collections[c].shards[s].replicas) {
                                 leaf_count++;
-                                var replica = state[c].shards[s].replicas[n]
+                                var replica = collections[c].shards[s].replicas[n]
 
                                 var uri = replica.base_url;
                                 var parts = uri.match(/^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/);
@@ -744,7 +742,7 @@ var graphSubController = function ($scope, Zookeeper, Collections) {
                                 data: {
                                     type: 'shard',
                                     state: shard_status,
-                                    range: state[c].shards[s].range
+                                    range: collections[c].shards[s].range
 
                                 },
                                 children: nodes
@@ -756,12 +754,12 @@ var graphSubController = function ($scope, Zookeeper, Collections) {
                             name: c,
                             data: {
                                 type: 'collection',
-                                pullReplicas: state[c].pullReplicas,
-                                replicationFactor: state[c].replicationFactor,
-                                router: state[c].router.name,
-                                nrtReplicas: state[c].nrtReplicas,
-                                tlogReplicas: state[c].tlogReplicas,
-                                numShards: shards.length
+                                pullReplicas: collections[c].pullReplicas,
+                                replicationFactor: collections[c].replicationFactor,
+                                router: collections[c].router.name,
+                                nrtReplicas: collections[c].nrtReplicas,
+                                tlogReplicas: collections[c].tlogReplicas,
+                                numShards: collections.length
                             },
                             children: shards
                         };
