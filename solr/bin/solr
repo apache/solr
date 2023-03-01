@@ -224,8 +224,8 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:-true}" == "false" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=false"
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
@@ -2054,6 +2054,10 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
+    if [ $SOLR_PORT -gt 55535 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
+      exit 1
+    fi
     if $verbose ; then
       echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi

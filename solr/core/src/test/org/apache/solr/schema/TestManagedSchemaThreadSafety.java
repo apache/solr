@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
@@ -56,7 +57,10 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
     private SuspendingZkClient(String zkServerAddress) {
-      super(zkServerAddress, ZK_CLIENT_TIMEOUT);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS));
     }
 
     boolean isSlowpoke() {

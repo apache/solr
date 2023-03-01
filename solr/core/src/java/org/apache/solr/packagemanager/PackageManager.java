@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
@@ -79,7 +80,11 @@ public class PackageManager implements Closeable {
   public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
-    this.zkClient = new SolrZkClient(zkHost, 30000);
+    this.zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build();
     log.info("Done initializing a zkClient instance...");
   }
 
