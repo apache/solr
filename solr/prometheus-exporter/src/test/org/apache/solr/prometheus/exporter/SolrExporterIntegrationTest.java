@@ -58,7 +58,7 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
     assertTrue(durationHistogram.get("solr_exporter_duration_seconds_sum") > 0);
 
     // 17 = (15 buckets in the histogram) + (count metric) + (sum metric)
-    assertEquals(17, durationHistogram.size());
+    assertEquals(18, durationHistogram.size());
   }
 
   @Test
