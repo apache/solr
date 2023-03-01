@@ -160,6 +160,7 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
         "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",

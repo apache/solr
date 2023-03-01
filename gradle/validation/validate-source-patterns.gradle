@@ -82,6 +82,7 @@ allprojects {
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'
+      exclude '.metadata/**'
 
       if (project == rootProject) {
         // ourselves :-)
