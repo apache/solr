@@ -74,7 +74,6 @@ solrAdminServices.factory('System',
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
       "liveNodes": {params: {path: '/live_nodes'}},
-      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
       "detail": {params: {detail: "true", path: "@path"}},
       "configs": {params: {detail:false, path: "/configs/"}},
       "aliases": {params: {detail: "true", path: "/aliases.json"}, transformResponse:function(data) {
@@ -332,7 +331,7 @@ solrAdminServices.factory('System',
           // console.log("Decoded hash as " + JSON.stringify(hp, undefined, 2)); // For debugging callbacks
           return (hp['access_token'] && hp['token_type'] && hp['state']) || hp['error'];
         };
-        
+
         service.decodeHashParams = function(hash) {
           // access_token, token_type, expires_in, state
           if (hash == null || hash.length === 0) {
@@ -350,6 +349,6 @@ solrAdminServices.factory('System',
           }
           return params;
         };
-        
+
         return service;
       }]);
