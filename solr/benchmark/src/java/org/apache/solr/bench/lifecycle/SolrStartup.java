@@ -73,8 +73,7 @@ public class SolrStartup {
       final Path defaultConfigsetDir = configsetsDir.resolve("defaultConfigSet");
       Files.createDirectories(defaultConfigsetDir);
       PathUtils.copyDirectory(
-          Path.of("src/resources/configs/minimal/conf"),
-          defaultConfigsetDir.resolve("conf"));
+          Path.of("src/resources/configs/minimal/conf"), defaultConfigsetDir.resolve("conf"));
       PathUtils.copyFileToDirectory(Path.of("src/resources/solr.xml"), tmpSolrHome);
 
       solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig("/solr"));
