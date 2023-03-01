@@ -152,6 +152,10 @@ Improvements
   `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
   `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
 
+* SOLR-16488: The paths of the v2 "ZooKeeper read" APIs have been tweaked slightly to be more intuitive. "get node data" is now available
+  at `GET /api/cluster/zookeeper/data/<path>`, and "list node children" is now available at `GET /api/cluster/zookeeper/children/<path>`
+  (Jason Gerlowski, Joshua Ouma)
+
 Optimizations
 ---------------------
 
@@ -227,6 +231,8 @@ Bug Fixes
 
 * SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax 
   (Mikhail Khludnev)
+
+* SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
 
 Build
 ---------------------
