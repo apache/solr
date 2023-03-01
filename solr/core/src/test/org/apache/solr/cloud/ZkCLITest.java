@@ -445,7 +445,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), "\n")
+        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
             .getBytes(StandardCharsets.UTF_8));
   }
 
@@ -464,7 +464,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), "\n")
+        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
             .getBytes(StandardCharsets.UTF_8));
   }
 
