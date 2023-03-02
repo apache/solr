@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  boolean unmapHack;
   boolean preload;
   private long maxChunk;
 
@@ -54,7 +53,6 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
     if (maxChunk <= 0) {
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }
-    unmapHack = params.getBool("unmap", true);
     preload = params.getBool("preload", false); // default turn-off
   }
 
@@ -62,11 +60,6 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    try {
-      System.setProperty(MMapDirectory.ENABLE_UNMAP_HACK_SYSPROP, String.valueOf(unmapHack));
-    } catch (IllegalArgumentException e) {
-      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
-    }
     mapDirectory.setPreload(preload);
     return mapDirectory;
   }
