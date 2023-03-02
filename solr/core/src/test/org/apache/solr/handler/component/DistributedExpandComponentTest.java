@@ -55,6 +55,14 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         "-2",
         "0",
         "4"); // NOTE: using 0 to explicitly confim we don't assume null
+    _test(
+        "group_l", "1", "0", "3", "-1"); // NOTE: using 0 to explicitly confim we don't assume null
+    _test(
+        "group_tl_dv",
+        "1",
+        "-2",
+        "0",
+        "4"); // NOTE: using 0 to explicitly confim we don't assume null
   }
 
   private void _test(

@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,6 +41,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
+    LONG_SHIFT_DIRECTION = random().nextInt(3) - 1; // -1, 0, or 1
     initCore("solrconfig-collapseqparser.xml", "schema15.xml");
   }
 
@@ -80,7 +80,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               instanceOf(CollapsingQParserPlugin.OrdScoreCollector.class));
           MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_i" + np + "}", req),
-              instanceOf(CollapsingQParserPlugin.IntScoreCollector.class));
+              instanceOf(CollapsingQParserPlugin.LongScoreCollector.class));
           for (String selector : fieldValueSelectors) {
             MatcherAssert.assertThat(
                 parseAndBuildCollector("{!collapse field=foo_s1 " + selector + np + "}", req),
@@ -89,7 +89,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           for (String selector : fieldValueSelectors) {
             MatcherAssert.assertThat(
                 parseAndBuildCollector("{!collapse field=foo_i " + selector + np + "}", req),
-                instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
+                instanceOf(CollapsingQParserPlugin.LongFieldValueCollector.class));
           }
 
           // anything with cscore() is (currently) off limits regardless of null policy or hint...
@@ -106,7 +106,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               MatcherAssert.assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=foo_i" + selector + np + hint + "}", req),
-                  instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
+                  instanceOf(CollapsingQParserPlugin.LongFieldValueCollector.class));
             }
           }
         }
@@ -127,7 +127,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
           MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_i hint=block" + np + "}", req),
-              instanceOf(CollapsingQParserPlugin.BlockIntScoreCollector.class));
+              instanceOf(CollapsingQParserPlugin.BlockLongScoreCollector.class));
           for (String selector : fieldValueSelectors) {
             MatcherAssert.assertThat(
                 parseAndBuildCollector(
@@ -138,7 +138,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             MatcherAssert.assertThat(
                 parseAndBuildCollector(
                     "{!collapse field=foo_i hint=block " + selector + np + "}", req),
-                instanceOf(CollapsingQParserPlugin.BlockIntSortSpecCollector.class));
+                instanceOf(CollapsingQParserPlugin.BlockLongSortSpecCollector.class));
           }
         }
       }
@@ -247,7 +247,9 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "field=_root_ hint=block",
             "field=block_s1 hint=block",
             // block collapse used explicitly (int)
-            "field=block_i  hint=block")) {
+            "field=block_i  hint=block",
+            // block collapse used explicitly (long)
+            "field=block_l  hint=block")) {
       for (String nullPolicy :
           Arrays.asList(
               "", // ignore is default
@@ -267,16 +269,18 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                   " max=sub(0,desc" + suffix + ")",
                   " min=sub(0,asc" + suffix + ")")) {
 
-            if (headSelector.endsWith("_l") && opt.endsWith("_i")) {
-              // NOTE: this limitation doesn't apply to block collapse on int,
-              // so we only check 'opt.endsWith' (if ends with block hint we're ok)
-              assertQEx(
-                  "expected known limitation of using long for min/max selector when doing numeric collapse",
-                  "min/max must be Int or Float",
-                  req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + headSelector + "}"),
-                  SolrException.ErrorCode.BAD_REQUEST);
-              continue;
-            }
+            // NOTE: this limitation is no longer relevant (as of some time ago) iiuc?
+            // if (headSelector.endsWith("_l") && opt.endsWith("_i")) {
+            //  // NOTE: this limitation doesn't apply to block collapse on int,
+            //  // so we only check 'opt.endsWith' (if ends with block hint we're ok)
+            //  assertQEx(
+            //      "expected known limitation of using long for min/max selector when doing numeric
+            // collapse",
+            //      "min/max must be Int or Float",
+            //      req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + headSelector + "}"),
+            //      SolrException.ErrorCode.BAD_REQUEST);
+            //  continue;
+            // }
 
             assertQ(
                 req(
@@ -315,7 +319,9 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "field=_root_ hint=block",
             "field=block_s1 hint=block",
             // block collapse used explicitly (int)
-            "field=block_i  hint=block")) {
+            "field=block_i  hint=block",
+            // block collapse used explicitly (long)
+            "field=block_l  hint=block")) {
 
       {
         // score based group head selection (default) these permutations should all give the same
@@ -437,16 +443,17 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                   " min=asc" + suffix,
                   " min='sum(asc" + suffix + ", 42)'")) {
 
-            if (selector.endsWith("_l") && opt.endsWith("_i")) {
-              // NOTE: this limitation doesn't apply to block collapse on int,
-              // so we only check 'opt.endsWith' (if ends with block hint we're ok)
-              assertQEx(
-                  "expected known limitation of using long for min/max selector when doing numeric collapse",
-                  "min/max must be Int or Float",
-                  req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + selector + "}"),
-                  SolrException.ErrorCode.BAD_REQUEST);
-              continue;
-            }
+            // if (selector.endsWith("_l") && opt.endsWith("_i")) {
+            //  // NOTE: this limitation doesn't apply to block collapse on int,
+            //  // so we only check 'opt.endsWith' (if ends with block hint we're ok)
+            //  assertQEx(
+            //      "expected known limitation of using long for min/max selector when doing numeric
+            // collapse",
+            //      "min/max must be Int or Float",
+            //      req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + selector + "}"),
+            //      SolrException.ErrorCode.BAD_REQUEST);
+            //  continue;
+            // }
 
             assertQ(
                 req(
@@ -503,16 +510,17 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                   " min='sum(desc" + suffix + ", 42)'",
                   " max='sum(asc" + suffix + ", 42)'")) {
 
-            if (selector.endsWith("_l") && opt.endsWith("_i")) {
-              // NOTE: this limitation doesn't apply to block collapse on int,
-              // so we only check 'opt.endsWith' (if ends with block hint we're ok)
-              assertQEx(
-                  "expected known limitation of using long for min/max selector when doing numeric collapse",
-                  "min/max must be Int or Float",
-                  req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + selector + "}"),
-                  SolrException.ErrorCode.BAD_REQUEST);
-              continue;
-            }
+            // if (selector.endsWith("_l") && opt.endsWith("_i")) {
+            //  // NOTE: this limitation doesn't apply to block collapse on int,
+            //  // so we only check 'opt.endsWith' (if ends with block hint we're ok)
+            //  assertQEx(
+            //      "expected known limitation of using long for min/max selector when doing numeric
+            // collapse",
+            //      "min/max must be Int or Float",
+            //      req("q", "*:*", "fq", "{!collapse " + opt + nullPolicy + selector + "}"),
+            //      SolrException.ErrorCode.BAD_REQUEST);
+            //  continue;
+            // }
 
             assertQ(
                 req(
@@ -637,7 +645,9 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             // block collapse used explicitly (ord)
             "field=block_s1 hint=block",
             // block collapse used explicitly (int)
-            "field=block_i  hint=block")) {
+            "field=block_i  hint=block",
+            // block collapse used explicitly (long)
+            "field=block_l  hint=block")) {
 
       { // score based group head selection (default)
         assertQ(
@@ -718,16 +728,17 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 " min='sum(asc" + suffix + ", 42)'",
                 " max='sum(desc" + suffix + ", 42)'")) {
 
-          if (selector.endsWith("_l") && opt.endsWith("_i")) {
-            // NOTE: this limitation doesn't apply to block collapse on int,
-            // so we only check 'opt.endsWith' (if ends with block hint we're ok)
-            assertQEx(
-                "expected known limitation of using long for min/max selector when doing numeric collapse",
-                "min/max must be Int or Float",
-                req("q", "*:*", "fq", "{!collapse " + opt + selector + " nullPolicy=expand}"),
-                SolrException.ErrorCode.BAD_REQUEST);
-            continue;
-          }
+          // if (selector.endsWith("_l") && opt.endsWith("_i")) {
+          //  // NOTE: this limitation doesn't apply to block collapse on int,
+          //  // so we only check 'opt.endsWith' (if ends with block hint we're ok)
+          //  assertQEx(
+          //      "expected known limitation of using long for min/max selector when doing numeric
+          // collapse",
+          //      "min/max must be Int or Float",
+          //      req("q", "*:*", "fq", "{!collapse " + opt + selector + " nullPolicy=expand}"),
+          //      SolrException.ErrorCode.BAD_REQUEST);
+          //  continue;
+          // }
 
           assertQ(
               req(
@@ -804,16 +815,17 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 " min='sum(desc" + suffix + ", 42)'",
                 " max='sum(asc" + suffix + ", 42)'")) {
 
-          if (selector.endsWith("_l") && opt.endsWith("_i")) {
-            // NOTE: this limitation doesn't apply to block collapse on int,
-            // so we only check 'opt.endsWith' (if ends with block hint we're ok)
-            assertQEx(
-                "expected known limitation of using long for min/max selector when doing numeric collapse",
-                "min/max must be Int or Float",
-                req("q", "*:*", "fq", "{!collapse " + opt + selector + " nullPolicy=expand}"),
-                SolrException.ErrorCode.BAD_REQUEST);
-            continue;
-          }
+          // if (selector.endsWith("_l") && opt.endsWith("_i")) {
+          //  // NOTE: this limitation doesn't apply to block collapse on int,
+          //  // so we only check 'opt.endsWith' (if ends with block hint we're ok)
+          //  assertQEx(
+          //      "expected known limitation of using long for min/max selector when doing numeric
+          // collapse",
+          //      "min/max must be Int or Float",
+          //      req("q", "*:*", "fq", "{!collapse " + opt + selector + " nullPolicy=expand}"),
+          //      SolrException.ErrorCode.BAD_REQUEST);
+          //  continue;
+          // }
 
           assertQ(
               req(
@@ -977,6 +989,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
 
     final String EX = "/response/lst[@name='expanded']/result";
+    String longBlockSpec = "field=block_l  hint=block";
     // we don't bother testing _root_ field collapsing, since it contains different field values
     // then block_s1
     for (String opt :
@@ -987,8 +1000,22 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             // block collapse used explicitly (int)
             "field=block_i  hint=block",
 
+            // block collapse used explicitly (long)
+            longBlockSpec,
+
             // block collapse used explicitly (ord)
             "field=block_s1 hint=block")) {
+
+      String low, mid, high;
+      if (longBlockSpec.equals(opt)) {
+        low = Long.toString(adjustToLongVal(-1));
+        mid = Long.toString(adjustToLongVal(0));
+        high = Long.toString(adjustToLongVal(1));
+      } else {
+        low = "-1";
+        mid = "0";
+        high = "1";
+      }
 
       // these permutations should all give the same results, since the queries don't match any docs
       // in 'null' groups
@@ -1013,16 +1040,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "/response/result/doc[2]/str[@name='id'][.='p2s4']",
             "/response/result/doc[3]/str[@name='id'][.='p3s1']",
             "*[count(" + EX + ")=count(/response/result/doc)]", // group per doc
-            "*[count(" + EX + "[@name='-1']/doc)=3]",
-            EX + "[@name='-1']/doc[1]/str[@name='id'][.='p1s3']",
-            EX + "[@name='-1']/doc[2]/str[@name='id'][.='p1s4']",
-            EX + "[@name='-1']/doc[3]/str[@name='id'][.='p1s2']",
-            "*[count(" + EX + "[@name='0']/doc)=2]",
-            EX + "[@name='0']/doc[1]/str[@name='id'][.='p2s3']",
-            EX + "[@name='0']/doc[2]/str[@name='id'][.='p2s1']",
-            "*[count(" + EX + "[@name='1']/doc)=2]",
-            EX + "[@name='1']/doc[1]/str[@name='id'][.='p3s4']",
-            EX + "[@name='1']/doc[2]/str[@name='id'][.='p3s3']");
+            "*[count(" + EX + "[@name='" + low + "']/doc)=3]",
+            EX + "[@name='" + low + "']/doc[1]/str[@name='id'][.='p1s3']",
+            EX + "[@name='" + low + "']/doc[2]/str[@name='id'][.='p1s4']",
+            EX + "[@name='" + low + "']/doc[3]/str[@name='id'][.='p1s2']",
+            "*[count(" + EX + "[@name='" + mid + "']/doc)=2]",
+            EX + "[@name='" + mid + "']/doc[1]/str[@name='id'][.='p2s3']",
+            EX + "[@name='" + mid + "']/doc[2]/str[@name='id'][.='p2s1']",
+            "*[count(" + EX + "[@name='" + high + "']/doc)=2]",
+            EX + "[@name='" + high + "']/doc[1]/str[@name='id'][.='p3s4']",
+            EX + "[@name='" + high + "']/doc[2]/str[@name='id'][.='p3s3']");
       }
 
       // nullPolicy=expand w/ func query to assert expected scores
@@ -1050,11 +1077,16 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "/response/result/doc[4][str[@name='id'][.='z3']   and float[@name='score'][.=45.0]]",
               "/response/result/doc[5][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]",
               "*[count(" + EX + ")=2]", // groups w/o any other docs don't expand
-              "*[count(" + EX + "[@name='-1']/doc)=1]",
+              "*[count(" + EX + "[@name='" + low + "']/doc)=1]",
               EX
-                  + "[@name='-1']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]",
-              "*[count(" + EX + "[@name='0']/doc)=1]",
-              EX + "[@name='0']/doc[1][str[@name='id'][.='p2s2'] and float[@name='score'][.=52.0]]"
+                  + "[@name='"
+                  + low
+                  + "']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]",
+              "*[count(" + EX + "[@name='" + mid + "']/doc)=1]",
+              EX
+                  + "[@name='"
+                  + mid
+                  + "']/doc[1][str[@name='id'][.='p2s2'] and float[@name='score'][.=52.0]]"
               // no "expand" docs for group '1' because no other docs match query
               // no "expand" docs for nulls unless/until SOLR-14330 is implemented
               );
@@ -1128,9 +1160,49 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
   protected static final List<String> SELECTOR_FIELD_SUFFIXES = Arrays.asList("_i", "_l", "_f");
 
+  private static int LONG_SHIFT_DIRECTION;
+
+  @SuppressWarnings("fallthrough")
+  private static long adjustToLongVal(Object orig) {
+    int intVal = Integer.parseInt(orig.toString());
+    if (LONG_SHIFT_DIRECTION == 0) {
+      return intVal;
+    }
+    switch (intVal) {
+      case -1:
+        switch (LONG_SHIFT_DIRECTION) {
+          case -1:
+            long ret = 0x8000000100000000L | (-1L >>> 32 & intVal);
+            assertTrue(ret < Integer.MIN_VALUE && (int) ret == intVal);
+            return ret;
+          case 1:
+            return 0;
+        }
+      case 0:
+        switch (LONG_SHIFT_DIRECTION) {
+          case -1:
+            return -1;
+          case 1:
+            return 1;
+        }
+      case 1:
+        switch (LONG_SHIFT_DIRECTION) {
+          case -1:
+            return 0;
+          case 1:
+            long ret = (long) intVal << 32 | intVal;
+            assertTrue(ret > Integer.MAX_VALUE && (int) ret == intVal);
+            return ret;
+        }
+    }
+    throw new IllegalStateException("make sure we know about any changes to how this is invoked");
+  }
+
   protected static SolrInputDocument dupFields(final SolrInputDocument doc) {
     if (doc.getFieldNames().contains("block_i")) {
-      doc.setField("block_s1", doc.getFieldValue("block_i"));
+      Object val = doc.getFieldValue("block_i");
+      doc.setField("block_s1", val);
+      doc.setField("block_l", adjustToLongVal(val));
     }
     // as num_i value increases, the asc_* fields increase
     // as num_i value increases, the desc_* fields decrease
