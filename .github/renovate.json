@@ -18,8 +18,13 @@
       "versioning": "regex:^(?<major>\\d{1,4})\\.(?<minor>\\d+)(\\.(?<patch>\\d+))?$"
     },
     {
-      "description": "Group these together in same PR",
-      "matchPackagePatterns": ["org.apache.httpcomponents"],
+      "description": "Group these calcite dependency upgrades together in same PR",
+      "matchPackagePrefixes": ["org.apache.calcite"],
+      "groupName": "org.apache.calcite"
+    },
+    {
+      "description": "Group these httpcomponents dependency upgrades together in same PR",
+      "matchPackagePrefixes": ["org.apache.httpcomponents"],
       "groupName": "org.apache.httpcomponents"
     },
     {
@@ -29,7 +34,7 @@
     },
     {
       "description": "Noisy, frequently updated dependencies checked less often",
-      "matchPackagePrefixes": ["software.amazon.awssdk"],
+      "matchPackagePrefixes": ["software.amazon.awssdk", "com.google.cloud"],
       "extends": ["schedule:monthly"]
     },
     {
