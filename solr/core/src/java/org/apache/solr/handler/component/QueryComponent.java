@@ -1322,9 +1322,11 @@ public class QueryComponent extends SearchComponent {
             Objects.requireNonNull(
                 (SolrDocumentList)
                     SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
+        List<String> unresolvedKeys = new ArrayList<>();
         for (SolrDocument doc : docs) {
-          Object id = doc.getFieldValue(keyFieldName);
-          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          final Object id = doc.getFieldValue(keyFieldName);
+          final String keyString = id.toString();
+          final ShardDoc sdoc = rb.resultIds.get(keyString);
           if (sdoc != null) {
             if (returnScores) {
               doc.setField("score", sdoc.score);
@@ -1338,7 +1340,16 @@ public class QueryComponent extends SearchComponent {
               doc.removeFields(keyFieldName);
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
+          } else {
+            unresolvedKeys.add(keyString);
           }
+        }
+        if (!unresolvedKeys.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "Unable to merge shard response. Perhaps uniqueKey (either " +
+                          rb.req.getSchema().getUniqueKeyField().getName()+" or "+keyFieldName+
+                          ") was erased by renaming via fl parameters." +
+                  " Got:"+unresolvedKeys + " expecting:" + rb.resultIds.keySet());
         }
       }
     }
