@@ -1349,7 +1349,7 @@ public class QueryComponent extends SearchComponent {
           }
         }
       }
-      if (shardDocFoundInResults == Boolean.FALSE && !rb.resultIds.isEmpty()) {
+      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !rb.resultIds.isEmpty()) {
         String keyMsg =
             !uniqueKey.equals(keyFieldName)
                 ? "(either " + uniqueKey + " or " + keyFieldName + ")"
