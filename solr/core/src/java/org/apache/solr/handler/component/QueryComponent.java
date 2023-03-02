@@ -1279,7 +1279,7 @@ public class QueryComponent extends SearchComponent {
         // if id was renamed we need to use the new name
         keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
       }
-      String lastKeyString="<empty>";
+      String lastKeyString = "<empty>";
       Boolean shardDocFoundInResults = null;
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
@@ -1342,21 +1342,27 @@ public class QueryComponent extends SearchComponent {
               doc.removeFields(keyFieldName);
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
-          }else {
-            if (shardDocFoundInResults==null) {
+          } else {
+            if (shardDocFoundInResults == null) {
               shardDocFoundInResults = Boolean.FALSE;
             }
           }
         }
       }
       if (shardDocFoundInResults == Boolean.FALSE && !rb.resultIds.isEmpty()) {
-        String keyMsg = !uniqueKey.equals(keyFieldName) ? "(either " +
-                uniqueKey +" or " + keyFieldName +")" : uniqueKey;
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Unable to merge shard response. Perhaps uniqueKey " +
-                        keyMsg +
-                        " was erased by renaming via fl parameters." +
-                        " Expecting:" + rb.resultIds.keySet()+ ", a sample of keys received:"+lastKeyString);
+        String keyMsg =
+            !uniqueKey.equals(keyFieldName)
+                ? "(either " + uniqueKey + " or " + keyFieldName + ")"
+                : uniqueKey;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unable to merge shard response. Perhaps uniqueKey "
+                + keyMsg
+                + " was erased by renaming via fl parameters."
+                + " Expecting:"
+                + rb.resultIds.keySet()
+                + ", a sample of keys received:"
+                + lastKeyString);
       }
     }
   }

@@ -89,11 +89,13 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "*[count(//doc/str)=2] ",
         "*//doc[1]/str[1][.='1'] ",
         "*//doc[1]/str[2][.='1'] ");
+  }
 
+  public void testMovePk(){
     assertQ(
-        req("q", "id:1", "fl", "old_id:id,id:new_id_s"),
-        "//*[@numFound='1'] ",
-        "*//doc[1]/arr[@name='id']/str[.='10'] ");
+            req("q", "id:1", "fl", "old_id:id,id:new_id_s"),
+            "//*[@numFound='1'] ",
+            "*//doc[1]/arr[@name='id']/str[.='10'] ");
   }
 
   @Test

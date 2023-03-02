@@ -58,7 +58,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
-    assertU(adoc("id", "99", "newid", "990","val_i", "1", "ssto", "X", "subject", "uncommitted"));
+    assertU(adoc("id", "99", "newid", "990", "val_i", "1", "ssto", "X", "subject", "uncommitted"));
   }
 
   public void testMultiValued() throws Exception {
@@ -110,9 +110,9 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "/doc=={'val2_ss':10,'val_ss':1,'subject':'uncommitted'}");
   }
 
-  public void test_mv_fl() {
+  public void testMovePk() {
 
-    for (String fl : new String[]{"oldid:id,id:newid,val_i,subject,ssto"}) {
+    for (String fl : new String[] {"oldid:id,id:newid,val_i,subject,ssto"}) {
       assertQ(
           "fl=" + fl + " ... all real fields",
           req("q", "*:*", "rows", "1", "fl", fl),
@@ -120,9 +120,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
           "//result/doc/str[@name='id'][.='420' or .='430' or .='440' or .='450' or .='460']",
           "//result/doc/int[@name='val_i']",
           "//result/doc/str[@name='ssto']",
-          "//result/doc/str[@name='subject']"//,
-          //"//result/doc[count(*)=5]"
-      );
+          "//result/doc/str[@name='subject']"
+          );
     }
   }
 
@@ -130,14 +129,14 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
     for (String fl : ALL_REAL_FIELDS) {
       assertQ(
-              "fl=" + fl + " ... all real fields",
-              req("q", "*:*", "rows", "1", "fl", fl),
-              "//result[@numFound='5']",
-              "//result/doc/str[@name='id']",
-              "//result/doc/int[@name='val_i']",
-              "//result/doc/str[@name='ssto']",
-              "//result/doc/str[@name='subject']",
-              "//result/doc[count(*)=6]");
+          "fl=" + fl + " ... all real fields",
+          req("q", "*:*", "rows", "1", "fl", fl),
+          "//result[@numFound='5']",
+          "//result/doc/str[@name='id']",
+          "//result/doc/int[@name='val_i']",
+          "//result/doc/str[@name='ssto']",
+          "//result/doc/str[@name='subject']",
+          "//result/doc[count(*)=6]");
     }
   }
 
