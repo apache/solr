@@ -292,6 +292,8 @@ Other Changes
 
 * SOLR-16672: Simplify SolrCLI Healthcheck command's logic for obtaining a target collection (Eric Pugh)
 
+* SOLR-16684: Keep solr's opennlp-tools version in sync with Lucene (janhoy)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
