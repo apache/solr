@@ -17,33 +17,29 @@
 
 package org.apache.solr.jersey;
 
-import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
+import java.io.IOException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.request.SolrQueryRequest;
+
 // TODO Deprecate or remove support for the 'wt' parameter in the v2 APIs in favor of the more
 //  HTTP-compliant 'Accept' header
-/**
- * Overrides the content-type of the response based on an optional user-provided 'wt' parameter
- */
+/** Overrides the content-type of the response based on an optional user-provided 'wt' parameter */
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
-    @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
-        final SolrQueryRequest solrQueryRequest =
-                (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-        final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, null);
-        if (mediaType != null) {
-            responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
-        }
+  @Override
+  public void filter(
+      ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+      throws IOException {
+    final SolrQueryRequest solrQueryRequest =
+        (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
+    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, null);
+    if (mediaType != null) {
+      responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
     }
+  }
 }

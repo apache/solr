@@ -132,7 +132,8 @@ public class TestV2Request extends SolrCloudTestCase {
             .build());
 
     assertSuccess(
-        client, new V2Request.Builder("/collections/test").withMethod(SolrRequest.METHOD.DELETE).build());
+        client,
+        new V2Request.Builder("/collections/test").withMethod(SolrRequest.METHOD.DELETE).build());
     NamedList<Object> res = client.request(new V2Request.Builder("/collections").build());
 
     // TODO: this is not guaranteed now - beast test if you try to fix

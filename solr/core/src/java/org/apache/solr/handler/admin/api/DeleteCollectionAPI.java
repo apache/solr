@@ -108,5 +108,4 @@ public class DeleteCollectionAPI extends AdminAPIBase {
 
     return new ZkNodeProps(remoteMessage);
   }
-
 }

@@ -17,9 +17,7 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
-import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
@@ -112,7 +110,8 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
 
     response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
     response.responseHeader.status = response.error.code;
-    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);
+    final String mediaType =
+        V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
   }
 

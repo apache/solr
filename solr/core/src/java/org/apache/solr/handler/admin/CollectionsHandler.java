@@ -1330,7 +1330,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          final ListCollectionsAPI listCollectionsAPI = new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final ListCollectionsAPI listCollectionsAPI =
+              new ListCollectionsAPI(h.coreContainer, req, rsp);
           final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
