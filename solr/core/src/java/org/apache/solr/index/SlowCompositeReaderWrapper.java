@@ -76,8 +76,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // also have a cached FieldInfos instance so this is consistent. SOLR-12878
   private final FieldInfos fieldInfos;
 
-  final Map<String, Terms> cachedTerms = new ConcurrentHashMap<>();
-
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
   final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
@@ -140,16 +138,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   public Terms terms(String field) throws IOException {
     ensureOpen();
     try {
-      return cachedTerms.computeIfAbsent(
-          field,
-          f -> {
-            try {
-              return MultiTerms.getTerms(in, f);
-            } catch (IOException e) {
-              // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
-              throw new RuntimeException("unwrapMe", e);
-            }
-          });
+      return MultiTerms.getTerms(in, field);
     } catch (RuntimeException e) {
       if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
         throw (IOException) e.getCause();
