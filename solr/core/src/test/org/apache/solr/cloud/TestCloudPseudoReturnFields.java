@@ -261,36 +261,35 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   @Test
   public void testCopyPk() throws Exception {
-      String fl = "oldid:id,newid";
-      SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
-      for (SolrDocument doc : docs) {
-        assertTrue(
-            fl + " => " + doc,
-            Arrays.asList("420", "430", "440", "450", "460")
-                    .indexOf((String) doc.getFieldValue("newid"))
-                >= 0);
-        assertTrue(
-                fl + " => " + doc,
-                Arrays.asList("42", "43", "44", "45", "46")
-                        .indexOf((String) doc.getFieldValue("oldid"))
-                        >= 0);
-      }
+    String fl = "oldid:id,newid";
+    SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
+    for (SolrDocument doc : docs) {
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("420", "430", "440", "450", "460")
+                  .indexOf((String) doc.getFieldValue("newid"))
+              >= 0);
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("42", "43", "44", "45", "46").indexOf((String) doc.getFieldValue("oldid"))
+              >= 0);
+    }
   }
 
   public void testMovePk() throws Exception {
-    try{
+    try {
       String fl = "oldid:id,id:newid"; // "id:newid";//
       SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
       fail("attempting to move PK causes 400");
       for (SolrDocument doc : docs) {
         assertTrue(
-                fl + " => " + doc,
-                Arrays.asList("420", "430", "440", "450", "460")
-                        .indexOf((String) doc.getFieldValue("id"))
-                        >= 0);
+            fl + " => " + doc,
+            Arrays.asList("420", "430", "440", "450", "460")
+                    .indexOf((String) doc.getFieldValue("id"))
+                >= 0);
       }
     } catch (SolrException sse) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,sse.code());
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, sse.code());
       final String message = sse.getMessage().toLowerCase(Locale.ROOT);
       assertTrue(message.contains("uniqueKey".toLowerCase(Locale.ROOT)));
       assertTrue(message.contains("fl".toLowerCase(Locale.ROOT)));

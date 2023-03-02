@@ -120,8 +120,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
           "//result/doc/str[@name='id'][.='420' or .='430' or .='440' or .='450' or .='460']",
           "//result/doc/int[@name='val_i']",
           "//result/doc/str[@name='ssto']",
-          "//result/doc/str[@name='subject']"
-          );
+          "//result/doc/str[@name='subject']");
     }
   }
 
