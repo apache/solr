@@ -34,12 +34,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -487,17 +485,19 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     ThreadPoolExecutor commExecutor = null;
     Http2SolrClient client = null;
     try {
-      commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          1,
-          Integer.MAX_VALUE,
-          1,
-          TimeUnit.SECONDS,
-          workQueue,
-          new SolrNamedThreadFactory("httpShardExecutor"),
-          false);
-      client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-          .withExecutor(commExecutor)
-          .build();
+      commExecutor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              3,
+              Integer.MAX_VALUE,
+              1,
+              TimeUnit.SECONDS,
+              workQueue,
+              new SolrNamedThreadFactory("httpShardExecutor"),
+              false);
+      client =
+          new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
+              .withExecutor(commExecutor)
+              .build();
       try {
         client.getById("a");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {

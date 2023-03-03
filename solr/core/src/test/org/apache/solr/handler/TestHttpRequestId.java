@@ -32,7 +32,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.MDC;
 
@@ -60,7 +59,6 @@ public class TestHttpRequestId extends SolrJettyTestBase {
   }
 
   @Test
-  @Ignore // investigate possible deadlock
   public void mdcContextTest2() throws Exception {
     String key = "mdcContextTestKey";
     String collection = "/collection1";
@@ -69,7 +67,6 @@ public class TestHttpRequestId extends SolrJettyTestBase {
   }
 
   @Test
-  @Ignore // investigate possible deadlock
   public void mdcContextFailureTest2() throws Exception {
     String key = "mdcContextTestKey";
     String collection = "/doesnotexist";
@@ -119,7 +116,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
       // client setup needs to be same as HttpShardHandlerFactory
       commExecutor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              1,
+              3,
               Integer.MAX_VALUE,
               1,
               TimeUnit.SECONDS,
