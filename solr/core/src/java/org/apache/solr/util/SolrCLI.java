@@ -662,7 +662,8 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Helper function for reading an Object of unknown type from a JSON Object tree.
+   * Helper function for reading an Object of unknown type from a JSON Object tree stored in
+   * NamedList format.
    *
    * <p>To find a path to a child that starts with a slash (e.g. queryHandler named /query) you must
    * escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams would get the
@@ -697,6 +698,52 @@ public class SolrCLI implements CLIO {
         if (child instanceof NamedList) {
           // keep walking the path down to the desired node
           parent = (NamedList<Object>) child;
+        } else {
+          // early termination - hit a leaf before the requested node
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Helper function for reading an Object of unknown type from a JSON Object tree stored in Map
+   * format.
+   *
+   * <p>To find a path to a child that starts with a slash (e.g. queryHandler named /query) you must
+   * escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams would get the
+   * echoParams value for the "/query" request handler.
+   */
+  @SuppressWarnings("unchecked")
+  public static Object atPath(String jsonPath, Map<String, Object> json) {
+    if ("/".equals(jsonPath)) return json;
+
+    if (!jsonPath.startsWith("/"))
+      throw new IllegalArgumentException(
+          "Invalid JSON path: " + jsonPath + "! Must start with a /");
+
+    Map<String, Object> parent = json;
+    Object result = null;
+    String[] path =
+        jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
+    for (int p = 1; p < path.length; p++) {
+      String part = path[p];
+
+      if (part.startsWith("\\")) {
+        part = part.substring(1);
+      }
+
+      Object child = parent.get(part);
+      if (child == null) break;
+
+      if (p == path.length - 1) {
+        // success - found the node at the desired path
+        result = child;
+      } else {
+        if (child instanceof Map) {
+          // keep walking the path down to the desired node
+          parent = (Map<String, Object>) child;
         } else {
           // early termination - hit a leaf before the requested node
           break;

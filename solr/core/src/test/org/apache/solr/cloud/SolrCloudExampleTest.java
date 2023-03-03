@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -218,6 +217,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * Uses the SolrCLI config action to activate soft auto-commits for the getting started
    * collection.
    */
+  @SuppressWarnings("unchecked")
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
@@ -229,10 +229,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
       Object maxTimeFromConfig =
-          ((LinkedHashMap)
-                  ((LinkedHashMap) ((LinkedHashMap) configJson.get("config")).get("updateHandler"))
-                      .get("autoSoftCommit"))
-              .get("maxTime");
+          SolrCLI.atPath(
+              "/updateHandler/autoSoftCommit/maxTime",
+              (Map<String, Object>) configJson.get("config"));
       assertNotNull(maxTimeFromConfig);
       assertEquals(-1, maxTimeFromConfig);
 
@@ -261,16 +260,22 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
       maxTimeFromConfig =
-          ((LinkedHashMap)
-                  ((LinkedHashMap) ((LinkedHashMap) configJson.get("config")).get("updateHandler"))
-                      .get("autoSoftCommit"))
-              .get("maxTime");
+          SolrCLI.atPath(
+              "/updateHandler/autoSoftCommit/maxTime",
+              (Map<String, Object>) configJson.get("config"));
       assertNotNull(maxTimeFromConfig);
       assertEquals(maxTime, maxTimeFromConfig);
 
       if (log.isInfoEnabled()) {
         log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
       }
+
+      assertEquals(
+          "Should have been able to get a value from the /query request handler",
+          "explicit",
+          SolrCLI.atPath(
+              "/requestHandler/\\/query/defaults/echoParams",
+              (Map<String, Object>) configJson.get("config")));
 
       // Since it takes some time for this command to complete we need to make sure all the reloads
       // for all the cores have been done.
@@ -296,6 +301,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   // Collect all the autoSoftCommit intervals.
+  @SuppressWarnings("unchecked")
   private Map<String, Integer> getSoftAutocommitInterval(String collection, SolrClient solrClient)
       throws Exception {
     Map<String, Integer> ret = new HashMap<>();
@@ -310,11 +316,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                     new ModifiableSolrParams()));
         Integer maxTime =
             (Integer)
-                ((LinkedHashMap)
-                        ((LinkedHashMap)
-                                ((LinkedHashMap) configJson.get("config")).get("updateHandler"))
-                            .get("autoSoftCommit"))
-                    .get("maxTime");
+                SolrCLI.atPath(
+                    "/updateHandler/autoSoftCommit/maxTime",
+                    (Map<String, Object>) configJson.get("config"));
         ret.put(replica.getCoreName(), maxTime);
       }
     }

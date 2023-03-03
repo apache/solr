@@ -735,11 +735,13 @@ public class PackageManager implements Closeable {
                   SolrRequest.METHOD.GET,
                   PackageUtils.getCollectionParamsPath(collection) + "/packages",
                   new ModifiableSolrParams()));
-      return (Map<String, String>) SolrCLI.atPath("/response/params/packages/" + packageName, response);
+      return (Map<String, String>)
+          SolrCLI.atPath(
+              "/params/packages/" + packageName, (Map<String, Object>) response.get("response"));
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       if (log.isWarnEnabled()) {
-        log.warn("There are no parameters to return for package: " + packageName);
+        log.warn("There are no parameters to return for package: {}", packageName);
       }
       return Collections.emptyMap();
     }
