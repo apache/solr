@@ -295,9 +295,7 @@ public class MiniSolrCloudCluster {
         zkTestServer,
         securityJson,
         false,
-        formatZkServer,
-        Optional.empty(),
-        Optional.empty());
+        formatZkServer);
   }
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
@@ -321,9 +319,7 @@ public class MiniSolrCloudCluster {
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
       boolean trackJettyMetrics,
-      boolean formatZkServer,
-      Optional<Integer> connectionTimeout,
-      Optional<Integer> socketTimeout)
+      boolean formatZkServer)
       throws Exception {
 
     Objects.requireNonNull(securityJson);
@@ -389,7 +385,7 @@ public class MiniSolrCloudCluster {
       throw startupError;
     }
 
-    solrClient = buildSolrClient(connectionTimeout, socketTimeout);
+    solrClient = buildSolrClient();
 
     if (numServers > 0) {
       waitForAllNodes(numServers, 60);
@@ -766,12 +762,11 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  protected CloudSolrClient buildSolrClient(
-      Optional<Integer> connectionTimeout, Optional<Integer> socketTimeout) {
+  protected CloudSolrClient buildSolrClient() {
     return new CloudLegacySolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(socketTimeout.orElse(90000))
-        .withConnectionTimeout(connectionTimeout.orElse(15000))
+        .withSocketTimeout(90000)
+        .withConnectionTimeout(15000)
         .build(); // we choose 90 because we run in some harsh envs
   }
 
@@ -1057,8 +1052,6 @@ public class MiniSolrCloudCluster {
     private boolean useDistributedCollectionConfigSetExecution;
     private boolean useDistributedClusterStateUpdate;
     private boolean formatZkServer = true;
-    private Optional<Integer> connectionTimeout = Optional.empty();
-    private Optional<Integer> socketTimeout = Optional.empty();
 
     /**
      * Create a builder
@@ -1219,16 +1212,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    public Builder withConnectionTimeout(Integer connectionTimeout) {
-      this.connectionTimeout = Optional.of(connectionTimeout);
-      return this;
-    }
-
-    public Builder withSocketTimeout(Integer socketTimeout) {
-      this.socketTimeout = Optional.of(socketTimeout);
-      return this;
-    }
-
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
@@ -1272,9 +1255,7 @@ public class MiniSolrCloudCluster {
               null,
               securityJson,
               trackJettyMetrics,
-              formatZkServer,
-              connectionTimeout,
-              socketTimeout);
+              formatZkServer);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }
