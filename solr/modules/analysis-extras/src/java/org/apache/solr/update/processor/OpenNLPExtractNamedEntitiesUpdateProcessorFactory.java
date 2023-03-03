@@ -642,11 +642,13 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
                 tokenStream, tokenStream.addAttribute(SentenceAttribute.class));
         tokenStream.reset();
         synchronized (nerTaggerOp) {
-          for (AttributeSource attributeSource :
-              sentenceAttributeExtractor.extractSentenceAttributes()) {
-            terms.add(attributeSource.getAttribute(CharTermAttribute.class).toString());
-            startOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).startOffset());
-            endOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).endOffset());
+          while (!sentenceAttributeExtractor.allSentencesProcessed()) {
+            for (AttributeSource attributeSource :
+                sentenceAttributeExtractor.extractSentenceAttributes()) {
+              terms.add(attributeSource.getAttribute(CharTermAttribute.class).toString());
+              startOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).startOffset());
+              endOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).endOffset());
+            }
             extractEntitiesFromSentence(
                 fullText, terms, startOffsets, endOffsets, entitiesWithType);
           }
