@@ -53,6 +53,12 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
     if (maxChunk <= 0) {
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }
+    if (params.get("unmap") != null) {
+      log.warn(
+          "It is no longer possible to configure unmapping of index files on DirectoryFactory level in solrconfig.xml.");
+      log.warn(
+          "To disable unmapping, pass -Dorg.apache.lucene.store.MMapDirectory.enableUnmapHack=false on Solr's command line.");
+    }
     preload = params.getBool("preload", false); // default turn-off
   }
 
