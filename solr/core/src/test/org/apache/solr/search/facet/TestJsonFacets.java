@@ -108,6 +108,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD =
       null; // FacetField.FacetMethod.DEFAULT_METHOD;
 
+  @SuppressWarnings("MathAbsoluteNegative")
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {

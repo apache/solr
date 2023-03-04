@@ -324,6 +324,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     testExample("schemaless");
   }
 
+  @Test
+  @LuceneTestCase.Nightly
+  public void testFilmsExample() throws Exception {
+    testExample("films");
+  }
+
   protected void testExample(String exampleName) throws Exception {
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
     if (!solrHomeDir.isDirectory())
