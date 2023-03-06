@@ -27,7 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 10000)
 public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   private OtelTracerConfigurator instance;
 

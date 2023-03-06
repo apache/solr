@@ -32,6 +32,7 @@ dependencies {
   runtimeOnly 'org.apache.lucene:lucene-analysis-smartcn'
   runtimeOnly 'org.apache.lucene:lucene-analysis-stempel'
   implementation 'org.apache.lucene:lucene-core'
+  // NOTE: Need to stay on same version of opennlp-tools as lucene-analysis-opennlp
   implementation 'org.apache.opennlp:opennlp-tools'
   implementation 'org.slf4j:slf4j-api'
 
