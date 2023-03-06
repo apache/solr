@@ -146,13 +146,10 @@ public class RepositoryManager {
                 SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH, new ModifiableSolrParams()));
     String solrHome = (String) systemInfo.get("solr_home");
 
-    Map<String, String[]> paramsMap = new LinkedHashMap<>();
-    paramsMap.put("sync", new String[] {"true"});
-
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromUrl(solrClient, "/api/node/files" + path, paramsMap);
+    PackageUtils.getJsonStringFromUrl(solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)

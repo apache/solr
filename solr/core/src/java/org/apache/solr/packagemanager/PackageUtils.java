@@ -25,6 +25,7 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.netty.channel.Channel;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -42,6 +45,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
@@ -102,7 +106,7 @@ public class PackageUtils {
               @Override
               public void write(OutputStream os) throws IOException {
                 if (payload == null) return;
-                os.write(payload.array());
+                Channels.newChannel(os).write(payload);
               }
 
               @Override
@@ -119,7 +123,7 @@ public class PackageUtils {
   public static <T> T getJson(SolrClient client, String path, Class<T> klass) {
     try {
       return getMapper()
-          .readValue(getJsonStringFromUrl(client, path, new LinkedHashMap<>()), klass);
+          .readValue(getJsonStringFromUrl(client, path, new ModifiableSolrParams()), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -145,10 +149,10 @@ public class PackageUtils {
 
   /** Returns JSON string from a given Solr URL */
   public static String getJsonStringFromUrl(
-      SolrClient client, String path, Map<String, String[]> params) {
+      SolrClient client, String path, SolrParams params) {
     try {
       GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, path, new ModifiableSolrParams(params));
+          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
       request.setResponseParser(new NoOpResponseParser("json"));
       NamedList<Object> response = client.request(request);
       return response.jsonStr();

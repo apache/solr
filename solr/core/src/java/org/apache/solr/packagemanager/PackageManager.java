@@ -233,15 +233,12 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
     Map<String, String> packages = null;
     try {
-      Map<String, String[]> paramsMap = new LinkedHashMap<>();
-      paramsMap.put("omitHeader", new String[] {"true"});
-      paramsMap.put("wt", new String[] {"javabin"});
       NamedList<Object> result =
           solrClient.request(
               new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
                   PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
-                  new ModifiableSolrParams(paramsMap)));
+                  new ModifiableSolrParams().add("omitHeader", "true").add("wt", "javabin")));
       packages =
           (Map<String, String>)
               result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
@@ -779,7 +776,7 @@ public class PackageManager implements Closeable {
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
             String response =
-                PackageUtils.getJsonStringFromUrl(solrClient, path, new LinkedHashMap<>());
+                PackageUtils.getJsonStringFromUrl(solrClient, path, new ModifiableSolrParams());
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
@@ -830,7 +827,7 @@ public class PackageManager implements Closeable {
 
             if ("GET".equalsIgnoreCase(cmd.method)) {
               String response =
-                  PackageUtils.getJsonStringFromUrl(solrClient, path, new LinkedHashMap<>());
+                  PackageUtils.getJsonStringFromUrl(solrClient, path, new ModifiableSolrParams());
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
@@ -1107,15 +1104,13 @@ public class PackageManager implements Closeable {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }
     Map<String, String> deployed = new HashMap<String, String>();
-    Map<String, String[]> paramsMap = new LinkedHashMap<>();
-    paramsMap.put("omitHeader", new String[] {"true"});
     for (String collection : allCollections) {
       // Check package version installed
       String paramsJson =
           PackageUtils.getJsonStringFromUrl(
               solrClient,
               PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
-              paramsMap);
+              new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
         version =
