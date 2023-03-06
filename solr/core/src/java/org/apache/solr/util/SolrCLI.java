@@ -105,7 +105,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.security.Sha256AuthenticationProvider;
@@ -616,143 +615,6 @@ public class SolrCLI implements CLIO {
     return solrClient.request(req);
   }
 
-  /** Helper function for reading a String value from a JSON Object tree. */
-  public static String asString(String jsonPath, NamedList<Object> json) {
-    return pathAs(String.class, jsonPath, json);
-  }
-
-  /** Helper function for reading a Long value from a JSON Object tree. */
-  public static Long asLong(String jsonPath, NamedList<Object> json) {
-    return pathAs(Long.class, jsonPath, json);
-  }
-
-  /** Helper function for reading a List of Strings from a JSON Object tree. */
-  @SuppressWarnings("unchecked")
-  public static List<String> asList(String jsonPath, NamedList<Object> json) {
-    return pathAs(List.class, jsonPath, json);
-  }
-
-  /** Helper function for reading a Map from a JSON Object tree. */
-  @SuppressWarnings("unchecked")
-  public static Map<String, Object> asMap(String jsonPath, NamedList<Object> json) {
-    return pathAs(SimpleOrderedMap.class, jsonPath, json).asMap();
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T> T pathAs(Class<T> clazz, String jsonPath, NamedList<Object> json) {
-    T val = null;
-    Object obj = atPath(jsonPath, json);
-    if (obj != null) {
-      if (clazz.isAssignableFrom(obj.getClass())) {
-        val = (T) obj;
-      } else {
-        // no ok if it's not null and of a different type
-        throw new IllegalStateException(
-            "Expected a "
-                + clazz.getName()
-                + " at path "
-                + jsonPath
-                + " but found "
-                + obj
-                + " instead! "
-                + json);
-      }
-    } // it's ok if it is null
-    return val;
-  }
-
-  /**
-   * Helper function for reading an Object of unknown type from a JSON Object tree stored in
-   * NamedList format.
-   *
-   * <p>To find a path to a child that starts with a slash (e.g. queryHandler named /query) you must
-   * escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams would get the
-   * echoParams value for the "/query" request handler.
-   */
-  @SuppressWarnings("unchecked")
-  public static Object atPath(String jsonPath, NamedList<Object> json) {
-    if ("/".equals(jsonPath)) return json;
-
-    if (!jsonPath.startsWith("/"))
-      throw new IllegalArgumentException(
-          "Invalid JSON path: " + jsonPath + "! Must start with a /");
-
-    NamedList<Object> parent = json;
-    Object result = null;
-    String[] path =
-        jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
-    for (int p = 1; p < path.length; p++) {
-      String part = path[p];
-
-      if (part.startsWith("\\")) {
-        part = part.substring(1);
-      }
-
-      Object child = parent.get(part);
-      if (child == null) break;
-
-      if (p == path.length - 1) {
-        // success - found the node at the desired path
-        result = child;
-      } else {
-        if (child instanceof NamedList) {
-          // keep walking the path down to the desired node
-          parent = (NamedList<Object>) child;
-        } else {
-          // early termination - hit a leaf before the requested node
-          break;
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Helper function for reading an Object of unknown type from a JSON Object tree stored in Map
-   * format.
-   *
-   * <p>To find a path to a child that starts with a slash (e.g. queryHandler named /query) you must
-   * escape the slash. For instance /config/requestHandler/\/query/defaults/echoParams would get the
-   * echoParams value for the "/query" request handler.
-   */
-  @SuppressWarnings("unchecked")
-  public static Object atPath(String jsonPath, Map<String, Object> json) {
-    if ("/".equals(jsonPath)) return json;
-
-    if (!jsonPath.startsWith("/"))
-      throw new IllegalArgumentException(
-          "Invalid JSON path: " + jsonPath + "! Must start with a /");
-
-    Map<String, Object> parent = json;
-    Object result = null;
-    String[] path =
-        jsonPath.split("(?<![\\\\])/"); // Break on all slashes _not_ preceeded by a backslash
-    for (int p = 1; p < path.length; p++) {
-      String part = path[p];
-
-      if (part.startsWith("\\")) {
-        part = part.substring(1);
-      }
-
-      Object child = parent.get(part);
-      if (child == null) break;
-
-      if (p == path.length - 1) {
-        // success - found the node at the desired path
-        result = child;
-      } else {
-        if (child instanceof Map) {
-          // keep walking the path down to the desired node
-          parent = (Map<String, Object>) child;
-        } else {
-          // early termination - hit a leaf before the requested node
-          break;
-        }
-      }
-    }
-    return result;
-  }
-
   /** Get the status of a Solr server. */
   public static class StatusTool extends ToolBase {
 
@@ -868,12 +730,12 @@ public class SolrCLI implements CLIO {
 
       String solrHome = (String) info.get("solr_home");
       status.put("solr_home", solrHome != null ? solrHome : "?");
-      status.put("version", asString("/lucene/solr-impl-version", info));
-      status.put("startTime", atPath("/jvm/jmx/startTime", info).toString());
-      status.put("uptime", uptime(asLong("/jvm/jmx/upTimeMS", info)));
+      status.put("version", (String) info.findRecursive("lucene", "solr-impl-version"));
+      status.put("startTime", info.findRecursive("jvm", "jmx", "startTime").toString());
+      status.put("uptime", uptime((Long) info.findRecursive("jvm", "jmx", "upTimeMS")));
 
-      String usedMemory = asString("/jvm/memory/used", info);
-      String totalMemory = asString("/jvm/memory/used", info);
+      String usedMemory = (String) info.findRecursive("jvm", "memory", "used");
+      String totalMemory = (String) info.findRecursive("jvm", "memory", "total");
       status.put("memory", usedMemory + " of " + totalMemory);
 
       if ("solrcloud".equals(info.get("mode"))) {
@@ -896,10 +758,10 @@ public class SolrCLI implements CLIO {
 
       NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
-      List<String> liveNodes = asList("/cluster/live_nodes", json);
+      List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
       cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
-      Map<String, Object> collections = asMap("/cluster/collections", json);
+      Map<String, Object> collections = ((NamedList) json.findRecursive("cluster", "collections")).asMap();
       cloudStatus.put("collections", String.valueOf(collections.size()));
 
       return cloudStatus;
@@ -1212,11 +1074,9 @@ public class SolrCLI implements CLIO {
                           SolrRequest.METHOD.GET,
                           CommonParams.SYSTEM_INFO_PATH,
                           new ModifiableSolrParams()));
-              @SuppressWarnings("unchecked")
-              NamedList<Object> jvm = (NamedList<Object>) systemInfo.get("jvm");
-              uptime = uptime(asLong("/jvm/jmx/upTimeMS", systemInfo));
-              String usedMemory = asString("/jvm/memory/used", systemInfo);
-              String totalMemory = asString("/jvm/memory/total", systemInfo);
+              uptime = uptime((Long) systemInfo.findRecursive("jvm", "jmx", "upTimeMS"));
+              String usedMemory = (String) systemInfo.findRecursive("jvm", "memory", "used");
+              String totalMemory = (String) systemInfo.findRecursive("jvm", "memory", "total");
               memory = usedMemory + " of " + totalMemory;
 
               // if we get here, we can trust the state
@@ -1396,6 +1256,7 @@ public class SolrCLI implements CLIO {
     return exists;
   }
 
+  @SuppressWarnings("unchecked")
   public static boolean safeCheckCoreExists(String solrUrl, String coreName) {
     boolean exists = false;
     try (var solrClient = getSolrClient(solrUrl)) {
@@ -1408,11 +1269,8 @@ public class SolrCLI implements CLIO {
         }
         NamedList<Object> existsCheckResult =
             CoreAdminRequest.getStatus(coreName, solrClient).getCoreStatus(coreName);
-        @SuppressWarnings("unchecked")
         Map<String, Object> status = ((NamedList) existsCheckResult.get("status")).asMap();
-        @SuppressWarnings("unchecked")
         Map<String, Object> coreStatus = ((NamedList) status.get(coreName)).asMap();
-        @SuppressWarnings("unchecked")
         Map<String, Object> failureStatus =
             ((NamedList) existsCheckResult.get("initFailures")).asMap();
         String errorMsg = (String) failureStatus.get(coreName);
@@ -2578,7 +2436,7 @@ public class SolrCLI implements CLIO {
 
       try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
         NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
-        Integer statusCode = (Integer) ((NamedList) result.get("responseHeader")).get("status");
+        Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
         if (statusCode == 0) {
           if (value != null) {
             echo("Successfully " + action + " " + property + " to " + value);
@@ -3804,7 +3662,7 @@ public class SolrCLI implements CLIO {
       try {
         SolrClient solrClient = getSolrClient(url);
         NamedList<Object> response = solrClient.request(new HealthCheckRequest());
-        Integer statusCode = (Integer) ((NamedList) response.get("responseHeader")).get("status");
+        Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
         checkCodeForAuthError(statusCode);
       } catch (SolrException se) {
         throw se;

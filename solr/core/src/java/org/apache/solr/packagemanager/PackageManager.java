@@ -279,7 +279,7 @@ public class PackageManager implements Closeable {
                   SolrRequest.METHOD.GET,
                   PackageUtils.CLUSTERPROPS_PATH,
                   new ModifiableSolrParams()));
-      Integer statusCode = (Integer) ((NamedList) response.get("responseHeader")).get("status");
+      Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       if (statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
         result = Collections.emptyMap();
@@ -736,8 +736,7 @@ public class PackageManager implements Closeable {
                   PackageUtils.getCollectionParamsPath(collection) + "/packages",
                   new ModifiableSolrParams()));
       return (Map<String, String>)
-          SolrCLI.atPath(
-              "/params/packages/" + packageName, (Map<String, Object>) response.get("response"));
+          response.findRecursive("response", "params", "packages", packageName);
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       if (log.isWarnEnabled()) {

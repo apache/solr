@@ -228,10 +228,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      Object maxTimeFromConfig =
-          SolrCLI.atPath(
-              "/updateHandler/autoSoftCommit/maxTime",
-              (Map<String, Object>) configJson.get("config"));
+      Object maxTimeFromConfig = configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
       assertNotNull(maxTimeFromConfig);
       assertEquals(-1, maxTimeFromConfig);
 
@@ -259,10 +256,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      maxTimeFromConfig =
-          SolrCLI.atPath(
-              "/updateHandler/autoSoftCommit/maxTime",
-              (Map<String, Object>) configJson.get("config"));
+      maxTimeFromConfig = configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
       assertNotNull(maxTimeFromConfig);
       assertEquals(maxTime, maxTimeFromConfig);
 
@@ -273,9 +267,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       assertEquals(
           "Should have been able to get a value from the /query request handler",
           "explicit",
-          SolrCLI.atPath(
-              "/requestHandler/\\/query/defaults/echoParams",
-              (Map<String, Object>) configJson.get("config")));
+          configJson.findRecursive("config", "requestHandler", "/query", "defaults", "echoParams"));
 
       // Since it takes some time for this command to complete we need to make sure all the reloads
       // for all the cores have been done.
@@ -314,11 +306,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                     SolrRequest.METHOD.GET,
                     "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config",
                     new ModifiableSolrParams()));
-        Integer maxTime =
-            (Integer)
-                SolrCLI.atPath(
-                    "/updateHandler/autoSoftCommit/maxTime",
-                    (Map<String, Object>) configJson.get("config"));
+        Integer maxTime = (Integer) configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
         ret.put(replica.getCoreName(), maxTime);
       }
     }
