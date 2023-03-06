@@ -39,6 +39,7 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.lucene.util.VectorUtil;
 
 /**
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
@@ -50,7 +51,6 @@ import org.apache.solr.uninverting.UninvertingReader;
  */
 public class DenseVectorField extends FloatPointField {
   public static final String HNSW_ALGORITHM = "hnsw";
-
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
@@ -58,12 +58,10 @@ public class DenseVectorField extends FloatPointField {
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
   static final String VECTOR_ENCODING = "vectorEncoding";
-
+  private final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
+  private final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
-  private VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
-  private VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
-
   private String knnAlgorithm;
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
@@ -102,7 +100,7 @@ public class DenseVectorField extends FloatPointField {
   public void init(IndexSchema schema, Map<String, String> args) {
     this.dimension =
         ofNullable(args.get(KNN_VECTOR_DIMENSION))
-            .map(value -> Integer.parseInt(value))
+            .map(Integer::parseInt)
             .orElseThrow(
                 () ->
                     new SolrException(
@@ -127,13 +125,13 @@ public class DenseVectorField extends FloatPointField {
 
     this.hnswMaxConn =
         ofNullable(args.get(HNSW_MAX_CONNECTIONS))
-            .map(value -> Integer.parseInt(value))
+            .map(Integer::parseInt)
             .orElse(DEFAULT_MAX_CONN);
     args.remove(HNSW_MAX_CONNECTIONS);
 
     this.hnswBeamWidth =
         ofNullable(args.get(HNSW_BEAM_WIDTH))
-            .map(value -> Integer.parseInt(value))
+            .map(Integer::parseInt)
             .orElse(DEFAULT_BEAM_WIDTH);
     args.remove(HNSW_BEAM_WIDTH);
 
@@ -227,7 +225,6 @@ public class DenseVectorField extends FloatPointField {
 
   @Override
   public Object toObject(IndexableField f) {
-
     if (vectorEncoding.equals(VectorEncoding.BYTE)) {
       BytesRef bytesRef = f.binaryValue();
       if (bytesRef != null) {
@@ -358,11 +355,8 @@ public class DenseVectorField extends FloatPointField {
 
     public BytesRef getByteVector() {
       if (byteVector == null) {
-        getFloatVector();
-        byteVector = new BytesRef(new byte[floatVector.length]);
-        for (int j = 0; j < byteVector.length; j++) {
-          byteVector.bytes[j] = (byte) floatVector[j];
-        }
+        floatVector = getFloatVector();
+        byteVector = VectorUtil.toBytesRef(floatVector);
       }
 
       return byteVector;
