@@ -199,6 +199,10 @@ public class DenseVectorField extends FloatPointField {
         }
       }
       return fields;
+    }
+    //already handled
+    catch (SolrException solrException){
+      throw solrException;
     } catch (RuntimeException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -356,9 +360,12 @@ public class DenseVectorField extends FloatPointField {
     public BytesRef getByteVector() {
       if (byteVector == null) {
         floatVector = getFloatVector();
-        byteVector = VectorUtil.toBytesRef(floatVector);
+        try {
+          byteVector = VectorUtil.toBytesRef(floatVector);
+        } catch (IllegalArgumentException e){
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage());
+        }
       }
-
       return byteVector;
     }
 
