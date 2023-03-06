@@ -439,23 +439,20 @@ public class ReplicaMutator {
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     if (collection.isPerReplicaState() && oldReplica != null) {
-      if (!writeStateJson(replica, oldReplica, newCollection)) {
+      if (!writeStateJson(replica, oldReplica)) {
         return ZkWriteCommand.NO_OP;
       }
     }
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
-  private boolean writeStateJson(Replica newReplica, Replica oldReplica, DocCollection newColl) {
+  private boolean writeStateJson(Replica newReplica, Replica oldReplica) {
     if (!Objects.equals(newReplica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
     if (!Objects.equals(newReplica.getCoreName(), oldReplica.getCoreName())) return true;
     if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
     if (!Objects.equals(
         newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
         oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
-    Slice.State sliceState = newColl.getSlice(newReplica.getShard()).getState();
-    if (sliceState == Slice.State.CONSTRUCTION || sliceState == Slice.State.RECOVERY) return true;
-    if (oldReplica.getState() == Replica.State.RECOVERING) return true;
     if (newReplica.getState() == Replica.State.RECOVERING) return true;
     return false;
   }
