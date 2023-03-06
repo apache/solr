@@ -67,14 +67,7 @@ public class ListAliasesAPI extends AdminAPIBase {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     final ListAliasesResponse response = instantiateJerseyResponse(ListAliasesResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-
-    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-
-    // if someone calls listAliases, lets ensure we return an up to date response
-    zkStateReader.getAliasesManager().update();
-
-    Aliases aliases = zkStateReader.getAliases();
+    final Aliases aliases = readAliasesFromZk();
 
     if (aliases != null) {
       // the aliases themselves...
@@ -109,18 +102,22 @@ public class ListAliasesAPI extends AdminAPIBase {
     final GetAliasByNameResponse response = instantiateJerseyResponse(GetAliasByNameResponse.class);
     response.alias = aliasName;
 
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    // if someone calls listAliases, lets ensure we return an up to date response
-    zkStateReader.getAliasesManager().update();
-
-    Aliases aliases = zkStateReader.getAliases();
+    final Aliases aliases = readAliasesFromZk();
     if (aliases != null) {
       response.collections = aliases.getCollectionAliasListMap().getOrDefault(aliasName, List.of());
       response.properties = aliases.getCollectionAliasProperties(aliasName);
     }
 
     return response;
+  }
+
+  private Aliases readAliasesFromZk() throws Exception {
+    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    final ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+    // Make sure we have the latest alias info, since a user has explicitly invoked an alias API
+    zkStateReader.getAliasesManager().update();
+
+    return zkStateReader.getAliases();
   }
 
   /** Response for {@link ListAliasesAPI#getAliases()}. */
