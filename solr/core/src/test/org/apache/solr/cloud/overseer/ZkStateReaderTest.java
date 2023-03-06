@@ -72,7 +72,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     private final ZkStateWriter writer;
 
     private TestFixture(
-            ZkTestServer server, SolrZkClient zkClient, ZkStateReader reader, ZkStateWriter writer) {
+        ZkTestServer server, SolrZkClient zkClient, ZkStateReader reader, ZkStateWriter writer) {
       this.server = server;
       this.zkClient = zkClient;
       this.reader = reader;

@@ -29,7 +29,6 @@ import java.util.function.Function;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,7 +298,7 @@ public class PerReplicaStatesOps {
         .init(rs);
   }
 
-    PerReplicaStatesOps init(PerReplicaStates rs) {
+  PerReplicaStatesOps init(PerReplicaStates rs) {
     if (rs == null) return null;
     get(rs);
     return this;
