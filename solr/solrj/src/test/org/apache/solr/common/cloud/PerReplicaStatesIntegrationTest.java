@@ -260,11 +260,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               });
 
     } finally {
-      System.out.println("prs1 : " + original);
-      System.out.println(
-          "prs2 : "
-              + PerReplicaStatesFetcher.fetch(
-                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null));
       cluster.shutdown();
     }
   }
