@@ -35,11 +35,11 @@ import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.VectorUtil;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.lucene.util.VectorUtil;
 
 /**
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
@@ -124,15 +124,11 @@ public class DenseVectorField extends FloatPointField {
     args.remove(VECTOR_ENCODING);
 
     this.hnswMaxConn =
-        ofNullable(args.get(HNSW_MAX_CONNECTIONS))
-            .map(Integer::parseInt)
-            .orElse(DEFAULT_MAX_CONN);
+        ofNullable(args.get(HNSW_MAX_CONNECTIONS)).map(Integer::parseInt).orElse(DEFAULT_MAX_CONN);
     args.remove(HNSW_MAX_CONNECTIONS);
 
     this.hnswBeamWidth =
-        ofNullable(args.get(HNSW_BEAM_WIDTH))
-            .map(Integer::parseInt)
-            .orElse(DEFAULT_BEAM_WIDTH);
+        ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
     args.remove(HNSW_BEAM_WIDTH);
 
     this.properties &= ~MULTIVALUED;
@@ -200,8 +196,8 @@ public class DenseVectorField extends FloatPointField {
       }
       return fields;
     }
-    //already handled
-    catch (SolrException solrException){
+    // already handled
+    catch (SolrException solrException) {
       throw solrException;
     } catch (RuntimeException e) {
       throw new SolrException(
@@ -362,7 +358,7 @@ public class DenseVectorField extends FloatPointField {
         floatVector = getFloatVector();
         try {
           byteVector = VectorUtil.toBytesRef(floatVector);
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage());
         }
       }
