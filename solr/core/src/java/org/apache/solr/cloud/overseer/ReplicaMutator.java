@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -437,7 +438,26 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
+    if (collection.isPerReplicaState() && oldReplica != null) {
+      if (!writeStateJson(replica, oldReplica, newCollection)) {
+        return ZkWriteCommand.NO_OP;
+      }
+    }
     return new ZkWriteCommand(collectionName, newCollection);
+  }
+
+  private boolean writeStateJson(Replica newReplica, Replica oldReplica, DocCollection newColl) {
+    if (!Objects.equals(newReplica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
+    if (!Objects.equals(newReplica.getCoreName(), oldReplica.getCoreName())) return true;
+    if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
+    if (!Objects.equals(
+        newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
+        oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
+    Slice.State sliceState = newColl.getSlice(newReplica.getShard()).getState();
+    if (sliceState == Slice.State.CONSTRUCTION || sliceState == Slice.State.RECOVERY) return true;
+    if (oldReplica.getState() == Replica.State.RECOVERING) return true;
+    if (newReplica.getState() == Replica.State.RECOVERING) return true;
+    return false;
   }
 
   private DocCollection checkAndCompleteShardSplit(
