@@ -216,6 +216,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.ListAliasesAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
@@ -866,24 +867,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LISTALIASES_OP(
         LISTALIASES,
         (req, rsp, h) -> {
-          ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
-          // if someone calls listAliases, lets ensure we return an up to date response
-          zkStateReader.aliasesManager.update();
-          Aliases aliases = zkStateReader.getAliases();
-          if (aliases != null) {
-            // the aliases themselves...
-            rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
-            // Any properties for the above aliases.
-            Map<String, Map<String, String>> meta = new LinkedHashMap<>();
-            for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-              Map<String, String> collectionAliasProperties =
-                  aliases.getCollectionAliasProperties(alias);
-              if (!collectionAliasProperties.isEmpty()) {
-                meta.put(alias, collectionAliasProperties);
-              }
-            }
-            rsp.getValues().add("properties", meta);
-          }
+          final ListAliasesAPI getAliasesAPI = new ListAliasesAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse getAliasesResponse = getAliasesAPI.getAliases();
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
         }),
     SPLITSHARD_OP(
@@ -2083,7 +2069,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AddReplicaPropertyAPI.class,
         DeleteReplicaPropertyAPI.class,
         ReplaceNodeAPI.class,
-        DeleteNodeAPI.class);
+        DeleteNodeAPI.class,
+        ListAliasesAPI.class);
   }
 
   @Override

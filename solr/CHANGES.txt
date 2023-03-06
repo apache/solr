@@ -154,6 +154,10 @@ Improvements
   at `GET /api/cluster/zookeeper/data/<path>`, and "list node children" is now available at `GET /api/cluster/zookeeper/children/<path>`
   (Jason Gerlowski, Joshua Ouma)
 
+* SOLR-16393: The path of the v2 "list alias" API has been tweaked slightly to be more intuitive, and is now available at
+  `GET /api/aliases`.  It is also now possible to request information about a specific alias at `GET /api/aliases/<aliasName>`.
+  (Alex Deparvu via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
