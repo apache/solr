@@ -57,9 +57,9 @@ public class SolrJettyTestRule extends SolrClientTestRule {
         throw new RuntimeException(e);
       }
     }
+    clients.clear();
 
     if (jetty != null) {
-
       try {
         jetty.stop();
       } catch (RuntimeException e) {
