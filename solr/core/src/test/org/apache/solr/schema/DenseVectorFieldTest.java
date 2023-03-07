@@ -574,7 +574,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               SolrException.class,
               () -> {
                 assertU(adoc(doc));
-                assertU(commit());
               });
 
       MatcherAssert.assertThat(
@@ -596,7 +595,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               SolrException.class,
               () -> {
                 assertU(adoc(doc1));
-                assertU(commit());
               });
 
       MatcherAssert.assertThat(
