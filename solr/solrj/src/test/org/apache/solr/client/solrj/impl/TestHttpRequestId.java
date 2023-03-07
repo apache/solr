@@ -119,7 +119,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
         MDC.remove(key);
       }
 
-      // expecting 3 events: headers, success|failure, complete
+      // expecting 3 events: started, success|failed, completed
       assertEquals(3, reqLog.getQueue().size());
       while (!reqLog.getQueue().isEmpty()) {
         var reqEvent = reqLog.getQueue().poll();
