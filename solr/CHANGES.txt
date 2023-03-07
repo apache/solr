@@ -274,53 +274,53 @@ Dependency Upgrades
 
 * SOLR-16627, PR#1399, PR#1401: Upgrade google-cloud-bom to v0.190.0, re2j to 1.7, and grpc to 1.53.0 (Kevin Risden)
 
-* PR#1425: Update dependency org.jctools:jctools-core to v4
+* PR#1425: Update dependency org.jctools:jctools-core to v4 (solrbot)
 
-* PR#1421: Update org.apache.logging.log4j:* to v2.20.0
+* PR#1421: Update org.apache.logging.log4j:* to v2.20.0 (solrbot)
 
-* PR#1420: Update org.apache.calcite:* to v1.33.0 and org.apache.calcite.avatica:* to v1.23.0
+* PR#1420: Update org.apache.calcite:* to v1.33.0 and org.apache.calcite.avatica:* to v1.23.0 (solrbot)
 
-* PR#1419: Update io.prometheus:* to v0.16.0
+* PR#1419: Update io.prometheus:* to v0.16.0 (solrbot)
 
-* PR#1417: Update dependency org.openjdk.jmh:jmh-core to v1.36
+* PR#1417: Update dependency org.openjdk.jmh:jmh-core to v1.36 (solrbot)
 
-* PR#1416: Update dependency org.bitbucket.b_c:jose4j to v0.9.3
+* PR#1416: Update dependency org.bitbucket.b_c:jose4j to v0.9.3 (solrbot)
 
-* PR#1415: Update dependency org.apache.commons:commons-compress to v1.22
+* PR#1415: Update dependency org.apache.commons:commons-compress to v1.22 (solrbot)
 
-* PR#1406: Update dependency net.sourceforge.argparse4j:argparse4j to v0.9.0
+* PR#1406: Update dependency net.sourceforge.argparse4j:argparse4j to v0.9.0 (solrbot)
 
-* PR#1404: Update dependency joda-time:joda-time to v2.12.2
+* PR#1404: Update dependency joda-time:joda-time to v2.12.2 (solrbot)
 
-* PR#1403: Update dependency commons-cli:commons-cli to v1.5.0
+* PR#1403: Update dependency commons-cli:commons-cli to v1.5.0 (solrbot)
 
-* PR#1402: Update dependency com.tdunning:t-digest to v3.3
+* PR#1402: Update dependency com.tdunning:t-digest to v3.3 (solrbot)
 
-* PR#1398: Update dependency com.fasterxml.woodstox:woodstox-core to v6.5.0
+* PR#1398: Update dependency com.fasterxml.woodstox:woodstox-core to v6.5.0 (solrbot)
 
-* PR#1397: Update dependency biz.aQute.bnd:biz.aQute.bnd.annotation to v6.4.0
+* PR#1397: Update dependency biz.aQute.bnd:biz.aQute.bnd.annotation to v6.4.0 (solrbot)
 
-* PR#1396: Update org.slf4j:* to v2.0.6
+* PR#1396: Update org.slf4j:* to v2.0.6 (solrbot)
 
-* PR#1395: Update org.apache.zookeeper:* to v3.8.1
+* PR#1395: Update org.apache.zookeeper:* to v3.8.1 (solrbot)
 
-* PR#1394: Update org.apache.tika:* to v1.28.5
+* PR#1394: Update org.apache.tika:* to v1.28.5 (solrbot)
 
-* PR#1393: Update org.apache.httpcomponents. httpclient v4.5.14, httpcore v4.4.16, httpmime v4.5.14
+* PR#1393: Update org.apache.httpcomponents. httpclient v4.5.14, httpcore v4.4.16, httpmime v4.5.14 (solrbot)
 
-* PR#1391: Update io.dropwizard.metrics:* to v4.2.17
+* PR#1391: Update io.dropwizard.metrics:* to v4.2.17 (solrbot)
 
-* PR#1390: Update dependency org.xerial.snappy:snappy-java to v1.1.9.1
+* PR#1390: Update dependency org.xerial.snappy:snappy-java to v1.1.9.1 (solrbot)
 
-* PR#1388: Update dependency org.immutables:value-annotations to v2.9.3
+* PR#1388: Update dependency org.immutables:value-annotations to v2.9.3 (solrbot)
 
-* PR#1387: Update dependency net.thisptr:jackson-jq to v0.0.13
+* PR#1387: Update dependency net.thisptr:jackson-jq to v0.0.13 (solrbot)
 
-* PR#1383: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.8
+* PR#1383: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.8 (solrbot)
 
-* PR#1382: Update dependency com.lmax:disruptor to v3.4.4
+* PR#1382: Update dependency com.lmax:disruptor to v3.4.4 (solrbot)
 
-* PR#1381: Update dependency com.github.spotbugs:spotbugs-annotations to v4.7.3
+* PR#1381: Update dependency com.github.spotbugs:spotbugs-annotations to v4.7.3 (solrbot)
 
 Other Changes
 ---------------------
