@@ -268,7 +268,7 @@ Dependency Upgrades
 
 * SOLR-16579, PR#1379: Upgrade Jackson to 2.14.2 (Kevin Risden)
 
-* SOLR-16562: Upgrade to Caffeine 3.1.4 (Kevin Risden)
+* SOLR-16562, PR#1433: Upgrade to Caffeine 3.1.5 (Kevin Risden)
 
 * SOLR-16626, PR#1392: Upgrade to Netty v4.1.89.Final (Kevin Risden)
 
