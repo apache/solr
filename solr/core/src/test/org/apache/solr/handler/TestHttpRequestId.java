@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import org.slf4j.MDC;
 
 @LogLevel("org.apache.solr.client.solrj.impl.Http2SolrClient=DEBUG")
+@SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
 public class TestHttpRequestId extends SolrJettyTestBase {
 
   @BeforeClass
