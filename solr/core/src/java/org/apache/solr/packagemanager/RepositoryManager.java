@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -149,7 +148,8 @@ public class RepositoryManager {
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromUrl(solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
+    PackageUtils.getJsonStringFromUrl(
+        solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)

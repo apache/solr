@@ -28,13 +28,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import io.netty.channel.Channel;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -148,11 +145,9 @@ public class PackageUtils {
   }
 
   /** Returns JSON string from a given Solr URL */
-  public static String getJsonStringFromUrl(
-      SolrClient client, String path, SolrParams params) {
+  public static String getJsonStringFromUrl(SolrClient client, String path, SolrParams params) {
     try {
-      GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
       request.setResponseParser(new NoOpResponseParser("json"));
       NamedList<Object> response = client.request(request);
       return response.jsonStr();

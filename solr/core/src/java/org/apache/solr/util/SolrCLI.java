@@ -590,6 +590,12 @@ public class SolrCLI implements CLIO {
     return new Http2SolrClient.Builder(solrUrl).maxConnectionsPerHost(32).build();
   }
 
+  /**
+   * Get Solr base url with port if present and root from URI
+   *
+   * @param uri Full Solr URI (e.g. http://localhost:8983/solr/admin/info/system)
+   * @return Solr base url with port and root (from above example http://localhost:8983/solr)
+   */
   public static String getSolrUrlFromUri(URI uri) {
     return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
   }
@@ -761,7 +767,8 @@ public class SolrCLI implements CLIO {
       List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
       cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
-      Map<String, Object> collections = ((NamedList) json.findRecursive("cluster", "collections")).asMap();
+      Map<String, Object> collections =
+          ((NamedList) json.findRecursive("cluster", "collections")).asMap();
       cloudStatus.put("collections", String.valueOf(collections.size()));
 
       return cloudStatus;
@@ -801,7 +808,6 @@ public class SolrCLI implements CLIO {
       if (getUrl != null) {
         URI uri = new URI(getUrl);
         String solrUrl = getSolrUrlFromUri(uri);
-        ModifiableSolrParams paramsMap = getSolrParamsFromUri(uri);
         String path = uri.getPath();
         try (var solrClient = getSolrClient(solrUrl)) {
           NamedList<Object> response =
@@ -809,7 +815,7 @@ public class SolrCLI implements CLIO {
                   new GenericSolrRequest(
                       SolrRequest.METHOD.GET,
                       path.substring(path.indexOf("/", path.indexOf("/") + 1)),
-                      paramsMap));
+                      getSolrParamsFromUri(uri)));
 
           // pretty-print the response to stdout
           CharArr arr = new CharArr();

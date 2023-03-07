@@ -229,7 +229,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      Object maxTimeFromConfig = configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
+      Object maxTimeFromConfig =
+          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
       assertEquals(-1, maxTimeFromConfig);
 
@@ -257,7 +258,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      maxTimeFromConfig = configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
+      maxTimeFromConfig =
+          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
       assertEquals(maxTime, maxTimeFromConfig);
 
@@ -265,11 +267,14 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
       }
 
-      //Need to use the _get(List, Object) here because of /query in the path
+      // Need to use the _get(List, Object) here because of /query in the path
       assertEquals(
           "Should have been able to get a value from the /query request handler",
           "explicit",
-          configJson._get(new ArrayList<>(Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams")),Collections.emptyMap()));
+          configJson._get(
+              new ArrayList<>(
+                  Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams")),
+              Collections.emptyMap()));
 
       // Since it takes some time for this command to complete we need to make sure all the reloads
       // for all the cores have been done.
@@ -308,7 +313,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                     SolrRequest.METHOD.GET,
                     "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config",
                     new ModifiableSolrParams()));
-        Integer maxTime = (Integer) configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
+        Integer maxTime =
+            (Integer)
+                configJson._get(
+                    "/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
         ret.put(replica.getCoreName(), maxTime);
       }
     }
