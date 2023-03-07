@@ -450,9 +450,7 @@ public class Http2SolrClient extends SolrClient {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
-                if (log.isDebugEnabled()) {
-                  log.debug("response processing started");
-                }
+                log.debug("response processing started");
                 InputStreamResponseListener listener = this;
                 MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
                 executor.execute(
@@ -463,28 +461,20 @@ public class Http2SolrClient extends SolrClient {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, parser, response, is);
                         mdcCopyHelper.onBegin(null);
-                        if (log.isDebugEnabled()) {
-                          log.debug("response processing success");
-                        }
+                        log.debug("response processing success");
                         asyncListener.onSuccess(body);
                       } catch (RemoteSolrException e) {
                         if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                           mdcCopyHelper.onBegin(null);
-                          if (log.isDebugEnabled()) {
-                            log.debug("response processing failed");
-                          }
+                          log.debug("response processing failed");
                           asyncListener.onFailure(e);
                         }
                       } catch (SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
-                        if (log.isDebugEnabled()) {
-                          log.debug("response processing failed");
-                        }
+                        log.debug("response processing failed");
                         asyncListener.onFailure(e);
                       } finally {
-                        if (log.isDebugEnabled()) {
-                          log.debug("response processing completed");
-                        }
+                        log.debug("response processing completed");
                         mdcCopyHelper.onComplete(null);
                       }
                     });
