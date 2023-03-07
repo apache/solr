@@ -733,7 +733,7 @@ public class PackageManager implements Closeable {
                   PackageUtils.getCollectionParamsPath(collection) + "/packages",
                   new ModifiableSolrParams()));
       return (Map<String, String>)
-          response.findRecursive("response", "params", "packages", packageName);
+          response._get("/response/params/packages/" + packageName, Collections.emptyMap());
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       if (log.isWarnEnabled()) {

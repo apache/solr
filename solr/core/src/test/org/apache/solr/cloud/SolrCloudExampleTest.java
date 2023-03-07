@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -228,7 +229,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      Object maxTimeFromConfig = configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
+      Object maxTimeFromConfig = configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
       assertEquals(-1, maxTimeFromConfig);
 
@@ -256,7 +257,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                   SolrRequest.METHOD.GET,
                   "/" + testCollectionName + "/config",
                   new ModifiableSolrParams()));
-      maxTimeFromConfig = configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
+      maxTimeFromConfig = configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
       assertEquals(maxTime, maxTimeFromConfig);
 
@@ -264,10 +265,11 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
       }
 
+      //Need to use the _get(List, Object) here because of /query in the path
       assertEquals(
           "Should have been able to get a value from the /query request handler",
           "explicit",
-          configJson.findRecursive("config", "requestHandler", "/query", "defaults", "echoParams"));
+          configJson._get(new ArrayList<>(Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams")),Collections.emptyMap()));
 
       // Since it takes some time for this command to complete we need to make sure all the reloads
       // for all the cores have been done.
@@ -306,7 +308,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                     SolrRequest.METHOD.GET,
                     "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config",
                     new ModifiableSolrParams()));
-        Integer maxTime = (Integer) configJson.findRecursive("config", "updateHandler", "autoSoftCommit", "maxTime");
+        Integer maxTime = (Integer) configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
         ret.put(replica.getCoreName(), maxTime);
       }
     }
