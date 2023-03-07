@@ -72,8 +72,8 @@ public class TestHttpRequestId extends SolrJettyTestBase {
   }
 
   private void setupClientAndRun(String collection, BlockingQueue<Runnable> workQueue) {
-    String key = "mdcContextTestKey" + System.currentTimeMillis();
-    String value = "TestHttpRequestId" + System.currentTimeMillis();
+    String key = "mdcContextTestKey" + System.nanoTime();
+    String value = "TestHttpRequestId" + System.nanoTime();
 
     AsyncListener<NamedList<Object>> listener =
         new AsyncListener<>() {
