@@ -184,7 +184,7 @@ public class ZkMaintenanceUtils {
     Path filename = Paths.get(dst);
     Path parentDir = filename.getParent();
     if (parentDir != null) {
-      Files.createDirectories(filename.getParent());
+      Files.createDirectories(parentDir);
     }
     log.info("Writing file {}", filename);
     Files.write(filename, data);
