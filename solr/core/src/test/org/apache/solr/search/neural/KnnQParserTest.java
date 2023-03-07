@@ -237,7 +237,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='5']",
         "//result/doc[2]/str[@name='id'][.='6']",
-        "//result/doc[2]/str[@name='id'][.='7']");
+        "//result/doc[3]/str[@name='id'][.='7']");
   }
 
   @Test
