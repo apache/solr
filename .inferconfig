@@ -1,8 +1,7 @@
 {
   "racerd-ignore-classes": [
     "org.apache.solr.common.util.ObjectReleaseTracker",
-    "org.noggit.CharArr",
-    "org.noggit.CharArr.NullCharArr"
+    "org.noggit.CharArr"
   ],
   "external-java-packages": [
     "org.slf4j"
