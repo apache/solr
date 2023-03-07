@@ -21,7 +21,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.util.AsyncListener;
@@ -74,36 +73,40 @@ public class TestHttpRequestId extends SolrJettyTestBase {
     String key = "mdcContextTestKey" + System.currentTimeMillis();
     String value = "TestHttpRequestId" + System.currentTimeMillis();
 
-    AsyncListener<NamedList<Object>> listener = new AsyncListener<>() {
+    AsyncListener<NamedList<Object>> listener =
+        new AsyncListener<>() {
 
-      @Override
-      public void onSuccess(NamedList<Object> t) {
-        assertTrue(value, value.equals(MDC.get(key)));
-      }
+          @Override
+          public void onSuccess(NamedList<Object> t) {
+            assertTrue(value, value.equals(MDC.get(key)));
+          }
 
-      @Override
-      public void onFailure(Throwable throwable) {
-        assertTrue(value, value.equals(MDC.get(key)));
-      }
-    };
+          @Override
+          public void onFailure(Throwable throwable) {
+            assertTrue(value, value.equals(MDC.get(key)));
+          }
+        };
 
-    try (LogListener reqLog = LogListener.debug(Http2SolrClient.class).substring("response processing")) {
+    try (LogListener reqLog =
+        LogListener.debug(Http2SolrClient.class).substring("response processing")) {
 
       ThreadPoolExecutor commExecutor = null;
       Http2SolrClient client = null;
       try {
         // client setup needs to be same as HttpShardHandlerFactory
-        commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-            3,
-            Integer.MAX_VALUE,
-            1,
-            TimeUnit.SECONDS,
-            workQueue,
-            new SolrNamedThreadFactory("httpShardExecutor"),
-            false);
-        client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + collection)
-            .withExecutor(commExecutor)
-            .build();
+        commExecutor =
+            new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                3,
+                Integer.MAX_VALUE,
+                1,
+                TimeUnit.SECONDS,
+                workQueue,
+                new SolrNamedThreadFactory("httpShardExecutor"),
+                false);
+        client =
+            new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + collection)
+                .withExecutor(commExecutor)
+                .build();
 
         MDC.put(key, value);
         client.asyncRequest(new SolrPing(), null, listener);
@@ -120,9 +123,6 @@ public class TestHttpRequestId extends SolrJettyTestBase {
       assertEquals(3, reqLog.getQueue().size());
       while (!reqLog.getQueue().isEmpty()) {
         var reqEvent = reqLog.getQueue().poll();
-        System.err.println(reqEvent);
-        System.err.println(reqEvent.getContextData());
-
         assertTrue(reqEvent.getContextData().containsKey(key));
         assertEquals(value, reqEvent.getContextData().getValue(key));
       }

@@ -450,7 +450,7 @@ public class Http2SolrClient extends SolrClient {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
-                if(log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                   log.debug("response processing started");
                 }
                 InputStreamResponseListener listener = this;
@@ -1302,9 +1302,9 @@ public class Http2SolrClient extends SolrClient {
   }
 
   /**
-   * Helper class in change of copying MDC context across all threads involved in processing a request. This does not
-   * strictly need to be a RequestResponseListener, but using it since it already provides hooks into the request
-   * processing lifecycle.
+   * Helper class in change of copying MDC context across all threads involved in processing a
+   * request. This does not strictly need to be a RequestResponseListener, but using it since it
+   * already provides hooks into the request processing lifecycle.
    */
   private static class MDCCopyHelper extends RequestResponseListener {
     private final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
