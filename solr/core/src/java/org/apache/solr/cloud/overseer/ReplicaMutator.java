@@ -439,21 +439,31 @@ public class ReplicaMutator {
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     if (collection.isPerReplicaState() && oldReplica != null) {
-      if (!writeStateJson(replica, oldReplica)) {
+      if (!persistStateJson(replica, oldReplica, collection)) {
+        log.info(
+            "slice/replica : {}/{} \n , old : {}, \n new {}",
+            replica.shard,
+            replica.name,
+            Utils.toJSONString(oldReplica.getProperties()),
+            Utils.toJSONString(replica.getProperties()));
         return ZkWriteCommand.NO_OP;
       }
     }
     return new ZkWriteCommand(collectionName, newCollection);
   }
 
-  private boolean writeStateJson(Replica newReplica, Replica oldReplica) {
+  /** Whether it is required to persist the state.json */
+  private boolean persistStateJson(Replica newReplica, Replica oldReplica, DocCollection coll) {
     if (!Objects.equals(newReplica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
     if (!Objects.equals(newReplica.getCoreName(), oldReplica.getCoreName())) return true;
     if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
     if (!Objects.equals(
         newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
         oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
-    if (newReplica.getState() == Replica.State.RECOVERING) return true;
+    Slice slice = coll.getSlice(newReplica.getShard());
+    //the replica may be in recovery
+    if(slice.getState() == Slice.State.RECOVERY) return true;
+    if (Objects.equals(oldReplica.getProperties().get("state"), "recovering")) return true;
     return false;
   }
 
