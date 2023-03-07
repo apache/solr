@@ -236,7 +236,7 @@ Bug Fixes
 
 * SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
 
-* SOLR-16676: Http2SolrClient loss of MDC context (Alex Deparvu)
+* SOLR-16676: Logs: Http2SolrClient.async() lacked MDC (Alex Deparvu)
 
 Build
 ---------------------
