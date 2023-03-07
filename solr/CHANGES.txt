@@ -256,7 +256,7 @@ Dependency Upgrades
 
 * SOLR-16578: Upgrade to errorprone 2.18.0 (Kevin Risden)
 
-* SOLR-16625, SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
+* SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
 
 * SOLR-16545: Upgrade Carrot2 to 4.5.0 (Dawid Weiss)
 
