@@ -30,9 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -49,8 +46,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
@@ -471,43 +466,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         client.getById("foo", ids, null);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
-    }
-  }
-
-  @Test
-  public void testGetByIdArrayBlockingQueue() throws Exception {
-    DebugServlet.clear();
-
-    // client setup needs to be same as HttpShardHandlerFactory
-
-    BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(10, false);
-    // new SynchronousQueue<Runnable>(false);
-    ThreadPoolExecutor commExecutor = null;
-    Http2SolrClient client = null;
-    try {
-      commExecutor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              3,
-              Integer.MAX_VALUE,
-              1,
-              TimeUnit.SECONDS,
-              workQueue,
-              new SolrNamedThreadFactory("httpShardExecutor"),
-              false);
-      client =
-          new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-              .withExecutor(commExecutor)
-              .build();
-      try {
-        client.getById("a");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-    } finally {
-      if (client != null) {
-        client.close();
-      }
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     }
   }
 

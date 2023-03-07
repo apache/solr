@@ -450,9 +450,11 @@ public class Http2SolrClient extends SolrClient {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
+                if(log.isDebugEnabled()) {
+                  log.debug("response processing started");
+                }
                 InputStreamResponseListener listener = this;
                 MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
-                mdcCopyHelper.onQueued(null);
                 executor.execute(
                     () -> {
                       InputStream is = listener.getInputStream();
@@ -461,16 +463,28 @@ public class Http2SolrClient extends SolrClient {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, parser, response, is);
                         mdcCopyHelper.onBegin(null);
+                        if (log.isDebugEnabled()) {
+                          log.debug("response processing success");
+                        }
                         asyncListener.onSuccess(body);
                       } catch (RemoteSolrException e) {
                         if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                           mdcCopyHelper.onBegin(null);
+                          if (log.isDebugEnabled()) {
+                            log.debug("response processing failed");
+                          }
                           asyncListener.onFailure(e);
                         }
                       } catch (SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
+                        if (log.isDebugEnabled()) {
+                          log.debug("response processing failed");
+                        }
                         asyncListener.onFailure(e);
                       } finally {
+                        if (log.isDebugEnabled()) {
+                          log.debug("response processing completed");
+                        }
                         mdcCopyHelper.onComplete(null);
                       }
                     });
@@ -581,16 +595,15 @@ public class Http2SolrClient extends SolrClient {
     }
 
     setBasicAuthHeader(solrRequest, req);
-    MDCCopyHelper h = new MDCCopyHelper();
-    h.onQueued(req);
-    req.onRequestBegin(h);
+    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+    req.onRequestBegin(mdcCopyHelper);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
       listener.onQueued(req);
       req.onRequestBegin(listener);
       req.onComplete(listener);
     }
-    req.onComplete(h);
+    req.onComplete(mdcCopyHelper);
 
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
@@ -1288,14 +1301,14 @@ public class Http2SolrClient extends SolrClient {
     return sslContextFactory;
   }
 
+  /**
+   * Helper class in change of copying MDC context across all threads involved in processing a request. This does not
+   * strictly need to be a RequestResponseListener, but using it since it already provides hooks into the request
+   * processing lifecycle.
+   */
   private static class MDCCopyHelper extends RequestResponseListener {
-    private Map<String, String> submitterContext;
+    private final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
     private Map<String, String> threadContext;
-
-    @Override
-    public void onQueued(Request request) {
-      submitterContext = MDC.getCopyOfContextMap();
-    }
 
     @Override
     public void onBegin(Request request) {
