@@ -25,11 +25,17 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.hamcrest.MatcherAssert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
-  private DenseVectorField toTest = new DenseVectorField();
+  private DenseVectorField toTest;
+
+  @Before
+  public void init() {
+    toTest = new DenseVectorField();
+  }
 
   @Test
   public void fieldTypeDefinition_badVectorDimension_shouldThrowException() throws Exception {
@@ -556,39 +562,52 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void denseVectorByteEncoding_shouldRaiseExceptionWithValuesOutsideBoundaries()
       throws Exception {
-    initCore("solrconfig.xml", "schema-densevector.xml");
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "0");
-    doc.addField("vector_byte_encoding", Arrays.asList(127.5, 6.6, 7.7, 8.8));
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector_byte_encoding", Arrays.asList(127.5, 6.6, 7.7, 8.8));
 
-    RuntimeException thrown =
-        assertThrows(
-            "Incorrect elements should throw an exception",
-            SolrException.class,
-            () -> {
-              assertU(adoc(doc));
-              assertU(commit());
-            });
-    MatcherAssert.assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=0] Error adding field 'vector_byte_encoding'='[127.5, 6.6, 7.7, 8.8]' msg=Vector value at 0 is out of range [-128.127]: 127.5"));
+      RuntimeException thrown =
+          assertThrows(
+              "Incorrect elements should throw an exception",
+              SolrException.class,
+              () -> {
+                assertU(adoc(doc));
+                assertU(commit());
+              });
 
-    SolrInputDocument doc1 = new SolrInputDocument();
-    doc1.addField("id", "1");
-    doc1.addField("vector_byte_encoding", Arrays.asList(1.0, -128.3, 7.7, 8.8));
+      MatcherAssert.assertThat(
+          thrown.getCause().getMessage(),
+          is(
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
 
-    thrown =
-        assertThrows(
-            "Incorrect elements should throw an exception",
-            SolrException.class,
-            () -> {
-              assertU(adoc(doc1));
-              assertU(commit());
-            });
-    MatcherAssert.assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=1] Error adding field 'vector_byte_encoding'='[1.0, -128.3, 7.7, 8.8]' msg=Vector value at 1 is out of range [-128.127]: -128.3"));
+      MatcherAssert.assertThat(
+          thrown.getCause().getCause().getMessage(),
+          is("Vector value at 0 is out of range [-128.127]: 127.5"));
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "1");
+      doc1.addField("vector_byte_encoding", Arrays.asList(1.0, -128.3, 7.7, 8.8));
+
+      thrown =
+          assertThrows(
+              "Incorrect elements should throw an exception",
+              SolrException.class,
+              () -> {
+                assertU(adoc(doc1));
+                assertU(commit());
+              });
+
+      MatcherAssert.assertThat(
+          thrown.getCause().getMessage(),
+          is(
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+      MatcherAssert.assertThat(
+          thrown.getCause().getCause().getMessage(),
+          is("Vector value at 1 is out of range [-128.127]: -128.3"));
+    } finally {
+      deleteCore();
+    }
   }
 }
