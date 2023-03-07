@@ -4,6 +4,7 @@
 
 jdkVersion = "11"
 disableTools = [ "refactor-first" ]
+ignoreRules = [ "INTERFACE_NOT_THREAD_SAFE" ]
 ignoreFiles = '''
 **/test/**
 **/*.min.js
