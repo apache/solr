@@ -63,6 +63,8 @@ New Features
 
 * SOLR-16646: New function query operator isnan to verify if value is NaN (Gabriel Magno via Kevin Risden)
 
+* SOLR-16643: Add reRankOperator=multiply/replace options to rerank query parser (Andy Webb, Christine Poerschke, Mikhail Khludnev)
+
 Improvements
 ---------------------
 

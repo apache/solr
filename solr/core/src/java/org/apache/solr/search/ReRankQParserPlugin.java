@@ -44,6 +44,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String RERANK_WEIGHT = "reRankWeight";
   public static final double RERANK_WEIGHT_DEFAULT = 2.0d;
 
+  public static final String RERANK_OPERATOR = "reRankOperator";
+  public static final String RERANK_OPERATOR_DEFAULT = "add";
+
   @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -68,21 +71,43 @@ public class ReRankQParserPlugin extends QParserPlugin {
       Query reRankQuery = reRankParser.parse();
 
       int reRankDocs = localParams.getInt(RERANK_DOCS, RERANK_DOCS_DEFAULT);
-      reRankDocs = Math.max(1, reRankDocs); //
+      reRankDocs = Math.max(1, reRankDocs);
 
       double reRankWeight = localParams.getDouble(RERANK_WEIGHT, RERANK_WEIGHT_DEFAULT);
 
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight);
+      ReRankOperator reRankOperator =
+          ReRankOperator.get(localParams.get(RERANK_OPERATOR, RERANK_OPERATOR_DEFAULT));
+
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator);
     }
   }
 
   private static final class ReRankQueryRescorer extends QueryRescorer {
 
-    final double reRankWeight;
+    final BiFloatFunction scoreCombiner;
 
-    public ReRankQueryRescorer(Query reRankQuery, double reRankWeight) {
+    @FunctionalInterface
+    interface BiFloatFunction {
+      float func(float a, float b);
+    }
+
+    public ReRankQueryRescorer(
+        Query reRankQuery, double reRankWeight, ReRankOperator reRankOperator) {
       super(reRankQuery);
-      this.reRankWeight = reRankWeight;
+      switch (reRankOperator) {
+        case ADD:
+          scoreCombiner = (score, second) -> (float) (score + reRankWeight * second);
+          break;
+        case MULTIPLY:
+          scoreCombiner = (score, second) -> (float) (score * reRankWeight * second);
+          break;
+        case REPLACE:
+          scoreCombiner = (score, second) -> (float) (reRankWeight * second);
+          break;
+        default:
+          scoreCombiner = null;
+          throw new IllegalArgumentException("Unexpected: reRankOperator=" + reRankOperator);
+      }
     }
 
     @Override
@@ -90,7 +115,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         float firstPassScore, boolean secondPassMatches, float secondPassScore) {
       float score = firstPassScore;
       if (secondPassMatches) {
-        score = (float) (score + reRankWeight * secondPassScore);
+        return scoreCombiner.func(score, secondPassScore);
       }
       return score;
     }
@@ -99,6 +124,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
   private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
+    private final ReRankOperator reRankOperator;
 
     @Override
     public int hashCode() {
@@ -106,7 +132,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
           + mainQuery.hashCode()
           + reRankQuery.hashCode()
           + (int) reRankWeight
-          + reRankDocs;
+          + reRankDocs
+          + reRankOperator.hashCode();
     }
 
     @Override
@@ -118,13 +145,19 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return mainQuery.equals(rrq.mainQuery)
           && reRankQuery.equals(rrq.reRankQuery)
           && reRankWeight == rrq.reRankWeight
-          && reRankDocs == rrq.reRankDocs;
+          && reRankDocs == rrq.reRankDocs
+          && reRankOperator.equals(rrq.reRankOperator);
     }
 
-    public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight) {
-      super(defaultQuery, reRankDocs, new ReRankQueryRescorer(reRankQuery, reRankWeight));
+    public ReRankQuery(
+        Query reRankQuery, int reRankDocs, double reRankWeight, ReRankOperator reRankOperator) {
+      super(
+          defaultQuery,
+          reRankDocs,
+          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator));
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
+      this.reRankOperator = reRankOperator;
     }
 
     @Override
@@ -135,13 +168,15 @@ public class ReRankQParserPlugin extends QParserPlugin {
       sb.append(" mainQuery='").append(mainQuery.toString()).append("' ");
       sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
       sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
-      sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append('}');
+      sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
+      sb.append(RERANK_OPERATOR).append('=').append(reRankOperator.toLower()).append('}');
       return sb.toString();
     }
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(rewrittenMainQuery);
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator)
+          .wrap(rewrittenMainQuery);
     }
   }
 }
