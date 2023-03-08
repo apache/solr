@@ -208,6 +208,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
       gen.close();
     }
 
+    @Override
     public void writeStrRaw(String name, String val) throws IOException {
       gen.writeRawValue(val);
     }
