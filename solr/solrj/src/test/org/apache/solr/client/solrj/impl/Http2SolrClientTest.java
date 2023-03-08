@@ -724,15 +724,37 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testGetDefaultSslContextFactory() {
-    assertNull(Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
+    assertEquals(
+        "HTTPS",
+        Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory.getKeyStoreType());
     assertEquals("bar", sslContextFactory.getTrustStoreType());
+    System.clearProperty("javax.net.ssl.keyStoreType");
+    System.clearProperty("javax.net.ssl.trustStoreType");
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "true");
+    System.setProperty("javax.net.ssl.keyStoreType", "foo");
+    System.setProperty("javax.net.ssl.trustStoreType", "bar");
+    SslContextFactory.Client sslContextFactory2 = Http2SolrClient.getDefaultSslContextFactory();
+    assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
+    assertEquals("foo", sslContextFactory2.getKeyStoreType());
+    assertEquals("bar", sslContextFactory2.getTrustStoreType());
+    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("javax.net.ssl.keyStoreType");
+    System.clearProperty("javax.net.ssl.trustStoreType");
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "false");
+    System.setProperty("javax.net.ssl.keyStoreType", "foo");
+    System.setProperty("javax.net.ssl.trustStoreType", "bar");
+    SslContextFactory.Client sslContextFactory3 = Http2SolrClient.getDefaultSslContextFactory();
+    assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
+    assertEquals("foo", sslContextFactory3.getKeyStoreType());
+    assertEquals("bar", sslContextFactory3.getTrustStoreType());
     System.clearProperty("solr.jetty.ssl.verifyClientHostName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");

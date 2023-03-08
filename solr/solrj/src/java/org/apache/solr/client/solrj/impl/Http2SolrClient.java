@@ -56,6 +56,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -80,6 +81,7 @@ import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
@@ -102,6 +104,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -447,7 +450,9 @@ public class Http2SolrClient extends SolrClient {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
+                log.debug("response processing started");
                 InputStreamResponseListener listener = this;
+                MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
                 executor.execute(
                     () -> {
                       InputStream is = listener.getInputStream();
@@ -455,13 +460,22 @@ public class Http2SolrClient extends SolrClient {
                       try {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, parser, response, is);
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing success");
                         asyncListener.onSuccess(body);
                       } catch (RemoteSolrException e) {
                         if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
+                          mdcCopyHelper.onBegin(null);
+                          log.debug("response processing failed");
                           asyncListener.onFailure(e);
                         }
                       } catch (SolrServerException e) {
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing failed");
                         asyncListener.onFailure(e);
+                      } finally {
+                        log.debug("response processing completed");
+                        mdcCopyHelper.onComplete(null);
                       }
                     });
               }
@@ -571,12 +585,15 @@ public class Http2SolrClient extends SolrClient {
     }
 
     setBasicAuthHeader(solrRequest, req);
+    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+    req.onRequestBegin(mdcCopyHelper);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
       listener.onQueued(req);
       req.onRequestBegin(listener);
       req.onComplete(listener);
     }
+    req.onComplete(mdcCopyHelper);
 
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
@@ -1265,9 +1282,41 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
-    sslContextFactory.setEndpointIdentificationAlgorithm(
-        System.getProperty("solr.jetty.ssl.verifyClientHostName"));
+    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
+      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+    } else {
+      sslContextFactory.setEndpointIdentificationAlgorithm(null);
+    }
 
     return sslContextFactory;
+  }
+
+  /**
+   * Helper class in change of copying MDC context across all threads involved in processing a
+   * request. This does not strictly need to be a RequestResponseListener, but using it since it
+   * already provides hooks into the request processing lifecycle.
+   */
+  private static class MDCCopyHelper extends RequestResponseListener {
+    private final Map<String, String> submitterContext = MDC.getCopyOfContextMap();
+    private Map<String, String> threadContext;
+
+    @Override
+    public void onBegin(Request request) {
+      threadContext = MDC.getCopyOfContextMap();
+      updateContextMap(submitterContext);
+    }
+
+    @Override
+    public void onComplete(Result result) {
+      updateContextMap(threadContext);
+    }
+
+    private static void updateContextMap(Map<String, String> context) {
+      if (context != null && !context.isEmpty()) {
+        MDC.setContextMap(context);
+      } else {
+        MDC.clear();
+      }
+    }
   }
 }

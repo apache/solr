@@ -55,6 +55,7 @@ public class JerseyApplications {
       register(MessageBodyWriters.JavabinMessageBodyWriter.class);
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(MessageBodyWriters.RawMessageBodyWriter.class);
       register(JacksonJsonProvider.class);
       register(SolrJacksonMapper.class);
 
