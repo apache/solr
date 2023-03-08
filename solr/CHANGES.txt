@@ -334,6 +334,9 @@ Other Changes
 
 * SOLR-16684: Keep solr's opennlp-tools version in sync with Lucene (janhoy)
 
+* SOLR-16681: Throw exception when attempting to replace uniqueKey via fl in distributed request,
+  e.g. fl=old_id:id,id:new_id (Mikhail Khludnev)
+
 ==================  9.1.1 ==================
 
 Bug Fixes
