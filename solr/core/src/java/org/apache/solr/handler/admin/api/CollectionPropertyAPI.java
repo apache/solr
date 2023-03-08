@@ -17,17 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.IOException;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import org.apache.solr.client.solrj.request.beans.SetCollectionPropertyPayload;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -36,13 +26,21 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+import javax.ws.rs.DELETE;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.io.IOException;
+
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
 /**
  * V2 API for modifying collection-level properties.
  *
- * <p>This API (POST /v2/collections/collectionName {'set-collection-property': {...}}) is analogous
+ * <p>These APIs (PUT and DELETE /api/collections/collName/properties/propName) are analogous
  * to the v1 /admin/collections?action=COLLECTIONPROP command.
- *
- * @see SetCollectionPropertyPayload
  */
 @Path("/collections/{collName}/properties/{propName}")
 public class CollectionPropertyAPI extends AdminAPIBase {
