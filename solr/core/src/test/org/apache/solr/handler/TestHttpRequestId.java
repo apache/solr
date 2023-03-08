@@ -16,11 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -113,10 +115,10 @@ public class TestHttpRequestId extends SolrJettyTestBase {
       }
 
       // expecting 3 events: started, success|failed, completed
-      assertEquals(3, reqLog.getQueue().size());
-      while (!reqLog.getQueue().isEmpty()) {
-        var reqEvent = reqLog.getQueue().poll();
-        assertNotNull(reqEvent);
+      Queue<LogEvent> reqLogQueue = reqLog.getQueue();
+      assertEquals(3, reqLogQueue.size());
+      while (!reqLogQueue.isEmpty()) {
+        var reqEvent = reqLogQueue.poll();
         assertEquals(value, reqEvent.getContextData().getValue(key));
       }
     }
