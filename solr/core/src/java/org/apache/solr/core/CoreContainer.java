@@ -824,7 +824,7 @@ public class CoreContainer {
     // TODO: manage to completely build CoreContainer in the constructor and not in the load()
     // method... Requires some test refactoring.
     this.distributedCollectionCommandRunner =
-        isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionConfigSetExecution()
+        isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionExecution()
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(this))
             : Optional.empty();
 
@@ -2451,6 +2451,10 @@ public class CoreContainer {
   public Optional<DistributedCollectionConfigSetCommandRunner>
       getDistributedCollectionCommandRunner() {
     return this.distributedCollectionCommandRunner;
+  }
+
+  public DistributedCollectionConfigSetCommandRunner getDistributedConfigSetCommandRunner() {
+    return new DistributedCollectionConfigSetCommandRunner(this);
   }
 
   /**

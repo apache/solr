@@ -1027,7 +1027,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               zkController,
               new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "")
                   .setUseDistributedClusterStateUpdates(false)
-                  .setUseDistributedCollectionConfigSetExecution(false)
+                  .setUseDistributedCollectionExecution(false)
                   .build());
       overseers.add(overseer);
       ElectionContext ec =

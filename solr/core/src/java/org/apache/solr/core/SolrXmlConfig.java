@@ -555,8 +555,8 @@ public class SolrXmlConfig {
         case "distributedClusterStateUpdates":
           builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
-        case "distributedCollectionConfigSetExecution":
-          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
+        case "distributedCollectionExecution":
+          builder.setUseDistributedCollectionExecution(Boolean.parseBoolean(value));
           break;
         case "minStateByteLenForCompression":
           builder.setMinStateByteLenForCompression(parseInt(name, value));

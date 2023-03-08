@@ -52,7 +52,7 @@ public class CloudConfig {
 
   private final boolean useDistributedClusterStateUpdates;
 
-  private final boolean useDistributedCollectionConfigSetExecution;
+  private final boolean useDistributedCollectionExecution;
 
   private final int minStateByteLenForCompression;
 
@@ -75,7 +75,7 @@ public class CloudConfig {
       String pkiHandlerPrivateKeyPath,
       String pkiHandlerPublicKeyPath,
       boolean useDistributedClusterStateUpdates,
-      boolean useDistributedCollectionConfigSetExecution,
+      boolean useDistributedCollectionExecution,
       int minStateByteLenForCompression,
       String stateCompressorClass) {
     this.zkHost = zkHost;
@@ -94,14 +94,14 @@ public class CloudConfig {
     this.pkiHandlerPrivateKeyPath = pkiHandlerPrivateKeyPath;
     this.pkiHandlerPublicKeyPath = pkiHandlerPublicKeyPath;
     this.useDistributedClusterStateUpdates = useDistributedClusterStateUpdates;
-    this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
+    this.useDistributedCollectionExecution = useDistributedCollectionExecution;
     this.minStateByteLenForCompression = minStateByteLenForCompression;
     this.stateCompressorClass = stateCompressorClass;
 
-    if (useDistributedCollectionConfigSetExecution && !useDistributedClusterStateUpdates) {
+    if (useDistributedCollectionExecution && !useDistributedClusterStateUpdates) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "'useDistributedCollectionConfigSetExecution' can't be true if useDistributedClusterStateUpdates is false");
+          "'useDistributedCollectionExecution' can't be true if useDistributedClusterStateUpdates is false");
     }
 
     if (this.hostPort == -1)
@@ -177,8 +177,8 @@ public class CloudConfig {
     return useDistributedClusterStateUpdates;
   }
 
-  public boolean getDistributedCollectionConfigSetExecution() {
-    return useDistributedCollectionConfigSetExecution;
+  public boolean getDistributedCollectionExecution() {
+    return useDistributedCollectionExecution;
   }
 
   public int getMinStateByteLenForCompression() {
@@ -216,7 +216,7 @@ public class CloudConfig {
     private String pkiHandlerPrivateKeyPath;
     private String pkiHandlerPublicKeyPath;
     private boolean useDistributedClusterStateUpdates = false;
-    private boolean useDistributedCollectionConfigSetExecution = false;
+    private boolean useDistributedCollectionExecution = false;
     private int minStateByteLenForCompression = DEFAULT_MINIMUM_STATE_SIZE_FOR_COMPRESSION;
 
     private String stateCompressorClass;
@@ -301,9 +301,9 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setUseDistributedCollectionConfigSetExecution(
-        boolean useDistributedCollectionConfigSetExecution) {
-      this.useDistributedCollectionConfigSetExecution = useDistributedCollectionConfigSetExecution;
+    public CloudConfigBuilder setUseDistributedCollectionExecution(
+        boolean useDistributedCollectionExecution) {
+      this.useDistributedCollectionExecution = useDistributedCollectionExecution;
       return this;
     }
 
@@ -335,7 +335,7 @@ public class CloudConfig {
           pkiHandlerPrivateKeyPath,
           pkiHandlerPublicKeyPath,
           useDistributedClusterStateUpdates,
-          useDistributedCollectionConfigSetExecution,
+          useDistributedCollectionExecution,
           minStateByteLenForCompression,
           stateCompressorClass);
     }
