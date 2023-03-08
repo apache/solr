@@ -139,7 +139,7 @@ public class MiniSolrCloudCluster {
               : "")
           + "}</str> \n"
           + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
-          + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
+          + "    <str name=\"distributedCollectionExecution\">${solr.distributedCollectionExecution:false}</str> \n"
           + "  </solrcloud>\n"
           +
           // NOTE: this turns off the metrics collection unless overridden by a sysprop
@@ -1054,7 +1054,7 @@ public class MiniSolrCloudCluster {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
-    private boolean useDistributedCollectionConfigSetExecution;
+    private boolean useDistributedCollectionExecution;
     private boolean useDistributedClusterStateUpdate;
     private boolean formatZkServer = true;
     private Optional<Integer> connectionTimeout = Optional.empty();
@@ -1146,13 +1146,13 @@ public class MiniSolrCloudCluster {
      * <p>The real need is for a few tests covering reasonable use cases to call this method. If
      * you're adding a new test, you don't have to call it (but it's ok if you do).
      */
-    public Builder useOtherCollectionConfigSetExecution() {
+    public Builder useOtherCollectionExecution() {
       // Switch from Overseer to distributed Collection execution and vice versa
-      useDistributedCollectionConfigSetExecution = !useDistributedCollectionConfigSetExecution;
+      useDistributedCollectionExecution = !useDistributedCollectionExecution;
       // Reverse distributed cluster state updates as well if possible (state can't be Overseer
       // based if Collections API is distributed)
       useDistributedClusterStateUpdate =
-          !useDistributedClusterStateUpdate || useDistributedCollectionConfigSetExecution;
+          !useDistributedClusterStateUpdate || useDistributedCollectionExecution;
       return this;
     }
 
@@ -1170,7 +1170,7 @@ public class MiniSolrCloudCluster {
      * <solrcloud>
      *   ....
      *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
-     *   <str name="distributedCollectionConfigSetExecution">${solr.distributedCollectionConfigSetExecution:false}</str>
+     *   <str name="distributedCollectionExecution">${solr.distributedCollectionExecution:false}</str>
      *   ....
      * </solrcloud>
      * }</pre>
@@ -1179,21 +1179,21 @@ public class MiniSolrCloudCluster {
      * MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}. When a test sets a different {@code solr.xml}
      * config (using {@link #withSolrXml}), if the config does not contain the placeholder, the
      * strategy will be defined by the values assigned to {@code useDistributedClusterStateUpdates}
-     * and {@code useDistributedCollectionConfigSetExecution} in {@link
+     * and {@code useDistributedCollectionExecution} in {@link
      * org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
      *
-     * @param distributedCollectionConfigSetApi When {@code true}, Collection and Config Set API
-     *     commands are executed in a distributed way by nodes. When {@code false}, they are
-     *     executed by Overseer.
+     * @param distributedCollectionApi When {@code true}, Collection and Config Set API commands are
+     *     executed in a distributed way by nodes. When {@code false}, they are executed by
+     *     Overseer.
      * @param distributedClusterStateUpdates When {@code true}, cluster state updates are handled in
      *     a distributed way by nodes. When {@code false}, cluster state updates are handled by
      *     Overseer.
-     *     <p>If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must
-     *     be {@code true}.
+     *     <p>If {@code distributedCollectionApi} is {@code true} then this parameter must be {@code
+     *     true}.
      */
     public Builder withDistributedClusterStateUpdates(
-        boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
-      useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
+        boolean distributedCollectionApi, boolean distributedClusterStateUpdates) {
+      useDistributedCollectionExecution = distributedCollectionApi;
       useDistributedClusterStateUpdate = distributedClusterStateUpdates;
       return this;
     }
@@ -1252,12 +1252,12 @@ public class MiniSolrCloudCluster {
       // To hard code behavior for tests not having these placeholders - and for SolrCloud as well
       // for that matter! -
       // change the values assigned to useDistributedClusterStateUpdates and
-      // useDistributedCollectionConfigSetExecution in
+      // useDistributedCollectionExecution in
       // org.apache.solr.core.CloudConfig.CloudConfigBuilder. Do not forget then to revert before
       // commit!
       System.setProperty(
-          "solr.distributedCollectionConfigSetExecution",
-          Boolean.toString(useDistributedCollectionConfigSetExecution));
+          "solr.distributedCollectionExecution",
+          Boolean.toString(useDistributedCollectionExecution));
       System.setProperty(
           "solr.distributedClusterStateUpdates",
           Boolean.toString(useDistributedClusterStateUpdate));

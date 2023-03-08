@@ -66,7 +66,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     // these tests need to be isolated, so we don't share the minicluster
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
-        .useOtherCollectionConfigSetExecution()
+        .useOtherCollectionExecution()
         // Some tests (this one) use "the other" cluster Collection API execution strategy to
         // increase coverage
         .configure();

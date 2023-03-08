@@ -315,6 +315,8 @@ public class CoreContainer {
   private volatile Optional<DistributedCollectionConfigSetCommandRunner>
       distributedCollectionCommandRunner;
 
+  private volatile DistributedCollectionConfigSetCommandRunner distributedConfigSetCommandRunner;
+
   private enum CoreInitFailedAction {
     fromleader,
     none
@@ -653,6 +655,7 @@ public class CoreContainer {
     containerProperties = null;
     replayUpdatesExecutor = null;
     distributedCollectionCommandRunner = Optional.empty();
+    distributedConfigSetCommandRunner = null;
     allowPaths = null;
     allowListUrlChecker = null;
   }
@@ -827,6 +830,8 @@ public class CoreContainer {
         isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionExecution()
             ? Optional.of(new DistributedCollectionConfigSetCommandRunner(this))
             : Optional.empty();
+    this.distributedConfigSetCommandRunner =
+        isZooKeeperAware() ? new DistributedCollectionConfigSetCommandRunner(this) : null;
 
     collectionsHandler =
         createHandler(
@@ -1200,6 +1205,7 @@ public class CoreContainer {
         OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
         overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
+      distributedConfigSetCommandRunner.stopAndWaitForPendingTasksToComplete();
     }
     if (log.isInfoEnabled()) {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
@@ -2454,7 +2460,7 @@ public class CoreContainer {
   }
 
   public DistributedCollectionConfigSetCommandRunner getDistributedConfigSetCommandRunner() {
-    return new DistributedCollectionConfigSetCommandRunner(this);
+    return this.distributedConfigSetCommandRunner;
   }
 
   /**

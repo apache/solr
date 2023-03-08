@@ -102,12 +102,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     // strategy to use (distributed if collection API is distributed, but Overseer based or
     // distributed randomly chosen if Collection API is Overseer based)
 
-    boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
+    boolean useDistributedCollectionExecution = LuceneTestCase.random().nextInt(2) == 0;
     boolean useDistributedClusterStateUpdate =
-        useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
+        useDistributedCollectionExecution || LuceneTestCase.random().nextInt(2) == 0;
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
         .withDistributedClusterStateUpdates(
-            useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+            useDistributedCollectionExecution, useDistributedClusterStateUpdate);
   }
 
   @AfterClass
