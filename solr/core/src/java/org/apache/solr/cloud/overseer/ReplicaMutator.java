@@ -440,8 +440,8 @@ public class ReplicaMutator {
     log.debug("Collection is now: {}", newCollection);
     if (collection.isPerReplicaState() && oldReplica != null) {
       if (!persistStateJson(replica, oldReplica, collection)) {
-        log.info(
-            "slice/replica : {}/{} \n , old : {}, \n new {}",
+        log.debug(
+            "state.json is not persisted slice/replica : {}/{} \n , old : {}, \n new {}",
             replica.shard,
             replica.name,
             Utils.toJSONString(oldReplica.getProperties()),
@@ -459,11 +459,17 @@ public class ReplicaMutator {
     if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
     if (!Objects.equals(
         newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
-        oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) return true;
+        oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) {
+      return true;
+    }
     Slice slice = coll.getSlice(newReplica.getShard());
-    //the replica may be in recovery
-    if(slice.getState() == Slice.State.RECOVERY) return true;
-    if (Objects.equals(oldReplica.getProperties().get("state"), "recovering")) return true;
+    //the slice may be in recovery
+    if(slice.getState() == Slice.State.RECOVERY) {
+      return true;
+    }
+    if (Objects.equals(oldReplica.getProperties().get("state"), "recovering")) {
+      return true;
+    }
     return false;
   }
 
