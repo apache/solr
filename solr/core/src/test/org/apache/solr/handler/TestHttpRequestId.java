@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.slf4j.MDC;
 
 @LogLevel("org.apache.solr.client.solrj.impl.Http2SolrClient=DEBUG")
-@SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
 public class TestHttpRequestId extends SolrJettyTestBase {
 
   @BeforeClass
@@ -45,79 +44,70 @@ public class TestHttpRequestId extends SolrJettyTestBase {
   }
 
   @Test
-  public void mdcContextTest() throws Exception {
+  public void mdcContextTest() {
     String collection = "/collection1";
-    BlockingQueue<Runnable> workQueue = new SynchronousQueue<Runnable>(false);
+    BlockingQueue<Runnable> workQueue = new SynchronousQueue<>(false);
     setupClientAndRun(collection, workQueue);
   }
 
   @Test
-  public void mdcContextFailureTest() throws Exception {
+  public void mdcContextFailureTest() {
     String collection = "/doesnotexist";
-    BlockingQueue<Runnable> workQueue = new SynchronousQueue<Runnable>(false);
+    BlockingQueue<Runnable> workQueue = new SynchronousQueue<>(false);
     setupClientAndRun(collection, workQueue);
   }
 
   @Test
-  public void mdcContextTest2() throws Exception {
+  public void mdcContextTest2() {
     String collection = "/collection1";
-    BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(10, false);
+    BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(10, false);
     setupClientAndRun(collection, workQueue);
   }
 
   @Test
-  public void mdcContextFailureTest2() throws Exception {
+  public void mdcContextFailureTest2() {
     String collection = "/doesnotexist";
-    BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(10, false);
+    BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(10, false);
     setupClientAndRun(collection, workQueue);
   }
 
+  @SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
   private void setupClientAndRun(String collection, BlockingQueue<Runnable> workQueue) {
-    String key = "mdcContextTestKey" + System.nanoTime();
-    String value = "TestHttpRequestId" + System.nanoTime();
+    final String key = "mdcContextTestKey" + System.nanoTime();
+    final String value = "TestHttpRequestId" + System.nanoTime();
 
     AsyncListener<NamedList<Object>> listener =
         new AsyncListener<>() {
-
           @Override
           public void onSuccess(NamedList<Object> t) {
-            assertTrue(value, value.equals(MDC.get(key)));
+            assertEquals(value, MDC.get(key));
           }
 
           @Override
           public void onFailure(Throwable throwable) {
-            assertTrue(value, value.equals(MDC.get(key)));
+            assertEquals(value, MDC.get(key));
           }
         };
 
     try (LogListener reqLog =
         LogListener.debug(Http2SolrClient.class).substring("response processing")) {
-
-      ThreadPoolExecutor commExecutor = null;
-      Http2SolrClient client = null;
-      try {
-        // client setup needs to be same as HttpShardHandlerFactory
-        commExecutor =
-            new ExecutorUtil.MDCAwareThreadPoolExecutor(
-                3,
-                Integer.MAX_VALUE,
-                1,
-                TimeUnit.SECONDS,
-                workQueue,
-                new SolrNamedThreadFactory("httpShardExecutor"),
-                false);
-        client =
-            new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + collection)
-                .withExecutor(commExecutor)
-                .build();
-
+      // client setup needs to be same as HttpShardHandlerFactory
+      ThreadPoolExecutor commExecutor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              3,
+              Integer.MAX_VALUE,
+              1,
+              TimeUnit.SECONDS,
+              workQueue,
+              new SolrNamedThreadFactory("httpShardExecutor"),
+              false);
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + collection)
+              .withExecutor(commExecutor)
+              .build()) {
         MDC.put(key, value);
         client.asyncRequest(new SolrPing(), null, listener);
-
       } finally {
-        if (client != null) {
-          client.close();
-        }
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
         MDC.remove(key);
       }
@@ -126,7 +116,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
       assertEquals(3, reqLog.getQueue().size());
       while (!reqLog.getQueue().isEmpty()) {
         var reqEvent = reqLog.getQueue().poll();
-        assertTrue(reqEvent.getContextData().containsKey(key));
+        assertNotNull(reqEvent);
         assertEquals(value, reqEvent.getContextData().getValue(key));
       }
     }
