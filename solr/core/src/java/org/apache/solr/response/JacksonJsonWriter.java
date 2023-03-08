@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import org.apache.solr.common.PushWriter;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class JacksonJsonWriter extends BinaryResponseWriter {
@@ -15,6 +16,9 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
         try (WriterImpl sw = new WriterImpl(out, request, response)) {
             sw.writeResponse();
         }
+    }
+    public PushWriter getWriter(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) {
+        return new WriterImpl(out, request, response);
     }
 
     @Override
@@ -57,7 +61,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
             } else if (val instanceof Float) {
                 gen.writeNumber(val.floatValue());
             } else if (val instanceof Double) {
-                gen.writeNumber(val.floatValue());
+                gen.writeNumber(val.doubleValue());
             } else if (val instanceof Short) {
                 gen.writeNumber(val.shortValue());
             } else if (val instanceof Byte) {
@@ -84,7 +88,11 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
         @Override
         public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-            gen.writeString(val);
+            if(needsEscaping) {
+                gen.writeString(val);
+            } else {
+                gen.writeRawValue(val);
+            }
         }
 
         @Override
