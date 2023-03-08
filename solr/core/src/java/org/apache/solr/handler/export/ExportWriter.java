@@ -187,11 +187,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
-    if(rw instanceof JacksonJsonWriter) {
+    if (rw instanceof JacksonJsonWriter) {
       writer = ((JacksonJsonWriter) rw).getWriter(os, req, res);
-    }    else if (rw instanceof BinaryResponseWriter) {
-        // todo add support for other writers after testing
-     writer = new JavaBinCodec(os, null);
+    } else if (rw instanceof BinaryResponseWriter) {
+      // todo add support for other writers after testing
+      writer = new JavaBinCodec(os, null);
     } else {
       respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
       writer = JSONResponseWriter.getPushWriter(respWriter, req, res);

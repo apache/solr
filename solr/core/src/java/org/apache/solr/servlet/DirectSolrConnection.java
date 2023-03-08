@@ -119,10 +119,10 @@ public class DirectSolrConnection {
 
       // Now write it out
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      if(responseWriter instanceof BinaryResponseWriter) {
+      if (responseWriter instanceof BinaryResponseWriter) {
         BinaryResponseWriter brw = (BinaryResponseWriter) responseWriter;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        brw.write(baos,req, rsp );
+        brw.write(baos, req, rsp);
         return baos.toString(StandardCharsets.UTF_8);
       } else {
         StringWriter out = new StringWriter();
