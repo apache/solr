@@ -139,8 +139,13 @@ public class ZkStateWriter {
       throw new IllegalStateException(
           "ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
-    if (cmds.isEmpty()) return prevState;
-    if (isNoOps(cmds)) return prevState;
+    if (cmds.isEmpty() || isNoOps(cmds)) { //empty and no-ops are valid, should call callback
+      if (callback != null) {
+        callback.onWrite();
+      }
+      return prevState;
+    }
+
 
     boolean forceFlush = false;
     if (cmds.size() == 1) {
