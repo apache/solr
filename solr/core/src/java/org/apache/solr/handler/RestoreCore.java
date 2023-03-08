@@ -109,6 +109,7 @@ public class RestoreCore implements Callable<Boolean> {
       Set<String> indexDirFiles = new HashSet<>(Arrays.asList(indexDir.listAll()));
       // Move all files from backupDir to restoreIndexDir
       for (String filename : repository.listAllFiles()) {
+        log.info("During restore attempting to deal with repo file {}", filename, restoreIndexDir);
         checkInterrupted();
         try {
           if (indexDirFiles.contains(filename)) {

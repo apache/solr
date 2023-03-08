@@ -1,0 +1,49 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.handler.admin;
+
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.admin.api.InstallCoreDataAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+
+public class InstallCoreDataOp implements CoreAdminHandler.CoreAdminOp {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Override
+    public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+        log.info("JEGERLOW: In install-core-data OP (v1)");
+        final SolrParams params = it.req.getParams();
+        final String coreName = params.required().get(CoreAdminParams.CORE);
+
+        final InstallCoreDataAPI api = new InstallCoreDataAPI(it.handler.getCoreContainer(), it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        final InstallCoreDataAPI.InstallCoreDataRequestBody requestBody = new InstallCoreDataAPI.InstallCoreDataRequestBody();
+        requestBody.repository = params.get(BACKUP_REPOSITORY);
+        requestBody.location = params.get(BACKUP_LOCATION);
+        requestBody.asyncId = params.get(ASYNC);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, api.installCoreData(coreName, requestBody));
+    }
+}
