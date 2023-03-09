@@ -21,9 +21,14 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 import java.io.IOException;
+import java.util.List;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -31,10 +36,23 @@ import org.apache.solr.request.SolrQueryRequest;
 //  HTTP-compliant 'Accept' header
 /** Overrides the content-type of the response based on an optional user-provided 'wt' parameter */
 public class MediaTypeOverridingFilter implements ContainerResponseFilter {
+
+  private static final List<Class<? extends JerseyResource>> EXEMPTED_RESOURCES =
+      List.of(ZookeeperReadAPI.class);
+
+  @Context private ResourceInfo resourceInfo;
+
   @Override
   public void filter(
       ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
+
+    // Some endpoints have their own media-type logic and opt out of the overriding behavior this
+    // filter provides.
+    if (EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
+      return;
+    }
+
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
     final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, null);
