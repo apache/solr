@@ -48,31 +48,31 @@ public class TestHttpRequestId extends SolrJettyTestBase {
   public void mdcContextTest() throws Exception {
     String collection = "/collection1";
     BlockingQueue<Runnable> workQueue = new SynchronousQueue<Runnable>(false);
-    setupClientAndRun(collection, workQueue);
+    setupClientAndRun(collection, workQueue, 0);
   }
 
   @Test
   public void mdcContextFailureTest() throws Exception {
     String collection = "/doesnotexist";
     BlockingQueue<Runnable> workQueue = new SynchronousQueue<Runnable>(false);
-    setupClientAndRun(collection, workQueue);
+    setupClientAndRun(collection, workQueue, 0);
   }
 
   @Test
   public void mdcContextTest2() throws Exception {
     String collection = "/collection1";
     BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(10, false);
-    setupClientAndRun(collection, workQueue);
+    setupClientAndRun(collection, workQueue, 3);
   }
 
   @Test
   public void mdcContextFailureTest2() throws Exception {
     String collection = "/doesnotexist";
     BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(10, false);
-    setupClientAndRun(collection, workQueue);
+    setupClientAndRun(collection, workQueue, 3);
   }
 
-  private void setupClientAndRun(String collection, BlockingQueue<Runnable> workQueue) {
+  private void setupClientAndRun(String collection, BlockingQueue<Runnable> workQueue, int corePoolSize) {
     String key = "mdcContextTestKey" + System.nanoTime();
     String value = "TestHttpRequestId" + System.nanoTime();
 
@@ -81,12 +81,12 @@ public class TestHttpRequestId extends SolrJettyTestBase {
 
           @Override
           public void onSuccess(NamedList<Object> t) {
-            assertTrue(value, value.equals(MDC.get(key)));
+            assertEquals(value, MDC.get(key));
           }
 
           @Override
           public void onFailure(Throwable throwable) {
-            assertTrue(value, value.equals(MDC.get(key)));
+            assertEquals(value, MDC.get(key));
           }
         };
 
@@ -99,7 +99,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
         // client setup needs to be same as HttpShardHandlerFactory
         commExecutor =
             new ExecutorUtil.MDCAwareThreadPoolExecutor(
-                3,
+                corePoolSize,
                 Integer.MAX_VALUE,
                 1,
                 TimeUnit.SECONDS,
@@ -122,8 +122,8 @@ public class TestHttpRequestId extends SolrJettyTestBase {
         MDC.remove(key);
       }
 
-      // expecting 3 events: started, success|failed, completed
-      assertEquals(3, reqLog.getQueue().size());
+      // expecting 2 events: success|failed, completed
+      assertEquals(2, reqLog.getQueue().size());
       while (!reqLog.getQueue().isEmpty()) {
         var reqEvent = reqLog.getQueue().poll();
         assertTrue(reqEvent.getContextData().containsKey(key));
