@@ -47,6 +47,12 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
       ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
 
+    // Solr has historically ignored 'wt' for client or server error responses, so maintain that
+    // behavior here for compatibility.
+    if (responseContext.getStatus() >= 400) {
+      return;
+    }
+
     // Some endpoints have their own media-type logic and opt out of the overriding behavior this
     // filter provides.
     if (EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
