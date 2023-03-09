@@ -43,3 +43,6 @@ __pycache__
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
 .gradletasknamecache
+
+# Ignore Benchmark results
+solr/benchmark/profile-results
