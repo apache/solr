@@ -72,7 +72,8 @@ public class TestHttpRequestId extends SolrJettyTestBase {
     setupClientAndRun(collection, workQueue, 3);
   }
 
-  private void setupClientAndRun(String collection, BlockingQueue<Runnable> workQueue, int corePoolSize) {
+  private void setupClientAndRun(
+      String collection, BlockingQueue<Runnable> workQueue, int corePoolSize) {
     String key = "mdcContextTestKey" + System.nanoTime();
     String value = "TestHttpRequestId" + System.nanoTime();
 
