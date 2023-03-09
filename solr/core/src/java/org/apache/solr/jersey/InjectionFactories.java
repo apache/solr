@@ -27,6 +27,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.glassfish.hk2.api.Factory;
 
 public class InjectionFactories {
+
   public static class SolrQueryRequestFactory implements Factory<SolrQueryRequest> {
 
     private final ContainerRequestContext containerRequestContext;

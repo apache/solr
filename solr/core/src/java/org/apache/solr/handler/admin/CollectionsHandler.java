@@ -218,6 +218,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
+import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
@@ -666,8 +667,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETE_OP(
         DELETE,
         (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, NAME);
-          return copy(req.getParams(), map, FOLLOW_ALIASES);
+          final RequiredSolrParams requiredParams = req.getParams().required();
+          final DeleteCollectionAPI deleteCollectionAPI =
+              new DeleteCollectionAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse deleteCollResponse =
+              deleteCollectionAPI.deleteCollection(
+                  requiredParams.get(NAME),
+                  req.getParams().getBool(FOLLOW_ALIASES),
+                  req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteCollResponse);
+
+          return null;
         }),
     // XXX should this command support followAliases?
     RELOAD_OP(
@@ -1232,19 +1242,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          NamedList<Object> results = new NamedList<>();
-          Map<String, DocCollection> collections =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getClusterState()
-                  .getCollectionsMap();
-          List<String> collectionList = new ArrayList<>(collections.keySet());
-          Collections.sort(collectionList);
-          // XXX should we add aliases here?
-          results.add("collections", collectionList);
-          SolrResponse response = new OverseerSolrResponse(results);
-          rsp.getValues().addAll(response.getResponse());
+          final ListCollectionsAPI listCollectionsAPI =
+              new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
     /**
@@ -2072,7 +2073,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
+        ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
         DeleteNodeAPI.class,
         ListAliasesAPI.class);
@@ -2089,7 +2092,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
