@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
+import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -48,8 +48,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
   @ShardsFixed(num = 1)
   public void testCreateAndDeleteThenCreateAgain() throws Exception {
     String overseerNode =
-        OverseerCollectionConfigSetProcessor.getLeaderNode(
-            ZkStateReader.from(cloudClient).getZkClient());
+        OverseerTaskProcessor.getLeaderNode(ZkStateReader.from(cloudClient).getZkClient());
     String notOverseerNode = null;
     for (CloudJettyRunner cloudJetty : cloudJettys) {
       if (!overseerNode.equals(cloudJetty.nodeName)) {

@@ -95,10 +95,8 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in
  *       ZooKeeper, see {@link ClusterStateUpdater},
- *   <li>Collection API implementation, see {@link OverseerCollectionConfigSetProcessor} and {@link
+ *   <li>Collection API implementation, see {@link OverseerTaskProcessor} and {@link
  *       OverseerCollectionMessageHandler} (and the example below),
- *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link
- *       OverseerConfigSetMessageHandler},
  * </ul>
  *
  * <p>The nodes in the cluster communicate with the Overseer over queues implemented in ZooKeeper.
@@ -108,8 +106,8 @@ import org.slf4j.LoggerFactory;
  *   <li>The <b>state update queue</b>, through which nodes request the Overseer to update the
  *       <code>state.json</code> file of a Collection in ZooKeeper. This queue is in Zookeeper at
  *       <code>/overseer/queue</code>,
- *   <li>A queue shared between <b>Collection API and Config Set API</b> requests. This queue is in
- *       Zookeeper at <code>/overseer/collection-queue-work</code>.
+ *   <li>A queue for <b>Collection API</b> requests. This queue is in Zookeeper at <code>
+ *       /overseer/collection-queue-work</code>.
  * </ol>
  *
  * <p>An example of the steps involved in the Overseer processing a Collection creation API call:
@@ -119,8 +117,8 @@ import org.slf4j.LoggerFactory;
  *       cluster,
  *   <li>The node (via {@link CollectionsHandler}) enqueues the request into the <code>
  *       /overseer/collection-queue-work</code> queue in ZooKeepeer,
- *   <li>The {@link OverseerCollectionConfigSetProcessor} running on the Overseer node dequeues the
- *       message and using an executor service with a maximum pool size of {@link
+ *   <li>The {@link OverseerTaskProcessor} running on the Overseer node dequeues the message and
+ *       using an executor service with a maximum pool size of {@link
  *       OverseerTaskProcessor#MAX_PARALLEL_TASKS} hands it for processing to {@link
  *       OverseerCollectionMessageHandler},
  *   <li>Command {@link CreateCollectionCmd} then executes and does:
@@ -488,11 +486,10 @@ public class Overseer implements SolrCloseable {
       try {
         Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(data);
         String id = (String) m.get(ID);
-        if (overseerCollectionConfigSetProcessor.getId().equals(id)) {
+        if (overseerTaskProcessor.getId().equals(id)) {
           try {
             log.warn(
-                "I (id={}) am exiting, but I'm still the leader",
-                overseerCollectionConfigSetProcessor.getId());
+                "I (id={}) am exiting, but I'm still the leader", overseerTaskProcessor.getId());
             zkClient.delete(path, stat.getVersion(), true);
           } catch (KeeperException.BadVersionException e) {
             // no problem ignore it some other Overseer has already taken over
@@ -592,7 +589,7 @@ public class Overseer implements SolrCloseable {
               if (log.isInfoEnabled()) {
                 log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               }
-              overseerCollectionConfigSetProcessor.close();
+              overseerTaskProcessor.close();
               close();
             } else {
               log.warn("Overseer received wrong QUIT message {}", message);
@@ -695,7 +692,7 @@ public class Overseer implements SolrCloseable {
 
   private final String adminPath;
 
-  private OverseerCollectionConfigSetProcessor overseerCollectionConfigSetProcessor;
+  private OverseerTaskProcessor overseerTaskProcessor;
 
   private ZkController zkController;
 
@@ -766,21 +763,21 @@ public class Overseer implements SolrCloseable {
     // as we have an Overseer, we need to support this.
     OverseerNodePrioritizer overseerPrioritizer =
         new OverseerNodePrioritizer(reader, this, adminPath, shardHandler.getShardHandlerFactory());
-    overseerCollectionConfigSetProcessor =
-        new OverseerCollectionConfigSetProcessor(
+    overseerTaskProcessor =
+        new OverseerTaskProcessor(
             reader,
             id,
-            shardHandler,
+            shardHandler.getShardHandlerFactory(),
             adminPath,
             stats,
             Overseer.this,
             overseerPrioritizer,
+            this.getCollectionQueue(reader.getZkClient(), stats),
+            Overseer.getRunningMap(reader.getZkClient()),
+            Overseer.getCompletedMap(reader.getZkClient()),
+            Overseer.getFailureMap(reader.getZkClient()),
             solrMetricsContext);
-    ccThread =
-        new OverseerThread(
-            ccTg,
-            overseerCollectionConfigSetProcessor,
-            "OverseerCollectionConfigSetProcessor-" + id);
+    ccThread = new OverseerThread(ccTg, overseerTaskProcessor, "OverseerTaskProcessor-" + id);
     ccThread.setDaemon(true);
 
     updaterThread.start();
@@ -1135,50 +1132,6 @@ public class Overseer implements SolrCloseable {
    */
   OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats) {
     return new OverseerTaskQueue(zkClient, "/overseer/collection-queue-work", zkStats);
-  }
-
-  /**
-   * Get queue that can be used to submit configset API tasks to the Overseer.
-   *
-   * <p>This queue is used internally by the {@link org.apache.solr.handler.admin.ConfigSetsHandler}
-   * to submit tasks which are executed by the {@link OverseerConfigSetMessageHandler}. The actions
-   * supported by this queue are listed in the {@link
-   * org.apache.solr.common.params.ConfigSetParams.ConfigSetAction} enum.
-   *
-   * <p>Performance statistics on the returned queue are <em>not</em> tracked by the Overseer Stats
-   * API, see {@link
-   * org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
-   *
-   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link ZkDistributedQueue} object
-   */
-  OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient) {
-    return getConfigSetQueue(zkClient, new Stats());
-  }
-
-  /**
-   * Get queue that can be used to read configset API tasks to the Overseer.
-   *
-   * <p>This queue is used internally by the {@link OverseerConfigSetMessageHandler} to read
-   * configset API tasks submitted by the {@link org.apache.solr.handler.admin.ConfigSetsHandler}.
-   * The actions supported by this queue are listed in the {@link
-   * org.apache.solr.common.params.ConfigSetParams.ConfigSetAction} enum.
-   *
-   * <p>Performance statistics on the returned queue are tracked by the Overseer Stats API, see
-   * {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
-   *
-   * <p>For now, this internally returns the same queue as {@link #getCollectionQueue(SolrZkClient,
-   * Stats)}. It is the responsibility of the client to ensure that configset API actions are
-   * prefixed with {@link OverseerConfigSetMessageHandler#CONFIGSETS_ACTION_PREFIX} so that it is
-   * processed by {@link OverseerConfigSetMessageHandler}.
-   *
-   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link ZkDistributedQueue} object
-   */
-  OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats) {
-    // For now, we use the same queue as the collection queue, but ensure
-    // that the actions are prefixed with a unique string.
-    return getCollectionQueue(zkClient, zkStats);
   }
 
   private void createOverseerNode(final SolrZkClient zkClient) {

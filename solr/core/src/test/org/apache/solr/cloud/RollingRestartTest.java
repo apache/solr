@@ -63,7 +63,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
 
   public void restartWithRolesTest() throws Exception {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
+    String leader = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     assertNotNull(leader);
     log.info("Current overseer leader = {}", leader);
 
@@ -102,12 +102,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
           boolean success =
               waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
           if (!success) {
-            leader =
-                OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
+            leader = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
             if (leader == null)
               log.error(
                   "NOOVERSEER election queue is : {}",
-                  OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                  OverseerTaskProcessor.getSortedElectionNodes(
                       zkStateReader.getZkClient(), "/overseer_elect/election"));
             fail("No overseer designate as leader found after restart #" + (i + 1) + ": " + leader);
           }
@@ -116,11 +115,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         boolean success =
             waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
         if (!success) {
-          leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
+          leader = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
           if (leader == null)
             log.error(
                 "NOOVERSEER election queue is :{}",
-                OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                OverseerTaskProcessor.getSortedElectionNodes(
                     zkStateReader.getZkClient(), "/overseer_elect/election"));
           fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
         }
@@ -135,7 +134,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
 
     assertTrue("Test may not be working if we never saw a live designate", sawLiveDesignate);
 
-    leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
+    leader = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     assertNotNull(leader);
     log.info("Current overseer leader (after restart) = {}", leader);
 
@@ -153,7 +152,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     int stableCheckTimeout = 2000;
     String oldleader = null;
     while (System.nanoTime() < timeout && System.nanoTime() < maxTimeout) {
-      String newLeader = OverseerCollectionConfigSetProcessor.getLeaderNode(testZkClient);
+      String newLeader = OverseerTaskProcessor.getLeaderNode(testZkClient);
       if (newLeader != null && !newLeader.equals(oldleader)) {
         // the leaders have changed, let's move the timeout further
         timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);

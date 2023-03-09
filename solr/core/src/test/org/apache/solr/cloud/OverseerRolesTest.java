@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLeaderNode;
+import static org.apache.solr.cloud.OverseerTaskProcessor.getLeaderNode;
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
 import java.lang.invoke.MethodHandles;
@@ -51,7 +51,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     String current = null;
     while (timeout.hasTimedOut() == false) {
       String prev = current;
-      current = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+      current = OverseerTaskProcessor.getLeaderNode(zkClient());
       if (state.test(current)) return;
       else if (failOnIntermediateTransition) {
         if (prev != null && current != null && !current.equals(prev)) {
@@ -107,13 +107,12 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     }
 
     logOverseerState();
-    List<String> nodes =
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
+    List<String> nodes = OverseerTaskProcessor.getSortedOverseerNodeNames(zkClient());
     // Remove the OVERSEER role, in case it was already assigned by another test in this suite
     for (String node : nodes) {
       CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
     }
-    String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+    String overseer1 = OverseerTaskProcessor.getLeaderNode(zkClient());
     nodes.remove(overseer1);
 
     Collections.shuffle(nodes, random());
@@ -155,8 +154,8 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     CollectionAdminRequest.addRole(overseer3, "overseer").process(cluster.getSolrClient());
 
     // explicitly tell the overseer to quit
-    String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
-    String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+    String leaderId = OverseerTaskProcessor.getLeaderId(zkClient());
+    String leader = OverseerTaskProcessor.getLeaderNode(zkClient());
     log.info("### Sending QUIT to overseer {}", leader);
     getOverseerJetty()
         .getCoreContainer()
@@ -171,8 +170,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     logOverseerState();
     assertTrue(
         "The old leader should have rejoined election",
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())
-            .contains(leader));
+        OverseerTaskProcessor.getSortedOverseerNodeNames(zkClient()).contains(leader));
 
     leaderJetty.start(); // starting this back, just for good measure
   }
@@ -187,8 +185,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     }
     logOverseerState();
     // Remove the OVERSEER role, in case it was already assigned by another test in this suite
-    List<String> nodes =
-        OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
+    List<String> nodes = OverseerTaskProcessor.getSortedOverseerNodeNames(zkClient());
     // We want to remove from the last (in election order) to the first.
     // This way the current overseer will have its role removed last,
     // so there will not be any elections.
@@ -196,10 +193,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     for (String node : nodes) {
       CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
     }
-    String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+    String overseer1 = OverseerTaskProcessor.getLeaderNode(zkClient());
     int counter = 0;
     while (overseer1 == null && counter < 10) {
-      overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+      overseer1 = OverseerTaskProcessor.getLeaderNode(zkClient());
       Thread.sleep(1000);
     }
 

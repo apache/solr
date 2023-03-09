@@ -96,7 +96,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
+public class OverseerTaskProcessorTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -139,15 +139,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private final List<ZkNodeProps> replicas = new ArrayList<>();
   private SolrResponse lastProcessMessageResult;
 
-  private OverseerCollectionConfigSetProcessorToBeTested underTest;
+  private OverseerTaskProcessorToBeTested underTest;
 
   private Thread thread;
   private final Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
 
-  private static class OverseerCollectionConfigSetProcessorToBeTested
-      extends OverseerCollectionConfigSetProcessor {
+  private static class OverseerTaskProcessorToBeTested extends OverseerTaskProcessor {
 
-    public OverseerCollectionConfigSetProcessorToBeTested(
+    public OverseerTaskProcessorToBeTested(
         ZkStateReader zkStateReader,
         String myId,
         HttpShardHandlerFactory shardHandlerFactory,
@@ -959,7 +958,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     if (random().nextBoolean()) Collections.shuffle(createNodeList, random());
 
     underTest =
-        new OverseerCollectionConfigSetProcessorToBeTested(
+        new OverseerTaskProcessorToBeTested(
             zkStateReaderMock,
             "1234",
             shardHandlerFactoryMock,

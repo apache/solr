@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.LockTree;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.OverseerMessageHandler;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.Stats;
@@ -52,16 +51,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link OverseerMessageHandler} that handles Collections API related overseer messages.
- *
- * <p>A lot of the content that was in this class got moved to {@link CollectionHandlingUtils} and
+ * A lot of the content that was in this class got moved to {@link CollectionHandlingUtils} and
  * {@link CollApiCmds}.
  *
  * <p>The equivalent of this class for distributed Collection API command execution is {@link
  * DistributedCollectionConfigSetCommandRunner}.
  */
-public class OverseerCollectionMessageHandler implements OverseerMessageHandler, SolrCloseable {
-
+public class OverseerCollectionMessageHandler implements SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   Overseer overseer;
@@ -72,6 +68,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   String myId;
   Stats stats;
   TimeSource timeSource;
+
+  public interface Lock {
+    void unlock();
+  }
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -111,7 +111,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         new CollApiCmds.CommandMap(new OcmhCollectionCommandContext(this), overseerPrioritizer);
   }
 
-  @Override
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
@@ -155,17 +154,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return action;
   }
 
-  @Override
   public String getName() {
     return "Overseer Collection Message Handler";
   }
 
-  @Override
   public String getTimerName(String operation) {
     return "collection_" + operation;
   }
 
-  @Override
   public String getTaskKey(ZkNodeProps message) {
     return message.containsKey(COLLECTION_PROP)
         ? message.getStr(COLLECTION_PROP)
@@ -184,7 +180,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    *     tasks are executed in queue order (and a later task is not run earlier than its turn just
    *     because it happens that a lock got released).
    */
-  @Override
   public Lock lockTask(ZkNodeProps message, long batchSessionId) {
     if (sessionId != batchSessionId) {
       // this is always called in the same thread.

@@ -22,7 +22,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cloud.OverseerMessageHandler.Lock;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Lock;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.LockLevel;
 import org.apache.solr.common.util.StrUtils;

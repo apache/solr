@@ -87,7 +87,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
             TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             while (!timeout.hasTimedOut()) {
               try {
-                String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
+                String leaderNode = OverseerTaskProcessor.getLeaderNode(zc);
                 if (leaderNode != null && !leaderNode.trim().isEmpty()) {
                   if (log.isInfoEnabled()) {
                     log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);

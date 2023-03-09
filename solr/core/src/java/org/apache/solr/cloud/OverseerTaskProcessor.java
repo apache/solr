@@ -34,9 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -46,6 +46,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
@@ -57,9 +59,6 @@ import org.slf4j.LoggerFactory;
  * A generic processor run in the Overseer, used for handling items added to a distributed work
  * queue. Has support for handling exclusive tasks (i.e. tasks that should not run in parallel with
  * each other).
- *
- * <p>An {@link OverseerMessageHandlerSelector} determines which {@link OverseerMessageHandler}
- * handles specific messages in the queue.
  */
 public class OverseerTaskProcessor implements Runnable, Closeable {
 
@@ -129,17 +128,19 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private final Object waitLock = new Object();
 
-  protected OverseerMessageHandlerSelector selector;
-
   private OverseerNodePrioritizer prioritizer;
 
   private String thisNode;
 
+  private OverseerCollectionMessageHandler overseerCollectionMessageHandler;
+
   public OverseerTaskProcessor(
       ZkStateReader zkStateReader,
       String myId,
+      final ShardHandlerFactory shardHandlerFactory,
+      String adminPath,
       Stats stats,
-      OverseerMessageHandlerSelector selector,
+      Overseer overseer,
       OverseerNodePrioritizer prioritizer,
       OverseerTaskQueue workQueue,
       DistributedMap runningMap,
@@ -149,7 +150,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.stats = stats;
-    this.selector = selector;
+    this.overseerCollectionMessageHandler =
+        new OverseerCollectionMessageHandler(
+            zkStateReader,
+            myId,
+            (HttpShardHandlerFactory) shardHandlerFactory,
+            adminPath,
+            stats,
+            overseer,
+            prioritizer);
     this.prioritizer = prioritizer;
     this.workQueue = workQueue;
     this.runningMap = runningMap;
@@ -341,8 +350,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               workQueue.remove(head);
               continue;
             }
-            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-            OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
+
+            OverseerCollectionMessageHandler.Lock lock =
+                this.overseerCollectionMessageHandler.lockTask(message, batchSessionId);
             if (lock == null) {
               if (log.isDebugEnabled()) {
                 log.debug("Exclusivity check failed for [{}]", message);
@@ -370,11 +380,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug(
                   "{}: Get the message id: {} message: {}",
-                  messageHandler.getName(),
+                  this.overseerCollectionMessageHandler.getName(),
                   head.getId(),
                   message);
             }
-            Runner runner = new Runner(messageHandler, message, operation, head, lock);
+            Runner runner =
+                new Runner(this.overseerCollectionMessageHandler, message, operation, head, lock);
             tpe.execute(runner);
           }
 
@@ -426,7 +437,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
-    IOUtils.closeQuietly(selector);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)
@@ -531,15 +541,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     String operation;
     OverseerSolrResponse response;
     QueueEvent head;
-    OverseerMessageHandler messageHandler;
-    private final OverseerMessageHandler.Lock lock;
+    OverseerCollectionMessageHandler messageHandler;
+    private final OverseerCollectionMessageHandler.Lock lock;
 
     public Runner(
-        OverseerMessageHandler messageHandler,
+        OverseerCollectionMessageHandler messageHandler,
         ZkNodeProps message,
         String operation,
         QueueEvent head,
-        OverseerMessageHandler.Lock lock) {
+        OverseerCollectionMessageHandler.Lock lock) {
       this.message = message;
       this.operation = operation;
       this.head = head;
@@ -643,7 +653,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
 
     private void resetTaskWithException(
-        OverseerMessageHandler messageHandler,
+        OverseerCollectionMessageHandler messageHandler,
         String id,
         String asyncId,
         String taskKey,
@@ -691,15 +701,5 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   String getId() {
     return myId;
-  }
-
-  /**
-   * An interface to determine which {@link OverseerMessageHandler} handles a given message. This
-   * could be a single OverseerMessageHandler for the case where a single type of message is handled
-   * (e.g. collection messages only) , or a different handler could be selected based on the
-   * contents of the message.
-   */
-  public interface OverseerMessageHandlerSelector extends Closeable {
-    OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message);
   }
 }

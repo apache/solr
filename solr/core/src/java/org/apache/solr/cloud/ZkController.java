@@ -155,7 +155,6 @@ public class ZkController implements Closeable {
 
   private final ZkDistributedQueue overseerJobQueue;
   private final OverseerTaskQueue overseerCollectionQueue;
-  private final OverseerTaskQueue overseerConfigSetQueue;
 
   private final DistributedMap overseerRunningMap;
   private final DistributedMap overseerCompletedMap;
@@ -414,7 +413,6 @@ public class ZkController implements Closeable {
       this.overseerJobQueue = overseer.getStateUpdateQueue();
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
-    this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     this.sysPropsCacher =
         new NodesSysPropsCacher(
             ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
@@ -2292,10 +2290,6 @@ public class ZkController implements Closeable {
 
   public OverseerTaskQueue getOverseerCollectionQueue() {
     return overseerCollectionQueue;
-  }
-
-  public OverseerTaskQueue getOverseerConfigSetQueue() {
-    return overseerConfigSetQueue;
   }
 
   public DistributedMap getOverseerRunningMap() {
