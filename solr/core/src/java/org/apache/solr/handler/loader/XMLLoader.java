@@ -320,6 +320,7 @@ public class XMLLoader extends ContentStreamLoader {
     SolrInputDocument doc = new SolrInputDocument();
 
     String attrName = "";
+    String attrVal = "";
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
@@ -341,6 +342,7 @@ public class XMLLoader extends ContentStreamLoader {
     String name = null;
     boolean isNull = false;
     boolean isLabeledChildDoc = false;
+    boolean isSingleLabeledChildDoc = false;
     String update = null;
     Collection<SolrInputDocument> subDocs = null;
     Map<String, Map<String, Object>> updateMap = null;
@@ -416,6 +418,23 @@ public class XMLLoader extends ContentStreamLoader {
               doc.addField(name, readDoc(parser));
               break;
             }
+            for (int i = 0; i < parser.getAttributeCount(); i++) {
+              attrName = parser.getAttributeLocalName(i);
+              attrVal = parser.getAttributeValue(i);
+              if (NAME.equals(attrName)) {
+                isSingleLabeledChildDoc = true;
+                if (!doc.containsKey(attrVal)) {
+                  doc.setField(attrVal, Lists.newArrayList());
+                }
+                doc.addField(attrVal, readDoc(parser));
+                break;
+              } else {
+                log.warn("XML element <doc> has invalid XML attr: {}", attrName);
+              }
+            }
+            if (isSingleLabeledChildDoc) {
+              break;
+            }
             if (subDocs == null) subDocs = Lists.newArrayList();
             subDocs.add(readDoc(parser));
           } else {
@@ -426,7 +445,6 @@ public class XMLLoader extends ContentStreamLoader {
             }
             update = null;
             isNull = false;
-            String attrVal = "";
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               attrName = parser.getAttributeLocalName(i);
               attrVal = parser.getAttributeValue(i);
