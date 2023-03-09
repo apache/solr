@@ -101,6 +101,7 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -271,6 +272,7 @@ public class Http2SolrClient extends SolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
     httpClient.setIdleTimeout(idleTimeoutMillis);
+    httpClient.setCookieStore(new HttpCookieStore.Empty());
 
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
