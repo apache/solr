@@ -239,7 +239,7 @@ public class RepositoryManager {
             @Override
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
               return new RequestWriter.StringPayloadContentWriter(
-                  "{add:" + add.jsonStr() + "}", "application/octet-stream");
+                  "{add:" + add.jsonStr() + "}", "application/json");
             }
           };
 

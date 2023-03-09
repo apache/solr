@@ -276,7 +276,7 @@ public class PackageManager implements Closeable {
                   PackageUtils.CLUSTERPROPS_PATH,
                   new ModifiableSolrParams()));
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
-      if (statusCode == ErrorCode.NOT_FOUND.code) {
+      if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
         result = Collections.emptyMap();
       } else {

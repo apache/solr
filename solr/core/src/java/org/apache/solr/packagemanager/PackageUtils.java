@@ -36,6 +36,7 @@ import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -168,10 +169,9 @@ public class PackageUtils {
             SolrRequest.METHOD.GET,
             "/api/node/files" + manifestFilePath,
             new ModifiableSolrParams());
-    request.setResponseParser(new NoOpResponseParser("json"));
+    request.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> response = solrClient.request(request);
-    Object json = response.get("response");
-    String manifestJson = (String) json;
+    String manifestJson = (String) response.get("response");
     String calculatedSHA512 =
         BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {

@@ -29,7 +29,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -111,10 +111,10 @@ public class DefaultPackageRepository extends PackageRepository {
       GenericSolrRequest request =
           new GenericSolrRequest(
               SolrRequest.METHOD.GET, "/repository.json", new ModifiableSolrParams());
-      request.setResponseParser(new NoOpResponseParser("json"));
+      request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> resp = client.request(request);
       SolrPackage[] items =
-          PackageUtils.getMapper().readValue((String) resp.get("response"), SolrPackage[].class);
+          PackageUtils.getMapper().readValue("[" + resp.jsonStr() + "]", SolrPackage[].class);
       packages = CollectionUtil.newHashMap(items.length);
       for (SolrPackage pkg : items) {
         pkg.setRepository(name);

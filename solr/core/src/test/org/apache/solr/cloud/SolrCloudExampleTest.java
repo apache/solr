@@ -272,8 +272,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "Should have been able to get a value from the /query request handler",
           "explicit",
           configJson._get(
-              new ArrayList<>(
-                  Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams")),
+              Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams"),
               Collections.emptyMap()));
 
       // Since it takes some time for this command to complete we need to make sure all the reloads
