@@ -168,6 +168,8 @@ Improvements
   `GET /api/aliases`.  It is also now possible to request information about a specific alias at `GET /api/aliases/<aliasName>`.
   (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
