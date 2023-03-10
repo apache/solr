@@ -185,8 +185,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
+    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
   }

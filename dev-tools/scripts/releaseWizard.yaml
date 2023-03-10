@@ -357,8 +357,6 @@ groups:
         cmd: git pull --ff-only
         stdout: true
       - !Command
-        cmd: "{{ gradle_cmd }} localSettings"
-      - !Command
         cmd: "{{ gradle_cmd }} clean check -x test"
   - !Todo
     id: create_stable_branch
@@ -749,7 +747,7 @@ groups:
         cmd: git pull --ff-only
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }} --manifest-username {{ gpg.apache_id }} --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
         comment: "Using gpg command for signing."
         logfile: build_rc.log
         tee: true

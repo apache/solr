@@ -181,11 +181,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   @Override
   public void write(OutputStream os) throws IOException {
-    try {
-      _write(os);
-    } finally {
-
-    }
+    _write(os);
   }
 
   private void _write(OutputStream os) throws IOException {
@@ -372,8 +368,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         Thread.currentThread().interrupt();
       }
       throw t;
-    } finally {
-
     }
   }
 
@@ -439,27 +433,21 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                 log.debug("--- writer interrupted");
                 break;
               }
-              try {
-                for (int i = 0; i <= buffer.outDocsIndex; ++i) {
-                  // we're using the raw writer here because there's no potential
-                  // reduction in the number of output items, unlike when using
-                  // streaming expressions
-                  final SortDoc currentDoc = buffer.outDocs[i];
-                  writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
-                }
-              } finally {
+              for (int i = 0; i <= buffer.outDocsIndex; ++i) {
+                // we're using the raw writer here because there's no potential
+                // reduction in the number of output items, unlike when using
+                // streaming expressions
+                final SortDoc currentDoc = buffer.outDocs[i];
+                writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
               }
               // log.debug("--- writer exchanging from {}", buffer);
-              try {
-                long startExchangeBuffers = System.nanoTime();
-                buffers.exchangeBuffers();
-                long endExchangeBuffers = System.nanoTime();
-                if (log.isDebugEnabled()) {
-                  log.debug(
-                      "Waited for reader thread {}:",
-                      Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
-                }
-              } finally {
+              long startExchangeBuffers = System.nanoTime();
+              buffers.exchangeBuffers();
+              long endExchangeBuffers = System.nanoTime();
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "Waited for reader thread {}:",
+                    Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
               }
               buffer = buffers.getOutputBuffer();
               // log.debug("--- writer got {}", buffer);
@@ -825,8 +813,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       } catch (Exception e) {
         log.error("Segment Iterator Error:", e);
         throw new IOException(e);
-      } finally {
-
       }
     }
   }

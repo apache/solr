@@ -78,7 +78,11 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    httpClient = new Http2SolrClient.Builder().connectionTimeout(1000).idleTimeout(2000).build();
+    httpClient =
+        new Http2SolrClient.Builder()
+            .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
+            .build();
 
     for (int i = 0; i < solr.length; i++) {
       solr[i] =
@@ -123,7 +127,9 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       solrUrls[i] = solr[i].getUrl();
     }
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls).setAliveCheckInterval(500).build()) {
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
       QueryResponse resp = null;
@@ -170,7 +176,9 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       solrUrls[i] = solr[i].getUrl();
     }
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls).setAliveCheckInterval(500).build()) {
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
       solr[0].jetty.stop();
@@ -204,7 +212,9 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
 
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls).setAliveCheckInterval(500).build()) {
+        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+            .build()) {
 
       // Kill a server and test again
       solr[1].jetty.stop();

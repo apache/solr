@@ -34,6 +34,7 @@ public class MetricsConfig {
   private final Object nullString;
   private final Object nullObject;
   private final boolean enabled;
+  private final CacheConfig cacheConfig;
 
   private MetricsConfig(
       boolean enabled,
@@ -46,7 +47,8 @@ public class MetricsConfig {
       Object nullNumber,
       Object notANumber,
       Object nullString,
-      Object nullObject) {
+      Object nullObject,
+      CacheConfig cacheConfig) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
@@ -58,10 +60,15 @@ public class MetricsConfig {
     this.notANumber = notANumber;
     this.nullString = nullString;
     this.nullObject = nullObject;
+    this.cacheConfig = cacheConfig;
   }
 
   public boolean isEnabled() {
     return enabled;
+  }
+
+  public CacheConfig getCacheConfig() {
+    return cacheConfig;
   }
 
   private static final PluginInfo[] NO_OP_REPORTERS = new PluginInfo[0];
@@ -149,11 +156,17 @@ public class MetricsConfig {
     private Object nullObject = null;
     // default to metrics enabled
     private boolean enabled = true;
+    private CacheConfig cacheConfig = null;
 
     public MetricsConfigBuilder() {}
 
     public MetricsConfigBuilder setEnabled(boolean enabled) {
       this.enabled = enabled;
+      return this;
+    }
+
+    public MetricsConfigBuilder setCacheConfig(CacheConfig cacheConfig) {
+      this.cacheConfig = cacheConfig;
       return this;
     }
 
@@ -223,7 +236,16 @@ public class MetricsConfig {
           nullNumber,
           notANumber,
           nullString,
-          nullObject);
+          nullObject,
+          cacheConfig);
+    }
+  }
+
+  public static class CacheConfig {
+    public Integer threadsIntervalSeconds; // intervals for which the threads metrics are cached
+
+    public CacheConfig(Integer threadsIntervalSeconds) {
+      this.threadsIntervalSeconds = threadsIntervalSeconds;
     }
   }
 }

@@ -127,7 +127,8 @@ task buildLocalAntoraYaml {
             ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
             ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
 
         copy {
@@ -534,13 +535,13 @@ dependencies {
 // Copy all the test resource files from SolrJ to the build/resources/test directory
 // of the examples so we can avoid duplication of the test resource files like
 // schemas and SolrConfigs.
-task copySolrjTestResources(type: Copy) {
+tasks.register('copySolrjTestResources', Copy) {
     from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
         exclude '**/*.java'
     }
     into sourceSets.test.output.resourcesDir
 }
 
-tasks.processTestResources.configure {
+tasks.named('processTestResources').configure {
     dependsOn copySolrjTestResources
 }
