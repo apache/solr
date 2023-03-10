@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -38,6 +39,8 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -47,6 +50,7 @@ import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SimpleFacets;
@@ -496,5 +500,15 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Solr MoreLikeThis";
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return Lists.newArrayList(AnnotatedApi.getApis(new MoreLikeThisAPI(this)));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }
