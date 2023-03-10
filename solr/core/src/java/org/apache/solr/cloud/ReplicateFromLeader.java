@@ -172,13 +172,15 @@ public class ReplicateFromLeader {
       // available to replicate
       if (softCommitMaxTime != -1
           && (!hardCommitNewSearcher || softCommitMaxTime <= hardCommitMaxTime)) {
-        // softCommit is configured.
-        // Usually if softCommit is configured, `hardCommitNewSearcher==false`,
-        // in which case you want to calculate poll interval wrt the max of hardCommitTime
-        // (when segments are available to replicate) and softCommitTime (when changes are visible).
-        // But in the unusual case that hardCommit _does_ open a new searcher and
-        // `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause,
-        // setting poll interval wrt `hardCommitMaxTime` alone.
+        /*
+         * softCommit is configured.
+         * Usually if softCommit is configured, `hardCommitNewSearcher==false`,
+         * in which case you want to calculate poll interval wrt the max of hardCommitTime
+         * (when segments are available to replicate) and softCommitTime (when changes are visible).
+         * But in the unusual case that hardCommit _does_ open a new searcher and
+         * `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause,
+         * setting poll interval wrt `hardCommitMaxTime` alone.
+         */
         pollIntervalStr = toPollIntervalStr(Math.max(hardCommitMaxTime, softCommitMaxTime) / 2);
       } else {
         pollIntervalStr = toPollIntervalStr(hardCommitMaxTime / 2);
