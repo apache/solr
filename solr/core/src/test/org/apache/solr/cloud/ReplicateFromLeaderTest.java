@@ -17,10 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import static org.junit.Assert.assertEquals;
+
 import org.apache.solr.core.SolrConfig;
 import org.junit.Test;
 
-public class ReplicateFromLeaderTest extends SolrCloudTestCase {
+public class ReplicateFromLeaderTest {
 
   @Test
   public void determinePollIntervalString() {

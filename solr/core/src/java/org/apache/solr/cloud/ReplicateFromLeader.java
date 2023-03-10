@@ -155,6 +155,13 @@ public class ReplicateFromLeader {
     }
   }
 
+  /**
+   * Determine the poll interval for replicas based on the auto soft/hard commit schedule
+   *
+   * @param uinfo the update handler info containing soft/hard commit configuration
+   * @return a poll interval string representing a cadence of polling frequency in the form of
+   *     hh:mm:ss
+   */
   public static String determinePollInterval(SolrConfig.UpdateHandlerInfo uinfo) {
     int hardCommitMaxTime = uinfo.autoCommmitMaxTime;
     int softCommitMaxTime = uinfo.autoSoftCommmitMaxTime;
@@ -162,20 +169,17 @@ public class ReplicateFromLeader {
     String pollIntervalStr = null;
     if (hardCommitMaxTime != -1) {
       // configured hardCommit places a ceiling on the interval at which new segments will be
-      // available
-      // to replicate
+      // available to replicate
       if (softCommitMaxTime != -1
           && (!hardCommitNewSearcher || softCommitMaxTime <= hardCommitMaxTime)) {
         // softCommit is configured.
-        // Usually if softCommit is configured, `hardCommitNewSearcher==false`, in which case you
-        // want
-        // to calculate poll interval wrt the max of hardCommitTime (when segments are available to
-        // replicate) and softCommitTime (when changes are visible).
+        // Usually if softCommit is configured, `hardCommitNewSearcher==false`,
+        // in which case you want to calculate poll interval wrt the max of hardCommitTime
+        // (when segments are available to replicate) and softCommitTime (when changes are visible).
         // But in the unusual case that hardCommit _does_ open a new searcher and
-        // `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause, setting poll
-        // interval
-        // wrt `hardCommitMaxTime` alone.
-        pollIntervalStr = toPollIntervalStr((Math.max(hardCommitMaxTime, softCommitMaxTime)) / 2);
+        // `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause,
+        // setting poll interval wrt `hardCommitMaxTime` alone.
+        pollIntervalStr = toPollIntervalStr(Math.max(hardCommitMaxTime, softCommitMaxTime) / 2);
       } else {
         pollIntervalStr = toPollIntervalStr(hardCommitMaxTime / 2);
       }
