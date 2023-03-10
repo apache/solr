@@ -220,7 +220,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     @Override
     public void writeDate(String name, String val) throws IOException {
-      writeStr(name, val, false);
+     gen.writeString(val);
     }
   }
 }
