@@ -19,6 +19,8 @@ package org.apache.solr.response;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -47,6 +49,11 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   // So we extend JSONWriter and override the relevant methods
 
   public static class WriterImpl extends JSONWriter {
+    static final PrettyPrinter pretty =
+        new DefaultPrettyPrinter()
+            .withoutSpacesInObjectEntries()
+            .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+
     protected final JsonGenerator gen;
     protected final OutputStream out;
 
@@ -56,9 +63,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
       JsonFactory JsonFactory = new JsonFactory();
       try {
         gen = JsonFactory.createGenerator(this.out, JsonEncoding.UTF8);
-        if (req.getParams().getBool("pretty_json", true)) {
-          gen.useDefaultPrettyPrinter();
-        }
+        gen.setPrettyPrinter(pretty);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
