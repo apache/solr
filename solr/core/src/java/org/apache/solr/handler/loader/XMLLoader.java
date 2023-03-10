@@ -333,6 +333,11 @@ public class XMLLoader extends ContentStreamLoader {
         } else {
           log.debug(message);
         }
+      } else if (NAME.equals(attrName)) {
+        /*
+         * ignore here!
+         * the name attribute is to specify the single labelled nested child
+         * */
       } else {
         log.warn("XML element <doc> has invalid XML attr: {}", attrName);
       }
@@ -423,9 +428,6 @@ public class XMLLoader extends ContentStreamLoader {
               attrVal = parser.getAttributeValue(i);
               if (NAME.equals(attrName)) {
                 isSingleLabeledChildDoc = true;
-                if (!doc.containsKey(attrVal)) {
-                  doc.setField(attrVal, Lists.newArrayList());
-                }
                 doc.addField(attrVal, readDoc(parser));
                 break;
               } else {
@@ -433,6 +435,7 @@ public class XMLLoader extends ContentStreamLoader {
               }
             }
             if (isSingleLabeledChildDoc) {
+              isSingleLabeledChildDoc = false;
               break;
             }
             if (subDocs == null) subDocs = Lists.newArrayList();
