@@ -217,6 +217,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
     public void writeStrRaw(String name, String val) throws IOException {
       gen.writeRawValue(val);
     }
+
     @Override
     public void writeDate(String name, String val) throws IOException {
       writeStr(name, val, false);

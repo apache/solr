@@ -34,7 +34,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -191,8 +190,7 @@ public class SolrTestCase extends LuceneTestCase {
   public static void jsonAssert(String expected, String actual) {
     Object json1 = fromJSONString(expected);
     Object json2 = fromJSONString(actual);
-    if(Objects.equals(json2, json1)) return;
-    throw new ComparisonFailure("", expected,
-            actual);
+    if (Objects.equals(json2, json1)) return;
+    throw new ComparisonFailure("", expected, actual);
   }
 }
