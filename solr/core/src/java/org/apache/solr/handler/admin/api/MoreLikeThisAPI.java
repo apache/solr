@@ -39,7 +39,7 @@ public class MoreLikeThisAPI {
   }
 
   @EndPoint(
-      path = {"/api/collections/{collName}/mlt"},
+      path = {"/mlt"},
       method = GET,
       permission = PermissionNameProvider.Name.READ_PERM)
   public void getDocuments(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
