@@ -444,6 +444,7 @@ public class Http2SolrClient extends SolrClient {
     final ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     req.onRequestQueued(asyncTracker.queuedListener)
+        .onRequestBegin(request -> asyncListener.onStart())
         .onComplete(asyncTracker.completeListener)
         .send(
             new InputStreamResponseListener() {

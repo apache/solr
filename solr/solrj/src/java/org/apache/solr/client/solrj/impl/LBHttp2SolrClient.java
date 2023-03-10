@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -37,6 +39,8 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -83,6 +87,7 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Http2SolrClient solrClient;
 
   /**
@@ -243,6 +248,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
     void onFailure(Exception e, boolean retryReq);
   }
 
+  private static final long DELAY_WARN_THRESHOLD =
+      TimeUnit.NANOSECONDS.convert(2000, TimeUnit.MILLISECONDS);
+
   private Cancellable doRequest(
       String baseUrl,
       Req req,
@@ -257,6 +265,24 @@ public class LBHttp2SolrClient extends LBSolrClient {
             req.getRequest(),
             null,
             new AsyncListener<>() {
+              private final long requestSubmitTimeNanos = System.nanoTime();
+
+              @Override
+              public void onStart() {
+                // There should be negligible delay between request submission and actually sending
+                // the request. Here we add extra logging to notify us if this assumption is
+                // violated. See: SOLR-16099, SOLR-16129,
+                // https://github.com/fullstorydev/lucene-solr/commit/445508adb4a
+                long delayed = System.nanoTime() - requestSubmitTimeNanos;
+                if (delayed > DELAY_WARN_THRESHOLD) {
+                  log.info(
+                      "Remote shard request to {} delayed by {} milliseconds",
+                      req.servers,
+                      TimeUnit.MILLISECONDS.convert(delayed, TimeUnit.NANOSECONDS));
+                }
+                AsyncListener.super.onStart();
+              }
+
               @Override
               public void onSuccess(NamedList<Object> result) {
                 rsp.rsp = result;
