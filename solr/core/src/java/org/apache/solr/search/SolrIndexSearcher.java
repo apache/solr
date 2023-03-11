@@ -81,6 +81,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -196,9 +197,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
-    return ExitableDirectoryReader.wrap(
-        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
-        SolrQueryTimeoutImpl.getInstance());
+    // TODO offer ExitableDirectoryReader wrap via sys prop?
+    return UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
   }
 
   /**
@@ -711,6 +711,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
     getDocListC(qr, cmd);
     return qr;
+  }
+
+  @Override
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+      throws IOException {
+    final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
+    if (queryTimeout.isTimeoutEnabled() == false) {
+      // no timeout.  Pass through to subclass
+      super.search(leaves, weight, collector);
+    } else {
+      // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
+      // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
+      //   that timedOut() might race with concurrent queries (dubious design).
+      // So we need to make a new IndexSearcher instead of using "this".
+      new IndexSearcher(reader) { // cheap, actually!
+        void searchWithTimeout() throws IOException {
+          setTimeout(queryTimeout.makeLocalImpl());
+          super.search(leaves, weight, collector); // FYI protected access
+          if (timedOut()) {
+            // We might not even be using ExitableDirectoryReader yet various places in Solr check
+            //  for this exception.  Sometimes others but this seems most suitable.
+            throw new ExitableDirectoryReader.ExitingReaderException(
+                "Timed out.  Not actually via ExitableDirectoryReader");
+          }
+        }
+      }.searchWithTimeout();
+    }
   }
 
   // FIXME: This option has been dead/noop since 3.1, should we re-enable or remove it?
