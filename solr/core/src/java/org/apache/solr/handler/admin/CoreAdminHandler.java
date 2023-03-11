@@ -69,6 +69,7 @@ import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
+import org.apache.solr.handler.admin.api.RestoreCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCoresAPI;
@@ -376,6 +377,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new RequestApplyCoreUpdatesAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestSyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestBufferUpdatesAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RestoreCoreAPI(this)));
 
     return apis;
   }
