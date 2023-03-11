@@ -183,6 +183,8 @@ Optimizations
 
 * SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
 
+* SOLR-16487: Replication pooling is optimized based on hard and soft commit settings for a given collection (Justin Sweeney)
+
 Bug Fixes
 ---------------------
 
