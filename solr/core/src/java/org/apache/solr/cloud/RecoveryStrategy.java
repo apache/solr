@@ -224,7 +224,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Attempting to replicate from [{}].", leaderUrl);
 
     // send commit if replica could be a leader
-    if (replicaType == null || Replica.Type.isLeaderType(replicaType)) {
+    if (Replica.Type.isLeaderType(replicaType)) {
       commitOnLeader(leaderUrl);
     }
 

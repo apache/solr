@@ -137,7 +137,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * @return true if that type is able to be leader, false otherwise
      */
     public static boolean isLeaderType(Type type) {
-      return type == NRT || type == TLOG;
+      return type == null || type == NRT || type == TLOG;
     }
   }
 
