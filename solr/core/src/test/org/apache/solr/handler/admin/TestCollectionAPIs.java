@@ -130,13 +130,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
 
     compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{delete-alias:{ name: aliasName}}",
-        "{operation : deletealias, name: aliasName}");
-
-    compareOutput(
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(

@@ -176,19 +176,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testDeleteAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'delete-alias': {" + "'name': 'aliasName', " + "'async': 'requestTrackingId'" + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.DELETEALIAS.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-  }
-
-  @Test
   public void testSetAliasAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
