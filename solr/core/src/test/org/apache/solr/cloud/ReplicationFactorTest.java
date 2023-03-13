@@ -298,7 +298,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     final int minRf = 2;
 
     createCollectionWithRetry(testCollectionName, numShards, replicationFactor);
-    CloudSolrClient solrClient = getSolrClientForCollection(testCollectionName);
+    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> replicas =
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
