@@ -552,8 +552,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     }
   }
 
-
-
   public void testEnqueueCallback() throws Exception {
     Path zkDir = createTempDir("testEnqueueCallback");
 
@@ -565,10 +563,10 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       server.run();
 
       zkClient =
-              new SolrZkClient.Builder()
-                      .withUrl(server.getZkAddress())
-                      .withConnTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
-                      .build();
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withConnTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+              .build();
       ZkController.createClusterZkNodes(zkClient);
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
@@ -581,32 +579,55 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         AtomicBoolean check = new AtomicBoolean(false);
         ClusterState clusterState = reader.getClusterState();
 
-        //ensure callback is invoked in all of the scenarios below
-        clusterState = writer.enqueueUpdate(clusterState, Collections.emptyList(), () -> check.set(true));
+        // ensure callback is invoked in all of the scenarios below
+        clusterState =
+            writer.enqueueUpdate(clusterState, Collections.emptyList(), () -> check.set(true));
         assertTrue(check.get());
 
         check.set(false);
-        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(ZkWriteCommand.NO_OP), () -> check.set(true));
+        clusterState =
+            writer.enqueueUpdate(
+                clusterState,
+                Collections.singletonList(ZkWriteCommand.NO_OP),
+                () -> check.set(true));
         assertTrue(check.get());
 
         check.set(false);
-        DocCollection prsCollection1 = new DocCollection("c1", Collections.emptyMap(),
-                Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+        DocCollection prsCollection1 =
+            new DocCollection(
+                "c1",
+                Collections.emptyMap(),
+                Collections.singletonMap(
+                    DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
                 DocRouter.DEFAULT,
                 -1,
-                new DocCollection.PrsSupplier(new PerReplicaStates(null, 0, Collections.emptyList())));
-        //1 PRS command
-        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(new ZkWriteCommand("c1", prsCollection1)), () -> check.set(true));
+                new DocCollection.PrsSupplier(
+                    new PerReplicaStates(null, 0, Collections.emptyList())));
+        // 1 PRS command
+        clusterState =
+            writer.enqueueUpdate(
+                clusterState,
+                Collections.singletonList(new ZkWriteCommand("c1", prsCollection1)),
+                () -> check.set(true));
         assertTrue(check.get());
 
         check.set(false);
-        DocCollection prsCollection2 = new DocCollection("c2", Collections.emptyMap(),
-                Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+        DocCollection prsCollection2 =
+            new DocCollection(
+                "c2",
+                Collections.emptyMap(),
+                Collections.singletonMap(
+                    DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
                 DocRouter.DEFAULT,
                 -1,
-                new DocCollection.PrsSupplier(new PerReplicaStates(null, 0, Collections.emptyList())));
-        //2 commands one is PRS
-        clusterState = writer.enqueueUpdate(clusterState, List.of(ZkWriteCommand.NO_OP, new ZkWriteCommand("c2", prsCollection2)), () -> check.set(true));
+                new DocCollection.PrsSupplier(
+                    new PerReplicaStates(null, 0, Collections.emptyList())));
+        // 2 commands one is PRS
+        clusterState =
+            writer.enqueueUpdate(
+                clusterState,
+                List.of(ZkWriteCommand.NO_OP, new ZkWriteCommand("c2", prsCollection2)),
+                () -> check.set(true));
         assertTrue(check.get());
       }
     } finally {
