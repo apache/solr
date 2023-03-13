@@ -78,9 +78,6 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     assertEquals(
         "Unexpected number of core admin requests were found", 2, coreAdminRequests.size());
 
-    CloudSolrClient client = cloudClient;
-
-    client.setDefaultCollection(collectionName);
     /*
     hash of b is 95de7e03 high bits=2 shard=shard1
     hash of e is 656c4367 high bits=1 shard=shard2
@@ -90,28 +87,28 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       doc.addField("id", (i % 2 == 0 ? "b!" : "e!") + i);
       doc.addField("a_i", i);
       doc.addField("a_t", "text_" + i);
-      client.add(doc);
+      cloudClient.add(collectionName,doc);
     }
-    client.commit();
+    cloudClient.commit(collectionName);
 
-    client.query(new SolrQuery("*:*"));
+    cloudClient.query(collectionName,new SolrQuery("*:*"));
 
     TrackingShardHandlerFactory.ShardRequestAndParams getTopIdsRequest =
         trackingQueue.getShardRequestByPurpose(
-            ZkStateReader.from(client), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
+            ZkStateReader.from(cloudClient), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
     getTopIdsRequest =
         trackingQueue.getShardRequestByPurpose(
-            ZkStateReader.from(client), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
+            ZkStateReader.from(cloudClient), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
 
     TrackingShardHandlerFactory.ShardRequestAndParams getFieldsRequest =
         trackingQueue.getShardRequestByPurpose(
-            ZkStateReader.from(client), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
+            ZkStateReader.from(cloudClient), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
     getFieldsRequest =
         trackingQueue.getShardRequestByPurpose(
-            ZkStateReader.from(client), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
+            ZkStateReader.from(cloudClient), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
 
     int numRequests = 0;
@@ -138,7 +135,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     }
 
     // make another request and verify
-    client.query(new SolrQuery("*:*"));
+    cloudClient.query(collectionName,new SolrQuery("*:*"));
     numRequests = 0;
     allRequests = trackingQueue.getAllRequests();
     for (Map.Entry<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> entry :
