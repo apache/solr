@@ -97,7 +97,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     String fullPath = "/collections/hello/shards";
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", fullPath, parts);
     assertNotNull(api);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/create", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     parts = new HashMap<>();

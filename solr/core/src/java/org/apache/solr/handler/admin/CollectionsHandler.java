@@ -141,6 +141,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -209,6 +210,7 @@ import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
@@ -293,6 +295,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return this.coreContainer;
   }
 
+  // TODO NOCOMMIT Delete this method as it should only ever be used in CreateCollectionAPI
   protected void copyFromClusterProp(Map<String, Object> props, String prop) throws IOException {
     if (props.get(prop) != null) return; // if it's already specified , return
     Object defVal =
@@ -495,6 +498,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
+  // TODO NOCOMMIT - move this into some utility class
   /**
    * Copy prefixed params into a map. There must only be one value for these parameters.
    *
@@ -504,7 +508,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    * @param prefix The prefix to select.
    * @return the map supplied in the props parameter, modified to contain the prefixed params.
    */
-  private static Map<String, Object> copyPropertiesWithPrefix(
+  public static Map<String, Object> copyPropertiesWithPrefix(
       SolrParams params, Map<String, Object> props, String prefix) {
     Iterator<String> iter = params.getParameterNamesIterator();
     while (iter.hasNext()) {
@@ -541,7 +545,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return Category.ADMIN;
   }
 
-  private static void createSysConfigSet(CoreContainer coreContainer)
+  public static void createSysConfigSet(CoreContainer coreContainer)
       throws KeeperException, InterruptedException {
     SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
@@ -585,58 +589,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATE_OP(
         CREATE,
         (req, rsp, h) -> {
-          Map<String, Object> props = copy(req.getParams().required(), null, NAME);
-          props.put("fromApi", "true");
-          copy(
-              req.getParams(),
-              props,
-              REPLICATION_FACTOR,
-              COLL_CONF,
-              NUM_SLICES,
-              CREATE_NODE_SET,
-              CREATE_NODE_SET_SHUFFLE,
-              SHARDS_PROP,
-              PULL_REPLICAS,
-              TLOG_REPLICAS,
-              NRT_REPLICAS,
-              WAIT_FOR_FINAL_STATE,
-              PER_REPLICA_STATE,
-              ALIAS);
+          final SolrParams params = req.getParams();
+          final CreateCollectionAPI.CreateCollectionRequestBody requestBody = CreateCollectionAPI.buildRequestBodyFromParams(req.getParams());
+          final CreateCollectionAPI createApi = new CreateCollectionAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse response = createApi.createCollection(requestBody);
 
-          if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
-            // TODO: Remove this in 8.0 . Keep this for SolrJ client back-compat. See SOLR-11676 for
-            // more details
-            int replicationFactor = Integer.parseInt((String) props.get(REPLICATION_FACTOR));
-            int nrtReplicas = Integer.parseInt((String) props.get(NRT_REPLICAS));
-            if (replicationFactor != nrtReplicas) {
-              throw new SolrException(
-                  ErrorCode.BAD_REQUEST,
-                  "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
-            }
+          // 'rsp' may be null, as when overseer commands execute CollectionAction impl's directly.
+          if (rsp != null) {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           }
-          if (props.get(REPLICATION_FACTOR) != null) {
-            props.put(NRT_REPLICAS, props.get(REPLICATION_FACTOR));
-          } else if (props.get(NRT_REPLICAS) != null) {
-            props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
-          }
-
-          final String collectionName =
-              SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
-          final String shardsParam = (String) props.get(SHARDS_PROP);
-          if (StringUtils.isNotEmpty(shardsParam)) {
-            verifyShardsParam(shardsParam);
-          }
-          if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-            // We must always create a .system collection with only a single shard
-            props.put(NUM_SLICES, 1);
-            props.remove(SHARDS_PROP);
-            createSysConfigSet(h.coreContainer);
-          }
-          if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
-          for (String prop : Set.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
-            h.copyFromClusterProp(props, prop);
-          copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
-          return copyPropertiesWithPrefix(req.getParams(), props, "router.");
+          return null;
         }),
     COLSTATUS_OP(
         COLSTATUS,
@@ -852,8 +814,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           }
           // note: could insist on a config name here as well.... or wait to throw at overseer
           createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
-          CREATE_OP.execute(
-              new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
+          final CreateCollectionAPI.CreateCollectionRequestBody requestBody = CreateCollectionAPI.buildRequestBodyFromParams(createCollParams);
+          CreateCollectionAPI.validateRequestBody(requestBody);
+          CreateCollectionAPI.createRemoteMessage(h.coreContainer, requestBody);
 
           return result;
         }),
@@ -2048,12 +2011,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private static void verifyShardsParam(String shardsParam) {
-    for (String shard : shardsParam.split(",")) {
-      SolrIdentifierValidator.validateShardName(shard);
-    }
-  }
-
   interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h)
         throws Exception;
@@ -2068,6 +2025,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        CreateCollectionAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
         ListCollectionsAPI.class,

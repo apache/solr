@@ -33,6 +33,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 
 /**
@@ -72,15 +73,11 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
     }
     createReqParams.set(NAME, createCollName);
-    // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent
+    // a CollectionOperation reads params and produces a message (ZkNodeProps) that is supposed to be sent
     // to the Overseer. Although we could create the Map without it, there are a fair amount of
     // rules we don't want to reproduce.
-    final Map<String, Object> createMsgMap =
-        CollectionsHandler.CollectionOperation.CREATE_OP.execute(
-            new LocalSolrQueryRequest(null, createReqParams),
-            null,
-            ccc.getCoreContainer().getCollectionsHandler());
-    createMsgMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
+    final CreateCollectionAPI.CreateCollectionRequestBody createReqBody = CreateCollectionAPI.buildRequestBodyFromParams(createReqParams);
+    final ZkNodeProps createMessage = CreateCollectionAPI.createRemoteMessage(ccc.getCoreContainer(), createReqBody);
 
     NamedList<Object> results = new NamedList<>();
     try {
@@ -88,7 +85,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
       // CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't.
       // We currently should already have a lock on the alias name which should be sufficient.
-      new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(createMsgMap), results);
+      new CreateCollectionCmd(ccc).call(clusterState, createMessage, results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.
       if (!e.getMessage().contains("collection already exists")) {

@@ -38,7 +38,6 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
-import org.apache.solr.client.solrj.request.beans.CreatePayload;
 import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
@@ -147,18 +146,6 @@ public class CollectionsAPI {
       final DeleteAliasPayload v2Body = obj.get();
       final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
       v1Params.put(ACTION, CollectionAction.DELETEALIAS.toLower());
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
-    @Command(name = V2_CREATE_COLLECTION_CMD)
-    public void create(PayloadObj<CreatePayload> obj) throws Exception {
-      final CreatePayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-
-      v1Params.put(ACTION, CollectionAction.CREATE.toLower());
-      convertV2CreateCollectionMapToV1ParamMap(v1Params);
 
       collectionsHandler.handleRequestBody(
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());

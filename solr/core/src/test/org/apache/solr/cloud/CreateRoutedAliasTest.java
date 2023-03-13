@@ -101,44 +101,43 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
     HttpPost post = new HttpPost(baseUrl + "/____v2/c");
-    post.setEntity(
-        new StringEntity(
-            "{\n"
-                + "  \"create-alias\" : {\n"
-                + "    \"name\": \""
-                + aliasName
-                + "\",\n"
-                + "    \"router\" : {\n"
-                + "      \"name\": \"time\",\n"
-                + "      \"field\": \"evt_dt\",\n"
-                + "      \"start\":\"NOW/DAY\",\n"
-                + // small window for test failure once a day.
-                "      \"interval\":\"+2HOUR\",\n"
-                + "      \"maxFutureMs\":\"14400000\"\n"
-                + "    },\n"
-                +
-                // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distributed search
-                "    \"create-collection\" : {\n"
-                + "      \"router\": {\n"
-                + "        \"name\":\"implicit\",\n"
-                + "        \"field\":\"foo_s\"\n"
-                + "      },\n"
-                + "      \"shards\":\"foo,bar\",\n"
-                + "      \"config\":\"_default\",\n"
-                + "      \"tlogReplicas\":1,\n"
-                + "      \"pullReplicas\":1,\n"
-                + "      \"nodeSet\": '"
-                + createNode
-                + "',\n"
-                + "      \"properties\" : {\n"
-                + "        \"foobar\":\"bazbam\",\n"
-                + "        \"foobar2\":\"bazbam2\"\n"
-                + "      }\n"
-                + "    }\n"
-                + "  }\n"
-                + "}",
-            ContentType.APPLICATION_JSON));
+    final String blah = "{\n"
+            + "  \"create-alias\" : {\n"
+            + "    \"name\": \""
+            + aliasName
+            + "\",\n"
+            + "    \"router\" : {\n"
+            + "      \"name\": \"time\",\n"
+            + "      \"field\": \"evt_dt\",\n"
+            + "      \"start\":\"NOW/DAY\",\n"
+            + // small window for test failure once a day.
+            "      \"interval\":\"+2HOUR\",\n"
+            + "      \"maxFutureMs\":\"14400000\"\n"
+            + "    },\n"
+            +
+            // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
+            // since intended for distributed search
+            "    \"create-collection\" : {\n"
+            + "      \"router\": {\n"
+            + "        \"name\":\"implicit\",\n"
+            + "        \"field\":\"foo_s\"\n"
+            + "      },\n"
+            + "      \"shards\":\"foo,bar\",\n"
+            + "      \"config\":\"_default\",\n"
+            + "      \"tlogReplicas\":1,\n"
+            + "      \"pullReplicas\":1,\n"
+            + "      \"nodeSet\": '"
+            + createNode
+            + "',\n"
+            + "      \"properties\" : {\n"
+            + "        \"foobar\":\"bazbam\",\n"
+            + "        \"foobar2\":\"bazbam2\"\n"
+            + "      }\n"
+            + "    }\n"
+            + "  }\n"
+            + "}";
+    System.out.println("JEGERLOW: Entity is: " + blah);
+    post.setEntity(new StringEntity(blah, ContentType.APPLICATION_JSON));
     assertSuccess(post);
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");

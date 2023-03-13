@@ -103,12 +103,10 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.POST)
             .withPayload(
                 "{"
-                    + "  'create' : {"
                     + "    'name' : 'test',"
                     + "    'numShards' : 2,"
                     + "    'replicationFactor' : 2,"
                     + "    'config' : 'config'"
-                    + "  }"
                     + "}"
                     + "/* ignore comment*/")
             .build());
@@ -139,12 +137,10 @@ public class TestV2Request extends SolrCloudTestCase {
                   .withMethod(SolrRequest.METHOD.POST)
                   .withPayload(
                       "{"
-                          + "  'create' : {"
                           + "    'name' : 'jsontailtest',"
                           + "    'numShards' : 2,"
                           + "    'replicationFactor' : 2,"
                           + "    'config' : 'config'"
-                          + "  }"
                           + "}"
                           + ", 'something':'bogus'")
                   .build());
@@ -161,12 +157,10 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.POST)
             .withPayload(
                 "{"
-                    + "  'create' : {"
                     + "    'name' : 'v2forward',"
                     + "    'numShards' : 1,"
                     + "    'replicationFactor' : 1,"
                     + "    'config' : 'config'"
-                    + "  }"
                     + "}")
             .build());
 
