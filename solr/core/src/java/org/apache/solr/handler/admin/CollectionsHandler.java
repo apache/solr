@@ -170,7 +170,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -208,6 +207,7 @@ import org.apache.solr.handler.admin.api.AddReplicaAPI;
 import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
@@ -225,7 +225,6 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollectionAPI;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
-import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -1053,13 +1052,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     COLLECTIONPROP_OP(
         COLLECTIONPROP,
         (req, rsp, h) -> {
-          String extCollection = req.getParams().required().get(NAME);
-          String collection = h.coreContainer.getAliases().resolveSimpleAlias(extCollection);
-          String name = req.getParams().required().get(PROPERTY_NAME);
-          String val = req.getParams().get(PROPERTY_VALUE);
-          CollectionProperties cp =
-              new CollectionProperties(h.coreContainer.getZkController().getZkClient());
-          cp.setCollectionProperty(collection, name, val);
+          final String collection = req.getParams().required().get(NAME);
+          final String propName = req.getParams().required().get(PROPERTY_NAME);
+          final String val = req.getParams().get(PROPERTY_VALUE);
+
+          final CollectionPropertyAPI setCollPropApi =
+              new CollectionPropertyAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse setPropRsp =
+              (val != null)
+                  ? setCollPropApi.createOrUpdateCollectionProperty(
+                      collection,
+                      propName,
+                      new CollectionPropertyAPI.UpdateCollectionPropertyRequestBody(val))
+                  : setCollPropApi.deleteCollectionProperty(collection, propName);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, setPropRsp);
           return null;
         }),
     REQUESTSTATUS_OP(
@@ -2072,6 +2078,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteReplicaPropertyAPI.class,
         ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
+        CollectionPropertyAPI.class,
         DeleteNodeAPI.class,
         ListAliasesAPI.class);
   }
@@ -2092,7 +2099,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SetCollectionPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;
