@@ -1,7 +1,6 @@
 {
   "racerd-ignore-classes": [
     "org.apache.solr.common.util.ObjectReleaseTracker",
-    "org.noggit.JSONParser",
     "org.noggit.CharArr",
     "org.noggit.CharArr.NullCharArr"
   ],
