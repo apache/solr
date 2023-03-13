@@ -338,6 +338,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +1 for ZkController#unregister, which delete the PRS entry from data node
       // overseer, current code would still do a "TOUCH" on the PRS entry
       assertEquals(56, stat.getCversion());
+
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
