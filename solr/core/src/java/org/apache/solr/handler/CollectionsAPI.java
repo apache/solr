@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
@@ -27,9 +26,7 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-import com.google.common.collect.Maps;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +46,6 @@ import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 
 /** All V2 APIs for collection management */
 public class CollectionsAPI {
@@ -68,16 +63,6 @@ public class CollectionsAPI {
 
   public CollectionsAPI(CollectionsHandler collectionsHandler) {
     this.collectionsHandler = collectionsHandler;
-  }
-
-  @EndPoint(
-      path = {"/c", "/collections"},
-      method = GET,
-      permission = COLL_READ_PERM)
-  public void getCollections(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(ACTION, CollectionAction.LIST.toLower());
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
   @EndPoint(

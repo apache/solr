@@ -305,6 +305,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient threadedClient =
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .sendUpdatesOnlyToShardLeaders()
             .withParallelUpdates(true)
             .withDefaultCollection("routing_collection")
             .build()) {

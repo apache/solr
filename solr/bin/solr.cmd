@@ -103,7 +103,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 
   IF NOT DEFINED SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
+  )
+  IF "%SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION%"=="false" (
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=false"
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
@@ -987,6 +990,11 @@ IF DEFINED SOLR_MODULES (
   set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.modules=%SOLR_MODULES%"
 )
 
+REM Default placement plugin
+IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
+)
+
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
@@ -1037,6 +1045,9 @@ IF "%SCRIPT_CMD%"=="restart" (
 )
 
 @REM stop logic here
+IF "%SOLR_STOP_WAIT%"=="" (
+  set SOLR_STOP_WAIT=180
+)
 IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
@@ -1051,10 +1062,15 @@ IF "%SCRIPT_CMD%"=="stop" (
               IF "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
                 set found_it=1
                 @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
-                IF "%STOP_PORT%"=="" set /A STOP_PORT=!SOME_SOLR_PORT! - 1000
-                "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+                IF "%STOP_PORT%"=="" (
+                  set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
+                ) else (
+                  set LOCAL_STOP_PORT=%STOP_PORT%
+                )
+                "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
                 del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
-                timeout /T 5
+                REM wait for the process to terminate
+                CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
                 REM Kill it if it is still running after the graceful shutdown
                 IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
                   qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
@@ -1081,7 +1097,8 @@ IF "%SCRIPT_CMD%"=="stop" (
           IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
           "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
           del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-          timeout /T 5
+          REM wait for the process to terminate
+          CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
           REM Kill it if it is still running after the graceful shutdown
           IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
             qprocess "%%N" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%N && taskkill /f /PID %%N
@@ -1160,6 +1177,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
+    IF %SOLR_PORT% GTR 55535 (
+      set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT%, which would result in an invalid embedded Zookeeper port!"
+      goto err
+    )
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
   )
@@ -1199,7 +1220,13 @@ set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_ALLOWLIST%" ^
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
-  IF "!RMI_PORT!"=="" set RMI_PORT=1%SOLR_PORT%
+  IF "!RMI_PORT!"=="" (
+    set /A RMI_PORT=%SOLR_PORT%+10000
+    IF !RMI_PORT! GTR 65535 (
+      set "SCRIPT_ERROR=RMI_PORT is !RMI_PORT!, which is invalid!"
+      goto err
+    )
+  )
   set REMOTE_JMX_OPTS=-Dcom.sun.management.jmxremote ^
 -Dcom.sun.management.jmxremote.local.only=false ^
 -Dcom.sun.management.jmxremote.ssl=false ^
@@ -1391,7 +1418,7 @@ IF "%FG%"=="1" (
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
     -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
@@ -1399,16 +1426,24 @@ IF "%FG%"=="1" (
     "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
-    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
     -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
+  REM default to 30 seconds for backwards compatibility.
+  IF "!SOLR_START_WAIT!"=="" (
+    set SOLR_START_WAIT=30
+  )
   REM now wait to see Solr come online ...
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.util.SolrCLI status -maxWaitSecs 30 -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
+    org.apache.solr.util.SolrCLI status -maxWaitSecs !SOLR_START_WAIT! -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
+  IF NOT "!ERRORLEVEL!"=="0" (
+      set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
+      goto err
+  )
 )
 
 goto done
@@ -1418,6 +1453,7 @@ REM Run the requested example
 
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -Dsolr.install.symDir="%SOLR_TIP%" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI run_example -script "%SDIR%\solr.cmd" -e %EXAMPLE% -d "%SOLR_SERVER_DIR%" ^
   -urlScheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
@@ -2092,4 +2128,38 @@ REM Safe echo which does not mess with () in strings
 set "eout=%1"
 set eout=%eout:"=%
 echo !eout!
+GOTO :eof
+
+:wait_for_process_exit
+  REM Wait for a process to stop within a configured period.
+  REM The timeout is approximate, since there is no standard
+  REM timing mechanism on windows that works in all situations.
+  REM ping can be used to provide a good approximation.
+  set WAIT_FOR_PID=%1
+  set WAIT_TIME=%2
+
+  REM Check every N seconds
+  set INTERVAL=1
+  set ELAPSED=0
+
+  REM ping timeout needs N + 1 for N seconds elapsed
+  set /A PING_INTERVAL=INTERVAL+1
+
+  echo Waiting up to %WAIT_TIME% seconds for process %WAIT_FOR_PID% to exit
+  IF %WAIT_TIME% GEQ 30 (
+      REM Reduce WAIT_TIME by 5% to roughly account for the drift in time for the untimed actions
+      set /A WAIT_TIME=WAIT_TIME*95
+      set /A WAIT_TIME=WAIT_TIME/100
+  )
+
+  :isalive
+  REM Check if process is alive
+  qprocess "%WAIT_FOR_PID%" >nul 2>nul
+  IF %ERRORLEVEL% EQU 0 (
+      ping 127.0.0.1 -n %PING_INTERVAL% > NUL
+      set /A ELAPSED=ELAPSED+INTERVAL
+      IF %ELAPSED% LEQ %WAIT_TIME% (
+        goto isalive
+      )
+  )
 GOTO :eof

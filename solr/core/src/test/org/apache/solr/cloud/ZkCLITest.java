@@ -27,10 +27,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -39,6 +41,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
@@ -61,6 +64,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   private String solrHome;
 
   private SolrZkClient zkClient;
+
+  private PrintStream originalSystemOut;
 
   protected static final String SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
 
@@ -86,16 +91,26 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     Path tmpDir = createTempDir();
     solrHome = exampleHome;
 
+    originalSystemOut = System.out;
+
     zkDir = tmpDir.resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    this.zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    this.zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
 
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
@@ -162,6 +177,28 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testPutCompressed() throws Exception {
+    // test put compressed
+    System.setProperty("solr.home", solrHome);
+    System.setProperty("minStateByteLenForCompression", "0");
+
+    String data = "my data";
+    ZLibCompressor zLibCompressor = new ZLibCompressor();
+    byte[] expected = zLibCompressor.compressBytes(data.getBytes(StandardCharsets.UTF_8));
+    String[] args =
+        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
+    ZkCLI.main(args);
+    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+
+    // test re-put to existing
+    data = "my data deux";
+    expected = zLibCompressor.compressBytes(data.getBytes(StandardCharsets.UTF_8));
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
+    ZkCLI.main(args);
+    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+  }
+
+  @Test
   public void testPutFile() throws Exception {
     // test put file
     String[] args =
@@ -186,6 +223,37 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       IOUtils.closeQuietly(is);
     }
     assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
+  }
+
+  @Test
+  public void testPutFileCompressed() throws Exception {
+    // test put file compressed
+    System.setProperty("solr.home", solrHome);
+    System.setProperty("minStateByteLenForCompression", "0");
+
+    String[] args =
+        new String[] {
+          "-zkhost",
+          zkServer.getZkAddress(),
+          "-cmd",
+          "putfile",
+          "/state.json",
+          SOLR_HOME + File.separator + "solr-stress-new.xml"
+        };
+    ZkCLI.main(args);
+
+    byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
+    InputStream is = new FileInputStream(locFile);
+    byte[] fromLoc;
+    try {
+      fromLoc = IOUtils.toByteArray(is);
+      ZLibCompressor zLibCompressor = new ZLibCompressor();
+      fromLoc = zLibCompressor.compressBytes(fromLoc);
+    } finally {
+      IOUtils.closeQuietly(is);
+    }
+    assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
   }
 
   @Test
@@ -370,9 +438,34 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testGet() throws Exception {
     String getNode = "/getNode";
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
+    ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     ZkCLI.main(args);
+    assertArrayEquals(
+        data,
+        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+            .getBytes(StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testGetCompressed() throws Exception {
+    System.setProperty("solr.home", solrHome);
+    System.setProperty("minStateByteLenForCompression", "0");
+
+    String getNode = "/getNode";
+    byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
+    ZLibCompressor zLibCompressor = new ZLibCompressor();
+    ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
+    this.zkClient.create(getNode, zLibCompressor.compressBytes(data), CreateMode.PERSISTENT, true);
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
+    ZkCLI.main(args);
+    assertArrayEquals(
+        data,
+        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+            .getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -382,6 +475,27 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+
+    File file =
+        new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
+    String[] args =
+        new String[] {
+          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
+        };
+    ZkCLI.main(args);
+
+    byte[] readData = FileUtils.readFileToByteArray(file);
+    assertArrayEquals(data, readData);
+  }
+
+  @Test
+  public void testGetFileCompressed() throws Exception {
+    File tmpDir = createTempDir().toFile();
+
+    String getNode = "/getFileNode";
+    byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
+    ZLibCompressor zLibCompressor = new ZLibCompressor();
+    this.zkClient.create(getNode, zLibCompressor.compressBytes(data), CreateMode.PERSISTENT, true);
 
     File file =
         new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -412,9 +526,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     SolrException ex =
         expectThrows(
             SolrException.class,
-            () -> {
-              new SolrZkClient("----------:33332", 100);
-            });
+            () ->
+                new SolrZkClient.Builder()
+                    .withUrl("----------:33332")
+                    .withTimeout(100, TimeUnit.MILLISECONDS)
+                    .build());
     zkClient.close();
   }
 
@@ -471,8 +587,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     boolean excepted = false;
     try (SolrZkClient zkClient =
-        new SolrZkClient(
-            zkServer.getZkAddress(), AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(
+                AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       zkClient.getData("/", null, null, true);
     } catch (KeeperException.NoAuthException e) {
       excepted = true;
@@ -488,6 +607,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     if (zkServer != null) {
       zkServer.shutdown();
     }
+    System.clearProperty("solr.home");
+    System.clearProperty("minStateByteLenForCompression");
+    System.setOut(originalSystemOut);
     super.tearDown();
   }
 }

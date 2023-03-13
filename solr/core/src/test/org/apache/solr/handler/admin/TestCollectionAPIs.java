@@ -36,6 +36,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -43,6 +44,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -138,9 +140,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(
-        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
-
-    compareOutput(
         apiBag,
         "/collections/collName/shards/shard1",
         DELETE,
@@ -224,13 +223,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
-        "{set-collection-property : {name: 'foo', value:'bar'} }",
-        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}");
   }
 
   static ZkNodeProps compareOutput(
@@ -308,16 +300,23 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     MockCollectionsHandler() {}
 
     @Override
-    protected void checkCoreContainer() {}
+    protected CoreContainer checkErrors() {
+      return null;
+    }
 
     @Override
     protected void copyFromClusterProp(Map<String, Object> props, String prop) {}
 
     @Override
-    void invokeOperation(SolrQueryRequest req, SolrQueryResponse rsp, CollectionOperation operation)
+    void invokeAction(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        CoreContainer cores,
+        CollectionParams.CollectionAction action,
+        CollectionOperation operation)
         throws Exception {
       Map<String, Object> result = null;
-      if (operation.equals(CollectionOperation.COLLECTIONPROP_OP)) {
+      if (action == CollectionParams.CollectionAction.COLLECTIONPROP) {
         // Fake this action, since we don't want to write to ZooKeeper in this test
         result = new HashMap<>();
         result.put(NAME, req.getParams().required().get(NAME));

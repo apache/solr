@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -181,7 +182,10 @@ public class ZkMaintenanceUtils {
     }
     byte[] data = zkClient.getData(src, null, null, true);
     Path filename = Paths.get(dst);
-    Files.createDirectories(filename.getParent());
+    Path parentDir = filename.getParent();
+    if (parentDir != null) {
+      Files.createDirectories(parentDir);
+    }
     log.info("Writing file {}", filename);
     Files.write(filename, data);
   }
@@ -328,11 +332,18 @@ public class ZkMaintenanceUtils {
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             String filename = file.getFileName().toString();
-            if (filenameExclusions != null && filenameExclusions.matcher(filename).matches()) {
+            if ((filenameExclusions != null && filenameExclusions.matcher(filename).matches())) {
               log.info(
                   "uploadToZK skipping '{}' due to filenameExclusions '{}'",
                   filename,
                   filenameExclusions);
+              return FileVisitResult.CONTINUE;
+            }
+            if (isFileForbiddenInConfigSets(filename)) {
+              log.info(
+                  "uploadToZK skipping '{}' due to forbidden file types '{}'",
+                  filename,
+                  USE_FORBIDDEN_FILE_TYPES);
               return FileVisitResult.CONTINUE;
             }
             String zkNode = createZkNodeName(zkPath, rootPath, file);
@@ -421,8 +432,12 @@ public class ZkMaintenanceUtils {
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a
         // marker on the local disk so create an empty file.
-        if (copyDataDown(zkClient, zkPath, file) == 0) {
-          Files.createFile(file);
+        if (isFileForbiddenInConfigSets(zkPath)) {
+          log.warn("Skipping download of file from ZK, as it is a forbidden type: {}", zkPath);
+        } else {
+          if (copyDataDown(zkClient, zkPath, file) == 0) {
+            Files.createFile(file);
+          }
         }
       } else {
         Files.createDirectories(file); // Make parent dir.
@@ -547,6 +562,32 @@ public class ZkMaintenanceUtils {
       }
     }
     return ret;
+  }
+
+  public static final String FORBIDDEN_FILE_TYPES_PROP = "solrConfigSetForbiddenFileTypes";
+  public static final String FORBIDDEN_FILE_TYPES_ENV = "SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES";
+  public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
+      Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
+  private static volatile Set<String> USE_FORBIDDEN_FILE_TYPES = null;
+
+  public static boolean isFileForbiddenInConfigSets(String filePath) {
+    // Try to set the forbidden file types just once, since it is set by SysProp/EnvVar
+    if (USE_FORBIDDEN_FILE_TYPES == null) {
+      synchronized (DEFAULT_FORBIDDEN_FILE_TYPES) {
+        if (USE_FORBIDDEN_FILE_TYPES == null) {
+          String userForbiddenFileTypes =
+              System.getProperty(
+                  FORBIDDEN_FILE_TYPES_PROP, System.getenv(FORBIDDEN_FILE_TYPES_ENV));
+          if (StringUtils.isEmpty(userForbiddenFileTypes)) {
+            USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
+          } else {
+            USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));
+          }
+        }
+      }
+    }
+    int lastDot = filePath.lastIndexOf(".");
+    return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
 }
 

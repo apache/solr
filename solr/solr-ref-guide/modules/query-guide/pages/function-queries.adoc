@@ -564,6 +564,16 @@ Returns `true` if any member of the field exists.
 
 * `if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
 
+=== isnan Function
+Returns `true` if the value is a float NaN (not a number).
+
+*Syntax Example*
+
+* `isnan(myfield)`: returns `true` for any document having a NaN stored in "myfield".
+* `isnan(12.3456)`: returns `false`.
+* `isnan(0)`: returns `false`.
+* `isnan(div(0,0))`: returns `true` (since 0 divided by 0 is not defined and returns a NaN).
+
 == Example Function Queries
 
 To give you a better understanding of how function queries can be used in Solr, suppose an index stores the dimensions in meters x,y,z of some hypothetical boxes with arbitrary names stored in field `boxname`.
