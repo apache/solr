@@ -136,10 +136,7 @@ public class Http2SolrClient extends SolrClient {
   private long requestTimeoutMillis;
 
   protected ResponseParser parser = new BinaryResponseParser();
-  private final Set<String> defaultMimeTypes =
-      parser.getContentTypes().stream()
-          .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
-          .collect(Collectors.toSet());
+  private Set<String> defaultParserMimeTypes;
 
   protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
@@ -193,6 +190,7 @@ public class Http2SolrClient extends SolrClient {
     if (builder.responseParser != null) {
       parser = builder.responseParser;
     }
+    updateDefaultMimeTypeForParser();
     if (builder.requestTimeoutMillis == null) {
       requestTimeoutMillis = -1;
     } else {
@@ -829,7 +827,7 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
-      checkContentType(processor, is, mimeType, encoding, httpStatus, String urlExceptionMessage);
+      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
 
       NamedList<Object> rsp;
       try {
@@ -904,19 +902,23 @@ public class Http2SolrClient extends SolrClient {
    */
   private void checkContentType(
       ResponseParser processor, InputStream is, String mimeType, String encoding, int httpStatus, String urlExceptionMessage) {
-    if (processor == this.parser && defaultMimeTypes.contains(mimeType)) {
+    if (mimeType == null
+        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
       // Shortcut the default scenario
       return;
     }
     final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
     if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
-      final Collection<String> processorMimeTypes =
+      boolean processorAcceptsMimeType =
           processorSupportedContentTypes.stream()
-              .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
-              .collect(Collectors.toSet());
-      if (!processorMimeTypes.contains(mimeType)) {
+              .map(ct -> ContentType.parse(ct).getMimeType().trim())
+              .anyMatch(mimeType::equalsIgnoreCase);
+      if (!processorAcceptsMimeType) {
         // unexpected mime type
-        final String allSupportedTypes = String.join(", ", processorMimeTypes);
+        final String allSupportedTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.joining(", "));
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
         String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
@@ -1267,6 +1269,14 @@ public class Http2SolrClient extends SolrClient {
   @Deprecated
   public void setParser(ResponseParser parser) {
     this.parser = parser;
+    updateDefaultMimeTypeForParser();
+  }
+
+  protected void updateDefaultMimeTypeForParser() {
+    defaultParserMimeTypes =
+        parser.getContentTypes().stream()
+            .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {

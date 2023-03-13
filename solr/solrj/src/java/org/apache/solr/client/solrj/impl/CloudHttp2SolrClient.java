@@ -70,7 +70,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.myClient.requestWriter = builder.requestWriter;
     }
     if (builder.responseParser != null) {
-      this.myClient.parser = builder.responseParser;
+      this.myClient.setParser(builder.responseParser);
     }
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.solrUrls != null) {
