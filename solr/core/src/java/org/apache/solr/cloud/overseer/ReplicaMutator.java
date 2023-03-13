@@ -440,15 +440,15 @@ public class ReplicaMutator {
     log.debug("Collection is now: {}", newCollection);
     if (collection.isPerReplicaState() && oldReplica != null) {
       if (!persistStateJson(replica, oldReplica, collection)) {
-        log.debug(
-            "state.json is not persisted slice/replica : {}/{} \n , old : {}, \n new {}",
-            replica.shard,
-            replica.name,
-            Utils.toJSONString(oldReplica.getProperties()),
-            Utils.toJSONString(replica.getProperties()));
+        if(log.isDebugEnabled()) {
+          log.debug(
+                  "state.json is not persisted slice/replica : {}/{} \n , old : {}, \n new {}",
+                  replica.shard,
+                  replica.name,
+                  Utils.toJSONString(oldReplica.getProperties()),
+                  Utils.toJSONString(replica.getProperties()));
+        }
         return ZkWriteCommand.NO_OP;
-      } else {
-        log.info("state.json persisted for a PRS collection :{} for message {}", collectionName, Utils.toJSONString(message));
       }
     }
     return new ZkWriteCommand(collectionName, newCollection);

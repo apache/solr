@@ -102,6 +102,7 @@ public class SliceMutator {
                 ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
                 ZkStateReader.NODE_NAME_PROP, nodeName,
                 ZkStateReader.BASE_URL_PROP, baseUrl,
+                ZkStateReader.FORCE_SET_STATE_PROP, "false",
                 ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)),
             coll,
             slice);
