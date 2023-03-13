@@ -462,21 +462,27 @@ public class ReplicaMutator {
     if (!Objects.equals(
         newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
         oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) {
-      log.info(
-          "{} force_set_state is changed from {} -> {}",
-          newReplica.name,
-          oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
-          newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP));
+      if (log.isInfoEnabled()) {
+        log.info(
+            "{} force_set_state is changed from {} -> {}",
+            newReplica.name,
+            oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
+            newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP));
+      }
       return true;
     }
     Slice slice = coll.getSlice(newReplica.getShard());
     // the slice may be in recovery
     if (slice.getState() == Slice.State.RECOVERY) {
-      log.info("{} state_is_recovery", slice.getName());
+      if (log.isInfoEnabled()) {
+        log.info("{} slice state_is_recovery", slice.getName());
+      }
       return true;
     }
     if (Objects.equals(oldReplica.getProperties().get("state"), "recovering")) {
-      log.info("{} state_is_recovering", newReplica.name);
+      if (log.isInfoEnabled()) {
+        log.info("{} state_is_recovering", newReplica.name);
+      }
       return true;
     }
     return false;
