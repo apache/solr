@@ -34,6 +34,14 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
+==================  9.3.0 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
+  (Shawn Heisey)
+
 ==================  9.2.0 ==================
 
 New Features
@@ -54,6 +62,8 @@ New Features
 * SOLR-16608: Ability to compress state.json in Zookeeper (Justin Sweeney via noble)
 
 * SOLR-16646: New function query operator isnan to verify if value is NaN (Gabriel Magno via Kevin Risden)
+
+* SOLR-16643: Add reRankOperator=multiply/replace options to rerank query parser (Andy Webb, Christine Poerschke, Mikhail Khludnev)
 
 Improvements
 ---------------------
@@ -158,6 +168,8 @@ Improvements
   `GET /api/aliases`.  It is also now possible to request information about a specific alias at `GET /api/aliases/<aliasName>`.
   (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
+
 * SOLR-16391: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.  Endpoints are now
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
@@ -174,6 +186,10 @@ Optimizations
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
 
 * SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
+
+* SOLR-16487: Replication pooling is optimized based on hard and soft commit settings for a given collection (Justin Sweeney)
+
+* SOLR-16689: Avoiding commits on leader when recovering a non-leader replica and avoiding incorrectly replicating an empty core (Justin Sweeney)
 
 Bug Fixes
 ---------------------
@@ -239,6 +255,8 @@ Bug Fixes
   (Mikhail Khludnev)
 
 * SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
+
+* SOLR-16676: Logs: Http2SolrClient.async() lacked MDC (Alex Deparvu)
 
 Build
 ---------------------
@@ -327,6 +345,9 @@ Other Changes
 * SOLR-16672: Simplify SolrCLI Healthcheck command's logic for obtaining a target collection (Eric Pugh)
 
 * SOLR-16684: Keep solr's opennlp-tools version in sync with Lucene (janhoy)
+
+* SOLR-16681: Throw exception when attempting to replace uniqueKey via fl in distributed request,
+  e.g. fl=old_id:id,id:new_id (Mikhail Khludnev)
 
 ==================  9.1.1 ==================
 

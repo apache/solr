@@ -114,14 +114,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testListCollectionsAllProperties() throws Exception {
-    final String noBody = null;
-    final SolrParams v1Params = captureConvertedV1Params("/collections", "GET", noBody);
-
-    assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
   public void testCreateAliasAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(

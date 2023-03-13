@@ -140,9 +140,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(
-        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
-
-    compareOutput(
         apiBag,
         "/collections/collName/shards/shard1",
         DELETE,
