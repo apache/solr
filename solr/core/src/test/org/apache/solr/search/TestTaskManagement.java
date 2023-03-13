@@ -88,8 +88,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
     }
 
     cluster.getSolrClientForCollection(COLLECTION_NAME).add(docs);
-    // nocommit Not sure the above line is any better than the below line????
-    // cluster.getSolrClient().add(COLLECTION_NAME,docs);
     cluster.getSolrClientForCollection(COLLECTION_NAME).commit();
   }
 
