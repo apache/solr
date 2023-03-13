@@ -55,7 +55,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));

@@ -552,7 +552,7 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 
 [source,bash]
 ----
-http://localhost:8982/solr/admin/collections?action=LISTALIASES
+curl -X GET 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
 ----
 ====
 
@@ -562,12 +562,21 @@ http://localhost:8982/solr/admin/collections?action=LISTALIASES
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/aliases
+curl -X GET http://localhost:8983/api/aliases
 ----
 ====
 --
 
-The LISTALIASES action does not take any parameters.
+=== LISTALIASES Getting details for a single alias
+[example.tab-pane#v2listsinglealias]
+====
+[.tab-label]*V2 API only*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+====
 
 === LISTALIASES Response
 
@@ -575,35 +584,63 @@ The output will contain a list of aliases with the corresponding collection name
 
 === Examples using LISTALIASES
 
+==== List the existing aliases
+
 *Input*
 
-List the existing aliases, requesting information as XML from Solr:
-
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
+curl -X GET http://localhost:8983/api/aliases
 ----
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-    <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">0</int>
-    </lst>
-    <lst name="aliases">
-        <str name="testalias1">collection1</str>
-        <str name="testalias2">collection1,collection2</str>
-    </lst>
-    <lst name="properties">
-        <lst name="testalias1"/>
-        <lst name="testalias2">
-            <str name="someKey">someValue</str>
-        </lst>
-    </lst>
-</response>
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "aliases": {
+    "testalias1": "collection1",
+    "testalias2": "collection2,collection1"
+  },
+  "properties": {
+    "testalias2": {
+      "someKey": "someValue"
+    }
+  }
+}
+----
+
+==== Getting details for a single alias
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "name": "testalias2",
+  "collections": [
+    "collection2",
+    "collection1"
+  ],
+  "properties": {
+    "someKey": "someValue"
+  }
+}
 ----
 
 [[aliasprop]]

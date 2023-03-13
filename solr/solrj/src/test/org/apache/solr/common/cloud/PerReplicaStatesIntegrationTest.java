@@ -320,8 +320,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica
       // will go through recovery, direct write PRS to RECOVERING
-      // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
-      assertEquals(57, stat.getCversion());
+      assertEquals(55, stat.getCversion());
 
       String addedCore = response.getCollectionCoresStatus().entrySet().iterator().next().getKey();
       Replica addedReplica =
@@ -337,9 +336,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For replica deletion
       // +1 for ZkController#unregister, which delete the PRS entry from data node
-      // +2 for state.json overseer writes, even though there's no longer PRS updates from
       // overseer, current code would still do a "TOUCH" on the PRS entry
-      assertEquals(60, stat.getCversion());
+      assertEquals(56, stat.getCversion());
 
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();

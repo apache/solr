@@ -2169,6 +2169,10 @@ public class ZkStateReader implements SolrCloseable {
     return aliasesManager.getAliases();
   }
 
+  public AliasesManager getAliasesManager() {
+    return aliasesManager;
+  }
+
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
