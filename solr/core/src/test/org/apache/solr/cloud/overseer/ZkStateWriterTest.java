@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,6 +34,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -544,6 +546,69 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         assertNotNull(map.get("c2"));
       }
 
+    } finally {
+      IOUtils.close(zkClient);
+      server.shutdown();
+    }
+  }
+
+
+
+  public void testEnqueueCallback() throws Exception {
+    Path zkDir = createTempDir("testEnqueueCallback");
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient zkClient = null;
+
+    try {
+      server.run();
+
+      zkClient =
+              new SolrZkClient.Builder()
+                      .withUrl(server.getZkAddress())
+                      .withConnTimeOut(OverseerTest.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                      .build();
+      ZkController.createClusterZkNodes(zkClient);
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
+
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), 500000, null);
+
+        AtomicBoolean check = new AtomicBoolean(false);
+        ClusterState clusterState = reader.getClusterState();
+
+        //ensure callback is invoked in all of the scenarios below
+        clusterState = writer.enqueueUpdate(clusterState, Collections.emptyList(), () -> check.set(true));
+        assertTrue(check.get());
+
+        check.set(false);
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(ZkWriteCommand.NO_OP), () -> check.set(true));
+        assertTrue(check.get());
+
+        check.set(false);
+        DocCollection prsCollection1 = new DocCollection("c1", Collections.emptyMap(),
+                Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+                DocRouter.DEFAULT,
+                -1,
+                new DocCollection.PrsSupplier(new PerReplicaStates(null, 0, Collections.emptyList())));
+        //1 PRS command
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(new ZkWriteCommand("c1", prsCollection1)), () -> check.set(true));
+        assertTrue(check.get());
+
+        check.set(false);
+        DocCollection prsCollection2 = new DocCollection("c2", Collections.emptyMap(),
+                Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+                DocRouter.DEFAULT,
+                -1,
+                new DocCollection.PrsSupplier(new PerReplicaStates(null, 0, Collections.emptyList())));
+        //2 commands one is PRS
+        clusterState = writer.enqueueUpdate(clusterState, List.of(ZkWriteCommand.NO_OP, new ZkWriteCommand("c2", prsCollection2)), () -> check.set(true));
+        assertTrue(check.get());
+      }
     } finally {
       IOUtils.close(zkClient);
       server.shutdown();
