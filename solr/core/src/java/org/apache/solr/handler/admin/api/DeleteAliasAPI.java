@@ -17,6 +17,21 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -25,67 +40,53 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.AsyncJerseyResponse;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.PermissionNameProvider;
-
-import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 @Path("/aliases/{aliasName}")
 public class DeleteAliasAPI extends AdminAPIBase {
-    @Inject
-    public DeleteAliasAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
-        super(coreContainer, solrQueryRequest, solrQueryResponse);
+  @Inject
+  public DeleteAliasAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
+  }
+
+  @DELETE
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @PermissionName(COLL_EDIT_PERM)
+  public SolrJerseyResponse deleteAlias(
+      @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
+      throws Exception {
+    final AsyncJerseyResponse response = instantiateJerseyResponse(AsyncJerseyResponse.class);
+    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+
+    final ZkNodeProps remoteMessage = createRemoteMessage(aliasName, asyncId);
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            CollectionParams.CollectionAction.DELETEALIAS,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
     }
 
-    @DELETE
-    @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-    @PermissionName(COLL_EDIT_PERM)
-    public SolrJerseyResponse deleteAlias(@PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId) throws Exception {
-        final AsyncJerseyResponse response = instantiateJerseyResponse(AsyncJerseyResponse.class);
-        final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-
-        final ZkNodeProps remoteMessage = createRemoteMessage(aliasName, asyncId);
-        final SolrResponse remoteResponse =
-                CollectionsHandler.submitCollectionApiCommand(
-                        coreContainer,
-                        coreContainer.getDistributedCollectionCommandRunner(),
-                        remoteMessage,
-                        CollectionParams.CollectionAction.DELETEALIAS,
-                        DEFAULT_COLLECTION_OP_TIMEOUT);
-        if (remoteResponse.getException() != null) {
-            throw remoteResponse.getException();
-        }
-
-        if (asyncId != null) {
-            response.requestId = asyncId;
-        }
-
-        return response;
+    if (asyncId != null) {
+      response.requestId = asyncId;
     }
 
-    public static ZkNodeProps createRemoteMessage(String aliasName, String asyncId) {
-        final Map<String, Object> remoteMessage = new HashMap<>();
-        remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEALIAS.toLower());
-        remoteMessage.put(NAME, aliasName);
-        if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
+    return response;
+  }
 
-        return new ZkNodeProps(remoteMessage);
-    }
+  public static ZkNodeProps createRemoteMessage(String aliasName, String asyncId) {
+    final Map<String, Object> remoteMessage = new HashMap<>();
+    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEALIAS.toLower());
+    remoteMessage.put(NAME, aliasName);
+    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
+
+    return new ZkNodeProps(remoteMessage);
+  }
 }

@@ -859,12 +859,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return result;
         }),
 
-    DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> {
-      final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
-      final SolrJerseyResponse response = deleteAliasAPI.deleteAlias(req.getParams().required().get(NAME), req.getParams().get(ASYNC));
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-      return null;
-    }),
+    DELETEALIAS_OP(
+        DELETEALIAS,
+        (req, rsp, h) -> {
+          final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse response =
+              deleteAliasAPI.deleteAlias(
+                  req.getParams().required().get(NAME), req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
+        }),
 
     /**
      * Change properties for an alias (use CREATEALIAS_OP to change the actual value of the alias)

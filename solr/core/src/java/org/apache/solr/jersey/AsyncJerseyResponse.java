@@ -20,6 +20,6 @@ package org.apache.solr.jersey;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class AsyncJerseyResponse extends SolrJerseyResponse {
-    @JsonProperty("requestid")
-    public String requestId;
+  @JsonProperty("requestid")
+  public String requestId;
 }
