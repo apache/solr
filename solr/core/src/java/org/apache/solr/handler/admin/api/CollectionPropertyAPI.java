@@ -27,6 +27,8 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -53,7 +55,7 @@ public class CollectionPropertyAPI extends AdminAPIBase {
 
   @PUT
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   public SolrJerseyResponse createOrUpdateCollectionProperty(
       @PathParam("collName") String collName,
       @PathParam("propName") String propName,
