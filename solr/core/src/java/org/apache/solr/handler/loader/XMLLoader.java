@@ -185,7 +185,7 @@ public class XMLLoader extends ContentStreamLoader {
             if (addCmd != null) {
               log.trace("adding doc...");
               addCmd.clear();
-              addCmd.solrDoc = readDoc(parser);
+              addCmd.solrDoc = readDoc(parser, false);
               processor.processAdd(addCmd);
             } else {
               throw new SolrException(
@@ -316,11 +316,12 @@ public class XMLLoader extends ContentStreamLoader {
    * @since solr 1.3
    */
   @SuppressWarnings({"unchecked"})
-  public SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
+  public SolrInputDocument readDoc(
+      XMLStreamReader parser, boolean isSingleLabeledChildDocProcessing) throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
-    String attrName = "";
-    String attrVal = "";
+    String attrName;
+    String attrVal;
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
@@ -334,10 +335,9 @@ public class XMLLoader extends ContentStreamLoader {
           log.debug(message);
         }
       } else if (NAME.equals(attrName)) {
-        /*
-         * ignore here!
-         * the name attribute is to specify the single labelled nested child
-         * */
+        if (!isSingleLabeledChildDocProcessing) {
+          log.warn("XML element <doc> has invalid XML attr: {}", attrName);
+        }
       } else {
         log.warn("XML element <doc> has invalid XML attr: {}", attrName);
       }
@@ -347,7 +347,6 @@ public class XMLLoader extends ContentStreamLoader {
     String name = null;
     boolean isNull = false;
     boolean isLabeledChildDoc = false;
-    boolean isSingleLabeledChildDoc = false;
     String update = null;
     Collection<SolrInputDocument> subDocs = null;
     Map<String, Map<String, Object>> updateMap = null;
@@ -420,26 +419,25 @@ public class XMLLoader extends ContentStreamLoader {
               if (!doc.containsKey(name)) {
                 doc.setField(name, Lists.newArrayList());
               }
-              doc.addField(name, readDoc(parser));
+              doc.addField(name, readDoc(parser, false));
               break;
             }
+            boolean isSingleLabeledChildDoc = false;
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               attrName = parser.getAttributeLocalName(i);
               attrVal = parser.getAttributeValue(i);
               if (NAME.equals(attrName)) {
                 isSingleLabeledChildDoc = true;
-                doc.addField(attrVal, readDoc(parser));
+                doc.addField(attrVal, readDoc(parser, true));
                 break;
               } else {
                 log.warn("XML element <doc> has invalid XML attr: {}", attrName);
               }
             }
-            if (isSingleLabeledChildDoc) {
-              isSingleLabeledChildDoc = false;
-              break;
-            }
+            if (isSingleLabeledChildDoc) break;
+
             if (subDocs == null) subDocs = Lists.newArrayList();
-            subDocs.add(readDoc(parser));
+            subDocs.add(readDoc(parser, false));
           } else {
             if (!"field".equals(localName)) {
               String msg = "XML element <doc> has invalid XML child element: " + localName;

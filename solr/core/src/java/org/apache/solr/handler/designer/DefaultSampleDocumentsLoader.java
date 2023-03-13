@@ -291,7 +291,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
           return docs;
         case XMLStreamConstants.START_ELEMENT:
           if ("doc".equals(parser.getLocalName())) {
-            SolrInputDocument doc = loader.readDoc(parser);
+            SolrInputDocument doc = loader.readDoc(parser, false);
             if (doc != null) {
               docs.add(doc);
 
