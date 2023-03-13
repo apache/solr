@@ -78,7 +78,7 @@ public class CommonTestInjection {
   }
 
   /**
-   * This should ONLY be set from unit test cases.
+   * This is usually set by the test cases.
    *
    * <p>If defined, code execution would break at certain code execution point at the invocation of
    * injectBreakpoint with matching key until the provided method in the {@link Breakpoint}
@@ -89,7 +89,7 @@ public class CommonTestInjection {
    * @see CommonTestInjection#injectBreakpoint(String)
    * @param key could simply be the fully qualified class name or more granular like class name +
    *     other id (such as method name). This should batch the key used in {@link
-   *     Breakpoint#injectBreakpoint(String)}
+   *     CommonTestInjection#injectBreakpoint(String)}
    * @param breakpoint The Breakpoint implementation, null to remove the breakpoint
    */
   public static void setBreakpoint(String key, Breakpoint breakpoint) {
@@ -115,8 +115,8 @@ public class CommonTestInjection {
    *       re-throwing. This could verify caught exception does get triggered
    * </ol>
    *
-   * This should always be a part of an assert statement (ie assert injectBreakpoint(key)) such that
-   * it will be skipped for normal code execution
+   * <p>This should always be a part of an assert statement (ie assert injectBreakpoint(key)) such
+   * that it will be skipped for normal code execution
    *
    * @see CommonTestInjection#setBreakpoint(String, Breakpoint)
    * @param key could simply be the fully qualified class name or more granular like class name +
