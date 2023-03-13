@@ -185,6 +185,8 @@ Optimizations
 
 * SOLR-16487: Replication pooling is optimized based on hard and soft commit settings for a given collection (Justin Sweeney)
 
+* SOLR-16689: Avoiding commits on leader when recovering a non-leader replica and avoiding incorrectly replicating an empty core (Justin Sweeney)
+
 Bug Fixes
 ---------------------
 
