@@ -385,7 +385,8 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         expectThrows(
             SolrException.class,
             () -> {
-              final QueryResponse rsp = cluster.getSolrClientForCollection(COLLECTION).query(solrQuery);
+              final QueryResponse rsp =
+                  cluster.getSolrClientForCollection(COLLECTION).query(solrQuery);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
@@ -409,7 +410,8 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         expectThrows(
             SolrException.class,
             () -> {
-              final QueryResponse rsp = cluster.getSolrClientForCollection(COLLECTION).query(solrQuery);
+              final QueryResponse rsp =
+                  cluster.getSolrClientForCollection(COLLECTION).query(solrQuery);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage(), ex.getMessage().contains(expected));

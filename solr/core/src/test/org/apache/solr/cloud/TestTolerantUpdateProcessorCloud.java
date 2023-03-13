@@ -238,8 +238,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // verify some basic sanity checking of indexing & querying across the collection
     // w/o using our custom update processor chain
 
-    assertEquals(0, COLLECTION_CLIENT.add(doc(f("id", S_ONE_PRE + "1"), f("foo_i", 42))).getStatus());
-    assertEquals(0, COLLECTION_CLIENT.add(doc(f("id", S_TWO_PRE + "2"), f("foo_i", 66))).getStatus());
+    assertEquals(
+        0, COLLECTION_CLIENT.add(doc(f("id", S_ONE_PRE + "1"), f("foo_i", 42))).getStatus());
+    assertEquals(
+        0, COLLECTION_CLIENT.add(doc(f("id", S_TWO_PRE + "2"), f("foo_i", 66))).getStatus());
     assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
 
     for (SolrClient c :

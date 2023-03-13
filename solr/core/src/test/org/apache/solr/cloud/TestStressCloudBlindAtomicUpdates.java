@@ -311,7 +311,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     // sanity check index contents
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
     assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
-    assertEquals(numDocsInIndex, COLLECTION_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
+    assertEquals(
+        numDocsInIndex, COLLECTION_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
     startTestInjection();
 

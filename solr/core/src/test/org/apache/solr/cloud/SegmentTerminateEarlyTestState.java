@@ -58,7 +58,11 @@ class SegmentTerminateEarlyTestState {
   }
 
   void addDocuments(
-      String collection, CloudSolrClient cloudSolrClient, int numCommits, int numDocsPerCommit, boolean optimize)
+      String collection,
+      CloudSolrClient cloudSolrClient,
+      int numCommits,
+      int numDocsPerCommit,
+      boolean optimize)
       throws Exception {
     for (int cc = 1; cc <= numCommits; ++cc) {
       for (int nn = 1; nn <= numDocsPerCommit; ++nn) {
@@ -84,7 +88,7 @@ class SegmentTerminateEarlyTestState {
         doc.setField(TIMESTAMP_FIELD, MM);
         doc.setField(ODD_FIELD, "" + (numDocs % 2));
         doc.setField(QUAD_FIELD, "" + (numDocs % 4) + 1);
-        cloudSolrClient.add(collection,doc);
+        cloudSolrClient.add(collection, doc);
       }
       cloudSolrClient.commit(collection);
     }
@@ -93,7 +97,8 @@ class SegmentTerminateEarlyTestState {
     }
   }
 
-  void queryTimestampDescending(String collection, CloudSolrClient cloudSolrClient) throws Exception {
+  void queryTimestampDescending(String collection, CloudSolrClient cloudSolrClient)
+      throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
@@ -130,7 +135,8 @@ class SegmentTerminateEarlyTestState {
   }
 
   void queryTimestampDescendingSegmentTerminateEarlyYes(
-      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
+      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort)
+      throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
@@ -200,7 +206,8 @@ class SegmentTerminateEarlyTestState {
   }
 
   void queryTimestampDescendingSegmentTerminateEarlyNo(
-      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
+      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort)
+      throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
@@ -266,7 +273,8 @@ class SegmentTerminateEarlyTestState {
   }
 
   void queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
-      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
+      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort)
+      throws Exception {
     TestSegmentSorting.assertFalse(maxTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (maxTimestampDocKeys.iterator().next() % 2);
@@ -279,7 +287,7 @@ class SegmentTerminateEarlyTestState {
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not quad-able", 0, (numDocs % 4));
     query.add("group.field", QUAD_FIELD);
     query.set("group", true);
-    final QueryResponse rsp = cloudSolrClient.query(collection,query);
+    final QueryResponse rsp = cloudSolrClient.query(collection, query);
     // check correctness of the results count
     TestSegmentSorting.assertEquals(
         "matches", numDocs / 2, rsp.getGroupResponse().getValues().get(0).getMatches());
@@ -311,7 +319,8 @@ class SegmentTerminateEarlyTestState {
   }
 
   void queryTimestampAscendingSegmentTerminateEarlyYes(
-      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort) throws Exception {
+      String collection, CloudSolrClient cloudSolrClient, boolean appendKeyDescendingToSort)
+      throws Exception {
     TestSegmentSorting.assertFalse(minTimestampDocKeys.isEmpty());
     TestSegmentSorting.assertEquals("numDocs=" + numDocs + " is not even", 0, (numDocs % 2));
     final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next() % 2);
@@ -322,7 +331,7 @@ class SegmentTerminateEarlyTestState {
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);
-    final QueryResponse rsp = cloudSolrClient.query(collection,query);
+    final QueryResponse rsp = cloudSolrClient.query(collection, query);
     // check correctness of the results count
     TestSegmentSorting.assertEquals("numFound", numDocs / 2, rsp.getResults().getNumFound());
     // check correctness of the first result

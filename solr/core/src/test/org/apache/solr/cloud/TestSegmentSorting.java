@@ -87,7 +87,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       assertEquals(RequestStatusState.COMPLETED, cmd.processAndWait(cloudSolrClient, 30));
     }
     cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
-
   }
 
   public void testSegmentTerminateEarly() throws Exception {
@@ -96,7 +95,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
     // add some documents, then optimize to get merged-sorted segments
-    tstes.addDocuments(collectionName,cloudSolrClient, 10, 10, true);
+    tstes.addDocuments(collectionName, cloudSolrClient, 10, 10, true);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
     tstes.queryTimestampDescending(collectionName, cloudSolrClient);
@@ -105,31 +104,31 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     tstes.addDocuments(collectionName, cloudSolrClient, 2, 10, false);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(collectionName,
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
-    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(collectionName,
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
-    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(collectionName,
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
     // uses a sort order that is _not_ compatible with the merge sort order
-    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(collectionName,
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
 
     if (compoundMergePolicySort) {
       // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(collectionName,
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
-      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(collectionName,
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
 
       // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
-      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(collectionName,
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
       // uses a sort order that is _not_ compatible with the merge sort order
-      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(collectionName,
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
     }
   }
 
@@ -153,7 +152,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
                 params(
                     "includeDynamic", "true",
                     "showDefaults", "true"))
-            .process(cloudSolrClient,collectionName)
+            .process(cloudSolrClient, collectionName)
             .getField();
     assertEquals(true, schemaOpts.get("docValues"));
     assertEquals(false, schemaOpts.get("indexed"));
@@ -162,7 +161,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     // add some documents
     final int numDocs = atLeast(1000);
     for (int id = 1; id <= numDocs; id++) {
-      cloudSolrClient.add(collectionName,sdoc("id", id, updateField, random().nextInt(60)));
+      cloudSolrClient.add(collectionName, sdoc("id", id, updateField, random().nextInt(60)));
     }
     cloudSolrClient.commit(collectionName);
 
@@ -172,10 +171,12 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       final int iterSize = atLeast(20);
       for (int i = 0; i < iterSize; i++) {
         // replace
-        cloudSolrClient.add(collectionName,
+        cloudSolrClient.add(
+            collectionName,
             sdoc("id", TestUtil.nextInt(random(), 1, numDocs), updateField, random().nextInt(60)));
         // atomic update
-        cloudSolrClient.add(collectionName,
+        cloudSolrClient.add(
+            collectionName,
             sdoc(
                 "id",
                 TestUtil.nextInt(random(), 1, numDocs),
@@ -189,9 +190,12 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     // ie: not an in-place update
     final int id = TestUtil.nextInt(random(), 1, numDocs);
     final int oldDocId =
-        (Integer) cloudSolrClient.getById(collectionName,"" + id, params("fl", "[docid]")).get("[docid]");
+        (Integer)
+            cloudSolrClient
+                .getById(collectionName, "" + id, params("fl", "[docid]"))
+                .get("[docid]");
 
-    cloudSolrClient.add(collectionName,sdoc("id", id, updateField, map("inc", "666")));
+    cloudSolrClient.add(collectionName, sdoc("id", id, updateField, map("inc", "666")));
     cloudSolrClient.commit(collectionName);
 
     // loop in case we're waiting for a newSearcher to be opened
@@ -200,7 +204,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     while ((newDocId < 0) && (0 < attempts--)) {
       SolrDocumentList docs =
           cloudSolrClient
-              .query(collectionName,
+              .query(
+                  collectionName,
                   params(
                       "q", "id:" + id,
                       "fl", "[docid]",
