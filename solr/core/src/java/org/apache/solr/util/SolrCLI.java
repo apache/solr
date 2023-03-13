@@ -207,7 +207,9 @@ public class SolrCLI implements CLIO {
       String zkHost = cli.getOptionValue(OPTION_ZKHOST.getOpt(), ZK_HOST);
 
       log.debug("Connecting to Solr cluster: {}", zkHost);
-
+      try (var cloudSolrClient =
+          new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+              .build()) {
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
       }

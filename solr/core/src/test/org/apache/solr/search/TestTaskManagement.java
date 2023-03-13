@@ -73,7 +73,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-
     queryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("TestTaskManagement-Query");
     cancelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("TestTaskManagement-Cancel");
 
@@ -90,7 +89,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     cluster.getSolrClientForCollection(COLLECTION_NAME).add(docs);
     // nocommit Not sure the above line is any better than the below line????
-    //cluster.getSolrClient().add(COLLECTION_NAME,docs);
+    // cluster.getSolrClient().add(COLLECTION_NAME,docs);
     cluster.getSolrClientForCollection(COLLECTION_NAME).commit();
   }
 
@@ -113,7 +112,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     GenericSolrRequest request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params);
-    NamedList<Object> queryResponse = cluster.getSolrClientForCollection(COLLECTION_NAME).request(request);
+    NamedList<Object> queryResponse =
+        cluster.getSolrClientForCollection(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
     assertEquals(404, queryResponse.get("responseCode"));
@@ -199,7 +199,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     GenericSolrRequest request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
-    NamedList<Object> queryResponse = cluster.getSolrClientForCollection(COLLECTION_NAME).request(request);
+    NamedList<Object> queryResponse =
+        cluster.getSolrClientForCollection(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");
 

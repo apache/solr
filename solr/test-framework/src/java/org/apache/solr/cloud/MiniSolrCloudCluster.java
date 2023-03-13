@@ -1044,11 +1044,12 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  /** When this is called we recreate the SolrClient with a defaultCollection **/
+  /** When this is called we recreate the SolrClient with a defaultCollection * */
   public void setDefaultCollection(String collectionName) {
     IOUtils.closeQuietly(solrClient);
-    solrClient = new CloudLegacySolrClient.Builder(
-                    Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+    solrClient =
+        new CloudLegacySolrClient.Builder(
+                Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
             .withSocketTimeout(90000)
             .withConnectionTimeout(15000)
             .withDefaultCollection(collectionName)

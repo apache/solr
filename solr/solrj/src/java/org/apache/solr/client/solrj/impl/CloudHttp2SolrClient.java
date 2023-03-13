@@ -65,7 +65,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.clientIsInternal = false;
       this.myClient = builder.httpClient;
     }
-    this.retryExpiryTime = builder.retryExpiryTime;
+    this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {
       this.myClient.requestWriter = builder.requestWriter;
