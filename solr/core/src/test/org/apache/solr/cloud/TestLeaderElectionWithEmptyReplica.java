@@ -59,7 +59,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", String.valueOf(i));
-      solrClient.add(COLLECTION_NAME,doc);
+      solrClient.add(COLLECTION_NAME, doc);
     }
     solrClient.commit(COLLECTION_NAME);
 
@@ -108,7 +108,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
             .getSlice("shard1"));
 
     // sanity check that documents still exist
-    QueryResponse response = solrClient.query(COLLECTION_NAME,new SolrQuery("*:*"));
+    QueryResponse response = solrClient.query(COLLECTION_NAME, new SolrQuery("*:*"));
     assertEquals("Indexed documents not found", 10, response.getResults().getNumFound());
   }
 
