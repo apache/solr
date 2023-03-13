@@ -152,6 +152,10 @@ Improvements
 
 * SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
 
+* SOLR-16391: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.  Endpoints are now
+  available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
+  being upserted or deleted. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 

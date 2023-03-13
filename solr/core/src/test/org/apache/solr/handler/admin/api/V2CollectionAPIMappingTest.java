@@ -60,7 +60,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
     apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
-    apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
     apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
     apiBag.registerObject(new RenameCollectionAPI(collectionsHandler));
   }
@@ -225,22 +224,5 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals(123, v1Params.getPrimitiveInt("maxAtOnce"));
     assertEquals(456, v1Params.getPrimitiveInt("maxWaitSeconds"));
-  }
-
-  @Test
-  public void testSetCollectionPropertyAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'set-collection-property': {"
-                + "'name': 'somePropertyName', "
-                + "'value': 'somePropertyValue' "
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.COLLECTIONPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(NAME));
-    assertEquals("somePropertyName", v1Params.get("propertyName"));
-    assertEquals("somePropertyValue", v1Params.get("propertyValue"));
   }
 }
