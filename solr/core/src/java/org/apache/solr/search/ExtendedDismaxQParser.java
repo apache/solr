@@ -18,16 +18,9 @@ package org.apache.solr.search;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -55,6 +48,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
+import org.apache.solr.parser.SynonymQueryWithOffset;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -1216,6 +1211,11 @@ public class ExtendedDismaxQParser extends QParser {
         // DisMaxQuery.rewrite() removes itself if there is just a single clause anyway.
         // if (lst.size()==1) return lst.get(0);
         if (makeDismax) {
+
+          if (canRewriteUsingStartOffset(lst)) {
+            return QueryUtils.build(rewriteUsingStartOffset(lst, a.tie), parser);
+          }
+
           Query firstQuery = lst.get(0);
           if ((firstQuery instanceof BooleanQuery
                   || (firstQuery instanceof BoostQuery
@@ -1223,9 +1223,10 @@ public class ExtendedDismaxQParser extends QParser {
               && allSameQueryStructure(lst)) {
             BooleanQuery.Builder q = rewriteUsingClausePosition(lst, a.tie);
             return QueryUtils.build(q, parser);
-          } else {
-            return new DisjunctionMaxQuery(lst, a.tie);
           }
+
+          return new DisjunctionMaxQuery(lst, a.tie);
+
         } else {
           BooleanQuery.Builder q = new BooleanQuery.Builder();
           for (Query sub : lst) {
@@ -1245,6 +1246,68 @@ public class ExtendedDismaxQParser extends QParser {
         }
         return getQuery();
       }
+    }
+
+    private boolean canRewriteUsingStartOffset(List<Query> lst) {
+      for (Query q : lst) {
+        if (!(q instanceof BooleanQuery)) {
+          return false;
+        }
+        BooleanQuery bq = (BooleanQuery)q;
+
+        for (BooleanClause clause : bq.clauses()) {
+          if (clause.getOccur() != BooleanClause.Occur.SHOULD) {
+            return false; // TODO: handle other cases?
+          }
+          Query innerQuery = clause.getQuery();
+          // TODO: handle BoostQuery
+          if (!((innerQuery instanceof SynonymQueryWithOffset) ||
+            (innerQuery instanceof TermQueryWithOffset))) {
+            return false;
+          }
+          // TODO: check offset is not -1
+        }
+      }
+      return true;
+    }
+
+    private BooleanQuery.Builder rewriteUsingStartOffset(List<Query> lst, float tie) {
+      SortedMap<Integer, List<Query>> offsets = new TreeMap<>();
+
+      for (Query q : lst) {
+        BooleanQuery bq = (BooleanQuery)q;
+
+        for (BooleanClause bc : bq.clauses()) {
+          Query clause = bc.getQuery();
+          int offset;
+
+          if (clause instanceof SynonymQueryWithOffset) {
+            SynonymQueryWithOffset sq = (SynonymQueryWithOffset) clause;
+            offset = sq.getStartOffset();
+          } else {
+            TermQueryWithOffset tq = (TermQueryWithOffset) clause;
+            offset = tq.getOffset();
+          }
+
+          if (offsets.containsKey(offset)) {
+            offsets.get(offset).add(clause);
+          } else {
+            ArrayList<Query> myList = new ArrayList<>();
+            myList.add(clause);
+            offsets.put(offset, myList);
+          }
+        }
+      }
+
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
+      Collection<Integer> keys = offsets.keySet();
+      for (Integer key : keys) {
+        List<Query> queries = offsets.get(key);
+        q.add(
+          newBooleanClause(
+            new DisjunctionMaxQuery(queries, tie), BooleanClause.Occur.SHOULD));
+      }
+      return q;
     }
 
     private BooleanQuery.Builder rewriteUsingClausePosition(List<Query> lst, float tie) {

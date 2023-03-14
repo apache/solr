@@ -2484,8 +2484,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   public void testSplitOnWhitespace_Different_Field_Analysis() throws Exception {
     // When the *structure* of produced queries is different in each field,
-    // sow=true produces boolean-of-dismax query structure,
-    // and sow=false produces dismax-of-boolean query structure.
+    // sow=true produces boolean-of-dismax query structure;
+    // sow=false also produces boolean-of-dismax query structure if startOffsets are available
     String parsedquery =
         getParsedQuery(
             req(
@@ -2525,17 +2525,21 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "debugQuery",
                 "true"));
     MatcherAssert.assertThat(
-        parsedquery,
-        anyOf(
-            containsString(
-                "(((text_sw:oliv text_sw:other) | (title:olive title:the title:other)))"),
-            containsString(
-                "(((title:olive title:the title:other) | (text_sw:oliv text_sw:other)))")));
+      parsedquery,
+      anyOf(
+        containsString("((text_sw:oliv | title:olive))"),
+        containsString("((title:olive | text_sw:oliv))")));
+    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    MatcherAssert.assertThat(
+      parsedquery,
+      anyOf(
+        containsString("((text_sw:other | title:other))"),
+        containsString("((title:other | text_sw:other))")));
 
     // When field's analysis produce different query structures, mm processing is always done on the
     // boolean query.
-    // sow=true produces (boolean-of-dismax)~<mm> query structure,
-    // and sow=false produces dismax-of-(boolean)~<mm> query structure.
+    // sow=true produces (boolean-of-dismax)~<mm> query structure;
+    // sow=false also produces dismax-of-(boolean)~<mm> query structure if termOffsets are available
     parsedquery =
         getParsedQuery(
             req(
@@ -2580,12 +2584,17 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "debugQuery",
                 "true"));
     MatcherAssert.assertThat(
-        parsedquery,
-        anyOf(
-            containsString(
-                "(((text_sw:oliv text_sw:other)~2) | ((title:olive title:the title:other)~3)))"),
-            containsString(
-                "(((title:olive title:the title:other)~3) | ((text_sw:oliv text_sw:other)~2)))")));
+      parsedquery,
+      anyOf(
+        containsString("((text_sw:oliv | title:olive))"),
+        containsString("((title:olive | text_sw:oliv))")));
+    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    MatcherAssert.assertThat(
+      parsedquery,
+      anyOf(
+        containsString("((text_sw:other | title:other))"),
+        containsString("((title:other | text_sw:other))")));
+    MatcherAssert.assertThat(parsedquery, containsString("))~3"));
 
     // When the *structure* of produced queries is the same in each field,
     // sow=false/true produce the same boolean-of-dismax query structure
