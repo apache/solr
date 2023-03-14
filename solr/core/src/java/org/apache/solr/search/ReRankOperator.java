@@ -14,14 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request.beans;
+package org.apache.solr.search;
 
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
+import java.util.Locale;
+import org.apache.solr.common.SolrException;
 
-public class SetCollectionPropertyPayload implements ReflectMapWriter {
-  @JsonProperty(required = true)
-  public String name;
+public enum ReRankOperator {
+  ADD,
+  MULTIPLY,
+  REPLACE;
 
-  @JsonProperty public String value = null;
+  public static ReRankOperator get(String p) {
+    if (p != null) {
+      try {
+        return ReRankOperator.valueOf(p.toUpperCase(Locale.ROOT));
+      } catch (Exception ex) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid reRankOperator: " + p);
+      }
+    }
+    return null;
+  }
+
+  public String toLower() {
+    return toString().toLowerCase(Locale.ROOT);
+  }
 }

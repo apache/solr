@@ -443,6 +443,7 @@ public class Http2SolrClient extends SolrClient {
     }
     final ResponseParser parser =
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
     req.onRequestQueued(asyncTracker.queuedListener)
         .onComplete(asyncTracker.completeListener)
         .send(
@@ -450,9 +451,7 @@ public class Http2SolrClient extends SolrClient {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
-                log.debug("response processing started");
                 InputStreamResponseListener listener = this;
-                MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
                 executor.execute(
                     () -> {
                       InputStream is = listener.getInputStream();
@@ -585,15 +584,12 @@ public class Http2SolrClient extends SolrClient {
     }
 
     setBasicAuthHeader(solrRequest, req);
-    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
-    req.onRequestBegin(mdcCopyHelper);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
       listener.onQueued(req);
       req.onRequestBegin(listener);
       req.onComplete(listener);
     }
-    req.onComplete(mdcCopyHelper);
 
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {

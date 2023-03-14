@@ -140,9 +140,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(
-        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
-
-    compareOutput(
         apiBag,
         "/collections/collName/shards/shard1",
         DELETE,
@@ -226,13 +223,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
-        "{set-collection-property : {name: 'foo', value:'bar'} }",
-        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}");
   }
 
   static ZkNodeProps compareOutput(
