@@ -34,14 +34,6 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
-==================  9.3.0 ==================
-
-Bug Fixes
----------------------
-
-* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
-  (Shawn Heisey)
-
 ==================  9.2.0 ==================
 
 New Features
@@ -257,6 +249,9 @@ Bug Fixes
 * SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
 
 * SOLR-16676: Logs: Http2SolrClient.async() lacked MDC (Alex Deparvu)
+
+* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
+  (Shawn Heisey)
 
 Build
 ---------------------
