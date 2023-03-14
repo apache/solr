@@ -2292,24 +2292,23 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected CloudSolrClient getSolrClientForCollection(String collectionName) {
-
-    return solrClientForCollectionCache.computeIfAbsent(
-        collectionName,
-        k -> {
-          CloudSolrClient solrClient =
-              getCloudSolrClient(
-                  zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
-          solrClient.connect();
-          solrClientForCollectionCache.put(collectionName, solrClient);
-          if (log.isInfoEnabled()) {
-            log.info(
-                "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
-                collectionName,
-                solrClient.isUpdatesToLeaders(),
-                solrClient.isParallelUpdates());
-          }
-          return solrClient;
-        });
+    synchronized (this) {
+      if (!solrClientForCollectionCache.containsKey(collectionName)) {
+        CloudSolrClient solrClient =
+            getCloudSolrClient(
+                zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
+        solrClient.connect();
+        solrClientForCollectionCache.put(collectionName, solrClient);
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+              collectionName,
+              solrClient.isUpdatesToLeaders(),
+              solrClient.isParallelUpdates());
+        }
+      }
+    }
+    return solrClientForCollectionCache.get(collectionName);
   }
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
