@@ -669,8 +669,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Ensure that collection state fetching (getCollectionLive etc.) would not throw exception when the state.json is
-   * deleted in between the state.json read and PRS entries read
+   * Ensure that collection state fetching (getCollectionLive etc.) would not throw exception when
+   * the state.json is deleted in between the state.json read and PRS entries read
    */
   public void testDeletePrsCollection() throws Exception {
     ZkStateWriter writer = fixture.writer;
@@ -687,87 +687,106 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // create new collection
     DocCollection state =
-            new DocCollection(
-                    collectionName,
-                    Map.of(sliceName, slice),
-                    Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
-                    DocRouter.DEFAULT,
-                    0,
-                    new PerReplicaStatesFetcher.LazyPrsSupplier(
-                            fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
+        new DocCollection(
+            collectionName,
+            Map.of(sliceName, slice),
+            Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
+            DocRouter.DEFAULT,
+            0,
+            new PerReplicaStatesFetcher.LazyPrsSupplier(
+                fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
     clusterState = writer.writePendingUpdates();
 
     TimeOut timeOut = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor(
-            "Timeout on waiting for c1 to show up in cluster state",
-            () -> reader.getClusterState().getCollectionOrNull(collectionName) != null);
+        "Timeout on waiting for c1 to show up in cluster state",
+        () -> reader.getClusterState().getCollectionOrNull(collectionName) != null);
 
     String collectionPath = ZkStateReader.getCollectionPath(collectionName);
 
-    //now create the replica, take note that this has to be done after DocCollection creation with empty slice,
-    //otherwise the DocCollection ctor would fetch the PRS entries and throw exceptions
+    // now create the replica, take note that this has to be done after DocCollection creation with
+    // empty slice,
+    // otherwise the DocCollection ctor would fetch the PRS entries and throw exceptions
     String replicaBaseUrl = Utils.getBaseUrlForNodeName(nodeName, "http");
 
     String replicaName = "replica1";
     Replica replica =
-            new Replica(
-                    replicaName,
-                    Map.of(
-                            ZkStateReader.CORE_NAME_PROP, "core1",
-                            ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString(),
-                            ZkStateReader.NODE_NAME_PROP, nodeName,
-                            ZkStateReader.BASE_URL_PROP, replicaBaseUrl,
-                            ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()),
-                    collectionName,
-                    sliceName);
+        new Replica(
+            replicaName,
+            Map.of(
+                ZkStateReader.CORE_NAME_PROP,
+                "core1",
+                ZkStateReader.STATE_PROP,
+                Replica.State.ACTIVE.toString(),
+                ZkStateReader.NODE_NAME_PROP,
+                nodeName,
+                ZkStateReader.BASE_URL_PROP,
+                replicaBaseUrl,
+                ZkStateReader.REPLICA_TYPE,
+                Replica.Type.NRT.name()),
+            collectionName,
+            sliceName);
 
-    wc = new ZkWriteCommand(collectionName, SliceMutator.updateReplica(state, slice, replica.getName(), replica));
+    wc =
+        new ZkWriteCommand(
+            collectionName, SliceMutator.updateReplica(state, slice, replica.getName(), replica));
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
     clusterState = writer.writePendingUpdates();
 
     timeOut.waitFor(
-            "Timeout on waiting for replica to show up in cluster state",
-            () -> reader.getCollectionLive(collectionName).getSlice(sliceName).getReplica(replicaName) != null);
-
+        "Timeout on waiting for replica to show up in cluster state",
+        () ->
+            reader.getCollectionLive(collectionName).getSlice(sliceName).getReplica(replicaName)
+                != null);
 
     try {
-      //set breakpoint such that after state.json fetch and before PRS entry fetch, we can delete the state.json and
+      // set breakpoint such that after state.json fetch and before PRS entry fetch, we can delete
+      // the state.json and
       // PRS entries to trigger the race condition
-      CommonTestInjection.setBreakpoint(PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch", (args) -> {
-        try {
-          //this is invoked after ZkStateReader.fetchCollectionState has fetched the state.json but before PRS entries.
-          //call delete state.json on ZK directly, very tricky to control execution order with writer.enqueueUpdate
-          reader.getZkClient().clean(collectionPath);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        } catch (KeeperException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      CommonTestInjection.setBreakpoint(
+          PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch",
+          (args) -> {
+            try {
+              // this is invoked after ZkStateReader.fetchCollectionState has fetched the state.json
+              // but before PRS entries.
+              // call delete state.json on ZK directly, very tricky to control execution order with
+              // writer.enqueueUpdate
+              reader.getZkClient().clean(collectionPath);
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            } catch (KeeperException e) {
+              throw new RuntimeException(e);
+            }
+          });
 
-      //set breakpoint to verify the expected PrsZkNodeNotFoundException is indeed thrown within the execution flow,
-      //such exception is caught within the logic and not thrown to the caller
+      // set breakpoint to verify the expected PrsZkNodeNotFoundException is indeed thrown within
+      // the execution flow,
+      // such exception is caught within the logic and not thrown to the caller
       AtomicBoolean prsZkNodeNotFoundExceptionThrown = new AtomicBoolean(false);
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName()+"/exercised", (args) -> {
-        if (args[0] instanceof PerReplicaStatesFetcher.PrsZkNodeNotFoundException) {
-          prsZkNodeNotFoundExceptionThrown.set(true);
-        }
-      });
+      CommonTestInjection.setBreakpoint(
+          ZkStateReader.class.getName() + "/exercised",
+          (args) -> {
+            if (args[0] instanceof PerReplicaStatesFetcher.PrsZkNodeNotFoundException) {
+              prsZkNodeNotFoundExceptionThrown.set(true);
+            }
+          });
 
-
-      timeOut.waitFor("Timeout waiting for collection state to become null", () -> {
-        //this should not throw exception even if the PRS entry read is delayed artificially (by previous command)
-        //and deleted after the following getCollectionLive call
-        return reader.getCollectionLive(collectionName) == null;
-      });
+      timeOut.waitFor(
+          "Timeout waiting for collection state to become null",
+          () -> {
+            // this should not throw exception even if the PRS entry read is delayed artificially
+            // (by previous command)
+            // and deleted after the following getCollectionLive call
+            return reader.getCollectionLive(collectionName) == null;
+          });
 
       assertTrue(prsZkNodeNotFoundExceptionThrown.get());
     } finally {
-      //clear breakpoints
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName()+"/beforePrsFetch", null);
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName()+"/exercised", null);
+      // clear breakpoints
+      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/beforePrsFetch", null);
+      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
 }

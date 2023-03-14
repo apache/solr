@@ -123,7 +123,7 @@ public class CommonTestInjection {
    *     with CommonTestInjection#setBreakpoint
    * @param args optional arguments list to be passed to the Breakpoint
    */
-  public static boolean injectBreakpoint(String key, Object...args) {
+  public static boolean injectBreakpoint(String key, Object... args) {
     Breakpoint breakpoint = breakpoints.get(key);
     if (breakpoint != null) {
       breakpoint.executeAndResume(args);
@@ -136,6 +136,6 @@ public class CommonTestInjection {
      * Code execution should break at where the breakpoint was injected, then it would execute this
      * method and resumes the execution afterwards.
      */
-    void executeAndResume(Object...args);
+    void executeAndResume(Object... args);
   }
 }
