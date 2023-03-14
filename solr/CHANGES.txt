@@ -12,6 +12,17 @@ Bug Fixes
 * SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
   (Shawn Heisey)
 
+==================  9.3.0 ==================
+
+Improvements
+---------------------
+
+* SOLR-16183: XML update allows <doc> <doc name="child"> ... </doc> </doc>.
+  (Vinayak Hegde via Mikhail Khludnev)
+
+Bug Fixes
+---------------------
+
 ==================  9.2.0 ==================
 
 New Features
