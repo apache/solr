@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
+import java.net.CookieStore;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -272,7 +273,10 @@ public class Http2SolrClient extends SolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
     httpClient.setIdleTimeout(idleTimeoutMillis);
-    httpClient.setCookieStore(new HttpCookieStore.Empty());
+
+    if (builder.cookieStore != null) {
+      httpClient.setCookieStore(builder.cookieStore);
+    }
 
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
@@ -1039,6 +1043,7 @@ public class Http2SolrClient extends SolrClient {
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
     private Set<String> urlParamNames = Set.of();
+    private CookieStore cookieStore = getDefaultCookieStore();
 
     public Builder() {}
 
@@ -1080,6 +1085,17 @@ public class Http2SolrClient extends SolrClient {
         }
         factory.setup(client);
       }
+    }
+
+    private static CookieStore getDefaultCookieStore() {
+      if (Boolean.getBoolean("solr.http.disableCookies")) {
+        return new HttpCookieStore.Empty();
+      }
+      /*
+       * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
+       * but for now it's only either Empty or default (in-memory).
+       */
+      return null;
     }
 
     /** Reuse {@code httpClient} connections pool */
@@ -1214,6 +1230,17 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
       this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
+      return this;
+    }
+
+    /**
+     * Set a cookieStore other than the default ({@code java.net.InMemoryCookieStore})
+     *
+     * @param cookieStore The CookieStore to set. {@code null} will set the default.
+     * @return this Builder
+     */
+    public Builder withCookieStore(CookieStore cookieStore) {
+      this.cookieStore = cookieStore;
       return this;
     }
   }
