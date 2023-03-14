@@ -50,8 +50,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
     Path schemaPath = TEST_COLL1_CONF().resolve("schema-nest.xml");
     cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
 
-    cloudClient = cluster.getSolrClient();
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    cloudClient = cluster.getSolrClientForCollection(DEFAULT_COLLECTION);
 
     CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, 4, 1).process(cloudClient);
 
