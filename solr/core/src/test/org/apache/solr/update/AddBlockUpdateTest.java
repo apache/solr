@@ -602,7 +602,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                 "A",
                 "test",
                 sdocs(
-                    sdoc("id", "5", "child_s", "b", "grandChild", sdoc("id", "7", "child_s", "d")),
+                    sdoc(
+                        "id",
+                        "5",
+                        "child_s",
+                        "b",
+                        "grandChild",
+                        Collections.singleton(sdoc("id", "7", "child_s", "d"))),
                     sdoc("id", "6", "child_s", "c")))
             .toString());
   }

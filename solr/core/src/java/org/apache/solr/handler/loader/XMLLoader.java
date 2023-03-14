@@ -418,7 +418,13 @@ public class XMLLoader extends ContentStreamLoader {
             if (currentFieldName != null) { // enclosed in <field>
               // flag to prevent spaces after doc from being added
               isLabeledChildDoc = true;
-              doc.addField(currentFieldName, readDoc(parser));
+              SolrInputDocument child = readDoc(parser);
+              if (doc.containsKey(currentFieldName)) {
+                doc.getField(currentFieldName).addValue(child);
+              } else {
+                final List<Object> list = new ArrayList<>(List.of(child));
+                doc.addField(currentFieldName, list);
+              }
             } else {
               final String subdocName = parser.getAttributeValue(null, NAME);
               if (subdocName != null) { // <doc name=""> enclosed in <doc>
