@@ -15,8 +15,15 @@ public final class SynonymQueryWithOffset extends Query {
 
   private SynonymQuery query;
 
-  public SynonymQueryWithOffset(SynonymQuery query) {
+  private int offset = -1;
+
+  public SynonymQueryWithOffset(SynonymQuery query, int offset) {
     this.query = query;
+    this.offset = offset;
+  }
+
+  public int getStartOffset() {
+    return offset;
   }
 
   @Override

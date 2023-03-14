@@ -1,7 +1,6 @@
 package org.apache.solr.parser;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.TermQuery;
 
 public class TermQueryWithOffset extends TermQuery {

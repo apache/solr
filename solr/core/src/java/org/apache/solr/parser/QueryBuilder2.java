@@ -614,7 +614,7 @@ public class QueryBuilder2 {
     for (TermAndBoost t : terms) {
       builder.addTerm(t.term, t.boost);
     }
-    return new SynonymQueryWithOffset(builder.build());
+    return new SynonymQueryWithOffset(builder.build(), terms[0].startOffset);
   }
 
   /**
