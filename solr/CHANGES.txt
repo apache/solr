@@ -45,9 +45,6 @@ Improvements
 Bug Fixes
 ---------------------
 
-* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
-  (Shawn Heisey)
-
 ==================  9.2.0 ==================
 
 New Features
