@@ -29,6 +29,16 @@ import org.apache.solr.common.PushWriter;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class JacksonJsonWriter extends BinaryResponseWriter {
+
+  protected final JsonFactory jsonfactory;
+  protected static final PrettyPrinter pretty =
+          new DefaultPrettyPrinter()
+                  .withoutSpacesInObjectEntries()
+                  .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+  public JacksonJsonWriter() {
+    super();
+    jsonfactory = new JsonFactory();
+  }
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
@@ -48,21 +58,14 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   }
   // So we extend JSONWriter and override the relevant methods
 
-  public static class WriterImpl extends JSONWriter {
-    static final PrettyPrinter pretty =
-        new DefaultPrettyPrinter()
-            .withoutSpacesInObjectEntries()
-            .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+  public class WriterImpl extends JSONWriter {
 
     protected final JsonGenerator gen;
-    protected final OutputStream out;
 
     public WriterImpl(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(null, req, rsp);
-      this.out = out;
-      JsonFactory JsonFactory = new JsonFactory();
       try {
-        gen = JsonFactory.createGenerator(this.out, JsonEncoding.UTF8);
+        gen =  jsonfactory.createGenerator(out, JsonEncoding.UTF8);
         gen.setPrettyPrinter(pretty);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -144,7 +147,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
     }
 
     @Override
-    public void writeArraySeparator() throws IOException {
+    public void writeArraySeparator() {
       // do nothing
     }
 
@@ -159,7 +162,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
     }
 
     @Override
-    public void writeMapSeparator() throws IOException {
+    public void writeMapSeparator() {
       // do nothing
     }
 
