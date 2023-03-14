@@ -1616,7 +1616,8 @@ public class ZkStateReader implements SolrCloseable {
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
-      } catch (KeeperException.NoNodeException e) {
+      } catch (KeeperException.NoNodeException | PerReplicaStatesFetcher.PrsZkNodeNotFoundException e) {
+        assert CommonTestInjection.injectBreakpoint(ZkStateReader.class.getName() + "/exercised", e);
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.
           Stat exists = zkClient.exists(collectionPath, watcher, true);

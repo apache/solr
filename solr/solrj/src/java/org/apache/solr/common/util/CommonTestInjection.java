@@ -86,10 +86,9 @@ public class CommonTestInjection {
    *
    * <p>Setting the breakpoint to null would remove the breakpoint
    *
-   * @see CommonTestInjection#injectBreakpoint(String)
+   * @see CommonTestInjection#injectBreakpoint(String, Object...)
    * @param key could simply be the fully qualified class name or more granular like class name +
-   *     other id (such as method name). This should batch the key used in {@link
-   *     CommonTestInjection#injectBreakpoint(String)}
+   *     other id (such as method name). This should batch the key used in injectBreakpoint
    * @param breakpoint The Breakpoint implementation, null to remove the breakpoint
    */
   public static void setBreakpoint(String key, Breakpoint breakpoint) {
@@ -122,11 +121,12 @@ public class CommonTestInjection {
    * @param key could simply be the fully qualified class name or more granular like class name +
    *     other id (such as method name). This should only be set by corresponding unit test cases
    *     with CommonTestInjection#setBreakpoint
+   * @param args optional arguments list to be passed to the Breakpoint
    */
-  public static boolean injectBreakpoint(String key) {
+  public static boolean injectBreakpoint(String key, Object...args) {
     Breakpoint breakpoint = breakpoints.get(key);
     if (breakpoint != null) {
-      breakpoint.executeAndResume();
+      breakpoint.executeAndResume(args);
     }
     return true;
   }
@@ -136,6 +136,6 @@ public class CommonTestInjection {
      * Code execution should break at where the breakpoint was injected, then it would execute this
      * method and resumes the execution afterwards.
      */
-    void executeAndResume();
+    void executeAndResume(Object...args);
   }
 }
