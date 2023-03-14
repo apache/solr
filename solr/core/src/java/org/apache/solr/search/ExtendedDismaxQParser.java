@@ -1221,30 +1221,7 @@ public class ExtendedDismaxQParser extends QParser {
                   || (firstQuery instanceof BoostQuery
                       && ((BoostQuery) firstQuery).getQuery() instanceof BooleanQuery))
               && allSameQueryStructure(lst)) {
-            BooleanQuery.Builder q = new BooleanQuery.Builder();
-            List<Query> subs = new ArrayList<>(lst.size());
-            BooleanQuery firstBooleanQuery =
-                firstQuery instanceof BoostQuery
-                    ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
-                    : (BooleanQuery) firstQuery;
-            for (int c = 0; c < firstBooleanQuery.clauses().size(); ++c) {
-              subs.clear();
-              // Make a dismax query for each clause position in the boolean per-field queries.
-              for (int n = 0; n < lst.size(); ++n) {
-                if (lst.get(n) instanceof BoostQuery) {
-                  BoostQuery boostQuery = (BoostQuery) lst.get(n);
-                  BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
-                  subs.add(
-                      new BoostQuery(
-                          booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
-                } else {
-                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
-                }
-              }
-              q.add(
-                  newBooleanClause(
-                      new DisjunctionMaxQuery(subs, a.tie), BooleanClause.Occur.SHOULD));
-            }
+            BooleanQuery.Builder q = rewriteUsingClausePosition(lst, a.tie);
             return QueryUtils.build(q, parser);
           } else {
             return new DisjunctionMaxQuery(lst, a.tie);
@@ -1268,6 +1245,35 @@ public class ExtendedDismaxQParser extends QParser {
         }
         return getQuery();
       }
+    }
+
+    private BooleanQuery.Builder rewriteUsingClausePosition(List<Query> lst, float tie) {
+      Query firstQuery = lst.get(0);
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
+      List<Query> subs = new ArrayList<>(lst.size());
+      BooleanQuery firstBooleanQuery =
+        firstQuery instanceof BoostQuery
+          ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
+          : (BooleanQuery) firstQuery;
+      for (int c = 0; c < firstBooleanQuery.clauses().size(); ++c) {
+        subs.clear();
+        // Make a dismax query for each clause position in the boolean per-field queries.
+        for (int n = 0; n < lst.size(); ++n) {
+          if (lst.get(n) instanceof BoostQuery) {
+            BoostQuery boostQuery = (BoostQuery) lst.get(n);
+            BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
+            subs.add(
+              new BoostQuery(
+                booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+          } else {
+            subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
+          }
+        }
+        q.add(
+          newBooleanClause(
+            new DisjunctionMaxQuery(subs, tie), BooleanClause.Occur.SHOULD));
+      }
+      return q;
     }
 
     /**
