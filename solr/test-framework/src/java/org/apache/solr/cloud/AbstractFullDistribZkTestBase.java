@@ -799,7 +799,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   /**
-   * Creates a JettySolrRunner with a socket proxy sitting infront of the Jetty server, which gives
+   * Creates a JettySolrRunner with a socket proxy sitting in front of the Jetty server, which gives
    * us the ability to simulate network partitions without having to fuss with IPTables.
    */
   public JettySolrRunner createProxiedJetty(
