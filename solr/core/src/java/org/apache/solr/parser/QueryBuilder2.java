@@ -37,7 +37,6 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
@@ -638,7 +637,7 @@ public class QueryBuilder2 {
    * @return new TermQuery instance
    */
   protected Query newTermQuery(Term term, float boost) {
-    Query q = new TermQuery(term);
+    Query q = new TermQueryWithOffset(term);
     if (boost == DEFAULT_BOOST) {
       return q;
     }

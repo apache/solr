@@ -51,6 +51,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.HllOptions;
 import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -1297,7 +1298,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             sf.getValueSource().getClass() + " is vs type of: " + param,
             sf.getValueSource() instanceof QueryValueSource);
         QueryValueSource qvs = (QueryValueSource) sf.getValueSource();
-        assertEquals("query of :" + param, new TermQuery(new Term("foo_t", "cow")), qvs.getQuery());
+        assertEquals("query of :" + param, new TermQueryWithOffset(new Term("foo_t", "cow")), qvs.getQuery());
       }
     }
   }
