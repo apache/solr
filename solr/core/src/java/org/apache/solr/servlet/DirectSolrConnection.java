@@ -16,9 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -120,10 +118,7 @@ public class DirectSolrConnection {
       // Now write it out
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       if (responseWriter instanceof BinaryResponseWriter) {
-        BinaryResponseWriter brw = (BinaryResponseWriter) responseWriter;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        brw.write(baos, req, rsp);
-        return baos.toString(StandardCharsets.UTF_8);
+        return ((BinaryResponseWriter) responseWriter).serializeResponse(req, rsp);
       } else {
         StringWriter out = new StringWriter();
         responseWriter.write(out, req, rsp);
