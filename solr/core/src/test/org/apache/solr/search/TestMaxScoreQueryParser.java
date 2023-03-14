@@ -54,10 +54,10 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
   @Test
   public void testFallbackToLucene() {
     q = parse("foo");
-    assertEquals(new TermQueryWithOffset(new Term("text", "foo")), q);
+    assertEquals(new TermQueryWithOffset(new Term("text", "foo"), -1), q);
 
     q = parse("foo^3.0");
-    assertEquals(new BoostQuery(new TermQueryWithOffset(new Term("text", "foo")), 3f), q);
+    assertEquals(new BoostQuery(new TermQueryWithOffset(new Term("text", "foo"), -1), 3f), q);
 
     q = parse("price:[0 TO 10]");
     Class<? extends Query> expected = LegacyNumericRangeQuery.class;

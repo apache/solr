@@ -629,14 +629,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder2 {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(term.term, term.boost));
+          currPosnClauses.add(newTermQuery(term.term, term.boost, term.startOffset));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
-          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
+          builder.add(newTermQuery(term.term, term.boost, term.startOffset), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:

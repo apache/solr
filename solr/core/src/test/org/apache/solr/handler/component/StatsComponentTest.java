@@ -1298,7 +1298,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             sf.getValueSource().getClass() + " is vs type of: " + param,
             sf.getValueSource() instanceof QueryValueSource);
         QueryValueSource qvs = (QueryValueSource) sf.getValueSource();
-        assertEquals("query of :" + param, new TermQueryWithOffset(new Term("foo_t", "cow")), qvs.getQuery());
+        assertEquals("query of :" + param,
+          new TermQueryWithOffset(new Term("foo_t", "cow"), -1), qvs.getQuery());
       }
     }
   }

@@ -5,12 +5,16 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.TermQuery;
 
 public class TermQueryWithOffset extends TermQuery {
-  public TermQueryWithOffset(Term t) {
+
+  private int offset = -1;
+
+  public TermQueryWithOffset(Term t, int offset) {
     super(t);
+    this.offset = offset;
   }
 
-  public TermQueryWithOffset(Term t, TermStates states) {
-    super(t, states);
+  public int getOffset() {
+    return offset;
   }
 
   @Override
