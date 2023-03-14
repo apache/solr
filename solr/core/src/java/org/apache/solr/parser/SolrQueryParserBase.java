@@ -74,7 +74,7 @@ import org.apache.solr.search.SyntaxError;
  * This class is overridden by QueryParser in QueryParser.jj and acts to separate the majority of
  * the Java code from the .jj grammar file.
  */
-public abstract class SolrQueryParserBase extends QueryBuilder {
+public abstract class SolrQueryParserBase extends QueryBuilder2 {
 
   protected static final String REVERSE_WILDCARD_LOWER_BOUND =
       new String(new char[] {ReverseStringFilter.START_OF_HEADING_MARKER + 1});
