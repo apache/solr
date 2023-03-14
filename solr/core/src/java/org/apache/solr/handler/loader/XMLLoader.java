@@ -185,7 +185,7 @@ public class XMLLoader extends ContentStreamLoader {
             if (addCmd != null) {
               log.trace("adding doc...");
               addCmd.clear();
-              addCmd.solrDoc = readDoc(parser, false);
+              addCmd.solrDoc = readDoc(parser);
               processor.processAdd(addCmd);
             } else {
               throw new SolrException(
