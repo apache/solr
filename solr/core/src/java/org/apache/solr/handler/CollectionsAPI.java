@@ -98,7 +98,7 @@ public class CollectionsAPI {
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
 
-    @Command(name = V2_CREATE_ALIAS_CMD)
+    // TODO NOCOMMIT Delete this at some point when I'm not referencing it any more
     @SuppressWarnings("unchecked")
     public void createAlias(PayloadObj<CreateAliasPayload> obj) throws Exception {
       final CreateAliasPayload v2Body = obj.get();
