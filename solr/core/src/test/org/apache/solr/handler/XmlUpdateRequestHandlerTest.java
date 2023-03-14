@@ -68,7 +68,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     // null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument doc = loader.readDoc(parser, false);
+    SolrInputDocument doc = loader.readDoc(parser);
 
     // Read values
     assertEquals("12345", doc.getField("id").getValue());

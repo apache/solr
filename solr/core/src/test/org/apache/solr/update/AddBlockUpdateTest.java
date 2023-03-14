@@ -498,13 +498,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     // null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc(parser, false);
+    SolrInputDocument document1 = loader.readDoc(parser);
 
     XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
     parser2.next(); // read the START document...
     // null for the processor is all right here
     // XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc(parser2, false);
+    SolrInputDocument document2 = loader.readDoc(parser2);
 
     docs.add(document1);
     docs.add(document2);
@@ -570,13 +570,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     // null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc(parser, false);
+    SolrInputDocument document1 = loader.readDoc(parser);
 
     XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
     parser2.next(); // read the START document...
     // null for the processor is all right here
     // XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc(parser2, false);
+    SolrInputDocument document2 = loader.readDoc(parser2);
 
     assertFalse(document1.hasChildDocuments());
     assertEquals(
@@ -602,13 +602,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                 "A",
                 "test",
                 sdocs(
-                    sdoc(
-                        "id",
-                        "5",
-                        "child_s",
-                        "b",
-                        "grandChild",
-                        Collections.singleton(sdoc("id", "7", "child_s", "d"))),
+                    sdoc("id", "5", "child_s", "b", "grandChild", sdoc("id", "7", "child_s", "d")),
                     sdoc("id", "6", "child_s", "c")))
             .toString());
   }
@@ -658,13 +652,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     // null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc(parser, false);
+    SolrInputDocument document1 = loader.readDoc(parser);
 
     XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
     parser2.next(); // read the START document...
     // null for the processor is all right here
     // XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc(parser2, false);
+    SolrInputDocument document2 = loader.readDoc(parser2);
 
     assertFalse(document1.hasChildDocuments());
     assertEquals(
@@ -757,13 +751,13 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     parser.next(); // read the START document...
     // null for the processor is all right here
     XMLLoader loader = new XMLLoader();
-    SolrInputDocument document1 = loader.readDoc(parser, false);
+    SolrInputDocument document1 = loader.readDoc(parser);
 
     XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
     parser2.next(); // read the START document...
     // null for the processor is all right here
     // XMLLoader loader = new XMLLoader();
-    SolrInputDocument document2 = loader.readDoc(parser2, false);
+    SolrInputDocument document2 = loader.readDoc(parser2);
 
     assertFalse(document1.hasChildDocuments());
     assertEquals(

@@ -315,9 +315,13 @@ public class XMLLoader extends ContentStreamLoader {
    *
    * @since solr 1.3
    */
+  public SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
+    return readDoc(parser, false);
+  }
+
   @SuppressWarnings({"unchecked"})
-  public SolrInputDocument readDoc(
-      XMLStreamReader parser, boolean isSingleLabeledChildDocProcessing) throws XMLStreamException {
+  protected SolrInputDocument readDoc(XMLStreamReader parser, boolean forgiveNameAttr)
+      throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
     String attrName;
@@ -334,17 +338,15 @@ public class XMLLoader extends ContentStreamLoader {
         } else {
           log.debug(message);
         }
-      } else if (NAME.equals(attrName)) {
-        if (!isSingleLabeledChildDocProcessing) {
+      } else {
+        if (!(NAME.equals(attrName) && forgiveNameAttr)) {
           log.warn("XML element <doc> has invalid XML attr: {}", attrName);
         }
-      } else {
-        log.warn("XML element <doc> has invalid XML attr: {}", attrName);
       }
     }
 
     StringBuilder text = new StringBuilder();
-    String name = null;
+    String currentFieldName = null;
     boolean isNull = false;
     boolean isLabeledChildDoc = false;
     String update = null;
@@ -374,10 +376,10 @@ public class XMLLoader extends ContentStreamLoader {
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<>();
-              Map<String, Object> extendedValues = updateMap.get(name);
+              Map<String, Object> extendedValues = updateMap.get(currentFieldName);
               if (extendedValues == null) {
                 extendedValues = new HashMap<>(1);
-                updateMap.put(name, extendedValues);
+                updateMap.put(currentFieldName, extendedValues);
               }
               Object val = extendedValues.get(update);
               if (val == null) {
@@ -399,13 +401,13 @@ public class XMLLoader extends ContentStreamLoader {
             }
             if (!isLabeledChildDoc) {
               // only add data if this is not a childDoc, since it was added already
-              doc.addField(name, v);
+              doc.addField(currentFieldName, v);
             } else {
               // reset so next field is not treated as child doc
               isLabeledChildDoc = false;
             }
             // field is over
-            name = null;
+            currentFieldName = null;
           }
           break;
 
@@ -413,31 +415,21 @@ public class XMLLoader extends ContentStreamLoader {
           text.setLength(0);
           String localName = parser.getLocalName();
           if ("doc".equals(localName)) {
-            if (name != null) {
+            if (currentFieldName != null) { // enclosed in <field>
               // flag to prevent spaces after doc from being added
               isLabeledChildDoc = true;
-              if (!doc.containsKey(name)) {
-                doc.setField(name, Lists.newArrayList());
-              }
-              doc.addField(name, readDoc(parser, false));
-              break;
-            }
-            boolean isSingleLabeledChildDoc = false;
-            for (int i = 0; i < parser.getAttributeCount(); i++) {
-              attrName = parser.getAttributeLocalName(i);
-              attrVal = parser.getAttributeValue(i);
-              if (NAME.equals(attrName)) {
-                isSingleLabeledChildDoc = true;
-                doc.addField(attrVal, readDoc(parser, true));
-                break;
-              } else {
-                log.warn("XML element <doc> has invalid XML attr: {}", attrName);
+              doc.addField(currentFieldName, readDoc(parser));
+            } else {
+              final String subdocName = parser.getAttributeValue(null, NAME);
+              if (subdocName != null) { // <doc name=""> enclosed in <doc>
+                doc.addField(subdocName, readDoc(parser, true));
+              } else { // unnamed <doc> enclosed in <doc>
+                if (subDocs == null) {
+                  subDocs = Lists.newArrayList();
+                }
+                subDocs.add(readDoc(parser));
               }
             }
-            if (isSingleLabeledChildDoc) break;
-
-            if (subDocs == null) subDocs = Lists.newArrayList();
-            subDocs.add(readDoc(parser, false));
           } else {
             if (!"field".equals(localName)) {
               String msg = "XML element <doc> has invalid XML child element: " + localName;
@@ -450,7 +442,7 @@ public class XMLLoader extends ContentStreamLoader {
               attrName = parser.getAttributeLocalName(i);
               attrVal = parser.getAttributeValue(i);
               if (NAME.equals(attrName)) {
-                name = attrVal;
+                currentFieldName = attrVal;
               } else if ("boost".equals(attrName)) {
                 String message =
                     "Ignoring field boost: "
@@ -476,9 +468,9 @@ public class XMLLoader extends ContentStreamLoader {
 
     if (updateMap != null) {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
-        name = entry.getKey();
+        currentFieldName = entry.getKey();
         Map<String, Object> value = entry.getValue();
-        doc.addField(name, value);
+        doc.addField(currentFieldName, value);
       }
     }
 
