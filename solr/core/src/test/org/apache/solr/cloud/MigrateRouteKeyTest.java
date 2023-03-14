@@ -105,7 +105,6 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().setDefaultCollection("sourceCollection");
 
     final String splitKey = "a";
     final int BIT_SEP = 1;
@@ -129,7 +128,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    Indexer indexer = new Indexer(cluster.getSolrClient(), splitKey, 1, 30);
+    Indexer indexer = new Indexer(cluster.getSolrClient(), "sourceCollection", splitKey, 1, 30);
     indexer.start();
 
     DocCollection state = getCollectionState(targetCollection);
@@ -153,12 +152,12 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       splitKeyCount += indexer.getSplitKeyCount();
 
       try {
-        cluster.getSolrClient().deleteById("a/" + BIT_SEP + "!104");
+        cluster.getSolrClient().deleteById("sourceCollection", "a/" + BIT_SEP + "!104");
         splitKeyCount--;
       } catch (Exception e) {
         log.warn("Error deleting document a/{}!104", BIT_SEP, e);
       }
-      cluster.getSolrClient().commit();
+      cluster.getSolrClient().commit("sourceCollection");
       collectionClient.commit();
 
       solrQuery = new SolrQuery("*:*").setRows(1000);
@@ -190,14 +189,17 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     final int seconds;
     final CloudSolrClient cloudClient;
     final String splitKey;
+    private final String collection;
     int splitKeyCount = 0;
     final int bitSep;
 
-    public Indexer(CloudSolrClient cloudClient, String splitKey, int bitSep, int seconds) {
-      this.seconds = seconds;
+    public Indexer(
+        CloudSolrClient cloudClient, String collection, String splitKey, int bitSep, int seconds) {
       this.cloudClient = cloudClient;
+      this.collection = collection;
       this.splitKey = splitKey;
       this.bitSep = bitSep;
+      this.seconds = seconds;
     }
 
     @Override
@@ -210,7 +212,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         doc.addField("id", shardKey + (bitSep != -1 ? "/" + bitSep : "") + "!" + id);
         doc.addField("n_ti", id);
         try {
-          cloudClient.add(doc);
+          cloudClient.add(collection, doc);
           if (splitKey.equals(shardKey)) splitKeyCount++;
         } catch (Exception e) {
           log.error("Exception while adding document id: {}", doc.getField("id"), e);
