@@ -468,9 +468,7 @@ public class XMLLoader extends ContentStreamLoader {
 
     if (updateMap != null) {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
-        currentFieldName = entry.getKey();
-        Map<String, Object> value = entry.getValue();
-        doc.addField(currentFieldName, value);
+        doc.addField(entry.getKey(), entry.getValue());
       }
     }
 
