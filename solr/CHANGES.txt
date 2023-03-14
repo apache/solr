@@ -253,6 +253,8 @@ Bug Fixes
 * SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
   (Shawn Heisey)
 
+* SOLR-16653 : sub-shard remains inactive after split for NRT+PULL collection (Hitesh Khamesra, noble)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
