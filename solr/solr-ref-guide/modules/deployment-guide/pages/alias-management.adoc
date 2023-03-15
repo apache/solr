@@ -826,13 +826,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
-{
-  "delete-alias":{
-    "name":"testalias"
-  }
-}
-'
+curl -X DELETE http://localhost:8983/api/aliases/testalias
 ----
 ====
 --
@@ -847,7 +841,7 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 s|Required |Default: none
 |===
 +
-The name of the alias to delete.
+The name of the alias to delete.  Specified in the path of v2 requests, and as an explicit request parameter for v1 requests.
 
 `async`::
 +
