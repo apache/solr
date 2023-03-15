@@ -670,26 +670,36 @@ curl -X POST 'http://localhost:8983/admin/collections?action=ALIASPROP&name=tech
 curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
 {
   "properties": {"foo":"bar"}
-}
-'
+}'
 ----
 
 ====
 
 [example.tab-pane#v2aliasplevelprop]
 ====
-[.tab-label]*V2 API* Property level api
+[.tab-label]*V2 API* Update via property level api
 
 [source,bash]
 ----
 curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
 {
   "value": "baz"
-}
-'
+}'
 ----
 
 ====
+
+[example.tab-pane#v2deleteplevelprop]
+====
+[.tab-label]*V2 API* Delete via property level api
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json'
+----
+
+====
+
 --
 
 
@@ -739,6 +749,61 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 
 The output will simply be a responseHeader with details of the time it took to process the request.
 To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file or use the LISTALIASES api command.
+
+[[aliaspropread]]
+== Listing Alias Properties
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v2listallprops]
+====
+[.tab-label]*V2 API* Get all properties on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "properties": {
+    "foo": "bar"
+  }
+}
+----
+====
+
+[example.tab-pane#v2listsingleprop]
+====
+[.tab-label]*V2 API* Get single property value on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "value": "bar"
+}
+----
+====
+--
+
 
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias

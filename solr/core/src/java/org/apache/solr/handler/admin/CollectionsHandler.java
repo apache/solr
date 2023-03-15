@@ -1835,7 +1835,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         });
 
     /**
-     * Collects all prefixed properties in a new. The resulting keys have the prefix removed.
+     * Collects all prefixed properties in a new map. The resulting keys have the prefix removed.
      *
      * @param params The solr params from which to extract prefixed properties.
      * @param prefix The prefix to identify properties to be extracted

@@ -103,8 +103,12 @@ public class AliasPropertyAPI extends AdminAPIBase {
         instantiateJerseyResponse(GetAliasPropertyResponse.class);
     final Aliases aliases = readAliasesFromZk();
     if (aliases != null) {
-      response.property = propName;
-      response.value = aliases.getCollectionAliasProperties(aliasName).get(propName);
+      String value = aliases.getCollectionAliasProperties(aliasName).get(propName);
+      if (value != null) {
+        response.value = value;
+      } else {
+        new SolrException(SolrException.ErrorCode.NOT_FOUND, propName + " not found");
+      }
     }
 
     return response;
@@ -251,10 +255,6 @@ public class AliasPropertyAPI extends AdminAPIBase {
   }
 
   public static class GetAliasPropertyResponse extends SolrJerseyResponse {
-    @JsonProperty("property")
-    @Schema(description = "Property name.")
-    public String property;
-
     @JsonProperty("value")
     @Schema(description = "Property value.")
     public String value;
