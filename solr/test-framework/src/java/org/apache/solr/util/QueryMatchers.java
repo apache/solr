@@ -27,7 +27,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.solr.parser.TermQueryWithOffset;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
