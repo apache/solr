@@ -176,15 +176,14 @@ public class SplitShardTest extends SolrCloudTestCase {
     assertEquals("wrong range in s1_1", expected1, delta1);
   }
 
-  CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
+  private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, repFactor)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, repFactor);
 
-    CloudSolrClient client = cluster.getSolrClient();
-    return client;
+    return cluster.getSolrClient();
   }
 
   long getNumDocs(CloudSolrClient client, String collectionName) throws Exception {
@@ -198,7 +197,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         SolrClient replicaClient =
             getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
-        long numFound = 0;
+        long numFound;
         try {
           numFound =
               replicaClient
