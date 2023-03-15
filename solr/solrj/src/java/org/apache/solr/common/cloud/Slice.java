@@ -91,6 +91,15 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicasCopy.put(modified.getName(), modified);
     return new Slice(name, replicasCopy, propMap, collection);
   }
+
+  /** Make a copy with a map of modified Replicas */
+  public Slice copyWith(LinkedHashMap<String, Replica> modified) {
+    if (log.isDebugEnabled()) {
+      log.debug("modified replicas : {}", modified);
+    }
+    return new Slice(name, new LinkedHashMap<>(modified), propMap, collection);
+  }
+
   /** The slice's state. */
   public enum State {
 

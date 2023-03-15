@@ -233,7 +233,7 @@ public class ClusterState implements JSONWriter.Writable {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes, prsSupplier);
+    return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
   @Deprecated
@@ -271,7 +271,8 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
-    if (Boolean.parseBoolean(String.valueOf(objs.get(CollectionStateProps.PER_REPLICA_STATE)))) {
+    boolean isPrsEnabledCollection = Boolean.parseBoolean(String.valueOf(objs.get(CollectionStateProps.PER_REPLICA_STATE)));
+    if (isPrsEnabledCollection) {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
@@ -285,6 +286,7 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
+
       props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
     }
@@ -302,8 +304,17 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, prsSupplier);
+    PerReplicaStates perReplicaStates = isPrsEnabledCollection && prsSupplier != null ? prsSupplier.get() : null;
+    DocCollection docCollection = new DocCollection(name, slices, props, router, version, perReplicaStates != null ? perReplicaStates.cversion : null);
+    if (perReplicaStates != null) {
+      docCollection = docCollection.copyWith(perReplicaStates);
+    }
+
+    return docCollection;
   }
+
+
+
 
   @Override
   public void write(JSONWriter jsonWriter) {
