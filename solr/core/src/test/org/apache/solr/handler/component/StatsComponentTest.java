@@ -38,7 +38,6 @@ import java.util.TimeZone;
 import org.apache.commons.math3.util.Combinations;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
