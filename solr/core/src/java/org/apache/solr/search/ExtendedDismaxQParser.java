@@ -1212,10 +1212,14 @@ public class ExtendedDismaxQParser extends QParser {
         // if (lst.size()==1) return lst.get(0);
         if (makeDismax) {
 
+          // if possible, rewrite the field-centric queries as term-centric ones
+          // by regrouping clauses according to startOffset
           if (canRewriteUsingStartOffset(lst)) {
             return QueryUtils.build(rewriteUsingStartOffset(lst, a.tie), parser);
           }
 
+          // apply the original heuristic of regrouping clauses by position,
+          // if all queries have the same structure
           Query firstQuery = lst.get(0);
           if ((firstQuery instanceof BooleanQuery
                   || (firstQuery instanceof BoostQuery
@@ -1225,6 +1229,7 @@ public class ExtendedDismaxQParser extends QParser {
             return QueryUtils.build(q, parser);
           }
 
+          // give up on rewriting the field-centric queries as term-centric ones
           return new DisjunctionMaxQuery(lst, a.tie);
 
         } else {
@@ -1248,57 +1253,90 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
+    /**
+     * Determines whether a list of field-centric queries can be rewritten as term-centric ones
+     * by regrouping clauses according to startOffset. Requires taht each query is a
+     * BooleanQuery (or BoostQuery containing a BooleanQuery) with clauses of type
+     * SynonymQueryWithOffset or TermQueryWithOffset and that each clause has a non-null offset.
+     */
     private boolean canRewriteUsingStartOffset(List<Query> lst) {
       for (Query q : lst) {
-        if (!(q instanceof BooleanQuery)) {
+
+        Query unwrappedQuery = q;
+        if (q instanceof BoostQuery) {
+          unwrappedQuery = ((BoostQuery)q).getQuery();
+        }
+
+        if (!(unwrappedQuery instanceof BooleanQuery)) {
           return false;
         }
-        BooleanQuery bq = (BooleanQuery)q;
+        BooleanQuery bq = (BooleanQuery)unwrappedQuery;
 
         for (BooleanClause clause : bq.clauses()) {
-          if (clause.getOccur() != BooleanClause.Occur.SHOULD) {
-            return false; // TODO: handle other cases?
-          }
           Query innerQuery = clause.getQuery();
-          // TODO: handle BoostQuery
-          if (!((innerQuery instanceof SynonymQueryWithOffset) ||
-            (innerQuery instanceof TermQueryWithOffset))) {
+
+          if (!(((innerQuery instanceof TermQueryWithOffset)
+                  && ((TermQueryWithOffset)innerQuery).hasStartOffset()) ||
+               ((innerQuery instanceof SynonymQueryWithOffset)
+                  && ((SynonymQueryWithOffset)innerQuery).hasStartOffset()))) {
             return false;
           }
-          // TODO: check offset is not -1
         }
       }
       return true;
     }
 
+    /**
+     * Rewrites a list of field-centric queries as term-centric queries by creating
+     * a term-centric query for each unique startOffset found in the clauses inside the field-centric queries.
+     *
+     * Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery,
+     * and that each BooleanQuery has clauses of type TermQueryWithOffset or SynonymQueryWithOffset,
+     * as confirmed via canRewriteUsingStartOffset()
+     */
     private BooleanQuery.Builder rewriteUsingStartOffset(List<Query> lst, float tie) {
-      SortedMap<Integer, List<Query>> offsets = new TreeMap<>();
 
+      // create a map of startOffsets to the Queries that have a particular startOffset
+      SortedMap<Integer, List<Query>> offsets = new TreeMap<>();
       for (Query q : lst) {
-        BooleanQuery bq = (BooleanQuery)q;
+
+        Float boost = null;
+        BooleanQuery bq = null;
+        if (q instanceof BoostQuery) {
+          boost = ((BoostQuery)q).getBoost();
+          bq = (BooleanQuery) ((BoostQuery)q).getQuery();
+        } else {
+          bq = (BooleanQuery) q;
+        }
 
         for (BooleanClause bc : bq.clauses()) {
-          Query clause = bc.getQuery();
+          Query innerQuery = bc.getQuery();
           int offset;
 
-          if (clause instanceof SynonymQueryWithOffset) {
-            SynonymQueryWithOffset sq = (SynonymQueryWithOffset) clause;
+          if (innerQuery instanceof SynonymQueryWithOffset) {
+            SynonymQueryWithOffset sq = (SynonymQueryWithOffset) innerQuery;
             offset = sq.getStartOffset();
           } else {
-            TermQueryWithOffset tq = (TermQueryWithOffset) clause;
-            offset = tq.getOffset();
+            TermQueryWithOffset tq = (TermQueryWithOffset) innerQuery;
+            offset = tq.getStartOffset();
+          }
+
+          Query boostedInnerQuery = innerQuery;
+          if (boost != null) {
+            boostedInnerQuery = new BoostQuery(innerQuery, boost);
           }
 
           if (offsets.containsKey(offset)) {
-            offsets.get(offset).add(clause);
+            offsets.get(offset).add(boostedInnerQuery);
           } else {
             ArrayList<Query> myList = new ArrayList<>();
-            myList.add(clause);
+            myList.add(boostedInnerQuery);
             offsets.put(offset, myList);
           }
         }
       }
 
+      // create a boolean clause for each unique startOffset
       BooleanQuery.Builder q = new BooleanQuery.Builder();
       Collection<Integer> keys = offsets.keySet();
       for (Integer key : keys) {
@@ -1310,6 +1348,13 @@ public class ExtendedDismaxQParser extends QParser {
       return q;
     }
 
+    /**
+     * Rewrites a list of field-centric queries as term-centric queries by creating
+     * a term-centric query for each clause position in the field-centric queries.
+     *
+     * Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery
+     * and that all queries have the same structure as confirmed by allSameQueryStructure()
+     */
     private BooleanQuery.Builder rewriteUsingClausePosition(List<Query> lst, float tie) {
       Query firstQuery = lst.get(0);
       BooleanQuery.Builder q = new BooleanQuery.Builder();

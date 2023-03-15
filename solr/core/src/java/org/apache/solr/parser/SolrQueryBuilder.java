@@ -42,7 +42,21 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
 /**
- * Creates queries from the {@link Analyzer} chain.
+ * <p>Adapted from org.apache.lucene.util.QueryBuilder as of lucene version 9.4.
+ * Provisionally included here in the Solr codebase so that behavior can be modified without requiring changes
+ * that span two repositories.
+ *
+ * <p>The key change is that startOffsets are now stored on term queries and synonym queries that are created via
+ * this builder, including when they are nested inside larger queries.
+ * newTermQuery() now returns a TermQueryWithOffset instead of a TermQuery
+ * newSynonymQuery() now returns a SynonymQueryWithOffset instead of a SynonymQuery
+ *
+ * <p>Original source:
+ * https://github.com/apache/lucene/blob/branch_9_4/lucene/core/src/java/org/apache/lucene/util/QueryBuilder.java</p>
+ *
+ * <p>Original doc:</p>
+ *
+ * <p>Creates queries from the {@link Analyzer} chain.
  *
  * <p>Example usage:
  *
@@ -57,9 +71,8 @@ import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
  * analysis chain. Factory methods such as {@code newTermQuery} are provided so that the generated
  * queries can be customized.
  *
- * <p>adapted from https://github.com/apache/lucene/blob/branch_9_4/lucene/core/src/java/org/apache/lucene/util/QueryBuilder.java</p>
  */
-public class QueryBuilder2 {
+public class SolrQueryBuilder {
   protected Analyzer analyzer;
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
@@ -83,7 +96,7 @@ public class QueryBuilder2 {
   }
 
   /** Creates a new QueryBuilder using the given analyzer. */
-  public QueryBuilder2(Analyzer analyzer) {
+  public SolrQueryBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
   }
 

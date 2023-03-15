@@ -5,25 +5,26 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 
 /**
- * A query that treats multiple terms as synonyms.
- *
- * <p>For scoring purposes, this query tries to score the terms as if you had indexed them as one
- * term: it will match any of the terms but only invoke the similarity a single time, scoring the
- * sum of all term frequencies for the document.
+ * Wraps a SynonymQuery and stores an Integer startOffset taken from the
+ * Token that gave rise to the contained Terms.
  */
 public final class SynonymQueryWithOffset extends Query {
 
   private SynonymQuery query;
 
-  private int offset = -1;
+  private Integer startOffset = null;
 
   public SynonymQueryWithOffset(SynonymQuery query, int offset) {
     this.query = query;
-    this.offset = offset;
+    this.startOffset = offset;
   }
 
-  public int getStartOffset() {
-    return offset;
+  public Integer getStartOffset() {
+    return startOffset;
+  }
+
+  public boolean hasStartOffset() {
+    return startOffset != null;
   }
 
   @Override
@@ -36,6 +37,15 @@ public final class SynonymQueryWithOffset extends Query {
     query.visit(visitor);
   }
 
+  /**
+   * Equality is based on the contained SynonymQuery and ignores the startOffset.
+   * A SynonymQueryWithOffset will consider itself equal to the SynonymQuery that it contains.
+   *
+   * Note that this relationship is not currently symmetric. A SynonymQuery that
+   * will not consider itself equal to any SynonymQueryWithOffset
+   * because SynonymQuery.equals() requires class equality. This could be fixed by updating
+   * SynonymQuery.equals() inside the lucene codebase.
+   */
   @Override
   public boolean equals(Object obj) {
     return query.equals(obj);
