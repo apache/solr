@@ -16,6 +16,7 @@
  */
 package org.apache.solr.parser;
 
+import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -24,11 +25,9 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-
 /**
- * Wraps a SynonymQuery and stores an Integer startOffset taken from the
- * Token that gave rise to the contained Terms.
+ * Wraps a SynonymQuery and stores an Integer startOffset taken from the Token that gave rise to the
+ * contained Terms.
  */
 public final class SynonymQueryWithOffset extends Query {
 
@@ -60,13 +59,13 @@ public final class SynonymQueryWithOffset extends Query {
   }
 
   /**
-   * Equality is based on the contained SynonymQuery and ignores the startOffset.
-   * A SynonymQueryWithOffset will consider itself equal to the SynonymQuery that it contains.
+   * Equality is based on the contained SynonymQuery and ignores the startOffset. A
+   * SynonymQueryWithOffset will consider itself equal to the SynonymQuery that it contains.
    *
-   * Note that this relationship is not currently symmetric. A SynonymQuery that
-   * will not consider itself equal to any SynonymQueryWithOffset
-   * because SynonymQuery.equals() requires class equality. This could be fixed by updating
-   * SynonymQuery.equals() inside the lucene codebase.
+   * <p>Note that this relationship is not currently symmetric. A SynonymQuery that will not
+   * consider itself equal to any SynonymQueryWithOffset because SynonymQuery.equals() requires
+   * class equality. This could be fixed by updating SynonymQuery.equals() inside the lucene
+   * codebase.
    */
   @Override
   public boolean equals(Object obj) {
@@ -83,9 +82,8 @@ public final class SynonymQueryWithOffset extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return query.createWeight(searcher, scoreMode, boost);
   }
-
 }
-

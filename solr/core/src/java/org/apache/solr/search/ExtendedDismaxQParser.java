@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -1264,31 +1263,31 @@ public class ExtendedDismaxQParser extends QParser {
     }
 
     /**
-     * Determines whether a list of field-centric queries can be rewritten as term-centric ones
-     * by regrouping clauses according to startOffset. Requires taht each query is a
-     * BooleanQuery (or BoostQuery containing a BooleanQuery) with clauses of type
-     * SynonymQueryWithOffset or TermQueryWithOffset and that each clause has a non-null offset.
+     * Determines whether a list of field-centric queries can be rewritten as term-centric ones by
+     * regrouping clauses according to startOffset. Requires taht each query is a BooleanQuery (or
+     * BoostQuery containing a BooleanQuery) with clauses of type SynonymQueryWithOffset or
+     * TermQueryWithOffset and that each clause has a non-null offset.
      */
     private boolean canRewriteUsingStartOffset(List<Query> lst) {
       for (Query q : lst) {
 
         Query unwrappedQuery = q;
         if (q instanceof BoostQuery) {
-          unwrappedQuery = ((BoostQuery)q).getQuery();
+          unwrappedQuery = ((BoostQuery) q).getQuery();
         }
 
         if (!(unwrappedQuery instanceof BooleanQuery)) {
           return false;
         }
-        BooleanQuery bq = (BooleanQuery)unwrappedQuery;
+        BooleanQuery bq = (BooleanQuery) unwrappedQuery;
 
         for (BooleanClause clause : bq.clauses()) {
           Query innerQuery = clause.getQuery();
 
           if (!(((innerQuery instanceof TermQueryWithOffset)
-                  && ((TermQueryWithOffset)innerQuery).hasStartOffset()) ||
-               ((innerQuery instanceof SynonymQueryWithOffset)
-                  && ((SynonymQueryWithOffset)innerQuery).hasStartOffset()))) {
+                  && ((TermQueryWithOffset) innerQuery).hasStartOffset())
+              || ((innerQuery instanceof SynonymQueryWithOffset)
+                  && ((SynonymQueryWithOffset) innerQuery).hasStartOffset()))) {
             return false;
           }
         }
@@ -1297,12 +1296,12 @@ public class ExtendedDismaxQParser extends QParser {
     }
 
     /**
-     * Rewrites a list of field-centric queries as term-centric queries by creating
-     * a term-centric query for each unique startOffset found in the clauses inside the field-centric queries.
+     * Rewrites a list of field-centric queries as term-centric queries by creating a term-centric
+     * query for each unique startOffset found in the clauses inside the field-centric queries.
      *
-     * Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery,
-     * and that each BooleanQuery has clauses of type TermQueryWithOffset or SynonymQueryWithOffset,
-     * as confirmed via canRewriteUsingStartOffset()
+     * <p>Assumes the list contains only instance BooleanQuery or BoostQuery containing
+     * BooleanQuery, and that each BooleanQuery has clauses of type TermQueryWithOffset or
+     * SynonymQueryWithOffset, as confirmed via canRewriteUsingStartOffset()
      */
     private BooleanQuery.Builder rewriteUsingStartOffset(List<Query> lst, float tie) {
 
@@ -1313,8 +1312,8 @@ public class ExtendedDismaxQParser extends QParser {
         Float boost = null;
         BooleanQuery bq = null;
         if (q instanceof BoostQuery) {
-          boost = ((BoostQuery)q).getBoost();
-          bq = (BooleanQuery) ((BoostQuery)q).getQuery();
+          boost = ((BoostQuery) q).getBoost();
+          bq = (BooleanQuery) ((BoostQuery) q).getQuery();
         } else {
           bq = (BooleanQuery) q;
         }
@@ -1351,18 +1350,16 @@ public class ExtendedDismaxQParser extends QParser {
       Collection<Integer> keys = offsets.keySet();
       for (Integer key : keys) {
         List<Query> queries = offsets.get(key);
-        q.add(
-          newBooleanClause(
-            new DisjunctionMaxQuery(queries, tie), BooleanClause.Occur.SHOULD));
+        q.add(newBooleanClause(new DisjunctionMaxQuery(queries, tie), BooleanClause.Occur.SHOULD));
       }
       return q;
     }
 
     /**
-     * Rewrites a list of field-centric queries as term-centric queries by creating
-     * a term-centric query for each clause position in the field-centric queries.
+     * Rewrites a list of field-centric queries as term-centric queries by creating a term-centric
+     * query for each clause position in the field-centric queries.
      *
-     * Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery
+     * <p>Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery
      * and that all queries have the same structure as confirmed by allSameQueryStructure()
      */
     private BooleanQuery.Builder rewriteUsingClausePosition(List<Query> lst, float tie) {
@@ -1370,9 +1367,9 @@ public class ExtendedDismaxQParser extends QParser {
       BooleanQuery.Builder q = new BooleanQuery.Builder();
       List<Query> subs = new ArrayList<>(lst.size());
       BooleanQuery firstBooleanQuery =
-        firstQuery instanceof BoostQuery
-          ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
-          : (BooleanQuery) firstQuery;
+          firstQuery instanceof BoostQuery
+              ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
+              : (BooleanQuery) firstQuery;
       for (int c = 0; c < firstBooleanQuery.clauses().size(); ++c) {
         subs.clear();
         // Make a dismax query for each clause position in the boolean per-field queries.
@@ -1381,15 +1378,12 @@ public class ExtendedDismaxQParser extends QParser {
             BoostQuery boostQuery = (BoostQuery) lst.get(n);
             BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
             subs.add(
-              new BoostQuery(
-                booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+                new BoostQuery(booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
           } else {
             subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
           }
         }
-        q.add(
-          newBooleanClause(
-            new DisjunctionMaxQuery(subs, tie), BooleanClause.Occur.SHOULD));
+        q.add(newBooleanClause(new DisjunctionMaxQuery(subs, tie), BooleanClause.Occur.SHOULD));
       }
       return q;
     }

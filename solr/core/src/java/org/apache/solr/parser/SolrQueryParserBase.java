@@ -635,7 +635,8 @@ public abstract class SolrQueryParserBase extends SolrQueryBuilder {
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
-          builder.add(newTermQuery(term.term, term.boost, term.startOffset), BooleanClause.Occur.SHOULD);
+          builder.add(
+              newTermQuery(term.term, term.boost, term.startOffset), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:

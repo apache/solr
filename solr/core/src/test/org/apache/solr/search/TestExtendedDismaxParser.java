@@ -2525,16 +2525,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "debugQuery",
                 "true"));
     MatcherAssert.assertThat(
-      parsedquery,
-      anyOf(
-        containsString("((text_sw:oliv | title:olive))"),
-        containsString("((title:olive | text_sw:oliv))")));
+        parsedquery,
+        anyOf(
+            containsString("((text_sw:oliv | title:olive))"),
+            containsString("((title:olive | text_sw:oliv))")));
     MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
     MatcherAssert.assertThat(
-      parsedquery,
-      anyOf(
-        containsString("((text_sw:other | title:other))"),
-        containsString("((title:other | text_sw:other))")));
+        parsedquery,
+        anyOf(
+            containsString("((text_sw:other | title:other))"),
+            containsString("((title:other | text_sw:other))")));
 
     // When field's analysis produce different query structures, mm processing is always done on the
     // boolean query.
@@ -2584,16 +2584,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "debugQuery",
                 "true"));
     MatcherAssert.assertThat(
-      parsedquery,
-      anyOf(
-        containsString("((text_sw:oliv | title:olive))"),
-        containsString("((title:olive | text_sw:oliv))")));
+        parsedquery,
+        anyOf(
+            containsString("((text_sw:oliv | title:olive))"),
+            containsString("((title:olive | text_sw:oliv))")));
     MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
     MatcherAssert.assertThat(
-      parsedquery,
-      anyOf(
-        containsString("((text_sw:other | title:other))"),
-        containsString("((title:other | text_sw:other))")));
+        parsedquery,
+        anyOf(
+            containsString("((text_sw:other | title:other))"),
+            containsString("((title:other | text_sw:other))")));
     MatcherAssert.assertThat(parsedquery, containsString("))~3"));
 
     // When the *structure* of produced queries is the same in each field,
