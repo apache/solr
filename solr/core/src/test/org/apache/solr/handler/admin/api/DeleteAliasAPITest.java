@@ -17,28 +17,31 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 
+import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
+
+/**
+ * Unit tests for {@link DeleteAliasAPI}.
+ */
 public class DeleteAliasAPITest extends SolrTestCaseJ4 {
 
-    @Test
-    public void testConstructsValidRemoteMessage() {
-        Map<String, Object> props = DeleteAliasAPI.createRemoteMessage("aliasName", null).getProperties();
-        assertEquals(2, props.size());
-        assertEquals("deletealias", props.get(QUEUE_OPERATION));
-        assertEquals("aliasName", props.get(NAME));
+  @Test
+  public void testConstructsValidRemoteMessage() {
+    Map<String, Object> props =
+        DeleteAliasAPI.createRemoteMessage("aliasName", null).getProperties();
+    assertEquals(2, props.size());
+    assertEquals("deletealias", props.get(QUEUE_OPERATION));
+    assertEquals("aliasName", props.get(NAME));
 
-        props = DeleteAliasAPI.createRemoteMessage("aliasName", "asyncId").getProperties();
-        assertEquals(3, props.size());
-        assertEquals("deletealias", props.get(QUEUE_OPERATION));
-        assertEquals("aliasName", props.get(NAME));
-        assertEquals("asyncId", props.get(ASYNC));
-    }
+    props = DeleteAliasAPI.createRemoteMessage("aliasName", "asyncId").getProperties();
+    assertEquals(3, props.size());
+    assertEquals("deletealias", props.get(QUEUE_OPERATION));
+    assertEquals("aliasName", props.get(NAME));
+    assertEquals("asyncId", props.get(ASYNC));
+  }
 }
