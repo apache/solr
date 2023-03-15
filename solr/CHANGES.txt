@@ -42,14 +42,11 @@ Improvements
 * SOLR-16183: XML update allows <doc> <doc name="child"> ... </doc> </doc>.
   (Vinayak Hegde via Mikhail Khludnev)
 
-Bug Fixes
----------------------
-
-Improvements
----------------------
-
 * SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
   `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
+
+Bug Fixes
+---------------------
 
 ==================  9.2.0 ==================
 
