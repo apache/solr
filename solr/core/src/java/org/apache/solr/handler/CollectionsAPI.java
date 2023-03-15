@@ -39,7 +39,6 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
-import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -53,7 +52,6 @@ public class CollectionsAPI {
   public static final String V2_BACKUP_CMD = "backup-collection";
   public static final String V2_RESTORE_CMD = "restore-collection";
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
-  public static final String V2_DELETE_ALIAS_CMD = "delete-alias";
 
   private final CollectionsHandler collectionsHandler;
 
@@ -119,16 +117,6 @@ public class CollectionsAPI {
         convertV2CreateCollectionMapToV1ParamMap(createCollectionMap);
         flattenMapWithPrefix(createCollectionMap, v1Params, CREATE_COLLECTION_PREFIX);
       }
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
-    @Command(name = V2_DELETE_ALIAS_CMD)
-    public void deleteAlias(PayloadObj<DeleteAliasPayload> obj) throws Exception {
-      final DeleteAliasPayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-      v1Params.put(ACTION, CollectionAction.DELETEALIAS.toLower());
 
       collectionsHandler.handleRequestBody(
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
