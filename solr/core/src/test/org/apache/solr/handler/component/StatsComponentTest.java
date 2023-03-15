@@ -1299,7 +1299,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         QueryValueSource qvs = (QueryValueSource) sf.getValueSource();
         assertEquals(
             "query of :" + param,
-            new TermQueryWithOffset(new Term("foo_t", "cow"), -1),
+            new TermQueryWithOffset(new Term("foo_t", "cow"), null),
             qvs.getQuery());
       }
     }

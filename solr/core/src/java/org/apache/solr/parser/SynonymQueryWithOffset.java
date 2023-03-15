@@ -31,11 +31,11 @@ import org.apache.lucene.search.Weight;
  */
 public final class SynonymQueryWithOffset extends Query {
 
-  private SynonymQuery query;
+  private final SynonymQuery query;
 
-  private Integer startOffset = null;
+  private final Integer startOffset;
 
-  public SynonymQueryWithOffset(SynonymQuery query, int offset) {
+  public SynonymQueryWithOffset(SynonymQuery query, Integer offset) {
     this.query = query;
     this.startOffset = offset;
   }
@@ -77,6 +77,7 @@ public final class SynonymQueryWithOffset extends Query {
     return query.hashCode();
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return query.rewrite(reader);
   }

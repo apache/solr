@@ -25,9 +25,9 @@ import org.apache.lucene.search.TermQuery;
  */
 public class TermQueryWithOffset extends TermQuery {
 
-  private Integer startOffset = null;
+  private final Integer startOffset;
 
-  public TermQueryWithOffset(Term t, int startOffset) {
+  public TermQueryWithOffset(Term t, Integer startOffset) {
     super(t);
     this.startOffset = startOffset;
   }

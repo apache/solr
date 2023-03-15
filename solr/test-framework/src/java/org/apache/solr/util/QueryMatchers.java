@@ -81,7 +81,7 @@ public class QueryMatchers {
 
   public static Matcher<Query> termQuery(String field, String text) {
     // TODO Use a better matcher for more descriptive results?
-    return is(new TermQueryWithOffset(new Term(field, text), -1));
+    return is(new TermQueryWithOffset(new Term(field, text), null));
   }
 
   public static Matcher<Query> boosted(String field, String text, float boost) {
