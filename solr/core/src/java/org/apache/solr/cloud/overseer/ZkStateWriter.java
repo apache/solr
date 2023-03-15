@@ -313,7 +313,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       0,
-                      null);
+                      c.getPerReplicaStates());
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
