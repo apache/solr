@@ -162,7 +162,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("POSTing {}", xml.toAbsolutePath());
       }
-      cloudClient.request(new StreamingUpdateRequest("/update", xml, "application/xml"), testCollectionName);
+      cloudClient.request(
+          new StreamingUpdateRequest("/update", xml, "application/xml"), testCollectionName);
     }
     cloudClient.commit(testCollectionName);
 

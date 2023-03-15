@@ -63,7 +63,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
       docs.add(doc);
     }
 
-    cluster.getSolrClient().add(collection,docs);
+    cluster.getSolrClient().add(collection, docs);
     cluster.getSolrClient().commit(collection);
 
     DocCollection state = getCollectionState(collection);

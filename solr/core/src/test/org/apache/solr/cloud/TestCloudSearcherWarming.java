@@ -169,13 +169,13 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     ConfigRequest request = new ConfigRequest(addListenerCommand);
     solrClient.request(request, collectionName);
 
-    solrClient.add(collectionName,new SolrInputDocument("id", "1"));
+    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
     solrClient.commit(collectionName);
 
     AtomicInteger expectedDocs = new AtomicInteger(1);
     AtomicReference<String> failingCoreNodeName = new AtomicReference<>();
 
-    QueryResponse response = solrClient.query(collectionName,new SolrQuery("*:*"));
+    QueryResponse response = solrClient.query(collectionName, new SolrQuery("*:*"));
     assertEquals(1, response.getResults().getNumFound());
 
     // reset

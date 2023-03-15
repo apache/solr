@@ -216,7 +216,8 @@ public class SplitShardTest extends SolrCloudTestCase {
       totCount += lastReplicaCount;
     }
 
-    long cloudClientDocs = client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
+    long cloudClientDocs =
+        client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(
         "Sum of shard count should equal distrib query doc count", totCount, cloudClientDocs);
     return totCount;
@@ -374,7 +375,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     // Debugging tips: if this fails, it may be easier to debug by lowering the number of threads to
     // 1 and looping the test until you get another failure. You may need to further instrument
     // things like DistributedZkUpdateProcessor to display the cluster state for the collection,
-    // etc. Using more threads increases the chance of hitting a concurrency bug, but too many threads
+    // etc. Using more threads increases the chance of hitting a concurrency bug, but too many
+    // threads
     // can overwhelm single-threaded buffering replay after the low level index split and result in
     // subShard leaders that can't catch up and become active (a known issue that still needs to be
     // resolved.)
