@@ -140,7 +140,7 @@ public class Http2SolrClient extends SolrClient {
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
   /** The URL of the Solr server. */
-  private String serverBaseUrl;
+  private final String serverBaseUrl;
 
   private boolean closeClient;
   private ExecutorService executor;
@@ -159,6 +159,8 @@ public class Http2SolrClient extends SolrClient {
         serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
       }
       this.serverBaseUrl = serverBaseUrl;
+    } else {
+      this.serverBaseUrl = null;
     }
 
     if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
@@ -458,7 +460,8 @@ public class Http2SolrClient extends SolrClient {
                       assert ObjectReleaseTracker.track(is);
                       try {
                         NamedList<Object> body =
-                            processErrorsAndResponse(solrRequest, parser, response, is);
+                            processErrorsAndResponse(
+                                solrRequest, parser, response, is, req.getURI().toString());
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         asyncListener.onSuccess(body);
@@ -504,7 +507,7 @@ public class Http2SolrClient extends SolrClient {
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-      return processErrorsAndResponse(solrRequest, parser, response, is);
+      return processErrorsAndResponse(solrRequest, parser, response, is, req.getURI().toString());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       abortCause = e;
@@ -522,7 +525,7 @@ public class Http2SolrClient extends SolrClient {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
         throw new SolrServerException(
-            "IOException occurred when talking to server at: " + getBaseURL(), cause);
+            "IOException occurred when talking to server at: " + req.getURI(), cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
     } catch (SolrServerException | RuntimeException sse) {
@@ -536,7 +539,11 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private NamedList<Object> processErrorsAndResponse(
-      SolrRequest<?> solrRequest, ResponseParser parser, Response response, InputStream is)
+      SolrRequest<?> solrRequest,
+      ResponseParser parser,
+      Response response,
+      InputStream is,
+      String urlExceptionMessage)
       throws SolrServerException {
     String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
     String mimeType = null;
@@ -546,7 +553,7 @@ public class Http2SolrClient extends SolrClient {
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
     return processErrorsAndResponse(
-        response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest));
+        response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, Request req) {
@@ -778,7 +785,8 @@ public class Http2SolrClient extends SolrClient {
       InputStream is,
       String mimeType,
       String encoding,
-      final boolean isV2Api)
+      final boolean isV2Api,
+      String urlExceptionMessage)
       throws SolrServerException {
     boolean shouldClose = true;
     try {
@@ -794,13 +802,13 @@ public class Http2SolrClient extends SolrClient {
         case HttpStatus.MOVED_TEMPORARILY_302:
           if (!httpClient.isFollowRedirects()) {
             throw new SolrServerException(
-                "Server at " + getBaseURL() + " sent back a redirect (" + httpStatus + ").");
+                "Server at " + urlExceptionMessage + " sent back a redirect (" + httpStatus + ").");
           }
           break;
         default:
           if (processor == null || mimeType == null) {
             throw new RemoteSolrException(
-                serverBaseUrl,
+                urlExceptionMessage,
                 httpStatus,
                 "non ok status: " + httpStatus + ", message:" + response.getReason(),
                 null);
@@ -832,10 +840,10 @@ public class Http2SolrClient extends SolrClient {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
             is.transferTo(body);
             throw new RemoteSolrException(
-                serverBaseUrl, httpStatus, prefix + body.toString(exceptionEncoding), null);
+                urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
           } catch (IOException e) {
             throw new RemoteSolrException(
-                serverBaseUrl,
+                urlExceptionMessage,
                 httpStatus,
                 "Could not parse response with encoding " + exceptionEncoding,
                 e);
@@ -847,14 +855,14 @@ public class Http2SolrClient extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(), e);
+        throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
       }
 
       Object error = rsp == null ? null : rsp.get("error");
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
-        throw RemoteExecutionException.create(serverBaseUrl, rsp);
+        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
       }
       if (httpStatus != HttpStatus.OK_200 && !isV2Api) {
         NamedList<String> metadata = null;
@@ -892,7 +900,8 @@ public class Http2SolrClient extends SolrClient {
               .append(response.getRequest().getMethod());
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
-        RemoteSolrException rss = new RemoteSolrException(serverBaseUrl, httpStatus, reason, null);
+        RemoteSolrException rss =
+            new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
