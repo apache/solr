@@ -102,17 +102,15 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
     final String foo = "{\n"
             + "    \"name\": \"" + aliasName + "\",\n"
-            + "    \"router\" : {\n"
-            + "      \"name\": \"time\",\n"
-            + "      \"properties\": {\n"
-            + "        \"type\": \"time\",\n"
-            + "        \"field\": \"evt_dt\",\n"
-            + "        \"start\":\"NOW/DAY\",\n"
+            + "    \"routers\" : [{\n"
+            + "      \"type\": \"time\",\n"
+            + "      \"field\": \"evt_dt\",\n"
+            + "      \"start\":\"NOW/DAY\",\n"
             + // small window for test failure once a day.
-            "          \"interval\":\"+2HOUR\",\n"
-            + "        \"maxFutureMs\":\"14400000\"\n"
+            "        \"interval\":\"+2HOUR\",\n"
+            + "      \"maxFutureMs\":\"14400000\"\n"
             + "      }\n"
-            + "    },\n"
+            + "    }],\n"
             +
             // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
             // since intended for distributed search

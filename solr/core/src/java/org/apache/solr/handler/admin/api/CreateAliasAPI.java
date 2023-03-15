@@ -20,15 +20,26 @@ package org.apache.solr.handler.admin.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -40,17 +51,24 @@ import javax.ws.rs.core.MediaType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import static org.apache.lucene.util.automaton.RegExp.INTERVAL;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.DIMENSIONAL;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
@@ -61,6 +79,8 @@ import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STA
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.START;
 import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
+import static org.apache.solr.common.params.CoreAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 @Path("/aliases")
@@ -73,15 +93,108 @@ public class CreateAliasAPI extends AdminAPIBase {
     @POST
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
     @PermissionName(COLL_EDIT_PERM)
-    public SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) {
-        final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    public SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception {
+        final SubResponseAccumulatingJerseyResponse response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+        recordCollectionForLogAndTracing(null, solrQueryRequest);
+        validateRequestBody(requestBody);
+
+        ZkNodeProps remoteMessage;
+        // Validation ensures that the request has either collections or a router but not both.
+        if (CollectionUtils.isNotEmpty(requestBody.collections)) {
+            remoteMessage = createRemoteMessageForTraditionalAlias(requestBody);
+        } else { // Creating a routed alias
+            assert CollectionUtils.isNotEmpty(requestBody.routers);
+            final Aliases aliases = coreContainer.getAliases();
+            if (aliases.hasAlias(requestBody.name) && !aliases.isRoutedAlias(requestBody.name)) {
+                throw new SolrException(
+                        BAD_REQUEST,
+                        "Cannot add routing parameters to existing non-routed Alias: " + requestBody.name);
+            }
+
+            remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
+
+            // TODO Create the placeholder collection
+        }
+
+        final SolrResponse remoteResponse =
+                CollectionsHandler.submitCollectionApiCommand(
+                        coreContainer,
+                        coreContainer.getDistributedCollectionCommandRunner(),
+                        remoteMessage,
+                        CollectionParams.CollectionAction.CREATEALIAS,
+                        DEFAULT_COLLECTION_OP_TIMEOUT);
+        if (remoteResponse.getException() != null) {
+            throw remoteResponse.getException();
+        }
+
+        if (requestBody.async != null) {
+            response.requestId = requestBody.async;
+        }
         return response;
+    }
+
+    public static ZkNodeProps createRemoteMessageForTraditionalAlias(CreateAliasRequestBody requestBody) {
+        final Map<String, Object> remoteMessage = new HashMap<>();
+
+        remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
+        remoteMessage.put(NAME, requestBody.name);
+        remoteMessage.put("collections", String.join(",", requestBody.collections));
+        remoteMessage.put(ASYNC, requestBody.async);
+
+        return new ZkNodeProps(remoteMessage);
+    }
+
+    public static ZkNodeProps createRemoteMessageForRoutedAlias(CreateAliasRequestBody requestBody) {
+        final Map<String, Object> remoteMessage = new HashMap<>();
+        remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
+        remoteMessage.put(NAME, requestBody.name);
+        remoteMessage.put(ASYNC, requestBody.async);
+
+        if (requestBody.routers.size() > 1) { // Multi-dimensional alias
+
+        } else if (requestBody.routers.size() == 1) { // Single dimensional alias
+            requestBody.routers.get(0).addRemoteMessageProperties(remoteMessage);
+        }
+        return new ZkNodeProps(remoteMessage);
+    }
+
+    public static void validateRequestBody(CreateAliasRequestBody requestBody) {
+        if (requestBody == null) {
+            return;
+        }
+
+        SolrIdentifierValidator.validateAliasName(requestBody.name);
+
+        if (CollectionUtils.isEmpty(requestBody.collections) && CollectionUtils.isEmpty(requestBody.routers)) {
+            throw new SolrException(BAD_REQUEST, "Alias creation requires either a list of either collections (for creating a traditional alias) or routers (for creating a routed alias)");
+        }
+
+        if (CollectionUtils.isNotEmpty(requestBody.routers)) {
+            requestBody.routers.forEach(r -> r.validate());
+            if (CollectionUtils.isNotEmpty(requestBody.collections)) {
+                throw new SolrException(
+                        BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
+            }
+
+            final CreateCollectionRequestBody createCollReqBody = requestBody.collCreationParameters;
+            if (createCollReqBody != null) {
+                if (createCollReqBody.name != null) {
+                    throw new SolrException(
+                            BAD_REQUEST,
+                            "routed aliases calculate names for their "
+                                    + "dependent collections, you cannot specify the name.");
+                }
+                if (createCollReqBody.config == null) {
+                    throw new SolrException(
+                            SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
+                }
+            }
+        }
     }
 
     public static CreateAliasRequestBody createFromSolrParams(SolrParams params) {
         final CreateAliasRequestBody createBody = new CreateAliasRequestBody();
         createBody.name = params.required().get(NAME);
-        SolrIdentifierValidator.validateAliasName(createBody.name);
 
         final String collections = params.get("collections");
         createBody.collections = StringUtils.isEmpty(collections) ? new ArrayList<>() : Arrays.asList(StringUtils.split(collections, ','));
@@ -96,24 +209,43 @@ public class CreateAliasAPI extends AdminAPIBase {
         createBody.routers = new ArrayList<>();
         // TODO NOCOMMIT constants for these values
         if (typeStr.startsWith("Dimensional[")) {
+            final String commaSeparatedDimensions = typeStr.substring("Dimensional[".length(), typeStr.length() - 1);
+            final String[] dimensions = commaSeparatedDimensions.split(",");
+            if (dimensions.length > 2) {
+                throw new SolrException(
+                        BAD_REQUEST,
+                        "More than 2 dimensions is not supported yet. "
+                                + "Please monitor SOLR-13628 for progress");
+            }
 
-        } else if (typeStr.startsWith("time")) {
-            createBody.routers.add(TimeRoutedAliasProperties.createFromSolrParams(params, "router."));
-        } else if (typeStr.startsWith("category")) {
-            createBody.routers.add(CategoryRoutedAliasProperties.createFromSolrParams(params, "router."));
+            for (int i = 0; i < dimensions.length; i++) {
+                createBody.routers.add(createFromSolrParams(dimensions[i], params, "router." + i + "."));
+            }
+        } else {
+            createBody.routers.add(createFromSolrParams(typeStr, params, "router."));
+        }
+
+        final SolrParams createCollectionParams = getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
+        buildRequestBodyFromParams(createCollectionParams);
+
+        return createBody;
+    }
+
+    public static RoutedAliasProperties createFromSolrParams(String type, SolrParams params, String propertyPrefix) {
+        if (type.startsWith("time")) {
+            return TimeRoutedAliasProperties.createFromSolrParams(params, "router.");
+        } else if (type.startsWith("category")) {
+            return CategoryRoutedAliasProperties.createFromSolrParams(params, "router.");
         } else {
             throw new SolrException(
                     BAD_REQUEST,
                     "Router name: "
-                            + typeStr
+                            + type
                             + " is not in supported types, "
                             + Arrays.asList(RoutedAliasTypes.values()));
         }
-
-        // TODO Copy over any create-collection properties here as well.
-
-        return createBody;
     }
+
 
     public static class CreateAliasRequestBody implements JacksonReflectMapWriter {
         @JsonProperty(required = true)
@@ -144,6 +276,17 @@ public class CreateAliasAPI extends AdminAPIBase {
     public static abstract class RoutedAliasProperties implements JacksonReflectMapWriter {
         @JsonProperty(required = true)
         public String field;
+
+        public abstract void validate();
+
+        public abstract void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix);
+
+        protected void ensureRequiredFieldPresent(Object val, String name) {
+            if (val == null) {
+                throw new SolrException(
+                        SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: " + name);
+            }
+        }
     }
 
     public static class TimeRoutedAliasProperties extends RoutedAliasProperties {
@@ -167,6 +310,23 @@ public class CreateAliasAPI extends AdminAPIBase {
         @JsonProperty("autoDeleteAge")
         public String autoDeleteAge;
 
+        @Override
+        public void validate() {
+            ensureRequiredFieldPresent(field, "'field' on time routed alias");
+            ensureRequiredFieldPresent(start, "'start' on time routed alias");
+            ensureRequiredFieldPresent(interval, "'interval' on time routed alias");
+        }
+
+        @Override
+        public void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix) {
+            remoteMessage.put(prefix + CoreAdminParams.NAME, "time");
+            remoteMessage.put(prefix + "field", field);
+            remoteMessage.put(prefix + "start", start);
+            remoteMessage.put(prefix + "interval", interval);
+
+            // TODO Add remaining fields if not null
+        }
+
         public static TimeRoutedAliasProperties createFromSolrParams(SolrParams params, String propertyPrefix) {
             final TimeRoutedAliasProperties timeRoutedProperties = new TimeRoutedAliasProperties();
             timeRoutedProperties.field = params.required().get(propertyPrefix + "field");
@@ -188,6 +348,10 @@ public class CreateAliasAPI extends AdminAPIBase {
 
         @JsonProperty("mustMatch")
         public String mustMatch;
+
+        public void validate() {
+            ensureRequiredFieldPresent(field, "'field' on category routed alias");
+        }
 
         public static CategoryRoutedAliasProperties createFromSolrParams(SolrParams params, String propertyPrefix) {
             final CategoryRoutedAliasProperties categoryRoutedProperties = new CategoryRoutedAliasProperties();
@@ -249,6 +413,67 @@ public class CreateAliasAPI extends AdminAPIBase {
 
         @JsonProperty("router")
         public CollectionRouterProperties router;
+    }
+
+    public static CreateCollectionRequestBody buildRequestBodyFromParams(SolrParams params) {
+        final CreateCollectionRequestBody requestBody = new CreateCollectionRequestBody();
+        requestBody.replicationFactor = params.getInt(ZkStateReader.REPLICATION_FACTOR);
+        requestBody.config = params.get(COLL_CONF);
+        requestBody.numShards = params.getInt(NUM_SLICES);
+        if (params.get(CREATE_NODE_SET) != null) {
+            requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
+        }
+        requestBody.shuffleNodes = params.getBool(CREATE_NODE_SET_SHUFFLE);
+        requestBody.shards = params.get(SHARDS_PROP);
+        requestBody.tlogReplicas = params.getInt(ZkStateReader.TLOG_REPLICAS);
+        requestBody.pullReplicas = params.getInt(ZkStateReader.PULL_REPLICAS);
+        requestBody.nrtReplicas = params.getInt(ZkStateReader.NRT_REPLICAS);
+        requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+        requestBody.perReplicaState = params.getBool(PER_REPLICA_STATE);
+        requestBody.alias = params.get(ALIAS);
+        requestBody.async = params.get(ASYNC);
+        requestBody.properties = copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
+        if (params.get("router.name") != null || params.get("router.field") != null) {
+            final CollectionRouterProperties routerProperties = new CollectionRouterProperties();
+            routerProperties.name = params.get("router.name");
+            routerProperties.field = params.get("router.field");
+            requestBody.router = routerProperties;
+        }
+
+        return requestBody;
+    }
+
+    /**
+     * Returns a SolrParams object containing only those values whose keys match a specified prefix (with that prefix removed)
+     *
+     * Query-parameter based v1 APIs often mimic hierarchical parameters by using a prefix in
+     * the query-param key to group similar parameters together.  This function can be used to
+     * identify all of the parameters "nested" in this way, with their prefix removed.
+     */
+    public static SolrParams getHierarchicalParametersByPrefix(SolrParams paramSource, String prefix) {
+        final ModifiableSolrParams filteredParams = new ModifiableSolrParams();
+        paramSource.stream()
+                .filter(e -> e.getKey().startsWith(prefix))
+                .forEach(e -> filteredParams.add(e.getKey().substring(prefix.length()), e.getValue()));
+        return filteredParams;
+    }
+
+    public static Map<String, String> copyPrefixedPropertiesWithoutPrefix(
+            SolrParams params, Map<String, String> props, String prefix) {
+        Iterator<String> iter = params.getParameterNamesIterator();
+        while (iter.hasNext()) {
+            String param = iter.next();
+            if (param.startsWith(prefix)) {
+                final String[] values = params.getParams(param);
+                if (values.length != 1) {
+                    throw new SolrException(
+                            BAD_REQUEST, "Only one value can be present for parameter " + param);
+                }
+                final String modifiedKey = param.replaceFirst(prefix, "");
+                props.put(modifiedKey, values[0]);
+            }
+        }
+        return props;
     }
 
     public static class CollectionRouterProperties implements JacksonReflectMapWriter {

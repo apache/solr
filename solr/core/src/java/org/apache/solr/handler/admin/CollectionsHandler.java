@@ -755,66 +755,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(
         CREATEALIAS,
         (req, rsp, h) -> {
+          final CreateAliasAPI.CreateAliasRequestBody reqBody = CreateAliasAPI.createFromSolrParams(req.getParams());
+          CreateAliasAPI.validateRequestBody(reqBody);
           String alias = req.getParams().get(NAME);
-          SolrIdentifierValidator.validateAliasName(alias);
-          String collections = req.getParams().get("collections");
-          RoutedAlias routedAlias = null;
-          Exception ex = null;
-          HashMap<String, Object> possiblyModifiedParams = new HashMap<>();
-          try {
-            // note that RA specific validation occurs here.
-            req.getParams().toMap(possiblyModifiedParams);
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            // This is awful because RoutedAlias lies about what types it wants
-            Map<String, String> temp = (Map<String, String>) (Map) possiblyModifiedParams;
-            routedAlias = RoutedAlias.fromProps(alias, temp);
-          } catch (SolrException e) {
-            // we'll throw this later if we are in fact creating a routed alias.
-            ex = e;
-          }
-          ModifiableSolrParams finalParams = new ModifiableSolrParams();
-          for (Map.Entry<String, Object> entry : possiblyModifiedParams.entrySet()) {
-            if (entry.getValue().getClass().isArray()) {
-              // v2 api hits this case
-              for (Object o : (Object[]) entry.getValue()) {
-                finalParams.add(entry.getKey(), o.toString());
-              }
-            } else {
-              finalParams.add(entry.getKey(), entry.getValue().toString());
-            }
-          }
-
-          if (collections != null) {
-            if (routedAlias != null) {
-              throw new SolrException(
-                  BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
-            } else {
-              //////////////////////////////////////
-              // Regular alias creation indicated //
-              //////////////////////////////////////
-              return copy(finalParams.required(), null, NAME, "collections");
-            }
-          } else {
-            if (routedAlias != null) {
-              CoreContainer coreContainer1 = h.getCoreContainer();
-              Aliases aliases = coreContainer1.getAliases();
-              String aliasName = routedAlias.getAliasName();
-              if (aliases.hasAlias(aliasName) && !aliases.isRoutedAlias(aliasName)) {
-                throw new SolrException(
-                    BAD_REQUEST,
-                    "Cannot add routing parameters to existing non-routed Alias: " + aliasName);
-              }
-            }
-          }
 
           /////////////////////////////////////////////////
           // We are creating a routed alias from here on //
           /////////////////////////////////////////////////
-
-          // If our prior creation attempt had issues expose them now.
-          if (ex != null) {
-            throw ex;
-          }
 
           // Now filter out just the parameters we care about from the request
           assert routedAlias != null;
