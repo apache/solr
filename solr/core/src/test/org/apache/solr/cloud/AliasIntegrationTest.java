@@ -304,6 +304,18 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
                 + "&property.bar=bam");
     assertSuccess(get);
     checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
+
+    HttpGet remove =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=ALIASPROP"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&property.foo="
+                + "&property.bar=bar");
+    assertSuccess(remove);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bar");
   }
 
   @Test
@@ -324,17 +336,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.process(cluster.getSolrClient());
     checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
 
-    // TODO is this a bug? should "bar" be null after the following
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("bar", null);
     setAliasProperty.process(cluster.getSolrClient());
-    checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
+    checkFooAndBarMeta(aliasName, zkStateReader, null, null);
 
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     // whitespace value
     setAliasProperty.addProperty("foo", " ");
     setAliasProperty.process(cluster.getSolrClient());
-    checkFooAndBarMeta(aliasName, zkStateReader, " ", "bam");
+    checkFooAndBarMeta(aliasName, zkStateReader, " ", null);
   }
 
   @Test
