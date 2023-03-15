@@ -98,6 +98,7 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
     assert isTimeoutEnabled();
     return new QueryTimeout() {
       final long timeoutAt = getTimeoutAtNs();
+
       @Override
       public boolean shouldExit() {
         return timeoutAt - nanoTime() < 0L;
