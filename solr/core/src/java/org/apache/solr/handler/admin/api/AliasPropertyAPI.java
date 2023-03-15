@@ -81,6 +81,8 @@ public class AliasPropertyAPI extends AdminAPIBase {
     final Aliases aliases = readAliasesFromZk();
     if (aliases != null) {
       response.properties = aliases.getCollectionAliasProperties(aliasName);
+    } else {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, aliasName + " not found");
     }
 
     return response;
@@ -107,7 +109,7 @@ public class AliasPropertyAPI extends AdminAPIBase {
       if (value != null) {
         response.value = value;
       } else {
-        new SolrException(SolrException.ErrorCode.NOT_FOUND, propName + " not found");
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, propName + " not found");
       }
     }
 
