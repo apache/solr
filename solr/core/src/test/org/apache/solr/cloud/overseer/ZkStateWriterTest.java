@@ -183,9 +183,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     new HashMap<>(),
                     prsProps,
                     DocRouter.DEFAULT,
-                    0,
-                    new PerReplicaStatesFetcher.LazyPrsSupplier(
-                        zkClient, DocCollection.getCollectionPath("c1"))));
+                    0));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 
@@ -248,17 +246,17 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             new ZkWriteCommand(
                 "c1",
                 new DocCollection(
-                    "c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
+                    "c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
         ZkWriteCommand c2 =
             new ZkWriteCommand(
                 "c2",
                 new DocCollection(
-                    "c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
+                    "c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
         ZkWriteCommand c3 =
             new ZkWriteCommand(
                 "c3",
                 new DocCollection(
-                    "c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
+                    "c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);
         ZkWriteCommand prs1 =
@@ -269,9 +267,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     new HashMap<>(),
                     prsProps,
                     DocRouter.DEFAULT,
-                    0,
-                    new PerReplicaStatesFetcher.LazyPrsSupplier(
-                        zkClient, DocCollection.getCollectionPath("prs1"))));
+                    0));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 

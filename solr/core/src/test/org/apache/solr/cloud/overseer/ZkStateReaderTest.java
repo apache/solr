@@ -290,22 +290,22 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         "Timeout on waiting for c1 updated to have PRS state r1",
         () -> {
           DocCollection c = reader.getCollection("c1");
-          return c.getPerReplicaStates() != null
-              && c.getPerReplicaStates().get("r1") != null
-              && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
+          return c.getReplica("r1") != null
+              && c.getReplica("r1").getState() == Replica.State.DOWN;
         });
 
     ref = reader.getClusterState().getCollectionRef("c1");
     assertEquals(0, ref.get().getZNodeVersion()); // no change in Znode version
     assertEquals(3, ref.get().getChildNodesVersion()); // but child version should be 1 now
 
-    prs = ref.get().getPerReplicaStates();
+    prs = PerReplicaStatesFetcher.fetch(
+                    collection.getZNode(), fixture.zkClient, collection.getPerReplicaStates());
     PerReplicaStatesOps.flipState("r1", Replica.State.ACTIVE, prs)
         .persist(collection.getZNode(), fixture.zkClient);
     timeOut.waitFor(
         "Timeout on waiting for c1 updated to have PRS state r1 marked as DOWN",
         () ->
-            reader.getCollection("c1").getPerReplicaStates().get("r1").state
+            reader.getCollection("c1").getReplica("r1").getState()
                 == Replica.State.ACTIVE);
 
     ref = reader.getClusterState().getCollectionRef("c1");
@@ -349,9 +349,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         "Timeout on waiting for c1 updated to have PRS state r1",
         () -> {
           DocCollection c = reader.getCollection("c1");
-          return c.getPerReplicaStates() != null
-              && c.getPerReplicaStates().get("r1") != null
-              && c.getPerReplicaStates().get("r1").state == Replica.State.DOWN;
+          return c.getReplica("r1") != null
+              && c.getReplica("r1").getState() == Replica.State.DOWN;
         });
 
     ref = reader.getClusterState().getCollectionRef("c1");

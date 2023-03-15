@@ -691,7 +691,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                       props.getProperties(),
                       DocRouter.DEFAULT,
                       0,
-                      distribStateManagerMock.getPrsSupplier(collName))));
+                      distribStateManagerMock.getPrsSupplier(collName).get())));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);

@@ -189,10 +189,10 @@ public class ClusterStatus {
       }
       String configName = clusterStateCollection.getConfigName();
       collectionStatus.put("configName", configName);
-      if (message.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
-        PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
-        collectionStatus.put("PRS", prs);
-      }
+//      if (message.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+//        PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
+//        collectionStatus.put("PRS", prs);
+//      } //TODO
       collectionProps.add(name, collectionStatus);
     }
 
