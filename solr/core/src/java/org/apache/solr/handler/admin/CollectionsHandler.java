@@ -209,6 +209,7 @@ import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
@@ -855,7 +856,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return result;
         }),
 
-    DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
+    DELETEALIAS_OP(
+        DELETEALIAS,
+        (req, rsp, h) -> {
+          final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse response =
+              deleteAliasAPI.deleteAlias(
+                  req.getParams().required().get(NAME), req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
+        }),
 
     /**
      * Change properties for an alias (use CREATEALIAS_OP to change the actual value of the alias)
@@ -2076,6 +2086,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        DeleteAliasAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
         ListCollectionsAPI.class,

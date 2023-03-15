@@ -19,6 +19,9 @@ Improvements
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
+* SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
+  `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
