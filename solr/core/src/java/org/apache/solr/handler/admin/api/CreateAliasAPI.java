@@ -20,6 +20,11 @@ package org.apache.solr.handler.admin.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
@@ -33,12 +38,18 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.lucene.util.automaton.RegExp.INTERVAL;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.DIMENSIONAL;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
@@ -48,6 +59,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.START;
 import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -66,6 +78,43 @@ public class CreateAliasAPI extends AdminAPIBase {
         return response;
     }
 
+    public static CreateAliasRequestBody createFromSolrParams(SolrParams params) {
+        final CreateAliasRequestBody createBody = new CreateAliasRequestBody();
+        createBody.name = params.required().get(NAME);
+        SolrIdentifierValidator.validateAliasName(createBody.name);
+
+        final String collections = params.get("collections");
+        createBody.collections = StringUtils.isEmpty(collections) ? new ArrayList<>() : Arrays.asList(StringUtils.split(collections, ','));
+        createBody.async = params.get(ASYNC);
+
+        // Handle routed-alias properties
+        final String typeStr = params.get(ROUTER_TYPE_NAME);
+        if (typeStr == null) {
+            return createBody; // non-routed aliases are being created
+        }
+
+        createBody.routers = new ArrayList<>();
+        // TODO NOCOMMIT constants for these values
+        if (typeStr.startsWith("Dimensional[")) {
+
+        } else if (typeStr.startsWith("time")) {
+            createBody.routers.add(TimeRoutedAliasProperties.createFromSolrParams(params, "router."));
+        } else if (typeStr.startsWith("category")) {
+            createBody.routers.add(CategoryRoutedAliasProperties.createFromSolrParams(params, "router."));
+        } else {
+            throw new SolrException(
+                    BAD_REQUEST,
+                    "Router name: "
+                            + typeStr
+                            + " is not in supported types, "
+                            + Arrays.asList(RoutedAliasTypes.values()));
+        }
+
+        // TODO Copy over any create-collection properties here as well.
+
+        return createBody;
+    }
+
     public static class CreateAliasRequestBody implements JacksonReflectMapWriter {
         @JsonProperty(required = true)
         public String name;
@@ -77,24 +126,11 @@ public class CreateAliasAPI extends AdminAPIBase {
         @JsonProperty(ASYNC)
         public String async;
 
-        @JsonProperty("router")
-        public AliasRouterInfo router;
+        @JsonProperty("routers")
+        public List<RoutedAliasProperties> routers;
 
         @JsonProperty("create-collection")
         public CreateCollectionRequestBody collCreationParameters;
-    }
-
-    public static class AliasRouterInfo implements JacksonReflectMapWriter {
-        @JsonProperty(NAME)
-        public String name;
-
-        // Used for non-dimensional aliases
-        @JsonProperty("properties")
-        public RoutedAliasProperties properties;
-
-        // Used for dimensional aliases - mutually exclusive with 'properties' above
-        @JsonProperty("routerList")
-        public List<RoutedAliasProperties> routerList;
     }
 
     @JsonTypeInfo(
@@ -105,21 +141,21 @@ public class CreateAliasAPI extends AdminAPIBase {
             @JsonSubTypes.Type(value = TimeRoutedAliasProperties.class, name = "time"),
             @JsonSubTypes.Type(value = CategoryRoutedAliasProperties.class, name = "category")
     })
-    public static class RoutedAliasProperties implements JacksonReflectMapWriter {
-        @JsonProperty("field")
+    public static abstract class RoutedAliasProperties implements JacksonReflectMapWriter {
+        @JsonProperty(required = true)
         public String field;
     }
 
     public static class TimeRoutedAliasProperties extends RoutedAliasProperties {
         // Expected to be a date/time in ISO format, or 'NOW'
-        @JsonProperty("start")
+        @JsonProperty(required = true)
         public String start;
 
         // TODO Change this to 'timezone' or something less abbreviated
         @JsonProperty("tz")
         public String tz;
 
-        @JsonProperty("interval")
+        @JsonProperty(required = true)
         public String interval;
 
         @JsonProperty("maxFutureMs")
@@ -130,14 +166,37 @@ public class CreateAliasAPI extends AdminAPIBase {
 
         @JsonProperty("autoDeleteAge")
         public String autoDeleteAge;
+
+        public static TimeRoutedAliasProperties createFromSolrParams(SolrParams params, String propertyPrefix) {
+            final TimeRoutedAliasProperties timeRoutedProperties = new TimeRoutedAliasProperties();
+            timeRoutedProperties.field = params.required().get(propertyPrefix + "field");
+            timeRoutedProperties.start = params.required().get(propertyPrefix + START);
+            timeRoutedProperties.interval = params.required().get(propertyPrefix + "interval");
+
+            timeRoutedProperties.tz = params.get(propertyPrefix + "tz");
+            timeRoutedProperties.maxFutureMs = params.getLong(propertyPrefix + "maxFutureMs");
+            timeRoutedProperties.preemptiveCreateMath = params.get(propertyPrefix + "preemptiveCreateMath");
+            timeRoutedProperties.autoDeleteAge = params.get(propertyPrefix + "autoDeleteAge");
+
+            return timeRoutedProperties;
+        }
     }
 
     public static class CategoryRoutedAliasProperties extends RoutedAliasProperties {
         @JsonProperty("maxCardinality")
-        public String maxCardinality;
+        public Long maxCardinality;
 
         @JsonProperty("mustMatch")
         public String mustMatch;
+
+        public static CategoryRoutedAliasProperties createFromSolrParams(SolrParams params, String propertyPrefix) {
+            final CategoryRoutedAliasProperties categoryRoutedProperties = new CategoryRoutedAliasProperties();
+            categoryRoutedProperties.field = params.required().get(propertyPrefix + "field");
+
+            categoryRoutedProperties.maxCardinality = params.getLong(propertyPrefix + "maxCardinality");
+            categoryRoutedProperties.mustMatch = params.get(propertyPrefix + "mustMatch");
+            return categoryRoutedProperties;
+        }
     }
 
     // TODO Move this to CreateCollectionAPI when that is created.
