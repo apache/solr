@@ -45,6 +45,12 @@ Improvements
 Bug Fixes
 ---------------------
 
+Improvements
+---------------------
+
+* SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
+  `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
+
 ==================  9.2.0 ==================
 
 New Features
