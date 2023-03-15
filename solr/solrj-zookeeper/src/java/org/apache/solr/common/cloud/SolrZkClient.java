@@ -117,7 +117,8 @@ public class SolrZkClient implements Closeable {
         builder.beforeReconnect,
         builder.zkACLProvider,
         builder.higherLevelIsClosed,
-        builder.compressor);
+        builder.compressor,
+        builder.solrClassLoader);
   }
 
   private SolrZkClient(
@@ -129,7 +130,8 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed,
-      Compressor compressor) {
+      Compressor compressor,
+      SolrClassLoader solrClassLoader) {
 
     if (zkServerAddress == null) {
       // only tests should create one without server address
@@ -145,7 +147,7 @@ public class SolrZkClient implements Closeable {
     this.zkClientConnectionStrategy = strat;
 
     if (!strat.hasZkCredentialsToAddAutomatically()) {
-      zkCredentialsInjector = createZkCredentialsInjector();
+      zkCredentialsInjector = createZkCredentialsInjector(solrClassLoader);
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
           createZkCredentialsToAddAutomatically();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
@@ -282,16 +284,19 @@ public class SolrZkClient implements Closeable {
   public static final String ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME =
       "zkCredentialsInjector";
 
-  protected ZkCredentialsInjector createZkCredentialsInjector() {
+  protected ZkCredentialsInjector createZkCredentialsInjector(SolrClassLoader solrClassLoader) {
     String zkCredentialsInjectorClassName =
         System.getProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkCredentialsInjectorClassName)) {
       try {
         log.info("Using ZkCredentialsInjector: {}", zkCredentialsInjectorClassName);
-        return Class.forName(zkCredentialsInjectorClassName)
-            .asSubclass(ZkCredentialsInjector.class)
-            .getConstructor()
-            .newInstance();
+        return solrClassLoader == null
+            ? Class.forName(zkCredentialsInjectorClassName)
+                .asSubclass(ZkCredentialsInjector.class)
+                .getConstructor()
+                .newInstance()
+            : solrClassLoader.newInstance(
+                zkCredentialsInjectorClassName, ZkCredentialsInjector.class);
       } catch (Exception e) {
         // just ignore - go default
         log.warn(
@@ -1116,6 +1121,7 @@ public class SolrZkClient implements Closeable {
     public ZkClientConnectionStrategy connectionStrategy;
     public ZkACLProvider zkACLProvider;
     public IsClosed higherLevelIsClosed;
+    public SolrClassLoader solrClassLoader;
 
     public Compressor compressor;
 
@@ -1161,6 +1167,11 @@ public class SolrZkClient implements Closeable {
 
     public Builder withCompressor(Compressor c) {
       this.compressor = c;
+      return this;
+    }
+
+    public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
+      this.solrClassLoader = solrClassLoader;
       return this;
     }
 
