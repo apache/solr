@@ -4,6 +4,18 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+
+==================  9.3.0 ==================
+
+Improvements
+---------------------
+
+* SOLR-16183: XML update allows <doc> <doc name="child"> ... </doc> </doc>.
+  (Vinayak Hegde via Mikhail Khludnev)
+
+Bug Fixes
+---------------------
+
 ==================  9.2.0 ==================
 
 New Features
