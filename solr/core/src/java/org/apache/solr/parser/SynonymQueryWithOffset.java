@@ -16,9 +16,15 @@
  */
 package org.apache.solr.parser;
 
-import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SynonymQuery;
+import org.apache.lucene.search.Weight;
+
+import java.io.IOException;
 
 /**
  * Wraps a SynonymQuery and stores an Integer startOffset taken from the
