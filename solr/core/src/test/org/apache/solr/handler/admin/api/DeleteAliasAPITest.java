@@ -25,9 +25,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-/**
- * Unit tests for {@link DeleteAliasAPI}.
- */
+/** Unit tests for {@link DeleteAliasAPI}. */
 public class DeleteAliasAPITest extends SolrTestCaseJ4 {
 
   @Test
