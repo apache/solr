@@ -121,7 +121,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // verify the collection is usable ...
     ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
     ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     int invalidToolExitStatus = 1;
     assertEquals(
@@ -163,15 +162,15 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("POSTing {}", xml.toAbsolutePath());
       }
-      cloudClient.request(new StreamingUpdateRequest("/update", xml, "application/xml"));
+      cloudClient.request(new StreamingUpdateRequest("/update", xml, "application/xml"), testCollectionName);
     }
-    cloudClient.commit();
+    cloudClient.commit(testCollectionName);
 
     int numFound = 0;
 
     // give the update a chance to take effect.
     for (int idx = 0; idx < 100; ++idx) {
-      QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
+      QueryResponse qr = cloudClient.query(testCollectionName, new SolrQuery("*:*"));
       numFound = (int) qr.getResults().getNumFound();
       if (numFound == expectedXmlDocCount) break;
       Thread.sleep(100);
