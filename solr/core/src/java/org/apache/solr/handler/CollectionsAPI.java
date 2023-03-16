@@ -19,9 +19,7 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
@@ -32,12 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
-import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
@@ -97,34 +93,6 @@ public class CollectionsAPI {
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
 
-    @Command(name = V2_CREATE_ALIAS_CMD)
-    @SuppressWarnings("unchecked")
-    public void createAlias(PayloadObj<CreateAliasPayload> obj) throws Exception {
-      final CreateAliasPayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-
-      v1Params.put(ACTION, CollectionAction.CREATEALIAS.toLower());
-      if (!CollectionUtils.isEmpty(v2Body.collections)) {
-        final String collectionsStr = String.join(",", v2Body.collections);
-        v1Params.remove(V2ApiConstants.COLLECTIONS);
-        v1Params.put(V2ApiConstants.COLLECTIONS, collectionsStr);
-      }
-      if (v2Body.router != null) {
-        Map<String, Object> routerProperties =
-            (Map<String, Object>) v1Params.remove(V2ApiConstants.ROUTER_KEY);
-        flattenMapWithPrefix(routerProperties, v1Params, ROUTER_PREFIX);
-      }
-      if (v2Body.createCollectionParams != null && !v2Body.createCollectionParams.isEmpty()) {
-        final Map<String, Object> createCollectionMap =
-            (Map<String, Object>) v1Params.remove(V2ApiConstants.CREATE_COLLECTION_KEY);
-        convertV2CreateCollectionMapToV1ParamMap(createCollectionMap);
-        flattenMapWithPrefix(createCollectionMap, v1Params, CREATE_COLLECTION_PREFIX);
-      }
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
     @Command(name = V2_SET_ALIAS_PROP_CMD)
     @SuppressWarnings("unchecked")
     public void setAliasProperty(PayloadObj<SetAliasPropertyPayload> obj) throws Exception {
@@ -151,7 +119,6 @@ public class CollectionsAPI {
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
 
-    @SuppressWarnings("unchecked")
     private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
       // Keys are copied so that map can be modified as keys are looped through.
       final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());
@@ -160,7 +127,7 @@ public class CollectionsAPI {
           case V2ApiConstants.PROPERTIES_KEY:
             final Map<String, Object> propertiesMap =
                 (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
-            flattenMapWithPrefix(propertiesMap, v2MapVals, PROPERTY_PREFIX);
+            flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
             break;
           case ROUTER_KEY:
             final Map<String, Object> routerProperties =

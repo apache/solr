@@ -170,6 +170,10 @@ Improvements
 
 * SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
 
+* SOLR-16391: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.  Endpoints are now
+  available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
+  being upserted or deleted. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -182,6 +186,10 @@ Optimizations
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
 
 * SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
+
+* SOLR-16487: Replication pooling is optimized based on hard and soft commit settings for a given collection (Justin Sweeney)
+
+* SOLR-16689: Avoiding commits on leader when recovering a non-leader replica and avoiding incorrectly replicating an empty core (Justin Sweeney)
 
 Bug Fixes
 ---------------------

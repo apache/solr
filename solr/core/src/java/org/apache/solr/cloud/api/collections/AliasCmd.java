@@ -23,18 +23,15 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.util.Map;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.api.CreateCollectionAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
 
 /**
  * Common superclass for commands that maintain or manipulate aliases. In the routed alias parlance,
@@ -73,11 +70,14 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
     }
     createReqParams.set(NAME, createCollName);
-    // a CollectionOperation reads params and produces a message (ZkNodeProps) that is supposed to be sent
+    // a CollectionOperation reads params and produces a message (ZkNodeProps) that is supposed to
+    // be sent
     // to the Overseer. Although we could create the Map without it, there are a fair amount of
     // rules we don't want to reproduce.
-    final CreateCollectionAPI.CreateCollectionRequestBody createReqBody = CreateCollectionAPI.buildRequestBodyFromParams(createReqParams);
-    final ZkNodeProps createMessage = CreateCollectionAPI.createRemoteMessage(ccc.getCoreContainer(), createReqBody);
+    final CreateCollectionAPI.CreateCollectionRequestBody createReqBody =
+        CreateCollectionAPI.buildRequestBodyFromParams(createReqParams);
+    final ZkNodeProps createMessage =
+        CreateCollectionAPI.createRemoteMessage(ccc.getCoreContainer(), createReqBody);
 
     NamedList<Object> results = new NamedList<>();
     try {
