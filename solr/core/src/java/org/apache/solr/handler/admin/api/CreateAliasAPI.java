@@ -26,6 +26,7 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
@@ -346,8 +347,8 @@ public class CreateAliasAPI extends AdminAPIBase {
       TimeRoutedAlias.parseStringAsInstant(start, TimeZoneUtils.parseTimezone(tz));
 
       // maxFutureMs must be > 0 if provided
-      if (maxFutureMs != null && maxFutureMs <= 0) {
-        // TODO Come up with an error to throw here.
+      if (maxFutureMs != null && maxFutureMs < 0) {
+        throw new SolrException(BAD_REQUEST, ROUTER_MAX_FUTURE + " must be >= 0");
       }
     }
 
@@ -358,10 +359,10 @@ public class CreateAliasAPI extends AdminAPIBase {
       remoteMessage.put(prefix + "start", start);
       remoteMessage.put(prefix + "interval", interval);
 
-      remoteMessage.put(prefix + "tz", tz);
-      remoteMessage.put(prefix + "maxFutureMs", maxFutureMs);
-      remoteMessage.put(prefix + "preemptiveCreateMath", preemptiveCreateMath);
-      remoteMessage.put(prefix + "autoDeleteAge", autoDeleteAge);
+      if (tz != null) remoteMessage.put(prefix + "tz", tz);
+      if (maxFutureMs != null) remoteMessage.put(prefix + "maxFutureMs", maxFutureMs);
+      if (preemptiveCreateMath != null) remoteMessage.put(prefix + "preemptiveCreateMath", preemptiveCreateMath);
+      if (autoDeleteAge != null) remoteMessage.put(prefix + "autoDeleteAge", autoDeleteAge);
     }
 
     public static TimeRoutedAliasProperties createFromSolrParams(

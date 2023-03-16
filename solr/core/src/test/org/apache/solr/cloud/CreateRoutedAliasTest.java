@@ -110,10 +110,9 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             + "      \"type\": \"time\",\n"
             + "      \"field\": \"evt_dt\",\n"
             + "      \"start\":\"NOW/DAY\",\n"
-            + // small window for test failure once a day.
-            "        \"interval\":\"+2HOUR\",\n"
+            // small window for test failure once a day.
+            + "      \"interval\":\"+2HOUR\",\n"
             + "      \"maxFutureMs\":\"14400000\"\n"
-            + "      }\n"
             + "    }],\n"
             // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
             // since intended for distributed search
@@ -133,7 +132,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             + "        \"foobar\":\"bazbam\",\n"
             + "        \"foobar2\":\"bazbam2\"\n"
             + "      }\n"
-            + "    }\n";
+            + "    }\n"
+            + "  }\n";
     System.out.println("JEGERLOW: Foo is " + foo);
     HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
     post.setEntity(new StringEntity(foo, ContentType.APPLICATION_JSON));
@@ -219,7 +219,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUpdateRoudetedAliasDoesNotChangeCollectionList() throws Exception {
+  public void testUpdateRoutedAliasDoesNotChangeCollectionList() throws Exception {
 
     final String aliasName = getSaferTestName();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
