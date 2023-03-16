@@ -901,7 +901,12 @@ public class Http2SolrClient extends SolrClient {
    * a {@code RemoteSolrException} if not.
    */
   private void checkContentType(
-      ResponseParser processor, InputStream is, String mimeType, String encoding, int httpStatus, String urlExceptionMessage) {
+      ResponseParser processor,
+      InputStream is,
+      String mimeType,
+      String encoding,
+      int httpStatus,
+      String urlExceptionMessage) {
     if (mimeType == null
         || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
       // Shortcut the default scenario
@@ -926,10 +931,10 @@ public class Http2SolrClient extends SolrClient {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
           throw new RemoteSolrException(
-                  urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
+              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
         } catch (IOException e) {
           throw new RemoteSolrException(
-                  urlExceptionMessage,
+              urlExceptionMessage,
               httpStatus,
               "Could not parse response with encoding " + exceptionEncoding,
               e);
