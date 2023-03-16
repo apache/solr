@@ -248,12 +248,10 @@ For more information about garbage collection settings refer to following articl
 
 You can also refer to xref:jvm-settings.adoc[] for tuning your memory and garbage collection settings.
 
-==== Out-of-Memory Shutdown Hook
+==== Out-of-Memory Handling
 
-The `bin/solr` script registers the `bin/oom_solr.sh` script to be called by the JVM if an OutOfMemoryError occurs.
-The `oom_solr.sh` script will issue a `kill -9` to the Solr process that experiences the `OutOfMemoryError`.
-This behavior is recommended when running in SolrCloud mode so that ZooKeeper is immediately notified that a node has experienced a non-recoverable error.
-Take a moment to inspect the contents of the `/opt/solr/bin/oom_solr.sh` script so that you are familiar with the actions the script will perform if it is invoked by the JVM.
+The `bin/solr` script uses the `-XX:+CrashOnOutOfMemoryError` JVM option to crash Solr on `OutOfMemoryError` exceptions.
+This behavior is recommended. In SolrCloud mode ZooKeeper will be immediately notified that a node has experienced a non-recoverable error.
 
 === Going to Production with SolrCloud
 
