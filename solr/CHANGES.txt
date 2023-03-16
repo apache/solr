@@ -48,6 +48,11 @@ Improvements
 Bug Fixes
 ---------------------
 
+Other Changes
+---------------------
+
+* SOLR-16704: Add simple search benchmark to benchmark module (Tomás Fernández Löbbe)
+
 ==================  9.2.0 ==================
 
 New Features

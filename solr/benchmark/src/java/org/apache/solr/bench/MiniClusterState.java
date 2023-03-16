@@ -113,6 +113,8 @@ public class MiniClusterState {
     private SplittableRandom random;
     private String workDir;
 
+    private boolean useHttp1 = false;
+
     /**
      * Tear down.
      *
@@ -273,7 +275,7 @@ public class MiniClusterState {
         nodes.add(runner.getBaseUrl().toString());
       }
 
-      client = new Http2SolrClient.Builder().build();
+      client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
 
       log("done starting mini cluster");
       log("");
@@ -316,6 +318,15 @@ public class MiniClusterState {
           throw e;
         }
       }
+    }
+
+    /** Setting useHttp1 to true will make the {@link #client} use http1 */
+    public void setUseHttp1(boolean useHttp1) {
+      if (client != null) {
+        throw new IllegalStateException(
+            "You can only change this setting before starting the Mini Cluster");
+      }
+      this.useHttp1 = useHttp1;
     }
 
     /**
