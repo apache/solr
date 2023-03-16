@@ -22,6 +22,12 @@ Improvements
 * SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
   `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
 
+* SOLR-16393: Solr's v2 "aliasprop" CRUD APIs have been tweaked slightly to be more intuitive.  Alias property modification
+  is now available at `PUT /api/aliases/aliasName/properties` (for bulk modification) and `PUT /api/aliases/aliasName/properties/propName`
+  (for single property updates).  Additionally new APIs have been added for listing properties (`GET /api/aliases/aliasName/properties`),
+  fetching single property values (`GET /api/aliases/aliasName/properties/propName`), and property deletion
+  (`DELETE /api/aliases/aliasName/properties/propName`). (Alex Deparvu via Jason Gerlowski)
+
 Optimizations
 ---------------------
 

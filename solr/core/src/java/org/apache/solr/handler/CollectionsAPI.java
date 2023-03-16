@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
-import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -53,7 +52,6 @@ public class CollectionsAPI {
   public static final String V2_BACKUP_CMD = "backup-collection";
   public static final String V2_RESTORE_CMD = "restore-collection";
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
-  public static final String V2_SET_ALIAS_PROP_CMD = "set-alias-property";
 
   private final CollectionsHandler collectionsHandler;
 
@@ -119,22 +117,6 @@ public class CollectionsAPI {
         convertV2CreateCollectionMapToV1ParamMap(createCollectionMap);
         flattenMapWithPrefix(createCollectionMap, v1Params, CREATE_COLLECTION_PREFIX);
       }
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
-    @Command(name = V2_SET_ALIAS_PROP_CMD)
-    @SuppressWarnings("unchecked")
-    public void setAliasProperty(PayloadObj<SetAliasPropertyPayload> obj) throws Exception {
-      final SetAliasPropertyPayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-
-      v1Params.put(ACTION, CollectionAction.ALIASPROP.toLower());
-      // Flatten "properties" map into individual prefixed params
-      final Map<String, Object> propertiesMap =
-          (Map<String, Object>) v1Params.remove(V2ApiConstants.PROPERTIES_KEY);
-      flattenMapWithPrefix(propertiesMap, v1Params, PROPERTY_PREFIX);
 
       collectionsHandler.handleRequestBody(
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
