@@ -144,7 +144,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
       invokeCollectionMigration(
           CollectionAdminRequest.migrateData(
-                          sourceCollection, targetCollection, splitKey + "/" + BIT_SEP + "!")
+                  sourceCollection, targetCollection, splitKey + "/" + BIT_SEP + "!")
               .setForwardTimeout(45));
 
       long finishTime = System.nanoTime();
@@ -171,7 +171,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
       waitForState(
           "Expected to find routing rule for split key " + splitKey,
-              sourceCollection,
+          sourceCollection,
           (n, c) -> {
             if (c == null) return false;
             Slice shard = c.getSlice("shard2");
