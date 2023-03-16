@@ -718,7 +718,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
     if (queryTimeout.isTimeoutEnabled() == false) {
-      // no timeout.  Pass through to subclass
+      // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
       // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
@@ -732,7 +732,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           if (timedOut()) {
             // We might not even be using ExitableDirectoryReader yet various places in Solr check
             //  for this exception.  Sometimes others but this seems most suitable.
-            throw new ExitableDirectoryReader.ExitingReaderException(
+            throw new TimeAllowedExceededFromScorerException(
                 "Timed out.  Not actually via ExitableDirectoryReader");
           }
         }
@@ -740,23 +740,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
-  // FIXME: This option has been dead/noop since 3.1, should we re-enable or remove it?
-  // public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-  // // todo - when Solr starts accepting filters, need to
-  // // change this conditional check (filter!=null) and create a new filter
-  // // that ANDs them together if it already exists.
-  //
-  // if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
-  // ) {
-  // return super.search(query,filter,sort);
-  // } else {
-  // Query[] newQuery = new Query[1];
-  // Filter[] newFilter = new Filter[1];
-  // optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
-  //
-  // return super.search(newQuery[0], newFilter[0], sort);
-  // }
-  // }
+  /**
+   * Thrown when {@link org.apache.solr.common.params.CommonParams#TIME_ALLOWED} is exceeded.
+   * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
+   * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
+   */
+  public static class TimeAllowedExceededFromScorerException
+      extends ExitableDirectoryReader.ExitingReaderException {
+
+    public TimeAllowedExceededFromScorerException(String msg) {
+      super(msg);
+    }
+  }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
