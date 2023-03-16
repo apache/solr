@@ -54,6 +54,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.ws.rs.POST;
@@ -66,6 +67,7 @@ import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -83,6 +85,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TimeZoneUtils;
 
 @Path("/aliases")
 public class CreateAliasAPI extends AdminAPIBase {
@@ -338,6 +341,14 @@ public class CreateAliasAPI extends AdminAPIBase {
       ensureRequiredFieldPresent(field, "'field' on time routed alias");
       ensureRequiredFieldPresent(start, "'start' on time routed alias");
       ensureRequiredFieldPresent(interval, "'interval' on time routed alias");
+
+      // Ensures that provided 'start' and optional 'tz' are of the right format.
+      TimeRoutedAlias.parseStringAsInstant(start, TimeZoneUtils.parseTimezone(tz));
+
+      // maxFutureMs must be > 0 if provided
+      if (maxFutureMs != null && maxFutureMs <= 0) {
+        // TODO Come up with an error to throw here.
+      }
     }
 
     @Override
