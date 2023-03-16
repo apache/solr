@@ -121,12 +121,6 @@ public class CreateAliasAPI extends AdminAPIBase {
       }
 
       remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
-      requestBody.collCreationParameters.name = "TMP_name_TMP_name_TMP";
-      final CreateCollectionAPI createCollectionAPI = new CreateCollectionAPI(coreContainer, solrQueryRequest, null);
-      createCollectionAPI.createCollection(requestBody.collCreationParameters);
-      // TODO Create the placeholder collection
-      //           CREATE_OP.execute(
-      //              new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
     }
 
     final SolrResponse remoteResponse =

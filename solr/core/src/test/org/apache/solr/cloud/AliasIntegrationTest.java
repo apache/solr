@@ -838,10 +838,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     ///////////////
     // use v2 API
-    new V2Request.Builder("/collections")
+    new V2Request.Builder("/aliases")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload(
-            "{\"create-alias\": {\"name\": \"testalias6\", collections:[\"collection2\",\"collection1\"]}}")
+            "{\"name\": \"testalias6\", \"collections\": [\"collection2\",\"collection1\"]}")
         .build()
         .process(cluster.getSolrClient());
 
