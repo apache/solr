@@ -164,7 +164,6 @@ public class CollectionsAPI {
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
 
-    @SuppressWarnings("unchecked")
     private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
       // Keys are copied so that map can be modified as keys are looped through.
       final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());
@@ -172,12 +171,12 @@ public class CollectionsAPI {
         switch (key) {
           case V2ApiConstants.PROPERTIES_KEY:
             final Map<String, Object> propertiesMap =
-                (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
-            flattenMapWithPrefix(propertiesMap, v2MapVals, PROPERTY_PREFIX);
+                    (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
+            flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
             break;
           case ROUTER_KEY:
             final Map<String, Object> routerProperties =
-                (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
+                    (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
             flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
             break;
           case V2ApiConstants.CONFIG:
@@ -185,8 +184,8 @@ public class CollectionsAPI {
             break;
           case V2ApiConstants.SHUFFLE_NODES:
             v2MapVals.put(
-                CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-                v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
+                    CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
+                    v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
             break;
           case V2ApiConstants.NODE_SET:
             final Object nodeSetValUncast = v2MapVals.remove(V2ApiConstants.NODE_SET);

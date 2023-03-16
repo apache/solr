@@ -757,52 +757,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           final CreateAliasAPI.CreateAliasRequestBody reqBody = CreateAliasAPI.createFromSolrParams(req.getParams());
           CreateAliasAPI.validateRequestBody(reqBody);
-          String alias = req.getParams().get(NAME);
-
-          /////////////////////////////////////////////////
-          // We are creating a routed alias from here on //
-          /////////////////////////////////////////////////
-
-          // Now filter out just the parameters we care about from the request
-          assert routedAlias != null;
-          Map<String, Object> result = copy(finalParams, null, routedAlias.getRequiredParams());
-          copy(finalParams, result, routedAlias.getOptionalParams());
-
-          ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
-
-          // add to result params that start with "create-collection.".
-          //   Additionally, save these without the prefix to createCollParams
-          for (Map.Entry<String, String[]> entry : finalParams) {
-            final String p = entry.getKey();
-            if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
-              // This is what SolrParams#getAll(Map, Collection)} does
-              final String[] v = entry.getValue();
-              if (v.length == 1) {
-                result.put(p, v[0]);
-              } else {
-                result.put(p, v);
-              }
-              createCollParams.set(p.substring(CREATE_COLLECTION_PREFIX.length()), v);
-            }
-          }
-
-          // Verify that the create-collection prefix'ed params appear to be valid.
-          if (createCollParams.get(NAME) != null) {
-            throw new SolrException(
-                BAD_REQUEST,
-                "routed aliases calculate names for their "
-                    + "dependent collections, you cannot specify the name.");
-          }
-          if (createCollParams.get(COLL_CONF) == null) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
-          }
-          // note: could insist on a config name here as well.... or wait to throw at overseer
-          createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
-          CREATE_OP.execute(
-              new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
-
-          return result;
+          final SolrJerseyResponse response = new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
         }),
 
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
