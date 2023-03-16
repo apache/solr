@@ -119,6 +119,7 @@ public class CollectionsAPI {
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
 
+    @SuppressWarnings("unchecked")
     private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
       // Keys are copied so that map can be modified as keys are looped through.
       final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());

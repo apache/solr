@@ -118,6 +118,8 @@ public class CreateAliasAPI extends AdminAPIBase {
 
       remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
       requestBody.collCreationParameters.name = "TMP_name_TMP_name_TMP";
+      final CreateCollectionAPI createCollectionAPI = new CreateCollectionAPI(coreContainer, solrQueryRequest, null);
+      createCollectionAPI.createCollection(requestBody.collCreationParameters);
       // TODO Create the placeholder collection
       //           CREATE_OP.execute(
       //              new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
@@ -194,7 +196,7 @@ public class CreateAliasAPI extends AdminAPIBase {
             BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
       }
 
-      final CreateCollectionRequestBody createCollReqBody = requestBody.collCreationParameters;
+      final CreateCollectionAPI.CreateCollectionRequestBody createCollReqBody = requestBody.collCreationParameters;
       if (createCollReqBody != null) {
         if (createCollReqBody.name != null) {
           throw new SolrException(
@@ -249,7 +251,7 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     final SolrParams createCollectionParams =
         getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
-    buildRequestBodyFromParams(createCollectionParams);
+    createBody.collCreationParameters = CreateCollectionAPI.buildRequestBodyFromParams(createCollectionParams, false);
 
     return createBody;
   }
@@ -285,7 +287,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     public List<RoutedAliasProperties> routers;
 
     @JsonProperty("create-collection")
-    public CreateCollectionRequestBody collCreationParameters;
+    public CreateCollectionAPI.CreateCollectionRequestBody collCreationParameters;
   }
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -400,135 +402,6 @@ public class CreateAliasAPI extends AdminAPIBase {
     }
   }
 
-  // TODO Move this to CreateCollectionAPI when that is created.
-  public static class CreateCollectionRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(NAME)
-    public String name;
-
-    @JsonProperty(REPLICATION_FACTOR)
-    public Integer replicationFactor;
-
-    @JsonProperty(CONFIG)
-    public String config;
-
-    @JsonProperty(NUM_SLICES)
-    public Integer numShards;
-
-    @JsonProperty("nodeSet") // V1 API uses 'createNodeSet'
-    public List<String> nodeSet;
-
-    @JsonProperty("shuffleNodes") // V1 API uses 'createNodeSet.shuffle'
-    public Boolean shuffleNodes;
-
-    // TODO This is currently a comma-separate list of shard names.  We should change it to be an
-    // actual List<String> instead, and maybe rename to 'shardNames' or something similar
-    @JsonProperty(SHARDS_PROP)
-    public String shards;
-
-    @JsonProperty(PULL_REPLICAS)
-    public Integer pullReplicas;
-
-    @JsonProperty(TLOG_REPLICAS)
-    public Integer tlogReplicas;
-
-    @JsonProperty(NRT_REPLICAS)
-    public Integer nrtReplicas;
-
-    @JsonProperty(WAIT_FOR_FINAL_STATE)
-    public Boolean waitForFinalState;
-
-    @JsonProperty(PER_REPLICA_STATE)
-    public Boolean perReplicaState;
-
-    @JsonProperty(ALIAS)
-    public String alias; // the name of an alias to create in addition to the collection
-
-    @JsonProperty("properties")
-    public Map<String, String> properties;
-
-    @JsonProperty(ASYNC)
-    public String async;
-
-    @JsonProperty("router")
-    public CollectionRouterProperties router;
-
-    public void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix) {
-      final Map<String, Object> v1Params = toMap(new HashMap<>());
-      convertV2CreateCollectionMapToV1ParamMap(v1Params);
-      for (Map.Entry<String, Object> v1Param : v1Params.entrySet()) {
-        remoteMessage.put(prefix + v1Param.getKey(), v1Param.getValue());
-      }
-    }
-
-    private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
-      // Keys are copied so that map can be modified as keys are looped through.
-      final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());
-      for (String key : v2Keys) {
-        switch (key) {
-          case V2ApiConstants.PROPERTIES_KEY:
-            final Map<String, Object> propertiesMap =
-                (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
-            flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
-            break;
-          case ROUTER_KEY:
-            final Map<String, Object> routerProperties =
-                (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
-            flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
-            break;
-          case V2ApiConstants.CONFIG:
-            v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
-            break;
-          case V2ApiConstants.SHUFFLE_NODES:
-            v2MapVals.put(
-                CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-                v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
-            break;
-          case V2ApiConstants.NODE_SET:
-            final Object nodeSetValUncast = v2MapVals.remove(V2ApiConstants.NODE_SET);
-            if (nodeSetValUncast instanceof String) {
-              v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetValUncast);
-            } else {
-              final List<String> nodeSetList = (List<String>) nodeSetValUncast;
-              final String nodeSetStr = String.join(",", nodeSetList);
-              v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
-            }
-            break;
-          default:
-            break;
-        }
-      }
-    }
-  }
-
-  public static CreateCollectionRequestBody buildRequestBodyFromParams(SolrParams params) {
-    final CreateCollectionRequestBody requestBody = new CreateCollectionRequestBody();
-    requestBody.replicationFactor = params.getInt(ZkStateReader.REPLICATION_FACTOR);
-    requestBody.config = params.get(COLL_CONF);
-    requestBody.numShards = params.getInt(NUM_SLICES);
-    if (params.get(CREATE_NODE_SET) != null) {
-      requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
-    }
-    requestBody.shuffleNodes = params.getBool(CREATE_NODE_SET_SHUFFLE);
-    requestBody.shards = params.get(SHARDS_PROP);
-    requestBody.tlogReplicas = params.getInt(ZkStateReader.TLOG_REPLICAS);
-    requestBody.pullReplicas = params.getInt(ZkStateReader.PULL_REPLICAS);
-    requestBody.nrtReplicas = params.getInt(ZkStateReader.NRT_REPLICAS);
-    requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
-    requestBody.perReplicaState = params.getBool(PER_REPLICA_STATE);
-    requestBody.alias = params.get(ALIAS);
-    requestBody.async = params.get(ASYNC);
-    requestBody.properties =
-        copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
-    if (params.get("router.name") != null || params.get("router.field") != null) {
-      final CollectionRouterProperties routerProperties = new CollectionRouterProperties();
-      routerProperties.name = params.get("router.name");
-      routerProperties.field = params.get("router.field");
-      requestBody.router = routerProperties;
-    }
-
-    return requestBody;
-  }
-
   /**
    * Returns a SolrParams object containing only those values whose keys match a specified prefix
    * (with that prefix removed)
@@ -544,31 +417,5 @@ public class CreateAliasAPI extends AdminAPIBase {
         .filter(e -> e.getKey().startsWith(prefix))
         .forEach(e -> filteredParams.add(e.getKey().substring(prefix.length()), e.getValue()));
     return filteredParams;
-  }
-
-  public static Map<String, String> copyPrefixedPropertiesWithoutPrefix(
-      SolrParams params, Map<String, String> props, String prefix) {
-    Iterator<String> iter = params.getParameterNamesIterator();
-    while (iter.hasNext()) {
-      String param = iter.next();
-      if (param.startsWith(prefix)) {
-        final String[] values = params.getParams(param);
-        if (values.length != 1) {
-          throw new SolrException(
-              BAD_REQUEST, "Only one value can be present for parameter " + param);
-        }
-        final String modifiedKey = param.replaceFirst(prefix, "");
-        props.put(modifiedKey, values[0]);
-      }
-    }
-    return props;
-  }
-
-  public static class CollectionRouterProperties implements JacksonReflectMapWriter {
-    @JsonProperty(NAME)
-    public String name;
-
-    @JsonProperty("field")
-    public String field;
   }
 }

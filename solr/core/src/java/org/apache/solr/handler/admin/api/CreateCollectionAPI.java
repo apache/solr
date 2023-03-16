@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
@@ -37,6 +38,7 @@ import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STA
 import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.schema.IndexSchema.FIELD;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -48,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -55,6 +58,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -205,10 +209,10 @@ public class CreateCollectionAPI extends AdminAPIBase {
     return new ZkNodeProps(rawProperties);
   }
 
-  public static CreateCollectionRequestBody buildRequestBodyFromParams(SolrParams params) {
+  public static CreateCollectionRequestBody buildRequestBodyFromParams(SolrParams params, boolean nameRequired) {
     final CreateCollectionAPI.CreateCollectionRequestBody requestBody =
         new CreateCollectionAPI.CreateCollectionRequestBody();
-    requestBody.name = params.required().get(CommonParams.NAME);
+    requestBody.name = nameRequired ? params.required().get(CommonParams.NAME) : params.get(CommonParams.NAME);
     requestBody.replicationFactor = params.getInt(ZkStateReader.REPLICATION_FACTOR);
     requestBody.config = params.get(COLL_CONF);
     requestBody.numShards = params.getInt(NUM_SLICES);
@@ -316,6 +320,54 @@ public class CreateCollectionAPI extends AdminAPIBase {
 
     @JsonProperty("router")
     public RouterProperties router;
+
+    public void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix) {
+      final Map<String, Object> v1Params = toMap(new HashMap<>());
+      convertV2CreateCollectionMapToV1ParamMap(v1Params);
+      for (Map.Entry<String, Object> v1Param : v1Params.entrySet()) {
+        remoteMessage.put(prefix + v1Param.getKey(), v1Param.getValue());
+      }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
+      // Keys are copied so that map can be modified as keys are looped through.
+      final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());
+      for (String key : v2Keys) {
+        switch (key) {
+          case V2ApiConstants.PROPERTIES_KEY:
+            final Map<String, Object> propertiesMap =
+                    (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
+            flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
+            break;
+          case ROUTER_KEY:
+            final Map<String, Object> routerProperties =
+                    (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
+            flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
+            break;
+          case V2ApiConstants.CONFIG:
+            v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
+            break;
+          case V2ApiConstants.SHUFFLE_NODES:
+            v2MapVals.put(
+                    CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
+                    v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
+            break;
+          case V2ApiConstants.NODE_SET:
+            final Object nodeSetValUncast = v2MapVals.remove(V2ApiConstants.NODE_SET);
+            if (nodeSetValUncast instanceof String) {
+              v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetValUncast);
+            } else {
+              final List<String> nodeSetList = (List<String>) nodeSetValUncast;
+              final String nodeSetStr = String.join(",", nodeSetList);
+              v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    }
   }
 
   public static class RouterProperties implements JacksonReflectMapWriter {
