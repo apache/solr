@@ -22,7 +22,6 @@ import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
-import com.google.common.collect.ImmutableMap;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -114,8 +113,7 @@ public class SolrPluginUtils {
     purposes = Collections.unmodifiableMap(map);
   }
 
-  private static final MapSolrParams maskUseParams =
-      new MapSolrParams(ImmutableMap.<String, String>builder().put(USEPARAM, "").build());
+  private static final MapSolrParams maskUseParams = new MapSolrParams(Map.of(USEPARAM, ""));
 
   /**
    * Set default-ish params on a SolrQueryRequest.

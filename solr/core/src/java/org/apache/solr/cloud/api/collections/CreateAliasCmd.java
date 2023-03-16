@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 
 public class CreateAliasCmd extends AliasCmd {
 
@@ -112,6 +113,7 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
+  @SuppressForbidden(reason = "Sets.difference")
   private void callCreateRoutedAlias(
       ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state)
       throws Exception {

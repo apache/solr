@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -504,7 +503,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return Lists.newArrayList(AnnotatedApi.getApis(new MoreLikeThisAPI(this)));
+    return List.copyOf(AnnotatedApi.getApis(new MoreLikeThisAPI(this)));
   }
 
   @Override

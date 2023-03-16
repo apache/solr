@@ -19,13 +19,6 @@ package org.apache.solr.handler.component;
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.ObjectArrays;
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -48,7 +41,10 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -919,7 +915,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     elevationBuilder.addExcludedIds(
         excludedIds == null ? Collections.emptyList() : Arrays.asList(excludedIds));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap =
-        ImmutableMap.of(elevatingQuery, elevationBuilder);
+        Map.of(elevatingQuery, elevationBuilder);
     synchronized (LOCK) {
       cacheIndexReader = new WeakReference<>(reader);
       cacheElevationProvider = createElevationProvider(elevationBuilderMap);
@@ -1221,7 +1217,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         includeQuery = EMPTY_QUERY;
         this.elevatedIds = Collections.emptySet();
       } else {
-        this.elevatedIds = ImmutableSet.copyOf(elevatedIds);
+        this.elevatedIds = Set.copyOf(elevatedIds);
         BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
         for (BytesRef elevatedId : elevatedIds) {
           includeQueryBuilder.add(
@@ -1234,7 +1230,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         this.excludedIds = Collections.emptySet();
         excludeQueries = null;
       } else {
-        this.excludedIds = ImmutableSet.copyOf(excludedIds);
+        this.excludedIds = Set.copyOf(excludedIds);
         List<TermQuery> excludeQueriesBuilder = new ArrayList<>(excludedIds.size());
         for (BytesRef excludedId : excludedIds) {
           excludeQueriesBuilder.add(new TermQuery(new Term(queryFieldName, excludedId)));
@@ -1265,15 +1261,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         return this;
       }
       Set<BytesRef> elevatedIds =
-          ImmutableSet.<BytesRef>builder()
-              .addAll(this.elevatedIds)
-              .addAll(elevation.elevatedIds)
-              .build();
+          Stream.concat(this.elevatedIds.stream(), elevation.elevatedIds.stream())
+              .collect(Collectors.toUnmodifiableSet());
       boolean overlappingElevatedIds =
           elevatedIds.size() != (this.elevatedIds.size() + elevation.elevatedIds.size());
       BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
       Set<BooleanClause> clauseSet =
-          (overlappingElevatedIds ? Sets.newHashSetWithExpectedSize(elevatedIds.size()) : null);
+          (overlappingElevatedIds ? new HashSet<>(elevatedIds.size()) : null);
       for (BooleanClause clause : this.includeQuery.clauses()) {
         if (!overlappingElevatedIds || clauseSet.add(clause)) {
           includeQueryBuilder.add(clause);
@@ -1285,10 +1279,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
       }
       Set<BytesRef> excludedIds =
-          ImmutableSet.<BytesRef>builder()
-              .addAll(this.excludedIds)
-              .addAll(elevation.excludedIds)
-              .build();
+          Stream.concat(this.excludedIds.stream(), elevation.excludedIds.stream())
+              .collect(Collectors.toUnmodifiableSet());
       TermQuery[] excludeQueries;
       if (this.excludeQueries == null) {
         excludeQueries = elevation.excludeQueries;
@@ -1299,14 +1291,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             excludedIds.size() != (this.excludedIds.size() + elevation.excludedIds.size());
         if (overlappingExcludedIds) {
           excludeQueries =
-              ImmutableSet.<TermQuery>builder()
-                  .add(this.excludeQueries)
-                  .add(elevation.excludeQueries)
-                  .build()
-                  .toArray(new TermQuery[0]);
+              Stream.concat(
+                      Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
+                  .collect(Collectors.toUnmodifiableSet())
+                  .toArray(TermQuery[]::new);
         } else {
           excludeQueries =
-              ObjectArrays.concat(this.excludeQueries, elevation.excludeQueries, TermQuery.class);
+              Stream.concat(
+                      Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
+                  .collect(Collectors.toUnmodifiableSet())
+                  .toArray(TermQuery[]::new);
         }
       }
       return new Elevation(elevatedIds, includeQueryBuilder.build(), excludedIds, excludeQueries);
@@ -1315,9 +1309,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     @Override
     public String toString() {
       return "{elevatedIds="
-          + Collections2.transform(elevatedIds, BytesRef::utf8ToString)
+          + elevatedIds.stream().map(BytesRef::utf8ToString).collect(Collectors.toUnmodifiableSet())
           + ", excludedIds="
-          + Collections2.transform(excludedIds, BytesRef::utf8ToString)
+          + excludedIds.stream().map(BytesRef::utf8ToString).collect(Collectors.toUnmodifiableSet())
           + "}";
     }
   }
@@ -1558,7 +1552,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       public Builder<E, M> addSubset(Collection<E> subset, M matchValue) {
         if (!subset.isEmpty()) {
           TrieSubsetMatcher.Node<E, M> node = root;
-          for (E e : ImmutableSortedSet.copyOf(subset)) {
+          for (E e : Collections.unmodifiableSortedSet(new TreeSet<>(subset))) {
             node = node.getOrCreateChild(e);
           }
           node.addMatchValue(matchValue);
@@ -1590,10 +1584,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * Returns an iterator over all the subsets that are contained by the provided set. The returned
      * iterator does not support removal.
      *
-     * @param set This set is copied to a new {@link ImmutableSortedSet} with natural ordering.
+     * @param set This set is copied to a new {@link SortedSet} with natural ordering.
      */
     public Iterator<M> findSubsetsMatching(Collection<E> set) {
-      return new MatchIterator(ImmutableSortedSet.copyOf(set));
+      return new MatchIterator(Collections.unmodifiableSortedSet(new TreeSet<>(set)));
     }
 
     /** Trie node. */
@@ -1652,12 +1646,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
        * memory usage and make it more efficient.
        */
       void trimAndMakeImmutable() {
-        if (children != null && !(children instanceof ImmutableMap)) {
+        if (children != null) {
           for (Node<E, M> child : children.values()) child.trimAndMakeImmutable();
-          children = ImmutableMap.copyOf(children);
+          children = Map.copyOf(children);
         }
-        if (matchValues != null && !(matchValues instanceof ImmutableList)) {
-          matchValues = ImmutableList.copyOf(matchValues);
+        if (matchValues != null) {
+          matchValues = List.copyOf(matchValues);
         }
       }
     }

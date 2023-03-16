@@ -18,8 +18,9 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -159,13 +160,13 @@ public class InfoHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    final ImmutableList.Builder<Api> list = new ImmutableList.Builder<>();
+    final List<Api> list = new ArrayList<>();
     list.addAll(handlers.get("threads").getApis());
     list.addAll(handlers.get("properties").getApis());
     list.addAll(handlers.get("logging").getApis());
     list.addAll(handlers.get("system").getApis());
     list.addAll(handlers.get("health").getApis());
-    return list.build();
+    return List.copyOf(list);
   }
 
   @Override

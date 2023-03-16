@@ -24,7 +24,6 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
@@ -117,8 +116,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     CoreContainer cores = init(CONFIGSETS_SOLR_XML);
 
     try {
-      SolrCore core1 = cores.create("core1", ImmutableMap.of("configSet", "minimal"));
-      SolrCore core2 = cores.create("core2", ImmutableMap.of("configSet", "minimal"));
+      SolrCore core1 = cores.create("core1", Map.of("configSet", "minimal"));
+      SolrCore core2 = cores.create("core2", Map.of("configSet", "minimal"));
 
       assertSame(core1.getLatestSchema(), core2.getLatestSchema());
 
@@ -132,7 +131,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testReloadSequential() throws Exception {
     final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
     try {
-      cc.create("core1", ImmutableMap.of("configSet", "minimal"));
+      cc.create("core1", Map.of("configSet", "minimal"));
       cc.reload("core1");
       cc.reload("core1");
       cc.reload("core1");
@@ -159,7 +158,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testReloadThreaded() throws Exception {
     final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
-    cc.create("core1", ImmutableMap.of("configSet", "minimal"));
+    cc.create("core1", Map.of("configSet", "minimal"));
 
     List<Thread> threads = new ArrayList<>();
     int numThreads = 4;
@@ -192,7 +191,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     @Override
     public void run() {
       try {
-        core = cc.create(coreName, ImmutableMap.of("configSet", "minimal"));
+        core = cc.create(coreName, Map.of("configSet", "minimal"));
       } catch (SolrException e) {
         String msg = e.getMessage();
         foundExpectedError =
@@ -249,13 +248,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // we didn't leave the record of trying to create this core around.
       // NOTE: unloading the core closes it too.
       cc.unload(testName, true, true, true);
-      cc.create(testName, ImmutableMap.of("configSet", "minimal"));
+      cc.create(testName, Map.of("configSet", "minimal"));
       // This call should fail with a different error because the core was
       // created successfully.
       SolrException thrown =
           expectThrows(
-              SolrException.class,
-              () -> cc.create(testName, ImmutableMap.of("configSet", "minimal")));
+              SolrException.class, () -> cc.create(testName, Map.of("configSet", "minimal")));
       assertTrue(
           "Should have 'already exists' error", thrown.getMessage().contains("already exists"));
 
@@ -274,7 +272,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("There should not be cores", 0, cores.getCores().size());
 
       // add a new core
-      cores.create("core1", ImmutableMap.of("configSet", "minimal"));
+      cores.create("core1", Map.of("configSet", "minimal"));
 
       // assert one registered core
 
@@ -345,7 +343,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(0));
 
       // can we create the core now with a good config?
-      SolrCore core = cc.create("badcore", ImmutableMap.of("configSet", "minimal"));
+      SolrCore core = cc.create("badcore", Map.of("configSet", "minimal"));
       MatcherAssert.assertThat(core, not(nullValue()));
 
     } finally {
@@ -361,7 +359,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       ClassLoader baseLoader = SolrResourceLoader.class.getClassLoader();
       assertSame(baseLoader, sharedLoader.getParent());
 
-      SolrCore core1 = cc.create("core1", ImmutableMap.of("configSet", "minimal"));
+      SolrCore core1 = cc.create("core1", Map.of("configSet", "minimal"));
       ClassLoader coreLoader = core1.getResourceLoader().getClassLoader();
       assertSame(sharedLoader, coreLoader.getParent());
 
@@ -832,7 +830,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+              cc.create("bogus", Map.of("configSet", "bogus_path"));
             });
     Throwable rootCause = Throwables.getRootCause(thrown);
     assertTrue(
@@ -935,7 +933,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     FileUtils.copyFile(
         getFile("solr/collection1/conf/schema-minimal.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "schema.xml"));
-    cc.create("col_bad", ImmutableMap.of());
+    cc.create("col_bad", Map.of());
 
     // check that we have the cores we expect
     cores = cc.getLoadedCoreNames();
@@ -958,7 +956,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+              cc.create("bogus", Map.of("configSet", "bogus_path"));
             });
     assertTrue(
         "init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),

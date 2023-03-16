@@ -14,3 +14,21 @@ com.google.common.base.Preconditions#checkNotNull(**)
 
 @defaultMessage Use methods in java.util.Comparator instead
 com.google.common.collect.Ordering
+
+@defaultMessage Use methods in java.util.Map
+com.google.common.collect.Maps
+com.google.common.collect.ImmutableMap
+
+@defaultMessage Use methods in java.util.List
+com.google.common.collect.Lists
+com.google.common.collect.ImmutableList
+
+@defaultMessage Use methods in java.util.Set
+com.google.common.collect.Sets
+com.google.common.collect.ImmutableSet
+com.google.common.collect.ImmutableSortedSet
+
+@defaultMessage Use Java stream methods
+com.google.common.collect.Collections2
+com.google.common.collect.Iterables
+import com.google.common.collect.ObjectArrays

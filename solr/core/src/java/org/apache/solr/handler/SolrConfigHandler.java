@@ -32,7 +32,6 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -1040,7 +1039,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis = Lists.newArrayList();
+    final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.PriorityQueue;
@@ -77,7 +77,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
             }
           };
 
-      Map<String, Long> childToModificationZxid = Maps.newHashMapWithExpectedSize(children.size());
+      Map<String, Long> childToModificationZxid = new HashMap<>(children.size());
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
         if (stat != null) {

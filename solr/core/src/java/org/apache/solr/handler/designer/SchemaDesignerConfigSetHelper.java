@@ -87,6 +87,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -755,6 +756,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     return cc.getZkController().getZkStateReader();
   }
 
+  @SuppressForbidden(reason = "Sets.difference")
   boolean applyCopyFieldUpdates(
       String mutableId, String copyDest, String fieldName, ManagedIndexSchema schema)
       throws IOException, SolrServerException {

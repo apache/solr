@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.search.QueryUtils.makeQueryable;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -885,7 +884,7 @@ public class RealTimeGetComponent extends SearchComponent {
           if (!fieldArrayListCreated && doc.getFieldValue(fname) instanceof Collection) {
             // previous value was array so we must return as an array even if was a single value
             // array
-            out.setField(fname, Lists.newArrayList(val));
+            out.setField(fname, new ArrayList<>(List.of(val)));
             fieldArrayListCreated = true;
             continue;
           }
@@ -1007,7 +1006,7 @@ public class RealTimeGetComponent extends SearchComponent {
                 .iterator();
         if (val instanceof Collection) {
           // add as collection even if single element collection
-          solrDoc.setField(solrInputField.getName(), Lists.newArrayList(childDocs));
+          solrDoc.setField(solrInputField.getName(), new ArrayList<>(List.of(childDocs)));
         } else {
           // single child doc
           solrDoc.setField(solrInputField.getName(), childDocs.next());
