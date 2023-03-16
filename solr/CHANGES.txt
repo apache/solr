@@ -54,6 +54,11 @@ Improvements
 Bug Fixes
 ---------------------
 
+Optimizations
+---------------------
+
+* SOLR-16694: Shortcut Http2SolrClient mimeType check for default response parse (Tomás Fernández Löbbe, Alex Deparvu)
+
 Other Changes
 ---------------------
 
