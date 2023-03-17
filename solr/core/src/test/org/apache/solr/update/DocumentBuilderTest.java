@@ -442,7 +442,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]'"));
     MatcherAssert.assertThat(
         thrown.getCause().getCause().getMessage(),
         is(
