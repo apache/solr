@@ -564,6 +564,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return sendDoc(docId, cloudClient, cloudClient.getDefaultCollection());
   }
 
+  protected int sendDoc(String collectionName, int docId) throws Exception {
+    return sendDoc(docId, cloudClient, collectionName);
+  }
+
   protected int sendDoc(int docId, SolrClient solrClient, String collection)
       throws IOException, SolrServerException {
     SolrInputDocument doc = new SolrInputDocument();

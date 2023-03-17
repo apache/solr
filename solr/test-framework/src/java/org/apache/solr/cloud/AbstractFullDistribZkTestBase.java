@@ -1029,10 +1029,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected int sendDocsWithRetry(
-      List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry)
+      String collectionName,
+      List<SolrInputDocument> batch,
+      int minRf,
+      int maxRetries,
+      int waitBeforeRetry)
       throws Exception {
     return sendDocsWithRetry(
-        cloudClient, cloudClient.getDefaultCollection(), batch, minRf, maxRetries, waitBeforeRetry);
+        cloudClient, collectionName, batch, minRf, maxRetries, waitBeforeRetry);
   }
 
   @SuppressWarnings("rawtypes")

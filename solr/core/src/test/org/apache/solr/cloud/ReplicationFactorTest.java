@@ -222,7 +222,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       int expectedRfByIds,
       Set<Integer> byQueriesSet,
       int expectedRfDBQ,
-      String coll)
+      String collectionName)
       throws Exception {
     // First add the docs indicated
     List<String> byIdsList = new ArrayList<>();
@@ -244,17 +244,17 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
 
     // Add the docs.
-    sendDocsWithRetry(batch, expectedRfDBQ, 5, 1);
+    sendDocsWithRetry(collectionName, batch, expectedRfDBQ, 5, 1);
 
     // Delete the docs by ID indicated
     UpdateRequest req = new UpdateRequest();
     req.deleteById(byIdsList);
-    sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfByIds, coll);
+    sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfByIds, collectionName);
 
     // Delete the docs by query indicated.
     req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(byQueryList, " OR ") + ")");
-    sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
+    sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, collectionName);
   }
 
   protected void sendNonDirectUpdateRequestReplicaWithRetry(
@@ -308,8 +308,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertRf(3, "all replicas should be active", rf);
 
     // Uses cloudClient to do it's work
-    doDBIdWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
-    doDBQWithRetry(3, 5, "deletes should have propagated to all 3 replicas", 1);
+    doDBIdWithRetry(
+        testCollectionName, 3, 5, "deletes should have propagated to all 3 replicas", 1);
+    doDBQWithRetry(testCollectionName, 3, 5, "deletes should have propagated to all 3 replicas", 1);
 
     log.info("Closing one proxy port");
     getProxyForReplica(replicas.get(0)).close();
@@ -319,8 +320,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertRf(2, "one replica should be down", rf);
 
     // Uses cloudClient to do it's work
-    doDBQWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
-    doDBIdWithRetry(2, 5, "deletes should have propagated to 2 replicas", 1);
+    doDBQWithRetry(testCollectionName, 2, 5, "deletes should have propagated to 2 replicas", 1);
+    doDBIdWithRetry(testCollectionName, 2, 5, "deletes should have propagated to 2 replicas", 1);
 
     // SOLR-13599 sanity check if problem is related to sending a batch
     List<SolrInputDocument> batch = new ArrayList<>(15);
@@ -331,7 +332,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
     log.info("Indexing batch of documents (30-45)");
-    int batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    int batchRf = sendDocsWithRetry(testCollectionName, batch, minRf, 5, 1);
     assertRf(2, "batch should have succeeded, only one replica should be down", batchRf);
 
     log.info("Closing second proxy port");
@@ -341,8 +342,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     rf = sendDoc(3);
     assertRf(1, "both replicas should be down", rf);
 
-    doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
-    doDBIdWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
+    doDBQWithRetry(testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 1);
+    doDBIdWithRetry(
+        testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 1);
 
     // heal the partitions
     log.info("Re-opening closed proxy ports");
@@ -357,8 +359,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     rf = sendDoc(4);
     assertRf(3, "all replicas have been healed", rf);
 
-    doDBQWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
-    doDBIdWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
+    doDBQWithRetry(testCollectionName, 3, 5, "delete should have propagated to all 3 replicas", 1);
+    doDBIdWithRetry(testCollectionName, 3, 5, "delete should have propagated to all 3 replicas", 1);
 
     // now send a batch
     batch = new ArrayList<>(10);
@@ -370,11 +372,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
 
     log.info("Indexing batch of documents (5-14)");
-    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    batchRf = sendDocsWithRetry(testCollectionName, batch, minRf, 5, 1);
     assertRf(3, "batch add should have succeeded on all replicas", batchRf);
 
-    doDBQWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
-    doDBIdWithRetry(3, 5, "batch deletes should have propagated to all 3 replica", 15);
+    doDBQWithRetry(
+        testCollectionName, 3, 5, "batch deletes should have propagated to all 3 replica", 15);
+    doDBIdWithRetry(
+        testCollectionName, 3, 5, "batch deletes should have propagated to all 3 replica", 15);
 
     // add some chaos to the batch
     log.info("Closing one proxy port (again)");
@@ -395,11 +399,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
     log.info("Indexing batch of documents (15-29)");
-    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    batchRf = sendDocsWithRetry(testCollectionName, batch, minRf, 5, 1);
     assertRf(2, "batch should have succeeded, only one replica should be down", batchRf);
 
-    doDBQWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
-    doDBIdWithRetry(2, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBQWithRetry(
+        testCollectionName, 2, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBIdWithRetry(
+        testCollectionName, 2, 5, "deletes should have propagated to only 1 replica", 15);
 
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
     log.info("Closing second proxy port (again)");
@@ -413,14 +419,16 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       batch.add(doc);
     }
 
-    batchRf = sendDocsWithRetry(batch, minRf, 5, 1);
+    batchRf = sendDocsWithRetry(testCollectionName, batch, minRf, 5, 1);
     assertRf(
         1,
         "batch should have succeeded on the leader only (both replicas should be down)",
         batchRf);
 
-    doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 15);
-    doDBIdWithRetry(1, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBQWithRetry(
+        testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 15);
+    doDBIdWithRetry(
+        testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 15);
 
     getProxyForReplica(replicas.get(0)).reopen();
     getProxyForReplica(replicas.get(1)).reopen();
@@ -429,7 +437,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
   }
 
-  protected void addDocs(Set<Integer> docIds, int expectedRf, int retries) throws Exception {
+  protected void addDocs(String collection, Set<Integer> docIds, int expectedRf, int retries)
+      throws Exception {
 
     Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
     if (idList.length == 1) {
@@ -443,34 +452,34 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       doc.addField("a_t", "hello" + docId);
       batch.add(doc);
     }
-    sendDocsWithRetry(batch, expectedRf, retries, 1);
+    sendDocsWithRetry(collection, batch, expectedRf, retries, 1);
   }
 
-  protected void doDBQWithRetry(int expectedRf, int retries, String msg, int docsToAdd)
-      throws Exception {
+  protected void doDBQWithRetry(
+      String collection, int expectedRf, int retries, String msg, int docsToAdd) throws Exception {
     Set<Integer> docIds = getSomeIds(docsToAdd);
-    addDocs(docIds, expectedRf, retries);
+    addDocs(collection, docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(docIds, " OR ") + ")");
-    doDelete(req, msg, expectedRf, retries);
+    doDelete(collection, req, msg, expectedRf, retries);
   }
 
-  protected void doDBIdWithRetry(int expectedRf, int retries, String msg, int docsToAdd)
-      throws Exception {
+  protected void doDBIdWithRetry(
+      String collection, int expectedRf, int retries, String msg, int docsToAdd) throws Exception {
     Set<Integer> docIds = getSomeIds(docsToAdd);
-    addDocs(docIds, expectedRf, retries);
+    addDocs(collection, docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteById(StringUtils.join(docIds, ","));
-    doDelete(req, msg, expectedRf, retries);
+    doDelete(collection, req, msg, expectedRf, retries);
   }
 
-  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries)
+  protected void doDelete(
+      String collection, UpdateRequest req, String msg, int expectedRf, int retries)
       throws IOException, SolrServerException, InterruptedException {
     int achievedRf = -1;
     for (int idx = 0; idx < retries; ++idx) {
       NamedList<Object> response = cloudClient.request(req);
-      achievedRf =
-          cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
+      achievedRf = cloudClient.getMinAchievedReplicationFactor(collection, response);
       if (achievedRf == expectedRf) return;
       Thread.sleep(1000);
     }
