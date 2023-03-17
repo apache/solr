@@ -119,7 +119,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
-    COLLECTION_CLIENT = cluster.getSolrClientForCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     ZkStateReader zkStateReader = cluster.getZkStateReader();
 

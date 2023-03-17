@@ -150,7 +150,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         .waitForState(
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
-    RandomizingCloudSolrClientBuilder builder =
+    var builder =
         new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
 

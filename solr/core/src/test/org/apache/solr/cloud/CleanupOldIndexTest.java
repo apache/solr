@@ -64,7 +64,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     StoppableIndexingThread indexThread =
         new StoppableIndexingThread(
-            null, cluster.getSolrClientForCollection(COLLECTION), "1", true, maxDoc, 1, true);
+            null, cluster.getSolrClient(COLLECTION), "1", true, maxDoc, 1, true);
     indexThread.start();
 
     // give some time to index...

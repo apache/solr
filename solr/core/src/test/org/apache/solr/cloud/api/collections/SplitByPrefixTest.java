@@ -150,7 +150,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 
-    CloudSolrClient client = cluster.getSolrClientForCollection(COLLECTION_NAME);
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION_NAME);
 
     // splitting an empty collection by prefix should still work (i.e. fall back to old method of
     // just dividing the hash range

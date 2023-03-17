@@ -128,7 +128,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
               + clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1),
           clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getLeader());
 
-      assertSendDocFails(DEFAULT_COLLECTION,3);
+      assertSendDocFails(DEFAULT_COLLECTION, 3);
 
       log.info("Do force leader...");
       doForceLeader(DEFAULT_COLLECTION, SHARD1);
@@ -174,7 +174,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
             "Expected only 2 documents in the index",
             () -> {
               try {
-                return 2 == cloudClient.query(DEFAULT_COLLECTION,params).getResults().getNumFound();
+                return 2
+                    == cloudClient.query(DEFAULT_COLLECTION, params).getResults().getNumFound();
               } catch (Exception e) {
                 return false;
               }
@@ -183,7 +184,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
         assertEquals(
             "Expected only 2 documents in the index",
             2,
-            cloudClient.query(DEFAULT_COLLECTION,params).getResults().getNumFound());
+            cloudClient.query(DEFAULT_COLLECTION, params).getResults().getNumFound());
       }
 
       bringBackOldLeaderAndSendDoc(DEFAULT_COLLECTION, leader, notLeaders, 5);
@@ -195,19 +196,18 @@ public class ForceLeaderTest extends HttpPartitionTest {
   }
 
   /**
-   * For this test, we need a cloudClient that is not randomized since we need to NEVER send
-   * the updates only to the leader.  The way the RandomizingCloudSolrClientBuilder works, you can't
+   * For this test, we need a cloudClient that is not randomized since we need to NEVER send the
+   * updates only to the leader. The way the RandomizingCloudSolrClientBuilder works, you can't
    * avoid its internal decision-making process to sometimes send updates only to leaders.
    */
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudLegacySolrClient.Builder builder = new CloudLegacySolrClient.Builder(Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+    CloudLegacySolrClient.Builder builder =
+        new CloudLegacySolrClient.Builder(
+            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
     defaultCollection = DEFAULT_COLLECTION;
     builder.withDefaultCollection(defaultCollection);
-    return builder
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
-            .build();
+    return builder.withConnectionTimeout(30000).withSocketTimeout(120000).build();
   }
 
   private void putNonLeadersIntoLowerTerm(
@@ -221,7 +221,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     for (int i = 0; i < notLeaders.size(); i++)
       nonLeaderProxies[i] = getProxyForReplica(notLeaders.get(i));
 
-    sendDoc(collectionName,1);
+    sendDoc(collectionName, 1);
 
     // ok, now introduce a network partition between the leader and both replicas
     log.info("Closing proxies for the non-leader replicas...");
@@ -323,7 +323,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     CollectionAdminRequest.ForceLeader forceLeader =
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
     boolean shardLeadersOnly = random().nextBoolean();
-    RandomizingCloudSolrClientBuilder builder =
+    var builder =
         new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
     if (shardLeadersOnly) {

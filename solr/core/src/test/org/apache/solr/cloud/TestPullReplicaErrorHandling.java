@@ -200,7 +200,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
           getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
-      assertNumDocs(10, cluster.getSolrClientForCollection(collectionName));
+      assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
       proxy.reopen();

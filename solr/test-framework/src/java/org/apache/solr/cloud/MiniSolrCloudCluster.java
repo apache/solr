@@ -162,7 +162,7 @@ public class MiniSolrCloudCluster {
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
-  private Map<String, CloudSolrClient> solrClientForCollectionCache = new ConcurrentHashMap<>();
+  private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
 
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
@@ -719,11 +719,13 @@ public class MiniSolrCloudCluster {
 
       IOUtils.closeQuietly(solrClient);
 
-      solrClientForCollectionCache.values().parallelStream()
+      solrClientByCollection.values().parallelStream()
           .forEach(
               c -> {
                 IOUtils.closeQuietly(c);
               });
+      solrClientByCollection.clear();
+      ;
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -753,8 +755,14 @@ public class MiniSolrCloudCluster {
     return solrClient;
   }
 
-  public CloudSolrClient getSolrClientForCollection(String collectionName) {
-    return solrClientForCollectionCache.computeIfAbsent(
+  /**
+   * Returns a SolrClient that has a defaultCollection set for it.
+   * SolrClients are cached by their collectionName for reuse and are closed for you.
+   * @param collectionName  The name of the collection to get a SolrClient for.
+   * @return
+   */
+  public CloudSolrClient getSolrClient(String collectionName) {
+    return solrClientByCollection.computeIfAbsent(
         collectionName,
         k -> {
           CloudSolrClient solrClient =

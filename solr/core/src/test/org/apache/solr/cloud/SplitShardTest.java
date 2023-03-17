@@ -376,10 +376,9 @@ public class SplitShardTest extends SolrCloudTestCase {
     // 1 and looping the test until you get another failure. You may need to further instrument
     // things like DistributedZkUpdateProcessor to display the cluster state for the collection,
     // etc. Using more threads increases the chance of hitting a concurrency bug, but too many
-    // threads
-    // can overwhelm single-threaded buffering replay after the low level index split and result in
-    // subShard leaders that can't catch up and become active (a known issue that still needs to be
-    // resolved.)
+    // threads can overwhelm single-threaded buffering replay after the low level index split and
+    // result in subShard leaders that can't catch up and become active (a known issue that still
+    // needs to be resolved.)
     doLiveSplitShard("livesplit1", 1, 4);
   }
 }

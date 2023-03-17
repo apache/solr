@@ -74,7 +74,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    COLLECTION_CLIENT = cluster.getSolrClientForCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 

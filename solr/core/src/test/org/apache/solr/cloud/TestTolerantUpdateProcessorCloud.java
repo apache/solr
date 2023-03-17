@@ -100,7 +100,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
     configureCluster(NUM_SERVERS).addConfig(configName, configDir.toPath()).configure();
 
-    COLLECTION_CLIENT = cluster.getSolrClientForCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     CollectionAdminRequest.createCollection(
             COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)

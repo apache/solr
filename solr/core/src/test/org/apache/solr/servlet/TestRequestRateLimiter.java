@@ -69,8 +69,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               5 /* allowedRequests */,
               true /* isSlotBorrowing */);
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
-      // its
-      // parent here
+      // its parent here
       RateLimitManager.Builder builder =
           new MockBuilder(
               null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
@@ -127,8 +126,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               5 /* allowedRequests */,
               true /* isSlotBorrowing */);
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
-      // its
-      // parent
+      // its parent
       RateLimitManager.Builder builder =
           new MockBuilder(
               null /*dummy SolrZkClient */,

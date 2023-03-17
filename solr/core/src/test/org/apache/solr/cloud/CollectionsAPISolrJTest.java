@@ -827,7 +827,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    CloudSolrClient solrClient = cluster.getSolrClientForCollection(collectionName);
+    CloudSolrClient solrClient = cluster.getSolrClient(collectionName);
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 

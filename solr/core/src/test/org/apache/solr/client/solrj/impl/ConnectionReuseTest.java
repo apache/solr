@@ -87,7 +87,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
-        RandomizingCloudSolrClientBuilder builder =
+        var builder =
             new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
         boolean shardLeadersOnly = random().nextBoolean();

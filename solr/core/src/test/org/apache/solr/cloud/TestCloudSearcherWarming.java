@@ -307,11 +307,14 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                     log.error(
                         "registered searcher not null, maxdocs = {}",
                         registeredSearcher.get().maxDoc());
-                    registeredSearcher.decref();
                     if (registeredSearcher.get().maxDoc() != expectedDocs.get()) {
                       failingCoreNodeName.set(coreNodeName);
+                      registeredSearcher.decref();
+                      return false;
+                    } else {
+                      registeredSearcher.decref();
+                      return false;
                     }
-                    return false;
                   } else {
                     log.error("registered searcher was null!");
                     RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
