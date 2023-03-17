@@ -162,8 +162,24 @@ public class DistributedCollectionConfigSetCommandRunner {
   }
 
   /**
-   * When {@link org.apache.solr.handler.admin.CollectionsHandler#invokeOperation} does not enqueue
-   * to overseer queue and instead calls this method.
+   * When {org.apache.solr.handler.admin.CollectionsHandler#invokeAction} does not enqueue to
+   * overseer queue and instead calls this method, this method is expected to do the equivalent of
+   * what Overseer does in { org.apache.solr.cloud.OverseerConfigSetMessageHandler#processMessage}.
+   *
+   * <p>The steps leading to that call in the Overseer execution path are (and the equivalent is
+   * done here):
+   *
+   * <ul>
+   *   <li>{@link org.apache.solr.cloud.OverseerTaskProcessor#run()} gets the message from the ZK
+   *       queue, grabs the corresponding locks (write lock on the config set target of the API
+   *       command and a read lock on the base config set if any - the case for config set creation)
+   *       then executes the command using an executor service (it also checks the asyncId if any is
+   *       specified but async calls are not supported for Config Set API calls).
+   *   <li>In {@link org.apache.solr.cloud.OverseerTaskProcessor}.{@code Runner.run()} (run on an
+   *       executor thread) a call is made to {
+   *       org.apache.solr.cloud.OverseerConfigSetMessageHandler#processMessage} which does a few
+   *       checks and calls the appropriate Config Set method.
+   * </ul>
    */
   public void runConfigSetCommand(
       SolrQueryResponse rsp,

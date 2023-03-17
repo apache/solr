@@ -69,10 +69,6 @@ public class OverseerCollectionMessageHandler implements SolrCloseable {
   Stats stats;
   TimeSource timeSource;
 
-  public interface Lock {
-    void unlock();
-  }
-
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
 
@@ -180,7 +176,7 @@ public class OverseerCollectionMessageHandler implements SolrCloseable {
    *     tasks are executed in queue order (and a later task is not run earlier than its turn just
    *     because it happens that a lock got released).
    */
-  public Lock lockTask(ZkNodeProps message, long batchSessionId) {
+  public LockTree.Lock lockTask(ZkNodeProps message, long batchSessionId) {
     if (sessionId != batchSessionId) {
       // this is always called in the same thread.
       // Each batch is supposed to have a new taskBatch

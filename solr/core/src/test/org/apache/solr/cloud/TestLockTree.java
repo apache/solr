@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Lock;
+import org.apache.solr.cloud.LockTree.Lock;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;

@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -132,7 +133,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private String thisNode;
 
-  private OverseerCollectionMessageHandler overseerCollectionMessageHandler;
+  private OverseerCollectionMessageHandler messageHandler;
 
   public OverseerTaskProcessor(
       ZkStateReader zkStateReader,
@@ -150,7 +151,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.stats = stats;
-    this.overseerCollectionMessageHandler =
+    this.messageHandler =
         new OverseerCollectionMessageHandler(
             zkStateReader,
             myId,
@@ -351,8 +352,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               continue;
             }
 
-            OverseerCollectionMessageHandler.Lock lock =
-                this.overseerCollectionMessageHandler.lockTask(message, batchSessionId);
+            LockTree.Lock lock = this.messageHandler.lockTask(message, batchSessionId);
             if (lock == null) {
               if (log.isDebugEnabled()) {
                 log.debug("Exclusivity check failed for [{}]", message);
@@ -380,12 +380,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug(
                   "{}: Get the message id: {} message: {}",
-                  this.overseerCollectionMessageHandler.getName(),
+                  this.messageHandler.getName(),
                   head.getId(),
                   message);
             }
-            Runner runner =
-                new Runner(this.overseerCollectionMessageHandler, message, operation, head, lock);
+            Runner runner = new Runner(this.messageHandler, message, operation, head, lock);
             tpe.execute(runner);
           }
 
@@ -437,6 +436,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
+    IOUtils.closeQuietly(messageHandler);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)
@@ -542,14 +542,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     OverseerSolrResponse response;
     QueueEvent head;
     OverseerCollectionMessageHandler messageHandler;
-    private final OverseerCollectionMessageHandler.Lock lock;
+    private final LockTree.Lock lock;
 
     public Runner(
         OverseerCollectionMessageHandler messageHandler,
         ZkNodeProps message,
         String operation,
         QueueEvent head,
-        OverseerCollectionMessageHandler.Lock lock) {
+        LockTree.Lock lock) {
       this.message = message;
       this.operation = operation;
       this.head = head;

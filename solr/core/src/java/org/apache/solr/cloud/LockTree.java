@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Lock;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.LockLevel;
 import org.apache.solr.common.util.StrUtils;
@@ -37,6 +36,10 @@ import org.slf4j.LoggerFactory;
 public class LockTree {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Node root = new Node(null, LockLevel.CLUSTER, null);
+
+  public interface Lock {
+    void unlock();
+  }
 
   private class LockImpl implements Lock {
     final Node node;
