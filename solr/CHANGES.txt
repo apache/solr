@@ -59,6 +59,11 @@ Optimizations
 
 * SOLR-16694: Shortcut Http2SolrClient mimeType check for default response parse (Tomás Fernández Löbbe, Alex Deparvu)
 
+* SOLR-16692: Allow setting the a CookieStore implementation in Http2SolrClient. When Cookies are not needed, this can be set to
+  `org.eclipse.jetty.util.HttpCookieStore.Empty`, which avoids some of the processing that happens in the default `java.net.InMemoryCookieStore`.
+  Solr can also be started with the system property `solr.http.disableCookies` set to `true`, so that the internal clients
+  that Solr uses to communicate between nodes use `HttpCookieStore.Empty`. (Tomás Fernández Löbbe)
+
 Other Changes
 ---------------------
 
