@@ -184,7 +184,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String data = "my data";
     ZLibCompressor zLibCompressor = new ZLibCompressor();
-    byte[] expected = zLibCompressor.compressBytes(data.getBytes(StandardCharsets.UTF_8));
+    byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+    byte[] expected =
+        random().nextBoolean()
+            ? zLibCompressor.compressBytes(dataBytes)
+            : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
     String[] args =
         new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
@@ -192,7 +196,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     // test re-put to existing
     data = "my data deux";
-    expected = zLibCompressor.compressBytes(data.getBytes(StandardCharsets.UTF_8));
+    dataBytes = data.getBytes(StandardCharsets.UTF_8);
+    expected =
+        random().nextBoolean()
+            ? zLibCompressor.compressBytes(dataBytes)
+            : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
     assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
@@ -458,7 +466,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     ZLibCompressor zLibCompressor = new ZLibCompressor();
     ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
-    this.zkClient.create(getNode, zLibCompressor.compressBytes(data), CreateMode.PERSISTENT, true);
+    byte[] compressedData =
+        random().nextBoolean()
+            ? zLibCompressor.compressBytes(data)
+            : zLibCompressor.compressBytes(data, data.length / 10);
+    this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     ZkCLI.main(args);
@@ -495,7 +507,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     ZLibCompressor zLibCompressor = new ZLibCompressor();
-    this.zkClient.create(getNode, zLibCompressor.compressBytes(data), CreateMode.PERSISTENT, true);
+    byte[] compressedData =
+        random().nextBoolean()
+            ? zLibCompressor.compressBytes(data)
+            : zLibCompressor.compressBytes(data, data.length / 10);
+    this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
 
     File file =
         new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());

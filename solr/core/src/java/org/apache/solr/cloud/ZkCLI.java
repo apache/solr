@@ -407,7 +407,7 @@ public class ZkCLI implements CLIO {
           byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data);
+            data = compressor.compressBytes(data, data.length / 10);
           }
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
@@ -429,7 +429,7 @@ public class ZkCLI implements CLIO {
           byte[] data = IOUtils.toByteArray(is);
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data);
+            data = compressor.compressBytes(data, data.length / 10);
           }
           try {
             if (zkClient.exists(path, true)) {
