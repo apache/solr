@@ -136,6 +136,8 @@ public class Http2SolrClient extends SolrClient {
   private long requestTimeoutMillis;
 
   protected ResponseParser parser = new BinaryResponseParser();
+  private Set<String> defaultParserMimeTypes;
+
   protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private AsyncTracker asyncTracker = new AsyncTracker();
@@ -188,6 +190,7 @@ public class Http2SolrClient extends SolrClient {
     if (builder.responseParser != null) {
       parser = builder.responseParser;
     }
+    updateDefaultMimeTypeForParser();
     if (builder.requestTimeoutMillis == null) {
       requestTimeoutMillis = -1;
     } else {
@@ -824,32 +827,7 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
-      final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-      if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
-        final Collection<String> processorMimeTypes =
-            processorSupportedContentTypes.stream()
-                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-        if (!processorMimeTypes.contains(mimeType)) {
-          // unexpected mime type
-          final String allSupportedTypes = String.join(", ", processorMimeTypes);
-          String prefix =
-              "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
-          String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
-          try {
-            ByteArrayOutputStream body = new ByteArrayOutputStream();
-            is.transferTo(body);
-            throw new RemoteSolrException(
-                urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-          } catch (IOException e) {
-            throw new RemoteSolrException(
-                urlExceptionMessage,
-                httpStatus,
-                "Could not parse response with encoding " + exceptionEncoding,
-                e);
-          }
-        }
-      }
+      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
 
       NamedList<Object> rsp;
       try {
@@ -913,6 +891,53 @@ public class Http2SolrClient extends SolrClient {
           assert ObjectReleaseTracker.release(is);
         } catch (IOException e) {
           // quitely
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that the content type in the response can be processed by the Response Parser. Throws
+   * a {@code RemoteSolrException} if not.
+   */
+  private void checkContentType(
+      ResponseParser processor,
+      InputStream is,
+      String mimeType,
+      String encoding,
+      int httpStatus,
+      String urlExceptionMessage) {
+    if (mimeType == null
+        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
+      // Shortcut the default scenario
+      return;
+    }
+    final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
+    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
+      boolean processorAcceptsMimeType =
+          processorSupportedContentTypes.stream()
+              .map(ct -> ContentType.parse(ct).getMimeType().trim())
+              .anyMatch(mimeType::equalsIgnoreCase);
+      if (!processorAcceptsMimeType) {
+        // unexpected mime type
+        final String allSupportedTypes =
+            processorSupportedContentTypes.stream()
+                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.joining(", "));
+        String prefix =
+            "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
+        String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
+        try {
+          ByteArrayOutputStream body = new ByteArrayOutputStream();
+          is.transferTo(body);
+          throw new RemoteSolrException(
+              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
+        } catch (IOException e) {
+          throw new RemoteSolrException(
+              urlExceptionMessage,
+              httpStatus,
+              "Could not parse response with encoding " + exceptionEncoding,
+              e);
         }
       }
     }
@@ -1249,6 +1274,14 @@ public class Http2SolrClient extends SolrClient {
   @Deprecated
   public void setParser(ResponseParser parser) {
     this.parser = parser;
+    updateDefaultMimeTypeForParser();
+  }
+
+  protected void updateDefaultMimeTypeForParser() {
+    defaultParserMimeTypes =
+        parser.getContentTypes().stream()
+            .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
