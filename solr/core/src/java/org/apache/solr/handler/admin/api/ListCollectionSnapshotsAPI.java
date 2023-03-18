@@ -17,7 +17,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,7 +54,7 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
 
   @GET
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-  @PermissionName(COLL_EDIT_PERM)
+  @PermissionName(COLL_READ_PERM)
   public ListSnapshotsResponse listSnapshots(
       @Parameter(description = "The name of the collection.", required = true)
           @PathParam("collName")

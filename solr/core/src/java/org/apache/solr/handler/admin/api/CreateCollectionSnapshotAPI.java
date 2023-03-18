@@ -73,7 +73,7 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
       @Parameter(description = "The name of the snapshot to be created.", required = true)
           @PathParam("snapshotName")
           String snapshotName,
-      @Parameter(description = "TODO follow aliases")
+      @Parameter(description = "A flag that treats the collName parameter as a collection alias.")
           @DefaultValue("false")
           @QueryParam("followAliases")
           boolean followAliases,
@@ -142,7 +142,7 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     @JsonProperty("snapshot")
     String snapshotName;
 
-    @Schema(description = "todo")
+    @Schema(description = "A flag that treats the collName parameter as a collection alias.")
     @JsonProperty("followAliases")
     boolean followAliases;
 
