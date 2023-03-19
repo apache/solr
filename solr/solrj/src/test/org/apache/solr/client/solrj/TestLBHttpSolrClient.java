@@ -212,8 +212,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .withConnectionTimeout(500)
-            .withSocketTimeout(500)
+            .withConnectionTimeout(500, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(500, TimeUnit.MILLISECONDS)
             .setAliveCheckInterval(500)
             .build()) {
 

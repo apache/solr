@@ -739,8 +739,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
           try (SolrClient client =
               new Builder(nodeProps.getBaseUrl())
-                  .withConnectionTimeout(15000)
-                  .withSocketTimeout(60000)
+                  .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+                  .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
                   .build()) {
             RequestSyncShard reqSyncShard = new RequestSyncShard();
             reqSyncShard.setCollection(collection);
