@@ -51,6 +51,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/** V2 API for Creating Collection Snapshots. */
 @Path("/collections/{collName}/snapshots")
 public class CreateCollectionSnapshotAPI extends AdminAPIBase {
 
@@ -62,6 +63,7 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=CREATESNAPSHOT */
   @POST
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -133,6 +135,10 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     return response;
   }
 
+  /**
+   * The Response for {@link CreateCollectionSnapshotAPI}'s {@link #createSnapshot(String, String,
+   * boolean, String)}
+   */
   public static class CreateSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The name of the collection.")
     @JsonProperty(COLLECTION_PROP)

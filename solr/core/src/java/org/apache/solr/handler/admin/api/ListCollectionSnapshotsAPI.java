@@ -41,6 +41,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/** V2 API for Listing Collection Snapshots. */
 @Path("/collections/{collName}/snapshots")
 public class ListCollectionSnapshotsAPI extends AdminAPIBase {
 
@@ -52,6 +53,7 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=LISTSNAPSHOTS */
   @GET
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_READ_PERM)
@@ -92,6 +94,7 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
     return response;
   }
 
+  /** The Response for {@link ListCollectionSnapshotsAPI}'s {@link #listSnapshots(String)} */
   public static class ListSnapshotsResponse extends SolrJerseyResponse {
     @Schema(description = "The snapshots for the collection.")
     @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)

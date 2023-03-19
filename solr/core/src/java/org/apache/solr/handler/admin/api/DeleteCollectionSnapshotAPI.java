@@ -49,6 +49,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/** V2 API for Deleting Collection Snapshots. */
 @Path("/collections/{collName}/snapshots")
 public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
 
@@ -60,6 +61,7 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT */
   @DELETE
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -116,6 +118,10 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
     return response;
   }
 
+  /**
+   * The Response for {@link DeleteCollectionSnapshotAPI}'s {@link #deleteSnapshot(String, String,
+   * boolean, String)}
+   */
   public static class DeleteSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The name of the collection.")
     @JsonProperty(COLLECTION_PROP)
