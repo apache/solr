@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.util.cli.AuthTool;
+import org.apache.solr.util.cli.Tool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -80,8 +82,8 @@ public class AuthToolTest extends SolrCloudTestCase {
   }
 
   private int runTool(String[] args) throws Exception {
-    SolrCLI.Tool tool = findTool(args);
-    assertTrue(tool instanceof SolrCLI.AuthTool);
+    Tool tool = findTool(args);
+    assertTrue(tool instanceof AuthTool);
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     return tool.runTool(cli);
   }

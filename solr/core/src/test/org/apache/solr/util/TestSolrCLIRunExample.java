@@ -46,6 +46,8 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.cli.DeleteTool;
+import org.apache.solr.util.cli.RunExampleTool;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -363,7 +365,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
       closeables.add(executor);
 
-      SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
+      RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
       try {
         int status =
             tool.runTool(
@@ -486,7 +488,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
     closeables.add(executor);
 
-    SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, userInputSim, stdoutSim);
+    RunExampleTool tool = new RunExampleTool(executor, userInputSim, stdoutSim);
     try {
       tool.runTool(
           SolrCLI.processCommandLineArgs(
@@ -560,7 +562,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     // delete the collection
-    SolrCLI.DeleteTool deleteTool = new SolrCLI.DeleteTool(stdoutSim);
+    DeleteTool deleteTool = new DeleteTool(stdoutSim);
     String[] deleteArgs = new String[] {"-name", collectionName, "-solrUrl", solrUrl};
     deleteTool.runTool(
         SolrCLI.processCommandLineArgs(
@@ -609,7 +611,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     DefaultExecutor executor = new DefaultExecutor();
 
-    SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
+    RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
     int code =
         tool.runTool(
             SolrCLI.processCommandLineArgs(

@@ -34,6 +34,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.cli.ConfigSetDownloadTool;
+import org.apache.solr.util.cli.ConfigSetUploadTool;
+import org.apache.solr.util.cli.ZkCpTool;
+import org.apache.solr.util.cli.ZkLsTool;
+import org.apache.solr.util.cli.ZkMvTool;
+import org.apache.solr.util.cli.ZkRmTool;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
@@ -93,7 +99,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           configSet.toAbsolutePath().toString(),
         };
 
-    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+    ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
     int res =
         tool.runTool(
@@ -153,7 +159,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           zkAddr,
         };
 
-    SolrCLI.ConfigSetDownloadTool downTool = new SolrCLI.ConfigSetDownloadTool();
+    ConfigSetDownloadTool downTool = new ConfigSetDownloadTool();
     int res =
         downTool.runTool(
             SolrCLI.processCommandLineArgs(
@@ -170,7 +176,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Now copy it up and back and insure it's still a file in the new place
     AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
     Path tmp2 = createTempDir("downConfigNewPlace2");
-    downTool = new SolrCLI.ConfigSetDownloadTool();
+    downTool = new ConfigSetDownloadTool();
     args =
         new String[] {
           "-confname",
@@ -211,7 +217,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-zkHost", zkAddr,
         };
 
-    SolrCLI.ZkCpTool cpTool = new SolrCLI.ZkCpTool();
+    ZkCpTool cpTool = new ZkCpTool();
 
     int res =
         cpTool.runTool(
@@ -658,7 +664,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-zkHost", zkAddr,
         };
 
-    SolrCLI.ZkMvTool mvTool = new SolrCLI.ZkMvTool();
+    ZkMvTool mvTool = new ZkMvTool();
 
     int res =
         mvTool.runTool(
@@ -760,7 +766,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
-    SolrCLI.ZkLsTool tool = new SolrCLI.ZkLsTool(ps);
+    ZkLsTool tool = new ZkLsTool(ps);
 
     int res =
         tool.runTool(
@@ -873,7 +879,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "-path", "/configs/rm1", "-zkHost", zkAddr,
         };
 
-    SolrCLI.ZkRmTool tool = new SolrCLI.ZkRmTool();
+    ZkRmTool tool = new ZkRmTool();
 
     int res =
         tool.runTool(

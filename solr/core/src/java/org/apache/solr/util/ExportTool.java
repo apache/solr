@@ -80,10 +80,11 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.util.cli.ToolBase;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-public class ExportTool extends SolrCLI.ToolBase {
+public class ExportTool extends ToolBase {
   @Override
   public String getName() {
     return "export";
@@ -176,7 +177,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   static Set<String> formats = Set.of(JAVABIN, "jsonl");
 
   @Override
-  protected void runImpl(CommandLine cli) throws Exception {
+  public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
     Info info = new MultiThreadedRunner(url);
     info.query = cli.getOptionValue("query", "*:*");

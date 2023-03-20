@@ -51,6 +51,10 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.cli.ConfigTool;
+import org.apache.solr.util.cli.CreateCollectionTool;
+import org.apache.solr.util.cli.DeleteTool;
+import org.apache.solr.util.cli.HealthcheckTool;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +113,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    SolrCLI.CreateCollectionTool tool = new SolrCLI.CreateCollectionTool();
+    CreateCollectionTool tool = new CreateCollectionTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
@@ -197,7 +201,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-collection", testCollectionName,
           "-zkHost", zkHost
         };
-    SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
+    HealthcheckTool tool = new HealthcheckTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
@@ -209,7 +213,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-name", testCollectionName,
           "-solrUrl", solrUrl
         };
-    SolrCLI.DeleteTool tool = new SolrCLI.DeleteTool();
+    DeleteTool tool = new DeleteTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
@@ -244,7 +248,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     Map<String, Long> startTimes = getSoftAutocommitInterval(testCollectionName);
 
-    SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
+    ConfigTool tool = new ConfigTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);

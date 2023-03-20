@@ -40,11 +40,12 @@ import org.apache.solr.packagemanager.RepositoryManager;
 import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
-import org.apache.solr.util.SolrCLI.StatusTool;
+import org.apache.solr.util.cli.StatusTool;
+import org.apache.solr.util.cli.ToolBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PackageTool extends SolrCLI.ToolBase {
+public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,7 +72,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           "We really need to print the stacktrace here, otherwise "
               + "there shall be little else information to debug problems. Other SolrCLI tools "
               + "don't print stack traces, hence special treatment is needed here.")
-  protected void runImpl(CommandLine cli) throws Exception {
+  public void runImpl(CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"

@@ -66,6 +66,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.cli.StatusTool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -302,7 +303,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       String[] toolArgs = new String[] {"status", "-solr", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-      SolrCLI.StatusTool tool = new SolrCLI.StatusTool(stdoutSim);
+      StatusTool tool = new StatusTool(stdoutSim);
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
         tool.runTool(
