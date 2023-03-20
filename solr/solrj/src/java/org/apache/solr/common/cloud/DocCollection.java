@@ -144,23 +144,23 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public static DocCollection buildDocCollection(
-          String name,
-          Map<String, Slice> slices,
-          Map<String, Object> props,
-          DocRouter router,
-          int zkVersion,
-          DocCollection.PrsSupplier prsSupplier) {
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion,
+      DocCollection.PrsSupplier prsSupplier) {
     boolean perReplicaState =
-            (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
+        (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     PerReplicaStates perReplicaStates;
     if (perReplicaState) {
       if (prsSupplier == null) {
         throw new IllegalArgumentException(
-                CollectionStateProps.PER_REPLICA_STATE + " = true , but prsSuppler is not provided");
+            CollectionStateProps.PER_REPLICA_STATE + " = true , but prsSuppler is not provided");
       }
 
       if (!hasAnyReplica(
-              slices)) { // a special case, if there is no replica, it should not fetch (first PRS
+          slices)) { // a special case, if there is no replica, it should not fetch (first PRS
         // collection creation with no replicas). Otherwise, it would trigger exception
         // on fetching a state.json that does not exist yet
         perReplicaStates = PerReplicaStates.empty(name);
@@ -191,9 +191,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * Update our state with a state of a {@link PerReplicaStates} which could override states of {@link Replica}.
+   * Update our state with a state of a {@link PerReplicaStates} which could override states of
+   * {@link Replica}.
    *
-   * This does not create a new DocCollection.
+   * <p>This does not create a new DocCollection.
    */
   public final void setPerReplicaStates(PerReplicaStates perReplicaStates) {
     this.perReplicaStates = perReplicaStates;

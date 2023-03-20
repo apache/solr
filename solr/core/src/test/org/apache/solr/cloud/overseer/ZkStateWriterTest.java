@@ -178,7 +178,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand prs1 =
             new ZkWriteCommand(
                 "prs1",
-                    DocCollection.buildDocCollection(
+                DocCollection.buildDocCollection(
                     "prs1",
                     new HashMap<>(),
                     prsProps,
@@ -264,7 +264,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand prs1 =
             new ZkWriteCommand(
                 "prs1",
-                    DocCollection.buildDocCollection(
+                DocCollection.buildDocCollection(
                     "prs1",
                     new HashMap<>(),
                     prsProps,
