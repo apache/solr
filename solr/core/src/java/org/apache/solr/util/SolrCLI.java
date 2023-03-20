@@ -287,7 +287,8 @@ public class SolrCLI implements CLIO {
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
 
-    for (Class<? extends Tool> next : findToolClassesInPackage(List.of("org.apache.solr.util", "org.apache.solr.util.cli"))) {
+    for (Class<? extends Tool> next :
+        findToolClassesInPackage(List.of("org.apache.solr.util", "org.apache.solr.util.cli"))) {
       Tool tool = next.getConstructor().newInstance();
       if (toolType.equals(tool.getName())) return tool;
     }
@@ -318,7 +319,8 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("export", getToolOptions(new ExportTool()));
     formatter.printHelp("package", getToolOptions(new PackageTool()));
 
-    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage((List.of("org.apache.solr.util", "org.apache.solr.util.cli")));
+    List<Class<? extends Tool>> toolClasses =
+        findToolClassesInPackage((List.of("org.apache.solr.util", "org.apache.solr.util.cli")));
     for (Class<? extends Tool> next : toolClasses) {
       Tool tool = next.getConstructor().newInstance();
       formatter.printHelp(tool.getName(), getToolOptions(tool));
@@ -407,7 +409,7 @@ public class SolrCLI implements CLIO {
   /** Scans Jar files on the classpath for Tool implementations to activate. */
   private static List<Class<? extends Tool>> findToolClassesInPackage(List<String> packageNames) {
     List<Class<? extends Tool>> toolClasses = new ArrayList<>();
-    for (String packageName: packageNames) {
+    for (String packageName : packageNames) {
       try {
         ClassLoader classLoader = SolrCLI.class.getClassLoader();
         String path = packageName.replace('.', '/');
@@ -420,7 +422,8 @@ public class SolrCLI implements CLIO {
 
         for (String classInPackage : classes) {
           Class<?> theClass = Class.forName(classInPackage);
-          if (Tool.class.isAssignableFrom(theClass)) toolClasses.add(theClass.asSubclass(Tool.class));
+          if (Tool.class.isAssignableFrom(theClass))
+            toolClasses.add(theClass.asSubclass(Tool.class));
         }
       } catch (Exception e) {
         // safe to squelch this as it's just looking for tools to run
@@ -520,7 +523,7 @@ public class SolrCLI implements CLIO {
   public static Map<String, Object> getJson(String getUrl) throws Exception {
     Map<String, Object> json = null;
     ;
-    try (CloseableHttpClient httpClient = getHttpClient()){
+    try (CloseableHttpClient httpClient = getHttpClient()) {
       json = getJson(httpClient, getUrl, 2, true);
     }
     return json;

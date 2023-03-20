@@ -107,7 +107,7 @@ public class CreateCoreTool extends ToolBase {
 
     String systemInfoUrl = solrUrl + "admin/info/system";
     String coreRootDirectory; // usually same as solr home, but not always
-    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()) {
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
       if ("solrcloud".equals(systemInfo.get("mode"))) {
         throw new IllegalStateException(
@@ -124,7 +124,6 @@ public class CreateCoreTool extends ToolBase {
       if (coreRootDirectory == null) coreRootDirectory = (String) systemInfo.get("solr_home");
       if (coreRootDirectory == null)
         coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
-
     }
 
     String coreStatusUrl = solrUrl + "admin/cores?action=STATUS&core=" + coreName;

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -91,7 +90,7 @@ public class DeleteTool extends ToolBase {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     String systemInfoUrl = solrUrl + "admin/info/system";
-    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()) {
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
       if ("solrcloud".equals(systemInfo.get("mode"))) {
         deleteCollection(cli);
