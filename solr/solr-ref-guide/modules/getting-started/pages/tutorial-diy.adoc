@@ -1,4 +1,4 @@
-= Exercise 3 Index Your Own Data
+= Exercise 3: Index Your Own Data
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
