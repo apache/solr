@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,6 +26,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.lucene.store.IOContext;
@@ -254,7 +254,10 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    Preconditions.checkState(repository.exists(source), "Path %s does not exist", source);
+    if (!repository.exists(source)) {
+      throw new IllegalArgumentException(
+          String.format(Locale.ROOT, "Path %s does not exist", source));
+    }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
