@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,7 +36,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.SuppressForbidden;
 
 public class CreateAliasCmd extends AliasCmd {
 
@@ -113,7 +111,6 @@ public class CreateAliasCmd extends AliasCmd {
         .collect(Collectors.toList());
   }
 
-  @SuppressForbidden(reason = "Sets.difference")
   private void callCreateRoutedAlias(
       ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state)
       throws Exception {
@@ -141,8 +138,9 @@ public class CreateAliasCmd extends AliasCmd {
       throw new SolrException(
           BAD_REQUEST,
           "Not all required params were supplied. Missing params: "
-              + StrUtils.join(
-                  Sets.difference(routedAlias.getRequiredParams(), props.keySet()), ','));
+              + routedAlias.getRequiredParams().stream()
+                  .filter(e -> !props.containsKey(e))
+                  .collect(Collectors.joining(",")));
     }
 
     Aliases aliases = zkStateReader.aliasesManager.getAliases();

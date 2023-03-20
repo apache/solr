@@ -27,7 +27,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import com.google.common.collect.Sets;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,7 +86,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
@@ -756,7 +754,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     return cc.getZkController().getZkStateReader();
   }
 
-  @SuppressForbidden(reason = "Sets.difference")
   boolean applyCopyFieldUpdates(
       String mutableId, String copyDest, String fieldName, ManagedIndexSchema schema)
       throws IOException, SolrServerException {
@@ -808,7 +805,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           schema.getCopyFieldsList(fieldName).stream()
               .map(cf -> cf.getDestination().getName())
               .collect(Collectors.toSet());
-      Set<String> add = Sets.difference(desired, existing);
+      Set<String> add =
+          desired.stream()
+              .filter(e -> !existing.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!add.isEmpty()) {
         SchemaRequest.AddCopyField addAction =
             new SchemaRequest.AddCopyField(fieldName, new ArrayList<>(add));
@@ -820,7 +820,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
         updated = true;
       } // no additions ...
 
-      Set<String> del = Sets.difference(existing, desired);
+      Set<String> del =
+          existing.stream()
+              .filter(e -> !desired.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!del.isEmpty()) {
         SchemaRequest.DeleteCopyField delAction =
             new SchemaRequest.DeleteCopyField(fieldName, new ArrayList<>(del));
