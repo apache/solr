@@ -105,8 +105,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         new CloudLegacySolrClient.Builder(
                 Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
-            .withConnectionTimeout(5000)
-            .withSocketTimeout(10000)
+            .withConnectionTimeout(5000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(10000, TimeUnit.MILLISECONDS)
             .build();
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;

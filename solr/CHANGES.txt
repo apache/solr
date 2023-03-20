@@ -69,6 +69,8 @@ Other Changes
 
 * SOLR-16704: Add simple search benchmark to benchmark module (Tomás Fernández Löbbe)
 
+* SOLR-16709: Update Solr's internal use of Solr Client Builders to use TimeUnit parameter for time specific builder methods. (Eric Pugh)
+
 ==================  9.2.0 ==================
 
 New Features
