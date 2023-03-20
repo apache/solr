@@ -16,6 +16,10 @@
  */
 package org.apache.solr.util.cli;
 
+import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -23,45 +27,38 @@ import org.apache.solr.util.SolrCLI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.Optional;
-
 /**
  * Helps build SolrCloud aware tools by initializing a CloudSolrClient instance before running the
  * tool.
  */
 public abstract class SolrCloudTool extends ToolBase {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    protected SolrCloudTool(PrintStream stdout) {
-        super(stdout);
+  protected SolrCloudTool(PrintStream stdout) {
+    super(stdout);
+  }
+
+  @Override
+  public Option[] getOptions() {
+    return SolrCLI.cloudOptions;
+  }
+
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    SolrCLI.raiseLogLevelUnlessVerbose(cli);
+    String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST.getOpt(), SolrCLI.ZK_HOST);
+
+    log.debug("Connecting to Solr cluster: {}", zkHost);
+    try (var cloudSolrClient =
+        new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+            .build()) {
+
+      cloudSolrClient.connect();
+      runCloudTool(cloudSolrClient, cli);
     }
+  }
 
-    @Override
-    public Option[] getOptions() {
-        return SolrCLI.cloudOptions;
-    }
-
-    @Override
-    public void runImpl(CommandLine cli) throws Exception {
-        SolrCLI.raiseLogLevelUnlessVerbose(cli);
-        String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST.getOpt(), SolrCLI.ZK_HOST);
-
-        log.debug("Connecting to Solr cluster: {}", zkHost);
-        try (var cloudSolrClient =
-                     new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-                             .build()) {
-
-            cloudSolrClient.connect();
-            runCloudTool(cloudSolrClient, cli);
-        }
-    }
-
-    /**
-     * Runs a SolrCloud tool with CloudSolrClient initialized
-     */
-    protected abstract void runCloudTool(CloudLegacySolrClient cloudSolrClient, CommandLine cli)
-            throws Exception;
+  /** Runs a SolrCloud tool with CloudSolrClient initialized */
+  protected abstract void runCloudTool(CloudLegacySolrClient cloudSolrClient, CommandLine cli)
+      throws Exception;
 }

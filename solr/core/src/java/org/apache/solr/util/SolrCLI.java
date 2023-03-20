@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -43,7 +42,6 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -793,14 +791,14 @@ public class SolrCLI implements CLIO {
     String memory;
 
     public ReplicaHealth(
-            String shard,
-            String name,
-            String url,
-            String status,
-            long numDocs,
-            boolean isLeader,
-            String uptime,
-            String memory) {
+        String shard,
+        String name,
+        String url,
+        String status,
+        long numDocs,
+        boolean isLeader,
+        String uptime,
+        String memory) {
       this.shard = shard;
       this.name = name;
       this.url = url;
@@ -1080,5 +1078,4 @@ public class SolrCLI implements CLIO {
       super(message);
     }
   }
-
 }

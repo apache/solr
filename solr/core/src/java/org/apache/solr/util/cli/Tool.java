@@ -21,9 +21,9 @@ import org.apache.commons.cli.Option;
 
 /** Defines the interface to a Solr tool that can be run from the command-line app. */
 public interface Tool {
-    String getName();
+  String getName();
 
-    Option[] getOptions();
+  Option[] getOptions();
 
-    int runTool(CommandLine cli) throws Exception;
+  int runTool(CommandLine cli) throws Exception;
 }
