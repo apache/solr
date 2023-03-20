@@ -30,20 +30,25 @@ via `bin/solr start -e cloud -noprompt` and then as you make changes to assets i
 run `gradle dev` to redeploy the web assets. Do a  hard refresh in your browser
 to pick up your changes.
 
-=== How do we ensure coding standards and quality?
+=== Are there Coding Standards to follow?
+
+Please follow the https://google.github.io/styleguide/javaguide.html[Google Java Style Guide].
+We don't follow all aspects strictly; much code was written before this style guide was selected.
+The whitespace formatting aspect of this guide is mandatory and strictly enforced with tooling.
+To format the code automatically using "Spotless", do the following:
+
+`./gradlew tidy`
+
+Learn more via `./gradlew :helpFormatting`.
+Major IDE vendors have plugins for this style guide to help keep your code formatted as you work:
+
+ * https://github.com/google/google-java-format#eclipse
+ * https://plugins.jetbrains.com/plugin/8527-google-java-format
 
 We use a number of tools for ensuring that Solr's codebase follows our community standards.
 The most important tool is the very rich testing infrastructure that Solr enjoys.
 We strive for testing of every aspect of Solr.
 If you find a bug, write a test demonstrating it, so we can ensure that once the bug is squashed, it stays squashed.
-
-Beyond testing, we also have some tools for ensuring coding standards are followed.
-https://github.com/diffplug/spotless[Spotless] is used to format the Java source code so that everyone uses the same formatting patterns.
-Run Spotless via:
-
-`./gradlew tidy`
-
-Learn more via `./gradlew :helpFormatting`.
 
 The Eclipse IDE's linting tool ECJ is applied as part of the `check` task.
 

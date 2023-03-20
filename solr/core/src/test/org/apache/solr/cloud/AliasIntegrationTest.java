@@ -20,13 +20,15 @@ import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -238,28 +240,51 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testModifyPropertiesV2() throws Exception {
     final String aliasName = getSaferTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    // TODO fix Solr test infra so that this /____v2/ becomes /api/
-    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
-    post.setEntity(
+    final String baseUrl =
+        cluster.getRandomJetty(random()).getBaseUrl().toString().replace("/solr", "");
+    String aliasApi = String.format(Locale.ENGLISH, "/api/aliases/%s/properties", aliasName);
+
+    HttpPut withoutBody = new HttpPut(baseUrl + aliasApi);
+    assertEquals(400, httpClient.execute(withoutBody).getStatusLine().getStatusCode());
+
+    HttpPut update = new HttpPut(baseUrl + aliasApi);
+    update.setEntity(
         new StringEntity(
             "{\n"
-                + "\"set-alias-property\" : {\n"
-                + "  \"name\": \""
-                + aliasName
-                + "\",\n"
-                + "  \"properties\" : {\n"
-                + "    \"foo\": \"baz\",\n"
-                + "    \"bar\": \"bam\"\n"
+                + "    \"properties\":\n"
+                + "    {\n"
+                + "        \"foo\": \"baz\",\n"
+                + "        \"bar\": \"bam\"\n"
                 + "    }\n"
-                +
-                // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distrib
-                "  }\n"
                 + "}",
             ContentType.APPLICATION_JSON));
-    assertSuccess(post);
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    assertSuccess(update);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
+
+    String aliasPropertyApi =
+        String.format(Locale.ENGLISH, "/api/aliases/%s/properties/%s", aliasName, "foo");
+    HttpPut updateByProperty = new HttpPut(baseUrl + aliasPropertyApi);
+    updateByProperty.setEntity(
+        new StringEntity("{ \"value\": \"zab\" }", ContentType.APPLICATION_JSON));
+    assertSuccess(updateByProperty);
+    checkFooAndBarMeta(aliasName, zkStateReader, "zab", "bam");
+
+    HttpDelete deleteByProperty = new HttpDelete(baseUrl + aliasPropertyApi);
+    assertSuccess(deleteByProperty);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
+
+    HttpPut deleteByEmptyValue = new HttpPut(baseUrl + aliasApi);
+    deleteByEmptyValue.setEntity(
+        new StringEntity(
+            "{\n"
+                + "    \"properties\":\n"
+                + "    {\n"
+                + "        \"bar\": \"\"\n"
+                + "    }\n"
+                + "}",
+            ContentType.APPLICATION_JSON));
+    assertSuccess(deleteByEmptyValue);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, null);
   }
 
   @Test
@@ -278,7 +303,19 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
                 + "&property.foo=baz"
                 + "&property.bar=bam");
     assertSuccess(get);
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
+
+    HttpGet remove =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=ALIASPROP"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&property.foo="
+                + "&property.bar=bar");
+    assertSuccess(remove);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bar");
   }
 
   @Test
@@ -291,20 +328,24 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.addProperty("foo", "baz");
     setAliasProperty.addProperty("bar", "bam");
     setAliasProperty.process(cluster.getSolrClient());
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
     // now verify we can delete
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("foo", "");
     setAliasProperty.process(cluster.getSolrClient());
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
+
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("bar", null);
     setAliasProperty.process(cluster.getSolrClient());
-    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, null);
 
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     // whitespace value
     setAliasProperty.addProperty("foo", " ");
     setAliasProperty.process(cluster.getSolrClient());
+    checkFooAndBarMeta(aliasName, zkStateReader, " ", null);
   }
 
   @Test
@@ -413,14 +454,26 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     return -1;
   }
 
-  private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
+  private void checkFooAndBarMeta(
+      String aliasName, ZkStateReader zkStateReader, String fooValue, String barValue)
+      throws Exception {
     zkStateReader.aliasesManager.update(); // ensure our view is up-to-date
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     assertNotNull(meta);
-    assertTrue(meta.containsKey("foo"));
-    assertEquals("baz", meta.get("foo"));
-    assertTrue(meta.containsKey("bar"));
-    assertEquals("bam", meta.get("bar"));
+
+    if (fooValue != null) {
+      assertTrue(meta.containsKey("foo"));
+      assertEquals(fooValue, meta.get("foo"));
+    } else {
+      assertFalse(meta.toString(), meta.containsKey("foo"));
+    }
+
+    if (barValue != null) {
+      assertTrue(meta.containsKey("bar"));
+      assertEquals(barValue, meta.get("bar"));
+    } else {
+      assertFalse(meta.toString(), meta.containsKey("bar"));
+    }
   }
 
   private ZkStateReader createColectionsAndAlias(String aliasName)
