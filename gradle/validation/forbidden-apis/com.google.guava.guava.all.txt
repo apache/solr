@@ -36,3 +36,8 @@ com.google.common.collect.ObjectArrays
 
 @defaultMessage Use org.apache.solr.common.util.StrUtils
 com.google.common.base.Strings
+
+@defaultMessage Use Caffeine cache instead
+com.google.common.cache.**
+
+# TODO com.google.common.base.MoreObjects
