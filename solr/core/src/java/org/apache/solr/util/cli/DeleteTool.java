@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.util.cli;
 
 import org.apache.commons.cli.CommandLine;
@@ -11,8 +27,11 @@ import org.apache.solr.util.CLIO;
 import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -22,7 +41,7 @@ import java.util.Set;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DeleteTool extends ToolBase {
-
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public DeleteTool() {
         this(CLIO.getOutStream());
     }
@@ -117,7 +136,7 @@ public class DeleteTool extends ToolBase {
         boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
         if (deleteConfig && configName != null) {
             if (cli.hasOption("forceDeleteConfig")) {
-                SolrCLI.log.warn(
+                log.warn(
                         "Skipping safety checks, configuration directory {} will be deleted with impunity.",
                         configName);
             } else {
@@ -126,8 +145,8 @@ public class DeleteTool extends ToolBase {
 
                 // give a little note to the user if there are many collections in case it takes a while
                 if (collections.size() > 50)
-                    if (SolrCLI.log.isInfoEnabled()) {
-                        SolrCLI.log.info(
+                    if (log.isInfoEnabled()) {
+                        log.info(
                                 "Scanning {} to ensure no other collections are using config {}",
                                 collections.size(),
                                 configName);
@@ -143,7 +162,7 @@ public class DeleteTool extends ToolBase {
                                 .findFirst();
                 if (inUse.isPresent()) {
                     deleteConfig = false;
-                    SolrCLI.log.warn(
+                    log.warn(
                             "Configuration directory {} is also being used by {}{}",
                             configName,
                             inUse.get(),

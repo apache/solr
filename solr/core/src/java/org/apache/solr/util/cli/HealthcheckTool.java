@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.util.cli;
 
 import org.apache.commons.cli.CommandLine;
@@ -15,8 +31,11 @@ import org.apache.solr.util.CLIO;
 import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -30,6 +49,7 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
  * Requests health information about a specific collection in SolrCloud.
  */
 public class HealthcheckTool extends SolrCloudTool {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public HealthcheckTool() {
         this(CLIO.getOutStream());
@@ -53,7 +73,7 @@ public class HealthcheckTool extends SolrCloudTool {
             throw new IllegalArgumentException(
                     "Must provide a collection to run a healthcheck against!");
 
-        SolrCLI.log.debug("Running healthcheck for {}", collection);
+        log.debug("Running healthcheck for {}", collection);
 
         ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
@@ -90,7 +110,7 @@ public class HealthcheckTool extends SolrCloudTool {
             try {
                 leaderUrl = zkStateReader.getLeaderUrl(collection, shardName, 1000);
             } catch (Exception exc) {
-                SolrCLI.log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
+                log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
             }
 
             List<SolrCLI.ReplicaHealth> replicaList = new ArrayList<>();
@@ -98,7 +118,7 @@ public class HealthcheckTool extends SolrCloudTool {
 
                 String uptime = null;
                 String memory = null;
-                String replicaStatus = null;
+                String replicaStatus;
                 long numDocs = -1L;
 
                 ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
@@ -132,7 +152,7 @@ public class HealthcheckTool extends SolrCloudTool {
                         // if we get here, we can trust the state
                         replicaStatus = replicaCoreProps.getState();
                     } catch (Exception exc) {
-                        SolrCLI.log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
+                        log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 
                         if (SolrCLI.checkCommunicationError(exc)) {
                             replicaStatus = Replica.State.DOWN.toString();
