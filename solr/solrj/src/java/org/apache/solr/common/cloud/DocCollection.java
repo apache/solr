@@ -64,7 +64,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
-  private PrsSupplier prsSupplier;
+  private PerReplicaStates perReplicaStates;
 
   @Deprecated
   public DocCollection(
@@ -95,7 +95,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       Map<String, Object> props,
       DocRouter router,
       int zkVersion,
-      PrsSupplier prsSupplier) {
+      PerReplicaStates perReplicaStates) {
     super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
     // overwrites
@@ -113,15 +113,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
-      if (prsSupplier == null) {
+      if (perReplicaStates == null) {
         throw new RuntimeException(
             CollectionStateProps.PER_REPLICA_STATE
-                + " = true , but per-replica state supplier is not provided");
+                + " = true , but perReplicatStates param is not provided");
       }
-      this.prsSupplier = prsSupplier;
-      for (Slice s : this.slices.values()) {
-        s.setPrsSupplier(prsSupplier);
-      }
+      setPerReplicaStates(perReplicaStates);
     }
     Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
@@ -146,6 +143,45 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     assert name != null && slices != null;
   }
 
+  public static DocCollection buildDocCollection(
+          String name,
+          Map<String, Slice> slices,
+          Map<String, Object> props,
+          DocRouter router,
+          int zkVersion,
+          DocCollection.PrsSupplier prsSupplier) {
+    boolean perReplicaState =
+            (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
+    PerReplicaStates perReplicaStates;
+    if (perReplicaState) {
+      if (prsSupplier == null) {
+        throw new IllegalArgumentException(
+                CollectionStateProps.PER_REPLICA_STATE + " = true , but prsSuppler is not provided");
+      }
+
+      if (!hasAnyReplica(
+              slices)) { // a special case, if there is no replica, it should not fetch (first PRS
+        // collection creation with no replicas). Otherwise, it would trigger exception
+        // on fetching a state.json that does not exist yet
+        perReplicaStates = PerReplicaStates.empty(name);
+      } else {
+        perReplicaStates = prsSupplier.get();
+      }
+    } else {
+      perReplicaStates = null;
+    }
+    return new DocCollection(name, slices, props, router, zkVersion, perReplicaStates);
+  }
+
+  private static boolean hasAnyReplica(Map<String, Slice> slices) {
+    for (Slice slice : slices.values()) {
+      if (!slice.getReplicasMap().isEmpty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static String getCollectionPath(String coll) {
     return getCollectionPathRoot(coll) + "/state.json";
   }
@@ -155,15 +191,15 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * Update our state with a state of a {@link Replica} Used to create a new Collection State when
-   * only a replica is updated
+   * Update our state with a state of a {@link PerReplicaStates} which could override states of {@link Replica}.
+   *
+   * This does not create a new DocCollection.
    */
-  public DocCollection copyWith(PerReplicaStates newPerReplicaStates) {
-    if (this.prsSupplier != null) {
-      log.debug("In-place update of PRS: {}", newPerReplicaStates);
-      this.prsSupplier.prs = newPerReplicaStates;
+  public final void setPerReplicaStates(PerReplicaStates perReplicaStates) {
+    this.perReplicaStates = perReplicaStates;
+    for (Slice s : this.slices.values()) {
+      s.setPerReplicaStates(perReplicaStates);
     }
-    return this;
   }
 
   private void addNodeNameReplica(Replica replica) {
@@ -215,7 +251,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices) {
     DocCollection result =
-        new DocCollection(getName(), slices, propMap, router, znodeVersion, prsSupplier);
+        new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStates);
     return result;
   }
   /** Return collection name. */
@@ -282,8 +318,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public int getChildNodesVersion() {
-    PerReplicaStates prs = prsSupplier == null ? null : prsSupplier.get();
-    return prs == null ? 0 : prs.cversion;
+    return perReplicaStates == null ? 0 : perReplicaStates.cversion;
   }
 
   public boolean isModified(int dataVersion, int childVersion) {
@@ -320,7 +355,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         + "/"
         + znodeVersion
         + " "
-        + (prsSupplier == null ? "" : prsSupplier.get())
+        + (perReplicaStates == null ? "" : perReplicaStates)
         + ")="
         + toJSONString(this);
   }
@@ -467,11 +502,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public PerReplicaStates getPerReplicaStates() {
-    return prsSupplier != null ? prsSupplier.get() : null;
-  }
-
-  public PrsSupplier getPrsSupplier() {
-    return prsSupplier;
+    return perReplicaStates;
   }
 
   public int getExpectedReplicaCount(Replica.Type type, int def) {

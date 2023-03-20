@@ -268,12 +268,12 @@ public class ZkStateWriter {
           // Update the Per Replica State znodes if needed
           if (cmd.ops != null) {
             cmd.ops.persist(path, reader.getZkClient());
-            clusterState =
-                clusterState.copyWith(
-                    name,
-                    cmd.collection.copyWith(
-                        PerReplicaStatesFetcher.fetch(
-                            cmd.collection.getZNode(), reader.getZkClient(), null)));
+            cmd.collection.setPerReplicaStates(
+                    PerReplicaStatesFetcher.fetch(
+                    cmd.collection.getZNode(), reader.getZkClient(), null));
+            //this is not strictly necessary as we are mutating currentCollState instead of creating a new
+            //instance, but keeping this just in case we are making PRS enabled DocCollection immutable in the future
+            clusterState = clusterState.copyWith(name, cmd.collection);
           }
 
           // Update the state.json file if needed
@@ -294,7 +294,7 @@ public class ZkStateWriter {
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection =
-                  new DocCollection(
+                      DocCollection.buildDocCollection(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),
@@ -306,7 +306,7 @@ public class ZkStateWriter {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection =
-                  new DocCollection(
+                      DocCollection.buildDocCollection(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),
@@ -320,12 +320,12 @@ public class ZkStateWriter {
           if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
-              clusterState =
-                  clusterState.copyWith(
-                      name,
-                      currentCollState.copyWith(
-                          PerReplicaStatesFetcher.fetch(
-                              currentCollState.getZNode(), reader.getZkClient(), null)));
+              currentCollState.setPerReplicaStates(
+                      PerReplicaStatesFetcher.fetch(
+                              currentCollState.getZNode(), reader.getZkClient(), null));
+              //this is not strictly necessary as we are mutating currentCollState instead of creating a new
+              //instance, but keeping this just in case we are making PRS enabled DocCollection immutable in the future
+              clusterState = clusterState.copyWith(name, currentCollState);
             }
           }
         }

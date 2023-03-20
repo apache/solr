@@ -138,7 +138,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ZkWriteCommand c1 =
         new ZkWriteCommand(
             "c1",
-            new DocCollection(
+            DocCollection.buildDocCollection(
                 "c1",
                 new HashMap<>(),
                 Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -165,7 +165,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
     DocCollection state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -184,7 +184,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     props.put("x", "y");
     props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
     state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             props,
@@ -225,7 +225,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // create new collection
     DocCollection state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -259,7 +259,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ClusterState clusterState = reader.getClusterState();
     // create new collection
     DocCollection state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(
@@ -383,7 +383,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // create new collection
     DocCollection state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -405,7 +405,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // update the collection
     state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -428,7 +428,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
     state =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c2",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -544,7 +544,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // now create both c1 (watched) and c2 (not watched)
     DocCollection state1 =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -554,7 +554,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc1 = new ZkWriteCommand("c1", state1);
     DocCollection state2 =
-        new DocCollection(
+            DocCollection.buildDocCollection(
             "c2",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
@@ -607,7 +607,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 int currentVersion = collection != null ? collection.getZNodeVersion() : 0;
                 // create new collection
                 DocCollection state =
-                    new DocCollection(
+                        DocCollection.buildDocCollection(
                         "c1",
                         new HashMap<>(),
                         Map.of(
