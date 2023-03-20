@@ -46,7 +46,7 @@ def update_changes(filename, new_version, init_changes, headers):
 def update_solrversion_class(new_version):
   filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
   print('  changing version to %s...' % new_version.dot, end='', flush=True)
-  constant_prefix = 'private static final String LATEST_STRING = "(.*?)"'
+  constant_prefix = 'public static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
 
   def edit(buffer, match, line):

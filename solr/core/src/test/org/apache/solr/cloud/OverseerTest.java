@@ -1945,8 +1945,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
     solrClients.add(client);
     SolrClientCloudManager sccm =

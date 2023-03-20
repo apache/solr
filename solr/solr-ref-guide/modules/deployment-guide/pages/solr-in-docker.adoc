@@ -337,10 +337,8 @@ If you really do not want to run `tini`, and just run Solr as PID 1 instead, the
 
 == Out of Memory Handling
 
-You can use the `OOM` environment variable to control the behaviour of the Solr JVM when an out-of-memory error occurs.
-If you specify `OOM=exit`, Solr docker will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.
-If you specify `OOM=crash`, Solr docker will add `-XX:+CrashOnOutOfMemoryError` to the JVM arguments, so the JVM will crash and produces text and binary crash files (if core files are enabled).
-If you specify `OOM=script`, Solr docker will add `-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh`, so the JVM will run that script (and if you want to you can mount your own in its place).
+Please refer to the xref:taking-solr-to-production.adoc#out-of-memory-handling[Out of Memory Handling] Section for more information.
+The Docker image no-longer has custom logic for OOMs.
 
 == History
 
