@@ -317,9 +317,12 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
     formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
     formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
-    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
+    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
+    formatter.printHelp("mkroot", getToolOptions(new ZkMkrootTool()));
+    formatter.printHelp("assert", getToolOptions(new AssertTool()));
+    formatter.printHelp("auth", getToolOptions(new AuthTool()));
     formatter.printHelp("export", getToolOptions(new ExportTool()));
     formatter.printHelp("package", getToolOptions(new PackageTool()));
 
