@@ -196,11 +196,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * <p>This does not create a new DocCollection.
    */
-  public final void setPerReplicaStates(PerReplicaStates perReplicaStates) {
+  public final DocCollection setPerReplicaStates(PerReplicaStates perReplicaStates) {
     this.perReplicaStates = perReplicaStates;
     for (Slice s : this.slices.values()) {
       s.setPerReplicaStates(perReplicaStates);
     }
+    return this;
   }
 
   private void addNodeNameReplica(Replica replica) {
