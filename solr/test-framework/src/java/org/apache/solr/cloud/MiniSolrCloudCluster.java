@@ -756,10 +756,11 @@ public class MiniSolrCloudCluster {
   }
 
   /**
-   * Returns a SolrClient that has a defaultCollection set for it.
-   * SolrClients are cached by their collectionName for reuse and are closed for you.
-   * @param collectionName  The name of the collection to get a SolrClient for.
-   * @return
+   * Returns a SolrClient that has a defaultCollection set for it. SolrClients are cached by their
+   * collectionName for reuse and are closed for you.
+   *
+   * @param collectionName The name of the collection to get a SolrClient for.
+   * @return CloudSolrClient configured for the specific collection.
    */
   public CloudSolrClient getSolrClient(String collectionName) {
     return solrClientByCollection.computeIfAbsent(

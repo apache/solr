@@ -110,8 +110,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     GenericSolrRequest request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params);
-    NamedList<Object> queryResponse =
-        cluster.getSolrClient(COLLECTION_NAME).request(request);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
     assertEquals(404, queryResponse.get("responseCode"));
@@ -197,8 +196,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     GenericSolrRequest request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
-    NamedList<Object> queryResponse =
-        cluster.getSolrClient(COLLECTION_NAME).request(request);
+    NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");
 
