@@ -1000,16 +1000,16 @@ public class RealTimeGetComponent extends SearchComponent {
       if (solrInputField.getFirstValue() instanceof SolrInputDocument) {
         // is child doc
         Object val = solrInputField.getValue();
-        Iterator<SolrDocument> childDocs =
+        List<SolrDocument> childDocs =
             solrInputField.getValues().stream()
                 .map(x -> toSolrDoc((SolrInputDocument) x, schema))
-                .iterator();
+                .collect(Collectors.toList());
         if (val instanceof Collection) {
           // add as collection even if single element collection
-          solrDoc.setField(solrInputField.getName(), new ArrayList<>(List.of(childDocs)));
+          solrDoc.setField(solrInputField.getName(), childDocs);
         } else {
           // single child doc
-          solrDoc.setField(solrInputField.getName(), childDocs.next());
+          solrDoc.setField(solrInputField.getName(), childDocs.get(0));
         }
       }
     }

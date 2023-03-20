@@ -1217,7 +1217,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         includeQuery = EMPTY_QUERY;
         this.elevatedIds = Collections.emptySet();
       } else {
-        this.elevatedIds = Set.copyOf(elevatedIds);
+        this.elevatedIds = Collections.unmodifiableSet(new LinkedHashSet<>(elevatedIds));
         BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
         for (BytesRef elevatedId : elevatedIds) {
           includeQueryBuilder.add(
@@ -1230,12 +1230,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         this.excludedIds = Collections.emptySet();
         excludeQueries = null;
       } else {
-        this.excludedIds = Set.copyOf(excludedIds);
-        List<TermQuery> excludeQueriesBuilder = new ArrayList<>(excludedIds.size());
-        for (BytesRef excludedId : excludedIds) {
-          excludeQueriesBuilder.add(new TermQuery(new Term(queryFieldName, excludedId)));
-        }
-        excludeQueries = excludeQueriesBuilder.toArray(new TermQuery[0]);
+        this.excludedIds = Collections.unmodifiableSet(new LinkedHashSet<>(excludedIds));
+        this.excludeQueries =
+            this.excludedIds.stream()
+                .map(excludedId -> new TermQuery(new Term(queryFieldName, excludedId)))
+                .collect(Collectors.toUnmodifiableList())
+                .toArray(TermQuery[]::new);
       }
     }
 
@@ -1262,7 +1262,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
       Set<BytesRef> elevatedIds =
           Stream.concat(this.elevatedIds.stream(), elevation.elevatedIds.stream())
-              .collect(Collectors.toUnmodifiableSet());
+              .collect(Collectors.toCollection(LinkedHashSet::new));
       boolean overlappingElevatedIds =
           elevatedIds.size() != (this.elevatedIds.size() + elevation.elevatedIds.size());
       BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
@@ -1309,9 +1309,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     @Override
     public String toString() {
       return "{elevatedIds="
-          + elevatedIds.stream().map(BytesRef::utf8ToString).collect(Collectors.toUnmodifiableSet())
+          + elevatedIds.stream()
+              .map(BytesRef::utf8ToString)
+              .collect(Collectors.toCollection(LinkedHashSet::new))
           + ", excludedIds="
-          + excludedIds.stream().map(BytesRef::utf8ToString).collect(Collectors.toUnmodifiableSet())
+          + excludedIds.stream()
+              .map(BytesRef::utf8ToString)
+              .collect(Collectors.toCollection(LinkedHashSet::new))
           + "}";
     }
   }
