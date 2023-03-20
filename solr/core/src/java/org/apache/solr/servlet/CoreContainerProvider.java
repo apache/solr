@@ -23,6 +23,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -60,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Group;
@@ -91,7 +93,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private RateLimitManager rateLimitManager;
   private final CountDownLatch init = new CountDownLatch(1);
   private String registryName;
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
   // AFAIK the only reason we need this is to support JettySolrRunner for tests. In tests we might
   // have multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real
   // server.
@@ -228,7 +229,7 @@ public class CoreContainerProvider implements ServletContextListener {
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit);
+      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
@@ -412,7 +413,7 @@ public class CoreContainerProvider implements ServletContextListener {
     return coreContainer;
   }
 
-  private void setupJvmMetrics(CoreContainer coresInit) {
+  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
@@ -427,11 +428,28 @@ public class CoreContainerProvider implements ServletContextListener {
           registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(
           registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(
-          registryName,
-          new ThreadStatesGaugeSet(),
-          ResolutionStrategy.IGNORE,
-          "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+
+      if (config.getCacheConfig() != null
+          && config.getCacheConfig().threadsIntervalSeconds != null) {
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Threads metrics will be cached for {} seconds",
+              config.getCacheConfig().threadsIntervalSeconds);
+        }
+        metricManager.registerAll(
+            registryName,
+            new CachedThreadStatesGaugeSet(
+                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      } else {
+        metricManager.registerAll(
+            registryName,
+            new ThreadStatesGaugeSet(),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      }
+
       MetricsMap sysprops =
           new MetricsMap(
               map ->
@@ -475,10 +493,6 @@ public class CoreContainerProvider implements ServletContextListener {
   @VisibleForTesting
   void setRateLimitManager(RateLimitManager rateLimitManager) {
     this.rateLimitManager = rateLimitManager;
-  }
-
-  public boolean isV2Enabled() {
-    return isV2Enabled;
   }
 
   private static class ContextInitializationKey {

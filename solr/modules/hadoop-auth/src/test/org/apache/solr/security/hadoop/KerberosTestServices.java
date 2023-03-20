@@ -30,6 +30,7 @@ import javax.security.auth.login.Configuration;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
+import org.apache.solr.client.solrj.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,7 +190,7 @@ public class KerberosTestServices {
   }
 
   public static final String krb5LoginModuleName =
-      System.getProperty("java.vendor").contains("IBM")
+      Constants.IS_IBM_JAVA
           ? "com.ibm.security.auth.module.Krb5LoginModule"
           : "com.sun.security.auth.module.Krb5LoginModule";
 

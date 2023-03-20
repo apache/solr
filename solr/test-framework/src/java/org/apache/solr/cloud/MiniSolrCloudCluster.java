@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -89,6 +90,10 @@ import org.slf4j.LoggerFactory;
 public class MiniSolrCloudCluster {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final URL PRE_GENERATED_PRIVATE_KEY_URL =
+      MiniSolrCloudCluster.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem");
+  private static final URL PRE_GENERATED_PUBLIC_KEY_URL =
+      MiniSolrCloudCluster.class.getClassLoader().getResource("cryptokeys/pub_key512.der");
 
   public static final String TEST_URL_ALLOW_LIST = SolrTestCaseJ4.TEST_URL_ALLOW_LIST;
 
@@ -123,8 +128,16 @@ public class MiniSolrCloudCluster {
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
           + "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n"
           + "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n"
-          + "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n"
-          + "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n"
+          + "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:"
+          + (PRE_GENERATED_PRIVATE_KEY_URL != null
+              ? PRE_GENERATED_PRIVATE_KEY_URL.toExternalForm()
+              : "")
+          + "}</str> \n"
+          + "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:"
+          + (PRE_GENERATED_PUBLIC_KEY_URL != null
+              ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm()
+              : "")
+          + "}</str> \n"
           + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
           + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
           + "  </solrcloud>\n"
@@ -334,7 +347,10 @@ public class MiniSolrCloudCluster {
     this.zkServer = zkTestServer;
 
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       if (!zkClient.exists("/solr/solr.xml", true)) {
         zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
@@ -610,11 +626,11 @@ public class MiniSolrCloudCluster {
    */
   public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try (SolrZkClient zkClient =
-        new SolrZkClient(
-            zkServer.getZkAddress(),
-            AbstractZkTestCase.TIMEOUT,
-            AbstractZkTestCase.TIMEOUT,
-            null)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       ZkMaintenanceUtils.uploadToZK(
           zkClient,
           configDir,
@@ -749,8 +765,8 @@ public class MiniSolrCloudCluster {
   protected CloudSolrClient buildSolrClient() {
     return new CloudLegacySolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000)
-        .withConnectionTimeout(15000)
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .build(); // we choose 90 because we run in some harsh envs
   }
 

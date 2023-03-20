@@ -137,7 +137,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
-    assertTrue(methodNames.contains("DELETE"));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
 

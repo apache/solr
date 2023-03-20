@@ -871,8 +871,8 @@ public class JettySolrRunner {
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
     return new HttpSolrClient.Builder(getBaseUrl().toString())
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 

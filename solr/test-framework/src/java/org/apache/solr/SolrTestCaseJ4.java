@@ -88,7 +88,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
-import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -178,7 +177,6 @@ import org.xml.sax.SAXException;
  * which core is used when loading the schema and solrconfig.xml, simply invoke the {@link
  * #initCore(String, String, String, String)} method.
  */
-@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 // ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
 @SuppressFileSystems("ExtrasFS")
 @RandomizeSSL()
@@ -304,19 +302,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
-
-    System.setProperty(
-        "pkiHandlerPrivateKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/priv_key512_pkcs8.pem")
-            .toExternalForm());
-    System.setProperty(
-        "pkiHandlerPublicKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/pub_key512.der")
-            .toExternalForm());
+    System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
@@ -931,7 +917,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // If the test case set up Zk, it should still have it as available,
       // otherwise the core close will just be unnecessarily delayed.
       CoreContainer cc = h.getCoreContainer();
-      if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+      if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
           cc.getZkController().getZkClient().exists("/", false);
         } catch (KeeperException e) {
@@ -2704,7 +2690,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
@@ -2724,13 +2710,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return new RandomizingCloudSolrClientBuilder(
               Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
-          .withSocketTimeout(socketTimeoutMillis)
+          .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
           .build();
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withSocketTimeout(socketTimeoutMillis)
+        .sendUpdatesToAnyReplica()
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2748,15 +2734,15 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return new RandomizingCloudSolrClientBuilder(
               Collections.singletonList(zkHost), Optional.empty())
           .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
+          .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+          .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
           .build();
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .sendUpdatesToAnyReplica()
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2777,7 +2763,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
+        .sendUpdatesToAnyReplica()
         .build();
   }
 
@@ -2797,16 +2783,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
               Collections.singletonList(zkHost), Optional.empty())
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
+          .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+          .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
           .build();
     }
     return new RandomizingCloudSolrClientBuilder(
             Collections.singletonList(zkHost), Optional.empty())
         .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .sendUpdatesToAnyReplica()
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2833,7 +2819,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
-        .withConnectionTimeout(connectionTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2870,8 +2856,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new LBHttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrls(solrUrls)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2945,7 +2931,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       String url, HttpClient httpClient, int connectionTimeoutMillis) {
     return new Builder(url)
         .withHttpClient(httpClient)
-        .withConnectionTimeout(connectionTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -2962,7 +2948,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
-    return new Builder(url).withConnectionTimeout(connectionTimeoutMillis).build();
+    return new Builder(url)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /**
@@ -2972,8 +2960,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static HttpSolrClient getHttpSolrClient(
       String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
     return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 

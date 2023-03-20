@@ -373,8 +373,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
 
       return client.request(req);
@@ -400,8 +400,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       NamedList<?> response = client.request(req);
 
@@ -546,7 +546,7 @@ public class IndexFetcher {
       }
 
       if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0) {
+        if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) != 0L) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
@@ -1991,8 +1991,8 @@ public class IndexFetcher {
           new Builder(leaderUrl)
               .withHttpClient(myHttpClient)
               .withResponseParser(null)
-              .withConnectionTimeout(connTimeout)
-              .withSocketTimeout(soTimeout)
+              .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
               .build()) {
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
@@ -2123,8 +2123,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);

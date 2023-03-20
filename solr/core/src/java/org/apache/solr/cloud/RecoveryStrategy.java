@@ -180,8 +180,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return (new HttpSolrClient.Builder(leaderUrl)
-        .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
-        .withSocketTimeout(cfg.getDistributedSocketTimeout())
+        .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
+        .withSocketTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient()));
   }
 
@@ -223,8 +223,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Attempting to replicate from [{}].", leaderUrl);
 
-    // send commit
-    commitOnLeader(leaderUrl);
+    // send commit if replica could be a leader
+    if (Replica.Type.isLeaderType(replicaType)) {
+      commitOnLeader(leaderUrl);
+    }
 
     // use rep handler directly, so we can do this sync rather than async
     SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
@@ -911,7 +913,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
     try (HttpSolrClient client =
-        recoverySolrClientBuilder(leaderBaseUrl).withSocketTimeout(readTimeout).build()) {
+        recoverySolrClientBuilder(leaderBaseUrl)
+            .withSocketTimeout(readTimeout, TimeUnit.MILLISECONDS)
+            .build()) {
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
 
