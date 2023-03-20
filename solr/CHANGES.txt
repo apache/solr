@@ -36,11 +36,40 @@ Other Changes
 
 ==================  9.3.0 ==================
 
+Improvements
+---------------------
+
+* SOLR-16183: XML update allows <doc> <doc name="child"> ... </doc> </doc>.
+  (Vinayak Hegde via Mikhail Khludnev)
+
+* SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
+  `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
+
+* SOLR-16393: Solr's v2 "aliasprop" CRUD APIs have been tweaked slightly to be more intuitive.  Alias property modification
+  is now available at `PUT /api/aliases/aliasName/properties` (for bulk modification) and `PUT /api/aliases/aliasName/properties/propName`
+  (for single property updates).  Additionally new APIs have been added for listing properties (`GET /api/aliases/aliasName/properties`),
+  fetching single property values (`GET /api/aliases/aliasName/properties/propName`), and property deletion
+  (`DELETE /api/aliases/aliasName/properties/propName`). (Alex Deparvu via Jason Gerlowski)
+
 Bug Fixes
 ---------------------
 
-* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
-  (Shawn Heisey)
+Optimizations
+---------------------
+
+* SOLR-16694: Shortcut Http2SolrClient mimeType check for default response parse (Tomás Fernández Löbbe, Alex Deparvu)
+
+* SOLR-16692: Allow setting the a CookieStore implementation in Http2SolrClient. When Cookies are not needed, this can be set to
+  `org.eclipse.jetty.util.HttpCookieStore.Empty`, which avoids some of the processing that happens in the default `java.net.InMemoryCookieStore`.
+  Solr can also be started with the system property `solr.http.disableCookies` set to `true`, so that the internal clients
+  that Solr uses to communicate between nodes use `HttpCookieStore.Empty`. (Tomás Fernández Löbbe)
+
+Other Changes
+---------------------
+
+* SOLR-16704: Add simple search benchmark to benchmark module (Tomás Fernández Löbbe)
+
+* SOLR-16709: Update Solr's internal use of Solr Client Builders to use TimeUnit parameter for time specific builder methods. (Eric Pugh)
 
 ==================  9.2.0 ==================
 
@@ -257,6 +286,11 @@ Bug Fixes
 * SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
 
 * SOLR-16676: Logs: Http2SolrClient.async() lacked MDC (Alex Deparvu)
+
+* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
+  (Shawn Heisey)
+
+* SOLR-16653 : sub-shard remains inactive after split for NRT+PULL collection (Hitesh Khamesra, noble)
 
 Build
 ---------------------

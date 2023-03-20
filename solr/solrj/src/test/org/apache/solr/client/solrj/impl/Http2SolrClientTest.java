@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -261,6 +262,37 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
         assertEquals("Unexpected exception status code", status, e.code());
+      }
+    } finally {
+      DebugServlet.clear();
+    }
+  }
+
+  /**
+   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
+   * even when not on the list of ErrorCodes solr may return.
+   */
+  @Test
+  public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
+    final int status = 527;
+    assertEquals(
+        status
+            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
+        SolrException.ErrorCode.UNKNOWN,
+        SolrException.ErrorCode.getErrorCode(status));
+
+    try (Http2SolrClient client = getHttp2SolrClient(null)) {
+      DebugServlet.setErrorCode(status);
+      try {
+        // if client base url is null, request url will be used in exception message
+        SolrPing ping = new SolrPing();
+        ping.setBasePath(jetty.getBaseUrl().toString() + "/debug/foo");
+        client.request(ping);
+
+        fail("Didn't get excepted exception from oversided request");
+      } catch (SolrException e) {
+        assertEquals("Unexpected exception status code", status, e.code());
+        assertTrue(e.getMessage().contains(jetty.getBaseUrl().toString()));
       }
     } finally {
       DebugServlet.clear();

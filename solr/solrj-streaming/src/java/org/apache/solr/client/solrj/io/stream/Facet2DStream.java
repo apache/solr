@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -328,8 +329,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
       hosts.add(zkHost);
       cloudSolrClient =
           new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build();
     }
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);

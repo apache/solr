@@ -285,3 +285,7 @@
 # Configure the default replica placement plugin to use if one is not configured in cluster properties
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 #SOLR_PLACEMENTPLUGIN_DEFAULT=simple
+
+# Solr internally doesn't use cookies other than for modules such as Kerberos/Hadoop Auth. If you don't need any of those
+# And you don't need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+# SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"
