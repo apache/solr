@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.util.cli;
 
 import org.apache.commons.cli.CommandLine;
@@ -11,9 +27,12 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.CLIO;
 import org.apache.solr.util.SolrCLI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AssertTool extends ToolBase {
 
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static String message = null;
     private static boolean useExitCode = false;
     private static Optional<Long> timeoutMs = Optional.empty();
@@ -224,14 +244,14 @@ public class AssertTool extends ToolBase {
         } catch (SolrException se) {
             throw se; // Auth error
         } catch (IOException e) {
-            SolrCLI.log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
+            log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
             return 0;
         }
         while (System.nanoTime() < timeout) {
             try {
                 status.waitToSeeSolrUp(url, 1);
                 try {
-                    SolrCLI.log.debug("Solr still up. Waiting before trying again to see if it was stopped");
+                    log.debug("Solr still up. Waiting before trying again to see if it was stopped");
                     Thread.sleep(1000L);
                 } catch (InterruptedException interrupted) {
                     timeout = 0; // stop looping
