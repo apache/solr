@@ -195,14 +195,6 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
-  /**
-   * @deprecated Use the method that takes a tool name as the first argument instead.
-   */
-  @Deprecated
-  public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
-    return parseCmdLine(SolrCLI.class.getName(), args, toolOptions);
-  }
-
   public static CommandLine parseCmdLine(String toolName, String[] args, Option[] toolOptions)
       throws Exception {
     // the parser doesn't like -D props
