@@ -91,16 +91,13 @@ public class DeleteTool extends ToolBase {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     String systemInfoUrl = solrUrl + "admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
-    try {
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
       if ("solrcloud".equals(systemInfo.get("mode"))) {
         deleteCollection(cli);
       } else {
         deleteCore(cli, solrUrl);
       }
-    } finally {
-      SolrCLI.closeHttpClient(httpClient);
     }
   }
 

@@ -508,17 +508,6 @@ public class SolrCLI implements CLIO {
     return HttpClientUtil.createClient(params);
   }
 
-  @SuppressWarnings("deprecation")
-  public static void closeHttpClient(CloseableHttpClient httpClient) {
-    if (httpClient != null) {
-      try {
-        HttpClientUtil.close(httpClient);
-      } catch (Exception exc) {
-        // safe to ignore, we're just shutting things down
-      }
-    }
-  }
-
   public static final String JSON_CONTENT_TYPE = "application/json";
 
   public static NamedList<Object> postJsonToSolr(
@@ -533,11 +522,9 @@ public class SolrCLI implements CLIO {
   /** Useful when a tool just needs to send one request to Solr. */
   public static Map<String, Object> getJson(String getUrl) throws Exception {
     Map<String, Object> json = null;
-    CloseableHttpClient httpClient = getHttpClient();
-    try {
+    ;
+    try (CloseableHttpClient httpClient = getHttpClient()){
       json = getJson(httpClient, getUrl, 2, true);
-    } finally {
-      closeHttpClient(httpClient);
     }
     return json;
   }

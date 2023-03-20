@@ -130,16 +130,12 @@ public class StatusTool extends ToolBase {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     String systemInfoUrl = solrUrl + "admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
-    try {
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()) {
       // hit Solr to get system info
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
       // convert raw JSON into user-friendly output
       status = reportStatus(solrUrl, systemInfo, httpClient);
-    } finally {
-      SolrCLI.closeHttpClient(httpClient);
     }
-
     return status;
   }
 
