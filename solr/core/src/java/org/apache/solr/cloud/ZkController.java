@@ -2930,11 +2930,12 @@ public class ZkController implements Closeable {
       distributedClusterStateUpdater.executeNodeDownStateUpdate(nodeName, zkStateReader);
     } else {
       try {
+        boolean sendToOverseer = false;
         // Create a concurrently accessible set to avoid repeating collections
         Set<String> processedCollections = new HashSet<>();
         for (CoreDescriptor cd : cc.getCoreDescriptors()) {
           String collName = cd.getCollectionName();
-          DocCollection coll;
+          DocCollection coll = null;
           if (collName != null
               && processedCollections.add(collName)
               && (coll = zkStateReader.getCollection(collName)) != null
@@ -2952,16 +2953,24 @@ public class ZkController implements Closeable {
                         coll.getZNode(), zkClient, coll.getPerReplicaStates()))
                 .persist(coll.getZNode(), zkClient);
           }
+          if (coll != null && !coll.isPerReplicaState()) {
+            sendToOverseer = true;
+          }
         }
 
-        // We always send a down node event to overseer to be safe, but overseer will not need to do
-        // anything for PRS collections
-        overseer
-            .getStateUpdateQueue()
-            .offer(
-                m ->
-                    m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
-                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
+        // Only send downnode message to overseer if we have to. We are trying to avoid the overhead
+        // from PRS collections, as it takes awhile to process downnode message by loading
+        // the DocCollection even if it does no further processing.
+        // In the future, we should optimize the handling on Solr side to speed up PRS DocCollection
+        // read on operations that do not require actual replica information.
+        if (sendToOverseer) {
+          overseer
+              .getStateUpdateQueue()
+              .offer(
+                  m ->
+                      m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
+                          .put(ZkStateReader.NODE_NAME_PROP, nodeName));
+        }
       } catch (AlreadyClosedException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");
