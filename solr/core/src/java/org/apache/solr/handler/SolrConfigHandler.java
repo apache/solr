@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -436,7 +435,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                 @SuppressWarnings({"rawtypes"})
                 Map val;
                 String key = entry.getKey();
-                if (isNullOrEmpty(key)) {
+                if (StrUtils.isNullOrEmpty(key)) {
                   op.addError("null key ");
                   continue;
                 }

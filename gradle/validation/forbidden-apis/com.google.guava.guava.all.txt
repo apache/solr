@@ -33,3 +33,6 @@ com.google.common.collect.Collections2
 com.google.common.collect.Iterables
 com.google.common.collect.Iterators
 com.google.common.collect.ObjectArrays
+
+@defaultMessage Use org.apache.solr.common.util.StrUtils
+com.google.common.base.Strings
