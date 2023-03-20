@@ -126,7 +126,7 @@ public class ClusterStateMutator {
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
     DocCollection newCollection =
-        new DocCollection(
+        DocCollection.buildDocCollection(
             cName, slices, collectionProps, router, -1, stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);
