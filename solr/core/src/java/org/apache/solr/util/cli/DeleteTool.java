@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -106,8 +108,8 @@ public class DeleteTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build()) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
