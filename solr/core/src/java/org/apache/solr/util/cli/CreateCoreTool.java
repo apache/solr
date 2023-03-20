@@ -92,7 +92,7 @@ public class CreateCoreTool extends ToolBase {
 
         String systemInfoUrl = solrUrl + "admin/info/system";
         CloseableHttpClient httpClient = SolrCLI.getHttpClient();
-        String coreRootDirectory = null; // usually same as solr home, but not always
+        String coreRootDirectory; // usually same as solr home, but not always
         try {
             Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
             if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -127,8 +127,8 @@ public class CreateCoreTool extends ToolBase {
         File coreInstanceDir = new File(coreRootDirectory, coreName);
         File confDir = new File(configSetDir, "conf");
         if (!coreInstanceDir.isDirectory()) {
-            coreInstanceDir.mkdirs();
-            if (!coreInstanceDir.isDirectory())
+            boolean result = coreInstanceDir.mkdirs();
+            if (!result || !coreInstanceDir.isDirectory())
                 throw new IOException(
                         "Failed to create new core instance directory: " + coreInstanceDir.getAbsolutePath());
 
@@ -179,4 +179,4 @@ public class CreateCoreTool extends ToolBase {
             throw e;
         }
     }
-} // end CreateCoreTool class
+}

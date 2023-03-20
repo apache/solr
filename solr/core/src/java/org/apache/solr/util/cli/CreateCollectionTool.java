@@ -156,7 +156,7 @@ public class CreateCollectionTool extends ToolBase {
                         + "\n",
                 cli);
 
-        Map<String, Object> json = null;
+        Map<String, Object> json;
         try {
             json = SolrCLI.getJson(createCollectionUrl);
         } catch (SolrServerException sse) {
@@ -187,4 +187,4 @@ public class CreateCollectionTool extends ToolBase {
     protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
         return Integer.parseInt(cli.getOptionValue(option, String.valueOf(defaultVal)));
     }
-} // end CreateCollectionTool class
+}

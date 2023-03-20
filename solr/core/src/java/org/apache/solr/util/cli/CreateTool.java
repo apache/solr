@@ -38,7 +38,7 @@ public class CreateTool extends ToolBase {
         String systemInfoUrl = solrUrl + "admin/info/system";
         CloseableHttpClient httpClient = SolrCLI.getHttpClient();
 
-        ToolBase tool = null;
+        ToolBase tool;
         try {
             Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
             if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -51,4 +51,4 @@ public class CreateTool extends ToolBase {
             SolrCLI.closeHttpClient(httpClient);
         }
     }
-} // end CreateTool class
+}

@@ -76,7 +76,7 @@ public class DeleteTool extends ToolBase {
             if ("solrcloud".equals(systemInfo.get("mode"))) {
                 deleteCollection(cli);
             } else {
-                deleteCore(cli, httpClient, solrUrl);
+                deleteCore(cli, solrUrl);
             }
         } finally {
             SolrCLI.closeHttpClient(httpClient);
@@ -164,7 +164,7 @@ public class DeleteTool extends ToolBase {
                         + "\n",
                 cli);
 
-        Map<String, Object> json = null;
+        Map<String, Object> json;
         try {
             json = SolrCLI.getJson(deleteCollectionUrl);
         } catch (SolrServerException sse) {
@@ -196,7 +196,7 @@ public class DeleteTool extends ToolBase {
         echo("Deleted collection '" + collectionName + "' using command:\n" + deleteCollectionUrl);
     }
 
-    protected void deleteCore(CommandLine cli, CloseableHttpClient httpClient, String solrUrl)
+    protected void deleteCore(CommandLine cli, String solrUrl)
             throws Exception {
         String coreName = cli.getOptionValue(NAME);
         String deleteCoreUrl =
@@ -208,7 +208,7 @@ public class DeleteTool extends ToolBase {
 
         echo("\nDeleting core '" + coreName + "' using command:\n" + deleteCoreUrl + "\n");
 
-        Map<String, Object> json = null;
+        Map<String, Object> json;
         try {
             json = SolrCLI.getJson(deleteCoreUrl);
         } catch (SolrServerException sse) {
@@ -222,4 +222,4 @@ public class DeleteTool extends ToolBase {
             echoIfVerbose("\n", cli);
         }
     }
-} // end DeleteTool class
+}

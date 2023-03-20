@@ -119,7 +119,7 @@ public class AssertTool extends ToolBase {
     public int runTool(CommandLine cli) throws Exception {
         verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-        int toolExitStatus = 0;
+        int toolExitStatus;
         try {
             toolExitStatus = runAssert(cli);
         } catch (Exception exc) {
@@ -359,4 +359,4 @@ public class AssertTool extends ToolBase {
             return false;
         }
     }
-} // end AssertTool class
+}

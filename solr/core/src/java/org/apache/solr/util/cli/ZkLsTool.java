@@ -66,7 +66,7 @@ public class ZkLsTool extends ToolBase {
                             + " from ZooKeeper at "
                             + zkHost
                             + " recurse: "
-                            + Boolean.toString(recurse),
+                            + recurse,
                     cli);
             stdout.print(zkClient.listZnode(znode, recurse));
         } catch (Exception e) {
@@ -74,4 +74,4 @@ public class ZkLsTool extends ToolBase {
             throw (e);
         }
     }
-} // End zkLsTool class
+}

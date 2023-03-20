@@ -54,7 +54,7 @@ public class ZkMvTool extends ToolBase {
             throw new IllegalStateException(
                     "Solr at "
                             + cli.getOptionValue("solrUrl")
-                            + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
+                            + " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
         }
 
         try (SolrZkClient zkClient =
@@ -88,4 +88,4 @@ public class ZkMvTool extends ToolBase {
             throw (e);
         }
     }
-} // End MvTool class
+}

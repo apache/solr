@@ -428,7 +428,9 @@ public class RunExampleTool extends ToolBase {
         int numNodes = 2;
         int[] cloudPorts = new int[]{8983, 7574, 8984, 7575};
         File cloudDir = new File(exampleDir, "cloud");
-        if (!cloudDir.isDirectory()) cloudDir.mkdir();
+        if (!cloudDir.isDirectory()) {
+            cloudDir.mkdir();
+        }
 
         echo("\nWelcome to the SolrCloud example!\n");
 
@@ -555,11 +557,10 @@ public class RunExampleTool extends ToolBase {
     }
 
     protected void waitToSeeLiveNodes(int maxWaitSecs, String zkHost, int numNodes) {
-        CloudSolrClient cloudClient = null;
-        try {
-            cloudClient =
-                    new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-                            .build();
+        try (CloudSolrClient cloudClient =
+                new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+                            .build()){
+
             cloudClient.connect();
             Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
             int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
@@ -592,13 +593,6 @@ public class RunExampleTool extends ToolBase {
             }
         } catch (Exception exc) {
             CLIO.err("Failed to see if " + numNodes + " joined the SolrCloud cluster due to: " + exc);
-        } finally {
-            if (cloudClient != null) {
-                try {
-                    cloudClient.close();
-                } catch (Exception ignore) {
-                }
-            }
         }
     }
 
@@ -661,7 +655,7 @@ public class RunExampleTool extends ToolBase {
                 String.format(
                         Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
 
-        Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port, cli);
+        Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port);
         if (nodeStatus != null)
             return nodeStatus; // the server they are trying to start is already running
 
@@ -669,7 +663,7 @@ public class RunExampleTool extends ToolBase {
         if (isWindows) {
             // On Windows, the execution doesn't return, so we have to execute async
             // and when calling the script, it seems to be inheriting the environment that launched this
-            // app so we have to prune out env vars that may cause issues
+            // app, so we have to prune out env vars that may cause issues
             Map<String, String> startEnv = new HashMap<>();
             Map<String, String> procEnv = EnvironmentUtils.getProcEnvironment();
             if (procEnv != null) {
@@ -712,7 +706,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     protected Map<String, Object> checkPortConflict(
-            String solrUrl, File solrHomeDir, int port, CommandLine cli) {
+            String solrUrl, File solrHomeDir, int port) {
         // quickly check if the port is in use
         if (isPortAvailable(port)) return null; // not in use ... try to start
 
@@ -795,7 +789,7 @@ public class RunExampleTool extends ToolBase {
                                 "Please provide a name for your new collection: [" + collectionName + "] ",
                                 collectionName);
 
-                // Test for existence and then prompt to either create another or skip the create step
+                // Test for existence and then prompt to either create another collection or skip the creation step
                 if (SolrCLI.safeCheckCollectionExists(collectionListUrl, collectionName)) {
                     echo("\nCollection '" + collectionName + "' already exists!");
                     int oneOrTwo =
@@ -894,9 +888,7 @@ public class RunExampleTool extends ToolBase {
 
         // not a built-in configset ... maybe it's a custom directory?
         configDir = new File(config);
-        if (configDir.isDirectory()) return true;
-
-        return false;
+        return configDir.isDirectory();
     }
 
     protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs) throws Exception {
@@ -916,7 +908,7 @@ public class RunExampleTool extends ToolBase {
                             + " in "
                             + mode
                             + " mode with status:\n"
-                            + arr.toString());
+                            + arr);
 
         return nodeStatus;
     }
@@ -1056,4 +1048,4 @@ public class RunExampleTool extends ToolBase {
         }
         return (nextInput != null) ? nextInput : defaultValue;
     }
-} // end RunExampleTool class
+}

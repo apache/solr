@@ -11,6 +11,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.CLIO;
 import org.apache.solr.util.SolrCLI;
+import org.apache.zookeeper.KeeperException;
 
 import java.io.Console;
 import java.io.File;
@@ -171,7 +172,7 @@ public class AuthTool extends ToolBase {
                         zkInaccessible = true;
                     }
                     if (zkHost == null) {
-                        if (zkInaccessible == false) {
+                        if (!zkInaccessible) {
                             CLIO.out(
                                     "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                                             + securityJson
@@ -187,17 +188,9 @@ public class AuthTool extends ToolBase {
                                              .withUrl(zkHost)
                                              .withTimeout(10000, TimeUnit.MILLISECONDS)
                                              .build()) {
-                            if (zkClient.exists("/security.json", true)) {
-                                byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
-                                if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
-                                    CLIO.out(
-                                            "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
-                                                    + new String(oldSecurityBytes, StandardCharsets.UTF_8));
-                                    SolrCLI.exit(1);
-                                }
-                            }
+                            checkSecurityConfigExistence(zkClient);
                         } catch (Exception ex) {
-                            if (zkInaccessible == false) {
+                            if (!zkInaccessible) {
                                 CLIO.out(
                                         "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                                                 + securityJson
@@ -219,7 +212,7 @@ public class AuthTool extends ToolBase {
                             zkClient.setData(
                                     "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
                         } catch (Exception ex) {
-                            if (zkInaccessible == false) {
+                            if (!zkInaccessible) {
                                 CLIO.out(
                                         "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                                                 + securityJson);
@@ -240,7 +233,7 @@ public class AuthTool extends ToolBase {
 
                 String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
                 File includeFile = new File(solrIncludeFilename);
-                if (includeFile.exists() == false || includeFile.canWrite() == false) {
+                if (!includeFile.exists() || !includeFile.canWrite()) {
                     CLIO.out(
                             "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
                     printAuthEnablingInstructions(config);
@@ -254,23 +247,7 @@ public class AuthTool extends ToolBase {
                 return 0;
 
             case "disable":
-                if (!updateIncludeFileOnly) {
-                    zkHost = SolrCLI.getZkHost(cli);
-                    if (zkHost == null) {
-                        stdout.print("ZK Host not found. Solr should be running in cloud mode.");
-                        SolrCLI.exit(1);
-                    }
-
-                    echoIfVerbose("Uploading following security.json: {}", cli);
-
-                    try (SolrZkClient zkClient =
-                                 new SolrZkClient.Builder()
-                                         .withUrl(zkHost)
-                                         .withTimeout(10000, TimeUnit.MILLISECONDS)
-                                         .build()) {
-                        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
-                    }
-                }
+                uploadSecurityConfiguration(cli, updateIncludeFileOnly);
 
                 solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
                 includeFile = new File(solrIncludeFilename);
@@ -295,6 +272,39 @@ public class AuthTool extends ToolBase {
         new HelpFormatter()
                 .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
         return 1;
+    }
+
+    private void checkSecurityConfigExistence(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+        if (zkClient.exists("/security.json", true)) {
+            byte[] oldSecurityBytes = zkClient.getData("/security.json", null, null, true);
+            if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
+                CLIO.out(
+                        "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
+                                + new String(oldSecurityBytes, StandardCharsets.UTF_8));
+                SolrCLI.exit(1);
+            }
+        }
+    }
+
+    private void uploadSecurityConfiguration(CommandLine cli, boolean updateIncludeFileOnly) throws Exception {
+        String zkHost;
+        if (!updateIncludeFileOnly) {
+            zkHost = SolrCLI.getZkHost(cli);
+            if (zkHost == null) {
+                stdout.print("ZK Host not found. Solr should be running in cloud mode.");
+                SolrCLI.exit(1);
+            }
+
+            echoIfVerbose("Uploading following security.json: {}", cli);
+
+            try (SolrZkClient zkClient =
+                         new SolrZkClient.Builder()
+                                 .withUrl(zkHost)
+                                 .withTimeout(10000, TimeUnit.MILLISECONDS)
+                                 .build()) {
+                zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+            }
+        }
     }
 
     private int handleBasicAuth(CommandLine cli) throws Exception {
@@ -350,15 +360,7 @@ public class AuthTool extends ToolBase {
                                          .withUrl(zkHost)
                                          .withTimeout(10000, TimeUnit.MILLISECONDS)
                                          .build()) {
-                        if (zkClient.exists("/security.json", true)) {
-                            byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
-                            if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
-                                CLIO.out(
-                                        "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
-                                                + new String(oldSecurityBytes, StandardCharsets.UTF_8));
-                                SolrCLI.exit(1);
-                            }
-                        }
+                        checkSecurityConfigExistence(zkClient);
                     }
                 }
 
@@ -380,7 +382,7 @@ public class AuthTool extends ToolBase {
                     } while (password.length() == 0);
                 }
 
-                boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
+                boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("blockUnknown", "true"));
 
                 String securityJson =
                         "{"
@@ -428,7 +430,7 @@ public class AuthTool extends ToolBase {
 
                 String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
                 File includeFile = new File(solrIncludeFilename);
-                if (includeFile.exists() == false || includeFile.canWrite() == false) {
+                if (!includeFile.exists() || !includeFile.canWrite()) {
                     CLIO.out(
                             "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
                     printAuthEnablingInstructions(username, password);
@@ -437,7 +439,7 @@ public class AuthTool extends ToolBase {
                 String authConfDir = cli.getOptionValue("authConfDir");
                 File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
 
-                if (basicAuthConfFile.getParentFile().canWrite() == false) {
+                if (!basicAuthConfFile.getParentFile().canWrite()) {
                     CLIO.out("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
                     printAuthEnablingInstructions(username, password);
                     System.exit(0);
@@ -460,23 +462,7 @@ public class AuthTool extends ToolBase {
                 return 0;
 
             case "disable":
-                if (!updateIncludeFileOnly) {
-                    zkHost = SolrCLI.getZkHost(cli);
-                    if (zkHost == null) {
-                        stdout.print("ZK Host not found. Solr should be running in cloud mode.");
-                        SolrCLI.exit(1);
-                    }
-
-                    echoIfVerbose("Uploading following security.json: {}", cli);
-
-                    try (SolrZkClient zkClient =
-                                 new SolrZkClient.Builder()
-                                         .withUrl(zkHost)
-                                         .withTimeout(10000, TimeUnit.MILLISECONDS)
-                                         .build()) {
-                        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
-                    }
-                }
+                uploadSecurityConfiguration(cli, updateIncludeFileOnly);
 
                 solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
                 includeFile = new File(solrIncludeFilename);

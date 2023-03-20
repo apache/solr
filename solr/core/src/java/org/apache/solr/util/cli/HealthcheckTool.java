@@ -175,4 +175,4 @@ public class HealthcheckTool extends SolrCloudTool {
         new JSONWriter(arr, 2).write(report);
         echo(arr.toString());
     }
-} // end HealthcheckTool
+}
