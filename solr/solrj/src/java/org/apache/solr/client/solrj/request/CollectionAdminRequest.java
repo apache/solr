@@ -1893,7 +1893,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public SetAliasProperty addProperty(String key, String value) {
-      properties.put(key, value);
+      if (value == null) {
+        properties.put(key, "");
+      } else {
+        properties.put(key, value);
+      }
       return this;
     }
 

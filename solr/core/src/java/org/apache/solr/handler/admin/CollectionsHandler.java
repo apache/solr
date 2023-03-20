@@ -170,7 +170,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -207,9 +206,12 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaAPI;
 import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
+import org.apache.solr.handler.admin.api.AliasPropertyAPI;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
@@ -217,6 +219,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
+import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
@@ -224,7 +227,6 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollectionAPI;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
-import org.apache.solr.handler.admin.api.SetCollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -664,8 +666,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETE_OP(
         DELETE,
         (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, NAME);
-          return copy(req.getParams(), map, FOLLOW_ALIASES);
+          final RequiredSolrParams requiredParams = req.getParams().required();
+          final DeleteCollectionAPI deleteCollectionAPI =
+              new DeleteCollectionAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse deleteCollResponse =
+              deleteCollectionAPI.deleteCollection(
+                  requiredParams.get(NAME),
+                  req.getParams().getBool(FOLLOW_ALIASES),
+                  req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteCollResponse);
+
+          return null;
         }),
     // XXX should this command support followAliases?
     RELOAD_OP(
@@ -848,7 +859,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return result;
         }),
 
-    DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
+    DELETEALIAS_OP(
+        DELETEALIAS,
+        (req, rsp, h) -> {
+          final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse response =
+              deleteAliasAPI.deleteAlias(
+                  req.getParams().required().get(NAME), req.getParams().get(ASYNC));
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
+        }),
 
     /**
      * Change properties for an alias (use CREATEALIAS_OP to change the actual value of the alias)
@@ -856,11 +876,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     ALIASPROP_OP(
         ALIASPROP,
         (req, rsp, h) -> {
-          Map<String, Object> params = copy(req.getParams().required(), null, NAME);
-
-          // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
-          // simple and one less case for api-callers to check for.
-          return convertPrefixToMap(req.getParams(), params, "property");
+          String name = req.getParams().required().get(NAME);
+          Map<String, Object> properties = collectToMap(req.getParams(), "property");
+          AliasPropertyAPI.UpdateAliasPropertiesRequestBody requestBody =
+              new AliasPropertyAPI.UpdateAliasPropertiesRequestBody();
+          requestBody.properties = properties;
+          requestBody.async = req.getParams().get(ASYNC);
+          final AliasPropertyAPI aliasPropertyAPI = new AliasPropertyAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse getAliasesResponse =
+              aliasPropertyAPI.updateAliasProperties(name, requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
+          return null;
         }),
 
     /** List the aliases and associated properties. */
@@ -1043,13 +1069,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     COLLECTIONPROP_OP(
         COLLECTIONPROP,
         (req, rsp, h) -> {
-          String extCollection = req.getParams().required().get(NAME);
-          String collection = h.coreContainer.getAliases().resolveSimpleAlias(extCollection);
-          String name = req.getParams().required().get(PROPERTY_NAME);
-          String val = req.getParams().get(PROPERTY_VALUE);
-          CollectionProperties cp =
-              new CollectionProperties(h.coreContainer.getZkController().getZkClient());
-          cp.setCollectionProperty(collection, name, val);
+          final String collection = req.getParams().required().get(NAME);
+          final String propName = req.getParams().required().get(PROPERTY_NAME);
+          final String val = req.getParams().get(PROPERTY_VALUE);
+
+          final CollectionPropertyAPI setCollPropApi =
+              new CollectionPropertyAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse setPropRsp =
+              (val != null)
+                  ? setCollPropApi.createOrUpdateCollectionProperty(
+                      collection,
+                      propName,
+                      new CollectionPropertyAPI.UpdateCollectionPropertyRequestBody(val))
+                  : setCollPropApi.deleteCollectionProperty(collection, propName);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, setPropRsp);
           return null;
         }),
     REQUESTSTATUS_OP(
@@ -1231,19 +1264,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          NamedList<Object> results = new NamedList<>();
-          Map<String, DocCollection> collections =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getClusterState()
-                  .getCollectionsMap();
-          List<String> collectionList = new ArrayList<>(collections.keySet());
-          Collections.sort(collectionList);
-          // XXX should we add aliases here?
-          results.add("collections", collectionList);
-          SolrResponse response = new OverseerSolrResponse(results);
-          rsp.getValues().addAll(response.getResponse());
+          final ListCollectionsAPI listCollectionsAPI =
+              new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
         }),
     /**
@@ -1821,28 +1845,21 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         });
 
     /**
-     * Places all prefixed properties in the sink map (or a new map) using the prefix as the key and
-     * a map of all prefixed properties as the value. The sub-map keys have the prefix removed.
+     * Collects all prefixed properties in a new map. The resulting keys have the prefix removed.
      *
      * @param params The solr params from which to extract prefixed properties.
-     * @param sink The map to add the properties too.
      * @param prefix The prefix to identify properties to be extracted
-     * @return The sink map, or a new map if the sink map was null
+     * @return a map with collected properties
      */
-    private static Map<String, Object> convertPrefixToMap(
-        SolrParams params, Map<String, Object> sink, String prefix) {
-      Map<String, Object> result = new LinkedHashMap<>();
+    private static Map<String, Object> collectToMap(SolrParams params, String prefix) {
+      Map<String, Object> sink = new LinkedHashMap<>();
       Iterator<String> iter = params.getParameterNamesIterator();
       while (iter.hasNext()) {
         String param = iter.next();
         if (param.startsWith(prefix)) {
-          result.put(param.substring(prefix.length() + 1), params.get(param));
+          sink.put(param.substring(prefix.length() + 1), params.get(param));
         }
       }
-      if (sink == null) {
-        sink = new LinkedHashMap<>();
-      }
-      sink.put(prefix, result);
       return sink;
     }
 
@@ -2067,10 +2084,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        DeleteAliasAPI.class,
+        DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
+        ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
+        CollectionPropertyAPI.class,
         DeleteNodeAPI.class,
-        ListAliasesAPI.class);
+        ListAliasesAPI.class,
+        AliasPropertyAPI.class);
   }
 
   @Override
@@ -2084,13 +2106,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SetCollectionPropertyAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;

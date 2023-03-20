@@ -223,8 +223,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Attempting to replicate from [{}].", leaderUrl);
 
-    // send commit
-    commitOnLeader(leaderUrl);
+    // send commit if replica could be a leader
+    if (Replica.Type.isLeaderType(replicaType)) {
+      commitOnLeader(leaderUrl);
+    }
 
     // use rep handler directly, so we can do this sync rather than async
     SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
