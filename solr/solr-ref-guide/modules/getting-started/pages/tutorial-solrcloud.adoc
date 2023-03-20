@@ -195,7 +195,6 @@ Once you startup a SolrCloud cluster using the startup scripts, you can add a ne
 [,console]
 ----
 $ mkdir <solr.home for new Solr node>
-$ cp <existing solr.xml path> <new solr.home>
 $ bin/solr start -cloud -s solr.home/solr -p <port num> -z <zk hosts string>
 ----
 
