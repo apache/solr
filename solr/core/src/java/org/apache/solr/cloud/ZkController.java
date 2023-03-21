@@ -98,6 +98,7 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -952,7 +953,7 @@ public class ZkController implements Closeable {
   public static void createClusterZkNodes(SolrZkClient zkClient)
       throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
-    cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkLiveNodes.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     for (NodeRoles.Role role : NodeRoles.Role.values()) {
       cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
@@ -1037,8 +1038,7 @@ public class ZkController implements Closeable {
         }
       }
 
-      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
-      if (stat != null && stat.getNumChildren() > 0) {
+      if (zkStateReader.getZkLiveNodes().getLiveNodes().size() > 0) {
         publishAndWaitForDownStates();
       }
 
@@ -1064,7 +1064,7 @@ public class ZkController implements Closeable {
       return;
     }
     String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+    String nodePath = ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + nodeName;
 
     if (!zkClient.exists(nodePath, true)) {
       return;
@@ -1216,7 +1216,7 @@ public class ZkController implements Closeable {
     }
 
     String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+    String nodePath = ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(
@@ -1246,7 +1246,7 @@ public class ZkController implements Closeable {
       return;
     }
     String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+    String nodePath = ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));

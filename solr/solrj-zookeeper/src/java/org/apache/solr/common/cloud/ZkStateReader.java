@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySortedSet;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -105,7 +104,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
-  public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+  @Deprecated public static final String LIVE_NODES_ZKNODE = ZkLiveNodes.LIVE_NODES_ZKNODE;
 
   // TODO: Deprecate and remove support for roles.json in an upcoming release.
   /**
@@ -185,8 +184,6 @@ public class ZkStateReader implements SolrCloseable {
   private final ConcurrentHashMap<String, PropsWatcher> collectionPropsWatchers =
       new ConcurrentHashMap<>();
 
-  private volatile SortedSet<String> liveNodes = emptySortedSet();
-
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
   private ConfigData securityData;
@@ -208,8 +205,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
-  private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
-
   private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
   /** Used to submit notifications to Collection Properties watchers in order */
@@ -222,6 +217,12 @@ public class ZkStateReader implements SolrCloseable {
 
   // only kept to identify if the cleaner has already been started.
   private Future<?> collectionPropsCacheCleaner;
+
+  private final ZkLiveNodes zkLiveNodes;
+
+  public ZkLiveNodes getZkLiveNodes() {
+    return zkLiveNodes;
+  }
 
   /**
    * Gets the ZkStateReader inside a ZK based SolrClient.
@@ -408,6 +409,7 @@ public class ZkStateReader implements SolrCloseable {
     this.zkClient = zkClient;
     this.closeClient = false;
     this.securityNodeListener = securityNodeListener;
+    this.zkLiveNodes = new ZkLiveNodes(zkClient);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -436,6 +438,7 @@ public class ZkStateReader implements SolrCloseable {
             .build();
     this.closeClient = true;
     this.securityNodeListener = null;
+    this.zkLiveNodes = new ZkLiveNodes(zkClient);
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -458,7 +461,7 @@ public class ZkStateReader implements SolrCloseable {
       }
       // No need to set watchers because we should already have watchers registered for everything.
       refreshCollectionList(null);
-      refreshLiveNodes(null);
+      zkLiveNodes.refresh();
 
       Set<String> updatedCollections = new HashSet<>();
 
@@ -523,7 +526,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Refresh the set of live nodes. */
   public void updateLiveNodes() throws KeeperException, InterruptedException {
-    refreshLiveNodes(null);
+    zkLiveNodes.refresh();
   }
 
   public Integer compareStateVersions(String coll, int version) {
@@ -566,7 +569,7 @@ public class ZkStateReader implements SolrCloseable {
     try {
       // on reconnect of SolrZkClient force refresh and re-add watches.
       loadClusterProperties();
-      refreshLiveNodes(new LiveNodeWatcher());
+      zkLiveNodes.refresh();
       refreshCollections();
       refreshCollectionList(new CollectionsChildWatcher());
       refreshAliases(aliasesManager);
@@ -656,9 +659,7 @@ public class ZkStateReader implements SolrCloseable {
    * @param changedCollections collections that have changed since the last call, and that should
    *     fire notifications
    */
-  private void constructState(Set<String> changedCollections) {
-
-    Set<String> liveNodes = this.liveNodes; // volatile read
+  protected void constructState(Set<String> changedCollections) {
 
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
@@ -677,7 +678,13 @@ public class ZkStateReader implements SolrCloseable {
       result.putIfAbsent(entry.getKey(), entry.getValue());
     }
 
-    this.clusterState = new ClusterState(result, liveNodes);
+    this.clusterState = new ClusterState(result, zkLiveNodes.getLiveNodes());
+    // Listen for future live nodes changes to update ClusterState
+    zkLiveNodes.addListener(
+        (o, n) -> {
+          clusterState.setLiveNodes(n);
+          return false;
+        });
 
     if (log.isDebugEnabled()) {
       log.debug(
@@ -841,60 +848,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  // We don't get a Stat or track versions on getChildren() calls, so force linearization.
-  private final Object refreshLiveNodesLock = new Object();
-  // Ensures that only the latest getChildren fetch gets applied.
-  private final AtomicReference<SortedSet<String>> lastFetchedLiveNodes = new AtomicReference<>();
-
-  /** Refresh live_nodes. */
-  private void refreshLiveNodes(Watcher watcher) throws KeeperException, InterruptedException {
-    synchronized (refreshLiveNodesLock) {
-      SortedSet<String> newLiveNodes;
-      try {
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
-        newLiveNodes = new TreeSet<>(nodeList);
-      } catch (KeeperException.NoNodeException e) {
-        newLiveNodes = emptySortedSet();
-      }
-      lastFetchedLiveNodes.set(newLiveNodes);
-    }
-
-    // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
-    SortedSet<String> oldLiveNodes, newLiveNodes;
-    synchronized (getUpdateLock()) {
-      newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
-      if (newLiveNodes == null) {
-        // Someone else won the race to apply the last update, just exit.
-        return;
-      }
-
-      oldLiveNodes = this.liveNodes;
-      this.liveNodes = newLiveNodes;
-      if (clusterState != null) {
-        clusterState.setLiveNodes(newLiveNodes);
-      }
-    }
-    if (oldLiveNodes.size() != newLiveNodes.size()) {
-      if (log.isInfoEnabled()) {
-        log.info(
-            "Updated live nodes from ZooKeeper... ({}) -> ({})",
-            oldLiveNodes.size(),
-            newLiveNodes.size());
-      }
-    }
-    if (log.isDebugEnabled()) {
-      log.debug("Updated live nodes from ZooKeeper... {} -> {}", oldLiveNodes, newLiveNodes);
-    }
-    if (!oldLiveNodes.equals(newLiveNodes)) { // fire listeners
-      liveNodesListeners.forEach(
-          listener -> {
-            if (listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes))) {
-              removeLiveNodesListener(listener);
-            }
-          });
-    }
-  }
-
   public void registerClusterPropertiesListener(ClusterPropertiesListener listener) {
     // fire it once with current properties
     if (listener.onChange(getClusterProperties())) {
@@ -916,11 +869,11 @@ public class ZkStateReader implements SolrCloseable {
       removeLiveNodesListener(listener);
     }
 
-    liveNodesListeners.add(listener);
+    zkLiveNodes.addListener(listener);
   }
 
   public void removeLiveNodesListener(LiveNodesListener listener) {
-    liveNodesListeners.remove(listener);
+    zkLiveNodes.removeListener(listener);
   }
 
   /**
@@ -986,10 +939,6 @@ public class ZkStateReader implements SolrCloseable {
       }
     }
     return null;
-  }
-
-  public boolean isNodeLive(String node) {
-    return liveNodes.contains(node);
   }
 
   /** Get shard leader properties, with retry if none exist. */
@@ -1420,7 +1369,7 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
 
-      Set<String> liveNodes = ZkStateReader.this.liveNodes;
+      Set<String> liveNodes = zkLiveNodes.getLiveNodes();
       if (log.isInfoEnabled()) {
         log.info(
             "A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
@@ -1631,42 +1580,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  /** Watches the live_nodes and syncs changes. */
-  class LiveNodeWatcher implements Watcher {
-
-    @Override
-    public void process(WatchedEvent event) {
-      // session events are not change events, and do not remove the watcher
-      if (EventType.None.equals(event.getType())) {
-        return;
-      }
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "A live node change: [{}], has occurred - updating... (live nodes size: [{}])",
-            event,
-            liveNodes.size());
-      }
-      refreshAndWatch();
-    }
-
-    public void refreshAndWatch() {
-      try {
-        refreshLiveNodes(this);
-      } catch (KeeperException.SessionExpiredException
-          | KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
-      } catch (KeeperException e) {
-        log.error("A ZK error has occurred", e);
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.warn("Interrupted", e);
-      }
-    }
-  }
-
   public DocCollection getCollectionLive(String coll) {
     try {
       return fetchCollectionState(coll, null);
@@ -1808,7 +1721,7 @@ public class ZkStateReader implements SolrCloseable {
     registerLiveNodesListener(wrapper);
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+    if (stateWatcher.onStateChanged(zkLiveNodes.getLiveNodes(), state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
     }
   }
@@ -2436,7 +2349,7 @@ public class ZkStateReader implements SolrCloseable {
 
     @Override
     public boolean onStateChanged(DocCollection collectionState) {
-      final boolean result = delegate.onStateChanged(ZkStateReader.this.liveNodes, collectionState);
+      final boolean result = delegate.onStateChanged(zkLiveNodes.getLiveNodes(), collectionState);
       if (result) {
         // it might be a while before live nodes changes, so proactively remove ourselves
         removeLiveNodesListener(this);

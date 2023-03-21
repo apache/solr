@@ -28,7 +28,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
@@ -93,7 +93,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     SolrZkClient client = newSolrZkClient();
     try {
       ArrayList<String> result =
-          new ArrayList<>(client.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
+          new ArrayList<>(client.getChildren(ZkLiveNodes.LIVE_NODES_ZKNODE, null, true));
       Collections.sort(result);
       return result;
     } finally {
@@ -252,7 +252,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       running = true;
       // NOTE: test includes 'running'
       for (int i = 0; running && i < numNodesToAdd; i++) {
-        final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/thrasher-" + id + "-" + i;
+        final String nodePath = ZkLiveNodes.LIVE_NODES_ZKNODE + "/thrasher-" + id + "-" + i;
         try {
           client.makePath(nodePath, CreateMode.EPHEMERAL, true);
           numAdded++;

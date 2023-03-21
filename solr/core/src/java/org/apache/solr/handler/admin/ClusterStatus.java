@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -196,8 +197,7 @@ public class ClusterStatus {
       collectionProps.add(name, collectionStatus);
     }
 
-    List<String> liveNodes =
-        zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+    SortedSet<String> liveNodes = zkStateReader.getZkLiveNodes().getLiveNodes();
 
     // now we need to walk the collectionProps tree to cross-check replica state with live nodes
     crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
@@ -272,7 +272,7 @@ public class ClusterStatus {
    */
   @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(
-      List<String> liveNodes, NamedList<Object> collectionProps) {
+      SortedSet<String> liveNodes, NamedList<Object> collectionProps) {
     for (Map.Entry<String, Object> next : collectionProps) {
       Map<String, Object> collMap = (Map<String, Object>) next.getValue();
       Map<String, Object> shards = (Map<String, Object>) collMap.get("shards");

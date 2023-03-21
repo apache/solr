@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -572,7 +573,7 @@ public class ReplicaMutator {
                 try {
                   leaderZnode =
                       stateManager.getData(
-                          ZkStateReader.LIVE_NODES_ZKNODE + "/" + shardParentNode, null);
+                          ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + shardParentNode, null);
                 } catch (NoSuchElementException e) {
                   // ignore
                 }

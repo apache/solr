@@ -65,6 +65,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -154,7 +155,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkStateReader.createClusterStateWatchersAndUpdate();
 
       // live node
-      final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+      final String nodePath = ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + nodeName;
       zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
     }
 
@@ -180,7 +181,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           log.warn(String.format(Locale.ROOT, "Error cancelling election for %s", ec.id), e);
         }
       }
-      deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+      deleteNode(ZkLiveNodes.LIVE_NODES_ZKNODE + "/" + nodeName);
       zkClient.close();
       zkStateReader.close();
     }

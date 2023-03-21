@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkLiveNodes;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -269,7 +270,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     int oldLiveNodes =
         ZkStateReader.from(cloudClient)
             .getZkClient()
-            .getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true)
+            .getChildren(ZkLiveNodes.LIVE_NODES_ZKNODE, null, true)
             .size();
 
     assertEquals(5, oldLiveNodes);
