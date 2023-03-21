@@ -203,7 +203,7 @@ public class SolrCLI implements CLIO {
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
-    } catch (java.lang.SecurityException secExc) {
+    } catch (SecurityException secExc) {
       if (exitStatus != 0)
         throw new RuntimeException("SolrCLI failed to exit with status " + exitStatus);
     }
