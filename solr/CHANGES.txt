@@ -59,6 +59,8 @@ Improvements
   fetching single property values (`GET /api/aliases/aliasName/properties/propName`), and property deletion
   (`DELETE /api/aliases/aliasName/properties/propName`). (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
+
 Optimizations
 ---------------------
 
