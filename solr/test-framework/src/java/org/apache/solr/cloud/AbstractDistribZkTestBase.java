@@ -420,10 +420,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
-    int res =
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(
-                tool.getName(), SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
   }
 }

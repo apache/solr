@@ -29,7 +29,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -365,7 +364,7 @@ public class PackageTool extends ToolBase {
     if (zkHost != null) return zkHost;
 
     String systemInfoUrl = solrUrl + "/admin/info/system";
-    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()) {
       // hit Solr to get system info
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
 

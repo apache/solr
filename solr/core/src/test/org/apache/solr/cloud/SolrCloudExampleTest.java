@@ -114,8 +114,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // no-no in a JUnit test
 
     CreateCollectionTool tool = new CreateCollectionTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(tool.getName(),SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue(
@@ -202,8 +201,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-zkHost", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(tool.getName(),SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
@@ -214,8 +212,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-solrUrl", solrUrl
         };
     DeleteTool tool = new DeleteTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(tool.getName(),SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
@@ -249,8 +246,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     Map<String, Long> startTimes = getSoftAutocommitInterval(testCollectionName);
 
     ConfigTool tool = new ConfigTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(tool.getName(),SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
     assertEquals("Set config property failed!", 0, tool.runTool(cli));
 

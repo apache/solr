@@ -211,8 +211,7 @@ public class SolrCLI implements CLIO {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli =
-        processCommandLineArgs(toolName, joinCommonAndToolOptions(toolOptions), toolArgs);
+    CommandLine cli = processCommandLineArgs(toolName, toolOptions, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -254,11 +253,6 @@ public class SolrCLI implements CLIO {
     if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
-  }
-
-  /** Support options common to all tools. */
-  public static Option[] getCommonToolOptions() {
-    return new Option[0];
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
@@ -331,13 +325,11 @@ public class SolrCLI implements CLIO {
     Options options = new Options();
     options.addOption("help", false, "Print this message");
     options.addOption(OPTION_VERBOSE);
-    Option[] toolOpts = joinCommonAndToolOptions(tool.getOptions());
-    for (int i = 0; i < toolOpts.length; i++) options.addOption(toolOpts[i]);
+    Option[] toolOpts = tool.getOptions();
+    for (int i = 0; i < toolOpts.length; i++) {
+      options.addOption(toolOpts[i]);
+    }
     return options;
-  }
-
-  public static Option[] joinCommonAndToolOptions(Option[] toolOpts) {
-    return joinOptions(getCommonToolOptions(), toolOpts);
   }
 
   public static Option[] joinOptions(Option[] lhs, Option[] rhs) {
@@ -990,7 +982,7 @@ public class SolrCLI implements CLIO {
     }
 
     String systemInfoUrl = solrUrl + "admin/info/system";
-    try (CloseableHttpClient httpClient = getHttpClient()){
+    try (CloseableHttpClient httpClient = getHttpClient()) {
       // hit Solr to get system info
       Map<String, Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
 

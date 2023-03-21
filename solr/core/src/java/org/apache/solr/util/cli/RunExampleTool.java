@@ -299,9 +299,7 @@ public class RunExampleTool extends ToolBase {
       int createCode =
           createTool.runTool(
               SolrCLI.processCommandLineArgs(
-                  createTool.getName(),
-                  SolrCLI.joinCommonAndToolOptions(createTool.getOptions()),
-                  createArgs));
+                  createTool.getName(), createTool.getOptions(), createArgs));
       if (createCode != 0)
         throw new Exception(
             "Failed to create " + collectionName + " using command: " + Arrays.asList(createArgs));
@@ -554,9 +552,7 @@ public class RunExampleTool extends ToolBase {
     try {
       configTool.runTool(
           SolrCLI.processCommandLineArgs(
-              configTool.getName(),
-              SolrCLI.joinCommonAndToolOptions(configTool.getOptions()),
-              configArgs));
+              configTool.getName(), configTool.getOptions(), configArgs));
     } catch (Exception exc) {
       CLIO.err("Failed to update '" + propName + "' property due to: " + exc);
     }
@@ -875,9 +871,7 @@ public class RunExampleTool extends ToolBase {
     int createCode =
         createCollectionTool.runTool(
             SolrCLI.processCommandLineArgs(
-                createCollectionTool.getName(),
-                SolrCLI.joinCommonAndToolOptions(createCollectionTool.getOptions()),
-                createArgs));
+                createCollectionTool.getName(), createCollectionTool.getOptions(), createArgs));
 
     if (createCode != 0)
       throw new Exception(

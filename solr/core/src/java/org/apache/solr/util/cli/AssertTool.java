@@ -237,7 +237,7 @@ public class AssertTool extends ToolBase {
     long timeout =
         System.nanoTime()
             + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
-    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()) {
       SolrCLI.attemptHttpHead(url, httpClient);
     } catch (SolrException se) {
       throw se; // Auth error

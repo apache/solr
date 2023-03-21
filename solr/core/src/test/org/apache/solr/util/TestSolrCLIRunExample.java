@@ -369,8 +369,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       try {
         int status =
             tool.runTool(
-                SolrCLI.processCommandLineArgs(tool.getName(),
-                    SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
 
         if (status == -1) {
           // maybe it's the port, try again
@@ -380,8 +379,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           Thread.sleep(100);
           status =
               tool.runTool(
-                  SolrCLI.processCommandLineArgs(tool.getName(),
-                      SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                  SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
         }
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
@@ -490,9 +488,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, userInputSim, stdoutSim);
     try {
-      tool.runTool(
-          SolrCLI.processCommandLineArgs(tool.getName(),
-              SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+      tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -565,11 +561,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     DeleteTool deleteTool = new DeleteTool(stdoutSim);
     String[] deleteArgs = new String[] {"-name", collectionName, "-solrUrl", solrUrl};
     deleteTool.runTool(
-        SolrCLI.processCommandLineArgs(deleteTool.getName(),
-            SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
+        SolrCLI.processCommandLineArgs(deleteTool.getName(), deleteTool.getOptions(), deleteArgs));
 
     // dump all the output written by the SolrCLI commands to stdout
-    // System.out.println(toolOutput);
+    System.out.println(toolOutput);
 
     // stop the test instance
     executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
@@ -613,9 +608,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
     int code =
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(tool.getName(),
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }
