@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
@@ -49,7 +50,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -258,8 +258,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          IOUtils.toString(
-              new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8);
+          try (InputStream is =
+              new URL(baseUrl.replace("/solr", "") + "/api/node/foo").openStream()) {
+            new String(is.readAllBytes(), StandardCharsets.UTF_8);
+          }
         });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
     assertAuditEvent(events.get(0), ERROR, "/api/node/foo", ADMIN, null, 404);

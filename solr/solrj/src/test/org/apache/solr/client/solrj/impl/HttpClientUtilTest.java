@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipException;
 import javax.net.ssl.HostnameVerifier;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -129,7 +128,7 @@ public class HttpClientUtilTest extends SolrTestCase {
   public void testNonRepeatableMalformedGzipEntityAutoClosed() throws IOException {
     HttpEntity baseEntity =
         new InputStreamEntity(
-            IOUtils.toInputStream("this is not compressed", StandardCharsets.UTF_8));
+            new ByteArrayInputStream("this is not compressed".getBytes(StandardCharsets.UTF_8)));
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity =
         new HttpClientUtil.GzipDecompressingEntity(baseEntity);
     Throwable error =
@@ -180,7 +179,7 @@ public class HttpClientUtilTest extends SolrTestCase {
     String testString = "this is compressed";
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
-      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+      gzipOutputStream.write(testString.getBytes(StandardCharsets.UTF_8));
     }
     // Use an ByteArrayEntity because it is repeatable
     HttpEntity baseEntity = new ByteArrayEntity(baos.toByteArray());
@@ -190,13 +189,13 @@ public class HttpClientUtilTest extends SolrTestCase {
       assertEquals(
           "Entity incorrect after decompression",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
     try (InputStream stream = gzipDecompressingEntity.getContent()) {
       assertEquals(
           "Entity incorrect after decompression after repeating",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
   }
 
@@ -205,7 +204,7 @@ public class HttpClientUtilTest extends SolrTestCase {
     String testString = "this is compressed";
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
-      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+      gzipOutputStream.write(testString.getBytes(StandardCharsets.UTF_8));
     }
     // Use an InputStreamEntity because it is non-repeatable
     HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream(baos.toByteArray()));
@@ -215,7 +214,7 @@ public class HttpClientUtilTest extends SolrTestCase {
       assertEquals(
           "Entity incorrect after decompression",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
     try (InputStream stream = gzipDecompressingEntity.getContent()) {
       expectThrows(
