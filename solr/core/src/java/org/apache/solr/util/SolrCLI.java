@@ -773,20 +773,16 @@ public class SolrCLI implements CLIO {
     return result;
   }
 
-  private static final long MS_IN_MIN = 60 * 1000L;
-  private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
-  private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
-
   @VisibleForTesting
   public static final String uptime(long uptimeMs) {
     if (uptimeMs <= 0L) return "?";
 
-    long numDays = (uptimeMs >= MS_IN_DAY) ? (uptimeMs / MS_IN_DAY) : 0L;
-    long rem = uptimeMs - (numDays * MS_IN_DAY);
-    long numHours = (rem >= MS_IN_HOUR) ? (rem / MS_IN_HOUR) : 0L;
-    rem = rem - (numHours * MS_IN_HOUR);
-    long numMinutes = (rem >= MS_IN_MIN) ? (rem / MS_IN_MIN) : 0L;
-    rem = rem - (numMinutes * MS_IN_MIN);
+    long numDays = TimeUnit.MILLISECONDS.toDays(uptimeMs);
+    long rem = uptimeMs - TimeUnit.DAYS.toMillis(numDays);
+    long numHours = TimeUnit.MILLISECONDS.toHours(rem);
+    rem = rem - TimeUnit.HOURS.toMillis(numHours);
+    long numMinutes = TimeUnit.MILLISECONDS.toMinutes(rem);
+    rem = rem - TimeUnit.MINUTES.toMillis(numMinutes);
     long numSeconds = Math.round(rem / 1000.0);
     return String.format(
         Locale.ROOT,
