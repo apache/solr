@@ -731,7 +731,7 @@ public class RunExampleTool extends ToolBase {
               "Solr is already setup and running on port "
                   + port
                   + " with status:\n"
-                  + arr.toString());
+                  + arr);
           echo(
               "\nIf this is not the example node you are trying to start, please choose a different port.");
           nodeStatus.put("baseUrl", solrUrl);
@@ -894,7 +894,7 @@ public class RunExampleTool extends ToolBase {
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
     URL solrURL = new URL(solrUrl);
-    Map<String, Object> nodeStatus = statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs);
+    Map<String, Object> nodeStatus = statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);

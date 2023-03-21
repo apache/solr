@@ -221,7 +221,7 @@ public class AssertTool extends ToolBase {
   public static int assertSolrRunning(String url) throws Exception {
     StatusTool status = new StatusTool();
     try {
-      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
     } catch (Exception se) {
       if (SolrCLI.exceptionIsAuthRelated(se)) {
         throw se;
@@ -247,7 +247,7 @@ public class AssertTool extends ToolBase {
     }
     while (System.nanoTime() < timeout) {
       try {
-        status.waitToSeeSolrUp(url, 1);
+        status.waitToSeeSolrUp(url, 1, TimeUnit.SECONDS);
         try {
           log.debug("Solr still up. Waiting before trying again to see if it was stopped");
           Thread.sleep(1000L);
@@ -354,7 +354,7 @@ public class AssertTool extends ToolBase {
   private static boolean isSolrRunningOn(String url) throws Exception {
     StatusTool status = new StatusTool();
     try {
-      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
       return true;
     } catch (Exception se) {
       if (SolrCLI.exceptionIsAuthRelated(se)) {
