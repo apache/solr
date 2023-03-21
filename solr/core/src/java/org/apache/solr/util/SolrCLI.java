@@ -356,14 +356,6 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
-  /**
-   * @deprecated Use the method that takes a tool name as the first argument instead.
-   */
-  @Deprecated
-  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
-    return processCommandLineArgs(SolrCLI.class.getName(), customOptions, args);
-  }
-
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(
       String toolName, Option[] customOptions, String[] args) {
