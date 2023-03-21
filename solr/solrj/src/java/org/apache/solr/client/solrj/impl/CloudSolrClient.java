@@ -819,9 +819,10 @@ public abstract class CloudSolrClient extends SolrClient {
       collection = defaultCollection;
     }
     // TODO if we like this, then "defaultCollection" should be renamed
-    //if (collection != null && defaultCollection != null && !defaultCollection.equals(collection)) {
+    // if (collection != null && defaultCollection != null && !defaultCollection.equals(collection))
+    // {
     //  throw new IllegalArgumentException("defaultCollection conflicts with requested");
-    //}
+    // }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(request, 0, inputCollections);

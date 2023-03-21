@@ -336,7 +336,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(1)).close();
 
     log.info("Indexing docId=3");
-    rf = sendDoc(testCollectionName,3);
+    rf = sendDoc(testCollectionName, 3);
     assertRf(1, "both replicas should be down", rf);
 
     doDBQWithRetry(testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 1);
@@ -353,7 +353,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
 
     log.info("Indexing docId=4");
-    rf = sendDoc(testCollectionName,4);
+    rf = sendDoc(testCollectionName, 4);
     assertRf(3, "all replicas have been healed", rf);
 
     doDBQWithRetry(testCollectionName, 3, 5, "delete should have propagated to all 3 replicas", 1);
@@ -384,7 +384,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // send a single doc (again)
     // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
     log.info("Indexing docId=5");
-    rf = sendDoc(testCollectionName,5);
+    rf = sendDoc(testCollectionName, 5);
     assertRf(2, "doc should have succeeded, only one replica should be down", rf);
 
     // now send a batch (again)
@@ -492,10 +492,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     return runAndGetAchievedRf(collectionName, up);
   }
 
-  private int runAndGetAchievedRf(String collectionName, UpdateRequest up) throws SolrServerException, IOException {
+  private int runAndGetAchievedRf(String collectionName, UpdateRequest up)
+      throws SolrServerException, IOException {
     NamedList<Object> response = cloudClient.request(up, collectionName);
-    return cloudClient.getMinAchievedReplicationFactor(
-        collectionName, response);
+    return cloudClient.getMinAchievedReplicationFactor(collectionName, response);
   }
 
   protected void assertRf(int expected, String explain, int actual) throws Exception {

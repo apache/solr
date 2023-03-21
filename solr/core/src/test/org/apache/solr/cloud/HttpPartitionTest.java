@@ -160,7 +160,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       leaderProxy.close();
 
       // indexing during a partition
-      int achievedRf = sendDoc(testCollectionName,2, leaderJetty);
+      int achievedRf = sendDoc(testCollectionName, 2, leaderJetty);
       assertEquals("Unexpected achieved replication factor", 1, achievedRf);
       try (ZkShardTerms zkShardTerms =
           new ZkShardTerms(
@@ -201,7 +201,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "c8n_1x2";
     createCollectionRetry(testCollectionName, "conf1", 1, 2);
 
-    sendDoc(testCollectionName,1);
+    sendDoc(testCollectionName, 1);
 
     Replica notLeader =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive)
@@ -218,7 +218,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
 
     // indexing during a partition
-    sendDoc(testCollectionName,2, leaderJetty);
+    sendDoc(testCollectionName, 2, leaderJetty);
     // replica should publish itself as DOWN if the network is not healed after some amount time
     waitForState(testCollectionName, notLeader.getName(), DOWN, 10000);
 
@@ -274,7 +274,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         }
       }
       // always send doc directly to leader without going through proxy
-      sendDoc(testCollectionName,d + 4, leaderJetty); // 4 is offset as we've already indexed 1-3
+      sendDoc(testCollectionName, d + 4, leaderJetty); // 4 is offset as we've already indexed 1-3
     }
 
     // restore connectivity if lost
@@ -363,7 +363,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
 
     // indexing during a partition
-    sendDoc(testCollectionName,2, leaderJetty);
+    sendDoc(testCollectionName, 2, leaderJetty);
 
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy0.reopen();
@@ -371,7 +371,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     SocketProxy proxy1 = getProxyForReplica(notLeaders.get(1));
     proxy1.close();
 
-    sendDoc(testCollectionName,3, leaderJetty);
+    sendDoc(testCollectionName, 3, leaderJetty);
 
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy1.reopen();
@@ -399,7 +399,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "c8n_1x2_leader_session_loss";
     createCollectionRetry(testCollectionName, "conf1", 1, 2);
 
-    sendDoc(testCollectionName,1);
+    sendDoc(testCollectionName, 1);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
