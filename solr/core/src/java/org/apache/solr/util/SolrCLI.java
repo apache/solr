@@ -990,8 +990,7 @@ public class SolrCLI implements CLIO {
     }
 
     String systemInfoUrl = solrUrl + "admin/info/system";
-    CloseableHttpClient httpClient = getHttpClient();
-    try {
+    try (CloseableHttpClient httpClient = getHttpClient()){
       // hit Solr to get system info
       Map<String, Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
 
@@ -1007,8 +1006,6 @@ public class SolrCLI implements CLIO {
         }
         zkHost = zookeeper;
       }
-    } finally {
-      HttpClientUtil.close(httpClient);
     }
 
     return zkHost;

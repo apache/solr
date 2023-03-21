@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -236,8 +237,8 @@ public class AssertTool extends ToolBase {
     long timeout =
         System.nanoTime()
             + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
-    try {
-      SolrCLI.attemptHttpHead(url, SolrCLI.getHttpClient());
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
+      SolrCLI.attemptHttpHead(url, httpClient);
     } catch (SolrException se) {
       throw se; // Auth error
     } catch (IOException e) {

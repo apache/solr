@@ -365,8 +365,7 @@ public class PackageTool extends ToolBase {
     if (zkHost != null) return zkHost;
 
     String systemInfoUrl = solrUrl + "/admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
-    try {
+    try (CloseableHttpClient httpClient = SolrCLI.getHttpClient()){
       // hit Solr to get system info
       Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
 
@@ -382,8 +381,6 @@ public class PackageTool extends ToolBase {
         }
         zkHost = zookeeper;
       }
-    } finally {
-      HttpClientUtil.close(httpClient);
     }
 
     return zkHost;
