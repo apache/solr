@@ -1292,11 +1292,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           excludeQueries =
               Stream.concat(
                       Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
+                  .distinct()
                   .toArray(TermQuery[]::new);
         } else {
           excludeQueries =
               Stream.concat(
                       Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
+                  .distinct()
                   .toArray(TermQuery[]::new);
         }
       }
