@@ -10,3 +10,6 @@ org.apache.commons.io.FileUtils#deleteDirectory(java.io.File)
 
 @defaultMessage Use Files.readString instead
 org.apache.commons.io.FileUtils#readFileToString(**)
+
+@defaultMessage Use OutputStream.nullOutputStream() instead
+org.apache.commons.io.output.NullPrintStream
