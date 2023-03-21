@@ -108,7 +108,7 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
-  public static final String ZK_HOST = "localhost:9983";
+  public static final String DEFAULT_ZK_HOST = "localhost:9983";
   public static final String DEFAULT_CONFIG_SET = "_default";
 
   public static final Option OPTION_ZKHOST =
@@ -116,7 +116,7 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST)
+          .desc("Address of the ZooKeeper ensemble; defaults to: " + DEFAULT_ZK_HOST)
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =

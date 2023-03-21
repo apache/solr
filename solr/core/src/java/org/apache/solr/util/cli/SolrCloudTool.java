@@ -46,7 +46,7 @@ public abstract class SolrCloudTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST.getOpt(), SolrCLI.ZK_HOST);
+    String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST.getOpt(), SolrCLI.DEFAULT_ZK_HOST);
 
     log.debug("Connecting to Solr cluster: {}", zkHost);
     try (var cloudSolrClient =
