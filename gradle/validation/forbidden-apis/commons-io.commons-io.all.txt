@@ -13,3 +13,6 @@ org.apache.commons.io.FileUtils#readFileToString(**)
 
 @defaultMessage Use OutputStream.nullOutputStream() instead
 org.apache.commons.io.output.NullPrintStream
+
+@defaultMessage Use new String(inputstream.readAllBytes(), StandardCharsets.UTF_8)
+org.apache.commons.io.IOUtils#toString(java.io.InputStream, java.lang.String)

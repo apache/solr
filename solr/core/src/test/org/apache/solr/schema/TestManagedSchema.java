@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -225,9 +224,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     h.getCore().setLatestSchema(newSchema);
 
     assertTrue(managedSchemaFile.exists());
-    FileInputStream stream = new FileInputStream(managedSchemaFile);
-    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
-    stream.close(); // Explicitly close so that Windows can delete this file
+    try (InputStream stream = Files.newInputStream(managedSchemaFile.toPath())) {
+      managedSchemaContents = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    }
     assertTrue(
         managedSchemaContents.contains(
             "<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
@@ -506,9 +505,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     initCore();
 
     assertTrue(managedSchemaFile.exists());
-    FileInputStream stream = new FileInputStream(managedSchemaFile);
-    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
-    stream.close(); // Explicitly close so that Windows can delete this file
+    try (InputStream stream = Files.newInputStream(managedSchemaFile.toPath())) {
+      managedSchemaContents = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    }
     assertTrue(
         managedSchemaContents.contains(
             "<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
