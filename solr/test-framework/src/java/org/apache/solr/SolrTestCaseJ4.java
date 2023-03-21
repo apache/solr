@@ -79,6 +79,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.IOUtils;
@@ -2993,7 +2994,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static String randomXmlUsableUnicodeString() {
     String result = TestUtil.randomRealisticUnicodeString(random());
-    if (result.matches(".*\\p{InSpecials}.*")) {
+    Pattern specialPattern = Pattern.compile(".*\\p{InSpecials}.*");
+    if (specialPattern.matcher(result).matches()) {
       result = TestUtil.randomSimpleString(random());
     }
     return result;

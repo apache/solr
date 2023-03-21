@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.regex.Pattern;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
@@ -114,7 +115,8 @@ public abstract class RestTestBase extends SolrJettyTestBase {
         query = request.substring(queryStartPos + 1);
         path = request.substring(0, queryStartPos);
       }
-      if (!query.matches(".*wt=schema\\.xml.*")) { // don't overwrite wt=schema.xml
+      final Pattern WT_SCHEMA_XML_PATTERN = Pattern.compile(".*wt=schema\\.xml.*");
+      if (!WT_SCHEMA_XML_PATTERN.matcher(query).matches()) { // don't overwrite wt=schema.xml
         query = setParam(query, "wt", "xml");
       }
       request = path + '?' + setParam(query, "indent", "on");

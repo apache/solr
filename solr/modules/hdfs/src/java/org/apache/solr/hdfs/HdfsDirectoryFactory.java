@@ -633,7 +633,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
                         fs.getFileStatus(path).isDirectory()
                             && !path.equals(currentIndexDirPath)
                             && (pathName.equals("index")
-                                || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
+                                || INDEX_W_TIMESTAMP_REGEX_PATTERN.matcher(pathName).matches());
                   } catch (IOException e) {
                     log.error(
                         "Error checking if path {} is an old index directory, caused by: {}",

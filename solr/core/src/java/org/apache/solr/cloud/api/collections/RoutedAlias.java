@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.cloud.ZkController;
@@ -185,8 +186,9 @@ public abstract class RoutedAlias {
   }
 
   private static Map<String, String> selectForIndex(int i, Map<String, String> original) {
+    final Pattern pattern = Pattern.compile("(((?!^router\\.).)*$|(^router\\." + i + ".*$))");
     return original.entrySet().stream()
-        .filter(e -> e.getKey().matches("(((?!^router\\.).)*$|(^router\\." + i + ".*$))"))
+        .filter(e -> pattern.matcher(e.getKey()).matches())
         .map(
             e ->
                 new SimpleEntry<>(

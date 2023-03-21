@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
@@ -255,15 +256,15 @@ public class PackageUtils {
   }
 
   public static String[] validateCollections(String collections[]) {
-    String collectionNameRegex = "^[a-zA-Z0-9_-]*$";
+    Pattern collectionNameRegexPattern = Pattern.compile("^[a-zA-Z0-9_-]*$");
     for (String c : collections) {
-      if (c.matches(collectionNameRegex) == false) {
+      if (collectionNameRegexPattern.matcher(c).matches() == false) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Invalid collection name: "
                 + c
                 + ". Didn't match the pattern: '"
-                + collectionNameRegex
+                + collectionNameRegexPattern
                 + "'");
       }
     }

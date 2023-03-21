@@ -18,3 +18,5 @@ java.lang.Thread#<init>()
 java.lang.Thread#<init>(java.lang.Runnable)
 java.lang.Thread#<init>(java.lang.ThreadGroup,java.lang.Runnable)
 
+@defaultMessage Prefer Pattern.compile(someRegEx).matcher(someInput).matches()
+java.lang.String#matches(java.lang.String)

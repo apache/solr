@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -53,6 +54,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
 
   protected static final String INDEX_W_TIMESTAMP_REGEX =
       "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
+  protected static final Pattern INDEX_W_TIMESTAMP_REGEX_PATTERN =
+      Pattern.compile(INDEX_W_TIMESTAMP_REGEX);
 
   // May be set by sub classes as data root, in which case getDataHome will use it as base.
   // Absolute.
@@ -357,7 +360,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
                 String fileName = file.getName();
                 return file.isDirectory()
                     && !file.equals(currentIndexDir)
-                    && (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
+                    && (fileName.equals("index")
+                        || INDEX_W_TIMESTAMP_REGEX_PATTERN.matcher(fileName).matches());
               }
             });
 
