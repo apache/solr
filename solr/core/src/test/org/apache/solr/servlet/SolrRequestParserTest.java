@@ -129,7 +129,10 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     URL url = getClass().getResource("/README");
     assertNotNull("Missing file 'README' in test-resources root folder.", url);
 
-    byte[] bytes = IOUtils.toByteArray(url);
+    final byte[] bytes;
+    try (InputStream inputStream = url.openStream()) {
+      bytes = inputStream.readAllBytes();
+    }
 
     SolrCore core = h.getCore();
 
@@ -142,7 +145,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }
@@ -165,7 +168,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }

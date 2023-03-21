@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -193,7 +192,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         Arrays.sort(tLogFiles);
         String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
         try (FileInputStream inputStream = new FileInputStream(lastTLogFile)) {
-          byte[] tlogBytes = IOUtils.toByteArray(inputStream);
+          byte[] tlogBytes = inputStream.readAllBytes();
           contentFiles.put(lastTLogFile, tlogBytes);
           logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
         }

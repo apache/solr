@@ -14,8 +14,12 @@ org.apache.commons.io.FileUtils#readFileToString(**)
 @defaultMessage Use OutputStream.nullOutputStream() instead
 org.apache.commons.io.output.NullPrintStream
 
+@defaultMessage Use org.apache.solr.common.util.IOUtils.closeQuietly or try-with-resources
+org.apache.commons.io.IOUtils#closeQuietly(**)
+
 @defaultMessage Use new String(inputstream.readAllBytes(), StandardCharsets.UTF_8)
 org.apache.commons.io.IOUtils#toString(java.io.InputStream, java.lang.String)
 
-@defaultMessage Use org.apache.solr.common.util.IOUtils.closeQuietly or try-with-resources
-org.apache.commons.io.IOUtils#closeQuietly(**)
+@defaultMessage Use readAllBytes() method on InputStream
+org.apache.commons.io.IOUtils#toByteArray(java.io.InputStream)
+org.apache.commons.io.IOUtils#toByteArray(java.net.URL)
