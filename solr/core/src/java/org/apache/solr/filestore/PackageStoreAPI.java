@@ -362,8 +362,8 @@ public class PackageStoreAPI {
 
     private void writeRawFile(SolrQueryRequest req, SolrQueryResponse rsp, String path) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      if (CommonParams.JSON.equals(req.getParams().get(CommonParams.WT))) {
-        solrParams.add(CommonParams.WT, CommonParams.JSON);
+      if ("json".equals(req.getParams().get(CommonParams.WT))) {
+        solrParams.add(CommonParams.WT, "json");
         req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
         try {
           packageStore.get(
@@ -401,7 +401,8 @@ public class PackageStoreAPI {
                             }
                           } catch (IOException e) {
                             throw new SolrException(
-                                SolrException.ErrorCode.SERVER_ERROR, "Error reading file to filestream" + path);
+                                SolrException.ErrorCode.SERVER_ERROR,
+                                "Error reading file to filestream" + path);
                           }
                         },
                         false));

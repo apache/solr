@@ -194,7 +194,7 @@ public class DistribPackageStore implements PackageStore {
             new GenericSolrRequest(
                 SolrRequest.METHOD.GET,
                 "/node/files" + getMetaPath(),
-                new ModifiableSolrParams().add(CommonParams.WT, CommonParams.JSON));
+                new ModifiableSolrParams().add(CommonParams.WT, "json"));
         request.setResponseParser(new JsonMapResponseParser());
         NamedList<Object> response = solrClient.request(request);
         metadata = ByteBuffer.wrap(((String) response.get("response")).getBytes(UTF_8));
