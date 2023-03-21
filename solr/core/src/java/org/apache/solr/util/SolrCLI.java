@@ -109,6 +109,7 @@ public class SolrCLI implements CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
   public static final String ZK_HOST = "localhost:9983";
+  public static final String DEFAULT_CONFIG_SET = "_default";
 
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
@@ -139,7 +140,7 @@ public class SolrCLI implements CLIO {
           // .type(Boolean.class)
           .build();
 
-  public static final Option[] cloudOptions =
+  public static final Option[] CLOUD_OPTIONS =
       new Option[] {
         OPTION_ZKHOST,
         Option.builder("c")
@@ -148,6 +149,53 @@ public class SolrCLI implements CLIO {
             .required(false)
             .desc("Name of collection; no default.")
             .longOpt("collection")
+            .build(),
+        OPTION_VERBOSE
+      };
+
+  public static final Option[] CREATE_COLLECTION_OPTIONS =
+      new Option[] {
+        OPTION_ZKHOST,
+        OPTION_SOLRURL,
+        Option.builder(NAME)
+            .argName("NAME")
+            .hasArg()
+            .required(true)
+            .desc("Name of collection to create.")
+            .build(),
+        Option.builder("shards")
+            .argName("#")
+            .hasArg()
+            .required(false)
+            .desc("Number of shards; default is 1.")
+            .build(),
+        Option.builder("replicationFactor")
+            .argName("#")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Number of copies of each document across the collection (replicas per shard); default is 1.")
+            .build(),
+        Option.builder("confdir")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Configuration directory to copy when creating the new collection; default is "
+                    + DEFAULT_CONFIG_SET
+                    + '.')
+            .build(),
+        Option.builder("confname")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc("Configuration name; default is the collection name.")
+            .build(),
+        Option.builder("configsetsDir")
+            .argName("DIR")
+            .hasArg()
+            .required(true)
+            .desc("Path to configsets directory on the local system.")
             .build(),
         OPTION_VERBOSE
       };
@@ -725,8 +773,6 @@ public class SolrCLI implements CLIO {
     return result;
   }
 
-  public static final String DEFAULT_CONFIG_SET = "_default";
-
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
   private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
@@ -885,53 +931,6 @@ public class SolrCLI implements CLIO {
       return arr.toString();
     }
   }
-
-  public static final Option[] CREATE_COLLECTION_OPTIONS =
-      new Option[] {
-        OPTION_ZKHOST,
-        OPTION_SOLRURL,
-        Option.builder(NAME)
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of collection to create.")
-            .build(),
-        Option.builder("shards")
-            .argName("#")
-            .hasArg()
-            .required(false)
-            .desc("Number of shards; default is 1.")
-            .build(),
-        Option.builder("replicationFactor")
-            .argName("#")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Number of copies of each document across the collection (replicas per shard); default is 1.")
-            .build(),
-        Option.builder("confdir")
-            .argName("NAME")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Configuration directory to copy when creating the new collection; default is "
-                    + DEFAULT_CONFIG_SET
-                    + '.')
-            .build(),
-        Option.builder("confname")
-            .argName("NAME")
-            .hasArg()
-            .required(false)
-            .desc("Configuration name; default is the collection name.")
-            .build(),
-        Option.builder("configsetsDir")
-            .argName("DIR")
-            .hasArg()
-            .required(true)
-            .desc("Path to configsets directory on the local system.")
-            .build(),
-        OPTION_VERBOSE
-      };
 
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option from

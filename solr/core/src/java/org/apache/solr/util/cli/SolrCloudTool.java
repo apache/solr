@@ -40,7 +40,7 @@ public abstract class SolrCloudTool extends ToolBase {
 
   @Override
   public Option[] getOptions() {
-    return SolrCLI.cloudOptions;
+    return SolrCLI.CLOUD_OPTIONS;
   }
 
   @Override

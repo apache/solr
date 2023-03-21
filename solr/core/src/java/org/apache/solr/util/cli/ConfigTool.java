@@ -87,7 +87,7 @@ public class ConfigTool extends ToolBase {
               .longOpt("scheme")
               .build()
         };
-    return SolrCLI.joinOptions(configOptions, SolrCLI.cloudOptions);
+    return SolrCLI.joinOptions(configOptions, SolrCLI.CLOUD_OPTIONS);
   }
 
   @Override
