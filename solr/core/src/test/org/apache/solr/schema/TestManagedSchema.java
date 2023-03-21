@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.File;
 import java.io.FileInputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,7 +87,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testUpgrade() throws Exception {
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
     assertTrue(managedSchemaFile.exists());
-    String managedSchema = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
     File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
     assertTrue(upgradedOriginalSchemaFile.exists());
@@ -101,7 +102,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
     assertTrue(managedSchemaFile.exists());
-    String managedSchema = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
     File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
     assertTrue(upgradedOriginalSchemaFile.exists());
@@ -210,7 +211,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     Map<String, Object> options = new HashMap<>();
@@ -244,7 +246,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     clearIndex();
@@ -483,7 +486,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     Map<String, Object> options = new HashMap<>();
