@@ -19,7 +19,7 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
