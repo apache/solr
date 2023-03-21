@@ -70,7 +70,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   @After
   public void purgeAllCollections() throws Exception {
     cluster.deleteAllCollections();
-    cluster.getSolrClient().setDefaultCollection(null);
   }
 
   /**
@@ -92,7 +91,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
-    cloudClient.setDefaultCollection(name);
     return name;
   }
 
@@ -144,21 +142,21 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   public void testDeleteByIdImplicitRouter() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
-    final String name = "implicit_collection_without_routerfield_" + NAME_COUNTER.getAndIncrement();
+    final String testCollectionName =
+        "implicit_collection_without_routerfield_" + NAME_COUNTER.getAndIncrement();
     assertEquals(
         RequestStatusState.COMPLETED,
         CollectionAdminRequest.createCollectionWithImplicitRouter(
-                name, "_default", "shard1,shard2", 2)
+                testCollectionName, "_default", "shard1,shard2", 2)
             .processAndWait(cloudClient, DEFAULT_TIMEOUT));
     ZkStateReader.from(cloudClient)
         .waitForState(
-            name,
+            testCollectionName,
             (long) DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (CollectionStatePredicate) (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
-    cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
@@ -183,20 +181,30 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               // including cloudClient helps us test view from other nodes that aren't the
               // leaders...
               for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
+
+                String queryWithCollectionName =
+                    specifyCollectionParameterForCloudSolrClient(c, testCollectionName);
+
                 assertEquals(
                     docCounts1.get() + docCounts2.get(),
-                    c.query(params("q", "*:*")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*"))
+                        .getResults()
+                        .getNumFound());
 
                 assertEquals(
                     docCounts1.get(),
-                    c.query(params("q", "*:*", "shards", "shard1")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard1"))
+                        .getResults()
+                        .getNumFound());
                 assertEquals(
                     docCounts2.get(),
-                    c.query(params("q", "*:*", "shards", "shard2")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard2"))
+                        .getResults()
+                        .getNumFound());
 
                 assertEquals(
                     docCounts1.get() + docCounts2.get(),
-                    c.query(params("q", "*:*", "shards", "shard2,shard1"))
+                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard2,shard1"))
                         .getResults()
                         .getNumFound());
               }
@@ -258,25 +266,38 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     }
   }
 
+  private String specifyCollectionParameterForCloudSolrClient(
+      SolrClient solrClient, String collectionName) {
+    // For CloudSolrClient we must specify the collection name as a parameter,
+    // however for shard1 and shard2, it's already part of the URL so we can specify a null
+    // parameter.  The
+    // instanceof check makes that decision.
+    String collectionNameRequiredParameter = null;
+    if (solrClient instanceof CloudSolrClient) {
+      collectionNameRequiredParameter = collectionName;
+    }
+    return collectionNameRequiredParameter;
+  }
+
   public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
-    final String name = "composite_collection_with_routerfield_" + NAME_COUNTER.getAndIncrement();
+    final String testCollectionName =
+        "composite_collection_with_routerfield_" + NAME_COUNTER.getAndIncrement();
     assertEquals(
         RequestStatusState.COMPLETED,
-        CollectionAdminRequest.createCollection(name, "_default", 2, 2)
+        CollectionAdminRequest.createCollection(testCollectionName, "_default", 2, 2)
             .setRouterName("compositeId")
             .setRouterField("routefield_s")
             .setShards("shard1,shard2")
             .processAndWait(cloudClient, DEFAULT_TIMEOUT));
     ZkStateReader.from(cloudClient)
         .waitForState(
-            name,
+            testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
             (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
-    cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
@@ -307,16 +328,24 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               // including cloudClient helps us test view from other nodes that aren't the
               // leaders...
               for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
+                String queryWithCollectionName =
+                    specifyCollectionParameterForCloudSolrClient(c, testCollectionName);
                 assertEquals(
                     docCountsEurope.get() + docCountsAfrica.get(),
-                    c.query(params("q", "*:*")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*"))
+                        .getResults()
+                        .getNumFound());
 
                 assertEquals(
                     docCountsEurope.get(),
-                    c.query(params("q", "*:*", "_route_", "europe")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*", "_route_", "europe"))
+                        .getResults()
+                        .getNumFound());
                 assertEquals(
                     docCountsAfrica.get(),
-                    c.query(params("q", "*:*", "_route_", "africa")).getResults().getNumFound());
+                    c.query(queryWithCollectionName, params("q", "*:*", "_route_", "africa"))
+                        .getResults()
+                        .getNumFound());
               }
             } catch (Exception sse) {
               throw new RuntimeException(sse);
@@ -373,7 +402,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public void testThatCantForwardToLeaderFails() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    cloudClient.setDefaultCollection(collectionName);
 
     // get a random node for use in our collection before creating the one we'll partition
     final JettySolrRunner otherLeader = cluster.getRandomJetty(random());
