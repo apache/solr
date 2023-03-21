@@ -972,13 +972,10 @@ public class IndexFetcher {
 
       String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
       final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      Writer outFile =
-          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-      try {
+      try (Writer outFile =
+          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
-      } finally {
-        IOUtils.closeQuietly(outFile);
       }
 
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
@@ -1794,18 +1791,14 @@ public class IndexFetcher {
     private void fetch() throws Exception {
       try {
         while (true) {
-          final FastInputStream is = getStream();
           int result;
-          try {
+          try (FastInputStream is = getStream()) {
             // fetch packets one by one in a single request
             result = fetchPackets(is);
             if (result == 0 || result == NO_CONTENT) {
-
               return;
             }
             // if there is an error continue. But continue from the point where it got broken
-          } finally {
-            IOUtils.closeQuietly(is);
           }
         }
       } finally {
@@ -1959,7 +1952,6 @@ public class IndexFetcher {
 
     /** Open a new stream using HttpClient */
     private FastInputStream getStream() throws IOException {
-
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       //    //the method is command=filecontent
@@ -2003,7 +1995,7 @@ public class IndexFetcher {
         return new FastInputStream(is);
       } catch (Exception e) {
         // close stream on error
-        org.apache.commons.io.IOUtils.closeQuietly(is);
+        IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }

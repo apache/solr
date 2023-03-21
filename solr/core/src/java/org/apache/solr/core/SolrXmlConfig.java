@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
@@ -228,7 +227,7 @@ public class SolrXmlConfig {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
+      byte[] buf = is.readAllBytes();
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);

@@ -21,12 +21,12 @@ import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -42,8 +42,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -299,17 +297,14 @@ public class ZkCLI implements CLIO {
         }
       }
 
-      SolrZkClient zkClient = null;
-      try {
-        zkClient =
-            new SolrZkClient.Builder()
-                .withUrl(zkServerAddress)
-                .withTimeout(30000, TimeUnit.MILLISECONDS)
-                .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
-                .withReconnectListener(() -> {})
-                .withCompressor(compressor)
-                .build();
-
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .withReconnectListener(() -> {})
+              .withCompressor(compressor)
+              .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
             stdout.println("-" + SOLRHOME + " is required for " + BOOTSTRAP);
@@ -378,9 +373,9 @@ public class ZkCLI implements CLIO {
           }
 
           StringBuilder sb = new StringBuilder();
-          String path = argList.get(0).toString();
+          String path = argList.get(0);
           zkClient.printLayout(path == null ? "/" : path, 0, sb);
-          stdout.println(sb.toString());
+          stdout.println(sb);
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
           List<String> arglist = line.getArgList();
@@ -388,14 +383,14 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
             System.exit(1);
           }
-          zkClient.clean(arglist.get(0).toString());
+          zkClient.clean(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
-          zkClient.makePath(arglist.get(0).toString(), true);
+          zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
@@ -424,30 +419,27 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          String path = arglist.get(0).toString();
-          InputStream is = new FileInputStream(arglist.get(1).toString());
-          byte[] data = IOUtils.toByteArray(is);
+          String path = arglist.get(0);
+          byte[] data;
+          try (InputStream inputStream = Files.newInputStream(Path.of(arglist.get(1)))) {
+            data = inputStream.readAllBytes();
+          }
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
             data = compressor.compressBytes(data);
           }
-          try {
-            if (zkClient.exists(path, true)) {
-              zkClient.setData(path, data, true);
-            } else {
-              zkClient.create(path, data, CreateMode.PERSISTENT, true);
-            }
-          } finally {
-            IOUtils.closeQuietly(is);
+          if (zkClient.exists(path, true)) {
+            zkClient.setData(path, data, true);
+          } else {
+            zkClient.create(path, data, CreateMode.PERSISTENT, true);
           }
-
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List<String> arglist = line.getArgList();
@@ -456,15 +448,15 @@ public class ZkCLI implements CLIO {
                 "-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
-          FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
+          Files.write(Path.of(arglist.get(1)), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");
             System.exit(1);
           }
-          zkClient.updateACLs(arglist.get(0).toString());
+          zkClient.updateACLs(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if (!line.hasOption(NAME)) {
             stdout.println("-" + NAME + " is required for " + CLUSTERPROP);
@@ -490,9 +482,6 @@ public class ZkCLI implements CLIO {
       } finally {
         if (solrPort != null) {
           zkServer.stop();
-        }
-        if (zkClient != null) {
-          zkClient.close();
         }
       }
     } catch (ParseException exp) {

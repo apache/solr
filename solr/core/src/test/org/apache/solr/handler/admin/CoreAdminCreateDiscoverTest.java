@@ -17,8 +17,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -112,32 +112,32 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // verify props are in persisted file
 
     Properties props = new Properties();
-    File propFile =
-        new File(solrHomeDirectory, coreSysProps + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
-    FileInputStream is = new FileInputStream(propFile);
-    try {
+    Path propFile =
+        solrHomeDirectory
+            .toPath()
+            .resolve(coreSysProps)
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    try (InputStream is = Files.newInputStream(propFile)) {
       props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-    } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(is);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.NAME),
         coreSysProps);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.CONFIG),
         "${CONFIG_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.SCHEMA),
         "${SCHEMA_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.DATA_DIR),
         "${DATA_TEST}");
 
@@ -290,32 +290,32 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // verify props are in persisted file
     Properties props = new Properties();
-    File propFile =
-        new File(solrHomeDirectory, coreNormal + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
-    FileInputStream is = new FileInputStream(propFile);
-    try {
+    Path propFile =
+        solrHomeDirectory
+            .toPath()
+            .resolve(coreNormal)
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    try (InputStream is = Files.newInputStream(propFile)) {
       props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-    } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(is);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.NAME),
         coreNormal);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.CONFIG),
         "solrconfig_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.SCHEMA),
         "schema_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.DATA_DIR),
         data.getAbsolutePath());
 
