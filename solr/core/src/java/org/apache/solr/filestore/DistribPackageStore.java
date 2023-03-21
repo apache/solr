@@ -48,17 +48,9 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -189,17 +181,14 @@ public class DistribPackageStore implements PackageStore {
 
       ByteBuffer metadata = null;
       Map<?, ?> m = null;
-      try (SolrClient solrClient = new Http2SolrClient.Builder(baseUrl).build()) {
-        GenericSolrRequest request =
-            new GenericSolrRequest(
-                SolrRequest.METHOD.GET,
-                "/node/files" + getMetaPath(),
-                new ModifiableSolrParams().add(CommonParams.WT, "json"));
-        request.setResponseParser(new JsonMapResponseParser());
-        NamedList<Object> response = solrClient.request(request);
-        metadata = ByteBuffer.wrap(((String) response.get("response")).getBytes(UTF_8));
+      try {
+        metadata =
+            Utils.executeGET(
+                coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+                baseUrl + "/node/files" + getMetaPath(),
+                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-      } catch (IOException | SolrServerException e) {
+      } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
 
