@@ -22,12 +22,13 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
@@ -110,11 +111,11 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   @Test
   public void testConfigSetOnCoreReload() throws IOException {
     Path testDirectory = createTempDir("core-reload");
-    File configSetsDir = new File(testDirectory.toFile(), "configsets");
+    Path configSetsDir = testDirectory.resolve("configsets");
 
-    FileUtils.copyDirectory(getFile("solr/configsets"), configSetsDir);
+    PathUtils.copyDirectory(getFile("solr/configsets").toPath(), configSetsDir);
 
-    String csd = configSetsDir.getAbsolutePath();
+    String csd = configSetsDir.toAbsolutePath().toString();
     System.setProperty("configsets", csd);
 
     CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
@@ -128,9 +129,10 @@ public class TestConfigSets extends SolrTestCaseJ4 {
         is(nullValue()));
 
     // Now copy in a config with a /dump handler and reload
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/solrconfig-withgethandler.xml"),
-        new File(new File(configSetsDir, "configset-2/conf"), "solrconfig.xml"));
+    Files.copy(
+        getFile("solr/collection1/conf/solrconfig-withgethandler.xml").toPath(),
+        configSetsDir.resolve("configset-2/conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     container.reload("core1");
 
     core = container.getCore("core1");

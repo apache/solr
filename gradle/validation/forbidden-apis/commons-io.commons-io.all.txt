@@ -2,6 +2,9 @@
 org.apache.commons.io.IOUtils#copy(**)
 org.apache.commons.io.IOUtils#copyLarge(**)
 
+@defaultMessage Use java.nio.file.Files#copy(java.nio.file.Path, java.nio.file.Path) instead
+org.apache.commons.io.FileUtils#copyFile(java.io.File, java.io.File)
+
 @defaultMessage Use org.apache.commons.io.file.PathUtils#deleteDirectory(java.nio.file.Path) instead
 org.apache.commons.io.FileUtils#deleteDirectory(java.io.File)
 

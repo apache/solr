@@ -21,8 +21,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -61,19 +62,18 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   private static void setupCore(String coreName) throws IOException {
-    File instDir = new File(solrHomeDirectory, coreName);
-    File subHome = new File(instDir, "conf");
-    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
+    Path instDir = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = instDir.resolve("conf");
+    Files.createDirectories(subHome);
 
     // Be sure we pick up sysvars when we create this
     String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(srcDir, "schema-tiny.xml"), new File(subHome, "schema_ren.xml"));
-    FileUtils.copyFile(
-        new File(srcDir, "solrconfig-minimal.xml"), new File(subHome, "solrconfig_ren.xml"));
+    Files.copy(Path.of(srcDir, "schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
+    Files.copy(Path.of(srcDir, "solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
 
-    FileUtils.copyFile(
-        new File(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(
+        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
   @Test

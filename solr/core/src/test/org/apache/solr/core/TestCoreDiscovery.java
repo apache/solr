@@ -93,14 +93,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
-    if (!propFile.getParentFile().exists()) propFile.getParentFile().mkdirs();
-    Writer out = new OutputStreamWriter(new FileOutputStream(propFile), StandardCharsets.UTF_8);
-    try {
-      stockProps.store(out, null);
-    } finally {
-      out.close();
+    if (!propFile.getParentFile().exists()) {
+      propFile.getParentFile().mkdirs();
     }
-    addConfFiles(new File(propFile.getParent(), "conf"));
+    try (Writer out =
+        new OutputStreamWriter(new FileOutputStream(propFile), StandardCharsets.UTF_8)) {
+      stockProps.store(out, null);
+    }
+    addConfFiles(propFile.toPath().getParent().resolve("conf"));
   }
 
   private void addCoreWithProps(String name, Properties stockProps) throws Exception {
@@ -113,15 +113,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addCoreWithProps(stockProps, propFile);
   }
 
-  private void addConfFiles(File confDir) throws Exception {
+  private void addConfFiles(Path confDir) throws Exception {
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    assertTrue("Failed to mkdirs for " + confDir.getAbsolutePath(), confDir.mkdirs());
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(confDir, "schema-tiny.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig-minimal.xml"), new File(confDir, "solrconfig-minimal.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.createDirectories(confDir);
+    Files.copy(Path.of(top, "schema-tiny.xml"), confDir.resolve("schema-tiny.xml"));
+    Files.copy(Path.of(top, "solrconfig-minimal.xml"), confDir.resolve("solrconfig-minimal.xml"));
+    Files.copy(
+        Path.of(top, "solrconfig.snippet.randomindexconfig.xml"),
+        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
   private CoreContainer init() {

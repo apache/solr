@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -752,10 +753,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // We want to see that the core "heals itself" if an un-corrupted file is written to the
   // directory.
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
+    Files.copy(
+        Path.of(top, srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
   }
 
   // If ok==true, we shouldn't be seeing any failure cases.

@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -268,10 +268,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "/solr.xml",
           SOLR_HOME + File.separator + "not-there.xml"
         };
-    FileNotFoundException e = expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
+    NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
     assertTrue(
         "Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
-        e.getMessage().indexOf("not-there.xml") != -1);
+        e.getMessage().contains("not-there.xml"));
   }
 
   @Test
