@@ -110,8 +110,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     createCollectionWithRetry(testCollectionName, numShards, replicationFactor);
 
-    cloudClient.setDefaultCollection(testCollectionName);
-
     List<Replica> replicas =
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertEquals("Expected active 1 replicas for " + testCollectionName, 1, replicas.size());
@@ -297,14 +295,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     final int minRf = 2;
 
     createCollectionWithRetry(testCollectionName, numShards, replicationFactor);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> replicas =
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     assertEquals("Expected 2 active replicas for " + testCollectionName, 2, replicas.size());
 
     log.info("Indexing docId=1");
-    int rf = sendDoc(1);
+    int rf = sendDoc(testCollectionName, 1);
     assertRf(3, "all replicas should be active", rf);
 
     // Uses cloudClient to do it's work
@@ -316,7 +313,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).close();
 
     log.info("Indexing docId=2");
-    rf = sendDoc(2);
+    rf = sendDoc(testCollectionName, 2);
     assertRf(2, "one replica should be down", rf);
 
     // Uses cloudClient to do it's work
@@ -339,7 +336,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(1)).close();
 
     log.info("Indexing docId=3");
-    rf = sendDoc(3);
+    rf = sendDoc(testCollectionName,3);
     assertRf(1, "both replicas should be down", rf);
 
     doDBQWithRetry(testCollectionName, 1, 5, "deletes should have propagated to only 1 replica", 1);
@@ -356,7 +353,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
 
     log.info("Indexing docId=4");
-    rf = sendDoc(4);
+    rf = sendDoc(testCollectionName,4);
     assertRf(3, "all replicas have been healed", rf);
 
     doDBQWithRetry(testCollectionName, 3, 5, "delete should have propagated to all 3 replicas", 1);
@@ -387,7 +384,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // send a single doc (again)
     // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
     log.info("Indexing docId=5");
-    rf = sendDoc(5);
+    rf = sendDoc(testCollectionName,5);
     assertRf(2, "doc should have succeeded, only one replica should be down", rf);
 
     // now send a batch (again)
@@ -442,7 +439,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
     if (idList.length == 1) {
-      sendDoc(idList[0]);
+      sendDoc(collection, idList[0]);
       return;
     }
     List<SolrInputDocument> batch = new ArrayList<>(10);
@@ -478,7 +475,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       throws IOException, SolrServerException, InterruptedException {
     int achievedRf = -1;
     for (int idx = 0; idx < retries; ++idx) {
-      NamedList<Object> response = cloudClient.request(req);
+      NamedList<Object> response = cloudClient.request(req, collection);
       achievedRf = cloudClient.getMinAchievedReplicationFactor(collection, response);
       if (achievedRf == expectedRf) return;
       Thread.sleep(1000);
@@ -486,19 +483,19 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertEquals(msg, expectedRf, achievedRf);
   }
 
-  protected int sendDoc(int docId) throws Exception {
+  protected int sendDoc(String collectionName, int docId) throws Exception {
     UpdateRequest up = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     up.add(doc);
-    return runAndGetAchievedRf(up);
+    return runAndGetAchievedRf(collectionName, up);
   }
 
-  private int runAndGetAchievedRf(UpdateRequest up) throws SolrServerException, IOException {
-    NamedList<Object> response = cloudClient.request(up);
+  private int runAndGetAchievedRf(String collectionName, UpdateRequest up) throws SolrServerException, IOException {
+    NamedList<Object> response = cloudClient.request(up, collectionName);
     return cloudClient.getMinAchievedReplicationFactor(
-        cloudClient.getDefaultCollection(), response);
+        collectionName, response);
   }
 
   protected void assertRf(int expected, String explain, int actual) throws Exception {
