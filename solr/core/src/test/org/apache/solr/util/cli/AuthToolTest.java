@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import static org.apache.solr.util.SolrCLI.findTool;
 import static org.apache.solr.util.SolrCLI.parseCmdLine;
@@ -25,8 +25,6 @@ import java.nio.file.Path;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.util.cli.AuthTool;
-import org.apache.solr.util.cli.Tool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
