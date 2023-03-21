@@ -102,7 +102,8 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public Map<String, Object> waitToSeeSolrUp(String solrUrl, long maxWait, TimeUnit unit) throws Exception {
+  public Map<String, Object> waitToSeeSolrUp(String solrUrl, long maxWait, TimeUnit unit)
+      throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
       try {
@@ -121,7 +122,11 @@ public class StatusTool extends ToolBase {
       }
     }
     throw new TimeoutException(
-        "Did not see Solr at " + solrUrl + " come online within " + TimeUnit.SECONDS.convert(maxWait, unit) + " seconds!");
+        "Did not see Solr at "
+            + solrUrl
+            + " come online within "
+            + TimeUnit.SECONDS.convert(maxWait, unit)
+            + " seconds!");
   }
 
   public Map<String, Object> getStatus(String solrUrl) throws Exception {
