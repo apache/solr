@@ -23,10 +23,9 @@ public class JsonMapResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     @SuppressWarnings({"rawtypes"})
     Map map = null;
-    try {
-      ObjectBuilder builder =
-          new ObjectBuilder(
-              new JSONParser(new InputStreamReader(body, encoding == null ? "UTF-8" : encoding)));
+    try (InputStreamReader reader =
+        new InputStreamReader(body, encoding == null ? "UTF-8" : encoding)) {
+      ObjectBuilder builder = new ObjectBuilder(new JSONParser(reader));
       map = (Map) builder.getObject();
     } catch (IOException | JSONParser.ParseException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JSON parsing error", e);
