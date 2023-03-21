@@ -74,7 +74,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
@@ -135,6 +134,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // now index docs like bin/post would, but we can't use SimplePostTool because it uses
     // System.exit when it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
+    assert ExternalPaths.SOURCE_HOME != null;
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
     assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
 
@@ -274,19 +274,20 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // Since it takes some time for this command to complete we need to make sure all the reloads
     // for all the cores have been done.
     boolean allGood = false;
-    Map<String, Long> curSoftCommitInterval = null;
-    for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+    Map<String, Long> curSoftCommitInterval;
+    for (int idx = 0; idx < 600 && !allGood; ++idx) {
       curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
       // no point in even trying if they're not the same size!
       if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
         allGood = true;
         for (Map.Entry<String, Long> currEntry : curSoftCommitInterval.entrySet()) {
-          if (currEntry.getValue().equals(maxTime) == false) {
+          if (!currEntry.getValue().equals(maxTime)) {
             allGood = false;
+            break;
           }
         }
       }
-      if (allGood == false) {
+      if (!allGood) {
         Thread.sleep(100);
       }
     }
