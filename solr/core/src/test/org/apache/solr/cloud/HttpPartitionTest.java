@@ -143,9 +143,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       TestInjection.prepRecoveryOpPauseForever = "true:100";
 
       createCollection(testCollectionName, "conf1", 1, 2);
-      cloudClient.setDefaultCollection(testCollectionName);
 
-      sendDoc(1);
+      sendDoc(testCollectionName, 1);
 
       JettySolrRunner leaderJetty =
           getJettyOnPort(getReplicaPort(getShardLeader(testCollectionName, "shard1", 1000)));
@@ -161,7 +160,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       leaderProxy.close();
 
       // indexing during a partition
-      int achievedRf = sendDoc(2, leaderJetty);
+      int achievedRf = sendDoc(testCollectionName,2, leaderJetty);
       assertEquals("Unexpected achieved replication factor", 1, achievedRf);
       try (ZkShardTerms zkShardTerms =
           new ZkShardTerms(
@@ -201,9 +200,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x2";
     createCollectionRetry(testCollectionName, "conf1", 1, 2);
-    cloudClient.setDefaultCollection(testCollectionName);
 
-    sendDoc(1);
+    sendDoc(testCollectionName,1);
 
     Replica notLeader =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive)
@@ -220,7 +218,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
 
     // indexing during a partition
-    sendDoc(2, leaderJetty);
+    sendDoc(testCollectionName,2, leaderJetty);
     // replica should publish itself as DOWN if the network is not healed after some amount time
     waitForState(testCollectionName, notLeader.getName(), DOWN, 10000);
 
@@ -230,7 +228,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
 
-    int achievedRf = sendDoc(3);
+    int achievedRf = sendDoc(testCollectionName, 3);
     if (achievedRf == 1) {
       // this case can happen when leader reuse an connection get established before network
       // partition
@@ -276,7 +274,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         }
       }
       // always send doc directly to leader without going through proxy
-      sendDoc(d + 4, leaderJetty); // 4 is offset as we've already indexed 1-3
+      sendDoc(testCollectionName,d + 4, leaderJetty); // 4 is offset as we've already indexed 1-3
     }
 
     // restore connectivity if lost
@@ -340,8 +338,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "c8n_1x3";
     createCollectionRetry(testCollectionName, "conf1", 1, 3);
 
-    cloudClient.setDefaultCollection(testCollectionName);
-
     sendDoc(1);
 
     List<Replica> notLeaders =
@@ -367,7 +363,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
 
     // indexing during a partition
-    sendDoc(2, leaderJetty);
+    sendDoc(testCollectionName,2, leaderJetty);
 
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy0.reopen();
@@ -375,7 +371,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     SocketProxy proxy1 = getProxyForReplica(notLeaders.get(1));
     proxy1.close();
 
-    sendDoc(3, leaderJetty);
+    sendDoc(testCollectionName,3, leaderJetty);
 
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy1.reopen();
@@ -402,9 +398,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
     createCollectionRetry(testCollectionName, "conf1", 1, 2);
-    cloudClient.setDefaultCollection(testCollectionName);
 
-    sendDoc(1);
+    sendDoc(testCollectionName,1);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
@@ -545,18 +540,18 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  protected SolrClient getHttpSolrClient(Replica replica, String coll) {
+  protected SolrClient getHttpSolrClient(Replica replica, String collection) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + coll;
+    String url = zkProps.getBaseUrl() + "/" + collection;
     return getHttpSolrClient(url);
   }
 
   // Send doc directly to a server (without going through proxy)
-  protected int sendDoc(int docId, JettySolrRunner leaderJetty)
+  protected int sendDoc(String collectionName, int docId, JettySolrRunner leaderJetty)
       throws IOException, SolrServerException {
     try (SolrClient solrClient =
         new HttpSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
-      return sendDoc(docId, solrClient, cloudClient.getDefaultCollection());
+      return sendDoc(docId, solrClient, collectionName);
     }
   }
 
