@@ -307,7 +307,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
         tool.runTool(
-            SolrCLI.processCommandLineArgs(
+            SolrCLI.processCommandLineArgs(tool.getName(),
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
         Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));

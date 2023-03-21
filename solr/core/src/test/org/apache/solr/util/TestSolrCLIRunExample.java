@@ -369,7 +369,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       try {
         int status =
             tool.runTool(
-                SolrCLI.processCommandLineArgs(
+                SolrCLI.processCommandLineArgs(tool.getName(),
                     SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
 
         if (status == -1) {
@@ -380,7 +380,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           Thread.sleep(100);
           status =
               tool.runTool(
-                  SolrCLI.processCommandLineArgs(
+                  SolrCLI.processCommandLineArgs(tool.getName(),
                       SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
         }
 
@@ -491,7 +491,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     RunExampleTool tool = new RunExampleTool(executor, userInputSim, stdoutSim);
     try {
       tool.runTool(
-          SolrCLI.processCommandLineArgs(
+          SolrCLI.processCommandLineArgs(tool.getName(),
               SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
     } catch (Exception e) {
       System.err.println(
@@ -565,7 +565,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     DeleteTool deleteTool = new DeleteTool(stdoutSim);
     String[] deleteArgs = new String[] {"-name", collectionName, "-solrUrl", solrUrl};
     deleteTool.runTool(
-        SolrCLI.processCommandLineArgs(
+        SolrCLI.processCommandLineArgs(deleteTool.getName(),
             SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
 
     // dump all the output written by the SolrCLI commands to stdout
@@ -614,7 +614,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     RunExampleTool tool = new RunExampleTool(executor, System.in, stdoutSim);
     int code =
         tool.runTool(
-            SolrCLI.processCommandLineArgs(
+            SolrCLI.processCommandLineArgs(tool.getName(),
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
   }

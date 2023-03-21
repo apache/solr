@@ -217,7 +217,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   private void run(PackageTool tool, String[] args) throws Exception {
     int res =
         tool.runTool(
-            SolrCLI.processCommandLineArgs(
+            SolrCLI.processCommandLineArgs(tool.getName(),
                 SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
