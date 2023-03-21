@@ -1234,7 +1234,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         this.excludeQueries =
             this.excludedIds.stream()
                 .map(excludedId -> new TermQuery(new Term(queryFieldName, excludedId)))
-                .collect(Collectors.toUnmodifiableList())
                 .toArray(TermQuery[]::new);
       }
     }
@@ -1293,13 +1292,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           excludeQueries =
               Stream.concat(
                       Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
-                  .collect(Collectors.toUnmodifiableSet())
                   .toArray(TermQuery[]::new);
         } else {
           excludeQueries =
               Stream.concat(
                       Arrays.stream(this.excludeQueries), Arrays.stream(elevation.excludeQueries))
-                  .collect(Collectors.toUnmodifiableSet())
                   .toArray(TermQuery[]::new);
         }
       }

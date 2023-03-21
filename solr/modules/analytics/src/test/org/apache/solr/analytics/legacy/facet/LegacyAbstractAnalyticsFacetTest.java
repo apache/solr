@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -308,9 +307,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   public static SolrQueryRequest request(String... args) {
     return SolrTestCaseJ4.req(
-        Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args))
-            .collect(Collectors.toUnmodifiableList())
-            .toArray(String[]::new));
+        Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args)).toArray(String[]::new));
   }
 
   public static final String[] BASEPARMS =

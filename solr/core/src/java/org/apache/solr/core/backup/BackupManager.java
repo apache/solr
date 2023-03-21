@@ -26,7 +26,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.lucene.store.IOContext;
@@ -255,8 +254,7 @@ public class BackupManager {
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     if (!repository.exists(source)) {
-      throw new IllegalArgumentException(
-          String.format(Locale.ROOT, "Path %s does not exist", source));
+      throw new IllegalArgumentException("Path " + source + " does not exist");
     }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }

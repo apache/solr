@@ -72,10 +72,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (clients != null) {
-      IOUtils.close(clients);
-      clients = null;
-    }
+    IOUtils.close(clients);
   }
 
   @Test
