@@ -68,6 +68,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -1266,7 +1267,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           elevatedIds.size() != (this.elevatedIds.size() + elevation.elevatedIds.size());
       BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
       Set<BooleanClause> clauseSet =
-          (overlappingElevatedIds ? new HashSet<>(elevatedIds.size()) : null);
+          (overlappingElevatedIds ? CollectionUtil.newHashSet(elevatedIds.size()) : null);
       for (BooleanClause clause : this.includeQuery.clauses()) {
         if (!overlappingElevatedIds || clauseSet.add(clause)) {
           includeQueryBuilder.add(clause);

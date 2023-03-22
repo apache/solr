@@ -16,11 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -77,7 +77,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
             }
           };
 
-      Map<String, Long> childToModificationZxid = new HashMap<>(children.size());
+      Map<String, Long> childToModificationZxid = CollectionUtil.newHashMap(children.size());
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
         if (stat != null) {
