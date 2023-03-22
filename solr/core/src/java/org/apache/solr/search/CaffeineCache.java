@@ -264,6 +264,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     if (computed == null) {
       return null;
     }
+    // using get-then-put, by the time the below call completes, we will have
+    // double-incremented `lookups` as internally tracked by CaffeineCache
+    // `stats.requestCount()` (considering the initial call to `getIfPresent()`);
+    // so decrement `lookups` here to compensate.
+    lookups.decrement();
     return cache.get(
         key,
         k -> {
@@ -271,10 +276,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
           // singleton return values and consistent updates to `inserts` and `ramBytes`.
           recordRamBytes(key, null, computed);
           inserts.increment();
-          // using get-then-put, we will have double-incremented `lookups` as internally
-          // tracked by CaffeineCache `stats.requestCount()` (here and in the initial
-          // call to `getIfPresent()`); so decrement `lookups` here to compensate.
-          lookups.decrement();
           return computed;
         });
   }
