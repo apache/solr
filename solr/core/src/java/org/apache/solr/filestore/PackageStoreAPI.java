@@ -376,7 +376,7 @@ public class PackageStoreAPI {
                   }
                 } catch (IOException e) {
                   throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file to json" + path);
+                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
                 }
               },
               false);
@@ -401,8 +401,7 @@ public class PackageStoreAPI {
                             }
                           } catch (IOException e) {
                             throw new SolrException(
-                                SolrException.ErrorCode.SERVER_ERROR,
-                                "Error reading file to filestream" + path);
+                                SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
                           }
                         },
                         false));

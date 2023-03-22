@@ -241,6 +241,9 @@ public class PackageManager implements Closeable {
       packages =
           (Map<String, String>)
               result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
+    } catch (PathNotFoundException ex) {
+      // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by
+      // the package manager.
     } catch (SolrServerException | IOException ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, ex);
     }

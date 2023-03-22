@@ -37,11 +37,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -114,7 +114,15 @@ public class PackageUtils {
             };
           }
         };
-    client.request(request);
+    NamedList<Object> rsp = client.request(request);
+    if (!name.equals(rsp.get(CommonParams.FILE))) {
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Mismatch in file uploaded. Uploaded: "
+              + rsp.get(CommonParams.FILE)
+              + ", Original: "
+              + name);
+    }
   }
 
   /** Download JSON from a Solr url and deserialize into klass. */
@@ -149,10 +157,10 @@ public class PackageUtils {
   public static String getJsonStringFromUrl(SolrClient client, String path, SolrParams params) {
     try {
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
-      request.setResponseParser(new NoOpResponseParser("json"));
+      request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> response = client.request(request);
       return response.jsonStr();
-    } catch (UnsupportedOperationException | IOException | SolrServerException e) {
+    } catch (IOException | SolrServerException e) {
       throw new RuntimeException(e);
     }
   }

@@ -744,6 +744,7 @@ public class SolrCLI implements CLIO {
       String totalMemory = (String) info.findRecursive("jvm", "memory", "total");
       status.put("memory", usedMemory + " of " + totalMemory);
 
+      // if this is a Solr in solrcloud mode, gather some basic cluster info
       if ("solrcloud".equals(info.get("mode"))) {
         String zkHost = (String) info.get("zkHost");
         status.put("cloud", getCloudStatus(solrClient, zkHost));
@@ -1332,8 +1333,7 @@ public class SolrCLI implements CLIO {
       }
     }
 
-    protected void runCloudTool(CloudHttp2SolrClient cloudSolrClient, CommandLine cli)
-        throws Exception {
+    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
@@ -1402,9 +1402,9 @@ public class SolrCLI implements CLIO {
           "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getSolrClient(solrUrl)) {
+      try {
         response =
-            solrClient.request(
+            cloudSolrClient.request(
                 CollectionAdminRequest.createCollection(
                     collectionName, confname, numShards, replicationFactor));
       } catch (SolrServerException sse) {
@@ -2286,8 +2286,8 @@ public class SolrCLI implements CLIO {
           "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
       NamedList<Object> response = null;
-      try (var solrClient = getSolrClient(solrUrl)) {
-        response = solrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
+      try {
+        response = cloudSolrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
       } catch (SolrServerException sse) {
         throw new Exception(
             "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
@@ -2320,11 +2320,12 @@ public class SolrCLI implements CLIO {
     protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
       String coreName = cli.getOptionValue(NAME);
 
-      echo("\nDeleting core '" + coreName);
+      echo("\nDeleting core '" + coreName + "' using CoreAdminRequest\n");
 
       NamedList<Object> response = null;
       try {
         CoreAdminRequest.Unload unloadRequest = new CoreAdminRequest.Unload(true);
+        unloadRequest.setDeleteIndex(true);
         unloadRequest.setDeleteDataDir(true);
         unloadRequest.setDeleteInstanceDir(true);
         unloadRequest.setCoreName(coreName);
@@ -3665,8 +3666,7 @@ public class SolrCLI implements CLIO {
       long timeout =
           System.nanoTime()
               + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
-      try {
-        SolrClient solrClient = getSolrClient(url);
+      try (SolrClient solrClient = getSolrClient(url)) {
         NamedList<Object> response = solrClient.request(new HealthCheckRequest());
         Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
         checkCodeForAuthError(statusCode);

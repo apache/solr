@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -242,12 +241,6 @@ public class RepositoryManager {
                   "{add:" + add.jsonStr() + "}", "application/json");
             }
           };
-
-      V2Request req =
-          new V2Request.Builder(PackageUtils.PACKAGE_PATH)
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload(Collections.singletonMap("add", add))
-              .build();
       try {
         NamedList<Object> resp = solrClient.request(request);
         PackageUtils.printGreen("Response: " + resp.jsonStr());
