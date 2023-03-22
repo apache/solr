@@ -2136,6 +2136,9 @@ if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   echo -e "ADMIN UI Disabled"
 else
   SOLR_ADMIN_UI="-DdisableAdminUI=false"
+  # When Admin UI is enabled, export environment variables for LOGIN UI's node process
+  export REACT_APP_SOLR_HOST=$SOLR_HOST
+  export REACT_APP_SOLR_PORT=$SOLR_PORT
 fi
 
 JAVA_MEM_OPTS=()
