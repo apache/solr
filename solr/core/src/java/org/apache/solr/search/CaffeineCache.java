@@ -25,7 +25,6 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -250,26 +249,34 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       return computeAsync(key, mappingFunction);
     }
 
-    try {
-      return cache.get(
-          key,
-          k -> {
-            V value;
-            try {
-              value = mappingFunction.apply(k);
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-            if (value == null) {
-              return null;
-            }
-            recordRamBytes(key, null, value);
-            inserts.increment();
-            return value;
-          });
-    } catch (UncheckedIOException e) {
-      throw e.getCause();
+    /*
+    Synchronous caches must effectively use get-then-put under the hood in place of
+    `computeIfAbsent()`-type behavior. A number of Solr queries (and consequently,
+    `mappingFunction`s passed into this method) would modify the cache recursively.
+    This is supported in `async` mode, but when `async==false`, it may yield
+    "IllegalStateException: Recursive update" (see SOLR-16707).
+     */
+    V cached = cache.getIfPresent(key);
+    if (cached != null) {
+      return cached;
     }
+    final V computed = mappingFunction.apply(key);
+    if (computed == null) {
+      return null;
+    }
+    return cache.get(
+        key,
+        k -> {
+          // use mapping function here as opposed to simple `put()` in order to ensure
+          // singleton return values and consistent updates to `inserts` and `ramBytes`.
+          recordRamBytes(key, null, computed);
+          inserts.increment();
+          // using get-then-put, we will have double-incremented `lookups` as internally
+          // tracked by CaffeineCache `stats.requestCount()` (here and in the initial
+          // call to `getIfPresent()`); so decrement `lookups` here to compensate.
+          lookups.decrement();
+          return computed;
+        });
   }
 
   @Override
