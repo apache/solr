@@ -23,6 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
@@ -32,6 +36,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,16 +54,15 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-// TODO Decide whether this is a good name or not.  Install Shard data?  Import Offline data? Something else?
-
 /**
  * A V2 API that allows users to import an index constructed offline into a shard of their collection
+ *
+ * Particularly useful for installing (per-shard) indices constructed offline into a SolrCloud deployment.  Callers are required to put the collection into read-only mode prior to installing data into any shards of that collection, and should exit read only mode when completed.
  */
 @Path("/collections/{collName}/shards/{shardName}/install")
 public class InstallShardDataAPI extends AdminAPIBase {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
 
     @Inject
     public InstallShardDataAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
@@ -71,15 +75,23 @@ public class InstallShardDataAPI extends AdminAPIBase {
     public SolrJerseyResponse installShardData(@PathParam("collName") String collName, @PathParam("shardName") String shardName, InstallShardRequestBody requestBody) throws Exception {
         final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
         final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-        log.info("JEGERLOW In the v2 API invocation with requestBody {}", requestBody);
-        if (requestBody != null) {
-            log.info("JEGERLOW location is {} in the v2 collection API", requestBody.location);
-        }
         recordCollectionForLogAndTracing(collName, solrQueryRequest);
+        if (requestBody == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required request body missing");
+        }
 
-        // TODO Check that collection and shard name exist
-        // TODO Check that the backup repository (if specified) exists
-        // TODO Should we fall back on the backuprepository's default location here?  Is there a scenario where that'd ever make sense, since we're not doing backupName and collection differentiate the way we do with backups?
+        if (StringUtils.isBlank(requestBody.location)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The Install Shard Data API requires a 'location' indicating the index data to install");
+        }
+
+        final ClusterState clusterState = coreContainer.getZkController().getZkStateReader().getClusterState();
+        ensureCollectionAndShardExist(clusterState, collName, shardName);
+
+        // Only install data to shards which belong to a collection in read-only mode
+        final DocCollection dc = coreContainer.getZkController().getZkStateReader().getCollection(collName);
+        if (! dc.isReadOnly()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection must be in readOnly mode before installing data to shard");
+        }
 
         final ZkNodeProps remoteMessage =
                 createRemoteMessage(collName, shardName, requestBody);
@@ -90,8 +102,19 @@ public class InstallShardDataAPI extends AdminAPIBase {
                         remoteMessage,
                         CollectionParams.CollectionAction.INSTALLSHARDDATA,
                         DEFAULT_COLLECTION_OP_TIMEOUT);
+        if (remoteResponse.getException() != null) {
+            throw remoteResponse.getException();
+        }
 
         return response;
+    }
+
+    public static void ensureCollectionAndShardExist(ClusterState clusterState, String collectionName, String shardName) {
+        final DocCollection installCollection = clusterState.getCollection(collectionName);
+        final Slice installSlice = installCollection.getSlice(shardName);
+        if (installSlice == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The specified shard [" + shardName + "] does not exist.");
+        }
     }
 
     public static ZkNodeProps createRemoteMessage(String collectionName, String shardName, InstallShardRequestBody requestBody) {
@@ -103,11 +126,13 @@ public class InstallShardDataAPI extends AdminAPIBase {
             messageTyped.repository = requestBody.repository;
             messageTyped.asyncId = requestBody.asyncId;
         }
+
+        messageTyped.validate();
         return new ZkNodeProps(messageTyped.toMap(new HashMap<>()));
     }
 
     public static class InstallShardRequestBody implements JacksonReflectMapWriter {
-        @JsonProperty("location")
+        @JsonProperty(defaultValue = "location", required = true)
         public String location;
 
         @JsonProperty("repository")

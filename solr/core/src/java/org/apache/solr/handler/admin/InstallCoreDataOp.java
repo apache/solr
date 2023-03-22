@@ -30,12 +30,14 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 
+/**
+ * v1 shim implementation of the "Install Core Data" API, a core-admin API used to implement the "Install Shard Data" Collection-Admin functionality
+ *
+ * Converts v1-style query parameters into a v2-style request body and delegating to {@link InstallCoreDataAPI}.
+ */
 public class InstallCoreDataOp implements CoreAdminHandler.CoreAdminOp {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
     @Override
     public void execute(CoreAdminHandler.CallInfo it) throws Exception {
-        log.info("JEGERLOW: In install-core-data OP (v1)");
         final SolrParams params = it.req.getParams();
         final String coreName = params.required().get(CoreAdminParams.CORE);
 

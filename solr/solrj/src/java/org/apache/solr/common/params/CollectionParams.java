@@ -113,8 +113,7 @@ public interface CollectionParams {
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
-    // TODO Should be LockLevel.SHARD, conceptually.  But currently we enable read-only on the whole collection, so I'm going to be conservative here initially.  See whether I can narrow this down to SHARD though
-    INSTALLSHARDDATA(true, LockLevel.COLLECTION),
+    INSTALLSHARDDATA(true, LockLevel.SHARD),
     LISTBACKUP(false, LockLevel.NONE),
     DELETEBACKUP(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
