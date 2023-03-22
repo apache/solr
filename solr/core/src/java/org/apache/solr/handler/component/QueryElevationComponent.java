@@ -1555,7 +1555,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       public Builder<E, M> addSubset(Collection<E> subset, M matchValue) {
         if (!subset.isEmpty()) {
           TrieSubsetMatcher.Node<E, M> node = root;
-          for (E e : Collections.unmodifiableSortedSet(new TreeSet<>(subset))) {
+          for (E e : new TreeSet<>(subset)) {
             node = node.getOrCreateChild(e);
           }
           node.addMatchValue(matchValue);
@@ -1590,7 +1590,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * @param set This set is copied to a new {@link SortedSet} with natural ordering.
      */
     public Iterator<M> findSubsetsMatching(Collection<E> set) {
-      return new MatchIterator(Collections.unmodifiableSortedSet(new TreeSet<>(set)));
+      return new MatchIterator(new TreeSet<>(set));
     }
 
     /** Trie node. */
