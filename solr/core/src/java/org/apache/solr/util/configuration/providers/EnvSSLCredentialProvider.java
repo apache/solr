@@ -23,8 +23,6 @@ import static org.apache.solr.util.configuration.SSLCredentialProvider.Credentia
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -48,8 +46,8 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
 
   @Override
   protected EnumMap<CredentialType, String> getCredentialKeyMap() {
-    return Maps.newEnumMap(
-        ImmutableMap.of(
+    return new EnumMap<>(
+        Map.of(
             SSL_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_KEY_STORE_PASSWORD,
             SSL_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD,
             SSL_CLIENT_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD,

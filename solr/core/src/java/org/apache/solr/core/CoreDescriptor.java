@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -93,20 +92,19 @@ public class CoreDescriptor {
     return originalExtraProperties;
   }
 
-  private static ImmutableMap<String, String> defaultProperties =
-      new ImmutableMap.Builder<String, String>()
-          .put(CORE_CONFIG, "solrconfig.xml")
-          .put(CORE_SCHEMA, "schema.xml")
-          .put(CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME)
-          .put(CORE_DATADIR, "data" + File.separator)
-          .put(CORE_TRANSIENT, "false")
-          .put(CORE_LOADONSTARTUP, "true")
-          .build();
+  private static final Map<String, String> defaultProperties =
+      Map.of(
+          CORE_CONFIG, "solrconfig.xml",
+          CORE_SCHEMA, "schema.xml",
+          CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
+          CORE_DATADIR, "data" + File.separator,
+          CORE_TRANSIENT, "false",
+          CORE_LOADONSTARTUP, "true");
 
-  private static ImmutableList<String> requiredProperties = ImmutableList.of(CORE_NAME);
+  private static final List<String> requiredProperties = List.of(CORE_NAME);
 
-  public static ImmutableList<String> standardPropNames =
-      ImmutableList.of(
+  public static List<String> standardPropNames =
+      List.of(
           CORE_NAME,
           CORE_CONFIG,
           CORE_DATADIR,

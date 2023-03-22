@@ -23,7 +23,6 @@ import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -174,7 +173,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
   }
 
-  static Set<String> formats = ImmutableSet.of(JAVABIN, "jsonl");
+  static Set<String> formats = Set.of(JAVABIN, "jsonl");
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {

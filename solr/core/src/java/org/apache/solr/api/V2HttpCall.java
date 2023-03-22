@@ -23,7 +23,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQ
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import com.google.common.collect.ImmutableSet;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import java.io.IOException;
@@ -81,8 +80,7 @@ public class V2HttpCall extends HttpSolrCall {
   private boolean servedByJaxRs =
       false; // A flag indicating whether the request was served by JAX-RS or the native framework
   HashMap<String, String> parts = new HashMap<>();
-  static final Set<String> knownPrefixes =
-      ImmutableSet.of("cluster", "node", "collections", "cores", "c");
+  static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
       SolrDispatchFilter solrDispatchFilter,

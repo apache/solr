@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FilterInputStream;
@@ -841,7 +840,7 @@ public class SolrResourceLoader
 
   /** If these components are trying to load classes, use schema classloader */
   private static final Set<Class<?>> schemaResourceLoaderComponents =
-      ImmutableSet.of(
+      Set.of(
           CharFilterFactory.class,
           TokenFilterFactory.class,
           TokenizerFactory.class,

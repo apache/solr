@@ -21,7 +21,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +29,7 @@ import org.apache.solr.SolrTestCaseJ4;
 public class TestPathTrie extends SolrTestCaseJ4 {
 
   public void testPathTrie() {
-    PathTrie<String> pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
+    PathTrie<String> pathTrie = new PathTrie<>(Set.of("_introspect"));
     pathTrie.insert("/", emptyMap(), "R");
     pathTrie.insert("/aa", emptyMap(), "d");
     pathTrie.insert("/aa/bb/{cc}/dd", emptyMap(), "a");
@@ -54,7 +53,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     pathTrie.lookup("/aa", templateValues, subPaths);
     assertEquals(3, subPaths.size());
 
-    pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
+    pathTrie = new PathTrie<>(Set.of("_introspect"));
     pathTrie.insert("/aa/bb/{cc}/tt/*", emptyMap(), "W");
 
     templateValues.clear();

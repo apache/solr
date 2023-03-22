@@ -18,7 +18,6 @@ package org.apache.solr.security;
 
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
-import com.google.common.collect.ImmutableSet;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -180,5 +179,5 @@ public class Sha256AuthenticationProvider
     return apis.get(0).getSpec();
   }
 
-  static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");
+  static final Set<String> supported_ops = Set.of("set-user", "delete-user");
 }

@@ -21,9 +21,9 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableList;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -339,6 +339,6 @@ public abstract class RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+    return List.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 }

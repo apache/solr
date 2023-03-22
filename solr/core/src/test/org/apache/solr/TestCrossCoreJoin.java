@@ -16,9 +16,9 @@
  */
 package org.apache.solr;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.Map;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -50,7 +50,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
-    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
+    fromCore = coreContainer.create("fromCore", Map.of("configSet", "minimal"));
 
     assertU(
         add(

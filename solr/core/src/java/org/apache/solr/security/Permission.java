@@ -21,7 +21,6 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -161,7 +160,6 @@ class Permission {
   }
 
   static final Set<String> knownKeys =
-      ImmutableSet.of("collection", "role", "params", "path", "method", NAME, "index");
-  public static final Set<String> HTTP_METHODS =
-      ImmutableSet.of("GET", "POST", "DELETE", "PUT", "HEAD");
+      Set.of("collection", "role", "params", "path", "method", NAME, "index");
+  public static final Set<String> HTTP_METHODS = Set.of("GET", "POST", "DELETE", "PUT", "HEAD");
 }

@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -184,14 +183,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "baseConfigSet2",
         "configSet2",
         null,
-        ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"),
+        Map.of("immutable", "true", "key1", "value1"),
         "solr");
 
     // old, no new
     verifyCreate(
         "baseConfigSet3",
         "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"),
+        Map.of("immutable", "false", "key2", "value2"),
         null,
         "solr");
 
@@ -199,8 +198,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     verifyCreate(
         "baseConfigSet4",
         "configSet4",
-        ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"),
+        Map.of("immutable", "true", "onlyOld", "onlyOldValue"),
+        Map.of("immutable", "false", "onlyNew", "onlyNewValue"),
         "solr");
   }
 
@@ -1882,7 +1881,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(
         new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")),
+        getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
     getConfigSetService().uploadConfig("configSet", tmpConfigDir.toPath());
 

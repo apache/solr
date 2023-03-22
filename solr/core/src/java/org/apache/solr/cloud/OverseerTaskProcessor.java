@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -124,7 +123,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         @Override
         public String toString() {
-          return StrUtils.join(ImmutableSet.of(runningTasks, blockedTasks.keySet()), ',');
+          return StrUtils.join(Set.of(runningTasks, blockedTasks.keySet()), ',');
         }
       };
 

@@ -124,8 +124,6 @@ import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -298,8 +296,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Object defVal =
         new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
             .getClusterProperty(
-                ImmutableList.of(
-                    CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop),
+                List.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop),
                 null);
     if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
@@ -385,7 +382,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
+  static final Set<String> KNOWN_ROLES = Set.of("overseer");
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
@@ -634,7 +631,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             createSysConfigSet(h.coreContainer);
           }
           if (shardsParam == null) h.copyFromClusterProp(props, NUM_SLICES);
-          for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+          for (String prop : Set.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
             h.copyFromClusterProp(props, prop);
           copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
           return copyPropertiesWithPrefix(req.getParams(), props, "router.");
