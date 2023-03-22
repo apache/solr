@@ -57,6 +57,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -806,7 +807,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
         Set<String> skipListSet = null;
         if (skipList != null) {
-          skipListSet = new HashSet<>(skipList.length);
+          skipListSet = CollectionUtil.newHashSet(skipList.length);
           skipListSet.addAll(Arrays.asList(skipList));
           log.info("test.distrib.skip.servers was found and contains:{}", skipListSet);
         }
@@ -980,7 +981,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
     Set<String> skipListSet = null;
     if (skipList != null) {
-      skipListSet = new HashSet<>(skipList.length);
+      skipListSet = CollectionUtil.newHashSet(skipList.length);
       skipListSet.addAll(Arrays.asList(skipList));
       log.info("test.distrib.skip.servers was found and contains:{}", skipListSet);
     }

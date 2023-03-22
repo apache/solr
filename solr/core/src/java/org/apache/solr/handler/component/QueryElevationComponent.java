@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -1158,7 +1156,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     public ElevationBuilder addExcludedIds(Collection<String> ids) {
       if (excludedIds == null) {
-        excludedIds = new HashSet<>(Math.max(10, ids.size()));
+        excludedIds = CollectionUtil.newHashSet(Math.max(10, ids.size()));
       }
       for (String id : ids) {
         excludedIds.add(toBytesRef(id));
@@ -1609,7 +1607,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       /** Gets the child node for the provided element, or creates it if it does not exist. */
       Node<E, M> getOrCreateChild(E e) {
         if (children == null) {
-          children = new HashMap<>(4);
+          children = CollectionUtil.newHashMap(4);
         }
         Node<E, M> child = children.get(e);
         if (child == null) {

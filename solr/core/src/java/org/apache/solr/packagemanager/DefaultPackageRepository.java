@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -31,6 +30,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +105,7 @@ public class DefaultPackageRepository extends PackageRepository {
       SolrPackage[] items =
           PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
 
-      packages = new HashMap<>(items.length);
+      packages = CollectionUtil.newHashMap(items.length);
       for (SolrPackage pkg : items) {
         pkg.setRepository(name);
         packages.put(pkg.name, pkg);

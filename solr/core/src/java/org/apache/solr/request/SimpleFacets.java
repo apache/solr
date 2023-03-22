@@ -24,7 +24,6 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -595,7 +595,7 @@ public class SimpleFacets {
           break;
         case UIF:
           // Emulate the JSON Faceting structure so we can use the same parsing classes
-          Map<String, Object> jsonFacet = new HashMap<>(13);
+          Map<String, Object> jsonFacet = CollectionUtil.newHashMap(13);
           jsonFacet.put("type", "terms");
           jsonFacet.put("field", field);
           jsonFacet.put("offset", offset);

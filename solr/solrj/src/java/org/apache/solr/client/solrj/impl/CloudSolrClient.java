@@ -75,6 +75,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -474,7 +475,8 @@ public abstract class CloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures =
+          CollectionUtil.newHashMap(routes.size());
       for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBSolrClient.Req lbRequest = entry.getValue();

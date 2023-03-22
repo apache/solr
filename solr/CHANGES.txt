@@ -91,6 +91,8 @@ Other Changes
 
 * SOLR-16716: Replace commons-io usages with pure Java (Kevin Risden)
 
+* SOLR-16715: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap / CollectionUtil.newHashSet (Kevin Risden)
+
 ==================  9.2.0 ==================
 
 New Features

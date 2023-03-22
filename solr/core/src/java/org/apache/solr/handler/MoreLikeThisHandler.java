@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +46,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
@@ -444,7 +444,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         }
 
         Collection<Object> streamValue = Collections.singleton(buffered.get().toString());
-        Map<String, Collection<Object>> multifieldDoc = new HashMap<>(fields.length);
+        Map<String, Collection<Object>> multifieldDoc = CollectionUtil.newHashMap(fields.length);
         for (String field : fields) {
           multifieldDoc.put(field, streamValue);
         }

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -1061,7 +1061,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    Map<String, String> map = CollectionUtil.newHashMap(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);
