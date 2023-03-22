@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
-import com.google.common.collect.Iterables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -38,6 +37,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -615,7 +616,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** Returns a collection of all field names the index reader knows about. */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
+    return StreamSupport.stream(getFieldInfos().spliterator(), false)
+        .map(fieldInfo -> fieldInfo.name)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public SolrCache<Query, DocSet> getFilterCache() {

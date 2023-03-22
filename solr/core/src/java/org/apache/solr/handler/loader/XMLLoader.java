@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -431,7 +430,7 @@ public class XMLLoader extends ContentStreamLoader {
                 doc.addField(subdocName, readDoc(parser, true));
               } else { // unnamed <doc> enclosed in <doc>
                 if (subDocs == null) {
-                  subDocs = Lists.newArrayList();
+                  subDocs = new ArrayList<>();
                 }
                 subDocs.add(readDoc(parser));
               }

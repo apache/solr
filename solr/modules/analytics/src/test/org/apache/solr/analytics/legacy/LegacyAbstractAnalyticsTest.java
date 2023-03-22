@@ -16,7 +16,6 @@
  */
 package org.apache.solr.analytics.legacy;
 
-import com.google.common.collect.ObjectArrays;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,10 +23,12 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
+import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -227,18 +228,21 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
   }
 
   public static SolrQueryRequest request(String... args) {
-    return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
+    return SolrTestCaseJ4.req(
+        Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args)).toArray(String[]::new));
   }
 
   public static SolrQueryRequest request(String[] args, String... additional) {
-    return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class), additional);
+    return SolrTestCaseJ4.req(
+        Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args)).toArray(String[]::new),
+        additional);
   }
 
   public static String[] fileToStringArr(Class<?> clazz, String fileName)
       throws FileNotFoundException {
     InputStream in = clazz.getResourceAsStream("/solr/analytics/legacy/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
-    Scanner file = new Scanner(in, "UTF-8");
+    Scanner file = new Scanner(in, StandardCharsets.UTF_8);
     try {
       ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {

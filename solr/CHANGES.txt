@@ -87,6 +87,8 @@ Other Changes
 
 * SOLR-16709: Update Solr's internal use of Solr Client Builders to use TimeUnit parameter for time specific builder methods. (Eric Pugh)
 
+* SOLR-16713: Replace Guava usages with pure Java (Kevin Risden)
+
 ==================  9.2.0 ==================
 
 New Features

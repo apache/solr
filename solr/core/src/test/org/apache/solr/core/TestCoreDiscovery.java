@@ -22,7 +22,6 @@ import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -35,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
@@ -262,7 +262,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       // Creating a core successfully should create a core.properties file
       Path corePropFile = Paths.get(solrHomeDirectory.toString(), "corep3", "core.properties");
       assertFalse("Should not be a properties file yet", Files.exists(corePropFile));
-      cc.create("corep3", ImmutableMap.of("configSet", "minimal"));
+      cc.create("corep3", Map.of("configSet", "minimal"));
       assertTrue("Should be a properties file for newly created core", Files.exists(corePropFile));
 
       // Failing to create a core should _not_ leave a core.properties file hanging around.
@@ -275,7 +275,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
               () -> {
                 cc.create(
                     "corep4",
-                    ImmutableMap.of(
+                    Map.of(
                         CoreDescriptor.CORE_NAME, "corep4",
                         CoreDescriptor.CORE_SCHEMA, "not-there.xml",
                         CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml",
@@ -292,7 +292,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
       assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));
 
-      cc.create("corep5", ImmutableMap.of("configSet", "minimal"));
+      cc.create("corep5", Map.of("configSet", "minimal"));
 
       assertTrue(
           "corep5 should have left a core.properties file on disk", Files.exists(corePropFile));
@@ -466,7 +466,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       assertNull(cc.getCore("core0"));
 
-      SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
+      SolrCore core3 = cc.create("core3", Map.of("configSet", "minimal"));
       MatcherAssert.assertThat(
           core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 

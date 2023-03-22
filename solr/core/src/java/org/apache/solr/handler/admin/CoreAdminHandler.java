@@ -21,10 +21,9 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STAT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -247,22 +246,21 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         "Unsupported operation: " + req.getParams().get(ACTION));
   }
 
-  public static ImmutableMap<String, String> paramToProp =
-      ImmutableMap.<String, String>builder()
-          .put(CoreAdminParams.CONFIG, CoreDescriptor.CORE_CONFIG)
-          .put(CoreAdminParams.SCHEMA, CoreDescriptor.CORE_SCHEMA)
-          .put(CoreAdminParams.DATA_DIR, CoreDescriptor.CORE_DATADIR)
-          .put(CoreAdminParams.ULOG_DIR, CoreDescriptor.CORE_ULOGDIR)
-          .put(CoreAdminParams.CONFIGSET, CoreDescriptor.CORE_CONFIGSET)
-          .put(CoreAdminParams.LOAD_ON_STARTUP, CoreDescriptor.CORE_LOADONSTARTUP)
-          .put(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT)
-          .put(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD)
-          .put(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION)
-          .put(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES)
-          .put(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME)
-          .put(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS)
-          .put(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE)
-          .build();
+  public static Map<String, String> paramToProp =
+      Map.ofEntries(
+          Map.entry(CoreAdminParams.CONFIG, CoreDescriptor.CORE_CONFIG),
+          Map.entry(CoreAdminParams.SCHEMA, CoreDescriptor.CORE_SCHEMA),
+          Map.entry(CoreAdminParams.DATA_DIR, CoreDescriptor.CORE_DATADIR),
+          Map.entry(CoreAdminParams.ULOG_DIR, CoreDescriptor.CORE_ULOGDIR),
+          Map.entry(CoreAdminParams.CONFIGSET, CoreDescriptor.CORE_CONFIGSET),
+          Map.entry(CoreAdminParams.LOAD_ON_STARTUP, CoreDescriptor.CORE_LOADONSTARTUP),
+          Map.entry(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT),
+          Map.entry(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD),
+          Map.entry(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION),
+          Map.entry(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES),
+          Map.entry(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME),
+          Map.entry(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS),
+          Map.entry(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE));
 
   protected static Map<String, String> buildCoreParams(SolrParams params) {
 
@@ -357,7 +355,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis = Lists.newArrayList();
+    final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));

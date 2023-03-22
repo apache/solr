@@ -22,11 +22,11 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.hamcrest.MatcherAssert;
@@ -79,7 +79,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       container = setupContainer(TEST_PATH().resolve("configsets").toString());
       Path solrHome = Paths.get(container.getSolrHome());
 
-      SolrCore core1 = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
+      SolrCore core1 = container.create("core1", Map.of("configSet", "configset-2"));
       MatcherAssert.assertThat(core1.getCoreDescriptor().getName(), is("core1"));
       MatcherAssert.assertThat(
           Paths.get(core1.getDataDir()).toString(),
@@ -98,7 +98,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
               Exception.class,
               "Expected core creation to fail",
               () -> {
-                container.create("core1", ImmutableMap.of("configSet", "nonexistent"));
+                container.create("core1", Map.of("configSet", "nonexistent"));
               });
       Throwable wrappedException = getWrappedException(thrown);
       MatcherAssert.assertThat(wrappedException.getMessage(), containsString("nonexistent"));
@@ -121,7 +121,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     container.load();
 
     // We initially don't have a /dump handler defined
-    SolrCore core = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
+    SolrCore core = container.create("core1", Map.of("configSet", "configset-2"));
     MatcherAssert.assertThat(
         "No /dump handler should be defined in the initial configuration",
         core.getRequestHandler("/dump"),

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -81,7 +80,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       new ReadOnlyCoresLocator() {
         @Override
         public List<CoreDescriptor> discover(CoreContainer cc) {
-          return ImmutableList.of(
+          return List.of(
               makeCoreDescriptor(cc, "collection1", "false", "true"),
               makeCoreDescriptor(cc, "collection2", "true", "true"),
               makeCoreDescriptor(cc, "collection3", "on", "false"),
