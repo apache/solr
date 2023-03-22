@@ -20,9 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- * Methods for manipulating (sorting) and creating collections. Sort methods work directly on the
- * supplied lists and don't copy to/from arrays before/after. For medium size collections as used in
- * the Lucene indexer that is much more efficient.
+ * Methods for creating collections with exact sizes.
  *
  * @lucene.internal
  */
