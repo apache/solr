@@ -1,0 +1,13 @@
+plugins {
+    id 'com.github.node-gradle.node' version '3.4.0'
+}
+
+node {
+    version = '18.14.0'
+    npmVersion = '9.3.1'
+    download = true
+}
+
+task startReact(type: NpmTask, dependsOn: npmInstall) {
+    args = ['run', 'start']
+}
