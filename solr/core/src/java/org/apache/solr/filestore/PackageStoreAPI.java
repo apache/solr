@@ -376,13 +376,13 @@ public class PackageStoreAPI {
                   }
                 } catch (IOException e) {
                   throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
+                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
                 }
               },
               false);
         } catch (IOException e) {
           throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "Error getting file from path" + path);
+              SolrException.ErrorCode.SERVER_ERROR, "Error getting file from path " + path);
         }
       } else {
         solrParams.add(CommonParams.WT, FILE_STREAM);
@@ -401,7 +401,7 @@ public class PackageStoreAPI {
                             }
                           } catch (IOException e) {
                             throw new SolrException(
-                                SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
+                                SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
                           }
                         },
                         false));
