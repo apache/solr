@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,6 +74,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
@@ -269,7 +269,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
-      Map<String, Object> m = new LinkedHashMap<>(doc.size());
+      Map<String, Object> m = CollectionUtil.newLinkedHashMap(doc.size());
       doc.forEach(
           (s, field) -> {
             if (s.equals("_version_") || s.equals("_roor_")) return;

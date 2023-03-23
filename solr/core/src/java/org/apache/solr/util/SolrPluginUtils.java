@@ -53,6 +53,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -478,7 +479,7 @@ public class SolrPluginUtils {
     if (null == fieldLists || 0 == fieldLists.length) {
       return new HashMap<>();
     }
-    Map<String, Float> out = new HashMap<>(7);
+    Map<String, Float> out = CollectionUtil.newHashMap(7);
     for (String in : fieldLists) {
       if (null == in) {
         continue;
@@ -824,7 +825,7 @@ public class SolrPluginUtils {
      * Where we store a map from field name we expect to see in our query string, to Alias object
      * containing the fields to use in our DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String, Alias> aliases = new HashMap<>(3);
+    protected Map<String, Alias> aliases = CollectionUtil.newHashMap(3);
 
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp, defaultField);
