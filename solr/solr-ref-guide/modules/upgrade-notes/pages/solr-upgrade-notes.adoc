@@ -37,12 +37,13 @@ Detailed steps for upgrading a Solr cluster are in the section xref:deployment-g
 == How to use the Major Changes pages
 
 The Major Changes pages are grouped in two ways:
-- For Solr versions `9.y+`:
+
+* For Solr versions `9.y+`:
   The `Major Changes in Solr _x_` (e.g. xref:major-changes-in-solr-9.adoc[]) pages include all changes included in any `x.y` release.
   Therefore xref:major-changes-in-solr-9.adoc[] includes all changes in any Solr `9.x` release.
-- For Solr versions `6.y`-`8.y`:
+* For Solr versions `6.y`-`8.y`:
   The `Major Changes in Solr _x_` (e.g. xref:major-changes-in-solr-8.adoc[]) pages include all changes from Solr `_(x-1)_.0` to Solr `_x_.0`.
-  Therefore xref:major-changes-in-solr-8.adoc[] includes all changes from Solr `7.0` to Solr `8.0`, starting wil Solr `7.1`.
+  Therefore xref:major-changes-in-solr-8.adoc[] includes all changes from Solr `7.0` to Solr `8.0`, starting with Solr `7.1`.
 
 In these pages, the first section describes planning for an upgrade to that major version from the previous major version,
 including system requirements, rolling upgrade concerns and re-indexing recommendations.
