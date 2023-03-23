@@ -68,7 +68,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -594,21 +593,6 @@ public class SimpleFacets {
           }
           break;
         case UIF:
-          // Emulate the JSON Faceting structure so we can use the same parsing classes
-          Map<String, Object> jsonFacet = CollectionUtil.newHashMap(13);
-          jsonFacet.put("type", "terms");
-          jsonFacet.put("field", field);
-          jsonFacet.put("offset", offset);
-          jsonFacet.put("limit", limit);
-          jsonFacet.put("mincount", mincount);
-          jsonFacet.put("missing", missing);
-          jsonFacet.put("prefix", prefix);
-          jsonFacet.put("numBuckets", params.getFieldBool(field, "numBuckets", false));
-          jsonFacet.put("allBuckets", params.getFieldBool(field, "allBuckets", false));
-          jsonFacet.put("method", "uif");
-          jsonFacet.put("cacheDf", 0);
-          jsonFacet.put("perSeg", false);
-
           final String sortVal;
           switch (sort) {
             case FacetParams.FACET_SORT_COUNT_LEGACY:
@@ -620,7 +604,23 @@ public class SimpleFacets {
             default:
               sortVal = sort;
           }
-          jsonFacet.put(SORT, sortVal);
+
+          // Emulate the JSON Faceting structure so we can use the same parsing classes
+          Map<String, Object> jsonFacet =
+              Map.ofEntries(
+                  Map.entry("type", "terms"),
+                  Map.entry("field", field),
+                  Map.entry("offset", offset),
+                  Map.entry("limit", limit),
+                  Map.entry("mincount", mincount),
+                  Map.entry("missing", missing),
+                  Map.entry("prefix", prefix),
+                  Map.entry("numBuckets", params.getFieldBool(field, "numBuckets", false)),
+                  Map.entry("allBuckets", params.getFieldBool(field, "allBuckets", false)),
+                  Map.entry("method", "uif"),
+                  Map.entry("cacheDf", 0),
+                  Map.entry("perSeg", false),
+                  Map.entry(SORT, sortVal));
 
           // TODO do we handle debug?  Should probably already be handled by the legacy code
 
