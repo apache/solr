@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1274,7 +1275,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
     String solrxml = getSolrXml();
     if (solrxml != null) {
-      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
+      Files.copy(
+          Path.of(getSolrHome(), solrxml),
+          jettyHome.toPath().resolve("solr.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
     }
   }
 

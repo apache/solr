@@ -22,9 +22,12 @@ import static org.apache.solr.bench.BaseBenchState.log;
 import com.codahale.metrics.Meter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.output.NullPrintStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -463,7 +465,10 @@ public class MiniClusterState {
      */
     @SuppressForbidden(reason = "JMH uses std out for user output")
     public void dumpCoreInfo() throws IOException {
-      cluster.dumpCoreInfo(!BaseBenchState.QUIET_LOG ? System.out : new NullPrintStream());
+      cluster.dumpCoreInfo(
+          !BaseBenchState.QUIET_LOG
+              ? System.out
+              : new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8));
     }
   }
 

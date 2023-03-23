@@ -92,11 +92,8 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
         stream.add("sourceInfo", content.getSourceInfo());
         stream.add("size", content.getSize());
         stream.add("contentType", content.getContentType());
-        Reader reader = content.getReader();
-        try {
+        try (Reader reader = content.getReader()) {
           stream.add("stream", IOUtils.toString(reader));
-        } finally {
-          reader.close();
         }
         streams.add(stream);
       }

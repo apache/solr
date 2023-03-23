@@ -35,7 +35,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -109,25 +108,10 @@ public class XMLLoader extends ContentStreamLoader {
       UpdateRequestProcessor processor)
       throws Exception {
     final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-
-    InputStream is = null;
     XMLStreamReader parser = null;
 
     // Normal XML Loader
-    try {
-      is = stream.getStream();
-      if (log.isTraceEnabled()) {
-        final byte[] body = IOUtils.toByteArray(is);
-        // TODO: The charset may be wrong, as the real charset is later
-        // determined by the XML parser, the content-type is only used as a hint!
-        if (log.isTraceEnabled()) {
-          log.trace(
-              "body: {}",
-              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
-        }
-        IOUtils.closeQuietly(is);
-        is = new ByteArrayInputStream(body);
-      }
+    try (InputStream is = getStream(stream, charset)) {
       parser =
           (charset == null)
               ? inputFactory.createXMLStreamReader(is)
@@ -137,8 +121,24 @@ public class XMLLoader extends ContentStreamLoader {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
       if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
     }
+  }
+
+  private InputStream getStream(ContentStream cs, String charset) throws IOException {
+    if (log.isTraceEnabled()) {
+      try (InputStream is = cs.getStream()) {
+        final byte[] body = is.readAllBytes();
+        // TODO: The charset may be wrong, as the real charset is later
+        // determined by the XML parser, the content-type is only used as a hint!
+        if (log.isTraceEnabled()) {
+          log.trace(
+              "body: {}",
+              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
+        }
+        return new ByteArrayInputStream(body);
+      }
+    }
+    return cs.getStream();
   }
 
   /**

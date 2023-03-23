@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -90,7 +88,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
             + "/"
             + DEFAULT_TEST_COLLECTION_NAME
             + "/debug/dump?wt=xml&stream.url="
-            + URLEncoder.encode(streamUrl, "UTF-8");
+            + URLEncoder.encode(streamUrl, StandardCharsets.UTF_8);
     String content = attemptHttpGet(getUrl);
     assertTrue(content.contains("1234"));
   }
@@ -98,13 +96,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   private String attemptHttpGet(String getUrl) throws IOException {
     Object obj = new URL(getUrl).getContent();
     if (obj instanceof InputStream) {
-      InputStream inputStream = (InputStream) obj;
-      try {
+      try (InputStream inputStream = (InputStream) obj) {
         StringWriter strWriter = new StringWriter();
         new InputStreamReader(inputStream, StandardCharsets.UTF_8).transferTo(strWriter);
         return strWriter.toString();
-      } finally {
-        IOUtils.closeQuietly(inputStream);
       }
     }
     return null;
@@ -123,13 +118,13 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   }
 
   /** Compose an HTTP GET url that will delete all the data. */
-  private String makeDeleteAllUrl() throws UnsupportedEncodingException {
+  private String makeDeleteAllUrl() {
     String deleteQuery = "<delete><query>*:*</query></delete>";
     return jettySolrRunner.getBaseUrl().toString()
         + "/"
         + DEFAULT_TEST_COLLECTION_NAME
         + "/update?commit=true&stream.body="
-        + URLEncoder.encode(deleteQuery, "UTF-8");
+        + URLEncoder.encode(deleteQuery, StandardCharsets.UTF_8);
   }
 
   private boolean searchFindsIt() throws SolrServerException, IOException {
