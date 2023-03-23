@@ -246,7 +246,13 @@ public class EmbeddedSolrServer extends SolrClient {
                 }
               };
 
-          try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          try (ByteArrayOutputStream out =
+              new ByteArrayOutputStream() {
+                @Override
+                public synchronized byte[] toByteArray() {
+                  return buf;
+                }
+              }) {
             createJavaBinCodec(callback, resolver)
                 .setWritableDocFields(resolver)
                 .marshal(rsp.getValues(), out);
