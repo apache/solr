@@ -81,7 +81,6 @@ public class UniqueAgg extends StrAggValueSource {
       sumUnique += unique;
 
       int valsListed = 0;
-      @SuppressWarnings("unchecked")
       List<?> vals = (List<?>) map.get(VALS);
       if (vals != null) {
         if (values == null) {

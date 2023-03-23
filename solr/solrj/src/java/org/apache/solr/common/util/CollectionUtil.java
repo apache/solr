@@ -37,7 +37,7 @@ public final class CollectionUtil {
   public static <K, V> HashMap<K, V> newHashMap(int size) {
     // With Lucene 9.5 - we should replace this with
     // org.apache.lucene.util.CollectionUtil.newHashMap(int size)
-    // This should be replaced with HashMap.newHashMap when Solr moves to jdk19 minimum version
+    // Replaced with HashMap.newHashMap when Solr moves to minimum jdk19
     return new HashMap<>((int) (size / 0.75f) + 1);
   }
 
@@ -46,9 +46,7 @@ public final class CollectionUtil {
    * internal array.
    */
   public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int size) {
-    // With Lucene 9.5 - we should replace this with
-    // This should be replaced with LinkedHashMap.newLinkedHashMap when Solr moves to jdk19 minimum
-    // version
+    // Replaced with LinkedHashMap.newLinkedHashMap when Solr moves to minimum jdk19
     return new LinkedHashMap<>((int) (size / 0.75f) + 1);
   }
 
@@ -59,7 +57,7 @@ public final class CollectionUtil {
   public static <E> HashSet<E> newHashSet(int size) {
     // With Lucene 9.5 - we should replace this with
     // org.apache.lucene.util.CollectionUtil.newHashSet(int size)
-    // This should be replaced with HashSet.newHashSet when Solr moves to jdk19 minimum version
+    // Replaced with HashSet.newHashSet when Solr moves to minimum jdk19
     return new HashSet<>((int) (size / 0.75f) + 1);
   }
 }
