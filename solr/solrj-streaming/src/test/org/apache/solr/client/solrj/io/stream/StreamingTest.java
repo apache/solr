@@ -145,23 +145,24 @@ public class StreamingTest extends SolrCloudTestCase {
   private static final String id = "id";
 
   // Update request shared by many of the tests
-  private final UpdateRequest helloDocsUpdateRequest = new UpdateRequest()
-      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-      .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-      .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-      .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-      .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-      .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-      .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-      .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+  private final UpdateRequest helloDocsUpdateRequest =
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+          .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+          .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+          .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+          .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+          .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+          .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+          .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+          .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+          .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
 
   @Before
   public void clearCollection() throws Exception {
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   @Test
   public void testUniqueStream() throws Exception {
 
