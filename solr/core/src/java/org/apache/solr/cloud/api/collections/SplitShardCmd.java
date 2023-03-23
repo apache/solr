@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable.CORE_IDX;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
@@ -42,11 +41,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
@@ -65,7 +66,6 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -873,42 +873,85 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws SolrException {
+
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
-    NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
-    Map<String, Object> nodeValues =
-        nodeStateProvider.getNodeValues(
-            parentShardLeader.getNodeName(), Collections.singletonList(ImplicitSnitch.DISK));
-    Map<String, Map<String, List<Replica>>> infos =
-        nodeStateProvider.getReplicaInfo(
-            parentShardLeader.getNodeName(), Collections.singletonList(CORE_IDX.metricsAttribute));
-    if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
+
+    ModifiableSolrParams params;
+    String metricName;
+    GenericSolrRequest req;
+    SolrResponse rsp;
+
+    metricName =
+        new StringBuilder("solr.core.")
+            .append(collection)
+            .append(".")
+            .append(shard)
+            .append(".")
+            .append(Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName()))
+            .append(":INDEX.sizeInBytes")
+            .toString();
+
+    params = new ModifiableSolrParams();
+    params.add("key", metricName);
+
+    req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
+    try {
+      rsp = cloudManager.request(req);
+    } catch (Exception e) {
+      log.error("Error occurred while checking the disk space of the node");
+      return;
+    }
+
+    if (rsp.getResponse() == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
-    // find the leader
-    List<Replica> lst = infos.get(collection).get(shard);
-    Double indexSize = null;
-    for (Replica info : lst) {
-      if (info.getCoreName().equals(parentShardLeader.getCoreName())) {
-        Number size = (Number) info.get(CORE_IDX.metricsAttribute);
-        if (size == null) {
-          log.warn("cannot verify information for parent shard leader");
-          return;
-        }
-        indexSize = (Double) CORE_IDX.convertVal(size);
-        break;
-      }
-    }
-    if (indexSize == null) {
-      log.warn("missing replica information for parent shard leader");
+
+    NamedList<Object> response = rsp.getResponse();
+    Object value = response.findRecursive("metrics", metricName);
+    if (value == null) {
+      log.warn("cannot verify information for parent shard leader");
       return;
     }
-    Number freeSize = (Number) nodeValues.get(ImplicitSnitch.DISK);
+
+    Number size = (Number) value;
+    if (size == null) {
+      log.warn("cannot verify information for parent shard leader");
+      return;
+    }
+    double indexSize = size.doubleValue();
+
+    metricName = "solr.node:CONTAINER.fs.usableSpace";
+    params = new ModifiableSolrParams();
+    params.add("key", metricName);
+
+    req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
+    try {
+      rsp = cloudManager.request(req);
+    } catch (Exception e) {
+      log.error("Error occurred while checking the disk space of the node");
+      return;
+    }
+
+    if (rsp.getResponse() == null) {
+      log.warn("cannot verify information for parent shard leader");
+      return;
+    }
+
+    response = rsp.getResponse();
+    value = response.findRecursive("metrics", metricName);
+    if (value == null) {
+      log.warn("cannot verify information for parent shard leader");
+      return;
+    }
+
+    Number freeSize = (Number) value;
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
     }
+
     // 100% more for REWRITE, 5% more for LINK
     double neededSpace =
         method == SolrIndexSplitter.SplitMethod.REWRITE ? 2.0 * indexSize : 1.05 * indexSize;
