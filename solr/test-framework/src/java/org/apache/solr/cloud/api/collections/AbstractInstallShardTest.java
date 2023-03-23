@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -334,7 +335,8 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     }
 
     final ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(multiShardUris.length, Thread::new);
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            multiShardUris.length, new SolrNamedThreadFactory("shardinstall"));
     final List<Future<Exception>> futures = executor.invokeAll(tasks, 10, TimeUnit.SECONDS);
     futures.stream()
         .forEach(
