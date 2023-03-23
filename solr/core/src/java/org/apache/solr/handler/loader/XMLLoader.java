@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
@@ -375,11 +376,8 @@ public class XMLLoader extends ContentStreamLoader {
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<>();
-              Map<String, Object> extendedValues = updateMap.get(currentFieldName);
-              if (extendedValues == null) {
-                extendedValues = new HashMap<>(1);
-                updateMap.put(currentFieldName, extendedValues);
-              }
+              Map<String, Object> extendedValues =
+                  updateMap.computeIfAbsent(currentFieldName, k -> CollectionUtil.newHashMap(1));
               Object val = extendedValues.get(update);
               if (val == null) {
                 extendedValues.put(update, v);

@@ -18,7 +18,6 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -343,7 +342,7 @@ public interface JsonTextWriter extends TextWriter {
     // Disad: this is ambiguous with a real single value that happens to be an array
     //
     // Both of these mappings have ambiguities.
-    HashMap<String, Integer> repeats = new HashMap<>(4);
+    Map<String, Integer> repeats = CollectionUtil.newHashMap(4);
 
     boolean first = true;
     for (int i = 0; i < sz; i++) {

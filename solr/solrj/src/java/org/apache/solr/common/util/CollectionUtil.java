@@ -18,12 +18,14 @@ package org.apache.solr.common.util;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 
 /**
  * Methods for creating collections with exact sizes.
  *
  * @lucene.internal
  */
+@SuppressForbidden(reason = "This class properly sizes the collections")
 public final class CollectionUtil {
 
   private CollectionUtil() {} // no instance
@@ -35,8 +37,17 @@ public final class CollectionUtil {
   public static <K, V> HashMap<K, V> newHashMap(int size) {
     // With Lucene 9.5 - we should replace this with
     // org.apache.lucene.util.CollectionUtil.newHashMap(int size)
-    // This should be replaced with HashMap.newHashMap when Solr moves to jdk19 minimum version
+    // Replace with HashMap.newHashMap when Solr moves to minimum jdk19
     return new HashMap<>((int) (size / 0.75f) + 1);
+  }
+
+  /**
+   * Returns a new {@link LinkedHashMap} sized to contain {@code size} items without resizing the
+   * internal array.
+   */
+  public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int size) {
+    // Replace with LinkedHashMap.newLinkedHashMap when Solr moves to minimum jdk19
+    return new LinkedHashMap<>((int) (size / 0.75f) + 1);
   }
 
   /**
@@ -46,7 +57,7 @@ public final class CollectionUtil {
   public static <E> HashSet<E> newHashSet(int size) {
     // With Lucene 9.5 - we should replace this with
     // org.apache.lucene.util.CollectionUtil.newHashSet(int size)
-    // This should be replaced with HashSet.newHashSet when Solr moves to jdk19 minimum version
+    // Replace with HashSet.newHashSet when Solr moves to minimum jdk19
     return new HashSet<>((int) (size / 0.75f) + 1);
   }
 }
