@@ -246,18 +246,17 @@ public class EmbeddedSolrServer extends SolrClient {
                 }
               };
 
-          try (ByteArrayOutputStream out =
+          try (var out =
               new ByteArrayOutputStream() {
-                @Override
-                public synchronized byte[] toByteArray() {
-                  return buf;
+                ByteArrayInputStream toInputStream() {
+                  return new ByteArrayInputStream(buf, 0, count);
                 }
               }) {
             createJavaBinCodec(callback, resolver)
                 .setWritableDocFields(resolver)
                 .marshal(rsp.getValues(), out);
 
-            try (ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray())) {
+            try (ByteArrayInputStream in = out.toInputStream()) {
               @SuppressWarnings({"unchecked"})
               NamedList<Object> resolved =
                   (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);

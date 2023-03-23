@@ -197,18 +197,17 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
-      try (ByteArrayOutputStream out =
+      try (var out =
           new ByteArrayOutputStream() {
-            @Override
-            public synchronized byte[] toByteArray() {
-              return buf;
+            ByteArrayInputStream toInputStream() {
+              return new ByteArrayInputStream(buf, 0, count);
             }
           }) {
         try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
           jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
         }
 
-        try (InputStream in = new ByteArrayInputStream(out.toByteArray())) {
+        try (InputStream in = out.toInputStream()) {
           try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
             return (NamedList<Object>) jbc.unmarshal(in);
           }
