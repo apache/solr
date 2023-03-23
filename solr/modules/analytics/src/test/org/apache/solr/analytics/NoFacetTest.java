@@ -18,7 +18,6 @@ package org.apache.solr.analytics;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 

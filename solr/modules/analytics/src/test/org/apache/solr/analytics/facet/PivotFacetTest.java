@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.facet;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
 import org.apache.solr.analytics.SolrAnalyticsTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
