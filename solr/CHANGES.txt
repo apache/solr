@@ -46,6 +46,8 @@ Other Changes
 
 * SOLR-16713: Replace Guava usages with pure Java (Kevin Risden)
 
+* SOLR-16716: Replace commons-io usages with pure Java (Kevin Risden)
+
 ==================  9.2.0 ==================
 
 New Features

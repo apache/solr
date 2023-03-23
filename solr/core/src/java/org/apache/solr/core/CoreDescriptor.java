@@ -18,8 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -242,17 +241,13 @@ public class CoreDescriptor {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
-      try (InputStream is = Files.newInputStream(propertiesFile)) {
+      try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+        externalProps.load(r);
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message =
-            String.format(
-                Locale.ROOT,
-                "Could not load properties from %s: %s:",
-                propertiesFile.toString(),
-                e.toString());
+            String.format(Locale.ROOT, "Could not load properties from %s: %s:", propertiesFile, e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     }

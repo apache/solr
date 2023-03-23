@@ -3653,7 +3653,7 @@ public class SolrCLI implements CLIO {
     }
 
     protected void copyIfNeeded(File src, File dest) throws IOException {
-      if (!dest.isFile()) FileUtils.copyFile(src, dest);
+      if (!dest.isFile()) Files.copy(src.toPath(), dest.toPath());
 
       if (!dest.isFile())
         throw new IllegalStateException("Required file " + dest.getAbsolutePath() + " not found!");

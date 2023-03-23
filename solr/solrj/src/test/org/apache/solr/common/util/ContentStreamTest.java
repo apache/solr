@@ -39,7 +39,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream(input);
     assertEquals(input.length(), stream.getSize().longValue());
-    assertEquals(input, IOUtils.toString(stream.getStream(), StandardCharsets.UTF_8));
+    assertEquals(input, new String(stream.getStream().readAllBytes(), StandardCharsets.UTF_8));
     assertEquals(input, IOUtils.toString(stream.getReader()));
   }
 

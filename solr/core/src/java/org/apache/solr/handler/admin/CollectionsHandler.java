@@ -125,6 +125,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -142,7 +143,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -550,9 +550,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try {
       String path =
           ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
-      byte[] data =
-          IOUtils.toByteArray(
-              CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml"));
+      byte[] data;
+      try (InputStream inputStream =
+          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
       path =
@@ -560,9 +563,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               + "/"
               + CollectionAdminParams.SYSTEM_COLL
               + "/solrconfig.xml";
-      data =
-          IOUtils.toByteArray(
-              CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml"));
+      try (InputStream inputStream =
+          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
     } catch (IOException e) {

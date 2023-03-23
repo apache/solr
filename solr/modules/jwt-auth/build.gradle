@@ -35,7 +35,6 @@ dependencies {
 
   implementation 'org.bitbucket.b_c:jose4j'
 
-  implementation 'commons-io:commons-io'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'

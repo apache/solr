@@ -26,9 +26,11 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,8 +40,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 import org.apache.commons.exec.OS;
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -927,12 +927,16 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
-        FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"));
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/schema-minimal.xml"),
-        FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "schema.xml"));
+    Path confDir = Path.of(cc.getSolrHome(), "col_bad", "conf");
+    Files.createDirectories(confDir);
+    Files.copy(
+        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        confDir.resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    Files.copy(
+        getFile("solr/collection1/conf/schema-minimal.xml").toPath(),
+        confDir.resolve("schema.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     cc.create("col_bad", Map.of());
 
     // check that we have the cores we expect
@@ -998,10 +1002,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final long col_bad_old_start = getCoreStartTime(cc, "col_bad");
 
-    FileUtils.write(
-        FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"),
+    Files.writeString(
+        Path.of(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"),
         "This is giberish, not valid XML <",
-        IOUtils.UTF_8);
+        StandardCharsets.UTF_8);
 
     ignoreException(Pattern.quote("SAX"));
     thrown =
@@ -1046,9 +1050,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
-        FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"));
+    Files.copy(
+        getFile("solr/collection1/conf/solrconfig-defaults.xml").toPath(),
+        confDir.resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     cc.reload("col_bad");
 
     assertTrue(
