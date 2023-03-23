@@ -94,14 +94,14 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         .addField(
             vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
 
-    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
-    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2.0f, 2.0f, 1.0f, 4.0f));
-    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(10.0f, 2.0f, 1.0f, 2.0f));
-    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7.0f, 2.0f, 1.0f, 3.0f));
-    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19.0f, 2.0f, 4.0f, 4.0f));
-    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19.9f, 2.9f, 4.9f, 4.9f));
-    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18.0f, 2.0f, 4.0f, 4.0f));
-    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8.0f, 3.0f, 2.0f, 4.0f));
+    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 3, 4));
+    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2, 2, 1, 4));
+    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 1, 2));
+    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7, 2, 1, 3));
+    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
+    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
 
     return docs;
   }
@@ -222,22 +222,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='1']");
-  }
-
-  @Test
-  public void vectorByteEncodingField_shouldApproximateIndexVectorValuesToIntegerValues() {
-    String vectorToSearch = "[19.0, 2.0, 4.0, 4.0]";
-
-    // If we consider the vectors with floating values, document 7 has an higher score than document
-    // 6.
-    // If instead we take only the integer part, document 6 gets an higher score.
-    assertQ(
-        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3}" + vectorToSearch, "fl", "id"),
-        "//result[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='5']",
-        "//result/doc[2]/str[@name='id'][.='6']",
-        "//result/doc[3]/str[@name='id'][.='7']");
+        "//result/doc[2]/str[@name='id'][.='3']");
   }
 
   @Test
