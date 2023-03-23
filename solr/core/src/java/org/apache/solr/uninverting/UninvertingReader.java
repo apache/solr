@@ -52,6 +52,13 @@ import org.apache.solr.uninverting.FieldCache.CacheEntry;
  */
 public class UninvertingReader extends FilterLeafReader {
 
+  public enum Support {
+    FORBID,
+    DISABLE,
+    DEFAULT_FALSE,
+    DEFAULT_TRUE
+  }
+
   /** Specifies the type of uninversion to apply for the field. */
   public static enum Type {
     /**

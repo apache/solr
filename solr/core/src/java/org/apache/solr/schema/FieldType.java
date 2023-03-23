@@ -185,7 +185,10 @@ public abstract class FieldType extends FieldProperties {
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
 
-    properties |= UNINVERTIBLE;
+    UninvertingReader.Support uninvertibleSupport = IndexSchema.getUninvertibleSupport();
+    if (uninvertibleSupport == UninvertingReader.Support.DEFAULT_TRUE) {
+      properties |= UNINVERTIBLE;
+    }
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);
@@ -196,6 +199,22 @@ public abstract class FieldType extends FieldProperties {
 
     properties &= ~falseProperties;
     properties |= trueProperties;
+
+    if ((properties & UNINVERTIBLE) != 0) {
+      switch (uninvertibleSupport) {
+        case FORBID:
+          throw new RuntimeException(
+              "uninvertible support is forbidden but configured on fieldType " + getTypeName());
+        case DISABLE:
+          if (log.isInfoEnabled()) {
+            log.info("disabling configured uninversion support for fieldType {}", getTypeName());
+          }
+          properties &= ~UNINVERTIBLE;
+          break;
+        default:
+          // No-op
+      }
+    }
 
     for (String prop : FieldProperties.propertyNames) initArgs.remove(prop);
 

@@ -49,6 +49,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
@@ -352,6 +353,9 @@ public class SolrXmlConfig {
                 break;
               case "maxBooleanClauses":
                 builder.setBooleanQueryMaxClauseCount(it.intVal(-1));
+                break;
+              case "uninvertibleSupport":
+                builder.setUninvertibleSupport(UninvertingReader.Support.valueOf(it.txt()));
                 break;
               case "managementPath":
                 builder.setManagementPath(it.txt());
