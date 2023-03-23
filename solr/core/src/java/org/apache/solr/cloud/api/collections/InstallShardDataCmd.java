@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -87,9 +86,11 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     final ShardHandler shardHandler = ccc.newShardHandler();
     shardRequestTracker.sliceCmd(clusterState, coreApiParams, null, installSlice, shardHandler);
     final String errorMessage =
-        String.format(Locale.ROOT,
+        String.format(
+            Locale.ROOT,
             "Could not install data to collection [%s] and shard [%s]",
-            typedMessage.collection, typedMessage.shard);
+            typedMessage.collection,
+            typedMessage.shard);
     shardRequestTracker.processResponses(new NamedList<>(), shardHandler, true, errorMessage);
   }
 
