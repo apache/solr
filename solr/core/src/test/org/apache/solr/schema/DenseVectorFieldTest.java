@@ -20,7 +20,9 @@ import static org.hamcrest.core.Is.is;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
@@ -30,11 +32,13 @@ import org.junit.Test;
 
 public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
-  private DenseVectorField toTest;
+  private DenseVectorField toTestFloatEncoding;
+  private DenseVectorField toTestByteEncoding;
 
   @Before
   public void init() {
-    toTest = new DenseVectorField();
+    toTestFloatEncoding = new DenseVectorField(3, VectorEncoding.FLOAT32);
+    toTestByteEncoding = new DenseVectorField(3, VectorEncoding.BYTE);
   }
 
   @Test
@@ -178,57 +182,111 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             "Single string value should throw an exception",
             SolrException.class,
             () -> {
-              toTest.parseVector("string");
+              toTestFloatEncoding.getVectorParser("string").getFloatVector();
             });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format."
-                + " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+            "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
+
+    thrown =
+        assertThrows(
+            "Single string value should throw an exception",
+            SolrException.class,
+            () -> {
+              toTestByteEncoding.getVectorParser("string").getByteVector();
+            });
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        is(
+            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
 
     thrown =
         assertThrows(
             "Single float value should throw an exception",
             SolrException.class,
             () -> {
-              toTest.parseVector(1.5f);
+              toTestFloatEncoding.getVectorParser(1.5f).getFloatVector();
             });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format."
-                + " The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+            "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
+
+    thrown =
+        assertThrows(
+            "Single string value should throw an exception",
+            SolrException.class,
+            () -> {
+              toTestByteEncoding.getVectorParser("1").getByteVector();
+            });
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        is(
+            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   @Test
   public void parseVector_notNumericList_shouldThrowException() {
-    toTest = new DenseVectorField(3);
-
     RuntimeException thrown =
         assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {
-              toTest.parseVector(
-                  Arrays.asList(
-                      new DenseVectorField(3), new DenseVectorField(4), new DenseVectorField(5)));
+              toTestFloatEncoding
+                  .getVectorParser(
+                      Arrays.asList(
+                          new DenseVectorField(3),
+                          new DenseVectorField(4),
+                          new DenseVectorField(5)))
+                  .getFloatVector();
             });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format. The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+            "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
+
+    thrown =
+        assertThrows(
+            "Incorrect elements should throw an exception",
+            SolrException.class,
+            () -> {
+              toTestByteEncoding
+                  .getVectorParser(
+                      Arrays.asList(
+                          new DenseVectorField(3),
+                          new DenseVectorField(4),
+                          new DenseVectorField(5)))
+                  .getByteVector();
+            });
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        is(
+            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   @Test
   public void parseVector_incorrectVectorDimension_shouldThrowException() {
-    toTest = new DenseVectorField(3);
+    toTestFloatEncoding = new DenseVectorField(3);
 
     RuntimeException thrown =
         assertThrows(
             "Incorrect vector dimension should throw an exception",
             SolrException.class,
             () -> {
-              toTest.parseVector(Arrays.asList(1.0f, 1.5f));
+              toTestFloatEncoding.getVectorParser(Arrays.asList(1.0f, 1.5f)).getFloatVector();
+            });
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        is(
+            "incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 3"));
+
+    thrown =
+        assertThrows(
+            "Incorrect vector dimension should throw an exception",
+            SolrException.class,
+            () -> {
+              toTestByteEncoding.getVectorParser(Arrays.asList(2, 1)).getByteVector();
             });
     MatcherAssert.assertThat(
         thrown.getMessage(),
@@ -238,19 +296,33 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void parseVector_incorrectElement_shouldThrowException() {
-    toTest = new DenseVectorField(3);
-
     RuntimeException thrown =
         assertThrows(
             "Incorrect elements should throw an exception",
             SolrException.class,
             () -> {
-              toTest.parseVector(Arrays.asList("1.0f", "string", "string2"));
+              toTestFloatEncoding
+                  .getVectorParser(Arrays.asList("1.0f", "string", "string2"))
+                  .getFloatVector();
             });
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector element: 'string'. The expected format is:'[f1,f2..f3]' where each element f is a float"));
+
+    thrown =
+        assertThrows(
+            "Incorrect elements should throw an exception",
+            SolrException.class,
+            () -> {
+              toTestByteEncoding
+                  .getVectorParser(Arrays.asList("1", "string", "string2"))
+                  .getByteVector();
+            });
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        is(
+            "incorrect vector element: 'string'. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   /**
@@ -260,10 +332,17 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
    */
   @Test
   public void parseVector_StringArrayList_shouldParseFloatArray() {
-    toTest = new DenseVectorField(3);
     float[] expected = new float[] {1.1f, 2.2f, 3.3f};
+    MatcherAssert.assertThat(
+        toTestFloatEncoding.getVectorParser(Arrays.asList(1.1f, 2.2f, 3.3f)).getFloatVector(),
+        is(expected));
+  }
 
-    MatcherAssert.assertThat(toTest.parseVector(Arrays.asList("1.1", "2.2", "3.3")), is(expected));
+  @Test
+  public void parseVector_StringArrayList_shouldParseByteArray() {
+    BytesRef expected = newBytesRef(new byte[] {1, 2, 3});
+    MatcherAssert.assertThat(
+        toTestByteEncoding.getVectorParser(Arrays.asList(1, 2, 3)).getByteVector(), is(expected));
   }
 
   /**
@@ -272,10 +351,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
    */
   @Test
   public void parseVector_DoubleArrayList_shouldParseFloatArray() {
-    toTest = new DenseVectorField(3);
     float[] expected = new float[] {1.7f, 5.4f, 6.6f};
-
-    MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(1.7d, 5.4d, 6.6d)), is(expected));
+    MatcherAssert.assertThat(
+        toTestFloatEncoding.getVectorParser(Arrays.asList(1.7d, 5.4d, 6.6d)).getFloatVector(),
+        is(expected));
   }
 
   /**
@@ -284,10 +363,19 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
    */
   @Test
   public void parseVector_FloatArrayList_shouldParseFloatArray() {
-    toTest = new DenseVectorField(3);
+    toTestFloatEncoding = new DenseVectorField(3);
     float[] expected = new float[] {5.5f, 7.7f, 9.8f};
 
-    MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(5.5f, 7.7f, 9.8f)), is(expected));
+    MatcherAssert.assertThat(
+        toTestFloatEncoding.getVectorParser(Arrays.asList(5.5f, 7.7f, 9.8f)).getFloatVector(),
+        is(expected));
+  }
+
+  @Test
+  public void parseVector_IntArrayList_shouldParseByteArray() {
+    BytesRef expected = new BytesRef(new byte[] {5, 7, 9});
+    MatcherAssert.assertThat(
+        toTestByteEncoding.getVectorParser(Arrays.asList(5, 7, 9)).getByteVector(), is(expected));
   }
 
   @Test
@@ -365,7 +453,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void query_vectorByteEncoded_storedField_shouldBeReturnedWithoutDecimals() throws Exception {
+  public void query_vectorByteEncoded_storedField_shouldBeReturnedInResults() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
@@ -376,7 +464,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertU(adoc(doc1));
       assertU(commit());
 
-      assertJQ(req("q", "id:0", "fl", "vector_byte_encoding"), "/response/docs/[0]=={'vector_byte_encoding':[1,2,3,4]}");
+      assertJQ(
+          req("q", "id:0", "fl", "vector_byte_encoding"),
+          "/response/docs/[0]=={'vector_byte_encoding':[1,2,3,4]}");
 
     } finally {
       deleteCore();
