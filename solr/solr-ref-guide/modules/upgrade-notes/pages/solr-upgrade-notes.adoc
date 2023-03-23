@@ -44,7 +44,7 @@ The Major Changes pages are grouped in two ways:
   The `Major Changes in Solr _x_` (e.g. xref:major-changes-in-solr-8.adoc[]) pages include all changes from Solr `_(x-1)_.0` to Solr `_x_.0`.
   Therefore xref:major-changes-in-solr-8.adoc[] includes all changes from Solr `7.0` to Solr `8.0`, starting wil Solr `7.1`.
 
-In these pages, the first section describes planning for an upgrade from to that major version from the previous major version,
+In these pages, the first section describes planning for an upgrade to that major version from the previous major version,
 including system requirements, rolling upgrade concerns and re-indexing recommendations.
 All other sections are version-specific and include relevant changes in each minor version.
 
