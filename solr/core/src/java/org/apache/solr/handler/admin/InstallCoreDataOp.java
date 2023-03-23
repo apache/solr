@@ -17,35 +17,37 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.admin.api.InstallCoreDataAPI;
-import org.apache.solr.handler.api.V2ApiUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.admin.api.InstallCoreDataAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
+
 /**
- * v1 shim implementation of the "Install Core Data" API, a core-admin API used to implement the "Install Shard Data" Collection-Admin functionality
+ * v1 shim implementation of the "Install Core Data" API, a core-admin API used to implement the
+ * "Install Shard Data" Collection-Admin functionality
  *
- * Converts v1-style query parameters into a v2-style request body and delegating to {@link InstallCoreDataAPI}.
+ * <p>Converts v1-style query parameters into a v2-style request body and delegating to {@link
+ * InstallCoreDataAPI}.
  */
 public class InstallCoreDataOp implements CoreAdminHandler.CoreAdminOp {
-    @Override
-    public void execute(CoreAdminHandler.CallInfo it) throws Exception {
-        final SolrParams params = it.req.getParams();
-        final String coreName = params.required().get(CoreAdminParams.CORE);
+  @Override
+  public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+    final SolrParams params = it.req.getParams();
+    final String coreName = params.required().get(CoreAdminParams.CORE);
 
-        final InstallCoreDataAPI api = new InstallCoreDataAPI(it.handler.getCoreContainer(), it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
-        final InstallCoreDataAPI.InstallCoreDataRequestBody requestBody = new InstallCoreDataAPI.InstallCoreDataRequestBody();
-        requestBody.repository = params.get(BACKUP_REPOSITORY);
-        requestBody.location = params.get(BACKUP_LOCATION);
-        requestBody.asyncId = params.get(ASYNC);
-        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, api.installCoreData(coreName, requestBody));
-    }
+    final InstallCoreDataAPI api =
+        new InstallCoreDataAPI(
+            it.handler.getCoreContainer(), it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+    final InstallCoreDataAPI.InstallCoreDataRequestBody requestBody =
+        new InstallCoreDataAPI.InstallCoreDataRequestBody();
+    requestBody.repository = params.get(BACKUP_REPOSITORY);
+    requestBody.location = params.get(BACKUP_LOCATION);
+    requestBody.asyncId = params.get(ASYNC);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+        it.rsp, api.installCoreData(coreName, requestBody));
+  }
 }

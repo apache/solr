@@ -1523,21 +1523,23 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           return params;
         }),
     INSTALLSHARDDATA_OP(
-            INSTALLSHARDDATA,
-            (req, rsp, h) -> {
-              req.getParams().required().check(COLLECTION, SHARD);
-              final String collectionName = req.getParams().get(COLLECTION);
-              final String shardName = req.getParams().get(SHARD);
-              final InstallShardDataAPI.InstallShardRequestBody reqBody = new InstallShardDataAPI.InstallShardRequestBody();
-              reqBody.asyncId = req.getParams().get(ASYNC);
-              reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
-              reqBody.location = req.getParams().get(BACKUP_LOCATION);
+        INSTALLSHARDDATA,
+        (req, rsp, h) -> {
+          req.getParams().required().check(COLLECTION, SHARD);
+          final String collectionName = req.getParams().get(COLLECTION);
+          final String shardName = req.getParams().get(SHARD);
+          final InstallShardDataAPI.InstallShardRequestBody reqBody =
+              new InstallShardDataAPI.InstallShardRequestBody();
+          reqBody.asyncId = req.getParams().get(ASYNC);
+          reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
+          reqBody.location = req.getParams().get(BACKUP_LOCATION);
 
-              final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
-              final SolrJerseyResponse installResponse = installApi.installShardData(collectionName, shardName, reqBody);
-              V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
-              return null;
-            }),
+          final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse installResponse =
+              installApi.installShardData(collectionName, shardName, reqBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
+          return null;
+        }),
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
