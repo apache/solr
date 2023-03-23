@@ -618,7 +618,9 @@ groups:
         tee: true
       - !Command
         cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok
+        comment: |
+          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
+          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
         stdout: true
       - !Command
         cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
