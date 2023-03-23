@@ -17,16 +17,18 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.cloud.Overseer;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -37,96 +39,86 @@ import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
-import static org.apache.solr.common.params.CoreAdminParams.CORE;
-
 /**
  * Overseer processing for the "install shard data" API.
  *
- * Largely this overseer processing consists of ensuring that read-only mode is enabled for the
- * specified collection, identifying the core hosting the shard leader, and sending it a core-
- * admin 'install' request.
+ * <p>Largely this overseer processing consists of ensuring that read-only mode is enabled for the
+ * specified collection, identifying the core hosting the shard leader, and sending it a core- admin
+ * 'install' request.
  */
 public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private final CollectionCommandContext ccc;
+  private final CollectionCommandContext ccc;
 
-    public InstallShardDataCmd(CollectionCommandContext ccc) {
-        this.ccc = ccc;
+  public InstallShardDataCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
+  }
+
+  @Override
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
+    final RemoteMessage typedMessage =
+        new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
+    final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =
+        CollectionHandlingUtils.asyncRequestTracker(typedMessage.asyncId, ccc);
+    final ClusterState clusterState = ccc.getZkStateReader().getClusterState();
+    typedMessage.validate();
+
+    // Fetch the specified Slice
+    final DocCollection installCollection = clusterState.getCollection(typedMessage.collection);
+    final Slice installSlice = installCollection.getSlice(typedMessage.shard);
+    if (installSlice == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The specified shard [" + typedMessage.shard + "] does not exist.");
     }
 
+    // Build the core-admin request
+    final ModifiableSolrParams coreApiParams = new ModifiableSolrParams();
+    coreApiParams.set(
+        CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.INSTALLCOREDATA.toString());
+    typedMessage.toMap(new HashMap<>()).forEach((k, v) -> coreApiParams.set(k, v.toString()));
 
-    @Override
-    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
-        final RemoteMessage typedMessage = new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
-        final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(typedMessage.asyncId, ccc);
-        final ClusterState clusterState = ccc.getZkStateReader().getClusterState();
-        typedMessage.validate();
+    // Send the core-admin request to each replica in the slice
+    final ShardHandler shardHandler = ccc.newShardHandler();
+    shardRequestTracker.sliceCmd(clusterState, coreApiParams, null, installSlice, shardHandler);
+    final String errorMessage =
+        String.format(
+            "Could not install data to collection [%s] and shard [%s]",
+            typedMessage.collection, typedMessage.shard);
+    shardRequestTracker.processResponses(new NamedList<>(), shardHandler, true, errorMessage);
+  }
 
-        // Fetch the specified Slice
-        final DocCollection installCollection = clusterState.getCollection(typedMessage.collection);
-        final Slice installSlice = installCollection.getSlice(typedMessage.shard);
-        if (installSlice == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The specified shard [" + typedMessage.shard + "] does not exist.");
-        }
+  /** A value-type representing the message received by {@link InstallShardDataCmd} */
+  public static class RemoteMessage implements JacksonReflectMapWriter {
 
-        // Build the core-admin request
-        final Replica leaderReplica = installSlice.getLeader();
-        if (leaderReplica == null) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard-data installation requires a leader, but none found");
-        }
-        final ModifiableSolrParams coreApiParams = new ModifiableSolrParams();
-        coreApiParams.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.INSTALLCOREDATA.toString());
-        coreApiParams.set(CORE, leaderReplica.core);
-        typedMessage.toMap(new HashMap<>())
-                .forEach((k, v) -> coreApiParams.set(k, v.toString()));
+    @JsonProperty(QUEUE_OPERATION)
+    public String operation = CollectionParams.CollectionAction.INSTALLSHARDDATA.toLower();
 
-        // Send it to the node hosting the leader
-        final ShardHandler shardHandler = ccc.newShardHandler();
-        shardRequestTracker.sendShardRequest(leaderReplica.getNodeName(), coreApiParams, shardHandler);
-        final String errorMessage = String.format("Could not install data to collection [%s] and shard [%s]", typedMessage.collection, typedMessage.shard);
-        shardRequestTracker.processResponses(
-                new NamedList<>(), shardHandler, true, errorMessage);
+    @JsonProperty public String collection;
+
+    @JsonProperty public String shard;
+
+    @JsonProperty public String repository;
+
+    @JsonProperty public String location;
+
+    @JsonProperty(ASYNC)
+    public String asyncId;
+
+    public void validate() {
+      if (StringUtils.isBlank(collection)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "The 'Install Shard Data' API requires a valid collection name to be provided");
+      }
+      if (StringUtils.isBlank(shard)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "The 'Install Shard Data' API requires a valid shard name to be provided");
+      }
     }
-
-
-    /**
-     * A value-type representing the message received by {@link InstallShardDataCmd}
-     */
-    public static class RemoteMessage implements JacksonReflectMapWriter {
-
-        @JsonProperty(QUEUE_OPERATION)
-        public String operation = CollectionParams.CollectionAction.INSTALLSHARDDATA.toLower();
-
-        @JsonProperty
-        public String collection;
-
-        @JsonProperty
-        public String shard;
-
-        @JsonProperty
-        public String repository;
-
-        @JsonProperty
-        public String location;
-
-        @JsonProperty(ASYNC)
-        public String asyncId;
-
-        public void validate() {
-            if (StringUtils.isBlank(collection)) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The 'Install Shard Data' API requires a valid collection name to be provided");
-            }
-            if (StringUtils.isBlank(shard)) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The 'Install Shard Data' API requires a valid shard name to be provided");
-            }
-        }
-    }
+  }
 }
