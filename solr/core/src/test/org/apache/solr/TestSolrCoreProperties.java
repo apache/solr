@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -63,9 +62,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
     try (Writer fos =
-        new OutputStreamWriter(
-            Files.newOutputStream(confDir.resolve("solrcore.properties")),
-            StandardCharsets.UTF_8)) {
+        Files.newBufferedWriter(confDir.resolve("solrcore.properties"), StandardCharsets.UTF_8)) {
       p.store(fos, null);
     }
 

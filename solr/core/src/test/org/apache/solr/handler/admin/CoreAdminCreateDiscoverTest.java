@@ -18,8 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,8 +116,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             .toPath()
             .resolve(coreSysProps)
             .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
-    try (InputStream is = Files.newInputStream(propFile)) {
-      props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+    try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
+      props.load(r);
     }
 
     assertEquals(
@@ -295,8 +294,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
             .toPath()
             .resolve(coreNormal)
             .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
-    try (InputStream is = Files.newInputStream(propFile)) {
-      props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+    try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
+      props.load(r);
     }
 
     assertEquals(

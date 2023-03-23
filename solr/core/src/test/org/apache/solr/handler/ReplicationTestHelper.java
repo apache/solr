@@ -18,16 +18,13 @@ package org.apache.solr.handler;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -83,11 +80,8 @@ public final class ReplicationTestHelper {
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression)
       throws IOException {
-    try (BufferedReader in =
-            new BufferedReader(
-                new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
-        Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8)) {
-
+    try (BufferedReader in = Files.newBufferedReader(src.toPath(), StandardCharsets.UTF_8);
+        Writer out = Files.newBufferedWriter(dst.toPath(), StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());

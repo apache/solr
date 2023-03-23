@@ -17,11 +17,10 @@
 package org.apache.solr.servlet;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
 import org.apache.http.Header;
@@ -271,11 +270,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = createTempFile("cachetest", "csv").toFile();
-      try (Writer out = new OutputStreamWriter(new FileOutputStream(f), charset)) {
-        out.write(contents);
-      }
-      return f;
+      Path f = createTempFile("cachetest", "csv");
+      Files.writeString(f, contents, Charset.forName(charset));
+      return f.toFile();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

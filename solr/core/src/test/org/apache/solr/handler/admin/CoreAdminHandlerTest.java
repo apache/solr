@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -336,8 +336,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             DEFAULT_CONNECTION_TIMEOUT)) {
       CoreAdminRequest.renameCore("corerename", "brand_new_core_name", client);
       Properties props = new Properties();
-      try (InputStreamReader is =
-          new InputStreamReader(Files.newInputStream(renamePropFile), StandardCharsets.UTF_8)) {
+      try (Reader is = Files.newBufferedReader(renamePropFile, StandardCharsets.UTF_8)) {
         props.load(is);
       }
       assertEquals(

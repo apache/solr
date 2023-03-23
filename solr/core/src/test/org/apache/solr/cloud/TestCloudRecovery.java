@@ -21,8 +21,9 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -191,11 +192,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         String[] tLogFiles = tlogFolder.list();
         Arrays.sort(tLogFiles);
         String lastTLogFile = tlogFolder.getAbsolutePath() + "/" + tLogFiles[tLogFiles.length - 1];
-        try (FileInputStream inputStream = new FileInputStream(lastTLogFile)) {
-          byte[] tlogBytes = inputStream.readAllBytes();
-          contentFiles.put(lastTLogFile, tlogBytes);
-          logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
-        }
+        byte[] tlogBytes = Files.readAllBytes(Path.of(lastTLogFile));
+        contentFiles.put(lastTLogFile, tlogBytes);
+        logHeaderSize = Math.min(tlogBytes.length, logHeaderSize);
       }
     }
 

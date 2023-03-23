@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -214,10 +213,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String fromZk =
         new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
-    try (InputStream is = Files.newInputStream(locFile)) {
-      String fromLoc = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-      assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
-    }
+    String fromLoc = Files.readString(locFile);
+    assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
   }
 
   @Test
@@ -239,10 +236,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
-    try (InputStream is = Files.newInputStream(locFile)) {
-      byte[] fromLoc = new ZLibCompressor().compressBytes(is.readAllBytes());
-      assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
-    }
+    byte[] fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
+    assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
   }
 
   @Test

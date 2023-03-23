@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
@@ -420,10 +419,7 @@ public class ZkCLI implements CLIO {
           }
 
           String path = arglist.get(0);
-          byte[] data;
-          try (InputStream inputStream = Files.newInputStream(Path.of(arglist.get(1)))) {
-            data = inputStream.readAllBytes();
-          }
+          byte[] data = Files.readAllBytes(Path.of(arglist.get(1)));
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
             data = compressor.compressBytes(data);

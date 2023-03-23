@@ -24,9 +24,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -96,8 +94,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     if (!propFile.getParentFile().exists()) {
       propFile.getParentFile().mkdirs();
     }
-    try (Writer out =
-        new OutputStreamWriter(new FileOutputStream(propFile), StandardCharsets.UTF_8)) {
+    try (Writer out = Files.newBufferedWriter(propFile.toPath(), StandardCharsets.UTF_8)) {
       stockProps.store(out, null);
     }
     addConfFiles(propFile.toPath().getParent().resolve("conf"));
