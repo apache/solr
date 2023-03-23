@@ -877,76 +877,43 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
-    ModifiableSolrParams params;
-    String metricName;
-    GenericSolrRequest req;
+    String indexSizeMetricName =
+        "solr.core."
+            + collection
+            + "."
+            + shard
+            + "."
+            + Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName())
+            + ":INDEX.sizeInBytes";
+    String freeDiskSpaceMetricName = "solr.node:CONTAINER.fs.usableSpace";
+
+    ModifiableSolrParams params =
+        new ModifiableSolrParams()
+            .add("key", indexSizeMetricName)
+            .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp;
-
-    metricName =
-        new StringBuilder("solr.core.")
-            .append(collection)
-            .append(".")
-            .append(shard)
-            .append(".")
-            .append(Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName()))
-            .append(":INDEX.sizeInBytes")
-            .toString();
-
-    params = new ModifiableSolrParams();
-    params.add("key", metricName);
-
-    req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
     try {
-      rsp = cloudManager.request(req);
+      rsp =
+          cloudManager.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
     } catch (Exception e) {
       log.error("Error occurred while checking the disk space of the node");
       return;
     }
-
     if (rsp.getResponse() == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
 
     NamedList<Object> response = rsp.getResponse();
-    Object value = response.findRecursive("metrics", metricName);
-    if (value == null) {
-      log.warn("cannot verify information for parent shard leader");
-      return;
-    }
-
-    Number size = (Number) value;
+    Number size = (Number) response.findRecursive("metrics", indexSizeMetricName);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    metricName = "solr.node:CONTAINER.fs.usableSpace";
-    params = new ModifiableSolrParams();
-    params.add("key", metricName);
-
-    req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
-    try {
-      rsp = cloudManager.request(req);
-    } catch (Exception e) {
-      log.error("Error occurred while checking the disk space of the node");
-      return;
-    }
-
-    if (rsp.getResponse() == null) {
-      log.warn("cannot verify information for parent shard leader");
-      return;
-    }
-
-    response = rsp.getResponse();
-    value = response.findRecursive("metrics", metricName);
-    if (value == null) {
-      log.warn("cannot verify information for parent shard leader");
-      return;
-    }
-
-    Number freeSize = (Number) value;
+    Number freeSize = (Number) response.findRecursive("metrics", freeDiskSpaceMetricName);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
