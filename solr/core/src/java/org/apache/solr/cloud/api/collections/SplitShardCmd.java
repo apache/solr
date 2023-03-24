@@ -28,6 +28,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -872,48 +873,32 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       Replica parentShardLeader,
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
-      throws SolrException {
+      throws SolrException, IOException {
 
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
+    String replicaName = Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName());
     String indexSizeMetricName =
-        "solr.core."
-            + collection
-            + "."
-            + shard
-            + "."
-            + Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName())
-            + ":INDEX.sizeInBytes";
+        "solr.core." + collection + "." + shard + "." + replicaName + ":INDEX.sizeInBytes";
     String freeDiskSpaceMetricName = "solr.node:CONTAINER.fs.usableSpace";
 
     ModifiableSolrParams params =
         new ModifiableSolrParams()
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
-    SolrResponse rsp;
-    try {
-      rsp =
-          cloudManager.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
-    } catch (Exception e) {
-      log.error("Error occurred while checking the disk space of the node");
-      return;
-    }
-    if (rsp.getResponse() == null) {
-      log.warn("cannot verify information for parent shard leader");
-      return;
-    }
+    SolrResponse rsp =
+        cloudManager.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
 
-    NamedList<Object> response = rsp.getResponse();
-    Number size = (Number) response.findRecursive("metrics", indexSizeMetricName);
+    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) response.findRecursive("metrics", freeDiskSpaceMetricName);
+    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
