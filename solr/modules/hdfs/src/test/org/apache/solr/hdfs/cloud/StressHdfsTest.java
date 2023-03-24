@@ -175,7 +175,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
       assertNotNull(replica.getProperties().toString(), replica.get("ulogDir"));
     }
 
-    CloudSolrClient solrClient = this.getSolrClientForCollection(DELETE_DATA_DIR_COLLECTION);
+    CloudSolrClient solrClient = this.getSolrClient(DELETE_DATA_DIR_COLLECTION);
 
     ZkStateReader.from(solrClient).forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     for (int i = 1; i < nShards + 1; i++) {

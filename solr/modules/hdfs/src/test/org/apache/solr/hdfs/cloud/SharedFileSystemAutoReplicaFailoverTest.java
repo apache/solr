@@ -310,7 +310,7 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
         fail("expected: " + expectedResultSize + ", actual: " + actualResultSize);
       }
       SolrParams queryAll = new SolrQuery("*:*");
-      CloudSolrClient solrClient = this.getSolrClientForCollection(collection);
+      CloudSolrClient solrClient = this.getSolrClient(collection);
       try {
         QueryResponse queryResponse = solrClient.query(queryAll);
         actualResultSize = queryResponse.getResults().getNumFound();
@@ -328,7 +328,7 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private void addDocs(String collection, int numDocs, boolean commit)
       throws SolrServerException, IOException {
-    CloudSolrClient solrClient = this.getSolrClientForCollection(collection);
+    CloudSolrClient solrClient = this.getSolrClient(collection);
     for (int docId = 1; docId <= numDocs; docId++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docId);

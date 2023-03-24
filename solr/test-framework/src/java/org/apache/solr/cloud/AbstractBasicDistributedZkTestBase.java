@@ -1590,17 +1590,17 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     indexDoc("collection2", getDoc(id, "10000001"));
     indexDoc("collection2", getDoc(id, "10000003"));
 
-    getSolrClientForCollection("collection2").add(getDoc(id, "10000004"));
+    getSolrClient("collection2").add(getDoc(id, "10000004"));
 
     indexDoc("collection3", getDoc(id, "20000000"));
     indexDoc("collection3", getDoc(id, "20000001"));
 
-    getSolrClientForCollection("collection3").add(getDoc(id, "10000005"));
+    getSolrClient("collection3").add(getDoc(id, "10000005"));
 
     otherCollectionClients.get("collection2").get(0).commit();
     otherCollectionClients.get("collection3").get(0).commit();
 
-    SolrClient clientForCollection1 = getSolrClientForCollection("collection1");
+    SolrClient clientForCollection1 = getSolrClient("collection1");
     long collection1Docs =
         clientForCollection1.query(new SolrQuery("*:*")).getResults().getNumFound();
 

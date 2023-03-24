@@ -2295,7 +2295,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return commonCloudSolrClient;
   }
 
-  protected CloudSolrClient getSolrClientForCollection(String collectionName) {
+  protected CloudSolrClient getSolrClient(String collectionName) {
     return solrClientByCollection.computeIfAbsent(
         collectionName,
         k -> {
