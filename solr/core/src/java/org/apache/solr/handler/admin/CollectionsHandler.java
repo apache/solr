@@ -53,6 +53,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
@@ -79,6 +80,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DISTRIBUTEDAPIPROCESSING;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.FORCELEADER;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LISTALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LISTBACKUP;
@@ -217,6 +219,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
@@ -1545,6 +1548,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           copyPropertiesWithPrefix(req.getParams(), params, PROPERTY_PREFIX);
           return params;
         }),
+    INSTALLSHARDDATA_OP(
+        INSTALLSHARDDATA,
+        (req, rsp, h) -> {
+          req.getParams().required().check(COLLECTION, SHARD);
+          final String collectionName = req.getParams().get(COLLECTION);
+          final String shardName = req.getParams().get(SHARD);
+          final InstallShardDataAPI.InstallShardRequestBody reqBody =
+              new InstallShardDataAPI.InstallShardRequestBody();
+          reqBody.asyncId = req.getParams().get(ASYNC);
+          reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
+          reqBody.location = req.getParams().get(BACKUP_LOCATION);
+
+          final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse installResponse =
+              installApi.installShardData(collectionName, shardName, reqBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
+          return null;
+        }),
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
@@ -2089,6 +2110,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteAliasAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
+        InstallShardDataAPI.class,
         ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
         CollectionPropertyAPI.class,

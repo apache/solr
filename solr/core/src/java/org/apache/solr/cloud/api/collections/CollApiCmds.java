@@ -47,6 +47,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
@@ -144,6 +145,7 @@ public class CollApiCmds {
               Map.entry(DELETENODE, new DeleteNodeCmd(ccc)),
               Map.entry(BACKUP, new BackupCmd(ccc)),
               Map.entry(RESTORE, new RestoreCmd(ccc)),
+              Map.entry(INSTALLSHARDDATA, new InstallShardDataCmd(ccc)),
               Map.entry(DELETEBACKUP, new DeleteBackupCmd(ccc)),
               Map.entry(CREATESNAPSHOT, new CreateSnapshotCmd(ccc)),
               Map.entry(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc)),
