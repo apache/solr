@@ -42,7 +42,9 @@ Other Changes
 
 New Features
 ---------------------
-(No changes)
+* Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
+  them into SolrCloud shards.  The API is available at `POST /api/collections/collName/shards/shardName/install`
+  (v2), or at `GET /solr/admin/collections?action=INSTALLSHARD` (v1). (Jason Gerlowski)
 
 Improvements
 ---------------------
