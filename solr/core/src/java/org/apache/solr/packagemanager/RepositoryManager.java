@@ -155,7 +155,7 @@ public class RepositoryManager {
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
       return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), StandardCharsets.UTF_8);
     }
     return "[]";
   }
