@@ -279,7 +279,7 @@ public final class CommitTracker implements Runnable {
 
       core.getUpdateHandler().commit(command);
     } catch (Exception e) {
-      SolrException.log(log, "auto commit error...", e);
+      SolrException.log(log, name + " auto commit error...", e);
     } finally {
       MDCLoggingContext.clear();
     }

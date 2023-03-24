@@ -62,6 +62,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -2436,6 +2437,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (isClosed()) {
           newSearcher.decref(); // once for caller since we're not returning it
           newSearcher.decref(); // once for ourselves since it won't be "replaced"
+          seenOpenNewSearcherCalledOnClosedCoreError.set(true);
           throw new SolrException(ErrorCode.SERVER_ERROR, "openNewSearcher called on closed core");
         }
 
@@ -2457,6 +2459,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
     }
   }
+  public static final AtomicBoolean seenOpenNewSearcherCalledOnClosedCoreError = new AtomicBoolean(false);
 
   /**
    * Get a {@link SolrIndexSearcher} or start the process of creating a new one.
