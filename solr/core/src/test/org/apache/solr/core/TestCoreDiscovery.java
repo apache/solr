@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -64,8 +63,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           xmlStr.replace(
               "<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
     }
-    File tmpFile = new File(solrHomeDirectory.toFile(), SolrXmlConfig.SOLR_XML_FILE);
-    FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
+    Path tmpFile = solrHomeDirectory.resolve(SolrXmlConfig.SOLR_XML_FILE);
+    Files.writeString(tmpFile, xmlStr, StandardCharsets.UTF_8);
   }
 
   private void setMeUp() throws Exception {
