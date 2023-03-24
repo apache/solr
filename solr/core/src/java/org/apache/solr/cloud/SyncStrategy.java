@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -365,8 +366,8 @@ public class SyncStrategy {
               try (SolrClient client =
                   new HttpSolrClient.Builder(baseUrl)
                       .withHttpClient(SyncStrategy.this.client)
-                      .withConnectionTimeout(30000)
-                      .withSocketTimeout(120000)
+                      .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
                       .build()) {
                 client.request(recoverRequestCmd);
               } catch (Throwable t) {

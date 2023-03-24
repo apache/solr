@@ -18,9 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -305,6 +302,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient threadedClient =
         new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .sendUpdatesOnlyToShardLeaders()
             .withParallelUpdates(true)
             .build()) {
       threadedClient.setDefaultCollection("routing_collection");
@@ -338,7 +336,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
-    Map<String, Long> requestCountsMap = Maps.newHashMap();
+    Map<String, Long> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
@@ -349,7 +347,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Collect the base URLs of the replicas of shard that's expected to be hit
     DocRouter router = col.getRouter();
     Collection<Slice> expectedSlices = router.getSearchSlicesSingle("0", null, col);
-    Set<String> expectedBaseURLs = Sets.newHashSet();
+    Set<String> expectedBaseURLs = new HashSet<>();
     for (Slice expectedSlice : expectedSlices) {
       for (Replica replica : expectedSlice.getReplicas()) {
         expectedBaseURLs.add(replica.getBaseUrl());
@@ -372,7 +370,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
 
     List<Slice> expectedSlicesList = List.copyOf(expectedSlices);
-    List<String> sameShardRoutes = Lists.newArrayList();
+    List<String> sameShardRoutes = new ArrayList<>();
     sameShardRoutes.add("0");
     for (int i = 1; i < n; i++) {
       String shardKey = Integer.toString(i);
@@ -400,7 +398,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // no increase in unexpected nodes.
     long increaseFromExpectedUrls = 0;
     long increaseFromUnexpectedUrls = 0;
-    Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
+    Map<String, Long> numRequestsToUnexpectedUrls = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();

@@ -17,9 +17,10 @@
 
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
@@ -35,7 +36,8 @@ public class TestDelegationTokenResponse extends SolrTestCase {
       throws Exception {
     ResponseParser parser = request.getResponseParser();
     response.setResponse(
-        parser.processResponse(IOUtils.toInputStream(responseBody, "UTF-8"), "UTF-8"));
+        parser.processResponse(
+            new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)), "UTF-8"));
   }
 
   private String getNestedMapJson(String outerKey, String innerKey, Object innerValue) {

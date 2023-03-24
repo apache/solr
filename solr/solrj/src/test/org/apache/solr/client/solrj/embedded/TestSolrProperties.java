@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -27,18 +26,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * @since solr 1.3
- */
+/** Test properties in configuration files. */
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, null);
-  }
 
   @Test
   public void testProperties() throws Exception {

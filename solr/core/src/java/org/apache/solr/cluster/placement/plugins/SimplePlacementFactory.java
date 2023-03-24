@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +36,7 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Factory for creating {@link SimplePlacementPlugin}, a placement plugin implementing the logic
@@ -67,7 +67,7 @@ public class SimplePlacementFactory
         }
 
         Set<ReplicaPlacement> replicaPlacements =
-            new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+            CollectionUtil.newHashSet(totalReplicasPerShard * request.getShardNames().size());
 
         Collection<ReplicaCount> replicaCounts = nodeVsShardCount.values();
 

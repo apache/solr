@@ -55,14 +55,14 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testSingleHost() throws Exception {
     AllowListUrlChecker checker = new AllowListUrlChecker(urls("http://abc-1.com:8983/solr"));
-    checker.checkAllowList(urls("http://abc-1.com:8983/solr"));
+    checker.checkAllowList(urls("http://Abc-1.Com:8983/solr"));
   }
 
   @Test
   public void testMultipleHosts() throws Exception {
     AllowListUrlChecker checker =
         new AllowListUrlChecker(
-            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
+            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://ABC-3.com:8983"));
     checker.checkAllowList(
         urls(
             "http://abc-3.com:8983/solr",

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -189,10 +191,10 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   private Http2SolrClient.Builder getHttp2SolrClientBuilder(
-      String url, int connectionTimeOut, int socketTimeout) {
+      String url, int connectionTimeout, int socketTimeout) {
     return new Http2SolrClient.Builder(url)
-        .connectionTimeout(connectionTimeOut)
-        .idleTimeout(socketTimeout);
+        .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
   }
 
   @Test
@@ -229,7 +231,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     try (Http2SolrClient client =
         getHttp2SolrClientBuilder(
                 jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
-            .requestTimeout(500)
+            .withRequestTimeout(500, TimeUnit.MILLISECONDS)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
@@ -260,6 +262,37 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
         assertEquals("Unexpected exception status code", status, e.code());
+      }
+    } finally {
+      DebugServlet.clear();
+    }
+  }
+
+  /**
+   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
+   * even when not on the list of ErrorCodes solr may return.
+   */
+  @Test
+  public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
+    final int status = 527;
+    assertEquals(
+        status
+            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
+        SolrException.ErrorCode.UNKNOWN,
+        SolrException.ErrorCode.getErrorCode(status));
+
+    try (Http2SolrClient client = getHttp2SolrClient(null)) {
+      DebugServlet.setErrorCode(status);
+      try {
+        // if client base url is null, request url will be used in exception message
+        SolrPing ping = new SolrPing();
+        ping.setBasePath(jetty.getBaseUrl().toString() + "/debug/foo");
+        client.request(ping);
+
+        fail("Didn't get excepted exception from oversided request");
+      } catch (SolrException e) {
+        assertEquals("Unexpected exception status code", status, e.code());
+        assertTrue(e.getMessage().contains(jetty.getBaseUrl().toString()));
       }
     } finally {
       DebugServlet.clear();
@@ -723,15 +756,37 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testGetDefaultSslContextFactory() {
-    assertNull(Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
+    assertEquals(
+        "HTTPS",
+        Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory.getKeyStoreType());
     assertEquals("bar", sslContextFactory.getTrustStoreType());
+    System.clearProperty("javax.net.ssl.keyStoreType");
+    System.clearProperty("javax.net.ssl.trustStoreType");
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "true");
+    System.setProperty("javax.net.ssl.keyStoreType", "foo");
+    System.setProperty("javax.net.ssl.trustStoreType", "bar");
+    SslContextFactory.Client sslContextFactory2 = Http2SolrClient.getDefaultSslContextFactory();
+    assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
+    assertEquals("foo", sslContextFactory2.getKeyStoreType());
+    assertEquals("bar", sslContextFactory2.getTrustStoreType());
+    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("javax.net.ssl.keyStoreType");
+    System.clearProperty("javax.net.ssl.trustStoreType");
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "false");
+    System.setProperty("javax.net.ssl.keyStoreType", "foo");
+    System.setProperty("javax.net.ssl.trustStoreType", "bar");
+    SslContextFactory.Client sslContextFactory3 = Http2SolrClient.getDefaultSslContextFactory();
+    assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
+    assertEquals("foo", sslContextFactory3.getKeyStoreType());
+    assertEquals("bar", sslContextFactory3.getTrustStoreType());
     System.clearProperty("solr.jetty.ssl.verifyClientHostName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.io.FileUtils;
 import org.apache.jute.InputArchive;
@@ -112,15 +112,15 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
-    final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
+    final Map<String, String> oldProps = Map.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
     SolrZkClient zkClient =
-        new SolrZkClient(
-            solrCluster.getZkServer().getZkAddress(),
-            AbstractZkTestCase.TIMEOUT,
-            AbstractZkTestCase.TIMEOUT,
-            null);
+        new SolrZkClient.Builder()
+            .withUrl(solrCluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     try {
 
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));

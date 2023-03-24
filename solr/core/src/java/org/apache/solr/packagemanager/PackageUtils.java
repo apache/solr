@@ -25,12 +25,12 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -132,7 +132,7 @@ public class PackageUtils {
       try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
         ZipEntry entry = zipFile.getEntry(filename);
         if (entry == null) continue;
-        return IOUtils.toString(zipFile.getInputStream(entry), "UTF-8");
+        return new String(zipFile.getInputStream(entry).readAllBytes(), StandardCharsets.UTF_8);
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, ex);
       }
@@ -149,7 +149,7 @@ public class PackageUtils {
             ErrorCode.NOT_FOUND,
             "Error (code=" + resp.getStatusLine().getStatusCode() + ") fetching from URL: " + url);
       }
-      return IOUtils.toString(resp.getEntity().getContent(), "UTF-8");
+      return new String(resp.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
     } catch (UnsupportedOperationException | IOException e) {
       throw new RuntimeException(e);
     }

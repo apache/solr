@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
@@ -97,13 +98,20 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
         AllAndReadonlyCredentialZkCredentialsInjector.class.getName());
 
     SolrZkClient zkClient =
-        new SolrZkClient(
-            zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
 
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.create(
         "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath(
@@ -118,7 +126,11 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     clearSecuritySystemProperties();
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     // Currently, no credentials on ZK connection, because those same VM-params are used for adding
     // ACLs, and here we want
     // no (or completely open) ACLs added. Therefore, hack your way into being authorized for
@@ -262,7 +274,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
       setUp();
       testZkCredentialsInjector.setSystemProps();
       try (SolrZkClient zkClient =
-          new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+          new SolrZkClient.Builder()
+              .withUrl(zkServer.getZkAddress())
+              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
         doTest(
             zkClient,
             getData,
@@ -283,7 +298,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   public void testRepairACL() throws Exception {
     clearSecuritySystemProperties();
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       // Currently, no credentials on ZK connection, because those same VM-params are used for
       // adding ACLs, and here we want
       // no (or completely open) ACLs added. Therefore, hack your way into being authorized for
@@ -302,7 +320,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
 
     setSecuritySystemProperties();
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       ZkController.createClusterZkNodes(zkClient);
       assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
     }
@@ -310,7 +331,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     useZkCredentialsInjector(ConnectWithReadonlyCredsInjector.class);
     // useReadonlyCredentials();
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       NoAuthException e =
           assertThrows(
               NoAuthException.class, () -> zkClient.getData("/security.json", null, null, false));
@@ -419,7 +443,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     useVMParamsAllCredentialsFromFile();
 
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       doTest(zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -429,7 +456,10 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     useVMParamsReadonlyCredentialsFromFile();
 
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       doTest(zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }

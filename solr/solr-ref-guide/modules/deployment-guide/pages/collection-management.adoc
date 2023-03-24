@@ -703,23 +703,28 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techprod
 ====
 [.tab-label]*V2 API*
 
+To create or update a collection property:
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/foo -H 'Content-Type: application/json' -d '
   {
-    "set-collection-property": {
-      "name": "foo",
-      "value": "bar"
-    }
+    "value": "bar"
   }
 '
+----
+
+To delete an existing collection property:
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
 ----
 ====
 --
 
 === COLLECTIONPROP Parameters
 
-`name`::
+`name` (v1)::
 +
 [%autowidth,frame=none]
 |===
@@ -727,8 +732,9 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection for which the property would be set.
+Appears in the path of v2 requests.
 
-`propertyName` (v1), `name` (v2)::
+`propertyName` (v1)::
 +
 [%autowidth,frame=none]
 |===
@@ -736,6 +742,7 @@ The name of the collection for which the property would be set.
 |===
 +
 The name of the property.
+Appears in the path of v2 requests.
 
 `propertyValue` (v1), `value` (v2)::
 +
@@ -745,7 +752,7 @@ The name of the property.
 |===
 +
 The value of the property.
-When not provided, the property is deleted.
+When not provided in v1 requests, the property is deleted.
 
 === COLLECTIONPROP Response
 

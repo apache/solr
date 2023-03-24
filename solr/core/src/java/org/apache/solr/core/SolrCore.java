@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import java.io.Closeable;
 import java.io.File;
@@ -53,6 +52,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -107,6 +109,7 @@ import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -1135,8 +1138,23 @@ public class SolrCore implements SolrInfoBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-      jerseyAppHandler =
-          new ApplicationHandler(reqHandlers.getRequestHandlers().getJerseyEndpoints());
+      if (V2ApiUtils.isEnabled()) {
+        final String effectiveConfigSetId = configSet.getName() + "-" + solrConfig.effectiveId();
+        jerseyAppHandler =
+            coreContainer
+                .getJerseyAppHandlerCache()
+                .computeIfAbsent(
+                    effectiveConfigSetId,
+                    () -> {
+                      log.debug(
+                          "Creating Jersey ApplicationHandler for 'effective solrConfig' [{}]",
+                          effectiveConfigSetId);
+                      return new ApplicationHandler(
+                          reqHandlers.getRequestHandlers().getJerseyEndpoints());
+                    });
+      } else {
+        jerseyAppHandler = null;
+      }
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -2921,7 +2939,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
             @Override
             public Iterator<String> getParameterNamesIterator() {
-              return Iterators.filter(params.getParameterNamesIterator(), lpSet::contains);
+              return StreamSupport.stream(
+                      Spliterators.spliteratorUnknownSize(
+                          params.getParameterNamesIterator(), Spliterator.ORDERED),
+                      false)
+                  .filter(lpSet::contains)
+                  .iterator();
             }
 
             @Override
@@ -3387,8 +3410,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
         if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown())
           return;
         cfg = solrCore.getSolrConfig();
-        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
+        solrConfigversion = solrCore.getSolrConfig().getZnodeVersion();
+        overlayVersion = solrCore.getSolrConfig().getOverlay().getVersion();
         if (managedSchmaResourcePath != null) {
           managedSchemaVersion =
               ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
@@ -3397,8 +3420,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       if (cfg != null) {
         cfg.refreshRequestParams();
       }
-      if (checkStale(zkClient, overlayPath, solrConfigversion)
-          || checkStale(zkClient, solrConfigPath, overlayVersion)
+      if (checkStale(zkClient, overlayPath, overlayVersion)
+          || checkStale(zkClient, solrConfigPath, solrConfigversion)
           || checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
         SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));

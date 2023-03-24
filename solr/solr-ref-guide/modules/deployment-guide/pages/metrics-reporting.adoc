@@ -310,6 +310,23 @@ complex objects:
 </metrics>
 ----
 
+=== Caching Threads Metrics ===
+The threads metrics in the JVM group can be expensive to compute, as it requires traversing all threads. 
+This can be avoided for every call to the metrics API (group=jvm) by setting a high caching expiration interval
+(in seconds). For example, to cache the thread metrics for 5 seconds:
+
+[source,xml]
+----
+<solr>
+ <metrics>
+  <caching>
+   <int name="threadsIntervalSeconds">5</int>
+  </caching>
+  ...
+ </metrics>
+...
+</solr>
+----
 
 == Reporters
 

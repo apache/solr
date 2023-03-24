@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.base.Strings;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -38,13 +37,13 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -133,7 +132,7 @@ public class SolrXmlConfig {
 
     NamedList<Object> entries = readNodeListAsNamedList(root, "<solr>");
     String nodeName = (String) entries.remove("nodeName");
-    if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
+    if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
     // It should goes inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
@@ -168,8 +167,6 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setSolrCoreCacheFactoryConfig(
-        getPluginInfo(root.get("transientCoreCacheFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -230,7 +227,7 @@ public class SolrXmlConfig {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
+      byte[] buf = is.readAllBytes();
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
@@ -380,6 +377,7 @@ public class SolrXmlConfig {
                 builder.setReplayUpdatesThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
+                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));
                 break;
               case "allowUrls":
@@ -401,14 +399,14 @@ public class SolrXmlConfig {
   }
 
   private static List<String> separateStrings(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptyList();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
@@ -559,6 +557,12 @@ public class SolrXmlConfig {
         case "distributedCollectionConfigSetExecution":
           builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
           break;
+        case "minStateByteLenForCompression":
+          builder.setMinStateByteLenForCompression(parseInt(name, value));
+          break;
+        case "stateCompressor":
+          builder.setStateCompressorClass(value);
+          break;
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -656,6 +660,17 @@ public class SolrXmlConfig {
       builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
       builder.setNullString(decodeNullValue(missingValues.get("nullString")));
       builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
+    }
+
+    ConfigNode caching = metrics.get("solr/metrics/caching");
+    if (caching != null) {
+      Object threadsCachingIntervalSeconds =
+          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+      builder.setCacheConfig(
+          new MetricsConfig.CacheConfig(
+              threadsCachingIntervalSeconds == null
+                  ? null
+                  : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
     }
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);

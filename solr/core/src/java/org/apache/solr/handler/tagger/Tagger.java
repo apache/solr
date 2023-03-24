@@ -24,7 +24,6 @@ package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -34,6 +33,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +86,7 @@ public abstract class Tagger {
   }
 
   public void enableDocIdsCache(int initSize) {
-    if (initSize > 0) docIdsCache = new HashMap<>(initSize);
+    if (initSize > 0) docIdsCache = CollectionUtil.newHashMap(initSize);
   }
 
   public void process() throws IOException {

@@ -74,7 +74,7 @@ Hence, the range of valid values for this parameter is [50, 95], both inclusive.
 
 Consider the following example:
 
-JVM has been allocated a maximum heap of 5GB (-Xmx) and `memoryCircuitBreakerThresholdPct` is set to `75`.
+JVM has been allocated a maximum heap of 5GB (-Xmx) and `memThreshold` is set to `75`.
 In this scenario, the heap usage at which the circuit breaker will trip is 3.75GB.
 
 

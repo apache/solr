@@ -17,9 +17,9 @@
 package org.apache.solr.util;
 
 import com.google.common.collect.ForwardingMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Wraps another map, keeping track of each key that was seen via {@link #get(Object)} or {@link
@@ -32,7 +32,7 @@ public class MapListener<K, V> extends ForwardingMap<K, V> {
 
   public MapListener(Map<K, V> target) {
     this.target = target;
-    seenKeys = new HashSet<>(target.size());
+    seenKeys = CollectionUtil.newHashSet(target.size());
   }
 
   public Set<K> getSeenKeys() {

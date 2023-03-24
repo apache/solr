@@ -19,7 +19,6 @@ package org.apache.solr.packagemanager;
 
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
-import com.google.common.base.Strings;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import java.io.Closeable;
@@ -35,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
@@ -52,6 +52,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
@@ -79,7 +80,11 @@ public class PackageManager implements Closeable {
   public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
-    this.zkClient = new SolrZkClient(zkHost, 30000);
+    this.zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build();
     log.info("Done initializing a zkClient instance...");
   }
 
@@ -246,7 +251,7 @@ public class PackageManager implements Closeable {
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packages.keySet()) {
-      if (Strings.isNullOrEmpty(packageName) == false
+      if (StrUtils.isNullOrEmpty(packageName) == false
           && // There can be an empty key, storing the version here
           packages.get(packageName)
               != null) { // null means the package was undeployed from this package before
@@ -307,7 +312,7 @@ public class PackageManager implements Closeable {
     }
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packageVersions.keySet()) {
-      if (Strings.isNullOrEmpty(packageName) == false
+      if (StrUtils.isNullOrEmpty(packageName) == false
           && // There can be an empty key, storing the version here
           packageVersions.get(packageName)
               != null) { // null means the package was undeployed from this package before
@@ -484,7 +489,7 @@ public class PackageManager implements Closeable {
                   plugin.name);
 
           Command cmd = plugin.setupCommand;
-          if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -639,7 +644,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.setupCommand;
-        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -762,7 +767,7 @@ public class PackageManager implements Closeable {
     boolean success = true;
     for (Plugin plugin : pkg.plugins) {
       Command cmd = plugin.verifyCommand;
-      if (plugin.verifyCommand != null && !Strings.isNullOrEmpty(cmd.path)) {
+      if (plugin.verifyCommand != null && !StrUtils.isNullOrEmpty(cmd.path)) {
         if ("cluster".equalsIgnoreCase(plugin.type)) {
           if (!shouldDeployClusterPlugins) continue; // Plugins of type "cluster"
           Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -996,7 +1001,7 @@ public class PackageManager implements Closeable {
                   "plugin-name",
                   plugin.name);
           Command cmd = plugin.uninstallCommand;
-          if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -1052,7 +1057,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.uninstallCommand;
-        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               String payload =

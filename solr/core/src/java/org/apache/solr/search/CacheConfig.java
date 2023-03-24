@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -82,7 +83,7 @@ public class CacheConfig implements MapSerializable {
   public static Map<String, CacheConfig> getMultipleConfigs(
       SolrConfig solrConfig, String configPath, List<ConfigNode> nodes) {
     if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
-    Map<String, CacheConfig> result = new HashMap<>(nodes.size());
+    Map<String, CacheConfig> result = CollectionUtil.newHashMap(nodes.size());
     for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
         CacheConfig config =
@@ -107,7 +108,7 @@ public class CacheConfig implements MapSerializable {
       SolrConfig solrConfig, String nodeName, Map<String, String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
-    Map<String, String> attrsCopy = new LinkedHashMap<>(attrs.size());
+    Map<String, String> attrsCopy = CollectionUtil.newLinkedHashMap(attrs.size());
     for (Map.Entry<String, String> e : attrs.entrySet()) {
       attrsCopy.put(e.getKey(), String.valueOf(e.getValue()));
     }

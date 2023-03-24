@@ -41,6 +41,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -163,7 +164,7 @@ public class FacetComponent extends SearchComponent {
 
       String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
       if (queries != null) {
-        facetQueries = new ArrayList<>();
+        facetQueries = new ArrayList<>(queries.length);
         for (String query : queries) {
           facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
         }
@@ -277,7 +278,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (!ArrayUtils.isEmpty(pivots)) {
+      if (ArrayUtils.isNotEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
@@ -1435,7 +1436,7 @@ public class FacetComponent extends SearchComponent {
     public long[] missingMax;
     // a bitset for each shard, keeping track of which terms seen
     public FixedBitSet[] counted;
-    public HashMap<String, ShardFacetCount> counts = new HashMap<>(128);
+    public HashMap<String, ShardFacetCount> counts = CollectionUtil.newHashMap(128);
     public int termNum;
 
     public int initialLimit; // how many terms requested in first phase

@@ -40,6 +40,8 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
@@ -76,6 +78,5 @@ dependencies {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation 'org.apache.commons:commons-lang3'
-  testImplementation 'com.google.guava:guava'
   testImplementation 'io.dropwizard.metrics:metrics-core'
 }

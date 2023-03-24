@@ -85,13 +85,13 @@ Please see xref:taking-solr-to-production.adoc#zookeeper-chroot[ZooKeeper chroot
 
 There are certain configuration files containing cluster wide configuration.
 Since some of these are crucial for the cluster to function properly, you may need to upload such files to ZooKeeper before starting your Solr cluster for the first time.
-Examples of such configuration files (not exhaustive) are `solr.xml`, `security.json` and `clusterprops.json`.
+Examples of such configuration files (not exhaustive) are `security.json` and `clusterprops.json`.
 
-If you for example would like to keep your `solr.xml` in ZooKeeper to avoid having to copy it to every node's `solr_home` directory, you can push it to ZooKeeper with the bin/solr utility (Unix example):
+If you for example would like to enable authentication, you can push your `security.json` file to ZooKeeper with the bin/solr utility (Unix example):
 
 [source,bash]
 ----
-bin/solr zk cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
+bin/solr zk cp file:local/file/path/to/security.json zk:/security.json -z localhost:2181
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files,Updating Solr Include Files>>) you can omit `-z <zk host string>` from the above command.
