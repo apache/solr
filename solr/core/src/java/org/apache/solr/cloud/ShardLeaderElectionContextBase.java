@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -111,10 +110,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               "Removing leader registration node on cancel: {} {}",
               leaderPath,
               leaderZkNodeParentVersion);
-          List<Op> ops = new ArrayList<>(2);
           String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
-          ops.add(Op.check(parent, leaderZkNodeParentVersion));
-          ops.add(Op.delete(leaderPath, -1));
+          List<Op> ops =
+              List.of(Op.check(parent, leaderZkNodeParentVersion), Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (InterruptedException e) {
           throw e;

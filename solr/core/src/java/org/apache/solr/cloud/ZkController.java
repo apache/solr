@@ -1217,7 +1217,8 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+    List<Op> ops = new ArrayList<>(roles.size() + 1);
     ops.add(
         Op.create(
             nodePath,
@@ -1226,16 +1227,14 @@ public class ZkController implements Closeable {
             CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-    cc.nodeRoles
-        .getRoles()
-        .forEach(
-            (role, mode) ->
-                ops.add(
-                    Op.create(
-                        NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
-                        null,
-                        zkClient.getZkACLProvider().getACLsToAdd(nodePath),
-                        CreateMode.EPHEMERAL)));
+    roles.forEach(
+        (role, mode) ->
+            ops.add(
+                Op.create(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
+                    null,
+                    zkClient.getZkACLProvider().getACLsToAdd(nodePath),
+                    CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);
   }
@@ -1247,8 +1246,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
-    ops.add(Op.delete(nodePath, -1));
+    List<Op> ops = List.of(Op.delete(nodePath, -1));
 
     try {
       zkClient.multi(ops, true);
@@ -2947,7 +2945,7 @@ public class ZkController implements Closeable {
               && processedCollections.add(collName)
               && (coll = zkStateReader.getCollection(collName)) != null
               && coll.isPerReplicaState()) {
-            final List<String> replicasToDown = new ArrayList<>();
+            final List<String> replicasToDown = new ArrayList<>(coll.getSlicesMap().size());
             coll.forEachReplica(
                 (s, replica) -> {
                   if (replica.getNodeName().equals(nodeName)) {
