@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -58,7 +57,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -187,10 +185,6 @@ public class ZkStateReader implements SolrCloseable {
   private volatile SortedSet<String> liveNodes = emptySortedSet();
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
-
-  private ConfigData securityData;
-
-  private final Runnable securityNodeListener;
 
   /**
    * Collections with active watches. The {@link StatefulCollectionWatch} inside for each collection
@@ -398,6 +392,7 @@ public class ZkStateReader implements SolrCloseable {
   private volatile boolean closed = false;
 
   private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
+  private final SecurityNodeWatcher securityNodeWatcher;
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -406,7 +401,7 @@ public class ZkStateReader implements SolrCloseable {
   public ZkStateReader(SolrZkClient zkClient, Runnable securityNodeListener) {
     this.zkClient = zkClient;
     this.closeClient = false;
-    this.securityNodeListener = securityNodeListener;
+    this.securityNodeWatcher = new SecurityNodeWatcher(this, securityNodeListener);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -434,7 +429,7 @@ public class ZkStateReader implements SolrCloseable {
                 })
             .build();
     this.closeClient = true;
-    this.securityNodeListener = null;
+    this.securityNodeWatcher = null;
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -570,19 +565,8 @@ public class ZkStateReader implements SolrCloseable {
       refreshCollectionList(new CollectionsChildWatcher());
       refreshAliases(aliasesManager);
 
-      if (securityNodeListener != null) {
-        addSecurityNodeWatcher(
-            pair -> {
-              ConfigData cd = new ConfigData();
-              cd.data =
-                  pair.first() == null || pair.first().length == 0
-                      ? emptyMap()
-                      : Utils.getDeepCopy((Map) Utils.fromJSON(pair.first()), 4, false);
-              cd.version = pair.second() == null ? -1 : pair.second().getVersion();
-              securityData = cd;
-              securityNodeListener.run();
-            });
-        securityData = getSecurityProps(true);
+      if (securityNodeWatcher != null) {
+        securityNodeWatcher.register();
       }
 
       collectionPropsObservers.forEach(
@@ -599,11 +583,6 @@ public class ZkStateReader implements SolrCloseable {
               + nne.getPath()
               + "' does not exist.");
     }
-  }
-
-  private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)
-      throws KeeperException, InterruptedException {
-    zkClient.exists(SOLR_SECURITY_CONF_PATH, new SecurityNodeWatcher(this, callback), true);
   }
 
   /**
@@ -1320,28 +1299,9 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the content of /security.json from ZooKeeper as a Map If the files doesn't exist, it
    * returns null.
    */
-  @SuppressWarnings("unchecked")
   public ConfigData getSecurityProps(boolean getFresh) {
-    if (!getFresh) {
-      if (securityData == null) return new ConfigData(emptyMap(), -1);
-      return new ConfigData(securityData.data, securityData.version);
-    }
-    try {
-      Stat stat = new Stat();
-      if (getZkClient().exists(SOLR_SECURITY_CONF_PATH, true)) {
-        final byte[] data =
-            getZkClient().getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, stat, true);
-        return data != null && data.length > 0
-            ? new ConfigData((Map<String, Object>) Utils.fromJSON(data), stat.getVersion())
-            : null;
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading security properties", e);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading security properties", e);
-    }
-    return null;
+    if (securityNodeWatcher == null) return new ConfigData(emptyMap(), -1);
+    return securityNodeWatcher.getSecurityProps(getFresh);
   }
 
   /**
