@@ -64,7 +64,6 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static final String INSTALL_DATA_BASE_LOCATION = "/";
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
 
   private static long docsSeed; // see indexDocs()
@@ -86,7 +85,6 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     final int numShards = random().nextInt(3) + 2;
     multiShardUris = new URI[numShards];
     replicasPerShard = random().nextInt(3) + 1;
-    // replicasPerShard = 1;
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     // Create collections and index docs
