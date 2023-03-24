@@ -186,20 +186,21 @@ public class DenseVectorField extends FloatPointField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     try {
       ArrayList<IndexableField> fields = new ArrayList<>();
-      VectorParser vectorValue = getVectorParser(value);
+      VectorBuilder vectorBuilder = getVectorBuilder(value);
 
       if (field.indexed()) {
-        fields.add(createField(field, vectorValue));
+        fields.add(createField(field, vectorBuilder));
       }
       if (field.stored()) {
         switch (vectorEncoding) {
           case FLOAT32:
-            for (float vectorElement : vectorValue.getFloatVector()) {
+            fields.ensureCapacity(vectorBuilder.getFloatVector().length + 1);
+            for (float vectorElement : vectorBuilder.getFloatVector()) {
               fields.add(getStoredField(field, vectorElement));
             }
             break;
           case BYTE:
-            fields.add(new StoredField(field.getName(), vectorValue.getByteVector()));
+            fields.add(new StoredField(field.getName(), vectorBuilder.getByteVector()));
             break;
         }
       }
@@ -219,14 +220,14 @@ public class DenseVectorField extends FloatPointField {
   @Override
   public IndexableField createField(SchemaField field, Object vectorValue) {
     if (vectorValue == null) return null;
-    VectorParser vectorParser = (VectorParser) vectorValue;
+    VectorBuilder vectorBuilder = (VectorBuilder) vectorValue;
     switch (vectorEncoding) {
       case BYTE:
         return new KnnByteVectorField(
-            field.getName(), vectorParser.getByteVector().bytes, similarityFunction);
+            field.getName(), vectorBuilder.getByteVector().bytes, similarityFunction);
       case FLOAT32:
         return new KnnVectorField(
-            field.getName(), vectorParser.getFloatVector(), similarityFunction);
+            field.getName(), vectorBuilder.getFloatVector(), similarityFunction);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -259,12 +260,12 @@ public class DenseVectorField extends FloatPointField {
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
-  public VectorParser getVectorParser(Object inputValue) {
+  public VectorBuilder getVectorBuilder(Object inputValue) {
     switch (vectorEncoding) {
       case FLOAT32:
-        return new VectorParser.Float32VectorBuilder(dimension, inputValue);
+        return new VectorBuilder.Float32VectorBuilder(dimension, inputValue);
       case BYTE:
-        return new VectorParser.ByteVectorBuilder(dimension, inputValue);
+        return new VectorBuilder.ByteVectorBuilder(dimension, inputValue);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -272,7 +273,7 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
-  abstract static class VectorParser {
+  abstract static class VectorBuilder {
 
     protected int dimension;
     protected Object inputValue;
@@ -327,7 +328,7 @@ public class DenseVectorField extends FloatPointField {
 
     protected abstract String errorMessage();
 
-    static class ByteVectorBuilder extends VectorParser {
+    static class ByteVectorBuilder extends VectorBuilder {
       private BytesRefBuilder byteRefBuilder;
       private BytesRef byteVector;
 
@@ -362,7 +363,7 @@ public class DenseVectorField extends FloatPointField {
       }
     }
 
-    static class Float32VectorBuilder extends VectorParser {
+    static class Float32VectorBuilder extends VectorBuilder {
       private float[] vector;
       private int curPosition;
 
