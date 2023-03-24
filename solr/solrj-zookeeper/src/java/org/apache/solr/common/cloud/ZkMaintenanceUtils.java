@@ -182,7 +182,10 @@ public class ZkMaintenanceUtils {
     }
     byte[] data = zkClient.getData(src, null, null, true);
     Path filename = Paths.get(dst);
-    Files.createDirectories(filename.getParent());
+    Path parentDir = filename.getParent();
+    if (parentDir != null) {
+      Files.createDirectories(parentDir);
+    }
     log.info("Writing file {}", filename);
     Files.write(filename, data);
   }

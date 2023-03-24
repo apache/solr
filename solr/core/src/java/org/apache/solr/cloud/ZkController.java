@@ -27,7 +27,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
-import com.google.common.base.Strings;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -866,11 +865,9 @@ public class ZkController implements Closeable {
       }
       cloudSolrClient =
           new CloudLegacySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
               .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
-              .withConnectionTimeout(15000)
-              .withSocketTimeout(30000)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
               .build();
       cloudManager =
           new SolrClientCloudManager(
@@ -1856,7 +1853,7 @@ public class ZkController implements Closeable {
     getCollectionTerms(collection).remove(cd.getCloudDescriptor().getShardId(), cd);
     replicasMetTragicEvent.remove(collection + ":" + coreNodeName);
 
-    if (Strings.isNullOrEmpty(collection)) {
+    if (StrUtils.isNullOrEmpty(collection)) {
       log.error("No collection was specified.");
       assert false : "No collection was specified [" + collection + "]";
       return;
@@ -2175,12 +2172,12 @@ public class ZkController implements Closeable {
               leaderProps.getCoreUrl());
         }
 
-        // short timeouts, we may be in a storm and this is best effort and maybe we should be the
+        // short timeouts, we may be in a storm and this is best effort, and maybe we should be the
         // leader now
         try (SolrClient client =
             new Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000)
-                .withSocketTimeout(30000)
+                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
+                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);

@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -337,7 +336,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 }
               });
 
-          this.apis = ImmutableList.copyOf(apis);
+          this.apis = List.copyOf(apis);
         }
       }
     }

@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +51,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
@@ -669,7 +669,7 @@ public class ExtendedDismaxQParser extends QParser {
    * @return a {fieldName, fieldBoost} map for the given fields.
    */
   private Map<String, Float> getFieldBoosts(Collection<FieldParams> fields) {
-    Map<String, Float> fieldBoostMap = new LinkedHashMap<>(fields.size());
+    Map<String, Float> fieldBoostMap = CollectionUtil.newLinkedHashMap(fields.size());
 
     for (FieldParams field : fields) {
       fieldBoostMap.put(field.getField(), field.getBoost());
@@ -977,7 +977,7 @@ public class ExtendedDismaxQParser extends QParser {
      * Where we store a map from field name we expect to see in our query string, to Alias object
      * containing the fields to use in our DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String, Alias> aliases = new HashMap<>(3);
+    protected Map<String, Alias> aliases = CollectionUtil.newHashMap(3);
 
     private QType type;
     private String field;

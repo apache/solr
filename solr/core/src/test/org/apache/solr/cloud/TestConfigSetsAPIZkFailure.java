@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -113,7 +112,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
-    final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
+    final Map<String, String> oldProps = Map.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
     SolrZkClient zkClient =

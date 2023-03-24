@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
@@ -35,6 +36,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -43,6 +45,7 @@ import org.apache.solr.search.TestPseudoReturnFields;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * @see TestPseudoReturnFields
@@ -91,27 +94,27 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa"))
+            .add(sdoc("id", "42", "newid", "420", "val_i", "1", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb"))
+            .add(sdoc("id", "43", "newid", "430", "val_i", "9", "ssto", "X", "subject", "bbb"))
             .getStatus());
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa"))
+            .add(sdoc("id", "44", "newid", "440", "val_i", "4", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa"))
+            .add(sdoc("id", "45", "newid", "450", "val_i", "6", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"))
+            .add(sdoc("id", "46", "newid", "460", "val_i", "3", "ssto", "X", "subject", "ggg"))
             .getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }
@@ -124,7 +127,18 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     assertEquals(
         0,
         CLOUD_CLIENT
-            .add(sdoc("id", "99", "val_i", "1", "ssto", "X", "subject", "uncommitted"))
+            .add(
+                sdoc(
+                    "id",
+                    "99",
+                    "newid",
+                    "990",
+                    "val_i",
+                    "1",
+                    "ssto",
+                    "X",
+                    "subject",
+                    "uncommitted"))
             .getStatus());
   }
 
@@ -234,7 +248,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
       // shouldn't matter what doc we pick...
       for (SolrDocument doc : docs) {
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);
@@ -245,12 +259,49 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testCopyPk() throws Exception {
+    String fl = "oldid:id,newid";
+    SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
+    for (SolrDocument doc : docs) {
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("420", "430", "440", "450", "460")
+                  .indexOf((String) doc.getFieldValue("newid"))
+              >= 0);
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("42", "43", "44", "45", "46").indexOf((String) doc.getFieldValue("oldid"))
+              >= 0);
+    }
+  }
+
+  public void testMovePk() throws Exception {
+    try {
+      String fl = "oldid:id,id:newid"; // "id:newid";//
+      SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
+      fail("attempting to move PK causes 400");
+      for (SolrDocument doc : docs) {
+        assertTrue(
+            fl + " => " + doc,
+            Arrays.asList("420", "430", "440", "450", "460")
+                    .indexOf((String) doc.getFieldValue("id"))
+                >= 0);
+      }
+    } catch (SolrException sse) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, sse.code());
+      final String message = sse.getMessage().toLowerCase(Locale.ROOT);
+      assertTrue(message.contains("uniqueKey".toLowerCase(Locale.ROOT)));
+      assertTrue(message.contains("fl".toLowerCase(Locale.ROOT)));
+    }
+  }
+
   public void testAllRealFieldsRTG() throws Exception {
     // shouldn't matter if we use RTG (committed or otherwise)
     for (String fl : TestPseudoReturnFields.ALL_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);
@@ -283,7 +334,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
       // shouldn't matter what doc we pick...
       for (SolrDocument doc : docs) {
-        assertEquals(fl + " => " + doc, 6, doc.size());
+        assertEquals(fl + " => " + doc, 6 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("score") instanceof Float);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
@@ -300,7 +351,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     for (String fl : TestPseudoReturnFields.SCORE_AND_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);

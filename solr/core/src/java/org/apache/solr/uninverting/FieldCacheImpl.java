@@ -67,12 +67,13 @@ public class FieldCacheImpl implements FieldCache {
   }
 
   private synchronized void init() {
-    caches = new HashMap<>(6);
-    caches.put(Long.TYPE, new LongCache(this));
-    caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
-    caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
-    caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
-    caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
+    caches =
+        Map.ofEntries(
+            Map.entry(Long.TYPE, new LongCache(this)),
+            Map.entry(BinaryDocValues.class, new BinaryDocValuesCache(this)),
+            Map.entry(SortedDocValues.class, new SortedDocValuesCache(this)),
+            Map.entry(DocTermOrds.class, new DocTermOrdsCache(this)),
+            Map.entry(DocsWithFieldCache.class, new DocsWithFieldCache(this)));
   }
 
   @Override

@@ -2493,8 +2493,8 @@ public class SolrCLI implements CLIO {
       String zkHost = getZkHost(cli);
       try (CloudSolrClient cloudSolrClient =
           new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build()) {
         echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
         cloudSolrClient.connect();
@@ -3653,7 +3653,7 @@ public class SolrCLI implements CLIO {
     }
 
     protected void copyIfNeeded(File src, File dest) throws IOException {
-      if (!dest.isFile()) FileUtils.copyFile(src, dest);
+      if (!dest.isFile()) Files.copy(src.toPath(), dest.toPath());
 
       if (!dest.isFile())
         throw new IllegalStateException("Required file " + dest.getAbsolutePath() + " not found!");

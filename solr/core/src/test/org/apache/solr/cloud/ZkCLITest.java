@@ -18,18 +18,16 @@ package org.apache.solr.cloud;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
@@ -214,14 +212,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String fromZk =
         new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
-    File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
-    InputStream is = new FileInputStream(locFile);
-    String fromLoc;
-    try {
-      fromLoc = new String(IOUtils.toByteArray(is), StandardCharsets.UTF_8);
-    } finally {
-      IOUtils.closeQuietly(is);
-    }
+    Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    String fromLoc = Files.readString(locFile);
     assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
   }
 
@@ -243,16 +235,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
 
     byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
-    File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
-    InputStream is = new FileInputStream(locFile);
-    byte[] fromLoc;
-    try {
-      fromLoc = IOUtils.toByteArray(is);
-      ZLibCompressor zLibCompressor = new ZLibCompressor();
-      fromLoc = zLibCompressor.compressBytes(fromLoc);
-    } finally {
-      IOUtils.closeQuietly(is);
-    }
+    Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    byte[] fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
   }
 
@@ -268,10 +252,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "/solr.xml",
           SOLR_HOME + File.separator + "not-there.xml"
         };
-    FileNotFoundException e = expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
+    NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
     assertTrue(
         "Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
-        e.getMessage().indexOf("not-there.xml") != -1);
+        e.getMessage().contains("not-there.xml"));
   }
 
   @Test
@@ -280,12 +264,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "list"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8.name());
+    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
     ZkCLI.setStdout(myOut);
 
     ZkCLI.main(args);
 
-    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
+    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8);
     String separator = System.lineSeparator();
     assertEquals("/ (1)" + separator + " /test (0)" + separator + separator, standardOutput);
   }
@@ -296,12 +280,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8.name());
+    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
     ZkCLI.setStdout(myOut);
 
     ZkCLI.main(args);
 
-    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
+    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8);
     String separator = System.lineSeparator();
     assertEquals(
         "/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);

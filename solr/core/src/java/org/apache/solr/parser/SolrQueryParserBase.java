@@ -18,7 +18,6 @@ package org.apache.solr.parser;
 
 import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 
-import com.google.common.base.Strings;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +59,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.parser.QueryParser.Operator;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
@@ -291,7 +291,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return !Strings.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
+    return !StrUtils.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /**
@@ -1024,7 +1024,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   private void checkNullField(String field) throws SolrException {
-    if (Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(defaultField)) {
+    if (StrUtils.isNullOrEmpty(field) && StrUtils.isNullOrEmpty(defaultField)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "no field name specified in query and no default specified via 'df' param");

@@ -358,4 +358,8 @@ public class StrUtils {
   public static String formatString(String pattern, Object... args) {
     return new MessageFormat(pattern, Locale.ROOT).format(args);
   }
+
+  public static boolean isNullOrEmpty(String string) {
+    return string == null || string.isEmpty();
+  }
 }

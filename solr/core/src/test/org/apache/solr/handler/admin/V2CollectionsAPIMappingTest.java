@@ -114,14 +114,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testListCollectionsAllProperties() throws Exception {
-    final String noBody = null;
-    final SolrParams v1Params = captureConvertedV1Params("/collections", "GET", noBody);
-
-    assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
   public void testCreateAliasAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
@@ -181,38 +173,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
         3,
         v1Params.getPrimitiveInt(
             RoutedAlias.CREATE_COLLECTION_PREFIX + ZkStateReader.REPLICATION_FACTOR));
-  }
-
-  @Test
-  public void testDeleteAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'delete-alias': {" + "'name': 'aliasName', " + "'async': 'requestTrackingId'" + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.DELETEALIAS.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-  }
-
-  @Test
-  public void testSetAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'set-alias-property': {"
-                + "'name': 'aliasName', "
-                + "'async': 'requestTrackingId', "
-                + "'properties': {'foo':'bar', 'foo2':'bar2'}"
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.ALIASPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertEquals("bar", v1Params.get("property.foo"));
-    assertEquals("bar2", v1Params.get("property.foo2"));
   }
 
   @Test

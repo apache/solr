@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -66,6 +65,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
@@ -581,8 +581,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * isn't null.
    */
   protected Set<String> getDocPrefetchFieldNames(String[] hlFieldNames, SolrQueryRequest req) {
-    Set<String> preFetchFieldNames =
-        new HashSet<>(hlFieldNames.length + 1); // +1 for uniqueyKey added after
+    // +1 for uniqueKey added after
+    Set<String> preFetchFieldNames = CollectionUtil.newHashSet(hlFieldNames.length + 1);
     Collections.addAll(preFetchFieldNames, hlFieldNames);
     for (String hlFieldName : hlFieldNames) {
       String alternateField =

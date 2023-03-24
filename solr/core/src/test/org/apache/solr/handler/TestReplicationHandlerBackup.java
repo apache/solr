@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -258,13 +257,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             + "?wt=xml&command="
             + cmd
             + params;
-    InputStream stream = null;
-    try {
-      URL url = new URL(leaderUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
+    URL url = new URL(leaderUrl);
+    try (InputStream stream = url.openStream()) {
+      assert stream != null;
     }
   }
 }
