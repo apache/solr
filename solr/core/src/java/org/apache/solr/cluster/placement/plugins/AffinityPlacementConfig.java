@@ -64,6 +64,8 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    */
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
+  public static final String ANTI_AFFINITY_SYSPROP = "anti_affinity";
+
   /**
    * If a node has strictly less GB of free disk than this value, the node is excluded from
    * assignment decisions. Set to 0 or less to disable.
@@ -95,6 +97,9 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * acceptable node types).
    */
   @JsonProperty public Map<String, String> collectionNodeType;
+
+  /** nocommit: Docs */
+  @JsonProperty public Boolean useAntiAffinity = Boolean.FALSE;
 
   /** Zero-arguments public constructor required for deserialization - don't use. */
   public AffinityPlacementConfig() {
