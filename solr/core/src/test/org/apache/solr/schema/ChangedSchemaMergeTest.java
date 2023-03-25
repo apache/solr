@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -73,8 +72,8 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
-  private File schemaFile = null;
+  private final Path solrHomeDirectory = createTempDir();
+  private Path schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
@@ -84,17 +83,17 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    Path changed = solrHomeDirectory.toPath().resolve("changed");
+    Path changed = solrHomeDirectory.resolve("changed");
     copyMinConf(changed.toFile(), "name=changed");
     // Overlay with my local schema
-    schemaFile = changed.resolve("conf").resolve("schema.xml").toFile();
-    Files.writeString(schemaFile.toPath(), withWhich, StandardCharsets.UTF_8);
+    schemaFile = changed.resolve("conf").resolve("schema.xml");
+    Files.writeString(schemaFile, withWhich, StandardCharsets.UTF_8);
 
     String discoveryXml = "<solr></solr>";
-    Path solrXml = solrHomeDirectory.toPath().resolve("solr.xml");
+    Path solrXml = solrHomeDirectory.resolve("solr.xml");
     Files.writeString(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory, new Properties());
     cores.load();
     return cores;
   }
@@ -126,7 +125,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current
-      Files.writeString(schemaFile.toPath(), withoutWhich, StandardCharsets.UTF_8);
+      Files.writeString(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
       IndexSchema iSchema =
           IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
