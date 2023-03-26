@@ -198,15 +198,16 @@ public class ForceLeaderTest extends HttpPartitionTest {
   /**
    * For this test, we need a cloudClient that is not randomized since we need to NEVER send the
    * updates only to the leader. The way the RandomizingCloudSolrClientBuilder works, you can't
-   * avoid its internal decision-making process to sometimes send updates only to leaders.
+   * avoid its internal decision-making process to sometimes send updates only to leaders. We
+   * override the definition of this class in AbstractFullDistribZkTestBase to make sure we always
+   * use DEFAULT_COLLECTION defined in ForceLeaderTest.
    */
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudLegacySolrClient.Builder builder =
         new CloudLegacySolrClient.Builder(
             Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
-    defaultCollection = DEFAULT_COLLECTION;
-    builder.withDefaultCollection(defaultCollection);
+    builder.withDefaultCollection(DEFAULT_COLLECTION);
     return builder.withConnectionTimeout(30000).withSocketTimeout(120000).build();
   }
 
