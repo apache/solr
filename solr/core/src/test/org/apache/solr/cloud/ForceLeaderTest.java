@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 @Nightly // this test is currently too slow for non-nightly
 public class ForceLeaderTest extends HttpPartitionTest {
-  public static final String DEFAULT_COLLECTION = "forceleader_lower_terms_collection";
+  public static final String TEST_COLLECTION = "forceleader_lower_terms_collection";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -72,37 +72,37 @@ public class ForceLeaderTest extends HttpPartitionTest {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
 
-    createCollection(DEFAULT_COLLECTION, "conf1", 1, 3);
+    createCollection(TEST_COLLECTION, "conf1", 1, 3);
 
     try {
       List<Replica> notLeaders =
-          ensureAllReplicasAreActive(DEFAULT_COLLECTION, SHARD1, 1, 3, maxWaitSecsToSeeAllActive);
+          ensureAllReplicasAreActive(TEST_COLLECTION, SHARD1, 1, 3, maxWaitSecsToSeeAllActive);
       assertEquals(
           "Expected 2 replicas for collection "
-              + DEFAULT_COLLECTION
+              + TEST_COLLECTION
               + " but found "
               + notLeaders.size()
               + "; clusterState: "
-              + printClusterStateInfo(DEFAULT_COLLECTION),
+              + printClusterStateInfo(TEST_COLLECTION),
           2,
           notLeaders.size());
 
-      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
+      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(TEST_COLLECTION, SHARD1);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
       if (log.isInfoEnabled()) {
         log.info("Before put non leaders into lower term: {}", printClusterStateInfo());
       }
-      putNonLeadersIntoLowerTerm(DEFAULT_COLLECTION, SHARD1, zkController, leader, notLeaders);
+      putNonLeadersIntoLowerTerm(TEST_COLLECTION, SHARD1, zkController, leader, notLeaders);
 
       for (Replica replica : notLeaders) {
-        waitForState(DEFAULT_COLLECTION, replica.getName(), State.DOWN, 60000);
+        waitForState(TEST_COLLECTION, replica.getName(), State.DOWN, 60000);
       }
-      waitForState(DEFAULT_COLLECTION, leader.getName(), State.DOWN, 60000);
-      ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
+      waitForState(TEST_COLLECTION, leader.getName(), State.DOWN, 60000);
+      ZkStateReader.from(cloudClient).forceUpdateCollection(TEST_COLLECTION);
       ClusterState clusterState = cloudClient.getClusterState();
-      int numActiveReplicas = getNumberOfActiveReplicas(clusterState, DEFAULT_COLLECTION, SHARD1);
+      int numActiveReplicas = getNumberOfActiveReplicas(clusterState, TEST_COLLECTION, SHARD1);
       assertEquals(
           "Expected only 0 active replica but found "
               + numActiveReplicas
@@ -113,7 +113,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
       int numReplicasOnLiveNodes = 0;
       for (Replica rep :
-          clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
+          clusterState.getCollection(TEST_COLLECTION).getSlice(SHARD1).getReplicas()) {
         if (clusterState.getLiveNodes().contains(rep.getNodeName())) {
           numReplicasOnLiveNodes++;
         }
@@ -125,43 +125,43 @@ public class ForceLeaderTest extends HttpPartitionTest {
       // Assert there is no leader yet
       assertNull(
           "Expected no leader right now. State: "
-              + clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1),
-          clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getLeader());
+              + clusterState.getCollection(TEST_COLLECTION).getSlice(SHARD1),
+          clusterState.getCollection(TEST_COLLECTION).getSlice(SHARD1).getLeader());
 
-      assertSendDocFails(DEFAULT_COLLECTION, 3);
+      assertSendDocFails(TEST_COLLECTION, 3);
 
       log.info("Do force leader...");
-      doForceLeader(DEFAULT_COLLECTION, SHARD1);
+      doForceLeader(TEST_COLLECTION, SHARD1);
 
       // By now we have an active leader. Wait for recoveries to begin
-      waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), true);
+      waitForRecoveriesToFinish(TEST_COLLECTION, ZkStateReader.from(cloudClient), true);
 
-      ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
+      ZkStateReader.from(cloudClient).forceUpdateCollection(TEST_COLLECTION);
       clusterState = cloudClient.getClusterState();
       if (log.isInfoEnabled()) {
         log.info(
             "After forcing leader: {}",
-            clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1));
+            clusterState.getCollection(TEST_COLLECTION).getSlice(SHARD1));
       }
       // we have a leader
       Replica newLeader =
-          clusterState.getCollectionOrNull(DEFAULT_COLLECTION).getSlice(SHARD1).getLeader();
+          clusterState.getCollectionOrNull(TEST_COLLECTION).getSlice(SHARD1).getLeader();
       assertNotNull(newLeader);
       // leader is active
       assertEquals(State.ACTIVE, newLeader.getState());
 
-      numActiveReplicas = getNumberOfActiveReplicas(clusterState, DEFAULT_COLLECTION, SHARD1);
+      numActiveReplicas = getNumberOfActiveReplicas(clusterState, TEST_COLLECTION, SHARD1);
       assertEquals(2, numActiveReplicas);
 
       // Assert that indexing works again
       log.info("Sending doc 4...");
-      sendDoc(DEFAULT_COLLECTION, 4);
+      sendDoc(TEST_COLLECTION, 4);
       log.info("Committing...");
-      cloudClient.commit(DEFAULT_COLLECTION);
+      cloudClient.commit(TEST_COLLECTION);
       log.info("Doc 4 sent and commit issued");
 
-      assertDocsExistInAllReplicas(notLeaders, DEFAULT_COLLECTION, 1, 1);
-      assertDocsExistInAllReplicas(notLeaders, DEFAULT_COLLECTION, 4, 4);
+      assertDocsExistInAllReplicas(notLeaders, TEST_COLLECTION, 1, 1);
+      assertDocsExistInAllReplicas(notLeaders, TEST_COLLECTION, 4, 4);
 
       if (useTlogReplicas()) {}
       // Docs 1 and 4 should be here. 2 was lost during the partition, 3 had failed to be indexed.
@@ -174,8 +174,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
             "Expected only 2 documents in the index",
             () -> {
               try {
-                return 2
-                    == cloudClient.query(DEFAULT_COLLECTION, params).getResults().getNumFound();
+                return 2 == cloudClient.query(TEST_COLLECTION, params).getResults().getNumFound();
               } catch (Exception e) {
                 return false;
               }
@@ -184,14 +183,14 @@ public class ForceLeaderTest extends HttpPartitionTest {
         assertEquals(
             "Expected only 2 documents in the index",
             2,
-            cloudClient.query(DEFAULT_COLLECTION, params).getResults().getNumFound());
+            cloudClient.query(TEST_COLLECTION, params).getResults().getNumFound());
       }
 
-      bringBackOldLeaderAndSendDoc(DEFAULT_COLLECTION, leader, notLeaders, 5);
+      bringBackOldLeaderAndSendDoc(TEST_COLLECTION, leader, notLeaders, 5);
     } finally {
       log.info("Cleaning up after the test.");
       // try to clean up
-      attemptCollectionDelete(cloudClient, DEFAULT_COLLECTION);
+      attemptCollectionDelete(cloudClient, TEST_COLLECTION);
     }
   }
 
@@ -207,7 +206,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     CloudLegacySolrClient.Builder builder =
         new CloudLegacySolrClient.Builder(
             Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
-    builder.withDefaultCollection(DEFAULT_COLLECTION);
+    builder.withDefaultCollection(TEST_COLLECTION);
     return builder.withConnectionTimeout(30000).withSocketTimeout(120000).build();
   }
 
