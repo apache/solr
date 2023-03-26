@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -194,31 +195,24 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               // leaders...
               for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
 
-                String queryWithCollectionName =
-                    specifyCollectionParameterForCloudSolrClient(c, testCollectionName);
-
+                ModifiableSolrParams params = params("q", "*:*");
+                if (c instanceof CloudSolrClient) {
+                  params.add("collection", testCollectionName);
+                }
                 assertEquals(
                     docCounts1.get() + docCounts2.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params).getResults().getNumFound());
 
                 assertEquals(
                     docCounts1.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard1"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params.set("shards", "shard1")).getResults().getNumFound());
                 assertEquals(
                     docCounts2.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard2"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params.set("shards", "shard2")).getResults().getNumFound());
 
                 assertEquals(
                     docCounts1.get() + docCounts2.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*", "shards", "shard2,shard1"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params.set("shards", "shard2,shard1")).getResults().getNumFound());
               }
 
               assertEquals(
@@ -278,19 +272,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     }
   }
 
-  private String specifyCollectionParameterForCloudSolrClient(
-      SolrClient solrClient, String collectionName) {
-    // For CloudSolrClient we must specify the collection name as a parameter,
-    // however for shard1 and shard2, it's already part of the URL so we can specify a null
-    // parameter.  The
-    // instanceof check makes that decision.
-    String collectionNameRequiredParameter = null;
-    if (solrClient instanceof CloudSolrClient) {
-      collectionNameRequiredParameter = collectionName;
-    }
-    return collectionNameRequiredParameter;
-  }
-
   public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String testCollectionName =
@@ -340,24 +321,21 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               // including cloudClient helps us test view from other nodes that aren't the
               // leaders...
               for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
-                String queryWithCollectionName =
-                    specifyCollectionParameterForCloudSolrClient(c, testCollectionName);
+
+                ModifiableSolrParams params = params("q", "*:*");
+                if (c instanceof CloudSolrClient) {
+                  params.add("collection", testCollectionName);
+                }
                 assertEquals(
                     docCountsEurope.get() + docCountsAfrica.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params).getResults().getNumFound());
 
                 assertEquals(
                     docCountsEurope.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*", "_route_", "europe"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params.set("_route_", "europe")).getResults().getNumFound());
                 assertEquals(
                     docCountsAfrica.get(),
-                    c.query(queryWithCollectionName, params("q", "*:*", "_route_", "africa"))
-                        .getResults()
-                        .getNumFound());
+                    c.query(params.set("_route_", "africa")).getResults().getNumFound());
               }
             } catch (Exception sse) {
               throw new RuntimeException(sse);
