@@ -322,17 +322,13 @@ public class ForceLeaderTest extends HttpPartitionTest {
       throws IOException, SolrServerException {
     CollectionAdminRequest.ForceLeader forceLeader =
         CollectionAdminRequest.forceLeaderElection(collectionName, shard);
-    boolean shardLeadersOnly = random().nextBoolean();
-    var builder =
-        new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
-    if (shardLeadersOnly) {
-      builder.sendUpdatesOnlyToShardLeaders();
-    } else {
-      builder.sendUpdatesToAllReplicasInShard();
-    }
+
     try (CloudSolrClient cloudClient =
-        builder.withConnectionTimeout(3000).withSocketTimeout(60000).build()) {
+        new CloudLegacySolrClient.Builder(
+                Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+            .withConnectionTimeout(3000)
+            .withSocketTimeout(60000)
+            .build()) {
       cloudClient.request(forceLeader);
     }
   }
