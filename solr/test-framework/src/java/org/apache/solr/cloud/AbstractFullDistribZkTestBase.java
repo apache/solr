@@ -147,6 +147,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected volatile ChaosMonkey chaosMonkey;
 
   protected Map<String, CloudJettyRunner> shardToLeaderJetty = new ConcurrentHashMap<>();
+  protected Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
   private static volatile boolean cloudInit;
   protected volatile boolean useJettyDataDir = true;
 
@@ -331,10 +332,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client =
-        getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 120000);
-    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    return client;
+    return getCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, 120000);
   }
 
   @Override
@@ -800,7 +799,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   /**
-   * Creates a JettySolrRunner with a socket proxy sitting infront of the Jetty server, which gives
+   * Creates a JettySolrRunner with a socket proxy sitting in front of the Jetty server, which gives
    * us the ability to simulate network partitions without having to fuss with IPTables.
    */
   public JettySolrRunner createProxiedJetty(
@@ -1030,10 +1029,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected int sendDocsWithRetry(
-      List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry)
+      String collectionName,
+      List<SolrInputDocument> batch,
+      int minRf,
+      int maxRetries,
+      int waitBeforeRetry)
       throws Exception {
     return sendDocsWithRetry(
-        cloudClient, cloudClient.getDefaultCollection(), batch, minRf, maxRetries, waitBeforeRetry);
+        cloudClient, collectionName, batch, minRf, maxRetries, waitBeforeRetry);
   }
 
   @SuppressWarnings("rawtypes")
@@ -1990,6 +1993,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                       IOUtils.closeQuietly(c);
                     }));
 
+    customThreadPool.submit(
+        () ->
+            solrClientByCollection.values().parallelStream()
+                .forEach(
+                    c -> {
+                      IOUtils.closeQuietly(c);
+                    }));
+
     customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
@@ -1997,6 +2008,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
     coreClients.clear();
+    solrClientByCollection.clear();
 
     super.destroyServers();
   }
@@ -2269,8 +2281,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     synchronized (this) {
       if (commonCloudSolrClient == null) {
         commonCloudSolrClient =
-            getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 5000, 120000);
-        commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
+            getCloudSolrClient(
+                zkServer.getZkAddress(), DEFAULT_COLLECTION, random().nextBoolean(), 5000, 120000);
         commonCloudSolrClient.connect();
         if (log.isInfoEnabled()) {
           log.info(
@@ -2281,6 +2293,26 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
     return commonCloudSolrClient;
+  }
+
+  protected CloudSolrClient getSolrClient(String collectionName) {
+    return solrClientByCollection.computeIfAbsent(
+        collectionName,
+        k -> {
+          CloudSolrClient solrClient =
+              getCloudSolrClient(
+                  zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
+
+          solrClient.connect();
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+                collectionName,
+                solrClient.isUpdatesToLeaders(),
+                solrClient.isParallelUpdates());
+          }
+          return solrClient;
+        });
   }
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {

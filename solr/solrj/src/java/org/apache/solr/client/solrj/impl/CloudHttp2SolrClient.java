@@ -66,6 +66,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.myClient = builder.httpClient;
     }
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
+    this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {
       this.myClient.requestWriter = builder.requestWriter;
     }
@@ -154,6 +155,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private ResponseParser responseParser;
     private long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
+
+    private String defaultCollection;
     private long timeToLiveSeconds = 60;
     private int parallelCacheRefreshesLocks = 3;
 
@@ -332,6 +335,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return this;
     }
 
+    /** Sets the default collection for request. */
+    public Builder withDefaultCollection(String collection) {
+      this.defaultCollection = collection;
+      return this;
+    }
     /**
      * Sets the cache ttl for DocCollection Objects cached.
      *

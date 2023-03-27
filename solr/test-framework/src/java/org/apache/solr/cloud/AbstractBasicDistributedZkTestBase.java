@@ -1589,22 +1589,20 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     indexDoc("collection2", getDoc(id, "10000000"));
     indexDoc("collection2", getDoc(id, "10000001"));
     indexDoc("collection2", getDoc(id, "10000003"));
-    getCommonCloudSolrClient().setDefaultCollection("collection2");
-    getCommonCloudSolrClient().add(getDoc(id, "10000004"));
-    getCommonCloudSolrClient().setDefaultCollection(null);
+
+    getSolrClient("collection2").add(getDoc(id, "10000004"));
 
     indexDoc("collection3", getDoc(id, "20000000"));
     indexDoc("collection3", getDoc(id, "20000001"));
-    getCommonCloudSolrClient().setDefaultCollection("collection3");
-    getCommonCloudSolrClient().add(getDoc(id, "10000005"));
-    getCommonCloudSolrClient().setDefaultCollection(null);
+
+    getSolrClient("collection3").add(getDoc(id, "10000005"));
 
     otherCollectionClients.get("collection2").get(0).commit();
     otherCollectionClients.get("collection3").get(0).commit();
 
-    getCommonCloudSolrClient().setDefaultCollection("collection1");
+    SolrClient clientForCollection1 = getSolrClient("collection1");
     long collection1Docs =
-        getCommonCloudSolrClient().query(new SolrQuery("*:*")).getResults().getNumFound();
+        clientForCollection1.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     long collection2Docs =
         otherCollectionClients
