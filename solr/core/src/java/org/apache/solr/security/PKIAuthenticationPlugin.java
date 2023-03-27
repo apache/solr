@@ -367,8 +367,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
           @Override
-          public void onQueued(Request request) {
-            log.trace("onQueued: {}", request);
+          public void onBegin(Request request) {
+            log.trace("onBegin: {}", request);
             if (cores.getAuthenticationPlugin() == null) {
               log.trace("no authentication plugin, skipping");
               return;
