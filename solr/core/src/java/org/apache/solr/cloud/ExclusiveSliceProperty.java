@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ class ExclusiveSliceProperty {
     this.property = tmp.toLowerCase(Locale.ROOT);
     collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
 
-    if (StringUtils.isBlank(collectionName) || StringUtils.isBlank(property)) {
+    if (StrUtils.isBlank(collectionName) || StrUtils.isBlank(property)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Overseer '"
@@ -145,7 +146,7 @@ class ExclusiveSliceProperty {
       boolean sliceHasProp = false;
       for (Replica replica : slice.getReplicas()) {
         if (onlyActiveNodes && isActive(replica) == false) {
-          if (StringUtils.isNotBlank(replica.getStr(property))) {
+          if (StrUtils.isNotBlank(replica.getStr(property))) {
             // Note, we won't be committing this to ZK until later.
             removeProp(slice, replica.getName());
           }
@@ -153,7 +154,7 @@ class ExclusiveSliceProperty {
         }
         allHosts.add(replica.getNodeName());
         String nodeName = replica.getNodeName();
-        if (StringUtils.isNotBlank(replica.getStr(property))) {
+        if (StrUtils.isNotBlank(replica.getStr(property))) {
           if (sliceHasProp) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

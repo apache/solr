@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -143,7 +144,7 @@ public class ReplicaMutator {
     boolean isUnique = false;
 
     if (SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(property)) {
-      if (StringUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
+      if (StrUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Overseer ADDREPLICAPROP for "

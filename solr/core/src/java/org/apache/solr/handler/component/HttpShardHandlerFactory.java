@@ -400,7 +400,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   private String buildUrl(String url) {
     if (!URLUtil.hasScheme(url)) {
       return StringUtils.defaultIfEmpty(scheme, DEFAULT_SCHEME) + "://" + url;
-    } else if (StringUtils.isNotEmpty(scheme)) {
+    } else if (StrUtils.isNotNullOrEmpty(scheme)) {
       return scheme + "://" + URLUtil.removeScheme(url);
     }
 

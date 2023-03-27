@@ -194,6 +194,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -632,7 +633,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String collectionName =
               SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
           final String shardsParam = (String) props.get(SHARDS_PROP);
-          if (StringUtils.isNotEmpty(shardsParam)) {
+          if (StrUtils.isNotNullOrEmpty(shardsParam)) {
             verifyShardsParam(shardsParam);
           }
           if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {

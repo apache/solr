@@ -71,6 +71,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -176,7 +177,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public static NullPolicy fromString(String nullPolicy) {
-      if (StringUtils.isEmpty(nullPolicy)) {
+      if (StrUtils.isNullOrEmpty(nullPolicy)) {
         return DEFAULT_POLICY;
       }
       switch (nullPolicy) {

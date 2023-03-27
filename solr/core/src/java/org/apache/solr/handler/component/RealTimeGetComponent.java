@@ -60,7 +60,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -1360,7 +1359,7 @@ public class RealTimeGetComponent extends SearchComponent {
   }
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
-    if (StringUtils.isEmpty(versionsStr)) {
+    if (StrUtils.isNullOrEmpty(versionsStr)) {
       return Collections.emptyList();
     }
 

@@ -29,6 +29,18 @@ org.apache.commons.lang3.StringUtils#equals(**)
 @defaultMessage Use String equalsIgnoreCase instead
 org.apache.commons.lang3.StringUtils#equalsIgnoreCase(**)
 
+@defaultMessage Use StrUtils.isBlank instead
+org.apache.commons.lang3.StringUtils#isBlank(**)
+
+@defaultMessage Use StrUtils.isNotBlank instead
+org.apache.commons.lang3.StringUtils#isNotBlank(**)
+
+@defaultMessage Use StrUtils.isNullOrEmpty instead
+org.apache.commons.lang3.StringUtils#isEmpty(**)
+
+@defaultMessage Use StrUtils.isNotNullOrEmpty instead
+org.apache.commons.lang3.StringUtils#isNotEmpty(**)
+
 @defaultMessage Use String.join or Collectors.joining instead
 org.apache.commons.lang3.StringUtils#join(**)
 
