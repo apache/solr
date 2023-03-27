@@ -48,6 +48,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.parser.SynonymQueryWithOffset;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.SolrPluginUtils;
@@ -1507,6 +1509,41 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "qf",
             "text"),
         "*[count(//doc)=3]");
+  }
+
+  /**
+   * Examine the generated query structure for a given query and confirm that terms are represented
+   * by TermQueryWithOffset instances, and synonyms are represented by SynonymQueryWithOffset
+   * instances that have the proper offsets attached.
+   */
+  @Test
+  public void testStartOffsets() throws Exception {
+    try (SolrQueryRequest req = req("sow", "false", "qf", "subject")) {
+      QParser qParser = QParser.getParser("one two three fooaaa four", "edismax", req);
+      BooleanQuery q = (BooleanQuery) qParser.getQuery();
+      BooleanQuery c1 = (BooleanQuery) q.clauses().get(0).getQuery();
+      assertEquals(0, getStartOffset(c1, 0));
+      assertEquals(4, getStartOffset(c1, 1));
+      assertEquals(8, getStartOffset(c1, 2));
+      assertEquals(14, getStartOffset(c1, 3));
+      assertEquals(21, getStartOffset(c1, 4));
+    }
+  }
+
+  /**
+   * Returns the start offset of an inner TermQueryWithOffset or SynonymQueryWithOffset contained
+   * inside the given Boolean Query. The Boolean Query is assumed to have clauses of type
+   * DusjunctionMaxQuery. The clause with the designated index is retrieved and the start offset of
+   * the first disjunct inside that clause is returned.
+   */
+  private static int getStartOffset(BooleanQuery q, int index) {
+    Query innerQuery =
+        ((DisjunctionMaxQuery) q.clauses().get(index).getQuery())
+            .getDisjuncts().stream().findFirst().get();
+    if (innerQuery instanceof TermQueryWithOffset) {
+      return ((TermQueryWithOffset) innerQuery).getStartOffset();
+    }
+    return ((SynonymQueryWithOffset) innerQuery).getStartOffset();
   }
 
   /** Repeating some of test cases as direct calls to splitIntoClauses */
