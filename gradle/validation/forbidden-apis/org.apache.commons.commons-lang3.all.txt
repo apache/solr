@@ -1,12 +1,15 @@
-@defaultMessage Use Arrays.stream(Integer[]).mapToInt(v -> v).toArray()) instead
+@defaultMessage Use Arrays.stream(primitive[]).boxed().toArray() instead
+org.apache.commons.lang3.ArrayUtils.toObject(**)
+
+@defaultMessage Use Arrays.stream(Integer[]).mapToInt(v -> v).toArray() instead
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Integer[])
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Integer[],int)
 
-@defaultMessage Use Arrays.stream(Long[]).mapToLong(v -> v).toArray()) instead
+@defaultMessage Use Arrays.stream(Long[]).mapToLong(v -> v).toArray() instead
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Long[])
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Long[],long)
 
-@defaultMessage Use Arrays.stream(Double[]).mapToDouble(v -> v).toArray()) instead
+@defaultMessage Use Arrays.stream(Double[]).mapToDouble(v -> v).toArray() instead
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Double[])
 org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Double[],double)
 

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -457,7 +458,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       reflector.reflect(TokenTrackingAttribute.class, "position", position);
       // convert to Integer[] array, as only such one can be serialized by ResponseWriters
       reflector.reflect(
-          TokenTrackingAttribute.class, "positionHistory", ArrayUtils.toObject(getPositions()));
+          TokenTrackingAttribute.class,
+          "positionHistory",
+          Arrays.stream(getPositions()).boxed().toArray(Integer[]::new));
     }
 
     @Override
