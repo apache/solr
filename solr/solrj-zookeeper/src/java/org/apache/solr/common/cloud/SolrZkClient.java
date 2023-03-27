@@ -45,6 +45,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.ZLibCompressor;
+import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -360,6 +361,18 @@ public class SolrZkClient implements Closeable {
     }
     metrics.existsChecks.increment();
     return result;
+  }
+
+  public Watcher persistentRecursiveWatch(final String basePath, final Watcher watcher)
+      throws InterruptedException, KeeperException {
+    Watcher wrappedWatcher = wrapWatcher(watcher);
+    keeper.addWatch(basePath, wrappedWatcher, AddWatchMode.PERSISTENT_RECURSIVE);
+    return wrappedWatcher;
+  }
+
+  public void removePersistentWatch(final String basePath, Watcher watcher)
+      throws InterruptedException, KeeperException {
+    keeper.removeWatches(basePath, watcher, Watcher.WatcherType.Any, true);
   }
 
   /** Returns true if path exists */

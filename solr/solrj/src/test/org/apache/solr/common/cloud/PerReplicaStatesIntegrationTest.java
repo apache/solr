@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
         + "org.apache.solr.handler.admin.CollectionsHandler=DEBUG;"
         + "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;"
+        + "org.apache.solr.common.cloud.DocCollection=DEBUG;"
         + "org.apache.solr.cloud.Overseer=INFO;"
         + "org.apache.solr.common.cloud=INFO;"
         + "org.apache.solr.cloud.api.collections=INFO;"
