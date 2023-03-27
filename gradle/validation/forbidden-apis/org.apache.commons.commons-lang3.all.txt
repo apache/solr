@@ -1,0 +1,2 @@
+@defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
+org.apache.commons.lang3.RandomStringUtils
