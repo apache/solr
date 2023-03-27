@@ -51,6 +51,9 @@ Improvements
   fetching single property values (`GET /api/aliases/aliasName/properties/propName`), and property deletion
   (`DELETE /api/aliases/aliasName/properties/propName`). (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-10466: Introduce Builder setter for defaultCollection on cloud SolrClients.  Deprecated
+  direct setter setDefaultCollection on cloud SolrClients. (Eric Pugh, David Smiley)
+
 Bug Fixes
 ---------------------
 
