@@ -77,7 +77,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
   /** Per node, we have a map of clients using specific writerTypes, keyed by wt */
-  private static final List<Map<String, SolrClient>> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
+  private static final List<Map<String, SolrClient>> CLIENTS =
+      Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -147,7 +148,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           new NotIncludedValidator("score", "score_alias:score"));
 
   @BeforeClass
-  @SuppressWarnings({"rawtypes","unchecked"})
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public static void createMiniSolrCloudCluster() throws Exception {
 
     // 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single
@@ -177,15 +178,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      Map<String,SolrClient> solrClientByWriterType = new <String,SolrClient>HashMap();
+      Map<String, SolrClient> solrClientByWriterType = new <String, SolrClient>HashMap();
       List<String> writerTypes = Arrays.asList("javabin", "json", "xml");
-      for (String wt: writerTypes){
-        HttpSolrClient.Builder builder = new HttpSolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/");
-        builder = withResponseParser(builder,wt);
-        solrClientByWriterType.put(wt,builder.build());
+      for (String wt : writerTypes) {
+        HttpSolrClient.Builder builder =
+            new HttpSolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/");
+        builder = withResponseParser(builder, wt);
+        solrClientByWriterType.put(wt, builder.build());
       }
       CLIENTS.add(solrClientByWriterType);
-
     }
   }
 
@@ -195,7 +196,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       COLLECTION_CLIENT.close();
       COLLECTION_CLIENT = null;
     }
-    for (Map<String, SolrClient> solrClientByWriterType: CLIENTS) {
+    for (Map<String, SolrClient> solrClientByWriterType : CLIENTS) {
       for (SolrClient client : solrClientByWriterType.values()) {
         client.close();
       }
@@ -443,10 +444,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       };
 
-  /**
-   * Helper to convert from wt string parameter to actual responseParser object.
-   */
-  private static HttpSolrClient.Builder withResponseParser(HttpSolrClient.Builder builder, final String wt) {
+  /** Helper to convert from wt string parameter to actual responseParser object. */
+  private static HttpSolrClient.Builder withResponseParser(
+      HttpSolrClient.Builder builder, final String wt) {
     switch (wt) {
       case "xml":
         builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
@@ -456,8 +456,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         break;
       default:
         break;
-
-
     }
     return builder;
   }
@@ -527,7 +525,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     String wt = params.get(CommonParams.WT, "javabin");
     final SolrClient client = getRandomClient(random(), wt);
     // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
-    if (client instanceof CloudSolrClient){
+    if (client instanceof CloudSolrClient) {
       wt = "javabin";
     }
 
@@ -646,17 +644,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster
-   * We have different CLIENTS based on their wt setting.
+   * in our cluster We have different CLIENTS based on their wt setting.
    */
   public static SolrClient getRandomClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    if (idx == numClients){
+    if (idx == numClients) {
       // Return the CloudSolrClient, it only uses javabin writerType.
       return COLLECTION_CLIENT;
-    }
-    else {
+    } else {
       // Grabbing the first
       int rnd = random().nextInt(CLIENTS.get(idx).values().toArray().length);
       return (SolrClient) CLIENTS.get(idx).values().toArray()[rnd];
@@ -664,18 +660,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster
-   * We have different CLIENTS based on their wt setting.
+   * in our cluster We have different CLIENTS based on their wt setting.
    */
   public static SolrClient getRandomClient(Random rand, String wt) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    //return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
-    if (idx == numClients){
+    // return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
+    if (idx == numClients) {
       // Return the CloudSolrClient that only ever uses javabin.
       return COLLECTION_CLIENT;
-    }
-    else {
+    } else {
       // Pick from the set of node clients by the random idx,
       // and then select the matching wt configured SolrClient.
       return CLIENTS.get(idx).get(wt);
