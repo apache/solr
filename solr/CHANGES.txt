@@ -81,7 +81,7 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-* PR#xxxx: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
+* PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
 
 Other Changes
