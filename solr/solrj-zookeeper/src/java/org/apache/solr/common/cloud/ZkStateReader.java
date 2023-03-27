@@ -1492,7 +1492,6 @@ public class ZkStateReader implements SolrCloseable {
           throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
         }
       }
-
     }
 
     @Override
