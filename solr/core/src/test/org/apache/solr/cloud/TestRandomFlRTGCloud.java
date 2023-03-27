@@ -76,8 +76,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
-  /** One client per node */
-  private static final List<SolrClient> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
+  /** Per node, we have a map of clients using specific writerTypes, keyed by wt */
+  private static final List<Map<String, SolrClient>> CLIENTS = Collections.synchronizedList(new ArrayList<>(5));
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -147,6 +147,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           new NotIncludedValidator("score", "score_alias:score"));
 
   @BeforeClass
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static void createMiniSolrCloudCluster() throws Exception {
 
     // 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single
@@ -176,7 +177,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      Map<String,SolrClient> solrClientByWriterType = new <String,SolrClient>HashMap();
+      List<String> writerTypes = Arrays.asList("javabin", "json", "xml");
+      for (String wt: writerTypes){
+        HttpSolrClient.Builder builder = new HttpSolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/");
+        builder = withResponseParser(builder,wt);
+        solrClientByWriterType.put(wt,builder.build());
+      }
+      CLIENTS.add(solrClientByWriterType);
+
     }
   }
 
@@ -186,8 +195,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       COLLECTION_CLIENT.close();
       COLLECTION_CLIENT = null;
     }
-    for (SolrClient client : CLIENTS) {
-      client.close();
+    for (Map<String, SolrClient> solrClientByWriterType: CLIENTS) {
+      for (SolrClient client : solrClientByWriterType.values()) {
+        client.close();
+      }
     }
     CLIENTS.clear();
   }
@@ -276,7 +287,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final float threshold = (float) itersSinceLastCommit / numIters;
     if (rand.nextFloat() < threshold) {
       log.info("COMMIT");
-      assertEquals(0, getRandClient(rand).commit().getStatus());
+      assertEquals(0, getRandomClient(rand).commit().getStatus());
       return 0;
     }
     return itersSinceLastCommit + 1;
@@ -352,7 +363,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     assertEquals(
         "Failed delete: " + Arrays.toString(docIds),
         0,
-        getRandClient(random()).deleteById(ids).getStatus());
+        getRandomClient(random()).deleteById(ids).getStatus());
   }
 
   /**
@@ -361,7 +372,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private SolrInputDocument addRandomDocument(final int docId)
       throws IOException, SolrServerException {
-    final SolrClient client = getRandClient(random());
+    final SolrClient client = getRandomClient(random());
 
     final SolrInputDocument doc =
         sdoc(
@@ -432,18 +443,23 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       };
 
-  private static ResponseParser modifyParser(HttpSolrClient client, final String wt) {
-    final ResponseParser ret = client.getParser();
+  /**
+   * Helper to convert from wt string parameter to actual responseParser object.
+   */
+  private static HttpSolrClient.Builder withResponseParser(HttpSolrClient.Builder builder, final String wt) {
     switch (wt) {
       case "xml":
-        client.setParser(RAW_XML_RESPONSE_PARSER);
-        return ret;
+        builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
+        break;
       case "json":
-        client.setParser(RAW_JSON_RESPONSE_PARSER);
-        return ret;
+        builder.withResponseParser(RAW_JSON_RESPONSE_PARSER);
+        break;
       default:
-        return null;
+        break;
+
+
     }
+    return builder;
   }
 
   /**
@@ -452,7 +468,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private void assertRTG(final SolrInputDocument[] knownDocs, final int[] docIds)
       throws IOException, SolrServerException {
-    final SolrClient client = getRandClient(random());
+
     // NOTE: not using SolrClient.getById or getByIds because we want to force choice of "id" vs
     // "ids" params
     final ModifiableSolrParams params = params("qt", "/get");
@@ -509,13 +525,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     String wt = params.get(CommonParams.WT, "javabin");
-    final ResponseParser restoreResponseParser;
-    if (client instanceof HttpSolrClient) {
-      restoreResponseParser = modifyParser((HttpSolrClient) client, wt);
-    } else {
-      // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
+    final SolrClient client = getRandomClient(random(), wt);
+    // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
+    if (client instanceof CloudSolrClient){
       wt = "javabin";
-      restoreResponseParser = null;
     }
 
     final Object rsp;
@@ -528,8 +541,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       docs = getDocsFromRTGResponse(askForList, qRsp);
     } else {
       final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
-      assertNotNull(restoreResponseParser);
-      ((HttpSolrClient) client).setParser(restoreResponseParser);
       assertNotNull(params.toString(), nlRsp);
       rsp = nlRsp;
       final String textResult = (String) nlRsp.get("response");
@@ -636,11 +647,39 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
    * in our cluster
+   * We have different CLIENTS based on their wt setting.
    */
-  public static SolrClient getRandClient(Random rand) {
+  public static SolrClient getRandomClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
+    if (idx == numClients){
+      // Return the CloudSolrClient, it only uses javabin writerType.
+      return COLLECTION_CLIENT;
+    }
+    else {
+      // Grabbing the first
+      int rnd = random().nextInt(CLIENTS.get(idx).values().toArray().length);
+      return (SolrClient) CLIENTS.get(idx).values().toArray()[rnd];
+    }
+  }
+  /**
+   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
+   * in our cluster
+   * We have different CLIENTS based on their wt setting.
+   */
+  public static SolrClient getRandomClient(Random rand, String wt) {
+    int numClients = CLIENTS.size();
+    int idx = TestUtil.nextInt(rand, 0, numClients);
+    //return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
+    if (idx == numClients){
+      // Return the CloudSolrClient that only ever uses javabin.
+      return COLLECTION_CLIENT;
+    }
+    else {
+      // Pick from the set of node clients by the random idx,
+      // and then select the matching wt configured SolrClient.
+      return CLIENTS.get(idx).get(wt);
+    }
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
