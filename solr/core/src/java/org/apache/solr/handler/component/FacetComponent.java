@@ -30,7 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -278,7 +277,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (ArrayUtils.isNotEmpty(pivots)) {
+      if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);

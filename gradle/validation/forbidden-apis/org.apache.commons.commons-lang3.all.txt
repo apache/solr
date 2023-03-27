@@ -1,3 +1,7 @@
+@defaultMessage Use Array.getLength instead
+org.apache.commons.lang3.ArrayUtils#isEmpty(**)
+org.apache.commons.lang3.ArrayUtils#isNotEmpty(**)
+
 @defaultMessage Use Arrays.stream(primitive[]).boxed().toArray() instead
 org.apache.commons.lang3.ArrayUtils.toObject(**)
 
