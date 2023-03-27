@@ -763,7 +763,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       if (values != null) {
         for (String value : values) {
           boolean shouldBeInQueryString =
-              client.getQueryParams().contains(name)
+              client.getUrlParamNames().contains(name)
                   || (request.getQueryParams() != null && request.getQueryParams().contains(name));
           assertEquals(
               shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));

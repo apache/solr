@@ -191,14 +191,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.urlParamNames = builder.urlParamNames;
   }
 
-  /**
-   * @deprecated use {@link #getUrlParamNames()}
-   */
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return getUrlParamNames();
-  }
-
   public Set<String> getUrlParamNames() {
     return urlParamNames;
   }
