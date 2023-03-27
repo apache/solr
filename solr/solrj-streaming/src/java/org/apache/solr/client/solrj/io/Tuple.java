@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * A simple abstraction of a record containing key/value pairs. Convenience methods are provided for
@@ -52,7 +53,7 @@ public class Tuple implements Cloneable, MapWriter {
    *
    * @deprecated use {@link #getFields()} instead of this public field.
    */
-  @Deprecated public Map<String, Object> fields = new HashMap<>(2);
+  @Deprecated public Map<String, Object> fields = CollectionUtil.newHashMap(2);
   /**
    * External serializable field names.
    *

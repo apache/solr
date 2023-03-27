@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.PivotListEntry;
@@ -247,7 +248,7 @@ public class PivotFacetValue {
       SimpleOrderedMap<SimpleOrderedMap<Object>> shardRanges = PivotFacetHelper.getRanges(value);
       if (shardRanges != null) {
         if (rangeCounts == null) {
-          rangeCounts = new LinkedHashMap<>(shardRanges.size() / 2);
+          rangeCounts = CollectionUtil.newLinkedHashMap(shardRanges.size() / 2);
         }
         RangeFacetRequest.DistribRangeFacet.mergeFacetRangesFromShardResponse(
             rangeCounts, shardRanges);

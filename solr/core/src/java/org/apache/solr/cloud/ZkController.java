@@ -27,7 +27,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
-import com.google.common.base.Strings;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -1218,7 +1217,8 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+    List<Op> ops = new ArrayList<>(roles.size() + 1);
     ops.add(
         Op.create(
             nodePath,
@@ -1227,16 +1227,14 @@ public class ZkController implements Closeable {
             CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-    cc.nodeRoles
-        .getRoles()
-        .forEach(
-            (role, mode) ->
-                ops.add(
-                    Op.create(
-                        NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
-                        null,
-                        zkClient.getZkACLProvider().getACLsToAdd(nodePath),
-                        CreateMode.EPHEMERAL)));
+    roles.forEach(
+        (role, mode) ->
+            ops.add(
+                Op.create(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
+                    null,
+                    zkClient.getZkACLProvider().getACLsToAdd(nodePath),
+                    CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);
   }
@@ -1248,8 +1246,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
-    ops.add(Op.delete(nodePath, -1));
+    List<Op> ops = List.of(Op.delete(nodePath, -1));
 
     try {
       zkClient.multi(ops, true);
@@ -1854,7 +1851,7 @@ public class ZkController implements Closeable {
     getCollectionTerms(collection).remove(cd.getCloudDescriptor().getShardId(), cd);
     replicasMetTragicEvent.remove(collection + ":" + coreNodeName);
 
-    if (Strings.isNullOrEmpty(collection)) {
+    if (StrUtils.isNullOrEmpty(collection)) {
       log.error("No collection was specified.");
       assert false : "No collection was specified [" + collection + "]";
       return;
@@ -2948,7 +2945,7 @@ public class ZkController implements Closeable {
               && processedCollections.add(collName)
               && (coll = zkStateReader.getCollection(collName)) != null
               && coll.isPerReplicaState()) {
-            final List<String> replicasToDown = new ArrayList<>();
+            final List<String> replicasToDown = new ArrayList<>(coll.getSlicesMap().size());
             coll.forEachReplica(
                 (s, replica) -> {
                   if (replica.getNodeName().equals(nodeName)) {

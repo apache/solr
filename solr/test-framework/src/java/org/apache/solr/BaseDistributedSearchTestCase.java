@@ -25,11 +25,11 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -59,6 +59,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -808,14 +809,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     boolean ordered = (flags & UNORDERED) == 0;
 
     if (!ordered) {
-      @SuppressWarnings({"rawtypes"})
-      Map mapA = new HashMap(a.size());
+      Map<String, Object> mapA = CollectionUtil.newHashMap(a.size());
       for (int i = 0; i < a.size(); i++) {
         Object prev = mapA.put(a.getName(i), a.getVal(i));
       }
 
-      @SuppressWarnings({"rawtypes"})
-      Map mapB = new HashMap(b.size());
+      Map<String, Object> mapB = CollectionUtil.newHashMap(b.size());
       for (int i = 0; i < b.size(); i++) {
         Object prev = mapB.put(b.getName(i), b.getVal(i));
       }
@@ -1274,7 +1273,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
     String solrxml = getSolrXml();
     if (solrxml != null) {
-      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
+      Files.copy(
+          Path.of(getSolrHome(), solrxml),
+          jettyHome.toPath().resolve("solr.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
     }
   }
 

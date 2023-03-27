@@ -20,7 +20,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
@@ -54,7 +54,7 @@ public class DeleteConfigSetAPI extends ConfigSetAPIBase {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No configset name provided to delete");
     }
-    final Map<String, Object> configsetCommandMsg = Maps.newHashMap();
+    final Map<String, Object> configsetCommandMsg = new HashMap<>();
     configsetCommandMsg.put(NAME, configSetName);
 
     runConfigSetCommand(rsp, ConfigSetParams.ConfigSetAction.DELETE, configsetCommandMsg);

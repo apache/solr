@@ -31,8 +31,6 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracer;
 import io.opentracing.noop.NoopTracerFactory;
@@ -44,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1173,7 +1172,7 @@ public class CoreContainer {
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
-    Map<String, Path> addedCores = Maps.newHashMap();
+    Map<String, Path> addedCores = new HashMap<>();
     for (CoreDescriptor cd : cds) {
       final String name = cd.getName();
       if (addedCores.containsKey(name))
@@ -1886,7 +1885,7 @@ public class CoreContainer {
    * </ul>
    */
   public Map<String, CoreLoadFailure> getCoreInitFailures() {
-    return ImmutableMap.copyOf(coreInitFailures);
+    return Map.copyOf(coreInitFailures);
   }
 
   // ---------------- Core name related methods ---------------
@@ -2192,6 +2191,9 @@ public class CoreContainer {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name, UUID id) {
+    if (name == null) {
+      return null;
+    }
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
     SolrCore core = solrCores.getCoreFromAnyList(name, true, id);

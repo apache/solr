@@ -53,6 +53,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
+import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
@@ -79,6 +80,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DISTRIBUTEDAPIPROCESSING;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.FORCELEADER;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LISTALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.LISTBACKUP;
@@ -125,6 +127,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -142,7 +145,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -218,6 +220,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
@@ -553,9 +556,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try {
       String path =
           ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
-      byte[] data =
-          IOUtils.toByteArray(
-              CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml"));
+      byte[] data;
+      try (InputStream inputStream =
+          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
       path =
@@ -563,9 +569,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               + "/"
               + CollectionAdminParams.SYSTEM_COLL
               + "/solrconfig.xml";
-      data =
-          IOUtils.toByteArray(
-              CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml"));
+      try (InputStream inputStream =
+          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
     } catch (IOException e) {
@@ -1543,6 +1551,24 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           copyPropertiesWithPrefix(req.getParams(), params, PROPERTY_PREFIX);
           return params;
         }),
+    INSTALLSHARDDATA_OP(
+        INSTALLSHARDDATA,
+        (req, rsp, h) -> {
+          req.getParams().required().check(COLLECTION, SHARD);
+          final String collectionName = req.getParams().get(COLLECTION);
+          final String shardName = req.getParams().get(SHARD);
+          final InstallShardDataAPI.InstallShardRequestBody reqBody =
+              new InstallShardDataAPI.InstallShardRequestBody();
+          reqBody.asyncId = req.getParams().get(ASYNC);
+          reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
+          reqBody.location = req.getParams().get(BACKUP_LOCATION);
+
+          final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse installResponse =
+              installApi.installShardData(collectionName, shardName, reqBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
+          return null;
+        }),
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
@@ -2087,6 +2113,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteAliasAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
+        InstallShardDataAPI.class,
         ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
         CollectionPropertyAPI.class,

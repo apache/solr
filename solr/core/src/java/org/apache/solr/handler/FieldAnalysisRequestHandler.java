@@ -153,14 +153,10 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     if (streams != null) {
       // NOTE: Only the first content stream is currently processed
       for (ContentStream stream : streams) {
-        Reader reader = null;
-        try {
-          reader = stream.getReader();
+        try (Reader reader = stream.getReader()) {
           value = IOUtils.toString(reader);
         } catch (IOException e) {
           // do nothing, leave value set to the request parameter
-        } finally {
-          IOUtils.closeQuietly(reader);
         }
         break;
       }

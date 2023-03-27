@@ -16,10 +16,12 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -81,7 +83,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       new ReadOnlyCoresLocator() {
         @Override
         public List<CoreDescriptor> discover(CoreContainer cc) {
-          return ImmutableList.of(
+          return List.of(
               makeCoreDescriptor(cc, "collection1", "false", "true"),
               makeCoreDescriptor(cc, "collection2", "true", "true"),
               makeCoreDescriptor(cc, "collection3", "on", "false"),
@@ -721,13 +723,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     // Collect the files that we'll write to the config directories.
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    String min_schema =
-        FileUtils.readFileToString(new File(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
+    String min_schema = Files.readString(Path.of(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
     String min_config =
-        FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
+        Files.readString(Path.of(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
     String rand_snip =
-        FileUtils.readFileToString(
-            new File(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
+        Files.readString(
+            Path.of(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
 
     // Now purposely mess up the config files, introducing stupid syntax errors.
     String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
@@ -752,10 +753,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // We want to see that the core "heals itself" if an un-corrupted file is written to the
   // directory.
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
+    Files.copy(
+        Path.of(top, srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
   }
 
   // If ok==true, we shouldn't be seeing any failure cases.

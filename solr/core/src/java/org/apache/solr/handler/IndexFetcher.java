@@ -42,7 +42,6 @@ import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -116,6 +115,7 @@ import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -498,7 +498,7 @@ public class IndexFetcher {
         response = getLatestVersion();
       } catch (Exception e) {
         final String errorMsg = e.toString();
-        if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
+        if (!StrUtils.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
           log.warn(
               "Leader at: {} is not available. Index fetch failed by interrupt. Exception: {}",
               leaderUrl,
@@ -972,13 +972,10 @@ public class IndexFetcher {
 
       String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
       final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      Writer outFile =
-          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-      try {
+      try (Writer outFile =
+          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
-      } finally {
-        IOUtils.closeQuietly(outFile);
       }
 
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
@@ -1794,18 +1791,14 @@ public class IndexFetcher {
     private void fetch() throws Exception {
       try {
         while (true) {
-          final FastInputStream is = getStream();
           int result;
-          try {
+          try (FastInputStream is = getStream()) {
             // fetch packets one by one in a single request
             result = fetchPackets(is);
             if (result == 0 || result == NO_CONTENT) {
-
               return;
             }
             // if there is an error continue. But continue from the point where it got broken
-          } finally {
-            IOUtils.closeQuietly(is);
           }
         }
       } finally {
@@ -1959,7 +1952,6 @@ public class IndexFetcher {
 
     /** Open a new stream using HttpClient */
     private FastInputStream getStream() throws IOException {
-
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       //    //the method is command=filecontent
@@ -2003,7 +1995,7 @@ public class IndexFetcher {
         return new FastInputStream(is);
       } catch (Exception e) {
         // close stream on error
-        org.apache.commons.io.IOUtils.closeQuietly(is);
+        IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }

@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +35,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -44,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
@@ -110,25 +109,10 @@ public class XMLLoader extends ContentStreamLoader {
       UpdateRequestProcessor processor)
       throws Exception {
     final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-
-    InputStream is = null;
     XMLStreamReader parser = null;
 
     // Normal XML Loader
-    try {
-      is = stream.getStream();
-      if (log.isTraceEnabled()) {
-        final byte[] body = IOUtils.toByteArray(is);
-        // TODO: The charset may be wrong, as the real charset is later
-        // determined by the XML parser, the content-type is only used as a hint!
-        if (log.isTraceEnabled()) {
-          log.trace(
-              "body: {}",
-              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
-        }
-        IOUtils.closeQuietly(is);
-        is = new ByteArrayInputStream(body);
-      }
+    try (InputStream is = getStream(stream, charset)) {
       parser =
           (charset == null)
               ? inputFactory.createXMLStreamReader(is)
@@ -138,8 +122,24 @@ public class XMLLoader extends ContentStreamLoader {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
       if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
     }
+  }
+
+  private InputStream getStream(ContentStream cs, String charset) throws IOException {
+    if (log.isTraceEnabled()) {
+      try (InputStream is = cs.getStream()) {
+        final byte[] body = is.readAllBytes();
+        // TODO: The charset may be wrong, as the real charset is later
+        // determined by the XML parser, the content-type is only used as a hint!
+        if (log.isTraceEnabled()) {
+          log.trace(
+              "body: {}",
+              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
+        }
+        return new ByteArrayInputStream(body);
+      }
+    }
+    return cs.getStream();
   }
 
   /**
@@ -376,11 +376,8 @@ public class XMLLoader extends ContentStreamLoader {
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<>();
-              Map<String, Object> extendedValues = updateMap.get(currentFieldName);
-              if (extendedValues == null) {
-                extendedValues = new HashMap<>(1);
-                updateMap.put(currentFieldName, extendedValues);
-              }
+              Map<String, Object> extendedValues =
+                  updateMap.computeIfAbsent(currentFieldName, k -> CollectionUtil.newHashMap(1));
               Object val = extendedValues.get(update);
               if (val == null) {
                 extendedValues.put(update, v);
@@ -431,7 +428,7 @@ public class XMLLoader extends ContentStreamLoader {
                 doc.addField(subdocName, readDoc(parser, true));
               } else { // unnamed <doc> enclosed in <doc>
                 if (subDocs == null) {
-                  subDocs = Lists.newArrayList();
+                  subDocs = new ArrayList<>();
                 }
                 subDocs.add(readDoc(parser));
               }
