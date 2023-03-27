@@ -31,6 +31,10 @@ Improvements
 * SOLR-10466: Introduce Builder setter for defaultCollection on cloud SolrClients.  Deprecated
   direct setter setDefaultCollection on cloud SolrClients. (Eric Pugh, David Smiley)
 
+* SOLR-16391: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.  Endpoints are now
+  available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
+  being upserted or deleted. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -133,9 +137,6 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
-* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
- for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
-
 * SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
 
 * SOLR-10463: Introduce Builder setter for retryExpiryTime on cloud SolrClients.  Deprecated
@@ -183,8 +184,6 @@ Improvements
 * SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
   `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
 
-* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
-
 * SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
   `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
   `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
@@ -198,10 +197,6 @@ Improvements
   (Alex Deparvu via Jason Gerlowski)
 
 * SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
-
-* SOLR-16391: The path of the v2 "collprop" API has been tweaked slightly to be more intuitive.  Endpoints are now
-  available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
-  being upserted or deleted. (Jason Gerlowski)
 
 Optimizations
 ---------------------
