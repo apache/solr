@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
@@ -237,7 +238,7 @@ class ExclusiveSliceProperty {
           ListIterator<SliceReplica> iter = ent.getValue().listIterator();
           while (iter.hasNext()) {
             SliceReplica sr = iter.next();
-            if (StringUtils.equals(slice, sr.slice.getName()) == false) {
+            if (Objects.equals(slice, sr.slice.getName()) == false) {
               continue;
             }
             if (nodesHostingProp.containsKey(ent.getKey()) == false) {

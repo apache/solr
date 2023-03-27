@@ -74,8 +74,9 @@ public class ReplicaMutator {
     assert key != null;
     assert value != null;
 
-    if (StringUtils.equalsIgnoreCase(replica.getStr(key), value))
+    if (value.equalsIgnoreCase(replica.getStr(key))) {
       return replica; // already the value we're going to set
+    }
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.put(key, value);
@@ -174,8 +175,9 @@ public class ReplicaMutator {
     log.info(
         "Setting property {} with value {} for collection {}", property, propVal, collectionName);
     log.debug("Full message: {}", message);
-    if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal))
+    if (propVal.equalsIgnoreCase(replica.getStr(property))) {
       return ZkStateWriter.NO_OP; // already the value we're going to set
+    }
 
     // OK, there's no way we won't change the cluster state now
     Map<String, Replica> replicas = collection.getSlice(sliceName).getReplicasCopy();

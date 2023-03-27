@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -101,7 +102,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
-      if (StringUtils.equals(val, replica.getProperty(property))) return;
+      if (Objects.equals(val, replica.getProperty(property))) return;
       Thread.sleep(100);
     }
 

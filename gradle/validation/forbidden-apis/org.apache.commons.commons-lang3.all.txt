@@ -23,6 +23,12 @@ org.apache.commons.lang3.ArrayUtils#toPrimitive(**)
 @defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
 org.apache.commons.lang3.RandomStringUtils
 
+@defaultMessage Use Objects.equals instead
+org.apache.commons.lang3.StringUtils#equals(**)
+
+@defaultMessage Use String equalsIgnoreCase instead
+org.apache.commons.lang3.StringUtils#equalsIgnoreCase(**)
+
 @defaultMessage Use String.join or Collectors.joining instead
 org.apache.commons.lang3.StringUtils#join(**)
 
