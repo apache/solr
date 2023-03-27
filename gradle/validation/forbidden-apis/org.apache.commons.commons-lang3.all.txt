@@ -21,3 +21,6 @@ org.apache.commons.lang3.StringUtils#join(**)
 
 @defaultMessage Use String repeat method instead
 org.apache.commons.lang3.StringUtils#repeat(**)
+
+@defaultMessage Use String split method instead
+org.apache.commons.lang3.StringUtils#split(**)
