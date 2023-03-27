@@ -53,8 +53,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
 
     configureCluster(1).addConfig(configName, configDir).configure();
 
-    cloudClient = cluster.getSolrClient();
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
+    cloudClient = cluster.getSolrClient(DEFAULT_COLLECTION);
 
     CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, configName, 4, 1)
         .withProperty("config", "solrconfig-tlog.xml")

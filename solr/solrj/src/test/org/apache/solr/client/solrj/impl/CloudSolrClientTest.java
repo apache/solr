@@ -304,8 +304,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .sendUpdatesOnlyToShardLeaders()
             .withParallelUpdates(true)
+            .withDefaultCollection("routing_collection")
             .build()) {
-      threadedClient.setDefaultCollection("routing_collection");
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
         checkSingleServer(response);
@@ -625,14 +625,17 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testNonRetryableRequests() throws Exception {
     String collection = getSaferTestName();
 
-    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
+    try (CloudSolrClient client =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection(collection)
+            .build()) {
       // important to have one replica on each node
       RequestStatusState state =
           CollectionAdminRequest.createCollection(collection, "conf", 1, NODE_COUNT)
               .processAndWait(client, 60);
       if (state == RequestStatusState.COMPLETED) {
         cluster.waitForActiveCollection(collection, 1, NODE_COUNT);
-        client.setDefaultCollection(collection);
 
         Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
         adminPathToMbean.put(
@@ -697,7 +700,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void checkCollectionParameters() throws Exception {
 
-    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
+    try (CloudSolrClient client =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection("multicollection1")
+            .build()) {
 
       String async1 =
           CollectionAdminRequest.createCollection("multicollection1", "conf", 2, 1)
@@ -712,7 +719,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       CollectionAdminRequest.waitForAsyncRequest(async2, client, TIMEOUT);
       cluster.waitForActiveCollection("multicollection1", 2, 2);
       cluster.waitForActiveCollection("multicollection2", 2, 2);
-      client.setDefaultCollection("multicollection1");
 
       List<SolrInputDocument> docs = new ArrayList<>(3);
       for (int i = 0; i < 3; i++) {
@@ -974,9 +980,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             .withParallelUpdates(true)
             // don't let collection cache entries get expired, even on a slow machine...
             .withCollectionCacheTtl(Integer.MAX_VALUE)
+            .withDefaultCollection(COL)
             .build()) {
-
-      stale_client.setDefaultCollection(COL);
 
       // do a query to populate stale_client's cache...
       assertEquals(0, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
