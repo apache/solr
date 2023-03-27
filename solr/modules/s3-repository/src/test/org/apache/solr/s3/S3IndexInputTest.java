@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Rule;
@@ -65,7 +65,7 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
 
     File tmp = temporaryFolder.newFolder();
     File file = new File(tmp, "content");
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
+    Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
 
     try (SliceInputStream slicedStream = new SliceInputStream(new FileInputStream(file), slice);
         S3IndexInput input = new S3IndexInput(slicedStream, "path", file.length())) {
