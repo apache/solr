@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
@@ -678,14 +677,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void writeCustomConfig(String coreName, String config, String schema, String rand_snip)
       throws IOException {
 
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
-    if (!coreRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", coreRoot.mkdirs());
-    }
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
+    Files.createDirectories(subHome);
     // Write the file for core discovery
-    FileUtils.writeStringToFile(
-        new File(coreRoot, "core.properties"),
+    Files.writeString(
+        coreRoot.resolve("core.properties"),
         "name="
             + coreName
             + System.getProperty("line.separator")
@@ -694,15 +691,14 @@ public class TestLazyCores extends SolrTestCaseJ4 {
             + "loadOnStartup=true",
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"),
+    Files.writeString(
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"),
         rand_snip,
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.xml"), config, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("solrconfig.xml"), config, StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("schema.xml"), schema, StandardCharsets.UTF_8);
   }
 
   // Write out the cores' config files, both bad schema files, bad config files and some good

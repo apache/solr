@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -4334,7 +4335,7 @@ public class SolrCLI implements CLIO {
           }
 
           // update the solr.in.sh file to contain the necessary authentication lines
-          updateIncludeFileEnableAuth(includeFile, null, config, cli);
+          updateIncludeFileEnableAuth(includeFile.toPath(), null, config, cli);
           echo(
               "Successfully enabled Kerberos authentication; please restart any running Solr nodes.");
           return 0;
@@ -4369,7 +4370,7 @@ public class SolrCLI implements CLIO {
           }
 
           // update the solr.in.sh file to comment out the necessary authentication lines
-          updateIncludeFileDisableAuth(includeFile, cli);
+          updateIncludeFileDisableAuth(includeFile.toPath(), cli);
           return 0;
 
         default:
@@ -4529,13 +4530,14 @@ public class SolrCLI implements CLIO {
             System.exit(0);
           }
 
-          FileUtils.writeStringToFile(
-              basicAuthConfFile,
+          Files.writeString(
+              basicAuthConfFile.toPath(),
               "httpBasicAuthUser=" + username + "\nhttpBasicAuthPassword=" + password,
               StandardCharsets.UTF_8);
 
           // update the solr.in.sh file to contain the necessary authentication lines
-          updateIncludeFileEnableAuth(includeFile, basicAuthConfFile.getAbsolutePath(), null, cli);
+          updateIncludeFileEnableAuth(
+              includeFile.toPath(), basicAuthConfFile.getAbsolutePath(), null, cli);
           final String successMessage =
               String.format(
                   Locale.ROOT,
@@ -4575,7 +4577,7 @@ public class SolrCLI implements CLIO {
           }
 
           // update the solr.in.sh file to comment out the necessary authentication lines
-          updateIncludeFileDisableAuth(includeFile, cli);
+          updateIncludeFileDisableAuth(includeFile.toPath(), cli);
           return 0;
 
         default:
@@ -4644,11 +4646,11 @@ public class SolrCLI implements CLIO {
      *     null.
      */
     private void updateIncludeFileEnableAuth(
-        File includeFile, String basicAuthConfFile, String kerberosConfig, CommandLine cli)
+        Path includeFile, String basicAuthConfFile, String kerberosConfig, CommandLine cli)
         throws IOException {
       assert !(basicAuthConfFile != null
           && kerberosConfig != null); // only one of the two needs to be populated
-      List<String> includeFileLines = FileUtils.readLines(includeFile, StandardCharsets.UTF_8);
+      List<String> includeFileLines = Files.readAllLines(includeFile, StandardCharsets.UTF_8);
       for (int i = 0; i < includeFileLines.size(); i++) {
         String line = includeFileLines.get(i);
         if (authenticationVariables.contains(line.trim().split("=")[0].trim())) { // Non-Windows
@@ -4690,17 +4692,19 @@ public class SolrCLI implements CLIO {
           includeFileLines.add("SOLR_AUTHENTICATION_OPTS=\"" + kerberosConfig + "\"");
         }
       }
-      FileUtils.writeLines(includeFile, StandardCharsets.UTF_8.name(), includeFileLines);
+
+      String lines = includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
+      Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
 
       if (basicAuthConfFile != null) {
         echoIfVerbose("Written out credentials file: " + basicAuthConfFile, cli);
       }
-      echoIfVerbose("Updated Solr include file: " + includeFile.getAbsolutePath(), cli);
+      echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath(), cli);
     }
 
-    private void updateIncludeFileDisableAuth(File includeFile, CommandLine cli)
+    private void updateIncludeFileDisableAuth(Path includeFile, CommandLine cli)
         throws IOException {
-      List<String> includeFileLines = FileUtils.readLines(includeFile, StandardCharsets.UTF_8);
+      List<String> includeFileLines = Files.readAllLines(includeFile, StandardCharsets.UTF_8);
       boolean hasChanged = false;
       for (int i = 0; i < includeFileLines.size(); i++) {
         String line = includeFileLines.get(i);
@@ -4716,8 +4720,10 @@ public class SolrCLI implements CLIO {
         }
       }
       if (hasChanged) {
-        FileUtils.writeLines(includeFile, StandardCharsets.UTF_8.name(), includeFileLines);
-        echoIfVerbose("Commented out necessary lines from " + includeFile.getAbsolutePath(), cli);
+        String lines =
+            includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
+        Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
+        echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath(), cli);
       }
     }
 
