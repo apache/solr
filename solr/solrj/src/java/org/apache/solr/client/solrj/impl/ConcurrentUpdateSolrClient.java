@@ -37,11 +37,9 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -141,28 +139,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
-  /**
-   * @deprecated use {@link #getUrlParamNames()}
-   */
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return getUrlParamNames();
-  }
-
   public Set<String> getUrlParamNames() {
     return this.client.getUrlParamNames();
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param queryParams set of param keys to only send via the query string
-   * @deprecated use {@link ConcurrentUpdateSolrClient.Builder#withTheseParamNamesInTheUrl(Set)}
-   *     instead
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.client.setQueryParams(queryParams);
   }
 
   /** Opens a connection and sends everything... */
@@ -841,11 +819,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
-  @Deprecated
-  public void setParser(ResponseParser responseParser) {
-    client.setParser(responseParser);
-  }
-
   /**
    * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
    */
@@ -858,11 +831,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     if (minimalStallTime > this.stallTime) {
       this.stallTime = minimalStallTime;
     }
-  }
-
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    client.setRequestWriter(requestWriter);
   }
 
   /** Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration. */

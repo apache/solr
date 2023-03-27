@@ -804,89 +804,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return baseUrl;
   }
 
-  /**
-   * Change the base-url used when sending requests to Solr.
-   *
-   * <p>Two different paths can be specified as a part of this URL:
-   *
-   * <p>1) A path pointing directly at a particular core
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr/core1");
-   *   QueryResponse resp = httpSolrClient.query(new SolrQuery("*:*"));
-   * </pre>
-   *
-   * Note that when a core is provided in the base URL, queries and other requests can be made
-   * without mentioning the core explicitly. However, the client can only send requests to that
-   * core.
-   *
-   * <p>2) The path of the root Solr path ("/solr")
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr");
-   *   QueryResponse resp = httpSolrClient.query("core1", new SolrQuery("*:*"));
-   * </pre>
-   *
-   * In this case the client is more flexible and can be used to send requests to any cores. The
-   * cost of this is that the core must be specified on each request.
-   *
-   * <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   * multiple threads simultaneously.
-   *
-   * @deprecated use {@link Builder} instead
-   */
-  @Deprecated
-  public void setBaseURL(String baseUrl) {
-    this.baseUrl = baseUrl;
-  }
-
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link Builder#withResponseParser(ResponseParser)} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
   }
 
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
-  }
-
-  /**
-   * Configure whether the client should follow redirects or not.
-   *
-   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is configured wrong somewhere.
-   *
-   * @deprecated use {@link Builder#withFollowRedirects(boolean)} Redirects(boolean)} instead
-   */
-  @Deprecated
-  public void setFollowRedirects(boolean followRedirects) {
-    this.followRedirects = followRedirects;
-  }
-
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>By default, {@link BinaryRequestWriter} is used.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link Builder#withRequestWriter(RequestWriter)} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   /** Close the {@link HttpClientConnectionManager} from the internal client. */
@@ -899,18 +823,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   public boolean isUseMultiPartPost() {
     return useMultiPartPost;
-  }
-
-  /**
-   * Set the multipart connection properties
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link Builder#allowMultiPartPost(Boolean)} instead
-   */
-  @Deprecated
-  public void setUseMultiPartPost(boolean useMultiPartPost) {
-    this.useMultiPartPost = useMultiPartPost;
   }
 
   /**
