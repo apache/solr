@@ -40,4 +40,11 @@ com.google.common.base.Strings
 @defaultMessage Use Caffeine cache instead
 com.google.common.cache.**
 
-# TODO com.google.common.base.MoreObjects
+@defaultMessage Use StringBuilder
+com.google.common.base.MoreObjects#toStringHelper(**)
+
+@defaultMessage Use Objects.requireNonNullElse instead
+com.google.common.base.MoreObjects#firstNonNull(**)
+
+@defaultMessage use Objects methods
+com.google.common.base.MoreObjects

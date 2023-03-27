@@ -454,43 +454,51 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFile() throws Exception {
-    File tmpDir = createTempDir().toFile();
+    Path tmpDir = createTempDir();
 
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File file =
-        new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
+    Path file =
+        tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
     String[] args =
         new String[] {
-          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
+          "-zkhost",
+          zkServer.getZkAddress(),
+          "-cmd",
+          "getfile",
+          getNode,
+          file.toAbsolutePath().toString()
         };
     ZkCLI.main(args);
 
-    byte[] readData = FileUtils.readFileToByteArray(file);
-    assertArrayEquals(data, readData);
+    assertArrayEquals(data, Files.readAllBytes(file));
   }
 
   @Test
   public void testGetFileCompressed() throws Exception {
-    File tmpDir = createTempDir().toFile();
+    Path tmpDir = createTempDir();
 
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     ZLibCompressor zLibCompressor = new ZLibCompressor();
     this.zkClient.create(getNode, zLibCompressor.compressBytes(data), CreateMode.PERSISTENT, true);
 
-    File file =
-        new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
+    Path file =
+        tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
     String[] args =
         new String[] {
-          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
+          "-zkhost",
+          zkServer.getZkAddress(),
+          "-cmd",
+          "getfile",
+          getNode,
+          file.toAbsolutePath().toString()
         };
     ZkCLI.main(args);
 
-    byte[] readData = FileUtils.readFileToByteArray(file);
-    assertArrayEquals(data, readData);
+    assertArrayEquals(data, Files.readAllBytes(file));
   }
 
   @Test
