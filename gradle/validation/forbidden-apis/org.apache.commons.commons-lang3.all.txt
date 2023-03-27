@@ -1,2 +1,5 @@
 @defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
 org.apache.commons.lang3.RandomStringUtils
+
+@defaultMessage Use String.join or Collectors.joining instead
+org.apache.commons.lang3.StringUtils#join(**)
