@@ -28,7 +28,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -399,7 +398,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
    */
   private String buildUrl(String url) {
     if (!URLUtil.hasScheme(url)) {
-      return StringUtils.defaultIfEmpty(scheme, DEFAULT_SCHEME) + "://" + url;
+      return (StrUtils.isNullOrEmpty(scheme) ? DEFAULT_SCHEME : scheme) + "://" + url;
     } else if (StrUtils.isNotNullOrEmpty(scheme)) {
       return scheme + "://" + URLUtil.removeScheme(url);
     }

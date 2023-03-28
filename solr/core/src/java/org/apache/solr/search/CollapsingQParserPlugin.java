@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -267,9 +266,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     /** returns a new GroupHeadSelector based on the specified local params */
     public static GroupHeadSelector build(final SolrParams localParams) {
-      final String sortString = StringUtils.defaultIfBlank(localParams.get(SORT), null);
-      final String max = StringUtils.defaultIfBlank(localParams.get("max"), null);
-      final String min = StringUtils.defaultIfBlank(localParams.get("min"), null);
+      final String sortString =
+          StrUtils.isBlank(localParams.get(SORT)) ? null : localParams.get(SORT);
+      final String max = StrUtils.isBlank(localParams.get("max")) ? null : localParams.get("max");
+      final String min = StrUtils.isBlank(localParams.get("min")) ? null : localParams.get("min");
 
       if (1 < numNotNull(min, max, sortString)) {
         throw new SolrException(
