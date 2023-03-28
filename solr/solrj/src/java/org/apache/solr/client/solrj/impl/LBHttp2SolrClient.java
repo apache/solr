@@ -71,7 +71,8 @@ import org.slf4j.MDC;
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
  * a dedicated thread. This interval can be set using {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one minute.
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to set up an external load
