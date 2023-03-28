@@ -79,6 +79,8 @@ Bug Fixes
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
+* SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
