@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -762,7 +761,7 @@ public class SolrDocumentFetcher {
     }
 
     private boolean returnDVFields() {
-      return CollectionUtils.isNotEmpty(dvFields);
+      return !(dvFields != null && dvFields.isEmpty());
     }
 
     private Set<String> getStoredFields() {

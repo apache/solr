@@ -36,8 +36,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -270,7 +268,7 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
     // map of package name to multiple values of pluginMeta(Map<String, String>)
-    MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>();
+    Map<String, Set<PluginMeta>> packagePlugins = new HashMap<>();
     Map<String, Object> result;
     try {
       result =
@@ -291,13 +289,11 @@ public class PackageManager implements Closeable {
     Map<String, Object> clusterPlugins =
         (Map<String, Object>)
             result.getOrDefault(ContainerPluginsApi.PLUGIN, Collections.emptyMap());
-    for (String key : clusterPlugins.keySet()) {
-      // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
+    for (Map.Entry<String, Object> entry : clusterPlugins.entrySet()) {
       PluginMeta pluginMeta;
       try {
         pluginMeta =
-            PackageUtils.getMapper()
-                .readValue(Utils.toJSON(clusterPlugins.get(key)), PluginMeta.class);
+            PackageUtils.getMapper().readValue(Utils.toJSON(entry.getValue()), PluginMeta.class);
       } catch (IOException e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
@@ -307,15 +303,14 @@ public class PackageManager implements Closeable {
       if (pluginMeta.klass.contains(":")) {
         String packageName = pluginMeta.klass.substring(0, pluginMeta.klass.indexOf(':'));
         packageVersions.put(packageName, pluginMeta.version);
-        packagePlugins.put(packageName, pluginMeta);
+        packagePlugins.computeIfAbsent(packageName, k -> new HashSet<>()).add(pluginMeta);
       }
     }
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packageVersions.keySet()) {
-      if (StrUtils.isNullOrEmpty(packageName) == false
-          && // There can be an empty key, storing the version here
-          packageVersions.get(packageName)
-              != null) { // null means the package was undeployed from this package before
+      // There can be an empty key, storing the version here
+      // null means the package was undeployed from this package before
+      if (!StrUtils.isNullOrEmpty(packageName) && packageVersions.get(packageName) != null) {
         ret.put(packageName, getPackageInstance(packageName, packageVersions.get(packageName)));
         ret.get(packageName).setCustomData(packagePlugins.get(packageName));
       }
