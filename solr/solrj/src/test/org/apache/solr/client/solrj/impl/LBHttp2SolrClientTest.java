@@ -52,7 +52,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           urlParamNames.toArray(),
           http2SolrClient.getUrlParamNames().toArray());
 
-      testClient.addQueryParams("param2");
       urlParamNames.add("param2");
       assertArrayEquals(
           "Wrong urlParamNames found in lb client.",

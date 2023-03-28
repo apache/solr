@@ -74,7 +74,6 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -193,23 +192,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
-  }
-
-  /**
-   * Expert Method
-   *
-   * @param urlParamNames set of param keys to only send via the query string Note that the param
-   *     will be sent as a query string if the key is part of this Set or the SolrRequest's query
-   *     params.
-   *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   *     multiple threads simultaneously. To avoid this, use {@link
-   *     Builder#withTheseParamNamesInTheUrl(Set)}.
-   * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Builder#withTheseParamNamesInTheUrl(Set)} instead
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> urlParamNames) {
-    this.urlParamNames = urlParamNames;
   }
 
   /**
