@@ -145,7 +145,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -1336,7 +1335,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               copy(req.getParams().required(), null, COLLECTION_PROP, PROPERTY_PROP);
           Boolean shardUnique = Boolean.parseBoolean(req.getParams().get(SHARD_UNIQUE));
           String prop = req.getParams().get(PROPERTY_PROP).toLowerCase(Locale.ROOT);
-          if (!StringUtils.startsWith(prop, PROPERTY_PREFIX)) {
+          if (!prop.startsWith(PROPERTY_PREFIX)) {
             prop = PROPERTY_PREFIX + prop;
           }
 

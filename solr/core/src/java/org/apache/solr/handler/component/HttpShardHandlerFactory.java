@@ -200,8 +200,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null, sb);
-    if (StringUtils.endsWith(this.scheme, "://")) {
-      this.scheme = StringUtils.removeEnd(this.scheme, "://");
+    if (this.scheme != null && this.scheme.endsWith("://")) {
+      this.scheme = this.scheme.replace("://", "");
     }
 
     String strategy =

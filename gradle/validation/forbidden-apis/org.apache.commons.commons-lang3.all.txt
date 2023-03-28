@@ -35,6 +35,9 @@ org.apache.commons.lang3.ArrayUtils#toPrimitive(**)
 @defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
 org.apache.commons.lang3.RandomStringUtils
 
+@defaultMessage Use String endsWith method instead
+org.apache.commons.lang3.StringUtils#endsWith(**)
+
 @defaultMessage Use Objects.equals instead
 org.apache.commons.lang3.StringUtils#equals(**)
 
@@ -61,6 +64,9 @@ org.apache.commons.lang3.StringUtils#repeat(**)
 
 @defaultMessage Use String split method instead
 org.apache.commons.lang3.StringUtils#split(**)
+
+@defaultMessage Use String startsWith method instead
+org.apache.commons.lang3.StringUtils#startsWith(**)
 
 @defaultMessage Use org.apache.lucene.util.Constants instead
 org.apache.commons.lang3.SystemUtils

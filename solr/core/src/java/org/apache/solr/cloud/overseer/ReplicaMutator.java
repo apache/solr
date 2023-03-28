@@ -32,7 +32,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
@@ -134,7 +133,7 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
-    if (!StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX)) {
+    if (!property.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
       property = CollectionAdminParams.PROPERTY_PREFIX + property;
     }
     property = property.toLowerCase(Locale.ROOT);
@@ -222,7 +221,7 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
-    if (StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX) == false) {
+    if (!property.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
       property = CollectionAdminParams.PROPERTY_PREFIX + property;
     }
 

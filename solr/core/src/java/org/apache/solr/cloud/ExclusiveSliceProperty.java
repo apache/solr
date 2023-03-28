@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -77,8 +76,8 @@ class ExclusiveSliceProperty {
 
   ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
-    String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
-    if (!StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX)) {
+    String tmp = message.getStr(ZkStateReader.PROPERTY_PROP, "");
+    if (!tmp.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
       tmp = CollectionAdminParams.PROPERTY_PREFIX + tmp;
     }
     this.property = tmp.toLowerCase(Locale.ROOT);
