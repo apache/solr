@@ -83,7 +83,11 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently, only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return new ConcurrentUpdateSolrClient.Builder(url.toString() + "/" + COLLECTION)
+            .withHttpClient(httpClient)
+            .withQueueSize(6)
+            .withThreadCount(1)
+            .build();
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
