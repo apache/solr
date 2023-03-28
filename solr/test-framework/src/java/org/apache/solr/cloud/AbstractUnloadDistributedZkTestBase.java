@@ -287,7 +287,11 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     // collectionClient.commit();
 
     // unload the leader
-    try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
+    try (SolrClient collectionClient =
+        new HttpSolrClient.Builder(leaderProps.getBaseUrl())
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -312,8 +316,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
     try (SolrClient addClient =
-        getHttpSolrClient(
-            jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 30000, 90000)) {
+        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       // add a few docs while the leader is down
       for (int x = 101; x < 200; x++) {
@@ -334,7 +340,11 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
     // unload the leader again
     leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
-    try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
+    try (SolrClient collectionClient =
+        new HttpSolrClient.Builder(leaderProps.getBaseUrl())
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       Unload unloadCmd = new Unload(false);
       unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -366,8 +376,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     long found1, found3;
 
     try (SolrClient adminClient =
-        getHttpSolrClient(
-            jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 15000, 30000)) {
+        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);
@@ -375,8 +387,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     }
 
     try (SolrClient adminClient =
-        getHttpSolrClient(
-            jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 15000, 30000)) {
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);
@@ -384,8 +398,10 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     }
 
     try (SolrClient adminClient =
-        getHttpSolrClient(
-            jettys.get(3).getBaseUrl() + "/unloadcollection_shard1_replica4", 15000, 30000)) {
+        new HttpSolrClient.Builder(jettys.get(3).getBaseUrl() + "/unloadcollection_shard1_replica4")
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);

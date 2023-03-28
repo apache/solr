@@ -2810,19 +2810,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
-    return new Builder(url)
-        .withHttpClient(httpClient)
-        .withResponseParser(responseParser)
-        .allowCompression(compression)
-        .build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
       String url, HttpClient httpClient, ResponseParser responseParser) {
     return new Builder(url).withHttpClient(httpClient).withResponseParser(responseParser).build();
   }
@@ -2853,18 +2840,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   /**
