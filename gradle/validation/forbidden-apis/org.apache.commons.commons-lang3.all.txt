@@ -1,3 +1,15 @@
+@defaultMessage Build compareTo manually
+org.apache.commons.lang3.builder.CompareToBuilder
+
+@defaultMessage Use Objects.hash instead
+org.apache.commons.lang3.builder.HashCodeBuilder
+
+@defaultMessage Use Objects.equals instead
+org.apache.commons.lang3.builder.EqualsBuilder
+
+@defaultMessage Use manual String builder
+org.apache.commons.lang3.builder.ToStringBuilder
+
 @defaultMessage Use Array.getLength instead
 org.apache.commons.lang3.ArrayUtils#isEmpty(**)
 org.apache.commons.lang3.ArrayUtils#isNotEmpty(**)
