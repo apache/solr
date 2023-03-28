@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -307,22 +305,29 @@ public class ExtendedDismaxQParser extends QParser {
       }
 
       // create a map of {wordGram, [phraseField]}
-      Multimap<Integer, FieldParams> phraseFieldsByWordGram =
-          Multimaps.index(allPhraseFields, FieldParams::getWordGrams);
+      final Map<Integer, List<FieldParams>> phraseFieldsByWordGram = new HashMap<>();
+      for (FieldParams fieldParams : allPhraseFields) {
+        phraseFieldsByWordGram
+            .computeIfAbsent(fieldParams.getWordGrams(), k -> new ArrayList<>())
+            .add(fieldParams);
+      }
 
       // for each {wordGram, [phraseField]} entry, create and add shingled field queries to the main
       // user query
-      for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsByWordGramEntry :
-          phraseFieldsByWordGram.asMap().entrySet()) {
-
+      for (Map.Entry<Integer, List<FieldParams>> phraseFieldsByWordGramEntry :
+          phraseFieldsByWordGram.entrySet()) {
         // group the fields within this wordGram collection by their associated slop (it's possible
         // that the same field appears multiple times for the same wordGram count but with different
         // slop values. In this case, we should take the *sum* of those phrase queries, rather than
         // the max across them).
-        Multimap<Integer, FieldParams> phraseFieldsBySlop =
-            Multimaps.index(phraseFieldsByWordGramEntry.getValue(), FieldParams::getSlop);
-        for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsBySlopEntry :
-            phraseFieldsBySlop.asMap().entrySet()) {
+        final Map<Integer, List<FieldParams>> phraseFieldsBySlop = new HashMap<>();
+        for (FieldParams fieldParams : phraseFieldsByWordGramEntry.getValue()) {
+          phraseFieldsBySlop
+              .computeIfAbsent(fieldParams.getSlop(), k -> new ArrayList<>())
+              .add(fieldParams);
+        }
+        for (Map.Entry<Integer, List<FieldParams>> phraseFieldsBySlopEntry :
+            phraseFieldsBySlop.entrySet()) {
           addShingledPhraseQueries(
               query,
               normalClauses,

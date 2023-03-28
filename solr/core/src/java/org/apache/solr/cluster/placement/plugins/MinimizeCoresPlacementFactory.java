@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -28,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
@@ -100,14 +99,15 @@ public class MinimizeCoresPlacementFactory
         }
 
         // Get number of cores on each Node
-        TreeMultimap<Integer, Node> nodesByCores =
-            TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
+        Map<Integer, Set<Node>> nodesByCores = new TreeMap<>(Comparator.naturalOrder());
 
         Set<Node> nodes = request.getTargetNodes();
 
         // Get the number of cores on each node and sort the nodes by increasing number of cores
         for (Node node : nodes) {
-          nodesByCores.put(coresPerNodeTotal.get(node.getName()), node);
+          nodesByCores
+              .computeIfAbsent(coresPerNodeTotal.get(node.getName()), k -> new HashSet<>())
+              .add(node);
         }
 
         Set<ReplicaPlacement> replicaPlacements =
@@ -123,20 +123,23 @@ public class MinimizeCoresPlacementFactory
           // replicas on nodes with less cores first. We only need totalReplicasPerShard nodes given
           // that's the number of replicas to place. We assign based on the passed
           // nodeEntriesToAssign list so the right nodes get replicas.
-          ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign =
+          List<Map.Entry<Integer, Node>> nodeEntriesToAssign =
               new ArrayList<>(totalReplicasPerShard);
-          Iterator<Map.Entry<Integer, Node>> treeIterator = nodesByCores.entries().iterator();
+          Iterator<Map.Entry<Integer, Node>> treeIterator =
+              nodesByCores.entrySet().stream()
+                  .flatMap(e -> e.getValue().stream().map(n -> Map.entry(e.getKey(), n)))
+                  .iterator();
           for (int i = 0; i < totalReplicasPerShard; i++) {
             nodeEntriesToAssign.add(treeIterator.next());
           }
 
-          // Update the number of cores each node will have once the assignments below got executed
-          // so the next shard picks the lowest loaded nodes for its replicas.
+          // Update the number of cores each node will have once the assignments below got
+          // executed so the next shard picks the lowest loaded nodes for its replicas.
           for (Map.Entry<Integer, Node> e : nodeEntriesToAssign) {
             int coreCount = e.getKey();
             Node node = e.getValue();
-            nodesByCores.remove(coreCount, node);
-            nodesByCores.put(coreCount + 1, node);
+            nodesByCores.getOrDefault(coreCount, new HashSet<>()).remove(node);
+            nodesByCores.computeIfAbsent(coreCount + 1, k -> new HashSet<>()).add(node);
             coresPerNodeTotal.put(node.getName(), coreCount + 1);
           }
 
@@ -162,7 +165,7 @@ public class MinimizeCoresPlacementFactory
 
     private void placeReplicas(
         SolrCollection solrCollection,
-        ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
+        List<Map.Entry<Integer, Node>> nodeEntriesToAssign,
         PlacementPlanFactory placementPlanFactory,
         Set<ReplicaPlacement> replicaPlacements,
         String shardName,
