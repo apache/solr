@@ -2859,16 +2859,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
-  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
-    return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
   public static HttpSolrClient getHttpSolrClient(
       String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
     return new Builder(url)

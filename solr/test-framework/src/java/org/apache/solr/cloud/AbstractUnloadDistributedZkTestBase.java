@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
@@ -271,8 +272,9 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     TestInjection.skipIndexWriterCommitOnClose = true;
 
     try (SolrClient addClient =
-        getHttpSolrClient(
-            jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 30000)) {
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       // add a few docs
       for (int x = 20; x < 100; x++) {
