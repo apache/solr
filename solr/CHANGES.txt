@@ -83,6 +83,8 @@ Bug Fixes
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
