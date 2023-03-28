@@ -67,7 +67,8 @@ class SecurityNodeWatcher implements Watcher {
 
         // remake watch
 
-        SolrZkClient.NodeData data = new SolrZkClient.NodeData(new Stat(), "{}".getBytes(StandardCharsets.UTF_8));
+        SolrZkClient.NodeData data =
+            new SolrZkClient.NodeData(new Stat(), "{}".getBytes(StandardCharsets.UTF_8));
         if (Event.EventType.NodeDeleted.equals(event.getType())) {
           // Node deleted, just recreate watch without attempting a read - SOLR-9679
           zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
@@ -96,12 +97,7 @@ class SecurityNodeWatcher implements Watcher {
   }
 
   void register() throws InterruptedException, KeeperException {
-    zkStateReader
-        .getZkClient()
-        .exists(
-            ZkStateReader.SOLR_SECURITY_CONF_PATH,
-                this,
-            true);
+    zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
     securityData = getSecurityProps(true);
   }
 
@@ -113,9 +109,8 @@ class SecurityNodeWatcher implements Watcher {
     }
     try {
       if (zkStateReader.getZkClient().exists(ZkStateReader.SOLR_SECURITY_CONF_PATH, true)) {
-        SolrZkClient.NodeData d = zkStateReader
-                .getZkClient()
-                .getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
+        SolrZkClient.NodeData d =
+            zkStateReader.getZkClient().getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
         return d != null && d.data.length > 0
             ? new ZkStateReader.ConfigData(
                 (Map<String, Object>) Utils.fromJSON(d.data), d.stat.getVersion())
