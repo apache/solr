@@ -2723,35 +2723,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
    * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
-   */
-  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(
-      String baseSolrUrl, int queueSize, int threadCount, int connectionTimeoutMillis) {
-    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
-   */
-  public static LBHttpSolrClient getLBHttpSolrClient(
-      HttpClient client, int connectionTimeoutMillis, int socketTimeoutMillis, String... solrUrls) {
-    return new LBHttpSolrClient.Builder()
-        .withHttpClient(client)
-        .withBaseSolrUrls(solrUrls)
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
    * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
    */
   public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls)
