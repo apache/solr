@@ -147,18 +147,23 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
-        S_ONE_NON_LEADER_CLIENT = new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
+        S_ONE_LEADER_CLIENT =
+            new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
+        S_ONE_NON_LEADER_CLIENT =
+            new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
-        S_TWO_NON_LEADER_CLIENT = new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
+        S_TWO_LEADER_CLIENT =
+            new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
+        S_TWO_NON_LEADER_CLIENT =
+            new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
-            new Http2SolrClient.Builder(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/").build();
+        new Http2SolrClient.Builder(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/")
+            .build();
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);

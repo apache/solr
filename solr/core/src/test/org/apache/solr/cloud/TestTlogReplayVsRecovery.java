@@ -259,8 +259,10 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * (inclusive) can be found on both the leader and the replica
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
-    try (SolrClient leaderSolr = new Http2SolrClient.Builder(NODE0.getBaseUrl().toString()).build();
-        SolrClient replicaSolr = new Http2SolrClient.Builder(NODE1.getBaseUrl().toString()).build()) {
+    try (SolrClient leaderSolr =
+            new Http2SolrClient.Builder(NODE0.getBaseUrl().toString()).build();
+        SolrClient replicaSolr =
+            new Http2SolrClient.Builder(NODE1.getBaseUrl().toString()).build()) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);

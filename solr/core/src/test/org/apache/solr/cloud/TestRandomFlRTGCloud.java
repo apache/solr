@@ -177,7 +177,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(new Http2SolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/").build());
+      CLIENTS.add(
+          new Http2SolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/").build());
     }
   }
 

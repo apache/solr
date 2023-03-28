@@ -261,7 +261,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient =
+        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -442,7 +443,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient = new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient =
+        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 

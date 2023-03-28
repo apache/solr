@@ -118,7 +118,8 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+      try (SolrClient leaderClient =
+          new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
