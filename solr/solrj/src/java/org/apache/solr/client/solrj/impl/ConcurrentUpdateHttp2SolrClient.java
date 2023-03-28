@@ -701,22 +701,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
   }
 
-  /**
-   * @param pollQueueTimeMillis time for an open connection to wait for updates when the queue is
-   *     empty.
-   * @deprecated use {@link ConcurrentUpdateHttp2SolrClient.Builder#setPollQueueTime(int)} instead
-   */
-  @Deprecated
-  public void setPollQueueTime(int pollQueueTimeMillis) {
-    this.pollQueueTimeMillis = pollQueueTimeMillis;
-    // make sure the stall time is larger than the polling time
-    // to give a chance for the queue to change
-    int minimalStallTime = pollQueueTimeMillis * 2;
-    if (minimalStallTime > this.stallTimeMillis) {
-      this.stallTimeMillis = minimalStallTime;
-    }
-  }
-
   /** Constructs {@link ConcurrentUpdateHttp2SolrClient} instances from provided configuration. */
   public static class Builder {
     protected Http2SolrClient client;
@@ -808,17 +792,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;
-      return this;
-    }
-
-    /**
-     * @param pollQueueTimeMillis time for an open connection to wait for updates when the queue is
-     *     empty.
-     * @deprecated Please use {@link #setPollQueueTime(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder setPollQueueTime(int pollQueueTimeMillis) {
-      setPollQueueTime(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
       return this;
     }
 
