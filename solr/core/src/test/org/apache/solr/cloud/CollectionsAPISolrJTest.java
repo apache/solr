@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -401,7 +402,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String corename = (String) response._get(asList("success", nodeName, "core"), null);
 
     try (SolrClient coreClient =
-        getHttpSolrClient(cluster.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+        new Http2SolrClient.Builder(cluster.getZkStateReader().getBaseUrlForNodeName(nodeName))
+            .build()) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
       assertEquals(
           collectionName, status._get(asList("status", corename, "cloud", "collection"), null));

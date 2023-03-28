@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -63,8 +64,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
-    collection1 = getHttpSolrClient(url + "/collection1");
-    collection2 = getHttpSolrClient(url + "/collection2");
+    collection1 = new Http2SolrClient.Builder(url + "/collection1").build();
+    collection2 = new Http2SolrClient.Builder(url + "/collection2").build();
 
     String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
     String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
@@ -72,7 +73,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (SolrClient nodeClient = getHttpSolrClient(url)) {
+    try (SolrClient nodeClient = new Http2SolrClient.Builder(url).build()) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
