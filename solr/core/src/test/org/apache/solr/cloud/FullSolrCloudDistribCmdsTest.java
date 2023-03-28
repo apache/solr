@@ -788,8 +788,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final int numDocs = atLeast(50);
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient =
-        getConcurrentUpdateSolrClient(
-            nodeToUpdate.getProxyBaseUrl() + "/" + collectionName, 10, 2)) {
+        new ConcurrentUpdateSolrClient.Builder(
+                nodeToUpdate.getProxyBaseUrl() + "/" + collectionName)
+            .withQueueSize(10)
+            .withThreadCount(2)
+            .build()) {
 
       for (int i = 0; i < numDocs; i++) {
         indexClient.add(

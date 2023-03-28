@@ -46,7 +46,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -93,12 +92,10 @@ import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -2705,29 +2702,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         .withConnectionTimeout(connectionTimeoutMillis)
         .withSocketTimeout(socketTimeoutMillis)
         .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
-   */
-  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(
-      String baseSolrUrl, int queueSize, int threadCount) {
-    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
-   */
-  public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls)
-      throws MalformedURLException {
-    return new LBHttpSolrClient.Builder().withBaseSolrUrls(solrUrls).build();
   }
 
   /** This method creates a HttpClient from a URL. */
