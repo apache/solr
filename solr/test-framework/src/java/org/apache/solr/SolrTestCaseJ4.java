@@ -89,7 +89,6 @@ import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -2793,29 +2792,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, ResponseParser responseParser) {
-    return new Builder(url).withHttpClient(httpClient).withResponseParser(responseParser).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
   public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
     return new Builder(url).withHttpClient(httpClient).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, int connectionTimeoutMillis) {
-    return new Builder(url)
-        .withHttpClient(httpClient)
-        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   /**

@@ -652,7 +652,10 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testGetRawStream() throws SolrServerException, IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try (SolrClient solrClient =
-        getHttpSolrClient(jetty.getBaseUrl().toString() + "/collection1", client, null); ) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1")
+            .withHttpClient(client)
+            .withResponseParser(null)
+            .build(); ) {
 
       QueryRequest req = new QueryRequest();
       NamedList<?> response = solrClient.request(req);
