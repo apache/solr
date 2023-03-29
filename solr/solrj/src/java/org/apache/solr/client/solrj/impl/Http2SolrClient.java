@@ -50,7 +50,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -922,13 +921,15 @@ public class Http2SolrClient extends SolrClient {
     if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
       boolean processorAcceptsMimeType =
           processorSupportedContentTypes.stream()
-              .map(ct -> ContentType.parse(ct).getMimeType().trim())
+              .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
               .anyMatch(mimeType::equalsIgnoreCase);
       if (!processorAcceptsMimeType) {
         // unexpected mime type
         final String allSupportedTypes =
             processorSupportedContentTypes.stream()
-                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .map(
+                    ct ->
+                        MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.joining(", "));
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
@@ -1309,7 +1310,7 @@ public class Http2SolrClient extends SolrClient {
   protected void updateDefaultMimeTypeForParser() {
     defaultParserMimeTypes =
         parser.getContentTypes().stream()
-            .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
             .collect(Collectors.toSet());
   }
 
