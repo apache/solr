@@ -2586,15 +2586,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
-   */
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(MiniSolrCloudCluster cluster) {
-    return new RandomizingCloudHttp2SolrClientBuilder(cluster).build();
-  }
-
-  /**
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudLegacySolrClient.Builder} that will
    * randomize some internal settings.
    */

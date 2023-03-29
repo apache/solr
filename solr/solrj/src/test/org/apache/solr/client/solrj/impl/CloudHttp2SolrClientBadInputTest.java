@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
@@ -37,7 +38,7 @@ public class CloudHttp2SolrClientBadInputTest extends SolrCloudTestCase {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getCloudHttp2SolrClient(cluster)) {
+      try (SolrClient client = new RandomizingCloudHttp2SolrClientBuilder(cluster).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
