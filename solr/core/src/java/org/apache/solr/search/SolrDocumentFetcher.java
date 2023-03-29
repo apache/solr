@@ -761,7 +761,7 @@ public class SolrDocumentFetcher {
     }
 
     private boolean returnDVFields() {
-      return !(dvFields != null && dvFields.isEmpty());
+      return !dvFields.isEmpty();
     }
 
     private Set<String> getStoredFields() {
