@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -103,8 +102,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
                 && !FileUtils.fileExists(replicaCd.getDataDir()));
 
     // Check that we can't create a core with no coreNodeName
-    try (SolrClient queryClient =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
+    try (SolrClient queryClient = getHttp2SolrClient(jetty.getBaseUrl().toString())) {
       Exception e =
           expectThrows(
               Exception.class,

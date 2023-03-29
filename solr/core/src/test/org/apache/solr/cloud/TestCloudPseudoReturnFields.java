@@ -30,7 +30,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -88,8 +87,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(
-          new Http2SolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/").build());
+      CLIENTS.add(getHttp2SolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
     assertEquals(

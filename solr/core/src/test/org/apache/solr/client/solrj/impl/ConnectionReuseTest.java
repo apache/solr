@@ -89,7 +89,9 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
             .withThreadCount(1)
             .build();
       case 1:
-        return new HttpSolrClient.Builder(url.toString() + "/" + COLLECTION).withHttpClient(httpClient).build();
+        return new HttpSolrClient.Builder(url.toString() + "/" + COLLECTION)
+            .withHttpClient(httpClient)
+            .build();
       case 2:
         var builder =
             new RandomizingCloudSolrClientBuilder(

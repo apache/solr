@@ -31,7 +31,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -316,7 +315,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+      try (SolrClient client = getHttp2SolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");

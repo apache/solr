@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -197,7 +196,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
         SolrClient replicaClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl() + "/" + replica.getCoreName()).build();
+            getHttp2SolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
         long numFound;
         try {
           numFound =

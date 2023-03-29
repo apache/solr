@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -177,8 +176,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(
-          new Http2SolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/").build());
+      CLIENTS.add(getHttp2SolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
   }
 

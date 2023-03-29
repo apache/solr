@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -147,23 +146,18 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT =
-            new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
-        S_ONE_NON_LEADER_CLIENT =
-            new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
+        S_ONE_LEADER_CLIENT = getHttp2SolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_NON_LEADER_CLIENT = getHttp2SolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT =
-            new Http2SolrClient.Builder(leaderUrl + "/" + COLLECTION_NAME + "/").build();
-        S_TWO_NON_LEADER_CLIENT =
-            new Http2SolrClient.Builder(passiveUrl + "/" + COLLECTION_NAME + "/").build();
+        S_TWO_LEADER_CLIENT = getHttp2SolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_NON_LEADER_CLIENT = getHttp2SolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
     NO_COLLECTION_CLIENT =
-        new Http2SolrClient.Builder(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/")
-            .build();
+        getHttp2SolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);

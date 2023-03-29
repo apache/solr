@@ -39,7 +39,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -116,8 +115,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
-      NODE_CLIENTS.add(
-          new Http2SolrClient.Builder(jettyURL.toString() + "/" + COLLECTION_NAME + "/").build());
+      NODE_CLIENTS.add(getHttp2SolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));
     }
     assertEquals(numServers, NODE_CLIENTS.size());
   }

@@ -31,7 +31,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -246,7 +245,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (SolrClient client = new Http2SolrClient.Builder(NODE0.getBaseUrl().toString()).build()) {
+    try (SolrClient client = getHttp2SolrClient(NODE0.getBaseUrl().toString())) {
       assertEquals(0, client.add(COLLECTION, docs).getStatus());
       if (commit) {
         assertEquals(0, client.commit(COLLECTION).getStatus());
@@ -259,10 +258,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * (inclusive) can be found on both the leader and the replica
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
-    try (SolrClient leaderSolr =
-            new Http2SolrClient.Builder(NODE0.getBaseUrl().toString()).build();
-        SolrClient replicaSolr =
-            new Http2SolrClient.Builder(NODE1.getBaseUrl().toString()).build()) {
+    try (SolrClient leaderSolr = getHttp2SolrClient(NODE0.getBaseUrl().toString());
+        SolrClient replicaSolr = getHttp2SolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);

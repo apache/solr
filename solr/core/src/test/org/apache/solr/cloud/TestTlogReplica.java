@@ -44,7 +44,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -262,15 +261,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient =
-        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       // TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (SolrClient tlogReplicaClient = new Http2SolrClient.Builder(r.getCoreUrl()).build()) {
+      try (SolrClient tlogReplicaClient = getHttp2SolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals(
@@ -402,7 +400,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-        try (SolrClient client = new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
@@ -410,7 +409,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertNotNull(docCloudClient);
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-          try (SolrClient client = new HttpSolrClient.Builder(rGet.getCoreUrl()).withHttpClient(httpClient).build()) {
+        try (SolrClient client =
+            new HttpSolrClient.Builder(rGet.getCoreUrl()).withHttpClient(httpClient).build()) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -420,7 +420,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-        try (SolrClient client = new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -444,8 +445,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient =
-        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -991,7 +991,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (SolrClient replicaClient = new Http2SolrClient.Builder(r.getCoreUrl()).build()) {
+      try (SolrClient replicaClient = getHttp2SolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals(

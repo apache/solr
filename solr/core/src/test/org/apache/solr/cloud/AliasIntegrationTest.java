@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -971,13 +970,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
         try (SolrClient client =
-            new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionList)
-                .build()) {
+            getHttp2SolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (SolrClient client =
-            new Http2SolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
+        try (SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }

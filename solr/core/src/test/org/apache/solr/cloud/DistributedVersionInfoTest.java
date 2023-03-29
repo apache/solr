@@ -36,7 +36,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -111,7 +110,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = getHttp2SolrClient(replica.getCoreUrl())) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", docId);
@@ -302,7 +301,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client = getHttp2SolrClient(replica.getCoreUrl())) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty()) fail("No results returned from query: " + query);
@@ -324,9 +323,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = new Http2SolrClient.Builder(leader.getCoreUrl()).build();
+    SolrClient leaderSolr = getHttp2SolrClient(leader.getCoreUrl());
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(new Http2SolrClient.Builder(r.getCoreUrl()).build());
+    for (Replica r : notLeaders) replicas.add(getHttp2SolrClient(r.getCoreUrl()));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -382,7 +381,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (SolrClient client = new Http2SolrClient.Builder(coreProps.getBaseUrl()).build()) {
+    try (SolrClient client = getHttp2SolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

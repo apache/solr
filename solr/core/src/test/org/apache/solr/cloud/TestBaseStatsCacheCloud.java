@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -135,8 +134,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client =
-          new Http2SolrClient.Builder(jettySolrRunner.getBaseUrl().toString()).build()) {
+      try (SolrClient client = getHttp2SolrClient(jettySolrRunner.getBaseUrl().toString())) {
         NamedList<Object> metricsRsp =
             client.request(
                 new GenericSolrRequest(

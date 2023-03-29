@@ -26,7 +26,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -66,7 +65,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
     clients = new ArrayList<>();
     ClusterState clusterState = cloudClient.getClusterState();
     for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
-      clients.add(new Http2SolrClient.Builder(replica.getCoreUrl()).build());
+      clients.add(getHttp2SolrClient(replica.getCoreUrl()));
     }
   }
 

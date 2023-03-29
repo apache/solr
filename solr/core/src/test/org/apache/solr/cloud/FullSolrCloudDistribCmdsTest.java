@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -172,11 +171,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 =
-            new Http2SolrClient.Builder(docCol.getSlice("shard1").getLeader().getCoreUrl())
-                .build();
+            getHttp2SolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 =
-            new Http2SolrClient.Builder(docCol.getSlice("shard2").getLeader().getCoreUrl())
-                .build()) {
+            getHttp2SolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
       // Add three documents to shard1
       shard1.add(sdoc("id", "1", "title", "s1 one"));
@@ -297,11 +294,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 =
-            new Http2SolrClient.Builder(docCol.getSlice("shard1").getLeader().getCoreUrl())
-                .build();
+            getHttp2SolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 =
-            new Http2SolrClient.Builder(docCol.getSlice("shard2").getLeader().getCoreUrl())
-                .build()) {
+            getHttp2SolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
       // Add six documents w/diff routes (all sent to shard1 leader's core)
       shard1.add(sdoc("id", "1", "routefield_s", "europe"));
@@ -459,7 +454,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
 
         // create client to send our updates to...
-        try (SolrClient indexClient = new Http2SolrClient.Builder(indexingUrl).build()) {
+        try (SolrClient indexClient = getHttp2SolrClient(indexingUrl)) {
 
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
@@ -832,12 +827,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = new Http2SolrClient.Builder(leader.getCoreUrl()).build()) {
+      try (SolrClient leaderClient = getHttp2SolrClient(leader.getCoreUrl())) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (SolrClient replicaClient =
-              new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+          try (SolrClient replicaClient = getHttp2SolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults =
                 replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {

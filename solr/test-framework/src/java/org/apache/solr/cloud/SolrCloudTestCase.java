@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -295,7 +294,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (SolrClient client =
-                 new HttpSolrClient.Builder(jetty.getBaseUrl().toString()).withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient()).build()) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
+            .build()) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

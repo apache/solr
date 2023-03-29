@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -270,8 +269,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient =
-          new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+      try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
       log.info(
@@ -286,7 +284,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
       for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = new Http2SolrClient.Builder(r.getCoreUrl()).build()) {
+        try (SolrClient pullReplicaClient = getHttp2SolrClient(r.getCoreUrl())) {
           SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
           // The adds gauge metric should be null for pull replicas since they don't process adds
@@ -465,14 +463,16 @@ public class TestPullReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (SolrClient client = new HttpSolrClient.Builder(rGet.getCoreUrl()).withHttpClient(httpClient).build()) {
+        try (SolrClient client =
+            new HttpSolrClient.Builder(rGet.getCoreUrl()).withHttpClient(httpClient).build()) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -482,7 +482,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (SolrClient client = new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -513,8 +514,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient =
-        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -617,8 +617,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (SolrClient leaderClient =
-        new Http2SolrClient.Builder(s.getLeader().getCoreUrl()).build()) {
+    try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -685,7 +684,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
       String replicaUrl = r.getCoreUrl();
-      try (SolrClient replicaClient = new Http2SolrClient.Builder(replicaUrl).build()) {
+      try (SolrClient replicaClient = getHttp2SolrClient(replicaUrl)) {
         while (true) {
           QueryRequest req = new QueryRequest(new SolrQuery(query));
           if (user != null && pass != null) {

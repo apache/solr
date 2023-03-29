@@ -95,7 +95,6 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -2716,6 +2715,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
+  }
+
+  /**
+   * This method creates a basic Http2SolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   */
+  public static Http2SolrClient getHttp2SolrClient(String url) {
+    return new Http2SolrClient.Builder(url).build();
   }
 
   /**
