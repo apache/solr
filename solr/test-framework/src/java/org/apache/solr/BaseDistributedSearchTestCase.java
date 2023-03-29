@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import jakarta.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -44,7 +45,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.Filter;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;

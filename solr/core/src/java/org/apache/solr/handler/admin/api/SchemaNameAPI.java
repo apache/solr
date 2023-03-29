@@ -20,10 +20,10 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;

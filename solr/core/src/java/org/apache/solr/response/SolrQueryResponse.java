@@ -16,12 +16,12 @@
  */
 package org.apache.solr.response;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;

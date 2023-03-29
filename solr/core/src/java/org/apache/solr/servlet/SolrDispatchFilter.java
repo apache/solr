@@ -26,6 +26,14 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -33,14 +41,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
@@ -340,12 +340,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         }
         // For legacy reasons, upon successful authentication this wants to call the chain's next
         // filter, which obfuscates the layout of the code since one usually expects to be able to
-        // find the call to doFilter() in the implementation of javax.servlet.Filter. Supplying a
+        // find the call to doFilter() in the implementation of jakarta.servlet.Filter. Supplying a
         // trivial impl here to keep existing code happy while making the flow clearer. Chain will
         // be called after this method completes. Eventually auth all moves to its own filter
         // (hopefully). Most auth plugins simply return true after calling this anyway, so they
         // obviously don't care. Kerberos plugins seem to mostly use it to satisfy the api of a
-        // wrapped instance of javax.servlet.Filter and neither of those seem to be doing anything
+        // wrapped instance of jakarta.servlet.Filter and neither of those seem to be doing anything
         // fancy with the filter chain, so this would seem to be a hack brought on by the fact that
         // our auth code has been forced to be code within dispatch filter, rather than being a
         // filter itself. The HadoopAuthPlugin has a suspicious amount of code after the call to

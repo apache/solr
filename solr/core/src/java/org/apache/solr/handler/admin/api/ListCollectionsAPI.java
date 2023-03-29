@@ -21,14 +21,14 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;

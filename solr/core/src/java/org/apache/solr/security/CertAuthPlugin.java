@@ -16,11 +16,11 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
 
 /** An authentication plugin that sets principal based on the certificate subject */
@@ -33,7 +33,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     X509Certificate[] certs =
-        (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
     if (certs == null || certs.length == 0) {
       numMissingCredentials.inc();
       response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");

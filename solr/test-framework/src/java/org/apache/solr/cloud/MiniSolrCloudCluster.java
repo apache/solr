@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
+import jakarta.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -53,7 +54,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -1066,8 +1066,8 @@ public class MiniSolrCloudCluster {
     @Override
     protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      io.dropwizard.metrics.jetty11.InstrumentedHandler metrics =
+          new io.dropwizard.metrics.jetty11.InstrumentedHandler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }

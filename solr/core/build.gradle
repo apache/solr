@@ -16,7 +16,7 @@
  */
 
 plugins {
-  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.9'
 }
 
 apply plugin: 'java-library'
@@ -41,7 +41,7 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
-  implementation 'io.swagger.core.v3:swagger-annotations'
+  implementation 'io.swagger.core.v3:swagger-annotations-jakarta'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -77,7 +77,7 @@ dependencies {
   implementation 'org.glassfish.jersey.core:jersey-common'
   implementation 'org.glassfish.jersey.core:jersey-server'
   implementation 'org.glassfish.hk2:hk2-api'
-  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.inject:jakarta.inject-api'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
 
   // Non-API below; although there are exceptions
@@ -127,7 +127,7 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  implementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
 
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {

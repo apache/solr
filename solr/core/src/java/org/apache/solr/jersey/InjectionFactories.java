@@ -19,8 +19,8 @@ package org.apache.solr.jersey;
 
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
 
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

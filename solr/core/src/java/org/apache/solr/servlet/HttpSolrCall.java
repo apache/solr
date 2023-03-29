@@ -34,6 +34,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,8 +56,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;

@@ -18,11 +18,11 @@
 package org.apache.solr.util.tracing;
 
 import io.opentracing.propagation.TextMap;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import javax.servlet.http.HttpServletRequest;
 
 /** A Carrier for extract Span context out of request headers */
 public class HttpServletCarrier implements TextMap {

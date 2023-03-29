@@ -16,10 +16,10 @@
  */
 package org.apache.solr.embedded;
 
+import jakarta.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.servlet.Filter;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 

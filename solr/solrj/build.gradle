@@ -63,7 +63,7 @@ dependencies {
 
   testImplementation 'commons-io:commons-io'
 
-  testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  testImplementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
   testImplementation 'org.eclipse.jetty:jetty-servlet'

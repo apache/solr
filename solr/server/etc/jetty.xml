@@ -30,7 +30,7 @@
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
   <Arg name="threadpool">
-    <New id="threadpool" class="io.dropwizard.metrics.jetty10.InstrumentedQueuedThreadPool">
+    <New id="threadpool" class="io.dropwizard.metrics.jetty11.InstrumentedQueuedThreadPool">
       <Arg name="registry">
         <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
           <Arg>solr.jetty</Arg>
@@ -178,7 +178,7 @@
                  </New>
                </Item>
                <Item>
-                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty10.InstrumentedHandler">
+                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty11.InstrumentedHandler">
                    <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
                    <Set name="handler">
                      <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
