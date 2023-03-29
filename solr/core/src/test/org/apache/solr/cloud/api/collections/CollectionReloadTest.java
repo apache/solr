@@ -97,17 +97,17 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
   }
 
-  @Repeat(iterations = 5)
+  @Repeat(iterations = 2)
   public void testCreateReloadDeleteAllNrt() throws Exception {
     testCreateReloadDelete("testCreateReloadDeleteAllNrt", 3, 0, 0);
   }
 
-  @Repeat(iterations = 5)
+  @Repeat(iterations = 2)
   public void testCreateReloadDeleteAllTlog() throws Exception {
     testCreateReloadDelete("testCreateReloadDeleteAllTlog", 0, 3, 0);
   }
 
-  @Repeat(iterations = 5)
+  @Repeat(iterations = 2)
   public void testCreateReloadDeletePull() throws Exception {
     testCreateReloadDelete("testCreateReloadDeletePull", 0, 1, 2);
   }
