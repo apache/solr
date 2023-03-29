@@ -94,6 +94,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -373,7 +374,13 @@ public class JettySolrRunner {
       // Initialize the servlets
       final ServletContextHandler root =
           new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
-      root.setResourceBase(".");
+      try {
+        // Using just setResourceBase(".") means that Jetty calls toRealPath with NO_FOLLOW_LINKS
+        // in PathResource line 226. This invocation bypasses that check by using a URI instead.
+        root.setBaseResource(Resource.newResource(Path.of(".").toRealPath().toUri()));
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to set Jetty resource base", e);
+      }
 
       server.addEventListener(
           new LifeCycle.Listener() {

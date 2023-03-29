@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.apache.solr.cli.PackageTool;
 import org.apache.solr.cli.SolrCLI;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -242,7 +244,10 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceDir);
+
+      // Using just setResourceBase(".") means that Jetty calls toRealPath with NO_FOLLOW_LINKS
+      // in PathResource line 226. This invocation bypasses that check by using a URI instead.
+      resourceHandler.setBaseResource(Resource.newResource(Path.of(resourceDir).toRealPath().toUri()));
       resourceHandler.setDirectoriesListed(true);
 
       HandlerList handlers = new HandlerList();

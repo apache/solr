@@ -85,7 +85,7 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
-  minJavaVersion = JavaVersion.VERSION_17
+  minJavaVersion = JavaVersion.VERSION_21
 
   // Allow definiting external tool locations using system props.
   externalTool = { name ->
