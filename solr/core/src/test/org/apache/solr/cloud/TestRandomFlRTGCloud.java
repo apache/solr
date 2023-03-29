@@ -644,7 +644,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster.  We have different CLIENTS based on their wt setting for each node.
+   * in our cluster. We have different CLIENTS based on their wt setting for each node.
    */
   public static SolrClient getRandomClient(Random rand) {
     int numClients = CLIENTS.size();
