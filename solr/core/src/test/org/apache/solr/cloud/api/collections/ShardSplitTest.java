@@ -887,7 +887,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                       deleted.add(delId);
                       documentIds.remove(String.valueOf(delId));
                     } catch (Exception e) {
-                      log.error("Exception while deleting docs", e);
+                      log.error("Exception while deleting doc id = {}", delId, e);
                     }
                   }
                 } catch (Exception e) {
@@ -1342,17 +1342,20 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Map<String, SolrDocument> shard11Docs = new HashMap<>();
     for (int i = 0; i < response.getResults().size(); i++) {
       SolrDocument document = response.getResults().get(i);
+      String id = document.getFieldValue("id").toString();
+      Object version = document.getFieldValue("_version_");
+      assertNotNull("doc " + id + " has null _version_ field", version);
       idVsVersion.put(
-          document.getFieldValue("id").toString(), document.getFieldValue("_version_").toString());
-      SolrDocument old = shard10Docs.put(document.getFieldValue("id").toString(), document);
+          id, version.toString());
+      SolrDocument old = shard10Docs.put(id, document);
       if (old != null) {
         log.error(
             "EXTRA: ID: {} on shard1_0. Old version: {} new version: {}",
-            document.getFieldValue("id"),
+            id,
             old.getFieldValue("_version_"),
-            document.getFieldValue("_version_"));
+            version);
       }
-      found.add(document.getFieldValue("id").toString());
+      found.add(id);
     }
     for (int i = 0; i < response2.getResults().size(); i++) {
       SolrDocument document = response2.getResults().get(i);
