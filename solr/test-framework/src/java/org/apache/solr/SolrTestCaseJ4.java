@@ -2655,33 +2655,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         Collections.singletonList(zkHost), Optional.empty());
   }
 
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(
-      String zkHost,
-      String defaultCollection,
-      boolean shardLeadersOnly,
-      int connectionTimeoutMillis,
-      int socketTimeoutMillis) {
-    RandomizingCloudSolrClientBuilder builder =
-        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
-    if (shardLeadersOnly) {
-      builder.sendUpdatesOnlyToShardLeaders();
-    } else {
-      builder.sendUpdatesToAllReplicasInShard();
-    }
-    if (defaultCollection != null) {
-      builder.withDefaultCollection(defaultCollection);
-    }
-    return builder
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
-  }
-
   /** This method creates a HttpClient from a URL. */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {

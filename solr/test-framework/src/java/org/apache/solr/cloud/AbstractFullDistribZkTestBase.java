@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -2170,6 +2171,33 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CollectionHandlingUtils.CREATE_NODE_SET, createNodeSetStr),
         client,
         configName);
+  }
+
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
+   * not wish to have any randomized behavior should use the {@link
+   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
+  public static CloudSolrClient getCloudSolrClient(
+      String zkHost,
+      String defaultCollection,
+      boolean shardLeadersOnly,
+      int connectionTimeoutMillis,
+      int socketTimeoutMillis) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+    if (shardLeadersOnly) {
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
+    }
+    if (defaultCollection != null) {
+      builder.withDefaultCollection(defaultCollection);
+    }
+    return builder
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
   }
 
   @Override
