@@ -523,7 +523,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     String wt = params.get(CommonParams.WT, "javabin");
     final SolrClient client = getRandomClient(random(), wt);
-    // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
+
+    // If we have chosen a CloudSolrClient, then override wt parameter back to javabin format,
+    // regardless of what was randomly picked.
     if (client instanceof CloudSolrClient) {
       wt = "javabin";
     }
@@ -643,7 +645,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster. We have different CLIENTS based on their wt setting for each node.
+   * in our cluster. This method doesn't care which wt is defined.
    */
   public static SolrClient getRandomClient(Random rand) {
     int numClients = CLIENTS.size();
@@ -659,7 +661,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster We have different CLIENTS based on their wt setting.
+   * in our cluster. We have different CLIENTS created for each node based on their wt setting.
    */
   public static SolrClient getRandomClient(Random rand, String wt) {
     int numClients = CLIENTS.size();
