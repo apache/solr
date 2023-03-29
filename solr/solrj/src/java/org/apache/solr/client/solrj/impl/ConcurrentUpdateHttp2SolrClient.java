@@ -159,14 +159,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.stallTimeMillis = minimalStallTimeMillis;
     }
 
-    if (stallTimeMillis < pollQueueTimeMillis * 2) {
-      throw new RuntimeException(
-          "Invalid stallTime: "
-              + stallTimeMillis
-              + "ms, must be 2x > pollQueueTime "
-              + pollQueueTimeMillis);
-    }
-
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
       this.shutdownExecutor = false;
