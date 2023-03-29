@@ -38,6 +38,9 @@ com.google.common.collect.ObjectArrays
 @defaultMessage Use Java collections
 com.google.common.collect.**
 
+@defaultMessage Use Java methods
+com.google.common.io.**
+
 @defaultMessage Use org.apache.solr.common.util.StrUtils
 com.google.common.base.Strings
 

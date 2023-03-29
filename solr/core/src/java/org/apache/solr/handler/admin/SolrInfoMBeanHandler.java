@@ -16,19 +16,20 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.BufferedReader;
 import java.io.StringReader;
 import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,7 +64,10 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "missing content-stream for diff");
       }
-      String content = IOUtils.toString(body.getReader());
+      final String content;
+      try (BufferedReader reader = new BufferedReader(body.getReader())) {
+        content = StrUtils.stringFromReader(reader);
+      }
 
       NamedList<NamedList<NamedList<Object>>> ref = fromXML(content);
 

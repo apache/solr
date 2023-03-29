@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -362,5 +364,15 @@ public class StrUtils {
 
   public static boolean isNullOrEmpty(String string) {
     return string == null || string.isEmpty();
+  }
+
+  public static String stringFromReader(Reader reader) throws IOException {
+    char[] arr = new char[8 * 1024];
+    StringBuilder buffer = new StringBuilder();
+    int numCharsRead;
+    while ((numCharsRead = reader.read(arr, 0, arr.length)) != -1) {
+      buffer.append(arr, 0, numCharsRead);
+    }
+    return buffer.toString();
   }
 }

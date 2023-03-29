@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -40,7 +41,9 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     ContentStreamBase stream = new ContentStreamBase.StringStream(input);
     assertEquals(input.length(), stream.getSize().longValue());
     assertEquals(input, new String(stream.getStream().readAllBytes(), StandardCharsets.UTF_8));
-    assertEquals(input, IOUtils.toString(stream.getReader()));
+    try (BufferedReader reader = new BufferedReader(stream.getReader())) {
+      assertEquals(input, StrUtils.stringFromReader(reader));
+    }
   }
 
   public void testFileStream() throws IOException {
