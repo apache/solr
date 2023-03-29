@@ -855,7 +855,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public void customHttpClientTest() throws IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try (CloudSolrClient solrClient =
-        getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withHttpClient(client)
+            .build()) {
 
       assertSame(((CloudLegacySolrClient) solrClient).getLbClient().getHttpClient(), client);
 
