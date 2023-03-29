@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -62,7 +64,9 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     // insecure: only use for tests!!!!
     server.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, "/solr");
+    // Using just WebAppContext with path means that Jetty calls toRealPath with NO_FOLLOW_LINKS
+    // in PathResource line 226. This invocation bypasses that check by using a URI instead.
+    new WebAppContext(server, Resource.newResource(Path.of(path).toRealPath().toUri()), "/solr");
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
