@@ -85,6 +85,8 @@ Bug Fixes
 
 * SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong)
 
+* SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)

@@ -22,6 +22,7 @@ import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -314,49 +315,50 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
 
   @Override
-  public Option[] getOptions() {
-    return new Option[] {
-      Option.builder("solrUrl")
-          .argName("URL")
-          .hasArg()
-          .required(true)
-          .desc(
-              "Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL + '.')
-          .build(),
-      Option.builder("collections")
-          .argName("COLLECTIONS")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-          .build(),
-      Option.builder("cluster")
-          .required(false)
-          .desc("Specifies that this action should affect cluster-level plugins only.")
-          .build(),
-      Option.builder("p")
-          .argName("PARAMS")
-          .hasArgs()
-          .required(false)
-          .desc("List of parameters to be used with deploy command.")
-          .longOpt("param")
-          .build(),
-      Option.builder("u")
-          .required(false)
-          .desc("If a deployment is an update over a previous deployment.")
-          .longOpt("update")
-          .build(),
-      Option.builder("c")
-          .required(false)
-          .desc("The collection to apply the package to, not required.")
-          .longOpt("collection")
-          .build(),
-      Option.builder("y")
-          .required(false)
-          .desc("Don't prompt for input; accept all default choices, defaults to false.")
-          .longOpt("noprompt")
-          .build()
-    };
+  public List<Option> getOptions() {
+    return List.of(
+        Option.builder("solrUrl")
+            .argName("URL")
+            .hasArg()
+            .required(true)
+            .desc(
+                "Address of the Solr Web application, defaults to: "
+                    + SolrCLI.DEFAULT_SOLR_URL
+                    + '.')
+            .build(),
+        Option.builder("collections")
+            .argName("COLLECTIONS")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
+            .build(),
+        Option.builder("cluster")
+            .required(false)
+            .desc("Specifies that this action should affect cluster-level plugins only.")
+            .build(),
+        Option.builder("p")
+            .argName("PARAMS")
+            .hasArgs()
+            .required(false)
+            .desc("List of parameters to be used with deploy command.")
+            .longOpt("param")
+            .build(),
+        Option.builder("u")
+            .required(false)
+            .desc("If a deployment is an update over a previous deployment.")
+            .longOpt("update")
+            .build(),
+        Option.builder("c")
+            .required(false)
+            .desc("The collection to apply the package to, not required.")
+            .longOpt("collection")
+            .build(),
+        Option.builder("y")
+            .required(false)
+            .desc("Don't prompt for input; accept all default choices, defaults to false.")
+            .longOpt("noprompt")
+            .build());
   }
 
   private String getZkHost(CommandLine cli) throws Exception {
