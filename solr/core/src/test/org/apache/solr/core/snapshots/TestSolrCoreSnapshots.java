@@ -34,6 +34,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.CreateSnapshot;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.DeleteSnapshot;
@@ -107,8 +108,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String duplicateName = commitName.concat("_duplicate");
 
     try (SolrClient adminClient =
-            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
+                 new Http2SolrClient.Builder(cluster.getJettySolrRunners().get(0).getBaseUrl().toString()).build();
+         SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
       // Create another snapshot referring to the same index commit to verify the
@@ -198,8 +199,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
     try (SolrClient adminClient =
-            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
+                 new Http2SolrClient.Builder(cluster.getJettySolrRunners().get(0).getBaseUrl().toString()).build();
+        SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 
