@@ -19,7 +19,6 @@ package org.apache.solr.search.grouping.endresulttransformer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
@@ -77,7 +76,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           if (group.groupValue != null) {
             // use createFields so that fields having doc values are also supported
             List<IndexableField> fields = groupField.createFields(group.groupValue.utf8ToString());
-            if (CollectionUtils.isNotEmpty(fields)) {
+            if (fields != null && !fields.isEmpty()) {
               groupResult.add("groupValue", groupFieldType.toObject(fields.get(0)));
             } else {
               throw new SolrException(
