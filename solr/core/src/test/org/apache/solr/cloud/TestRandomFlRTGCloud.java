@@ -431,9 +431,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       };
 
-  /** Helper to convert from wt string parameter to actual responseParser object. */
-  private static HttpSolrClient.Builder withResponseParser(
-      HttpSolrClient.Builder builder, final String wt) {
+  /** Helper to convert from wt string parameter to actual SolrClient. */
+  private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
+    HttpSolrClient.Builder builder =
+        new HttpSolrClient.Builder(jettyBaseUrl + "/" + COLLECTION_NAME + "/");
     switch (wt) {
       case "xml":
         builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
@@ -444,7 +445,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       default:
         break;
     }
-    return builder;
+    return builder.build();
   }
 
   /**
@@ -655,12 +656,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       JettySolrRunner jetty = jettySolrRunners.get(idx);
       String jettyBaseUrl = jetty.getBaseUrl().toString();
       return CLIENTS.computeIfAbsent(
-          new Pair<>(jettyBaseUrl, wt),
-          k ->
-              withResponseParser(
-                      new HttpSolrClient.Builder(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"),
-                      wt)
-                  .build());
+          new Pair<>(jettyBaseUrl, wt), k -> getSolrClient(k.first(), k.second()));
     }
   }
 
