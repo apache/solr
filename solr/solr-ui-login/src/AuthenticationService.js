@@ -14,25 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const SOLR_HOST_URL = process.env.REACT_APP_SOLR_HOST; 
-const SOLR_PORT = process.env.REACT_APP_SOLR_PORT;
 
 export const AuthenticationService = {
     login: async function(username, password) {
-        // Note: this direction would only work for basic auth. 
-        // Need to do more thinking on other auth classes and dependencies like session storage.
-        const response = await fetch(`${SOLR_HOST_URL}:${SOLR_PORT}/solr/admin/authentication`, {
+        
+        /* 
+            Note: this direction would only work for basic auth and JWT, 
+            can expand to more strategies easily after more thinking. 
+        */
+
+        const response = await fetch(`http://0.0.0.0:3001/login`, {
             method: "POST",
             headers: {
             "Content-Type": "application/json",
+            "Authorization": "Basic " + btoa(username + ":" + password),
+            "Access-Control-Allow-Origin": "*",
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({
+                "set-property": {
+                    "forwardCredentials": true
+                }
+            }),
         });
     
         // If the response is successful, store the JWT in local storage.
         if (response.ok) {
-            return true;
-            // force users to http://localhost:8983/solr/#/home
+            // hard coding the location of the legacy UI until using environment variables
+            // const authToken = response.headers.get("Authorization");
+            const authToken = response.headers.get("X-Auth-Token");
+            document.cookie = `authToken=${authToken}; path=/; SameSite=None; Secure`;
+            window.location.href = "http://localhost:8983/solr/#/home";
+            // return true;
+            // const jwt = await response.json();
+            // localStorage.setItem("jwt", jwt);
+            
         } else {
             return false
         }

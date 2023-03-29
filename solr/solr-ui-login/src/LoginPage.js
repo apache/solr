@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
@@ -30,7 +31,7 @@ const LoginPage = () => {
     try {
       await AuthenticationService.login(username, password);
       // Redirect to the legacy admin UI after successful login
-      window.location.replace("http://localhost:8983/solr/#/home");
+      window.location.replace(`http://localhost:8983/solr/#/`);
     } catch (error) {
       //TODO: make this prettier
       alert(error.message)
@@ -40,7 +41,7 @@ const LoginPage = () => {
   return (
     <div>
       <p>
-        This login page facilitates the eventual migration of the Apache Solr&#8482; Admin UI
+        This new login page facilitates the eventual migration of the Apache Solr&#8482; Admin UI
         to React.
       </p>
       <p> To start, it will only support login via the form below.</p>
