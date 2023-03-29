@@ -83,7 +83,7 @@ Bug Fixes
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
-* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy)
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong)
 
 Dependency Upgrades
 ---------------------
