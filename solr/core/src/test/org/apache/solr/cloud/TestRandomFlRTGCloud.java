@@ -177,8 +177,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      @SuppressWarnings({"rawtypes", "unchecked"})
-      Map<String, SolrClient> solrClientByWriterType = new <String, SolrClient>HashMap();
+      Map<String, SolrClient> solrClientByWriterType = new HashMap<>();
       List<String> writerTypes = Arrays.asList("javabin", "json", "xml");
       for (String wt : writerTypes) {
         HttpSolrClient.Builder builder =
