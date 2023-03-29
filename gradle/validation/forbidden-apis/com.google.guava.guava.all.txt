@@ -35,7 +35,7 @@ com.google.common.collect.Iterables
 com.google.common.collect.Iterators
 com.google.common.collect.ObjectArrays
 
-@defaultMessage use Java collections
+@defaultMessage Use Java collections
 com.google.common.collect.**
 
 @defaultMessage Use org.apache.solr.common.util.StrUtils
