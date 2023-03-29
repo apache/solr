@@ -307,11 +307,13 @@ public class PackageManager implements Closeable {
       }
     }
     Map<String, SolrPackageInstance> ret = new HashMap<>();
-    for (String packageName : packageVersions.keySet()) {
+    for (Map.Entry<String, String> entry : packageVersions.entrySet()) {
+      String packageName = entry.getKey();
+      String packageVersion = entry.getValue();
       // There can be an empty key, storing the version here
       // null means the package was undeployed from this package before
-      if (!StrUtils.isNullOrEmpty(packageName) && packageVersions.get(packageName) != null) {
-        ret.put(packageName, getPackageInstance(packageName, packageVersions.get(packageName)));
+      if (!StrUtils.isNullOrEmpty(packageName) && packageVersion != null) {
+        ret.put(packageName, getPackageInstance(packageName, packageVersion));
         ret.get(packageName).setCustomData(packagePlugins.get(packageName));
       }
     }
