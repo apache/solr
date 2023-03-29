@@ -269,7 +269,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + collection;
-    try (SolrClient solrServer = getHttp2SolrClient(url)) {
+    try (SolrClient solrServer = getHttpSolrClient(url)) {
       NamedList<?> resp = solrServer.request(up);
       NamedList<?> hdr = (NamedList<?>) resp.get("responseHeader");
       Integer batchRf = (Integer) hdr.get(UpdateRequest.REPFACT);

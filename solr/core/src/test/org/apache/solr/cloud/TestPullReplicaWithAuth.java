@@ -117,7 +117,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttp2SolrClient(s.getLeader().getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
@@ -127,7 +127,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
 
       for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttp2SolrClient(r.getCoreUrl())) {
+        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
           QueryResponse statsResponse =
               queryWithBasicAuth(
                   pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));

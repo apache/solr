@@ -108,7 +108,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   @Test
   public void testCreateZkFailure() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttp2SolrClient(baseUrl);
+    final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 

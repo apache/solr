@@ -67,7 +67,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       final String collectionName = "collection" + i;
       solrCluster.uploadConfigSet(configset("configset-2"), collectionName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-      final SolrClient solrClient = getHttp2SolrClient(baseUrl);
+      final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] =
           new CreateDeleteSearchCollectionThread(
               "create-delete-search-" + i,
@@ -94,7 +94,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
-      final SolrClient solrClient = getHttp2SolrClient(baseUrl);
+      final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] =
           new CreateDeleteCollectionThread(
               "create-delete-" + i, collectionName, configName, timeToRunSec, solrClient, failure);

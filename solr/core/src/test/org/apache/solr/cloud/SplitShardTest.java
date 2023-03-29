@@ -196,7 +196,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
         SolrClient replicaClient =
-            getHttp2SolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
+            getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
         long numFound;
         try {
           numFound =

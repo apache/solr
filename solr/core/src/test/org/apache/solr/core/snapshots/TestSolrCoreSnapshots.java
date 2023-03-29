@@ -108,7 +108,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String duplicateName = commitName.concat("_duplicate");
 
     try (SolrClient adminClient =
-            getHttp2SolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
@@ -199,7 +199,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
     try (SolrClient adminClient =
-            getHttp2SolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);

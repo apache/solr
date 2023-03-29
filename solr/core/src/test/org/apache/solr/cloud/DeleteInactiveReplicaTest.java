@@ -102,7 +102,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
                 && !FileUtils.fileExists(replicaCd.getDataDir()));
 
     // Check that we can't create a core with no coreNodeName
-    try (SolrClient queryClient = getHttp2SolrClient(jetty.getBaseUrl().toString())) {
+    try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
       Exception e =
           expectThrows(
               Exception.class,

@@ -134,7 +134,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client = getHttp2SolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
         NamedList<Object> metricsRsp =
             client.request(
                 new GenericSolrRequest(

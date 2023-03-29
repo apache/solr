@@ -245,7 +245,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     }
     // For simplicity, we always add out docs directly to NODE0
     // (where the leader should be) and bypass the proxy...
-    try (SolrClient client = getHttp2SolrClient(NODE0.getBaseUrl().toString())) {
+    try (SolrClient client = getHttpSolrClient(NODE0.getBaseUrl().toString())) {
       assertEquals(0, client.add(COLLECTION, docs).getStatus());
       if (commit) {
         assertEquals(0, client.commit(COLLECTION).getStatus());
@@ -258,8 +258,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    * (inclusive) can be found on both the leader and the replica
    */
   private void assertDocsExistInBothReplicas(int firstDocId, int lastDocId) throws Exception {
-    try (SolrClient leaderSolr = getHttp2SolrClient(NODE0.getBaseUrl().toString());
-        SolrClient replicaSolr = getHttp2SolrClient(NODE1.getBaseUrl().toString())) {
+    try (SolrClient leaderSolr = getHttpSolrClient(NODE0.getBaseUrl().toString());
+        SolrClient replicaSolr = getHttpSolrClient(NODE1.getBaseUrl().toString())) {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
         assertDocExists("leader", leaderSolr, docId);

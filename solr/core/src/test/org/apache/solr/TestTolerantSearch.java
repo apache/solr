@@ -63,8 +63,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
-    collection1 = getHttp2SolrClient(url + "/collection1");
-    collection2 = getHttp2SolrClient(url + "/collection2");
+    collection1 = getHttpSolrClient(url + "/collection1");
+    collection2 = getHttpSolrClient(url + "/collection2");
 
     String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
     String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
@@ -72,7 +72,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (SolrClient nodeClient = getHttp2SolrClient(url)) {
+    try (SolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");

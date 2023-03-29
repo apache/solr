@@ -970,11 +970,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
         try (SolrClient client =
-            getHttp2SolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+            getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString())) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }

@@ -190,7 +190,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (SolrClient client = getHttp2SolrClient(replicaCoreUrl)) {
+    try (SolrClient client = getHttpSolrClient(replicaCoreUrl)) {
       try {
         client.commit();
 
