@@ -148,7 +148,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           new NotIncludedValidator("score", "score_alias:score"));
 
   @BeforeClass
-  @SuppressWarnings({"rawtypes", "unchecked"})
   public static void createMiniSolrCloudCluster() throws Exception {
 
     // 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single
@@ -178,6 +177,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      @SuppressWarnings({"rawtypes", "unchecked"})
       Map<String, SolrClient> solrClientByWriterType = new <String, SolrClient>HashMap();
       List<String> writerTypes = Arrays.asList("javabin", "json", "xml");
       for (String wt : writerTypes) {
@@ -644,7 +644,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster We have different CLIENTS based on their wt setting.
+   * in our cluster.  We have different CLIENTS based on their wt setting for each node.
    */
   public static SolrClient getRandomClient(Random rand) {
     int numClients = CLIENTS.size();
