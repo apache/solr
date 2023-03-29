@@ -18,8 +18,8 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
+import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
@@ -596,7 +596,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       SolrInputDocument updateDoc = new SolrInputDocument();
       updateDoc.addField("id", "0");
-      updateDoc.addField("string_field", ImmutableMap.of("set", "other test"));
+      updateDoc.addField("string_field", Map.of("set", "other test"));
       assertU(adoc(updateDoc));
       assertU(commit());
 
@@ -632,8 +632,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
       SolrInputDocument updateDoc = new SolrInputDocument();
       updateDoc.addField("id", "0");
-      updateDoc.addField("vector", ImmutableMap.of("set", Arrays.asList(9.2, 2.2, 3.3, 5.2)));
-      updateDoc.addField("vector_byte_encoding", ImmutableMap.of("set", Arrays.asList(8, 3, 1, 3)));
+      updateDoc.addField("vector", Map.of("set", Arrays.asList(9.2, 2.2, 3.3, 5.2)));
+      updateDoc.addField("vector_byte_encoding", Map.of("set", Arrays.asList(8, 3, 1, 3)));
       assertU(adoc(updateDoc));
       assertU(commit());
 
