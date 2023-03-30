@@ -89,6 +89,8 @@ Other Changes
 
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
 
+* SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
+
 ==================  9.2.0 ==================
 
 New Features
