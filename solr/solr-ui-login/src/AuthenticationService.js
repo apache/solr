@@ -23,37 +23,39 @@ export const AuthenticationService = {
             can expand to more strategies easily after more thinking. 
         */
 
-        const response = await fetch(`http://0.0.0.0:3001/login`, {
+        const response = await fetch(`http://localhost:3001/login`, {
+            /*
+                this is the structure of a Solr Authentication request.
+                Ideally each request would be contained in a single service
+                file and that service makes a request to a server.js-like
+                Express Node backend that then sends the request to Solr.
+                This would make it easier to extend.
+            */
+
             method: "POST",
             headers: {
             "Content-Type": "application/json",
             "Authorization": "Basic " + btoa(username + ":" + password),
             "Access-Control-Allow-Origin": "*",
             },
-            body: JSON.stringify({
-                "set-property": {
-                    "forwardCredentials": true
-                }
-            }),
         });
     
-        // If the response is successful, store the JWT in local storage.
         if (response.ok) {
             // hard coding the location of the legacy UI until using environment variables
             // const authToken = response.headers.get("Authorization");
-            const authToken = response.headers.get("X-Auth-Token");
-            document.cookie = `authToken=${authToken}; path=/; SameSite=None; Secure`;
-            window.location.href = "http://localhost:8983/solr/#/home";
+            // document.cookie = `authToken=${authToken}; path=/; SameSite=None; Secure`;
+            // For now will just route to the real login.
+            window.location.href = "http://localhost:8983/solr/#/login";
             // return true;
-            // const jwt = await response.json();
-            // localStorage.setItem("jwt", jwt);
             
         } else {
             return false
         }
     },
-  
+    
+    // not implemented yet
     logout: function() {
+        
         localStorage.removeItem("jwt");
     },
   
