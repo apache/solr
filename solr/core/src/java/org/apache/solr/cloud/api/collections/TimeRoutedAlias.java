@@ -25,7 +25,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.TZ;
 
-import com.google.common.base.MoreObjects;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
@@ -324,15 +323,22 @@ public class TimeRoutedAlias extends RoutedAlias {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("aliasName", aliasName)
-        .add("routeField", routeField)
-        .add("intervalMath", intervalMath)
-        .add("maxFutureMs", maxFutureMs)
-        .add("preemptiveCreateMath", preemptiveCreateMath)
-        .add("autoDeleteAgeMath", autoDeleteAgeMath)
-        .add("timeZone", timeZone)
-        .toString();
+    return "TimeRoutedAlias=("
+        + "aliasName="
+        + aliasName
+        + ",routeField="
+        + routeField
+        + ",intervalMath="
+        + intervalMath
+        + ",maxFutureMs="
+        + maxFutureMs
+        + ",preemptiveCreateMath="
+        + preemptiveCreateMath
+        + ",autoDeleteAgeMath="
+        + autoDeleteAgeMath
+        + ",timeZone="
+        + timeZone
+        + ')';
   }
 
   /**

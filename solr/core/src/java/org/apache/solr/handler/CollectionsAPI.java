@@ -32,16 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
-import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
-import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -54,8 +51,6 @@ public class CollectionsAPI {
   public static final String V2_BACKUP_CMD = "backup-collection";
   public static final String V2_RESTORE_CMD = "restore-collection";
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
-  public static final String V2_SET_ALIAS_PROP_CMD = "set-alias-property";
-  public static final String V2_DELETE_ALIAS_CMD = "delete-alias";
 
   private final CollectionsHandler collectionsHandler;
 
@@ -105,7 +100,7 @@ public class CollectionsAPI {
       final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
       v1Params.put(ACTION, CollectionAction.CREATEALIAS.toLower());
-      if (!CollectionUtils.isEmpty(v2Body.collections)) {
+      if (v2Body.collections != null && !v2Body.collections.isEmpty()) {
         final String collectionsStr = String.join(",", v2Body.collections);
         v1Params.remove(V2ApiConstants.COLLECTIONS);
         v1Params.put(V2ApiConstants.COLLECTIONS, collectionsStr);
@@ -121,32 +116,6 @@ public class CollectionsAPI {
         convertV2CreateCollectionMapToV1ParamMap(createCollectionMap);
         flattenMapWithPrefix(createCollectionMap, v1Params, CREATE_COLLECTION_PREFIX);
       }
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
-    @Command(name = V2_SET_ALIAS_PROP_CMD)
-    @SuppressWarnings("unchecked")
-    public void setAliasProperty(PayloadObj<SetAliasPropertyPayload> obj) throws Exception {
-      final SetAliasPropertyPayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-
-      v1Params.put(ACTION, CollectionAction.ALIASPROP.toLower());
-      // Flatten "properties" map into individual prefixed params
-      final Map<String, Object> propertiesMap =
-          (Map<String, Object>) v1Params.remove(V2ApiConstants.PROPERTIES_KEY);
-      flattenMapWithPrefix(propertiesMap, v1Params, PROPERTY_PREFIX);
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
-
-    @Command(name = V2_DELETE_ALIAS_CMD)
-    public void deleteAlias(PayloadObj<DeleteAliasPayload> obj) throws Exception {
-      final DeleteAliasPayload v2Body = obj.get();
-      final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-      v1Params.put(ACTION, CollectionAction.DELETEALIAS.toLower());
 
       collectionsHandler.handleRequestBody(
           wrapParams(obj.getRequest(), v1Params), obj.getResponse());

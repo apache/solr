@@ -167,7 +167,7 @@ class TypeValidator extends Validator<Object> {
 
   TypeValidator(Map<?, ?> schema, Object type) {
     super(schema, type);
-    types = new HashSet<>(1);
+    types = CollectionUtil.newHashSet(1);
     if (type instanceof List) {
       for (Object t : (List) type) {
         types.add(getType(t.toString()));

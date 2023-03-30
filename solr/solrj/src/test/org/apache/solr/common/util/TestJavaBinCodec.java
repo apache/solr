@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.EnumFieldValue;
@@ -256,21 +255,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
       Object data = generateAllDataTypes();
-      try {
-        javabin.marshal(data, os);
-        byte[] newFormatBytes = os.toByteArray();
+      javabin.marshal(data, os);
+      byte[] newFormatBytes = os.toByteArray();
 
-        InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN);
-        byte[] currentFormatBytes = IOUtils.toByteArray(is);
-
+      try (InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN)) {
+        assertNotNull(is);
+        byte[] currentFormatBytes = is.readAllBytes();
         for (int i = 1;
             i < currentFormatBytes.length;
             i++) { // ignore the first byte. It is version information
           assertEquals(newFormatBytes[i], currentFormatBytes[i]);
         }
-
-      } catch (IOException e) {
-        throw e;
       }
     }
   }
@@ -283,15 +278,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       javabin.marshal(sdoc, os);
       byte[] newFormatBytes = os.toByteArray();
 
-      InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN_CHILD_DOCS);
-      byte[] currentFormatBytes = IOUtils.toByteArray(is);
+      try (InputStream is =
+          getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN_CHILD_DOCS)) {
+        assertNotNull(is);
+        byte[] currentFormatBytes = is.readAllBytes();
 
-      // ignore the first byte. It is version information
-      for (int i = 1; i < currentFormatBytes.length; i++) {
-        assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+        // ignore the first byte. It is version information
+        for (int i = 1; i < currentFormatBytes.length; i++) {
+          assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+        }
       }
-    } catch (IOException e) {
-      throw e;
     }
   }
 

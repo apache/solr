@@ -110,8 +110,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;

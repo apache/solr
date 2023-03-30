@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +55,6 @@ import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
@@ -1761,7 +1759,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
-      FileInputStream inputStream = null;
       try {
         initWrite();
 
@@ -1797,7 +1794,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (IOException e) {
         log.warn("Exception while writing response for params: {}", params, e);
       } finally {
-        IOUtils.closeQuietly(inputStream);
         extendReserveAndReleaseCommitPoint();
       }
     }

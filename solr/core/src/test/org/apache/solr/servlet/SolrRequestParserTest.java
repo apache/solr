@@ -22,12 +22,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,7 +38,6 @@ import java.util.Vector;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -129,7 +129,10 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     URL url = getClass().getResource("/README");
     assertNotNull("Missing file 'README' in test-resources root folder.", url);
 
-    byte[] bytes = IOUtils.toByteArray(url);
+    final byte[] bytes;
+    try (InputStream inputStream = url.openStream()) {
+      bytes = inputStream.readAllBytes();
+    }
 
     SolrCore core = h.getCore();
 
@@ -142,7 +145,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }
@@ -150,14 +153,14 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"try"})
   public void testStreamFile() throws Exception {
-    File file = getFile("README");
+    Path file = getFile("README").toPath();
 
-    byte[] bytes = FileUtils.readFileToByteArray(file);
+    byte[] bytes = Files.readAllBytes(file);
 
     SolrCore core = h.getCore();
 
     Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_FILE, new String[] {file.getAbsolutePath()});
+    args.put(CommonParams.STREAM_FILE, new String[] {file.toAbsolutePath().toString()});
 
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<>();
@@ -165,7 +168,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
       assertEquals(1, streams.size());
       try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, IOUtils.toByteArray(in));
+        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }

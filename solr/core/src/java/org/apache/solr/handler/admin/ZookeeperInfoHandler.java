@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -359,9 +358,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {

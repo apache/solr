@@ -17,10 +17,10 @@
 package org.apache.solr.search.join;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.search.SyntaxError;
 
 class ScoreModeParser {
@@ -29,7 +29,7 @@ class ScoreModeParser {
   private ScoreModeParser() {}
 
   private static Map<String, ScoreMode> getLowerAndCapitalCaseMap() {
-    Map<String, ScoreMode> map = new HashMap<>(ScoreMode.values().length * 2);
+    Map<String, ScoreMode> map = CollectionUtil.newHashMap(ScoreMode.values().length * 2);
     for (ScoreMode s : ScoreMode.values()) {
       map.put(s.name().toLowerCase(Locale.ROOT), s);
       map.put(s.name(), s);
