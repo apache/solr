@@ -2635,24 +2635,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * not wish to have any randomized behavior should use the {@link
    * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
-  public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    return new RandomizingCloudSolrClientBuilder(
-            Collections.singletonList(zkHost), Optional.empty())
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
   public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
     return new RandomizingCloudSolrClientBuilder(cluster).build();
-  }
-
-  public static RandomizingCloudSolrClientBuilder newCloudSolrClient(String zkHost) {
-    return new RandomizingCloudSolrClientBuilder(
-        Collections.singletonList(zkHost), Optional.empty());
   }
 
   /** This method creates a HttpClient from a URL. */
