@@ -1270,8 +1270,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     try (SolrClient baseServer =
         new HttpSolrClient.Builder(baseUrl)
-            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(60000 * 5, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(30, TimeUnit.SECONDS)
+            .withSocketTimeout(5, TimeUnit.MINUTES)
             .build()) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
