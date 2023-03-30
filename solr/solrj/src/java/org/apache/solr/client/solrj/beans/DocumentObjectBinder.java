@@ -136,6 +136,7 @@ public class DocumentObjectBinder {
     return fields;
   }
 
+  @SuppressWarnings({"removal"})
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
   private List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();

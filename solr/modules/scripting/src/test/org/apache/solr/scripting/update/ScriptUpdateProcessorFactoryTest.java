@@ -23,6 +23,7 @@ import javax.script.ScriptEngineManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.UpdateProcessorTestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -233,6 +234,8 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
     assertEquals("bar", d.getFieldValue("term_s"));
   }
 
+  @SuppressForbidden(reason = "Using AccessController")
+  @SuppressWarnings("removal")
   public void testScriptSandbox() throws Exception {
     assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     expectThrows(
