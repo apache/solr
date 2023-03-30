@@ -197,9 +197,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
-    return ExitableDirectoryReader.wrap(
-        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
-        SolrQueryTimeoutImpl.getInstance());
+    switch (IndexSchema.getUninvertibleSupport()) {
+      case DEFAULT_FALSE:
+      case DEFAULT_TRUE:
+        reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
+        break;
+      case FORBID:
+      case DISABLE:
+        // No need to wrap in UninvertingReader
+        break;
+    }
+    return ExitableDirectoryReader.wrap(reader, SolrQueryTimeoutImpl.getInstance());
   }
 
   /**

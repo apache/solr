@@ -116,6 +116,18 @@ public class IndexSchema {
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
 
+  /**
+   * Implicit default for `uninvertible` FieldType property, if not specified by `fieldType` or
+   * `field`. This implicit default may be overridden by a node-level default specified in
+   * `solr.xml`. The implicit defaults is <code>true</code> for historical reasons, but users are
+   * strongly encouraged to set this to <code>false</code> for stability and use <code>
+   * docValues="true"</code> or <code>uninvertible="true"</code> as needed.
+   */
+  public static final UninvertingReader.Support IMPLICIT_DEFAULT_UNINVERTIBLE =
+      UninvertingReader.Support.DEFAULT_TRUE;
+
+  private static UninvertingReader.Support uninvertibleSupport = IMPLICIT_DEFAULT_UNINVERTIBLE;
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected String resourceName;
   protected String name;
@@ -409,6 +421,14 @@ public class IndexSchema {
   public void refreshAnalyzers() {
     indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
+  }
+
+  public static UninvertingReader.Support getUninvertibleSupport() {
+    return uninvertibleSupport;
+  }
+
+  public static void setUninvertibleSupport(UninvertingReader.Support support) {
+    uninvertibleSupport = support;
   }
 
   /**

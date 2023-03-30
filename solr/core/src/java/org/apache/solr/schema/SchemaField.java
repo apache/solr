@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,12 +32,16 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.TextResponseWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Encapsulates all information about a Field in a Solr Schema */
 public final class SchemaField extends FieldProperties implements IndexableFieldType {
   private static final String FIELD_NAME = "name";
   private static final String TYPE_NAME = "type";
   private static final String DEFAULT_VALUE = "default";
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final String name;
   final FieldType type;
@@ -413,6 +418,19 @@ public final class SchemaField extends FieldProperties implements IndexableField
 
     p &= ~falseProps;
     p |= trueProps;
+    if ((p & UNINVERTIBLE) != 0) {
+      switch (IndexSchema.getUninvertibleSupport()) {
+        case FORBID:
+          throw new RuntimeException(
+              "uninvertible support is forbidden but configured for field " + name);
+        case DISABLE:
+          log.info("disabling configured uninversion support for field {}", name);
+          p &= ~UNINVERTIBLE;
+          break;
+        default:
+          // No-op
+      }
+    }
     return p;
   }
 
