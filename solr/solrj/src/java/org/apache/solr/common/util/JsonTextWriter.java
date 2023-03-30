@@ -26,9 +26,11 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 
 public interface JsonTextWriter extends TextWriter {
+  @SuppressWarnings("MutablePublicArray")
   char[] hexdigits = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
   };
+
   String JSON_NL_MAP = "map";
   String JSON_NL_FLAT = "flat";
   String JSON_NL_ARROFARR = "arrarr";

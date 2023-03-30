@@ -1268,7 +1268,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
+    try (SolrClient baseServer =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(30, TimeUnit.SECONDS)
+            .withSocketTimeout(5, TimeUnit.MINUTES)
+            .build()) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
         log.info("Shard split response: {}", Utils.toJSONString(rsp));

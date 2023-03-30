@@ -183,26 +183,6 @@ public class LBHttpSolrClient extends LBSolrClient {
     return httpClient;
   }
 
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return urlParamNames;
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param urlParamNames set of param keys to only send via the query string
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> urlParamNames) {
-    this.urlParamNames = urlParamNames;
-  }
-
-  @Deprecated
-  public void addQueryParams(String urlParamNames) {
-    this.urlParamNames.add(urlParamNames);
-  }
-
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */
   public static class Builder extends SolrClientBuilder<Builder> {
 

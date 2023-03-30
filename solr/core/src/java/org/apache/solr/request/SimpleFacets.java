@@ -55,6 +55,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.Bits;
@@ -805,16 +806,16 @@ public class SimpleFacets {
     boolean orderByCount =
         sort.equals(FacetParams.FACET_SORT_COUNT)
             || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result =
+    GroupFacetCollector.GroupedFacetResult result =
         collector.mergeSegmentResults(
             limit < 0 ? Integer.MAX_VALUE : (offset + limit), mincount, orderByCount);
 
     CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries =
+    List<GroupFacetCollector.FacetEntry> scopedEntries =
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
-    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+    for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
       if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;

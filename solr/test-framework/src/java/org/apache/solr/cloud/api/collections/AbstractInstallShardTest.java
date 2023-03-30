@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.client.solrj.request.CollectionAdminRequest.deleteCollection;
+
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.file.Path;
@@ -46,6 +48,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -74,12 +78,31 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
   }
 
+  @Before
+  public void clearCollsToDelete() {
+    collectionsToDelete = new ArrayList<>();
+  }
+
+  @After
+  public void deleteTestCollections() throws Exception {
+    for (String collName : collectionsToDelete) {
+      deleteCollection(collName).process(cluster.getSolrClient());
+    }
+  }
+
+  private String deleteAfterTest(String collName) {
+    collectionsToDelete.add(collName);
+    return collName;
+  }
+
   // Populated by 'bootstrapBackupRepositoryData'
   private static int singleShardNumDocs = -1;
   private static int replicasPerShard = -1;
   private static int multiShardNumDocs = -1;
   private static URI singleShard1Uri = null;
   private static URI[] multiShardUris = null;
+
+  private List<String> collectionsToDelete;
 
   public static void bootstrapBackupRepositoryData(String baseRepositoryLocation) throws Exception {
     final int numShards = random().nextInt(3) + 2;
@@ -110,13 +133,14 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     }
 
     // Nuke collections now that we've populated the BackupRepository
-    CollectionAdminRequest.deleteCollection(singleShardCollName).process(solrClient);
-    CollectionAdminRequest.deleteCollection(multiShardCollName).process(solrClient);
+    deleteCollection(singleShardCollName).process(solrClient);
+    deleteCollection(multiShardCollName).process(solrClient);
   }
 
   @Test
   public void testInstallFailsIfCollectionIsNotInReadOnlyMode() throws Exception {
     final String collectionName = createAndAwaitEmptyCollection(1, replicasPerShard);
+    deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
     final BaseHttpSolrClient.RemoteSolrException rse =
@@ -137,6 +161,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   @Test
   public void testInstallToSingleShardCollection() throws Exception {
     final String collectionName = createAndAwaitEmptyCollection(1, replicasPerShard);
+    deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
@@ -152,6 +177,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   public void testSerialInstallToMultiShardCollection() throws Exception {
     final String collectionName =
         createAndAwaitEmptyCollection(multiShardUris.length, replicasPerShard);
+    deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
 
     for (int i = 1; i <= multiShardUris.length; i++) {
@@ -167,6 +193,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   public void testParallelInstallToMultiShardCollection() throws Exception {
     final String collectionName =
         createAndAwaitEmptyCollection(multiShardUris.length, replicasPerShard);
+    deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
 
     runParallelShardInstalls(collectionName, multiShardUris);

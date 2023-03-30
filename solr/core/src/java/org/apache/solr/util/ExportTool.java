@@ -90,7 +90,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
   @Override
-  public Option[] getOptions() {
+  public List<Option> getOptions() {
     return OPTIONS;
   }
 
@@ -205,39 +205,39 @@ public class ExportTool extends SolrCLI.ToolBase {
     void end() throws IOException {}
   }
 
-  private static final Option[] OPTIONS = {
-    Option.builder("url")
-        .hasArg()
-        .required()
-        .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-        .build(),
-    Option.builder("out")
-        .hasArg()
-        .required(false)
-        .desc("File name, defaults to 'collection-name.<format>'.")
-        .build(),
-    Option.builder("format")
-        .hasArg()
-        .required(false)
-        .desc(
-            "Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
-        .build(),
-    Option.builder("limit")
-        .hasArg()
-        .required(false)
-        .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-        .build(),
-    Option.builder("query")
-        .hasArg()
-        .required(false)
-        .desc("A custom query, default is '*:*'.")
-        .build(),
-    Option.builder("fields")
-        .hasArg()
-        .required(false)
-        .desc("Comma separated list of fields to export. By default all fields are fetched.")
-        .build()
-  };
+  private static final List<Option> OPTIONS =
+      List.of(
+          Option.builder("url")
+              .hasArg()
+              .required()
+              .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+              .build(),
+          Option.builder("out")
+              .hasArg()
+              .required(false)
+              .desc("File name, defaults to 'collection-name.<format>'.")
+              .build(),
+          Option.builder("format")
+              .hasArg()
+              .required(false)
+              .desc(
+                  "Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
+              .build(),
+          Option.builder("limit")
+              .hasArg()
+              .required(false)
+              .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+              .build(),
+          Option.builder("query")
+              .hasArg()
+              .required(false)
+              .desc("A custom query, default is '*:*'.")
+              .build(),
+          Option.builder("fields")
+              .hasArg()
+              .required(false)
+              .desc("Comma separated list of fields to export. By default all fields are fetched.")
+              .build());
 
   static class JsonSink extends DocsSink {
     private CharArr charArr = new CharArr(1024 * 2);
