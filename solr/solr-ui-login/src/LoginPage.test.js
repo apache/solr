@@ -14,22 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Path: src/LoginPage.js
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import LoginPage from './LoginPage';
 
-/*
-  This file is very simple and mostly boilerplate to show
-  how to test a React component. The test is checking that
-  the text "migration" is present in the rendered component.
-  This is a good starting point for testing your additioinal
-  components. The API is declaritive and easy to use.
+test('renders login page with a button', () => {
+    render(<LoginPage />);
+    const buttonElement = screen.getAllByRole('button');
+    /*
+        This may look confusing but it is actually done 
+        because the button returns an array. We need to 
+        verify that one button exists.
+    */
+    expect(buttonElement[0]).toBeInTheDocument();
+    });
 
-  A good place to start is the React Testing Library docs:
-  https://testing-library.com/docs/ecosystem-jest-dom/
-*/
+test('renders login page with a text field', () => {
+    render(<LoginPage />);
+    /* 
+        here, we are using the getAllByRole method to get all the textboxes
+        and then we are verifying that there is one that exists.
 
-test('renders migration note', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/migration/i);
-  expect(linkElement).toBeInTheDocument();
-});
+        As always, every test costs time.
+    */
+    const inputElements = screen.getAllByRole('textbox');
+    expect(inputElements.length).toBe(1);
+    })
+
+
