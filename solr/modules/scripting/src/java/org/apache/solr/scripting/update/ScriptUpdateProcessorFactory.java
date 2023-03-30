@@ -43,6 +43,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -144,6 +145,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 4.0.0
  */
+@SuppressForbidden(reason = "Using AccessController")
 public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
@@ -249,6 +251,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
    * @param rsp The solr response
    * @return The list of initialized script engines.
    */
+  @SuppressForbidden(reason = "Using AccessController")
+  @SuppressWarnings("removal")
   private List<EngineInfo> initEngines(SolrQueryRequest req, SolrQueryResponse rsp)
       throws SolrException {
 
@@ -428,6 +432,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      * Result value is computed from the return value of the script function if: it exists, is
      * non-null, and can be cast to a java Boolean.
      */
+    @SuppressForbidden(reason = "Using AccessController")
+    @SuppressWarnings("removal")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
           new PrivilegedAction<Boolean>() {
@@ -513,6 +519,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   }
 
   // sandbox for script code: zero permissions
+  @SuppressWarnings("removal")
   private static final AccessControlContext SCRIPT_SANDBOX =
       new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
 }
