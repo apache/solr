@@ -1355,8 +1355,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       String id = document.getFieldValue("id").toString();
       Object version = document.getFieldValue("_version_");
       assertNotNull("doc " + id + " has null _version_ field", version);
-      idVsVersion.put(
-          id, version.toString());
+      idVsVersion.put(id, version.toString());
       SolrDocument old = shard10Docs.put(id, document);
       if (old != null) {
         log.error(
