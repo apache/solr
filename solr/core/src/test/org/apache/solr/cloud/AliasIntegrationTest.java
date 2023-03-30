@@ -34,7 +34,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -69,7 +68,6 @@ import org.junit.Test;
 public class AliasIntegrationTest extends SolrCloudTestCase {
 
   private CloseableHttpClient httpClient;
-  private CloudSolrClient solrClient;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -80,15 +78,15 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
+
+    httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    IOUtils.close(solrClient, httpClient);
 
     cluster.deleteAllCollections(); // note: deletes aliases too
   }

@@ -90,7 +90,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -2628,15 +2627,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       this.shardLeadersOnly = random().nextBoolean();
       this.parallelUpdates = random().nextBoolean();
     }
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
-    return new RandomizingCloudSolrClientBuilder(cluster).build();
   }
 
   /** This method creates a HttpClient from a URL. */
