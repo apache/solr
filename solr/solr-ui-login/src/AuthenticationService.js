@@ -42,8 +42,6 @@ export const AuthenticationService = {
     
         if (response.ok) {
             // hard coding the location of the legacy UI until using environment variables
-            // const authToken = response.headers.get("Authorization");
-            // document.cookie = `authToken=${authToken}; path=/; SameSite=None; Secure`;
             // For now will just route to the real login.
             window.location.href = "http://localhost:8983/solr/#/login";
             // return true;
