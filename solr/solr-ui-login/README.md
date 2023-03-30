@@ -5,7 +5,19 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
-In the project directory, you can run:
+The application can be started several ways. The recommended way is to start each service, `client` and `server` independently.
+
+### `npm run start-server`
+
+The backend Express app will start running on port `3001`. This service is a thin layer to handle communication between the front end and Solr or Zookeeper backends. Today, the service is only being built to support standalone, where there is no Zookeeper, to prevent the likelihood of it being run in a production environment, though there is still some configuration need to do so in standalone.
+
+You can test the backend endpoints with `cURL`, just as you could target the Solr directly. 
+
+### `npm run start-client`
+
+The frontend Express app will start. This service purely handles the presentation layer and user actions. It does not actually communicate with the backend at all. If you are working only on styling or markup related edits, you may find running in this mode faster as it will pickup changes quickly. 
+
+In the project directory, to start both the server and the client you can run. It works, but not as well and is not recommended yet:
 
 ### `npm start`
 
@@ -22,23 +34,15 @@ See the section about [running tests](https://facebook.github.io/create-react-ap
 
 ### `npm run build`
 
+This project is months from being production ready, however this section is here for reference and will evolve. 
+
 Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+It correctly bundles React in production mode and optimizes the build for the best performance. 
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
 ## Learn More
 
@@ -69,3 +73,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+### Express Documentation
+
+https://expressjs.com/
