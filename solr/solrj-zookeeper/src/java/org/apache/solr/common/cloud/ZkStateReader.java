@@ -396,13 +396,8 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
       log.debug("an event happened for {}, event: {}", coll, event.toString());
-      DocCollection collectionState = getCollection(coll); // .getDocCollection(coll);
-      if (collectionState == null) {
-        log.info("collectionState == null");
-        return;
-      }
-
-      if (collectionState.getZNode().equals(event.getPath())) {
+      DocCollection collectionState = getCollection(coll);
+      if (collectionPath.equals(event.getPath())) {
         DocCollection newState = null;
         try {
           newState = fetchCollectionState(coll, null);
@@ -410,20 +405,18 @@ public class ZkStateReader implements SolrCloseable {
             | KeeperException.ConnectionLossException e) {
           log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
         } catch (KeeperException e) {
-          log.error("Unwatched collection: [{}]", coll, e);
+          log.error("exception for collection: [{}]", coll, e);
           throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          log.error("Unwatched collection: [{}]", coll, e);
+          log.error("exception for collection: [{}]", coll, e);
         }
         collectionWatches.updateDocCollection(coll, newState);
         synchronized (getUpdateLock()) {
           constructState(Collections.singleton(coll));
         }
       }
-      if (collectionState.isPerReplicaState()) {
-        log.info("isPRS");
-
+      if (collectionState!= null && collectionState.isPerReplicaState()) {
         String path = event.getPath();
         if ((event.getType() == EventType.NodeCreated || event.getType() == EventType.NodeDeleted)
             && path.length() > collectionState.getZNode().length()
@@ -1471,52 +1464,13 @@ public class ZkStateReader implements SolrCloseable {
   /** Watches a single collection's state.json. */
   class StateWatcher implements Watcher {
     private final String coll;
-    private final String collectionPath;
-
     StateWatcher(String coll) {
       this.coll = coll;
-      collectionPath = DocCollection.getCollectionPath(coll);
-      StatefulCollectionWatch s = collectionWatches.statefulWatchesByCollectionName.get(coll);
-      if (s.persistentWatcher != null) return;
-      synchronized (s) {
-        if (s.persistentWatcher != null) return;
-        try {
-          s.persistentWatcher =
-              zkClient.persistentRecursiveWatch(
-                  DocCollection.getCollectionPathRoot(coll), s::handleWatch);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          log.error("Unwatched collection: [{}]", coll, e);
-        } catch (KeeperException e) {
-          log.error("Unwatched collection: [{}]", coll, e);
-          throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-        }
-      }
     }
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events, and do not remove the watcher
-      if (EventType.None.equals(event.getType())) {
-        return;
-      }
 
-      if (!collectionWatches.watchedCollections().contains(coll)) {
-        // This collection is no longer interesting, stop watching.
-        log.debug("Uninteresting collection {}", coll);
-        return;
-      }
-
-      Set<String> liveNodes = ZkStateReader.this.liveNodes;
-      if (log.isInfoEnabled()) {
-        log.info(
-            "A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
-            event,
-            coll,
-            liveNodes.size());
-      }
-
-      refreshAndWatch(event.getType());
     }
 
     public void refreshAndWatch() {
@@ -1528,7 +1482,25 @@ public class ZkStateReader implements SolrCloseable {
      * updates {@link #clusterState} and collection ref within {@link #collectionWatches} with the
      * results of the refresh.
      */
-    public void refreshAndWatch(EventType eventType) {}
+    public void refreshAndWatch(EventType eventType) {
+      StatefulCollectionWatch s = collectionWatches.statefulWatchesByCollectionName.get(coll);
+      if (s.persistentWatcher != null) return;
+      synchronized (s) {
+        if (s.persistentWatcher != null) return;
+        try {
+          s.persistentWatcher =
+                  zkClient.persistentRecursiveWatch(
+                          DocCollection.getCollectionPathRoot(coll), s::handleWatch);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          log.error("Unwatched collection: [{}]", coll, e);
+        } catch (KeeperException e) {
+          log.error("Unwatched collection: [{}]", coll, e);
+          throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+        }
+      }
+
+    }
   }
 
   /** Watches collection properties */
