@@ -97,6 +97,8 @@ Other Changes
 
 * SOLR-16715: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap / CollectionUtil.newHashSet (Kevin Risden)
 
+* SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
+
 ==================  9.2.0 ==================
 
 New Features
