@@ -120,7 +120,7 @@ task buildLocalAntoraYaml {
         props.putAll([
             ["dep_version_commons_codec", "commons-codec", "commons-codec"],
             ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
-            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-client-api"],
             ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
             ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
             ["dep_version_tika", "org.apache.tika", "tika-core"],
