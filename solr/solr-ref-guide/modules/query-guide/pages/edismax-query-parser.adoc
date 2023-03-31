@@ -77,6 +77,12 @@ qq={!edismax qf=name}ipod
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
 Defaults to `false`.
 
+`pf`:: 
+Phrase Fields.
+Once the list of matching documents has been identified using the `fq` and `qf` parameters, the `pf` parameter can be used to "boost" the score of documents in cases where all of the terms in the q parameter appear in close proximity.
++
+The format is the same as that used by the `qf` parameter: a list of fields and "boosts" to associate with each of them when making phrase queries out of the entire q parameter.
+
 `ps`::
 Phrase Slop.
 The default amount of slop - distance between terms - on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting).

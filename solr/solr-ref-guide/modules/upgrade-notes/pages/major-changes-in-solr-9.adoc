@@ -65,16 +65,36 @@ In Solr 8, it was possible to add docValues to a schema without re-indexing via 
 Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.2
+=== Upgrade to Jetty 10.x
+* Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.
+* Loading solr.xml from Zookeeper is deprecated. See xref:configuration-guide:configuring-solr-xml.adoc[Configuring solr.xml].
+* The xref:query-guide:analytics.adoc[Analytics Component] has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+
 === Jetty Configuration
 * Solr no longer duplicates certain Jetty "server" library dependencies between `server/lib` and `WEB-INF/lib` (jetty-util, jetty-io, etc.).
 This is an improvement to the binary release artifact, but Jetty does not allow web-apps (Solr) to share these libraries by default.
 The `server/contexts/solr-jetty-context.xml` now explicitly removes these restrictions, allowing Solr to share these "server" jars which now live in `server/lib/ext`.
 * The "Transient Cores" feature is now deprecated.
 
+=== SSL Configuration
+* When using Solr (or SolrJ) with an SSL-enabled Solr cluster using HTTP2, the default `-Dsolr.ssl.checkPeerName` value is now *true*.
+This is what has been documented in xref:deployment-guide:enabling-ssl.adoc#start-solrcloud[Enabling SSL], and matches the functionality of the original `HttpSolrClient`.
+
 === Tracing
 * A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
   At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
   Users should start migrating to the new module to prepare for a smooth transition.
+
+=== Docker
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+
+=== Streaming Expressions
+* Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
+This change will only affect users that have used streaming expression classes in clients outside
+of Solr. Streaming expressions sent to the /stream handler will still operate exactly as before.
+External clients using streaming expression classes will need to update their depenencies to reference
+the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
+
 
 == Solr 9.1.1
 * Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.

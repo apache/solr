@@ -81,13 +81,6 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClusterAliasesAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster/aliases", "GET", null);
-
-    assertEquals(CollectionParams.CollectionAction.LISTALIASES.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
   public void testClusterOverseerAllParams() throws Exception {
     final SolrParams v1Params = captureConvertedV1Params("/cluster/overseer", "GET", null);
 

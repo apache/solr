@@ -87,6 +87,8 @@ done
 CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
 # shellcheck disable=SC2164
+SOLR_TIP_SYM=$(cd "$SOLR_TIP"; pwd -L)
+# shellcheck disable=SC2164
 SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
@@ -110,7 +112,7 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
-# if pid dir is unset, deafult to $solr_tip/bin
+# if pid dir is unset, default to $solr_tip/bin
 : "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
 
 if [ -n "${SOLR_JAVA_HOME:-}" ]; then
@@ -222,8 +224,8 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:-true}" == "false" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=false"
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
@@ -2052,6 +2054,10 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
+    if [ $SOLR_PORT -gt 55535 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
+      exit 1
+    fi
     if $verbose ; then
       echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi
@@ -2281,7 +2287,7 @@ function start_solr() {
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

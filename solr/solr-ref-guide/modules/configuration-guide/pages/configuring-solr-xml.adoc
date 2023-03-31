@@ -25,6 +25,9 @@ For details on how to configure `core.properties`, see the section xref:core-dis
 
 You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
 
+WARNING: Loading `solr.xml` from Zookeeper is deprecated, and will not be supported in a future version.
+Being the node config of Solr, this file must be available at early startup and also be allowed to differ between nodes.
+
 The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and looks like this:
 
 [source,xml]
@@ -53,7 +56,9 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
-    <int name="minimumStateSizeForCompression">${minimumStateSizeForCompression:-1}</int>
+    <int name="minStateByteLenForCompression">${minStateByteLenForCompression:-1}</int>
+    <str name="compressor">${compressor:org.apache.solr.common.util.ZLibCompressor}</str>
+
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -423,14 +428,23 @@ Optional parameters that can be specified if you are using xref:deployment-guide
 +
 If `true`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
 
-`minimumStateSizeForCompression`::
+`minStateByteLenForCompression`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: -1
 |===
 +
-Optional parameter to enable compression of the state.json over the wire and stored in Zookeeper. The value provided is the minimum size in bytes to compress state.json, i.e. any state.json above that size in bytes will be compressed. The default is -1, meaning state.json is always uncompressed.
+Optional parameter to enable compression of the state.json over the wire and stored in Zookeeper. The value provided is the minimum length of bytes to compress state.json, i.e. any state.json above that size in bytes will be compressed. The default is -1, meaning state.json is always uncompressed.
+
+`stateCompressor`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default:org.apache.solr.common.util.ZLibCompressor
+|===
++
+Optional parameter to provide a compression implementation for state.json over the wire and stored in Zookeeper. The value provided is the class to use for state compression. This is only used if minStateByteLenForCompression is set to a value above -1.
 
 === The <logging> Element
 

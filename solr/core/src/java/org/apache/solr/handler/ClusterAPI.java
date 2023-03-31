@@ -50,7 +50,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -196,13 +195,6 @@ public class ClusterAPI {
     } catch (NoSuchElementException e) {
       return Collections.emptyList();
     }
-  }
-
-  @EndPoint(method = GET, path = "/cluster/aliases", permission = COLL_READ_PERM)
-  public void aliases(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(ACTION, CollectionParams.CollectionAction.LISTALIASES.lowerName);
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
   @EndPoint(method = GET, path = "/cluster/overseer", permission = COLL_READ_PERM)

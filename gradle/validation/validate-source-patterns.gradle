@@ -82,6 +82,7 @@ allprojects {
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'
+      exclude '.metadata/**'
 
       if (project == rootProject) {
         // ourselves :-)
@@ -126,6 +127,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileTree sourceFiles
 
   @Inject

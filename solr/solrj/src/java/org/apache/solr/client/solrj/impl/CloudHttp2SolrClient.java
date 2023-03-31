@@ -65,7 +65,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.clientIsInternal = false;
       this.myClient = builder.httpClient;
     }
-    this.retryExpiryTime = builder.retryExpiryTime;
+    this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     if (builder.requestWriter != null) {
       this.myClient.requestWriter = builder.requestWriter;
     }
@@ -98,7 +98,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.stateProvider = builder.stateProvider;
     }
 
-    this.collectionStateCache.timeToLiveMs = builder.timeToLiveSeconds * 1000L;
+    this.collectionStateCache.timeToLiveMs =
+        TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
 
     //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
     // locks.
@@ -151,9 +152,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     protected Http2SolrClient.Builder internalClientBuilder;
     private RequestWriter requestWriter;
     private ResponseParser responseParser;
-    private long retryExpiryTime =
+    private long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
-    private int timeToLiveSeconds = 60;
+    private long timeToLiveSeconds = 60;
     private int parallelCacheRefreshesLocks = 3;
 
     /**
@@ -292,17 +293,42 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * number of locks.
      *
      * <p>Defaults to 3.
+     *
+     * @deprecated Please use {@link #withParallelCacheRefreshes(int)}
      */
+    @Deprecated(since = "9.2")
     public Builder setParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
+      this.withParallelCacheRefreshes(parallelCacheRefreshesLocks);
+      return this;
+    }
+
+    /**
+     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
+     * number of locks.
+     *
+     * <p>Defaults to 3.
+     */
+    public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
       this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
       return this;
     }
 
     /**
      * This is the time to wait to refetch the state after getting the same state version from ZK
+     *
+     * @deprecated Please use {@link #withRetryExpiryTime(long, TimeUnit)}
      */
+    @Deprecated(since = "9.2")
     public Builder setRetryExpiryTime(int secs) {
-      this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
+      this.withRetryExpiryTime(secs, TimeUnit.SECONDS);
+      return this;
+    }
+
+    /**
+     * This is the time to wait to refetch the state after getting the same state version from ZK
+     */
+    public Builder withRetryExpiryTime(long expiryTime, TimeUnit unit) {
+      this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(expiryTime, unit);
       return this;
     }
 
@@ -310,10 +336,22 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * Sets the cache ttl for DocCollection Objects cached.
      *
      * @param timeToLiveSeconds ttl value in seconds
+     * @deprecated Please use {@link #withCollectionCacheTtl(long, TimeUnit)}
      */
+    @Deprecated(since = "9.2")
     public Builder withCollectionCacheTtl(int timeToLiveSeconds) {
-      assert timeToLiveSeconds > 0;
-      this.timeToLiveSeconds = timeToLiveSeconds;
+      withCollectionCacheTtl(timeToLiveSeconds, TimeUnit.SECONDS);
+      return this;
+    }
+
+    /**
+     * Sets the cache ttl for DocCollection Objects cached.
+     *
+     * @param timeToLive ttl value
+     */
+    public Builder withCollectionCacheTtl(long timeToLive, TimeUnit unit) {
+      assert timeToLive > 0;
+      this.timeToLiveSeconds = TimeUnit.SECONDS.convert(timeToLive, unit);
       return this;
     }
 

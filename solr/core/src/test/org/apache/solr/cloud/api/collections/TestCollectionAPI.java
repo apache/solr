@@ -1260,7 +1260,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void testRecreateCollectionAfterFailure() throws Exception {
     // Upload a bad configset
     SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT, ZkTestServer.TIMEOUT, null);
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkTestServer.putConfig(
         "badconf",
         zkClient,

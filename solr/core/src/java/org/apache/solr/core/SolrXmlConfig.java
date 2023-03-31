@@ -558,8 +558,11 @@ public class SolrXmlConfig {
         case "distributedCollectionConfigSetExecution":
           builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
           break;
-        case "minimumStateSizeForCompression":
-          builder.setMinimumStateSizeForCompression(parseInt(name, value));
+        case "minStateByteLenForCompression":
+          builder.setMinStateByteLenForCompression(parseInt(name, value));
+          break;
+        case "stateCompressor":
+          builder.setStateCompressorClass(value);
           break;
         default:
           throw new SolrException(

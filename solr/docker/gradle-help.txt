@@ -17,7 +17,7 @@ gradlew dockerBuild
 The docker build task accepts the following inputs, all accepted via both Environment Variables and Gradle Properties.
 
 Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
-   Default: "eclipse-temurin:17-jre"
+   Default: "eclipse-temurin:17-jre-jammy"
    EnvVar: SOLR_DOCKER_BASE_IMAGE
    Gradle Property: -Psolr.docker.baseImage
 

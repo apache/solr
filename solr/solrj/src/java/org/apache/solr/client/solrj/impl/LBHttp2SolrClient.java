@@ -340,10 +340,10 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   public static class Builder {
 
-    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
-    private int aliveCheckInterval = CHECK_INTERVAL;
+    private long aliveCheckIntervalMillis =
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
@@ -354,21 +354,21 @@ public class LBHttp2SolrClient extends LBSolrClient {
      * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
      * this to set that interval
      *
-     * @param aliveCheckInterval time in milliseconds
+     * @param aliveCheckInterval how often to ping for aliveness
      */
-    public LBHttp2SolrClient.Builder setAliveCheckInterval(int aliveCheckInterval) {
+    public LBHttp2SolrClient.Builder setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
       if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
             "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
-      this.aliveCheckInterval = aliveCheckInterval;
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
       return this;
     }
 
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.aliveCheckInterval = this.aliveCheckInterval;
+      solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
       return solrClient;
     }
   }

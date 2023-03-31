@@ -36,9 +36,6 @@ jobs:
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
 
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
-
     - name: Run gradle check (without tests)
       run: ./gradlew check -x test -Ptask.times=true -x licenses -x documentation -x buildLocalAntoraSite -x :solr:documentation:documentation -x :solr:documentation:collectLuceneJavadocs -x buildLocalSite -x :solr:solr-ref-guide:checkSiteLinks -x :checkUnusedConstraints -x rat -x :validateSourcePatterns -x :verifyLocks -x :solr:documentation:checkBrokenLinks
 

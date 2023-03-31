@@ -49,7 +49,7 @@ allprojects {
       description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java
@@ -61,7 +61,7 @@ allprojects {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
@@ -85,8 +85,8 @@ allprojects {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
-        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+        "https://docs.oracle.com/en/java/javase/11/docs/api/": project.relativePath(javaJavadocPackages),
+        "https://junit.org/junit4/javadoc/4.12/": project.relativePath(junitJavadocPackages)
     ]
 
     solrDocUrl = provider({ rootProject.solrDocUrl })
@@ -160,6 +160,7 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
         "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",

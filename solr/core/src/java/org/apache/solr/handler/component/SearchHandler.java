@@ -276,18 +276,23 @@ public class SearchHandler extends RequestHandlerBase
     return result;
   }
 
+  private boolean isDistrib(SolrQueryRequest req) {
+    boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
+    boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    if (!isDistrib) {
+      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
+      // search is distributed.
+      final String shards = req.getParams().get(ShardParams.SHARDS);
+      isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
+    }
+    return isDistrib;
+  }
+
   public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
-    rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
-    if (!rb.isDistrib) {
-      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-      // search is distributed.
-      final String shards = req.getParams().get(ShardParams.SHARDS);
-      rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
-    }
 
     if (rb.isDistrib) {
       shardHandler = shardHandlerFactory.getShardHandler();
@@ -359,6 +364,7 @@ public class SearchHandler extends RequestHandlerBase
       rb.requestInfo.setResponseBuilder(rb);
     }
 
+    rb.isDistrib = isDistrib(req);
     tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);

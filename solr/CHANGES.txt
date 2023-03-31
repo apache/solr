@@ -4,6 +4,14 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  9.3.0 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-16686: Using bin/solr to copy a file from ZK to local fails if the local filename does not have a path.
+  (Shawn Heisey)
+
 ==================  9.2.0 ==================
 
 New Features
@@ -20,6 +28,12 @@ New Features
 * SOLR-16532: New OpenTelemetry (OTEL) module with OTLP/gRPC trace exporter. See ref.guide. (janhoy, David Smiley)
 
 * SOLR-16596: Learning To Rank - Added support for null feature values in multiple additive trees models (Anna Ruggero via Alessandro Benedetti)
+
+* SOLR-16608: Ability to compress state.json in Zookeeper (Justin Sweeney via noble)
+
+* SOLR-16646: New function query operator isnan to verify if value is NaN (Gabriel Magno via Kevin Risden)
+
+* SOLR-16643: Add reRankOperator=multiply/replace options to rerank query parser (Andy Webb, Christine Poerschke, Mikhail Khludnev)
 
 Improvements
 ---------------------
@@ -102,6 +116,38 @@ Improvements
 * SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
   configured per AbstractUpdateRequest instance.  (hossman)
 
+* SOLR-16635: Resolve crypto keys file path in MiniSolrCloudCluster. This eliminates the need to set the system
+  properties `pkiHandlerPublicKeyPath` and `pkiHandlerPrivateKeyPath` before starting MiniSolrCloudCluster when using
+  the Solr test framework. (Tomás Fernández Löbbe)
+
+* SOLR-16618: Admin UI Analysis page should include dynamic fields (Alex Deparvu via Eric Pugh)
+
+* SOLR-16590: Standardize Builder method names on SolrClient's to use the with pattern, deprecating the use of set or bare property name.  (Eric Pugh)
+
+* SOLR-16595: Standardize Builder methods handling of times to use require a TimeUnit to be passed in.  Deprecated methods that
+  do not specify a TimeUnit.  (Eric Pugh)
+
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
+
+* SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
+  `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
+
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
+
+* SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
+  `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
+  `DELETE /api/cores/coreName/snapshots/snapshotName`, respectively  (John Durham via Jason Gerlowski)
+
+* SOLR-16488: The paths of the v2 "ZooKeeper read" APIs have been tweaked slightly to be more intuitive. "get node data" is now available
+  at `GET /api/cluster/zookeeper/data/<path>`, and "list node children" is now available at `GET /api/cluster/zookeeper/children/<path>`
+  (Jason Gerlowski, Joshua Ouma)
+
+* SOLR-16393: The path of the v2 "list alias" API has been tweaked slightly to be more intuitive, and is now available at
+  `GET /api/aliases`.  It is also now possible to request information about a specific alias at `GET /api/aliases/<aliasName>`.
+  (Alex Deparvu via Jason Gerlowski)
+
+* SOLR-16397: /mlt now has a v2 API available at `GET /api/collections/collName/mlt` (Ameer Albahem via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -112,6 +158,12 @@ Optimizations
 * SOLR-15732: queries to missing collection are slow (noble)
 
 * SOLR-15616: Allow thread metrics to be cached (Ishan Chattopadhyaya, ab)
+
+* SOLR-16615: Jersey 'ApplicationHandlers' are now shared by compatible cores where possible (Jason Gerlowski, Houston Putman)
+
+* SOLR-16487: Replication pooling is optimized based on hard and soft commit settings for a given collection (Justin Sweeney)
+
+* SOLR-16689: Avoiding commits on leader when recovering a non-leader replica and avoiding incorrectly replicating an empty core (Justin Sweeney)
 
 Bug Fixes
 ---------------------
@@ -151,6 +203,35 @@ Bug Fixes
 
 * SOLR-16621: Admin UI fails to grant user permissions that have wildcard role (janhoy)
 
+* SOLR-16631: solr.allowUrls (former solr.shardsWhitelist) should treat hostnames in case insensitive way. (Paul Blanchaert via Eric Pugh)
+
+* SOLR-16647: Fix circuit breaker examples in solrconfig.xml (Colvin Cowie via Kevin Risden)
+
+* SOLR-16648: NullPointerException when excluding facets in More Like This Handler (Mikhail Khludnev)
+
+* SOLR-16628: Ensure that InputStreams are closed after Xml parsing (Michael Gibney, David Smiley, Kevin Risden)
+
+* SOLR-16639: Fix jq parse error of solr-exporter metrics node_thread_pool_completed_total (Naoto Minami)
+
+* SOLR-16658: List of permissions returned to Admin UI is not complete (janhoy)
+
+* SOLR-9698: Fix start/stop wait time and RMI_PORT on Windows (Colvin Cowie)
+
+* SOLR-16670: Fix directory/file check in S3Repository (Houston Putman, Hakan Özler)
+
+* SOLR-16668: Use default to Java SSL for Http2SolrClient when none is provided (Houston Putman)
+
+* SOLR-16669: Http2SolrClient now defaults checkPeerName to True, as the documentation specified (Houston Putman)
+
+* SOLR-16679: Fix solr.jetty.ssl.verifyClientHostName logging (Kevin Risden)
+
+* SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax 
+  (Mikhail Khludnev)
+
+* SOLR-16656: rid parameter missing from query logs (Alex Deparvu)
+
+* SOLR-16676: Logs: Http2SolrClient.async() lacked MDC (Alex Deparvu)
+
 Build
 ---------------------
 * Upgrade forbiddenapis to 3.4 (Uwe Schindler)
@@ -163,13 +244,15 @@ Build
 
 * SOLR-16508: Upgrade gradle wrapper to 7.6 (Kevin Risden)
 
-* SOLR-16578: Upgrade to errorprone 2.16 (Kevin Risden)
+* SOLR-16578: Upgrade to errorprone 2.18.0 (Kevin Risden)
 
 * SOLR-16581: Upgrade OWASP dependency check to 7.4.1 (Kevin Risden)
 
 * SOLR-16624: Remove Gradle Groovy version override (Kevin Risden)
 
 * SOLR-16625: Upgrade OWASP dependency check to 8.0.1 (Kevin Risden)
+
+* SOLR-16641: Generate gradle.properties from gradlew, if absent (Colvin Cowie)
 
 Other Changes
 ---------------------
@@ -194,7 +277,7 @@ Other Changes
 
 * SOLR-16579: Upgrade Jackson to 2.14.1 (Kevin Risden)
 
-* SOLR-16562: Upgrade to Caffeine 3.1.2 (Kevin Risden)
+* SOLR-16562: Upgrade to Caffeine 3.1.4 (Kevin Risden)
 
 * SOLR-16569: Add java system property to overseer queue size (Nick Ginther via noble)
 
@@ -215,6 +298,30 @@ Other Changes
 * SOLR-16626: Upgrade to Netty 4.1.87.Final (Kevin Risden)
 
 * SOLR-16627: Upgrade google-cloud-bom to 0.184.0, re2j to 1.6, and grpc to 1.51.0 (Kevin Risden)
+
+* SOLR-16629: Replace Solr thread safety annotations with JCIP. (David Smiley)
+
+* SOLR-16632: Add core name to periodic delete related log messages (Bence Szabo via Andras Salamon)
+
+* SOLR-15955: Upgrade to Jetty 10.x (Mark Miller, Kevin Risden)
+
+* SOLR-15959: Deprecate loading of solr.xml from Zookeeper (janhoy)
+
+* SOLR-16573: Introduce EmbeddedSolrServerTestRule, a JUnit 4 TestRule for Solr testing
+  (Joshua Ouma, David Smiley)
+
+* SOLR-16660: Deprecate analytics component (janhoy)
+
+* SOLR-15733: Separate out a solrj-streaming module (Joel Bernstein, Kevin Risden)
+
+* SOLR-15928: Dim 'Add Collection' and 'Create Alias' buttons when user lacks proper permissions (janhoy)
+
+* SOLR-16672: Simplify SolrCLI Healthcheck command's logic for obtaining a target collection (Eric Pugh)
+
+* SOLR-16684: Keep solr's opennlp-tools version in sync with Lucene (janhoy)
+
+* SOLR-16681: Throw exception when attempting to replace uniqueKey via fl in distributed request,
+  e.g. fl=old_id:id,id:new_id (Mikhail Khludnev)
 
 ==================  9.1.1 ==================
 

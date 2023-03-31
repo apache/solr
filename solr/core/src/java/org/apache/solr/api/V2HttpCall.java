@@ -40,9 +40,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -72,7 +72,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // class that handle the '/v2' path
-@SolrThreadSafe
+@ThreadSafe
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
@@ -337,14 +337,19 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   private boolean invokeJerseyRequest(
-      CoreContainer cores, SolrCore core, ApplicationHandler primary, SolrQueryResponse rsp) {
-    return invokeJerseyRequest(cores, core, primary, rsp, Map.of());
+      CoreContainer cores,
+      SolrCore core,
+      ApplicationHandler jerseyHandler,
+      PluginBag<SolrRequestHandler> requestHandlers,
+      SolrQueryResponse rsp) {
+    return invokeJerseyRequest(cores, core, jerseyHandler, requestHandlers, rsp, Map.of());
   }
 
   private boolean invokeJerseyRequest(
       CoreContainer cores,
       SolrCore core,
       ApplicationHandler jerseyHandler,
+      PluginBag<SolrRequestHandler> requestHandlers,
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
     final ContainerRequest containerRequest =
@@ -355,6 +360,8 @@ public class V2HttpCall extends HttpSolrCall {
     containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
     containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_RESPONSE, rsp);
     containerRequest.setProperty(RequestContextKeys.CORE_CONTAINER, cores);
+    containerRequest.setProperty(
+        RequestContextKeys.RESOURCE_TO_RH_MAPPING, requestHandlers.getJaxrsRegistry());
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
     containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
     containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
@@ -401,7 +408,12 @@ public class V2HttpCall extends HttpSolrCall {
     SolrQueryResponse solrResp = new SolrQueryResponse();
     final boolean jerseyResourceFound =
         invokeJerseyRequest(
-            cores, null, cores.getJerseyApplicationHandler(), solrResp, suppressNotFoundProp);
+            cores,
+            null,
+            cores.getJerseyApplicationHandler(),
+            cores.getRequestHandlers(),
+            solrResp,
+            suppressNotFoundProp);
     if (jerseyResourceFound) {
       logAndFlushAdminRequest(solrResp);
       return;
@@ -415,7 +427,8 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
     if (api == null) {
-      invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), solrResp);
+      invokeJerseyRequest(
+          cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), solrResp);
     } else {
       SolrCore.preDecorateResponse(solrReq, solrResp);
       try {
@@ -449,10 +462,16 @@ public class V2HttpCall extends HttpSolrCall {
           Map.of(RequestContextKeys.SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION, "true");
       final boolean resourceFound =
           invokeJerseyRequest(
-              cores, core, core.getJerseyApplicationHandler(), rsp, suppressNotFoundProp);
+              cores,
+              core,
+              core.getJerseyApplicationHandler(),
+              core.getRequestHandlers(),
+              rsp,
+              suppressNotFoundProp);
       if (!resourceFound) {
         response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
-        invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), rsp);
+        invokeJerseyRequest(
+            cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);

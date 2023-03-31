@@ -69,6 +69,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -129,6 +130,7 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.jersey.InjectionFactories;
+import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -192,9 +194,14 @@ public class CoreContainer {
       new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile ApplicationHandler jerseyAppHandler;
+  private volatile JerseyAppHandlerCache appHandlersByConfigSetId;
 
   public ApplicationHandler getJerseyApplicationHandler() {
     return jerseyAppHandler;
+  }
+
+  public JerseyAppHandlerCache getJerseyAppHandlerCache() {
+    return appHandlersByConfigSetId;
   }
 
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
@@ -407,6 +414,7 @@ public class CoreContainer {
             ExecutorUtil.newMDCAwareCachedThreadPool(
                 cfg.getReplayUpdatesThreads(),
                 new SolrNamedThreadFactory("replayUpdatesExecutor")));
+    this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     allowPathBuilder.addPath(cfg.getSolrHome());
@@ -722,6 +730,14 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
+  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+    if (containerHandlers.getJerseyEndpoints() == null) {
+      return;
+    }
+
+    containerHandlers.getJerseyEndpoints().register(clazz);
+  }
+
   // -------------------------------------------------------------------
   // Initialization / Cleanup
   // -------------------------------------------------------------------
@@ -791,9 +807,7 @@ public class CoreContainer {
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-
-      ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
-      registerV2ApiIfEnabled(zookeeperReadAPI);
+      registerV2ApiIfEnabled(ZookeeperReadAPI.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -1086,6 +1100,17 @@ public class CoreContainer {
                 protected void configure() {
                   bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
                       .to(SolrNodeKeyPair.class)
+                      .in(Singleton.class);
+                }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(
+                          new InjectionFactories.SingletonFactory<>(
+                              coreAdminHandler.getCoreAdminAsyncTracker()))
+                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
                       .in(Singleton.class);
                 }
               });

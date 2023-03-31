@@ -16,44 +16,33 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.solr.core.SolrCore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.CoreContainer;
+import org.junit.BeforeClass;
 
-public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class TestEmbeddedSolrServer extends SolrTestCase {
 
-  @Override
-  protected EmbeddedSolrServer getSolrCore1() {
-    return new EmbeddedSolrServer(cores, "core1");
-  }
-
-  public void testGetCoreContainer() {
-    assertEquals(cores, ((EmbeddedSolrServer) getSolrCore0()).getCoreContainer());
-    assertEquals(cores, (getSolrCore1()).getCoreContainer());
+  @BeforeClass
+  public static void beforeClass() {
+    SolrTestCaseJ4.assumeWorkingMockito();
   }
 
   public void testClose() throws IOException {
-
-    EmbeddedSolrServer solrServer = (EmbeddedSolrServer) getSolrCore0();
-
-    assertEquals(3, cores.getCores().size());
-    List<SolrCore> solrCores = new ArrayList<>();
-    for (SolrCore solrCore : cores.getCores()) {
-      assertFalse(solrCore.isClosed());
-      solrCores.add(solrCore);
-    }
-
+    // create a CoreContainer first then pass to EmbeddedSolrServer.
+    CoreContainer cores = mock(CoreContainer.class);
+    EmbeddedSolrServer solrServer = new EmbeddedSolrServer(cores, null);
     solrServer.close();
 
-    assertEquals(3, cores.getCores().size());
+    verify(cores, never()).shutdown();
 
-    for (SolrCore solrCore : solrCores) {
-      assertFalse(solrCore.isClosed());
-    }
+    // We could test the reverse, that if EmbeddedSolrServer is created without a
+    // CoreContainer passed in that it propagates the shutdown, but honestly tons of
+    // tests would fail, so we're covered.
   }
 }

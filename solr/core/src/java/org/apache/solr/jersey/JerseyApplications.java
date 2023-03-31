@@ -20,13 +20,13 @@ package org.apache.solr.jersey;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
-import javax.inject.Singleton;
-import org.apache.solr.core.PluginBag;
+import java.util.Map;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrVersion;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -44,7 +44,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 public class JerseyApplications {
 
   public static class CoreContainerApp extends ResourceConfig {
-    public CoreContainerApp(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
+    public CoreContainerApp() {
       super();
 
       // Authentication and authorization
@@ -55,6 +55,8 @@ public class JerseyApplications {
       register(MessageBodyWriters.JavabinMessageBodyWriter.class);
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(MessageBodyWriters.RawMessageBodyWriter.class);
+      register(JacksonJsonProvider.class);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
@@ -63,15 +65,6 @@ public class JerseyApplications {
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
-      register(
-          new AbstractBinder() {
-            @Override
-            protected void configure() {
-              bindFactory(new MetricBeanFactory(beanRegistry))
-                  .to(PluginBag.JerseyMetricsLookupRegistry.class)
-                  .in(Singleton.class);
-            }
-          });
       register(
           new AbstractBinder() {
             @Override
@@ -90,29 +83,35 @@ public class JerseyApplications {
                   .in(RequestScoped.class);
             }
           });
-      // Logging - disabled by default but useful for debugging Jersey execution
-      //      setProperties(
-      //          Map.of(
-      //              "jersey.config.server.tracing.type",
-      //              "ALL",
-      //              "jersey.config.server.tracing.threshold",
-      //              "VERBOSE"));
+
+      setProperties(
+          Map.of(
+              // Explicit Jersey logging is disabled by default but useful for debugging
+              // "jersey.config.server.tracing.type", "ALL",
+              // "jersey.config.server.tracing.threshold", "VERBOSE",
+              "jersey.config.server.wadl.disableWadl", "true",
+              "jersey.config.beanValidation.disable.server", "true",
+              "jersey.config.server.disableAutoDiscovery", "true",
+              "jersey.config.server.disableJsonProcessing", "true",
+              "jersey.config.server.disableMetainfServicesLookup", "true",
+              "jersey.config.server.disableMoxyJson", "true",
+              "jersey.config.server.resource.validation.disable", "true"));
     }
   }
 
   public static class SolrCoreApp extends CoreContainerApp {
 
-    public SolrCoreApp(SolrCore solrCore, PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
-      super(beanRegistry);
+    public SolrCoreApp() {
+      super();
 
       // Dependency Injection for Jersey resources
       register(
           new AbstractBinder() {
             @Override
             protected void configure() {
-              bindFactory(new InjectionFactories.SingletonFactory<>(solrCore))
+              bindFactory(InjectionFactories.ReuseFromContextSolrCoreFactory.class)
                   .to(SolrCore.class)
-                  .in(Singleton.class);
+                  .in(RequestScoped.class);
             }
           });
     }

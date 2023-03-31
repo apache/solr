@@ -954,6 +954,26 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser(
+        "isnan",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected String name() {
+                return "isnan";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return Float.isNaN(vals.floatVal(doc));
+              }
+            };
+          }
+        });
+
+    addParser(
         "not",
         new ValueSourceParser() {
           @Override

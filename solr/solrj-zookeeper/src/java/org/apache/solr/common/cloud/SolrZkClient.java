@@ -24,25 +24,27 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
-import org.apache.solr.common.util.CompressionUtil;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -80,6 +82,8 @@ public class SolrZkClient implements Closeable {
 
   private final ZkMetrics metrics = new ZkMetrics();
 
+  private Compressor compressor;
+
   public MapWriter getMetrics() {
     return metrics::writeMap;
   }
@@ -103,51 +107,20 @@ public class SolrZkClient implements Closeable {
     return zkClientTimeout;
   }
 
-  // expert: for tests
-  public SolrZkClient() {}
-
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT);
-  }
-
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      int zkClientConnectTimeout,
-      OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null, onReconnect);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      ZkClientConnectionStrategy strat,
-      final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, strat, onReconnect);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
-      final OnReconnect onReconnect) {
+  public SolrZkClient(Builder builder) {
     this(
-        zkServerAddress,
-        zkClientTimeout,
-        clientConnectTimeout,
-        strat,
-        onReconnect,
-        null,
-        null,
-        null);
+        builder.zkServerAddress,
+        builder.zkClientTimeout,
+        builder.zkClientConnectTimeout,
+        builder.connectionStrategy,
+        builder.onReconnect,
+        builder.beforeReconnect,
+        builder.zkACLProvider,
+        builder.higherLevelIsClosed,
+        builder.compressor);
   }
 
-  public SolrZkClient(
+  private SolrZkClient(
       String zkServerAddress,
       int zkClientTimeout,
       int clientConnectTimeout,
@@ -155,7 +128,13 @@ public class SolrZkClient implements Closeable {
       final OnReconnect onReconnect,
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
-      IsClosed higherLevelIsClosed) {
+      IsClosed higherLevelIsClosed,
+      Compressor compressor) {
+
+    if (zkServerAddress == null) {
+      // only tests should create one without server address
+      return;
+    }
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
@@ -231,6 +210,12 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = createZkACLProvider();
     } else {
       this.zkACLProvider = zkACLProvider;
+    }
+
+    if (compressor == null) {
+      this.compressor = new ZLibCompressor();
+    } else {
+      this.compressor = compressor;
     }
   }
 
@@ -435,12 +420,16 @@ public class SolrZkClient implements Closeable {
     } else {
       result = keeper.getData(path, wrapWatcher(watcher), stat);
     }
-    if (CompressionUtil.isCompressedBytes(result)) {
+    if (compressor.isCompressedBytes(result)) {
       log.debug("Zookeeper data at path {} is compressed", path);
       try {
-        result = CompressionUtil.decompressBytes(result);
-      } catch (DataFormatException e) {
-        throw new RuntimeException(e);
+        result = compressor.decompressBytes(result);
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            String.format(
+                Locale.ROOT, "Unable to decompress data at path: %s from zookeeper", path),
+            e);
       }
     }
     metrics.reads.increment();
@@ -1115,6 +1104,68 @@ public class SolrZkClient implements Closeable {
     public NodeData(Stat stat, byte[] data) {
       this.stat = stat;
       this.data = data;
+    }
+  }
+
+  public static class Builder {
+    public String zkServerAddress;
+    public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public int zkClientConnectTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public OnReconnect onReconnect;
+    public BeforeReconnect beforeReconnect;
+    public ZkClientConnectionStrategy connectionStrategy;
+    public ZkACLProvider zkACLProvider;
+    public IsClosed higherLevelIsClosed;
+
+    public Compressor compressor;
+
+    public Builder withUrl(String server) {
+      this.zkServerAddress = server;
+      return this;
+    }
+
+    public Builder withTimeout(int i, TimeUnit unit) {
+      this.zkClientTimeout = (int) unit.toMillis(i);
+      return this;
+    }
+
+    public Builder withConnTimeOut(int i, TimeUnit unit) {
+      this.zkClientConnectTimeout = (int) unit.toMillis(i);
+      return this;
+    }
+
+    public Builder withReconnectListener(OnReconnect onReconnect) {
+      this.onReconnect = onReconnect;
+      return this;
+    }
+
+    public Builder withConnStrategy(ZkClientConnectionStrategy strat) {
+      this.connectionStrategy = strat;
+      return this;
+    }
+
+    public Builder withBeforeConnect(BeforeReconnect beforeReconnect) {
+      this.beforeReconnect = beforeReconnect;
+      return this;
+    }
+
+    public Builder withAclProvider(ZkACLProvider zkACLProvider) {
+      this.zkACLProvider = zkACLProvider;
+      return this;
+    }
+
+    public Builder withClosedCheck(IsClosed higherLevelIsClosed) {
+      this.higherLevelIsClosed = higherLevelIsClosed;
+      return this;
+    }
+
+    public Builder withCompressor(Compressor c) {
+      this.compressor = c;
+      return this;
+    }
+
+    public SolrZkClient build() {
+      return new SolrZkClient(this);
     }
   }
 }
