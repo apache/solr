@@ -696,11 +696,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               null,
               (null != dcmd.getRoute()
                   ? dcmd.getRoute()
-                  : req.getParams().get(ShardParams._ROUTE_)), cmd);
+                  : req.getParams().get(ShardParams._ROUTE_)),
+              cmd);
     }
   }
 
-  protected List<SolrCmdDistributor.Node> setupRequest(String id, SolrInputDocument doc, UpdateCommand updateCommand) {
+  protected List<SolrCmdDistributor.Node> setupRequest(
+      String id, SolrInputDocument doc, UpdateCommand updateCommand) {
     return setupRequest(id, doc, null, updateCommand);
   }
 

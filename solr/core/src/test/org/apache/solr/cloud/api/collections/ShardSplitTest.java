@@ -866,7 +866,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     commit();
 
-    List<String> errors = new  CopyOnWriteArrayList<>();
+    List<String> errors = new CopyOnWriteArrayList<>();
     Thread indexThread =
         new Thread(
             () -> {
@@ -932,7 +932,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       }
     }
 
-    assertTrue("Errors present while concurrently adding and removing docs " + errors, errors.isEmpty());
+    assertTrue(
+        "Errors present while concurrently adding and removing docs " + errors, errors.isEmpty());
 
     waitForRecoveriesToFinish(true);
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
