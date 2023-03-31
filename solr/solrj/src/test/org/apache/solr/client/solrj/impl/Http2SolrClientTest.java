@@ -254,7 +254,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         SolrException.ErrorCode.getErrorCode(status));
 
     try (Http2SolrClient client =
-        getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
+        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build()) {
       DebugServlet.setErrorCode(status);
       try {
         SolrQuery q = new SolrQuery("foo");
@@ -281,7 +281,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         SolrException.ErrorCode.UNKNOWN,
         SolrException.ErrorCode.getErrorCode(status));
 
-    try (Http2SolrClient client = getHttp2SolrClient(null)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
       DebugServlet.setErrorCode(status);
       try {
         // if client base url is null, request url will be used in exception message
@@ -305,7 +305,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     String url = jetty.getBaseUrl().toString() + "/debug/foo";
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
-    try (Http2SolrClient client = getHttp2SolrClient(url)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
 
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -433,7 +433,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testDelete() throws Exception {
     DebugServlet.clear();
     String url = jetty.getBaseUrl().toString() + "/debug/foo";
-    try (Http2SolrClient client = getHttp2SolrClient(url)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
       try {
         client.deleteById("id");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -477,7 +477,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (Http2SolrClient client =
-        getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
+        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build()) {
       Collection<String> ids = Collections.singletonList("a");
       try {
         client.getById("a");
@@ -508,7 +508,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     UpdateRequest req = new UpdateRequest();
     req.add(new SolrInputDocument());
     req.setParam("a", "\u1234");
-    try (Http2SolrClient client = getHttp2SolrClient(url)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
 
       try {
         client.request(req);
@@ -634,7 +634,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
 
-    try (Http2SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString())) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
       client.add("collection1", doc);
@@ -646,7 +647,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
 
     final String collection1Url = jetty.getBaseUrl().toString() + "/collection1";
-    try (Http2SolrClient client = getHttp2SolrClient(collection1Url)) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(collection1Url).build()) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
   }

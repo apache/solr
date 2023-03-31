@@ -37,6 +37,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -188,7 +189,9 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     int i = 0;
     for (SolrClient client : clients) {
       try (SolrClient c =
-          getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION, 30000)) {
+          new HttpSolrClient.Builder(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)
+              .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+              .build()) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));

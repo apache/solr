@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,7 +64,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress());
+    solrClient =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .build();
 
     final String SCHEME = "digest";
     final String AUTH = "user:pass";
