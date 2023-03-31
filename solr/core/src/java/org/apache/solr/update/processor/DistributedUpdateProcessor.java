@@ -151,8 +151,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   /** Number of times requests from leaders to followers can be retried */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
-  protected UpdateCommand updateCommand; // the current command this processor is working on.
-
   protected final Replica.Type replicaType;
 
   public DistributedUpdateProcessor(
@@ -326,6 +324,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // Find the version
         String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
         versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+      }
+    }
+
+    if (!isLeader && versionOnUpdate == 0) {
+      // refreshing isLeader status in case this is a race (see SOLR-7609)
+      isLeader = getNonZkLeaderAssumption(req);
+      if (!isLeader) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
       }
     }
 
@@ -824,8 +830,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     assert TestInjection.injectFailUpdateRequests();
 
-    updateCommand = cmd;
-
     if (!cmd.isDeleteById()) {
       doDeleteByQuery(cmd);
     } else {
@@ -1034,7 +1038,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   void setupRequest(UpdateCommand cmd) {
-    updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
   }
 
@@ -1210,8 +1213,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
     assert TestInjection.injectFailUpdateRequests();
-
-    updateCommand = cmd;
 
     // replica type can only be NRT in standalone mode
     // NRT replicas will always commit

@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -80,7 +81,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly
 @LogLevel(
-    "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
+    "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.update.PeerSync=DEBUG;org.apache.solr.update.processor.DistributedUpdateProcessor=DEBUG;org.apache.solr.update.processor.LogUpdateProcessorFactory=DEBUG;org.apache.solr.update.UpdateLog=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -865,6 +866,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     commit();
 
+    List<String> errors = new  CopyOnWriteArrayList<>();
     Thread indexThread =
         new Thread(
             () -> {
@@ -879,21 +881,27 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   indexAndUpdateCount(
                       router, ranges, docCounts, String.valueOf(id), id, documentIds);
                   Thread.sleep(sleep);
-                  if (usually(random)) {
-                    String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
-                    if (deleted.contains(delId)) continue;
-                    try {
-                      deleteAndUpdateCount(router, ranges, docCounts, delId);
-                      deleted.add(delId);
-                      documentIds.remove(String.valueOf(delId));
-                    } catch (Exception e) {
-                      log.error("Exception while deleting doc id = {}", delId, e);
-                    }
-                  }
                 } catch (Exception e) {
                   log.error("Exception while adding doc id = {}", id, e);
                   // do not select this id for deletion ever
                   deleted.add(String.valueOf(id));
+                  errors.add(e.getMessage());
+                }
+
+                if (usually(random)) {
+                  String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
+                  if (deleted.contains(delId)) continue;
+                  try {
+                    deleteAndUpdateCount(router, ranges, docCounts, delId);
+                    deleted.add(delId);
+                    documentIds.remove(String.valueOf(delId));
+                    log.info("Deleted doc id = {}", id);
+
+                  } catch (Exception e) {
+                    log.error("Exception while deleting doc id = {}", delId, e);
+                    // TODO disabling this check for now to focus on 'add' scenario
+                    // errors.add(e.getMessage());
+                  }
                 }
               }
             });
@@ -923,6 +931,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         log.error("Indexing thread interrupted", e);
       }
     }
+
+    assertTrue("Errors present while concurrently adding and removing docs " + errors, errors.isEmpty());
 
     waitForRecoveriesToFinish(true);
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
