@@ -107,6 +107,11 @@ Other Changes
 
 * SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
 
+Other Changes
+---------------------
+
+* SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
+
 ==================  9.2.0 ==================
 
 New Features
