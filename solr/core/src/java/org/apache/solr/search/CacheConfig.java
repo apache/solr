@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
@@ -163,7 +162,7 @@ public class CacheConfig implements MapSerializable {
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
-      SolrException.log(log, "Error instantiating cache", e);
+      log.error("Error instantiating cache", e);
       // we can carry on without a cache... but should we?
       // in some cases (like an OOM) we probably should try to continue.
       return null;

@@ -834,13 +834,13 @@ public class SolrZkClient implements Closeable {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkCallbackExecutor", e);
     }
 
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkConnManagerCallbackExecutor", e);
     }
   }
 

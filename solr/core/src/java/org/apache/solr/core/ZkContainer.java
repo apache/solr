@@ -219,10 +219,10 @@ public class ZkContainer {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
+              log.error("", e);
             } catch (KeeperException e) {
-              SolrException.log(log, "", e);
-            } catch (AlreadyClosedException e) {
+              log.error("", e);
+            } catch (AlreadyClosedException ignore) {
 
             } catch (Exception e) {
               try {
@@ -233,7 +233,7 @@ public class ZkContainer {
               } catch (Exception e1) {
                 log.error("", e1);
               }
-              SolrException.log(log, "", e);
+              log.error("", e);
             }
           } finally {
             MDCLoggingContext.clear();

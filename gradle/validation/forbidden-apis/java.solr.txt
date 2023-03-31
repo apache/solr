@@ -27,3 +27,6 @@ java.util.LinkedHashMap#<init>(int)
 @defaultMessage Use CollectionUtil.newHashSet(int)
 java.util.HashSet#<init>(int)
 
+@defaultMessage Use Logger directly
+org.apache.solr.common.SolrException#log(**)
+
