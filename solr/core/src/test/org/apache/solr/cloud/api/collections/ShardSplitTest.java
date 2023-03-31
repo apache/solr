@@ -81,7 +81,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly
 @LogLevel(
-    "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.update.PeerSync=DEBUG;org.apache.solr.update.processor.DistributedUpdateProcessor=DEBUG;org.apache.solr.update.processor.LogUpdateProcessorFactory=DEBUG;org.apache.solr.update.UpdateLog=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
+    "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
