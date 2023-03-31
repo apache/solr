@@ -17,6 +17,8 @@ Bug Fixes
 
 * SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
 
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
 * SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
 
 Other Changes
