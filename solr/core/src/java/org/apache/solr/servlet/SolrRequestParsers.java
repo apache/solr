@@ -18,7 +18,6 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -632,11 +631,8 @@ public class SolrRequestParsers {
       for (Part part : req.getParts()) {
         if (part.getSubmittedFileName() == null) { // thus a form field and not file upload
           // If it's a form field, put it in our parameter map
-          try (BufferedReader reader =
-              new BufferedReader(new PartContentStream(part).getReader())) {
-            String partAsString = StrUtils.stringFromReader(reader);
-            MultiMapSolrParams.addParam(part.getName().trim(), partAsString, params.getMap());
-          }
+          String partAsString = StrUtils.stringFromReader(new PartContentStream(part).getReader());
+          MultiMapSolrParams.addParam(part.getName().trim(), partAsString, params.getMap());
         } else { // file upload
           streams.add(new PartContentStream(part));
         }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -181,8 +180,8 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
         PrefixTreeStrategy.ShapeTokenStream ts = s.tokenStream();
         return new TokenStreamComponents(
             r -> {
-              try (BufferedReader reader = new BufferedReader(r)) {
-                ts.setShape(parseShape(StrUtils.stringFromReader(reader)));
+              try {
+                ts.setShape(parseShape(StrUtils.stringFromReader(r)));
               } catch (IOException e) {
                 throw new RuntimeException(e);
               }

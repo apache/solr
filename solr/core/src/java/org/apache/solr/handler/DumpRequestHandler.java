@@ -18,9 +18,7 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -93,10 +91,7 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
         stream.add("sourceInfo", content.getSourceInfo());
         stream.add("size", content.getSize());
         stream.add("contentType", content.getContentType());
-        try (Reader reader = content.getReader();
-            BufferedReader bufferedReader = new BufferedReader(reader)) {
-          stream.add("stream", StrUtils.stringFromReader(bufferedReader));
-        }
+        stream.add("stream", StrUtils.stringFromReader(content.getReader()));
         streams.add(stream);
       }
       rsp.add("streams", streams);

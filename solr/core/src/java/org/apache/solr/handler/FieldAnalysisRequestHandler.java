@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
@@ -153,8 +152,8 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     if (streams != null) {
       // NOTE: Only the first content stream is currently processed
       for (ContentStream stream : streams) {
-        try (BufferedReader reader = new BufferedReader(stream.getReader())) {
-          value = StrUtils.stringFromReader(reader);
+        try {
+          value = StrUtils.stringFromReader(stream.getReader());
         } catch (IOException e) {
           // do nothing, leave value set to the request parameter
         }

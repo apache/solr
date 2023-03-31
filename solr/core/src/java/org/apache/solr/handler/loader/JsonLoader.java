@@ -23,7 +23,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -158,11 +157,9 @@ public class JsonLoader extends ContentStreamLoader {
 
     private Reader getReader(ContentStream stream) throws IOException {
       if (log.isTraceEnabled()) {
-        try (BufferedReader reader = new BufferedReader(stream.getReader())) {
-          String body = StrUtils.stringFromReader(reader);
-          log.trace("body: {}", body);
-          return new StringReader(body);
-        }
+        String body = StrUtils.stringFromReader(stream.getReader());
+        log.trace("body: {}", body);
+        return new StringReader(body);
       }
       return stream.getReader();
     }

@@ -19,7 +19,6 @@ package org.apache.solr.request.json;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -88,8 +87,8 @@ public class RequestUtil {
               "Bad contentType for search handler :" + contentType + " request=" + req);
         }
 
-        try (BufferedReader reader = new BufferedReader(cs.getReader())) {
-          String jsonString = StrUtils.stringFromReader(reader);
+        try {
+          String jsonString = StrUtils.stringFromReader(cs.getReader());
           MultiMapSolrParams.addParam(JSON, jsonString, map);
         } catch (IOException e) {
           throw new SolrException(

@@ -22,7 +22,6 @@
 
 package org.apache.solr.handler.tagger;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -264,9 +263,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     @Override
     public String call() throws IOException {
       if (inputString == null) {
-        try (BufferedReader reader = new BufferedReader(inputReader)) {
-          inputString = StrUtils.stringFromReader(reader);
-        }
+        inputString = StrUtils.stringFromReader(inputReader);
       }
       return inputString;
     }

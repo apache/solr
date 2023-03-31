@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.BufferedReader;
 import java.io.StringReader;
 import java.text.NumberFormat;
 import java.util.HashSet;
@@ -64,10 +63,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "missing content-stream for diff");
       }
-      final String content;
-      try (BufferedReader reader = new BufferedReader(body.getReader())) {
-        content = StrUtils.stringFromReader(reader);
-      }
+      final String content = StrUtils.stringFromReader(body.getReader());
 
       NamedList<NamedList<NamedList<Object>>> ref = fromXML(content);
 

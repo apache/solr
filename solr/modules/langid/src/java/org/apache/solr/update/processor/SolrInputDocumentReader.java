@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -219,8 +218,8 @@ public class SolrInputDocumentReader extends Reader {
    * @return string of concatenated fields
    */
   public static String asString(Reader reader) {
-    try (BufferedReader bufferedReader = new BufferedReader(reader)) {
-      return StrUtils.stringFromReader(bufferedReader);
+    try {
+      return StrUtils.stringFromReader(reader);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed reading doc content from reader", e);

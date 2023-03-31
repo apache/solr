@@ -21,7 +21,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,9 +92,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
         parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
       assertNotNull(req);
       assertEquals(1, streams.size());
-      try (BufferedReader reader = new BufferedReader(streams.get(0).getReader())) {
-        assertEquals(body1, StrUtils.stringFromReader(reader));
-      }
+      assertEquals(body1, StrUtils.stringFromReader(streams.get(0).getReader()));
     }
 
     // Now add three and make sure they come out ok
@@ -111,9 +108,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       input.add(body2);
       input.add(body3);
       for (ContentStream cs : streams) {
-        try (BufferedReader reader = new BufferedReader(cs.getReader())) {
-          output.add(StrUtils.stringFromReader(reader));
-        }
+        output.add(StrUtils.stringFromReader(cs.getReader()));
       }
       // sort them so the output is consistent
       Collections.sort(input);
@@ -541,9 +536,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       for (ContentStream cs : req.getContentStreams()) {
         num++;
         assertTrue(cs.getContentType().startsWith(expectedContentType));
-        try (BufferedReader reader = new BufferedReader(cs.getReader())) {
-          assertEquals(body, StrUtils.stringFromReader(reader));
-        }
+        assertEquals(body, StrUtils.stringFromReader(cs.getReader()));
       }
       assertEquals(1, num);
     }
