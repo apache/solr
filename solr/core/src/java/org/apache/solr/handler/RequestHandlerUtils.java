@@ -134,9 +134,7 @@ public class RequestHandlerUtils {
   public static void setWt(SolrQueryRequest req, String wt) {
     SolrParams params = req.getParams();
     if (params.get(CommonParams.WT) != null) return; // wt is set by user
-    Map<String, String> map = new HashMap<>(1);
-    map.put(CommonParams.WT, wt);
-    map.put("indent", "true");
+    Map<String, String> map = Map.of(CommonParams.WT, wt, "indent", "true");
     req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
   }
 }

@@ -396,7 +396,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     q = LegacyNumericRangeQuery.newFloatRange("float", Float.NaN, Float.NaN, true, true);
     topDocs = s.search(q, 10);
     assertEquals(
-        "Score doc count", TestLegacyNumericUtils.FLOAT_NANs.length, topDocs.scoreDocs.length);
+        "Score doc count", TestLegacyNumericUtils.FLOAT_NANs.size(), topDocs.scoreDocs.length);
 
     r.close();
     dir.close();

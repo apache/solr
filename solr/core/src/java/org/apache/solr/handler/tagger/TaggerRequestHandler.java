@@ -28,7 +28,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +54,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -203,7 +203,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
                   tags.add(tag);
                 }
 
-                Map<Object, List<Object>> docIdsListCache = new HashMap<>(2000);
+                Map<Object, List<Object>> docIdsListCache = CollectionUtil.newHashMap(2000);
 
                 ValueSourceAccessor uniqueKeyCache =
                     new ValueSourceAccessor(

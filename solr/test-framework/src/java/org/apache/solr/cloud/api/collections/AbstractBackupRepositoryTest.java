@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -191,16 +190,16 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       // Ensure nonexistent files are handled differently based on boolean flag param
       final URI nonexistentFileUri = repo.resolve(getBaseUri(), "file4.txt");
       assertFalse(repo.exists(nonexistentFileUri));
-      repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), IGNORE_NONEXISTENT);
+      repo.delete(getBaseUri(), List.of("file4.txt"), IGNORE_NONEXISTENT);
       expectThrows(
           IOException.class,
           () -> {
-            repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), REPORT_NONEXISTENT);
+            repo.delete(getBaseUri(), List.of("file4.txt"), REPORT_NONEXISTENT);
           });
 
       // Delete existing files individually and in 'bulk'
-      repo.delete(getBaseUri(), Lists.newArrayList("file1.txt"), REPORT_NONEXISTENT);
-      repo.delete(getBaseUri(), Lists.newArrayList("file2.txt", "file3.txt"), REPORT_NONEXISTENT);
+      repo.delete(getBaseUri(), List.of("file1.txt"), REPORT_NONEXISTENT);
+      repo.delete(getBaseUri(), List.of("file2.txt", "file3.txt"), REPORT_NONEXISTENT);
       assertFalse(repo.exists(file1Uri));
       assertFalse(repo.exists(file2Uri));
       assertFalse(repo.exists(file3Uri));
@@ -223,7 +222,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       addFile(repo, file1Uri);
       addFile(repo, file2Uri);
 
-      final List<String> rootChildren = Lists.newArrayList(repo.listAll(rootUri));
+      final List<String> rootChildren = List.of(repo.listAll(rootUri));
       assertEquals(3, rootChildren.size());
       assertTrue(rootChildren.contains("otherDir1"));
       assertTrue(rootChildren.contains("otherDir2"));
@@ -232,7 +231,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       final String[] otherDir2Children = repo.listAll(otherDir2Uri);
       assertEquals(0, otherDir2Children.length);
 
-      final List<String> otherDir3Children = Lists.newArrayList(repo.listAll(otherDir3Uri));
+      final List<String> otherDir3Children = List.of(repo.listAll(otherDir3Uri));
       assertEquals(2, otherDir3Children.size());
       assertTrue(otherDir3Children.contains("file1.txt"));
       assertTrue(otherDir3Children.contains("file2.txt"));

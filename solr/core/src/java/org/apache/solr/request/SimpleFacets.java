@@ -24,7 +24,6 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -56,6 +55,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.Bits;
@@ -69,6 +69,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -595,7 +596,7 @@ public class SimpleFacets {
           break;
         case UIF:
           // Emulate the JSON Faceting structure so we can use the same parsing classes
-          Map<String, Object> jsonFacet = new HashMap<>(13);
+          Map<String, Object> jsonFacet = CollectionUtil.newHashMap(13);
           jsonFacet.put("type", "terms");
           jsonFacet.put("field", field);
           jsonFacet.put("offset", offset);
@@ -805,16 +806,16 @@ public class SimpleFacets {
     boolean orderByCount =
         sort.equals(FacetParams.FACET_SORT_COUNT)
             || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result =
+    GroupFacetCollector.GroupedFacetResult result =
         collector.mergeSegmentResults(
             limit < 0 ? Integer.MAX_VALUE : (offset + limit), mincount, orderByCount);
 
     CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries =
+    List<GroupFacetCollector.FacetEntry> scopedEntries =
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
-    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+    for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
       if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;

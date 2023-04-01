@@ -24,6 +24,7 @@ import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationRespon
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
@@ -641,7 +641,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void parsePemToX509() {
     Collection<X509Certificate> parsed =
-        CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
+        CryptoKeys.parseX509Certs(
+            new ByteArrayInputStream(trustedPemCert.getBytes(StandardCharsets.UTF_8)));
     assertEquals(2, parsed.size());
   }
 
@@ -652,9 +653,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
         CertificateException.class,
         () -> {
           CryptoKeys.parseX509Certs(
-              IOUtils.toInputStream(
-                  "-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n",
-                  StandardCharsets.UTF_8));
+              new ByteArrayInputStream(
+                  ("-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n")
+                      .getBytes(StandardCharsets.UTF_8)));
         });
   }
 
@@ -663,7 +664,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     Path pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     String cert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath));
     assertEquals(
-        2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
+        2,
+        CryptoKeys.parseX509Certs(new ByteArrayInputStream(cert.getBytes(StandardCharsets.UTF_8)))
+            .size());
   }
 
   @Test
