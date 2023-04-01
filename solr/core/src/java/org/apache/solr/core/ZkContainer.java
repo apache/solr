@@ -219,7 +219,7 @@ public class ZkContainer {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              log.error("", e);
+              log.error("Interrupted", e);
             } catch (KeeperException e) {
               log.error("", e);
             } catch (AlreadyClosedException ignore) {
