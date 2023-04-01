@@ -204,9 +204,9 @@ def checkAllJARs(topDir, gitRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
+            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
+            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -576,7 +576,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   in_solr_folder = []
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
     is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
   else:
     is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
@@ -600,7 +600,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)

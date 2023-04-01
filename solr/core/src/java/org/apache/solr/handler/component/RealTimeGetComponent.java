@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.search.QueryUtils.makeQueryable;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -70,6 +69,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -885,7 +885,7 @@ public class RealTimeGetComponent extends SearchComponent {
           if (!fieldArrayListCreated && doc.getFieldValue(fname) instanceof Collection) {
             // previous value was array so we must return as an array even if was a single value
             // array
-            out.setField(fname, Lists.newArrayList(val));
+            out.setField(fname, new ArrayList<>(List.of(val)));
             fieldArrayListCreated = true;
             continue;
           }
@@ -1001,16 +1001,16 @@ public class RealTimeGetComponent extends SearchComponent {
       if (solrInputField.getFirstValue() instanceof SolrInputDocument) {
         // is child doc
         Object val = solrInputField.getValue();
-        Iterator<SolrDocument> childDocs =
+        List<SolrDocument> childDocs =
             solrInputField.getValues().stream()
                 .map(x -> toSolrDoc((SolrInputDocument) x, schema))
-                .iterator();
+                .collect(Collectors.toList());
         if (val instanceof Collection) {
           // add as collection even if single element collection
-          solrDoc.setField(solrInputField.getName(), Lists.newArrayList(childDocs));
+          solrDoc.setField(solrInputField.getName(), childDocs);
         } else {
           // single child doc
-          solrDoc.setField(solrInputField.getName(), childDocs.next());
+          solrDoc.setField(solrInputField.getName(), childDocs.get(0));
         }
       }
     }
@@ -1378,7 +1378,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.
-    Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
+    Set<Long> versionsToRet = CollectionUtil.newHashSet(ulog.getNumRecordsToKeep());
     for (String range : ranges) {
       String[] rangeBounds = range.split("\\.{3}");
       int indexStart =

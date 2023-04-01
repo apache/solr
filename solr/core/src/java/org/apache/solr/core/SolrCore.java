@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import java.io.Closeable;
 import java.io.File;
@@ -53,6 +52,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -2937,7 +2939,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
             @Override
             public Iterator<String> getParameterNamesIterator() {
-              return Iterators.filter(params.getParameterNamesIterator(), lpSet::contains);
+              return StreamSupport.stream(
+                      Spliterators.spliteratorUnknownSize(
+                          params.getParameterNamesIterator(), Spliterator.ORDERED),
+                      false)
+                  .filter(lpSet::contains)
+                  .iterator();
             }
 
             @Override

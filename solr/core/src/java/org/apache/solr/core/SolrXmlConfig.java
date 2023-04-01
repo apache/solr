@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.base.Strings;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -38,13 +37,13 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -133,7 +132,7 @@ public class SolrXmlConfig {
 
     NamedList<Object> entries = readNodeListAsNamedList(root, "<solr>");
     String nodeName = (String) entries.remove("nodeName");
-    if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
+    if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
     // It should goes inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
@@ -228,7 +227,7 @@ public class SolrXmlConfig {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
+      byte[] buf = is.readAllBytes();
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
@@ -400,14 +399,14 @@ public class SolrXmlConfig {
   }
 
   private static List<String> separateStrings(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptyList();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
@@ -557,6 +556,12 @@ public class SolrXmlConfig {
           break;
         case "distributedCollectionConfigSetExecution":
           builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
+          break;
+        case "minStateByteLenForCompression":
+          builder.setMinStateByteLenForCompression(parseInt(name, value));
+          break;
+        case "stateCompressor":
+          builder.setStateCompressorClass(value);
           break;
         default:
           throw new SolrException(

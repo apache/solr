@@ -32,8 +32,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -324,6 +326,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     testExample("schemaless");
   }
 
+  @Test
+  @LuceneTestCase.Nightly
+  public void testFilmsExample() throws Exception {
+    testExample("films");
+  }
+
   protected void testExample(String exampleName) throws Exception {
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
     if (!solrHomeDir.isDirectory())
@@ -510,12 +518,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     // index some docs - to verify all is good for both shards
-    CloudSolrClient cloudClient = null;
-
-    try {
-      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
-      cloudClient.connect();
-      cloudClient.setDefaultCollection(collectionName);
+    try (CloudSolrClient cloudClient =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
+                Optional.empty())
+            .withDefaultCollection(collectionName)
+            .build()) {
 
       int numDocs = 10;
       for (int d = 0; d < numDocs; d++) {
@@ -535,13 +543,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                 + collectionName
                 + " collection but only found "
                 + qr.getResults().getNumFound());
-      }
-    } finally {
-      if (cloudClient != null) {
-        try {
-          cloudClient.close();
-        } catch (Exception ignore) {
-        }
       }
     }
 

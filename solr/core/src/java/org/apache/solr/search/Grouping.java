@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
@@ -848,7 +847,7 @@ public class Grouping {
           // TODO: currently, this path is called only for string field, so
           // should we just use fieldType.toObject(schemaField, group.groupValue) here?
           List<IndexableField> fields = schemaField.createFields(group.groupValue.utf8ToString());
-          if (CollectionUtils.isNotEmpty(fields)) {
+          if (fields != null && !fields.isEmpty()) {
             nl.add("groupValue", fieldType.toObject(fields.get(0)));
           } else {
             throw new SolrException(

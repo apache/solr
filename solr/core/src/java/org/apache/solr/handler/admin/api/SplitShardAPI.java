@@ -27,7 +27,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -68,9 +67,7 @@ public class SplitShardAPI {
     if (StringUtils.isNotEmpty(v2Body.splitKey)) {
       v1Params.put(CommonAdminParams.SPLIT_KEY, v2Body.splitKey);
     }
-    if (MapUtils.isNotEmpty(v2Body.coreProperties)) {
-      flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
-    }
+    flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
   }
 }

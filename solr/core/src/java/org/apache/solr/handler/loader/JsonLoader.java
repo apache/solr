@@ -147,23 +147,23 @@ public class JsonLoader extends ContentStreamLoader {
         ContentStream stream,
         UpdateRequestProcessor processor)
         throws Exception {
-
-      Reader reader = null;
-      try {
-        reader = stream.getReader();
-        if (log.isTraceEnabled()) {
-          String body = IOUtils.toString(reader);
-          log.trace("body: {}", body);
-          reader = new StringReader(body);
-        }
-
+      try (Reader reader = getReader(stream)) {
         this.processUpdate(reader);
       } catch (ParseException e) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
-      } finally {
-        IOUtils.closeQuietly(reader);
       }
+    }
+
+    private Reader getReader(ContentStream stream) throws IOException {
+      if (log.isTraceEnabled()) {
+        try (Reader reader = stream.getReader()) {
+          String body = IOUtils.toString(reader);
+          log.trace("body: {}", body);
+          return new StringReader(body);
+        }
+      }
+      return stream.getReader();
     }
 
     @SuppressWarnings("fallthrough")

@@ -26,14 +26,18 @@ import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.OldAnalyticsParams;
 import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** Computes analytics requests. */
+@Deprecated(since = "9.2")
 public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
 
   @Override
   public void init(NamedList<?> args) {
+    DeprecationLog.log(
+        "analytics", "The Analytics component is deprecated. See upgrade notes for more.");
     AnalyticsRequestParser.init();
   }
 

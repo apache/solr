@@ -91,7 +91,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "9",
         "lowerfilt",
-        "The quick red fox jumped over the lazy big and large brown dogs.",
+        "The quick red:fox jumped over the lazy big and large brown dogs.",
         "lowerfilt1",
         "x");
     index(id, "10", "lowerfilt", "blue", "lowerfilt1", "x");
@@ -100,7 +100,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "13",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote RED)FOX jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
@@ -389,5 +389,29 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
       Long actual = ((SolrDocumentList) entry.getValue()).getNumFound();
       assertEquals("MLT mismatch for id=" + key, expected, actual);
     }
+    // test boost mlt.qf
+    query(
+        "q",
+        "lowerfilt:moon",
+        "fl",
+        id,
+        MoreLikeThisParams.MIN_TERM_FREQ,
+        2,
+        MoreLikeThisParams.MIN_DOC_FREQ,
+        1,
+        "sort",
+        "id_i1 desc",
+        "mlt",
+        "true",
+        "mlt.fl",
+        "lowerfilt1,lowerfilt",
+        "mlt.qf",
+        "lowerfilt1^1.2 lowerfilt^3.4",
+        "qt",
+        requestHandlerName,
+        "shards.qt",
+        requestHandlerName,
+        "mlt.count",
+        "20");
   }
 }

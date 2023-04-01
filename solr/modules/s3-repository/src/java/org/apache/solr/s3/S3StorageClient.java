@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -329,6 +330,8 @@ public class S3StorageClient {
       String contentType = objectMetadata.contentType();
 
       return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
+    } catch (NoSuchKeyException nske) {
+      return false;
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -420,6 +423,7 @@ public class S3StorageClient {
    * @param batchSize number of deletes to send to S3 at a time
    */
   @VisibleForTesting
+  @SuppressForbidden(reason = "Lists.partition")
   Collection<String> deleteObjects(Collection<String> entries, int batchSize) throws S3Exception {
     List<ObjectIdentifier> keysToDelete =
         entries.stream()
