@@ -894,12 +894,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   try {
                     deleteAndUpdateCount(router, ranges, docCounts, delId);
                     deleted.add(delId);
-                    documentIds.remove(String.valueOf(delId));
+                    documentIds.remove(delId);
                     log.info("Deleted doc id = {}", id);
 
                   } catch (Exception e) {
                     log.error("Exception while deleting doc id = {}", delId, e);
-                    // TODO disabling this check for now to focus on 'add' scenario
+                    // TODO disabling this check for now to improve 'add' scenario (see SOLR-7609)
                     // errors.add(e.getMessage());
                   }
                 }

@@ -280,6 +280,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
   }
 
+  private boolean leaderLogicWithVersionIntegrityCheck(
+      boolean isReplayOrPeersync, long versionOnUpdate) {
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    if (!leaderLogic && versionOnUpdate == 0) {
+      // refreshing leaderLogic status in case this is a race (see SOLR-7609)
+      leaderLogic = isSubShardLeader && !isReplayOrPeersync;
+      if (!leaderLogic) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
+      }
+    }
+    return leaderLogic;
+  }
+
   /**
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
@@ -327,17 +340,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    if (!isLeader && versionOnUpdate == 0) {
-      // refreshing isLeader status in case this is a race (see SOLR-7609)
-      isLeader = getNonZkLeaderAssumption(req);
-      if (!isLeader) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-      }
-    }
-
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic = leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
@@ -972,6 +977,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
+    // TODO replace below with a call to leaderLogicWithVersionIntegrityCheck (see SOLR-7609)
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
 
     if (!leaderLogic && versionOnUpdate == 0) {
@@ -981,7 +987,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.blockUpdates();
     try {
 
-      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
+      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync, leaderLogic);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the
@@ -1003,7 +1009,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void doLocalDeleteByQuery(
-      DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync)
+      DeleteUpdateCommand cmd,
+      long versionOnUpdate,
+      boolean isReplayOrPeersync,
+      boolean leaderLogic)
       throws IOException {
     if (versionsStored) {
       final boolean leaderLogic = isLeader && !isReplayOrPeersync;
@@ -1076,6 +1085,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
+    // TODO replace below with a call to leaderLogicWithVersionIntegrityCheck (see SOLR-7609)
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
