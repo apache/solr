@@ -248,10 +248,10 @@ public class SolrExporter {
       SolrScrapeConfiguration scrapeConfiguration = null;
 
       String defaultClusterId = "";
-      if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
+      if (!res.getString(ARG_ZK_HOST_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_ZK_HOST_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
-      } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
+      } else if (!res.getString(ARG_BASE_URL_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_BASE_URL_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
       }

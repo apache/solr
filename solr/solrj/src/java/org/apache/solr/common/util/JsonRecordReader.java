@@ -105,7 +105,7 @@ public class JsonRecordReader {
       return; // the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
-    if ("".equals(paths.get(0).trim())) paths.remove(0);
+    if (paths.get(0).trim().isEmpty()) paths.remove(0);
     rootNode.build(paths, fieldName, multiValued, isRecord, path);
     rootNode.buildOptimize();
   }

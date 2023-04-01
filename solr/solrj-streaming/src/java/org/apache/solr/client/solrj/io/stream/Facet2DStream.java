@@ -139,7 +139,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketXExpression != null) {
       if (bucketXExpression.getParameter() instanceof StreamExpressionValue) {
         String keyX = ((StreamExpressionValue) bucketXExpression.getParameter()).getValue();
-        if (keyX != null && !keyX.equals("")) {
+        if (keyX != null && !keyX.isEmpty()) {
           x = new Bucket(keyX.trim());
         }
       }
@@ -148,7 +148,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketYExpression != null) {
       if (bucketYExpression.getParameter() instanceof StreamExpressionValue) {
         String keyY = ((StreamExpressionValue) bucketYExpression.getParameter()).getValue();
-        if (keyY != null && !keyY.equals("")) {
+        if (keyY != null && !keyY.isEmpty()) {
           y = new Bucket(keyY.trim());
         }
       }

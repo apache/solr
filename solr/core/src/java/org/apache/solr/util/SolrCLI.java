@@ -1602,7 +1602,7 @@ public class SolrCLI implements CLIO {
 
       boolean configExistsInZk =
           confname != null
-              && !"".equals(confname.trim())
+              && !confname.trim().isEmpty()
               && ZkStateReader.from(cloudSolrClient)
                   .getZkClient()
                   .exists("/configs/" + confname, true);
@@ -1611,8 +1611,8 @@ public class SolrCLI implements CLIO {
         // do nothing
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory " + confname);
-      } else if (confdir != null && !"".equals(confdir.trim())) {
-        if (confname == null || "".equals(confname.trim())) {
+      } else if (confdir != null && !confdir.trim().isEmpty()) {
+        if (confname == null || confname.trim().isEmpty()) {
           confname = collectionName;
         }
         Path confPath = ConfigSetService.getConfigsetPath(confdir, configsetsDir);
@@ -1651,7 +1651,7 @@ public class SolrCLI implements CLIO {
               collectionName,
               numShards,
               replicationFactor);
-      if (confname != null && !"".equals(confname.trim())) {
+      if (confname != null && !confname.trim().isEmpty()) {
         createCollectionUrl =
             createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
       }
@@ -1684,7 +1684,7 @@ public class SolrCLI implements CLIO {
                 collectionName,
                 numShards,
                 replicationFactor);
-        if (confname != null && !"".equals(confname.trim())) {
+        if (confname != null && !confname.trim().isEmpty()) {
           endMessage += String.format(Locale.ROOT, " with config-set '%s'", confname);
         }
 

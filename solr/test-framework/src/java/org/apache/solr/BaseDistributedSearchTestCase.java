@@ -190,9 +190,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private static String getHostContextSuitableForServletContext() {
     String ctx = System.getProperty("hostContext", "/solr");
-    if ("".equals(ctx)) ctx = "/solr";
+    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
     if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    ;
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
     return ctx;
   }

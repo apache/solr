@@ -546,7 +546,7 @@ public class ExtendedDismaxQParser extends QParser {
     List<Query> boostFunctions = new ArrayList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
-        if (null == boostFunc || "".equals(boostFunc)) continue;
+        if (null == boostFunc || boostFunc.isEmpty()) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (Map.Entry<String, Float> entry : ff.entrySet()) {
           Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
@@ -1070,7 +1070,7 @@ public class ExtendedDismaxQParser extends QParser {
 
     @Override
     protected Query getPrefixQuery(String field, String val) throws SyntaxError {
-      if (val.equals("") && field.equals("*")) {
+      if (val.isEmpty() && field.equals("*")) {
         return new MatchAllDocsQuery();
       }
       this.type = QType.PREFIX;
