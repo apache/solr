@@ -250,7 +250,7 @@ public class HttpSolrCall {
     }
 
     // Parse a core or collection name from the path and attempt to see if it's a core name
-    idx = path.indexOf("/", 1);
+    idx = path.indexOf('/', 1);
     if (idx > 1) {
       origCorename = path.substring(1, idx);
 

@@ -1187,11 +1187,11 @@ public class ZkController implements Closeable {
       return true;
     }
     log.trace("zkHost includes chroot");
-    String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
+    String chrootPath = zkHost.substring(zkHost.indexOf('/'), zkHost.length());
 
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
-            .withUrl(zkHost.substring(0, zkHost.indexOf("/")))
+            .withUrl(zkHost.substring(0, zkHost.indexOf('/')))
             .withTimeout(60000, TimeUnit.MILLISECONDS)
             .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
             .build();

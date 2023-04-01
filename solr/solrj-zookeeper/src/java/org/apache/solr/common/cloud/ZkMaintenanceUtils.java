@@ -98,7 +98,7 @@ public class ZkMaintenanceUtils {
         VISIT_ORDER.VISIT_PRE,
         znode -> {
           if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
-          int iPos = znode.lastIndexOf("/");
+          int iPos = znode.lastIndexOf('/');
           if (iPos > 0) {
             for (int idx = 0; idx < iPos; ++idx) sb.append(" ");
             sb.append(znode.substring(iPos + 1)).append(System.lineSeparator());
@@ -529,7 +529,7 @@ public class ZkMaintenanceUtils {
     if (path.endsWith("/")) {
       endIndex--;
     }
-    int index = path.lastIndexOf("/", endIndex);
+    int index = path.lastIndexOf('/', endIndex);
     if (index == -1) {
       return "";
     }
@@ -586,7 +586,7 @@ public class ZkMaintenanceUtils {
         }
       }
     }
-    int lastDot = filePath.lastIndexOf(".");
+    int lastDot = filePath.lastIndexOf('.');
     return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
 }

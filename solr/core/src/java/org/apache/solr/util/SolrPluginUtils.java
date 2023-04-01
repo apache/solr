@@ -624,7 +624,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (-1 < spec.indexOf("<")) {
+    if (spec.contains("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {

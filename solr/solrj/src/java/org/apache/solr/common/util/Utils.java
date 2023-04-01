@@ -771,7 +771,7 @@ public class Utils {
           "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException(
           "nodeName does not contain expected '_' separator: " + nodeName);

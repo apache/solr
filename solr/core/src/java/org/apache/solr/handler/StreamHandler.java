@@ -545,7 +545,7 @@ public class StreamHandler extends RequestHandlerBase
     Iterator<String> paramsIt = params.getParameterNamesIterator();
     while (paramsIt.hasNext()) {
       String param = paramsIt.next();
-      if (param.indexOf(".shards") > -1) {
+      if (param.contains(".shards")) {
         String collection = param.split("\\.")[0];
         String shardString = params.get(param);
         String[] shards = shardString.split(",");

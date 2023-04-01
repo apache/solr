@@ -98,7 +98,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
       map.put(name, new JulInfo(name, logger));
 
       while (true) {
-        int dot = name.lastIndexOf(".");
+        int dot = name.lastIndexOf('.');
         if (dot < 0) break;
         name = name.substring(0, dot);
         if (!map.containsKey(name)) {
