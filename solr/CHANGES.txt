@@ -17,6 +17,8 @@ Bug Fixes
 
 * SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
 
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
 Other Changes
 ---------------------
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
