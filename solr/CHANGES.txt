@@ -54,6 +54,8 @@ Bug Fixes
 
 * SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
 
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
