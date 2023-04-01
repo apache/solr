@@ -137,14 +137,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Terms terms(String field) throws IOException {
     ensureOpen();
-    try {
-      return MultiTerms.getTerms(in, field);
-    } catch (RuntimeException e) {
-      if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
-        throw (IOException) e.getCause();
-      }
-      throw e;
-    }
+    return MultiTerms.getTerms(in, field);
   }
 
   @Override
@@ -359,7 +352,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public PointValues getPointValues(String field) {
     ensureOpen();
-    return null; // because not supported.  Throw UOE?
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -377,13 +370,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public TopDocs searchNearestVectors(
       String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public TopDocs searchNearestVectors(
       String field, byte[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
