@@ -670,11 +670,13 @@ public class SolrCLI implements CLIO {
           throw exc;
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
-          if (!isFirstAttempt) // only show the log warning after the second attempt fails
-          log.warn(
+          if (!isFirstAttempt) {
+            // only show the log warning after the second attempt fails
+            log.warn(
                 "Request to {} failed, sleeping for 5 seconds before re-trying the request ...",
                 getUrl,
                 exc);
+          }
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) {

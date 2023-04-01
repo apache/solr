@@ -211,9 +211,11 @@ public class CoreDescriptor {
       if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
       else originalCoreProperties.put(propname, propvalue);
 
-      if (!requiredProperties.contains(propname)) // Required props are already dealt with
-      coreProperties.setProperty(
+      // Required props are already dealt with
+      if (!requiredProperties.contains(propname)) {
+        coreProperties.setProperty(
             propname, PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      }
     }
 
     loadExtraProperties();
