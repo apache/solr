@@ -233,7 +233,7 @@ public class ZkContainer {
               } catch (Exception e1) {
                 log.error("", e1);
               }
-              log.error("", e);
+              log.error(e.toString(), e);
             }
           } finally {
             MDCLoggingContext.clear();
