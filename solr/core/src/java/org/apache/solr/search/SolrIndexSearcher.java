@@ -134,6 +134,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
+  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
+  private static final boolean useExitableDirectoryReader =
+      Boolean.getBoolean("solr.useExitableDirectoryReader");
+
   private final SolrCore core;
   private final IndexSchema schema;
   private final SolrDocumentFetcher docFetcher;
@@ -198,8 +202,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
-    // TODO offer ExitableDirectoryReader wrap via sys prop?
-    return UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
+    reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
+    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
+      reader = ExitableDirectoryReader.wrap(reader, SolrQueryTimeoutImpl.getInstance());
+    }
+    return reader;
   }
 
   /**
@@ -720,7 +727,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
     final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
-    if (queryTimeout.isTimeoutEnabled() == false) {
+    if (useExitableDirectoryReader || queryTimeout.isTimeoutEnabled() == false) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -733,10 +740,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           setTimeout(queryTimeout.makeLocalImpl());
           super.search(leaves, weight, collector); // FYI protected access
           if (timedOut()) {
-            // We might not even be using ExitableDirectoryReader yet various places in Solr check
-            //  for this exception.  Sometimes others but this seems most suitable.
-            throw new TimeAllowedExceededFromScorerException(
-                "Timed out.  Not actually via ExitableDirectoryReader");
+            throw new TimeAllowedExceededFromScorerException("timeAllowed exceeded");
           }
         }
       }.searchWithTimeout();
