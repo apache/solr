@@ -197,16 +197,16 @@ public class PackageUtils {
     if (defaults != null) {
       for (String param : defaults.keySet()) {
         str =
-            str.replaceAll(
-                "\\$\\{" + param + "\\}",
+            str.replace(
+                "${" + param + "}",
                 overrides.containsKey(param) ? overrides.get(param) : defaults.get(param));
       }
     }
     for (String param : overrides.keySet()) {
-      str = str.replaceAll("\\$\\{" + param + "\\}", overrides.get(param));
+      str = str.replace("${" + param + "}", overrides.get(param));
     }
     for (String param : systemParams.keySet()) {
-      str = str.replaceAll("\\$\\{" + param + "\\}", systemParams.get(param));
+      str = str.replace("${" + param + "}", systemParams.get(param));
     }
     return str;
   }

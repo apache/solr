@@ -4304,12 +4304,12 @@ public class SolrCLI implements CLIO {
 
           String config = StrUtils.join(Arrays.asList(cli.getOptionValues("config")), ' ');
           // config is base64 encoded (to get around parsing problems), decode it
-          config = config.replaceAll(" ", "");
+          config = config.replace(" ", "");
           config =
               new String(
                   Base64.getDecoder().decode(config.getBytes(StandardCharsets.UTF_8)),
                   StandardCharsets.UTF_8);
-          config = config.replaceAll("\n", "").replaceAll("\r", "");
+          config = config.replace("\n", "").replace("\r", "");
 
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           File includeFile = new File(solrIncludeFilename);

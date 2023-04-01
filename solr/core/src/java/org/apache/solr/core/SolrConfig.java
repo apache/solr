@@ -541,7 +541,7 @@ public class SolrConfig implements MapSerializable {
     }
 
     public String getCleanTag() {
-      return tag.replaceAll("/", "");
+      return tag.replace("/", "");
     }
 
     public String getTagCleanLower() {

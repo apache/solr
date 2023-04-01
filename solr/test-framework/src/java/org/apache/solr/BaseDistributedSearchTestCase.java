@@ -160,7 +160,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
     }
     // paranoia, we *really* don't want to ever get "//" in a path...
-    final String hc = hostContext.toString().replaceAll("\\/+", "/");
+    final String hc = hostContext.toString().replaceAll("/+", "/");
 
     log.info("Setting hostContext system property: {}", hc);
     System.setProperty("hostContext", hc);
