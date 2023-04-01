@@ -221,19 +221,19 @@ public class ZkContainer {
               Thread.currentThread().interrupt();
               log.error("Interrupted", e);
             } catch (KeeperException e) {
-              log.error("KeeperException", e);
+              log.error("KeeperException registering core {}", core.getName(), e);
             } catch (AlreadyClosedException ignore) {
 
             } catch (Exception e) {
+              log.error("Exception registering core {}", core.getName(), e);
               try {
                 zkController.publish(cd, Replica.State.DOWN);
               } catch (InterruptedException e1) {
                 Thread.currentThread().interrupt();
-                log.error("", e1);
+                log.error("Interrupted", e1);
               } catch (Exception e1) {
-                log.error("", e1);
+                log.error("Exception publishing down state for core {}", core.getName(), e1);
               }
-              log.error(e.toString(), e);
             }
           } finally {
             MDCLoggingContext.clear();
