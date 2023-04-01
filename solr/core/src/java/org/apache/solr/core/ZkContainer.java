@@ -221,7 +221,7 @@ public class ZkContainer {
               Thread.currentThread().interrupt();
               log.error("Interrupted", e);
             } catch (KeeperException e) {
-              log.error("", e);
+              log.error("KeeperException", e);
             } catch (AlreadyClosedException ignore) {
 
             } catch (Exception e) {
