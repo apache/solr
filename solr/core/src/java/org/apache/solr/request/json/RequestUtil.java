@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -89,10 +88,8 @@ public class RequestUtil {
         }
 
         try {
-          String jsonString = IOUtils.toString(cs.getReader());
-          if (jsonString != null) {
-            MultiMapSolrParams.addParam(JSON, jsonString, map);
-          }
+          String jsonString = StrUtils.stringFromReader(cs.getReader());
+          MultiMapSolrParams.addParam(JSON, jsonString, map);
         } catch (IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,

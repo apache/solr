@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.MapMaker;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -55,6 +54,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -272,7 +272,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      new MapMaker().weakKeys().makeMap();
+      new WeakHashMap<>();
 
   public long getStartNanoTime() {
     return startNanoTime;
