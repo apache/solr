@@ -48,7 +48,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 public class CollectionsAPI {
 
   public static final String V2_CREATE_COLLECTION_CMD = "create";
-  public static final String V2_BACKUP_CMD = "backup-collection";
   public static final String V2_RESTORE_CMD = "restore-collection";
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
 
@@ -65,15 +64,6 @@ public class CollectionsAPI {
       method = POST,
       permission = COLL_EDIT_PERM)
   public class CollectionsCommands {
-
-    @Command(name = V2_BACKUP_CMD)
-    public void backupCollection(PayloadObj<BackupCollectionPayload> obj) throws Exception {
-      final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
-      v1Params.put(ACTION, CollectionAction.BACKUP.toLower());
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
 
     @Command(name = V2_RESTORE_CMD)
     @SuppressWarnings("unchecked")

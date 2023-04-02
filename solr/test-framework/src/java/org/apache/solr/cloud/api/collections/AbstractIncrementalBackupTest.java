@@ -228,7 +228,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  //@Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();

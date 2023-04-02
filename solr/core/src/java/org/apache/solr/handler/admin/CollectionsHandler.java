@@ -49,6 +49,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -113,9 +114,11 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
@@ -212,6 +215,7 @@ import org.apache.solr.handler.admin.api.AliasPropertyAPI;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
@@ -1390,86 +1394,21 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         BACKUP,
         (req, rsp, h) -> {
           req.getParams().required().check(NAME, COLLECTION_PROP);
+          var backupName = req.getParams().get(NAME);
+          var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+          requestBody.collection = req.getParams().get(COLLECTION);
+          requestBody.location = req.getParams().get(BACKUP_LOCATION);
+          requestBody.repository = req.getParams().get(BACKUP_REPOSITORY);
+          requestBody.followAliases = req.getParams().getBool(FOLLOW_ALIASES);
+          requestBody.indexBackup = req.getParams().get(INDEX_BACKUP_STRATEGY);
+          requestBody.commitName = req.getParams().get(COMMIT_NAME);
+          requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
+          requestBody.async = req.getParams().get(ASYNC);
 
-          final String extCollectionName = req.getParams().get(COLLECTION_PROP);
-          final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
-          final String collectionName =
-              followAliases
-                  ? h.coreContainer
-                      .getZkController()
-                      .getZkStateReader()
-                      .getAliases()
-                      .resolveSimpleAlias(extCollectionName)
-                  : extCollectionName;
-          final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-          if (!clusterState.hasCollection(collectionName)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Collection '" + collectionName + "' does not exist, no action taken.");
-          }
-
-          CoreContainer cc = h.coreContainer;
-          String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-          BackupRepository repository = cc.newBackupRepository(repo);
-
-          String location =
-              repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
-          if (location == null) {
-            // Refresh the cluster property file to make sure the value set for location is the
-            // latest. Check if the location is specified in the cluster property.
-            location =
-                new ClusterProperties(h.coreContainer.getZkController().getZkClient())
-                    .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
-            if (location == null) {
-              throw new SolrException(
-                  ErrorCode.BAD_REQUEST,
-                  "'location' is not specified as a query"
-                      + " parameter or as a default repository property or as a cluster property.");
-            }
-          }
-          boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-
-          // Check if the specified location is valid for this repository.
-          final URI uri = repository.createDirectoryURI(location);
-          try {
-            if (!repository.exists(uri)) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
-            }
-          } catch (IOException ex) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Failed to check the existence of " + uri + ". Is it valid?",
-                ex);
-          }
-
-          String strategy =
-              req.getParams()
-                  .get(
-                      CollectionAdminParams.INDEX_BACKUP_STRATEGY,
-                      CollectionAdminParams.COPY_FILES_STRATEGY);
-          if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(strategy)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
-          }
-
-          Map<String, Object> params =
-              copy(
-                  req.getParams(),
-                  null,
-                  NAME,
-                  COLLECTION_PROP,
-                  FOLLOW_ALIASES,
-                  CoreAdminParams.COMMIT_NAME,
-                  CoreAdminParams.MAX_NUM_BACKUP_POINTS);
-          params.put(CoreAdminParams.BACKUP_LOCATION, location);
-          if (repo != null) {
-            params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
-          }
-
-          params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
-          params.put(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
-          return params;
+          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp);
+          final SolrJerseyResponse response = createBackupApi.createCollectionBackup(backupName, requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
         }),
     RESTORE_OP(
         RESTORE,
@@ -2110,6 +2049,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         AddReplicaPropertyAPI.class,
+        CreateCollectionBackupAPI.class,
         DeleteAliasAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,

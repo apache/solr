@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,6 +45,25 @@ public abstract class AdminAPIBase extends JerseyResource {
   protected CoreContainer fetchAndValidateZooKeeperAwareCoreContainer() {
     validateZooKeeperAwareCoreContainer(coreContainer);
     return coreContainer;
+  }
+
+  protected String resolveAndValidateAliasIfEnabled(String unresolvedCollectionName, boolean aliasResolutionEnabled) {
+    final String resolvedCollectionName = aliasResolutionEnabled ? resolveAlias(unresolvedCollectionName) : unresolvedCollectionName;
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(resolvedCollectionName)) {
+      throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Collection '" + resolvedCollectionName + "' does not exist, no action taken.");
+    }
+
+    return resolvedCollectionName;
+  }
+
+  private String resolveAlias(String aliasName) {
+    return coreContainer.getZkController()
+            .getZkStateReader()
+            .getAliases()
+            .resolveSimpleAlias(aliasName);
   }
 
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {
