@@ -1026,7 +1026,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED: " + req.getParamString(), e2);
+      log.error("REQUEST FAILED: {}", req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }

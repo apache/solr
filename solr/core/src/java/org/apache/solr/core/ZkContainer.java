@@ -219,21 +219,21 @@ public class ZkContainer {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
+              log.error("Interrupted", e);
             } catch (KeeperException e) {
-              SolrException.log(log, "", e);
-            } catch (AlreadyClosedException e) {
+              log.error("KeeperException registering core {}", core.getName(), e);
+            } catch (AlreadyClosedException ignore) {
 
             } catch (Exception e) {
+              log.error("Exception registering core {}", core.getName(), e);
               try {
                 zkController.publish(cd, Replica.State.DOWN);
               } catch (InterruptedException e1) {
                 Thread.currentThread().interrupt();
-                log.error("", e1);
+                log.error("Interrupted", e1);
               } catch (Exception e1) {
-                log.error("", e1);
+                log.error("Exception publishing down state for core {}", core.getName(), e1);
               }
-              SolrException.log(log, "", e);
             }
           } finally {
             MDCLoggingContext.clear();

@@ -251,8 +251,7 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log(t);
+      log.error("Could not start Solr. Check solr/home property and the logs", t);
       if (t instanceof Error) {
         throw (Error) t;
       }

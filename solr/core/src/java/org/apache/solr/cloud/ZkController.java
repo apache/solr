@@ -502,7 +502,7 @@ public class ZkController implements Closeable {
               register(descriptor.getName(), descriptor, true, true, false);
             }
           } catch (Exception e) {
-            SolrException.log(log, "Error registering SolrCore", e);
+            log.error("Error registering SolrCore", e);
           }
         }
       }
@@ -536,7 +536,7 @@ public class ZkController implements Closeable {
     } catch (SessionExpiredException e) {
       throw e;
     } catch (Exception e) {
-      SolrException.log(log, "", e);
+      log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
     }
   }
@@ -905,7 +905,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (Exception e) {
-          SolrException.log(log, "Error while looking for a better host name than 127.0.0.1", e);
+          log.error("Error while looking for a better host name than 127.0.0.1", e);
         }
       }
       host = hostaddress;
@@ -2217,7 +2217,7 @@ public class ZkController implements Closeable {
                 }
               }
 
-              SolrException.log(log, "There was a problem making a request to the leader", e);
+              log.error("There was a problem making a request to the leader", e);
               try {
                 Thread.sleep(2000);
               } catch (InterruptedException e1) {
@@ -2230,7 +2230,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (IOException e) {
-          SolrException.log(log, "Error closing HttpSolrClient", e);
+          log.error("Error closing HttpSolrClient", e);
         }
       }
     }

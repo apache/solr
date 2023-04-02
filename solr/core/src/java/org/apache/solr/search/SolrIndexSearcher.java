@@ -579,7 +579,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
-      SolrException.log(log, "Problem dec ref'ing reader", e);
+      log.error("Problem dec ref'ing reader", e);
     }
 
     if (directoryFactory.searchersReserveCommitPoints()) {
@@ -590,7 +590,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       try {
         cache.close();
       } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+        log.error("Exception closing cache {}", cache.name(), e);
       }
     }
 

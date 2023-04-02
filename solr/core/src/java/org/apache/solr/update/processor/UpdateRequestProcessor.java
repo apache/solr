@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -86,7 +85,7 @@ public abstract class UpdateRequestProcessor implements Closeable {
       try {
         p.doClose();
       } catch (Exception e) {
-        SolrException.log(log, "Exception closing processor", e);
+        log.error("Exception closing processor", e);
       }
       p = p.next;
     }

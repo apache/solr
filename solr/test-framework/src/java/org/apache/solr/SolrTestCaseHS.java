@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -177,7 +176,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED for params: " + args.toQueryString(), e2);
+      log.error("REQUEST FAILED for params: {}", args.toQueryString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }

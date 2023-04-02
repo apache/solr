@@ -48,7 +48,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -194,7 +193,7 @@ public class StreamHandler extends RequestHandlerBase
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming
       // expression parse rules.
-      SolrException.log(log, e);
+      log.error("Exception creating stream", e);
       rsp.add(StreamParams.RESULT_SET, new DummyErrorStream(e));
 
       return;

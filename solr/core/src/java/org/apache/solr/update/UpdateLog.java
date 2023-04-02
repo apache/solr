@@ -742,7 +742,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher", e);
+        log.error("Error opening realtime searcher", e);
         return;
       }
 
@@ -759,7 +759,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        log.error("Error opening realtime searcher for deleteByQuery", e);
       }
 
       if (map != null) map.clear();
@@ -1487,7 +1487,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Exception shutting down recoveryExecutor", e);
     }
   }
 
@@ -1875,15 +1875,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       } catch (SolrException e) {
         if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-          SolrException.log(log, e);
+          log.error("Replay failed service unavailable", e);
           recoveryInfo.failed = true;
         } else {
           recoveryInfo.errors.incrementAndGet();
-          SolrException.log(log, e);
+          log.error("Replay failed due to exception", e);
         }
       } catch (Exception e) {
         recoveryInfo.errors.incrementAndGet();
-        SolrException.log(log, e);
+        log.error("Replay failed due to exception", e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
@@ -2004,7 +2004,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               }
             }
           } catch (Exception e) {
-            SolrException.log(log, e);
+            log.error("Exception during replay", e);
           }
 
           if (o == null) break;
