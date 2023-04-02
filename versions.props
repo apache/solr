@@ -1,5 +1,5 @@
 biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.0
-com.adobe.testing:s3mock-junit4=2.1.34
+com.adobe.testing:s3mock-junit4=2.11.0
 com.carrotsearch.randomizedtesting:*=2.8.1
 com.carrotsearch:hppc=0.9.1
 com.cybozu.labs:langdetect=1.1-20120112
