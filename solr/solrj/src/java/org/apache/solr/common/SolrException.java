@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -139,6 +140,7 @@ public class SolrException extends RuntimeException {
    * @deprecated Use the Logger directly
    */
   @Deprecated
+  @SuppressForbidden(reason = "self referencing")
   public void log(Logger log) {
     log(log, this);
   }

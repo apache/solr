@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -55,7 +54,7 @@ public abstract class ZkClientConnectionStrategy {
       try {
         listener.disconnected();
       } catch (Exception e) {
-        SolrException.log(log, "", e);
+        log.error("Exception on disconnected for listener: {}", listener, e);
       }
     }
   }
@@ -65,7 +64,7 @@ public abstract class ZkClientConnectionStrategy {
       try {
         listener.connected();
       } catch (Exception e) {
-        SolrException.log(log, "", e);
+        log.error("Exception on connected for listener: {}", listener, e);
       }
     }
   }

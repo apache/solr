@@ -113,6 +113,8 @@ Other Changes
 
 * SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
 
+* SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
+
 ==================  9.2.0 ==================
 
 New Features

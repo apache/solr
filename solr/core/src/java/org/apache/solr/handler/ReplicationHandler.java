@@ -482,7 +482,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
-      SolrException.log(log, "Index fetch failed ", e);
+      log.error("Index fetch failed", e);
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }
@@ -775,7 +775,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             core.getDirectoryFactory().release(dir);
           } catch (IOException e) {
-            SolrException.log(log, "Could not release directory after fetching file list", e);
+            log.error("Could not release directory after fetching file list", e);
           }
         }
       }
