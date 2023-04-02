@@ -18,7 +18,6 @@ package org.apache.solr.common;
 
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -131,57 +130,6 @@ public class SolrException extends RuntimeException {
 
   public String getRootThrowable() {
     return getMetadata(ROOT_ERROR_CLASS);
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  @SuppressForbidden(reason = "self referencing")
-  public void log(Logger log) {
-    log(log, this);
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(e.toString(), e); // nowarn (we are inside of isErrorEnabled, toString as msg is ok)
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(msg, e);
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg) {
-    if (log.isErrorEnabled()) {
-      log.error(msg);
-    }
   }
 
   // TODO: This doesn't handle cause loops
