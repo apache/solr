@@ -22,7 +22,6 @@
 
 package org.apache.solr.handler.tagger;
 
-import com.google.common.io.CharStreams;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -57,6 +56,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -263,7 +263,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     @Override
     public String call() throws IOException {
       if (inputString == null) {
-        inputString = CharStreams.toString(inputReader);
+        inputString = StrUtils.stringFromReader(inputReader);
       }
       return inputString;
     }

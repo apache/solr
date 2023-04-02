@@ -16,7 +16,8 @@
  */
 package org.apache.solr.logging.log4j2;
 
-import com.google.common.base.Throwables;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -272,7 +273,11 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     Message message = event.getMessage();
     doc.setField("message", message.getFormattedMessage());
     Throwable t = message.getThrowable();
-    if (t != null) doc.setField("trace", Throwables.getStackTraceAsString(t));
+    if (t != null) {
+      StringWriter trace = new StringWriter();
+      t.printStackTrace(new PrintWriter(trace));
+      doc.setField("trace", trace.toString());
+    }
 
     Map<String, String> contextMap = event.getContextMap();
     if (contextMap != null) {

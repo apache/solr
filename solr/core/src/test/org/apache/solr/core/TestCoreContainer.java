@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
-import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -832,7 +831,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             () -> {
               cc.create("bogus", Map.of("configSet", "bogus_path"));
             });
-    Throwable rootCause = Throwables.getRootCause(thrown);
+    Throwable rootCause = SolrException.getRootCause(thrown);
     assertTrue(
         "init exception doesn't mention bogus dir: " + rootCause.getMessage(),
         0 < rootCause.getMessage().indexOf("bogus_path"));
@@ -862,7 +861,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               SolrCore c = cc.getCore("bogus");
             });
     assertEquals(500, thrown.code());
-    String cause = Throwables.getRootCause(thrown).getMessage();
+    String cause = SolrException.getRootCause(thrown).getMessage();
     assertTrue(
         "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
 
