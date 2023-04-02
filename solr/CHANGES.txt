@@ -29,6 +29,7 @@ Deprecation Removals
 
 * SOLR-16601: Removed deprecated methods on the various Solr Clients. (Eric Pugh, Kevin Risden)
 
+* SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
 ---------------------
 (No changes)
