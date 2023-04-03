@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -436,7 +435,11 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     @Override
     public int[] getPositions() {
       if (cachedPositions == null) {
-        cachedPositions = ArrayUtils.add(basePositions, position);
+        // add position to the end of basePositions array
+        int[] tmpPositions = new int[basePositions.length + 1];
+        System.arraycopy(basePositions, 0, tmpPositions, 0, basePositions.length);
+        tmpPositions[basePositions.length] = position;
+        cachedPositions = tmpPositions;
       }
       return cachedPositions;
     }

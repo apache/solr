@@ -10,6 +10,9 @@ org.apache.commons.lang3.builder.EqualsBuilder
 @defaultMessage Use manual String builder
 org.apache.commons.lang3.builder.ToStringBuilder
 
+@defaultMessage Expand array and add element
+org.apache.commons.lang3.ArrayUtils#add(**)
+
 @defaultMessage Use Array.getLength instead
 org.apache.commons.lang3.ArrayUtils#isEmpty(**)
 org.apache.commons.lang3.ArrayUtils#isNotEmpty(**)
