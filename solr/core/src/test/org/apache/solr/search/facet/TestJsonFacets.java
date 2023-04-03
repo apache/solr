@@ -1499,10 +1499,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // that many times
     for (int i = 0; i < maxAlt; i++) {
       ModifiableSolrParams args = params(p);
-      for (String field : fieldLists.keySet()) {
-        List<String> alts = fieldLists.get(field);
+      for (Map.Entry<String, List<String>> entry : fieldLists.entrySet()) {
+        List<String> alts = entry.getValue();
         String alt = alts.get(i % alts.size());
-        args.add(field, alt);
+        args.add(entry.getKey(), alt);
       }
 
       args.set("rows", "0");

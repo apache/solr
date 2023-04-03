@@ -141,15 +141,15 @@ public class ShardBackupMetadata {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(is);
     ShardBackupMetadata shardBackupMetadata = new ShardBackupMetadata();
-    for (String uniqueFileName : map.keySet()) {
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> fileMap = (Map<String, Object>) map.get(uniqueFileName);
+      Map<String, Object> fileMap = (Map<String, Object>) entry.getValue();
 
       String fileName = (String) fileMap.get("fileName");
       long checksum = (long) fileMap.get("checksum");
       long size = (long) fileMap.get("size");
       shardBackupMetadata.addBackedFile(
-          new BackedFile(uniqueFileName, fileName, new Checksum(checksum, size)));
+          new BackedFile(entry.getKey(), fileName, new Checksum(checksum, size)));
     }
 
     return shardBackupMetadata;

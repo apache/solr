@@ -799,8 +799,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       assertNotNull(facets);
       assertTrue(0 < facets.size());
       StringBuilder sb = new StringBuilder("{");
-      for (String key : facets.keySet()) {
-        sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
+      for (Map.Entry<String, TermFacet> entry : facets.entrySet()) {
+        sb.append(entry.getKey()).append(" : ").append(entry.getValue().toJSONFacetParamValue());
         sb.append(" ,");
       }
       sb.setLength(sb.length() - 1);

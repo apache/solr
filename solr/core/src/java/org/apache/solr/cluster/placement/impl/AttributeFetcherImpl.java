@@ -161,10 +161,10 @@ public class AttributeFetcherImpl implements AttributeFetcher {
       }
     }
 
-    for (Node node : nodeToReplicaInternalTags.keySet()) {
-      Set<String> tags = nodeToReplicaInternalTags.get(node);
+    for (Map.Entry<Node, Set<String>> e : nodeToReplicaInternalTags.entrySet()) {
+      Set<String> tags = e.getValue();
       Map<String, Map<String, List<Replica>>> infos =
-          cloudManager.getNodeStateProvider().getReplicaInfo(node.getName(), tags);
+          cloudManager.getNodeStateProvider().getReplicaInfo(e.getKey().getName(), tags);
       infos.entrySet().stream()
           .filter(entry -> requestedCollectionNamesMetrics.containsKey(entry.getKey()))
           .forEach(

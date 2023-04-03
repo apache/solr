@@ -107,13 +107,13 @@ public class PackageManager implements Closeable {
 
     // Make sure that this package instance is not deployed on any collection
     Map<String, String> collectionsDeployedOn = getDeployedCollections(packageName);
-    for (String collection : collectionsDeployedOn.keySet()) {
-      if (version.equals(collectionsDeployedOn.get(collection))) {
+    for (Map.Entry<String, String> entry : collectionsDeployedOn.entrySet()) {
+      if (version.equals(entry.getValue())) {
         PackageUtils.printRed(
             "Package "
                 + packageName
                 + " is currently deployed on collection: "
-                + collection
+                + entry.getKey()
                 + ". Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
         System.exit(1);
       }
@@ -122,10 +122,9 @@ public class PackageManager implements Closeable {
     // Make sure that no plugin from this package instance has been deployed as cluster level
     // plugins
     Map<String, SolrPackageInstance> clusterPackages = getPackagesDeployedAsClusterLevelPlugins();
-    for (String clusterPackageName : clusterPackages.keySet()) {
-      SolrPackageInstance clusterPackageInstance = clusterPackages.get(clusterPackageName);
-      if (packageName.equals(clusterPackageName)
-          && version.equals(clusterPackageInstance.version)) {
+    for (Map.Entry<String, SolrPackageInstance> entry : clusterPackages.entrySet()) {
+      SolrPackageInstance clusterPackageInstance = entry.getValue();
+      if (packageName.equals(entry.getKey()) && version.equals(clusterPackageInstance.version)) {
         PackageUtils.printRed(
             "Package "
                 + packageName
@@ -190,8 +189,9 @@ public class PackageManager implements Closeable {
                             "UTF-8"),
                         Map.class)
                     .get("packages");
-        for (String packageName : packagesZnodeMap.keySet()) {
-          List<Map<?, ?>> pkg = packagesZnodeMap.get(packageName);
+        for (Map.Entry<String, List<Map<?, ?>>> entry : packagesZnodeMap.entrySet()) {
+          String packageName = entry.getKey();
+          List<Map<?, ?>> pkg = entry.getValue();
           for (Map<?, ?> pkgVersion : pkg) {
             Manifest manifest =
                 PackageUtils.fetchManifest(
@@ -248,12 +248,13 @@ public class PackageManager implements Closeable {
     }
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
-    for (String packageName : packages.keySet()) {
+    for (Map.Entry<String, String> entry : packages.entrySet()) {
+      String packageName = entry.getKey();
       if (StrUtils.isNullOrEmpty(packageName) == false
           && // There can be an empty key, storing the version here
-          packages.get(packageName)
+          entry.getValue()
               != null) { // null means the package was undeployed from this package before
-        ret.put(packageName, getPackageInstance(packageName, packages.get(packageName)));
+        ret.put(packageName, getPackageInstance(packageName, entry.getValue()));
       }
     }
     return ret;

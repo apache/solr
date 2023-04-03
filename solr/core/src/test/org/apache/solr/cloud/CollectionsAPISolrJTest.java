@@ -101,8 +101,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (String coreName : coresStatus.keySet()) {
-      NamedList<Integer> status = coresStatus.get(coreName);
+    for (NamedList<Integer> status : coresStatus.values()) {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -348,8 +347,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (String coreName : coresStatus.keySet()) {
-      NamedList<Integer> status = coresStatus.get(coreName);
+    for (NamedList<Integer> status : coresStatus.values()) {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -448,8 +446,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     int replicaTlog = 0;
     int replicaNrt = 0;
     int replicaPull = 0;
-    for (String coreName : coresStatus.keySet()) {
-      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
+    for (Map.Entry<String, NamedList<Integer>> entry : coresStatus.entrySet()) {
+      String coreName = entry.getKey();
+      assertEquals(0, (int) entry.getValue().get("status"));
       if (coreName.contains("shardC_replica_t")) replicaTlog++;
       else if (coreName.contains("shardC_replica_n")) replicaNrt++;
       else replicaPull++;
@@ -504,9 +503,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     int shard10 = 0;
     int shard11 = 0;
-    for (String coreName : coresStatus.keySet()) {
-      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
-      if (coreName.contains("_shard1_0")) shard10++;
+    for (Map.Entry<String, NamedList<Integer>> entry : coresStatus.entrySet()) {
+      assertEquals(0, (int) entry.getValue().get("status"));
+      if (entry.getKey().contains("_shard1_0")) shard10++;
       else shard11++;
     }
     assertEquals(1, shard10);

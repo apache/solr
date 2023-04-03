@@ -772,7 +772,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public QueryResponse queryAndCompare(SolrParams params, SolrClient... clients)
       throws SolrServerException, IOException {
-    return queryAndCompare(params, Arrays.<SolrClient>asList(clients));
+    return queryAndCompare(params, Arrays.asList(clients));
   }
 
   public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrClient> clients)
@@ -797,12 +797,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return f == null ? 0 : f;
   }
 
-  @SuppressWarnings({"unchecked"})
   public static String compare(
-      @SuppressWarnings({"rawtypes"}) NamedList a,
-      @SuppressWarnings({"rawtypes"}) NamedList b,
-      int flags,
-      Map<String, Integer> handle) {
+      NamedList<?> a, NamedList<?> b, int flags, Map<String, Integer> handle) {
     //    System.out.println("resp a:" + a);
     //    System.out.println("resp b:" + b);
     boolean ordered = (flags & UNORDERED) == 0;
@@ -880,15 +876,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare1(
-      @SuppressWarnings({"rawtypes"}) Map a,
-      @SuppressWarnings({"rawtypes"}) Map b,
-      int flags,
-      Map<String, Integer> handle) {
+  public static String compare1(Map<?, ?> a, Map<?, ?> b, int flags, Map<String, Integer> handle) {
     String cmp;
 
-    for (Object keya : a.keySet()) {
-      Object vala = a.get(keya);
+    for (Map.Entry<?, ?> entry : a.entrySet()) {
+      Object keya = entry.getKey();
+      Object vala = entry.getValue();
       int flagsa = flags(handle, keya);
       if ((flagsa & SKIP) != 0) continue;
       if (!b.containsKey(keya)) {
@@ -902,11 +895,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
-  public static String compare(
-      @SuppressWarnings({"rawtypes"}) Map a,
-      @SuppressWarnings({"rawtypes"}) Map b,
-      int flags,
-      Map<String, Integer> handle) {
+  public static String compare(Map<?, ?> a, Map<?, ?> b, int flags, Map<String, Integer> handle) {
     String cmp;
     cmp = compare1(a, b, flags, handle);
     if (cmp != null) return cmp;
@@ -991,7 +980,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (a == null || b == null) return ":" + a + "!=" + b;
 
     if (a instanceof NamedList && b instanceof NamedList) {
-      return compare((NamedList) a, (NamedList) b, flags, handle);
+      return compare((NamedList<?>) a, (NamedList<?>) b, flags, handle);
     }
 
     if (a instanceof SolrDocumentList && b instanceof SolrDocumentList) {
@@ -1003,7 +992,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if (a instanceof Map && b instanceof Map) {
-      return compare((Map) a, (Map) b, flags, handle);
+      return compare((Map<?, ?>) a, (Map<?, ?>) b, flags, handle);
     }
 
     if (a instanceof Object[] && b instanceof Object[]) {
@@ -1018,7 +1007,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if (a instanceof List && b instanceof List) {
-      return compare(((List) a).toArray(), ((List) b).toArray(), flags, handle);
+      return compare(((List<?>) a).toArray(), ((List<?>) b).toArray(), flags, handle);
     }
 
     // equivalent integer numbers

@@ -214,8 +214,7 @@ public class ChaosMonkey {
   public void stopAll(int pauseBetweenMs) throws Exception {
     Set<String> keys = shardToJetty.keySet();
     List<Thread> jettyThreads = new ArrayList<>(keys.size());
-    for (String key : keys) {
-      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+    for (List<CloudJettyRunner> jetties : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jetties) {
         Thread.sleep(pauseBetweenMs);
         Thread thread =
@@ -238,9 +237,7 @@ public class ChaosMonkey {
   }
 
   public void startAll() throws Exception {
-    Set<String> keys = shardToJetty.keySet();
-    for (String key : keys) {
-      List<CloudJettyRunner> jetties = shardToJetty.get(key);
+    for (List<CloudJettyRunner> jetties : shardToJetty.values()) {
       for (CloudJettyRunner jetty : jetties) {
         jetty.jetty.start();
       }

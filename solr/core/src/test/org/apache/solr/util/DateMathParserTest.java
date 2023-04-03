@@ -312,11 +312,12 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
     badCommands.put("/4", 1);
     badCommands.put("?SECONDS", 0);
 
-    for (String command : badCommands.keySet()) {
+    for (Map.Entry<String, Integer> entry : badCommands.entrySet()) {
+      String command = entry.getKey();
       ParseException e = expectThrows(ParseException.class, () -> p.parseMath(command));
       assertEquals(
           "Wrong pos for: " + command + " => " + e.getMessage(),
-          badCommands.get(command).intValue(),
+          entry.getValue().intValue(),
           e.getErrorOffset());
     }
   }

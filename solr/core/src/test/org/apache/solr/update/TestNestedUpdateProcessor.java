@@ -395,8 +395,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     public void checkParentAndChildQueriesOfEachDocument() {
       assertFalse("You didn't build any docs", allDocs.isEmpty());
 
-      for (String doc_id : allDocs.keySet()) {
-        final String doc_path = allDocs.get(doc_id).getFieldValue("test_path_s").toString();
+      for (Map.Entry<String, SolrInputDocument> entry : allDocs.entrySet()) {
+        String doc_id = entry.getKey();
+        final String doc_path = entry.getValue().getFieldValue("test_path_s").toString();
 
         if (!doc_path.equals("/")) {
 

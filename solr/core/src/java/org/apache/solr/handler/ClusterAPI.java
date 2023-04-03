@@ -145,15 +145,15 @@ public class ClusterAPI {
                     .getSolrCloudManager()
                     .getDistribStateManager(),
                 3);
-    for (String role : roles.keySet()) {
-      for (String mode : roles.get(role).keySet()) {
-        if (roles.get(role).get(mode).isEmpty()) continue;
-        Set<String> nodes = roles.get(role).get(mode);
-        if (nodes.contains(node)) ret.put(role, mode);
+    for (Map.Entry<String, Map<String, Set<String>>> entry : roles.entrySet()) {
+      for (Map.Entry<String, Set<String>> e : entry.getValue().entrySet()) {
+        Set<String> nodes = e.getValue();
+        if (nodes.isEmpty()) continue;
+        if (nodes.contains(node)) ret.put(entry.getKey(), e.getKey());
       }
     }
-    for (String role : ret.keySet()) {
-      rsp.add(role, ret.get(role));
+    for (Map.Entry<String, String> entry : ret.entrySet()) {
+      rsp.add(entry.getKey(), entry.getValue());
     }
   }
 

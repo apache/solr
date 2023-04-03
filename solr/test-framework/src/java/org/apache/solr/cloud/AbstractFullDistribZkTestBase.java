@@ -1611,11 +1611,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   public void showCounts() {
-    Set<String> theShards = shardToJetty.keySet();
-
-    for (String shard : theShards) {
-      List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
-
+    for (List<CloudJettyRunner> solrJetties : shardToJetty.values()) {
       for (CloudJettyRunner cjetty : solrJetties) {
         ZkNodeProps props = cjetty.info;
         log.debug("PROPS:{}", props);
@@ -2253,8 +2249,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             + slices.size();
       }
       int totalShards = 0;
-      for (String sliceName : slices.keySet()) {
-        for (Replica replica : slices.get(sliceName).getReplicas()) {
+      for (Slice replicas : slices.values()) {
+        for (Replica replica : replicas.getReplicas()) {
           if (nodesAllowedToRunShards != null
               && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
             return "Shard "
@@ -2265,7 +2261,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 + collectionName;
           }
         }
-        totalShards += slices.get(sliceName).getReplicas().size();
+        totalShards += replicas.getReplicas().size();
       }
       if (totalShards != expectedTotalShards) {
         return "Found new collection "

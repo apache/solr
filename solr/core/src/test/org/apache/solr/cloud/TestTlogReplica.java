@@ -1198,8 +1198,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private boolean assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
-    for (SolrCore core : timesPerCore.keySet()) {
-      if (timesPerCore.get(core) + delta != getTimesCopyOverOldUpdates(core)) return false;
+    for (Map.Entry<SolrCore, Long> entry : timesPerCore.entrySet()) {
+      if (entry.getValue() + delta != getTimesCopyOverOldUpdates(entry.getKey())) return false;
     }
     return true;
   }

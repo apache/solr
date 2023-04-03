@@ -650,7 +650,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             CommonParams.CONFIGSETS_HANDLER_PATH, ConfigSetsHandler.class.getName());
         // we do not add the authc/authz handlers because they do not currently expose any mbeans
 
-        for (String adminPath : adminPathToMbean.keySet()) {
+        for (Map.Entry<String, String> entry : adminPathToMbean.entrySet()) {
+          String adminPath = entry.getKey();
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
             Long numRequests =
@@ -658,7 +659,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                     runner.getBaseUrl().toString(),
                     collection,
                     "ADMIN",
-                    adminPathToMbean.get(adminPath),
+                    entry.getValue(),
                     adminPath,
                     true);
             errorsBefore += numRequests;
@@ -685,7 +686,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                     runner.getBaseUrl().toString(),
                     collection,
                     "ADMIN",
-                    adminPathToMbean.get(adminPath),
+                    entry.getValue(),
                     adminPath,
                     true);
             errorsAfter += numRequests;

@@ -2154,17 +2154,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Map<Comparable, List<Comparable>> value_to_id = new HashMap<>();
 
     // invert field
-    for (Comparable key : model.keySet()) {
-      Doc doc = model.get(key);
+    for (Entry<Comparable, Doc> entry : model.entrySet()) {
+      Doc doc = entry.getValue();
       List<Comparable> vals = doc.getValues(field);
       if (vals == null) continue;
       for (Comparable val : vals) {
-        List<Comparable> ids = value_to_id.get(val);
-        if (ids == null) {
-          ids = new ArrayList<>(2);
-          value_to_id.put(val, ids);
-        }
-        ids.add(key);
+        List<Comparable> ids = value_to_id.computeIfAbsent(val, k -> new ArrayList<>(2));
+        ids.add(entry.getKey());
       }
     }
 

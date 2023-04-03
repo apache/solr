@@ -157,9 +157,10 @@ public class ManagedSchemaDiff {
     Map<String, List<Map<String, Object>>> changedValues = new HashMap<>();
     Map<String, SimpleOrderedMap<Object>> newValues = new HashMap<>();
     Map<String, SimpleOrderedMap<Object>> removedValues = new HashMap<>();
-    for (String fieldName : map1.keySet()) {
+    for (Map.Entry<String, SimpleOrderedMap<Object>> entry : map1.entrySet()) {
+      String fieldName = entry.getKey();
       if (map2.containsKey(fieldName)) {
-        SimpleOrderedMap<Object> oldPropValues = map1.get(fieldName);
+        SimpleOrderedMap<Object> oldPropValues = entry.getValue();
         SimpleOrderedMap<Object> newPropValues = map2.get(fieldName);
         if (!oldPropValues.equals(newPropValues)) {
           List<Map<String, Object>> mapDiff = getMapDifference(oldPropValues, newPropValues);
@@ -168,13 +169,14 @@ public class ManagedSchemaDiff {
           }
         }
       } else {
-        removedValues.put(fieldName, map1.get(fieldName));
+        removedValues.put(fieldName, entry.getValue());
       }
     }
 
-    for (String fieldName : map2.keySet()) {
+    for (Map.Entry<String, SimpleOrderedMap<Object>> entry : map2.entrySet()) {
+      String fieldName = entry.getKey();
       if (!map1.containsKey(fieldName)) {
-        newValues.put(fieldName, map2.get(fieldName));
+        newValues.put(fieldName, entry.getValue());
       }
     }
 

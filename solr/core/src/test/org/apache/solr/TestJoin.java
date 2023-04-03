@@ -433,19 +433,16 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     Map<Comparable, List<Comparable>> value_to_id = invertField(model, toField);
 
-    for (Comparable fromId : model.keySet()) {
-      Doc doc = model.get(fromId);
+    for (Map.Entry<Comparable, Doc> entry : model.entrySet()) {
+      Comparable fromId = entry.getKey();
+      Doc doc = entry.getValue();
       List<Comparable> vals = doc.getValues(fromField);
       if (vals == null) continue;
       for (Comparable val : vals) {
         List<Comparable> toIds = value_to_id.get(val);
         if (toIds == null) continue;
-        Set<Comparable> ids = id_to_id.get(fromId);
-        if (ids == null) {
-          ids = new HashSet<>();
-          id_to_id.put(fromId, ids);
-        }
-        for (Comparable toId : toIds) ids.add(toId);
+        Set<Comparable> ids = id_to_id.computeIfAbsent(fromId, k -> new HashSet<>());
+        ids.addAll(toIds);
       }
     }
 

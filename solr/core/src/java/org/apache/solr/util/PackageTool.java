@@ -124,8 +124,8 @@ public class PackageTool extends SolrCLI.ToolBase {
                   Map<String, SolrPackageInstance> packages =
                       packageManager.getPackagesDeployed(collection);
                   PackageUtils.printGreen("Packages deployed on " + collection + ":");
-                  for (String packageName : packages.keySet()) {
-                    PackageUtils.printGreen("\t" + packages.get(packageName));
+                  for (SolrPackageInstance solrPackageInstance : packages.values()) {
+                    PackageUtils.printGreen("\t" + solrPackageInstance);
                   }
                 } else {
                   String packageName = cli.getArgs()[1];
@@ -134,15 +134,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                   if (deployedCollections.isEmpty() == false) {
                     PackageUtils.printGreen(
                         "Collections on which package " + packageName + " was deployed:");
-                    for (String collection : deployedCollections.keySet()) {
+                    for (Map.Entry<String, String> entry : deployedCollections.entrySet()) {
                       PackageUtils.printGreen(
-                          "\t"
-                              + collection
-                              + "("
-                              + packageName
-                              + ":"
-                              + deployedCollections.get(collection)
-                              + ")");
+                          "\t" + entry.getKey() + "(" + packageName + ":" + entry.getValue() + ")");
                     }
                   } else {
                     PackageUtils.printGreen(

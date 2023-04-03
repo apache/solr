@@ -934,7 +934,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     Map<String, Long> shardCounts = new HashMap<>();
 
-    for (String shard : shardToJetty.keySet()) {
+    for (Map.Entry<String, List<CloudJettyRunner>> entry : shardToJetty.entrySet()) {
+      String shard = entry.getKey();
       // every client should give the same numDocs for this shard
       // shffle the clients in a diff order for each shard
       List<SolrClient> solrclients = new ArrayList<>(this.clients);
@@ -951,12 +952,12 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             shardCounts.get(shard).longValue(),
             numDocs);
 
-        List<CloudJettyRunner> replicaJetties = new ArrayList<>(shardToJetty.get(shard));
+        List<CloudJettyRunner> replicaJetties = new ArrayList<>(entry.getValue());
         Collections.shuffle(replicaJetties, random());
 
         // each replica should also give the same numDocs
         ArrayList<String> replicaAlts = new ArrayList<>(replicaJetties.size() * 2);
-        for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
+        for (CloudJettyRunner replicaJetty : entry.getValue()) {
           String replica = replicaJetty.url;
           query.set("shards", replica);
 

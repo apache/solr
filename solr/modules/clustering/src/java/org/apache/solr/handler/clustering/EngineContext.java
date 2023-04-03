@@ -109,12 +109,12 @@ final class EngineContext {
     }
 
     // Debug info about loaded languages.
-    for (String lang : languages.keySet()) {
+    for (Map.Entry<String, LanguageComponents> entry : languages.entrySet()) {
       if (log.isTraceEnabled()) {
         log.trace(
             "Loaded language '{}' with components:\n  - {}",
-            lang,
-            languages.get(lang).components().stream()
+            entry.getKey(),
+            entry.getValue().components().stream()
                 .map(Class::getSimpleName)
                 .collect(Collectors.joining("\n  - ")));
       }

@@ -914,8 +914,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
   }
 
   protected void assertDesignerSettings(Map<String, Object> expected, NamedList<?> actual) {
-    for (String expKey : expected.keySet()) {
-      Object expValue = expected.get(expKey);
+    for (Map.Entry<String, Object> entry : expected.entrySet()) {
+      String expKey = entry.getKey();
+      Object expValue = entry.getValue();
       assertEquals(
           "Value for designer setting '" + expKey + "' not match expected!",
           expValue,
