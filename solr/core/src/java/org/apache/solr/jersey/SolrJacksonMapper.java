@@ -27,6 +27,7 @@ import java.io.IOException;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /** Customizes the ObjectMapper settings used for serialization/deserialization in Jersey */
 @SuppressWarnings("rawtypes")
@@ -36,6 +37,7 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
   public ObjectMapper getContext(Class<?> type) {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
+    customTypeModule.addSerializer(new SOMSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
@@ -55,6 +57,23 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
     public void serialize(NamedList value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
+      gen.writeObject(value.asShallowMap());
+    }
+  }
+
+  public static class SOMSerializer extends StdSerializer<SimpleOrderedMap> {
+
+    public SOMSerializer() {
+      this(null);
+    }
+
+    public SOMSerializer(Class<SimpleOrderedMap> nlClazz) {
+      super(nlClazz);
+    }
+
+    @Override
+    public void serialize(SimpleOrderedMap value, JsonGenerator gen, SerializerProvider provider)
+            throws IOException {
       gen.writeObject(value.asShallowMap());
     }
   }
