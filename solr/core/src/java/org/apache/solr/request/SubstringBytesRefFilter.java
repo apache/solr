@@ -42,7 +42,7 @@ public class SubstringBytesRefFilter implements Predicate<BytesRef> {
       return StringUtils.containsIgnoreCase(term, contains);
     }
 
-    return StringUtils.contains(term, contains);
+    return term.contains(contains);
   }
 
   @Override

@@ -38,6 +38,9 @@ org.apache.commons.lang3.ArrayUtils#toPrimitive(**)
 @defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
 org.apache.commons.lang3.RandomStringUtils
 
+@defaultMessage Use String contains method instead
+org.apache.commons.lang3.StringUtils#contains(**)
+
 @defaultMessage Use String endsWith method instead
 org.apache.commons.lang3.StringUtils#endsWith(**)
 
