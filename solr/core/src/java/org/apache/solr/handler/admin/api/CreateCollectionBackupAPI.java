@@ -34,6 +34,7 @@ import org.apache.solr.jersey.AsyncJerseyResponse;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
@@ -166,12 +167,15 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         @JsonProperty public String async;
     }
 
-    public static class CreateCollectionBackupResponseBody extends AsyncJerseyResponse {
+    public static class CreateCollectionBackupResponseBody extends SubResponseAccumulatingJerseyResponse {
         @JsonProperty("response")
-        public BackupDataResponse backupDataResponse;
+        public CollectionBackupData backupDataResponse;
+
+        //@JsonProperty("deleted")
+        //public List<>
     }
 
-    public static class BackupDataResponse implements JacksonReflectMapWriter {
+    public static class CollectionBackupData implements JacksonReflectMapWriter {
         @JsonProperty public String collection;
         @JsonProperty public Integer numShards;
         @JsonProperty public Integer backupId;
