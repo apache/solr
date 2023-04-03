@@ -350,9 +350,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     if (cc != null && cc.getZkController() != null) {
       String urlScheme =
-          cc.getZkController()
-              .zkStateReader
-              .getClusterProperty(ZkStateReader.BASE_URL_PROP, "http");
+          cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
       info.add("tls", ZkStateReader.HTTPS.equals(urlScheme));
     }
 
