@@ -96,6 +96,9 @@ Bug Fixes
 
 * SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
 
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
