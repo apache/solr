@@ -79,3 +79,6 @@ org.apache.commons.lang3.StringUtils#startsWith(**)
 
 @defaultMessage Use org.apache.lucene.util.Constants instead
 org.apache.commons.lang3.SystemUtils
+
+@defaultMessage Use JDK classes where possible
+org.apache.commons.lang3.**
