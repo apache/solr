@@ -94,6 +94,8 @@ Bug Fixes
 
 * SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
 
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
