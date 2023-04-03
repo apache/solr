@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -281,7 +283,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
 
       @Override
       public Set<java.util.Map.Entry<String, Collection<Object>>> entrySet() {
-        throw new UnsupportedOperationException();
+        return _fields.keySet().stream().collect(Collectors.toMap(k -> k, v -> getFieldValues(v))).entrySet();
       }
 
       @Override
