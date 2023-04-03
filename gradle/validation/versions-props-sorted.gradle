@@ -21,7 +21,7 @@ configure(rootProject) {
   task versionsPropsAreSorted() {
     doFirst {
       def versionsProps = file('versions.props')
-      def lines = versionsProps.readLines("UTF-8")
+      def lines = versionsProps.readLines("UTF-8").stream().filter(l -> !l.startsWith("#")).collect(java.util.stream.Collectors.toList())
       def sorted = lines.toSorted()
 
       if (!Objects.equals(lines, sorted)) {
