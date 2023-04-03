@@ -148,6 +148,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -237,6 +241,7 @@ import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -1405,7 +1410,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
           requestBody.async = req.getParams().get(ASYNC);
 
-          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp);
+          // TODO NOCOMMIT Hack to get things compiling for intermediate testing
+          final SimpleModule customTypeModule = new SimpleModule();
+          customTypeModule.addSerializer(new SolrJacksonMapper.NamedListSerializer(NamedList.class));
+
+          ObjectMapper om = new ObjectMapper()
+                  .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                  .registerModule(customTypeModule);
+
+          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp, om);
           final SolrJerseyResponse response = createBackupApi.createCollectionBackup(backupName, requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;

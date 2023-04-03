@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -58,9 +59,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 @Path("/api/collections/backups/{backupName}/versions")
 public class CreateCollectionBackupAPI extends AdminAPIBase {
+
+    private final ObjectMapper objectMapper;
     @Inject
-    public CreateCollectionBackupAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
+    public CreateCollectionBackupAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse, ObjectMapper objectMapper) {
         super(coreContainer, solrQueryRequest, solrQueryResponse);
+
+        this.objectMapper = objectMapper;
     }
 
     private String getLocation(BackupRepository repository, String location) throws IOException {
@@ -96,7 +101,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         if (requestBody.collection == null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'collection'");
         }
-        final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+        //final SolrJerseyResponse response = instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
         final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
         recordCollectionForLogAndTracing(requestBody.collection, solrQueryRequest);
 
@@ -138,6 +143,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
             throw remoteResponse.getException();
         }
 
+        final SolrJerseyResponse response = objectMapper.convertValue(remoteResponse.getResponse(), CreateCollectionBackupResponseBody.class);
+
         return response;
     }
 
@@ -171,8 +178,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         @JsonProperty("response")
         public CollectionBackupData backupDataResponse;
 
-        //@JsonProperty("deleted")
-        //public List<>
+        @JsonProperty("deleted")
+        public List<BackupDeletionData> deleted;
     }
 
     public static class CollectionBackupData implements JacksonReflectMapWriter {
@@ -185,9 +192,16 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         @JsonProperty public Integer indexFileCount;
         @JsonProperty public Integer uploadedIndexFileCount;
         @JsonProperty public Double indexSizeMB;
-        @JsonProperty public Double uploadedIndexSizeMB;
+        @JsonProperty("uploadedIndexFileMB") public Double uploadedIndexSizeMB;
         @JsonProperty public List<String> shardBackupIds;
 
         // TODO Still need to add here: properties from maxNumBackups deletion, actual shard requests?
+    }
+
+    public static class BackupDeletionData implements JacksonReflectMapWriter {
+        @JsonProperty public String startTime;
+        @JsonProperty public Integer backupId;
+        @JsonProperty public Long size;
+        @JsonProperty public Integer numFiles;
     }
 }
