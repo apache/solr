@@ -1002,7 +1002,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync)
       throws IOException {
     if (versionsStored) {
-      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
+      final boolean leaderLogic = isLeader && !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);

@@ -1306,7 +1306,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // handle version ranges
     List<Long> versions = null;
-    if (versionsStr.indexOf("...") != -1) {
+    if (versionsStr.contains("...")) {
       versions = resolveVersionRanges(versionsStr, ulog);
     } else {
       versions =

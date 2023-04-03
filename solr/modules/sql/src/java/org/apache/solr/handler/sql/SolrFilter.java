@@ -444,7 +444,7 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String toEqualsClause(String key, RexLiteral value) {
-      if ("".equals(key)) {
+      if (key != null && key.isEmpty()) {
         // special handling for 1 = 0 kind of clause
         return "-*:*";
       }

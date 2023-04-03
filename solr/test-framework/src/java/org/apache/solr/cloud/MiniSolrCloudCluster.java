@@ -825,7 +825,7 @@ public class MiniSolrCloudCluster {
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
-    if (ctx == null || "".equals(ctx)) ctx = "/solr";
+    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
     if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
     return ctx;

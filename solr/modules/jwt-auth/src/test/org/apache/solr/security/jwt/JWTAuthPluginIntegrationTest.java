@@ -484,7 +484,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
-            .replaceAll("\n", "\\\\n");
+            .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
     return "{\n"
         + "  \"authentication\" : {\n"
         + "    \"class\": \"solr.JWTAuthPlugin\",\n"

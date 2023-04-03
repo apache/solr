@@ -625,7 +625,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (-1 < spec.indexOf("<")) {
+    if (spec.contains("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
@@ -894,7 +894,7 @@ public class SolrPluginUtils {
   public static Sort getSort(SolrQueryRequest req) {
 
     String sort = req.getParams().get(CommonParams.SORT);
-    if (null == sort || sort.equals("")) {
+    if (null == sort || sort.isEmpty()) {
       return null;
     }
 

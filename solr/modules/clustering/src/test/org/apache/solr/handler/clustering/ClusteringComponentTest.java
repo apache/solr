@@ -293,8 +293,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
   }
 
   static void compareWhitespaceNormalized(String actual, String expected) {
-    Function<String, String> normalize =
-        v -> v.replaceAll("\r", "").replaceAll("[ \t]+", " ").trim();
+    Function<String, String> normalize = v -> v.replace("\r", "").replaceAll("[ \t]+", " ").trim();
 
     if (!normalize.apply(expected).equals(normalize.apply(actual))) {
       throw new AssertionError(

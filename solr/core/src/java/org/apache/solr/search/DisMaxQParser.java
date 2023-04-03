@@ -120,7 +120,7 @@ public class DisMaxQParser extends QParser {
     String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
-        if (null == boostFunc || "".equals(boostFunc)) continue;
+        if (null == boostFunc || boostFunc.isEmpty()) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (Map.Entry<String, Float> entry : ff.entrySet()) {
           Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();

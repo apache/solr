@@ -1151,8 +1151,9 @@ public abstract class CloudSolrClient extends SolrClient {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
               || replica.getState()
-                  != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-          continue;
+                  != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
+            continue;
+          }
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
           } else {

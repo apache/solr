@@ -98,7 +98,7 @@ public class ZkMaintenanceUtils {
         VISIT_ORDER.VISIT_PRE,
         znode -> {
           if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
-          int iPos = znode.lastIndexOf("/");
+          int iPos = znode.lastIndexOf('/');
           if (iPos > 0) {
             for (int idx = 0; idx < iPos; ++idx) sb.append(" ");
             sb.append(znode.substring(iPos + 1)).append(System.lineSeparator());
@@ -529,7 +529,7 @@ public class ZkMaintenanceUtils {
     if (path.endsWith("/")) {
       endIndex--;
     }
-    int index = path.lastIndexOf("/", endIndex);
+    int index = path.lastIndexOf('/', endIndex);
     if (index == -1) {
       return "";
     }
@@ -542,7 +542,7 @@ public class ZkMaintenanceUtils {
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    if ("\\".equals(File.separator)) relativePath = relativePath.replaceAll("\\\\", "/");
+    if ("\\".equals(File.separator)) relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
     boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);
@@ -586,7 +586,7 @@ public class ZkMaintenanceUtils {
         }
       }
     }
-    int lastDot = filePath.lastIndexOf(".");
+    int lastDot = filePath.lastIndexOf('.');
     return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
 }

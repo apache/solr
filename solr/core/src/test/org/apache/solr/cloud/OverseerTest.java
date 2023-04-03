@@ -1031,8 +1031,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                   .build());
       overseers.add(overseer);
       ElectionContext ec =
-          new OverseerElectionContext(
-              zkClient, overseer, server.getZkAddress().replaceAll("/", "_"));
+          new OverseerElectionContext(zkClient, overseer, server.getZkAddress().replace("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
 
@@ -1868,8 +1867,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 .setUseDistributedClusterStateUpdates(false)
                 .build());
     overseers.add(overseer);
-    ElectionContext ec =
-        new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+    ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);
     return zkClient;

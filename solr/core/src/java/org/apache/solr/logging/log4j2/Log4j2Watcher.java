@@ -185,7 +185,10 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     for (Map.Entry<String, LoggerConfig> logger : loggers.entrySet()) {
       String name = logger.getKey();
 
-      if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
+      if (logger == root
+          || root.equals(logger)
+          || isRootLogger(name)
+          || (name != null && name.isEmpty())) {
         continue;
       }
       map.put(name, new Log4j2Info(name, logger.getValue().getLevel()));
@@ -197,7 +200,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
       map.put(name, new Log4j2Info(name, logger.getLevel()));
       while (true) {
-        int dot = name.lastIndexOf(".");
+        int dot = name.lastIndexOf('.');
         if (dot < 0) break;
 
         name = name.substring(0, dot);

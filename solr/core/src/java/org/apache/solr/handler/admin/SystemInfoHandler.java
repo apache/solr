@@ -411,9 +411,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
+          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf('=')))) {
         list.add(
-            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf('=')), REDACT_STRING));
       } else {
         list.add(arg);
       }

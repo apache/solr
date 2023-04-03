@@ -139,7 +139,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
             try {
               String credentials =
                   new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
