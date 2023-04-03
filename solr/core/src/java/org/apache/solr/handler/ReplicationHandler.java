@@ -1457,7 +1457,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     {
       final String reserve = (String) initArgs.get(RESERVE);
-      if (reserve != null && !reserve.trim().equals("")) {
+      if (reserve != null && !reserve.trim().isEmpty()) {
         reserveCommitDuration = readIntervalMs(reserve);
       }
     }

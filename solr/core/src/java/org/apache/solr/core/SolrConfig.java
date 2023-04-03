@@ -541,7 +541,7 @@ public class SolrConfig implements MapSerializable {
     }
 
     public String getCleanTag() {
-      return tag.replaceAll("/", "");
+      return tag.replace("/", "");
     }
 
     public String getTagCleanLower() {
@@ -773,7 +773,7 @@ public class SolrConfig implements MapSerializable {
         try {
           final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
           final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
-          tmp = (null != ttlStr && !"".equals(ttlStr)) ? Long.valueOf(ttlStr) : null;
+          tmp = (null != ttlStr && !ttlStr.isEmpty()) ? Long.valueOf(ttlStr) : null;
         } catch (Exception e) {
           log.warn(
               "Ignoring exception while attempting to extract max-age from cacheControl config: {}",

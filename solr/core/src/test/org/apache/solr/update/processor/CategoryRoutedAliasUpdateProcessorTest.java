@@ -220,11 +220,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   }
 
   private String noDashes(String ship) {
-    return ship.replaceAll("-", "_");
+    return ship.replace("-", "_");
   }
 
   private String noDollar(String ship) {
-    return ship.replaceAll("\\$", "_");
+    return ship.replace("$", "_");
   }
 
   @Test

@@ -185,7 +185,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
-      if (storedValue.indexOf(",") < 0) {
+      if (!storedValue.contains(",")) {
         storedValue += "," + defaultCurrency;
       }
       f.add(createField(field.getName(), storedValue, StoredField.TYPE));

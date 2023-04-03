@@ -173,7 +173,7 @@ public class InfoHandler extends RequestHandlerBase {
   public Name getPermissionName(AuthorizationContext request) {
     // Delegate permission to the actual handler
     String path = request.getResource();
-    String lastPath = path.substring(path.lastIndexOf("/") + 1);
+    String lastPath = path.substring(path.lastIndexOf('/') + 1);
     RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
     if (handler != null) {
       return handler.getPermissionName(request);

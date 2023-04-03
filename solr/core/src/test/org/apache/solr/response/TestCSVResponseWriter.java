@@ -159,7 +159,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     String result = h.query(req("q", "*:*", "wt", "csv", "csv.header", "true", "fl", "*,score"));
     for (String field :
         "id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
-      assertTrue(result.indexOf(field) >= 0);
+      assertTrue(result.contains(field));
     }
 
     // test null values
@@ -317,7 +317,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     buf = new StringWriter();
     w.write(buf, req, rsp);
     String s = buf.toString();
-    assertTrue(s.indexOf("score") >= 0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0);
+    assertTrue(s.contains("score") && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0);
 
     // Test field globs
     rsp.setReturnFields(new SolrReturnFields("id,foo*", req));

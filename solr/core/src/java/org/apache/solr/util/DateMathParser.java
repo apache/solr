@@ -244,7 +244,7 @@ public class DateMathParser {
       }
     }
 
-    if (null == math || math.equals("")) {
+    if (null == math || math.isEmpty()) {
       return p.getNow();
     }
 
