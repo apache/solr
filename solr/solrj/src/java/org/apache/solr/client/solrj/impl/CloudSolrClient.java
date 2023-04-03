@@ -75,6 +75,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -90,7 +91,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private volatile String defaultCollection;
+  protected volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
@@ -105,7 +106,7 @@ public abstract class CloudSolrClient extends SolrClient {
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   public static final String STATE_VERSION = "_stateVer_";
-  protected long retryExpiryTime =
+  protected long retryExpiryTimeNano =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   private static final Set<String> NON_ROUTABLE_PARAMS =
       Set.of(
@@ -223,41 +224,29 @@ public abstract class CloudSolrClient extends SolrClient {
     }
   }
 
-  /**
-   * This is the time to wait to refetch the state after getting the same state version from ZK
-   *
-   * <p>secs
-   *
-   * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
-   */
-  @Deprecated
-  public void setRetryExpiryTime(int secs) {
-    this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
-  }
-
   protected final StateCache collectionStateCache = new StateCache();
 
   class ExpiringCachedDocCollection {
     final DocCollection cached;
-    final long cachedAt;
+    final long cachedAtNano;
     // This is the time at which the collection is retried and got the same old version
-    volatile long retriedAt = -1;
+    volatile long retriedAtNano = -1;
     // flag that suggests that this is potentially to be rechecked
     volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
-      this.cachedAt = System.nanoTime();
+      this.cachedAtNano = System.nanoTime();
     }
 
     boolean isExpired(long timeToLiveMs) {
-      return (System.nanoTime() - cachedAt)
+      return (System.nanoTime() - cachedAtNano)
           > TimeUnit.NANOSECONDS.convert(timeToLiveMs, TimeUnit.MILLISECONDS);
     }
 
     boolean shouldRetry() {
       if (maybeStale) { // we are not sure if it is stale so check with retry time
-        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTime)) {
+        if ((retriedAtNano == -1 || (System.nanoTime() - retriedAtNano) > retryExpiryTimeNano)) {
           return true; // we retried a while back. and we could not get anything new.
           // it's likely that it is not going to be available now also.
         }
@@ -266,7 +255,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     void setRetriedAt() {
-      retriedAt = System.nanoTime();
+      retriedAtNano = System.nanoTime();
     }
   }
 
@@ -276,18 +265,6 @@ public abstract class CloudSolrClient extends SolrClient {
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
-  }
-
-  /**
-   * Sets the cache ttl for DocCollection Objects cached.
-   *
-   * @param seconds ttl value in seconds
-   * @deprecated use {@link CloudSolrClient.Builder#withCollectionCacheTtl(int)} instead
-   */
-  @Deprecated
-  public void setCollectionCacheTTl(int seconds) {
-    assert seconds > 0;
-    this.collectionStateCache.timeToLiveMs = seconds * 1000L;
   }
 
   protected abstract LBSolrClient getLbClient();
@@ -312,38 +289,8 @@ public abstract class CloudSolrClient extends SolrClient {
     return getLbClient().getParser();
   }
 
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser processor) {
-    getLbClient().setParser(processor);
-  }
-
   public RequestWriter getRequestWriter() {
     return getLbClient().getRequestWriter();
-  }
-
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    getLbClient().setRequestWriter(requestWriter);
-  }
-
-  /** Sets the default collection for request */
-  public void setDefaultCollection(String collection) {
-    this.defaultCollection = collection;
   }
 
   /** Gets the default collection for request */
@@ -474,7 +421,8 @@ public abstract class CloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures =
+          CollectionUtil.newHashMap(routes.size());
       for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBSolrClient.Req lbRequest = entry.getValue();
@@ -813,6 +761,7 @@ public abstract class CloudSolrClient extends SolrClient {
     } else if (collection == null) {
       collection = defaultCollection;
     }
+
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(request, 0, inputCollections);
@@ -1234,17 +1183,6 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   public boolean isDirectUpdatesToLeadersOnly() {
     return directUpdatesToLeadersOnly;
-  }
-
-  /**
-   * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
-   * locks
-   *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder#setParallelCacheRefreshes(int)} instead
-   */
-  @Deprecated
-  public void setParallelCacheRefreshes(int n) {
-    locks = objectList(n);
   }
 
   protected static Object[] objectList(int n) {

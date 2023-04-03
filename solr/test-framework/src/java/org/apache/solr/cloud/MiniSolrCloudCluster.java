@@ -42,6 +42,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -156,11 +157,12 @@ public class MiniSolrCloudCluster {
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private final CloudSolrClient solrClient;
+  private CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
+  private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
 
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
@@ -295,9 +297,7 @@ public class MiniSolrCloudCluster {
         zkTestServer,
         securityJson,
         false,
-        formatZkServer,
-        Optional.empty(),
-        Optional.empty());
+        formatZkServer);
   }
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
@@ -321,9 +321,7 @@ public class MiniSolrCloudCluster {
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
       boolean trackJettyMetrics,
-      boolean formatZkServer,
-      Optional<Integer> connectionTimeout,
-      Optional<Integer> socketTimeout)
+      boolean formatZkServer)
       throws Exception {
 
     Objects.requireNonNull(securityJson);
@@ -351,7 +349,10 @@ public class MiniSolrCloudCluster {
     this.zkServer = zkTestServer;
 
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       if (!zkClient.exists("/solr/solr.xml", true)) {
         zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
@@ -386,7 +387,7 @@ public class MiniSolrCloudCluster {
       throw startupError;
     }
 
-    solrClient = buildSolrClient(connectionTimeout, socketTimeout);
+    solrClient = buildSolrClient();
 
     if (numServers > 0) {
       waitForAllNodes(numServers, 60);
@@ -627,11 +628,11 @@ public class MiniSolrCloudCluster {
    */
   public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try (SolrZkClient zkClient =
-        new SolrZkClient(
-            zkServer.getZkAddress(),
-            AbstractZkTestCase.TIMEOUT,
-            AbstractZkTestCase.TIMEOUT,
-            null)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       ZkMaintenanceUtils.uploadToZK(
           zkClient,
           configDir,
@@ -717,6 +718,14 @@ public class MiniSolrCloudCluster {
     try {
 
       IOUtils.closeQuietly(solrClient);
+
+      solrClientByCollection.values().parallelStream()
+          .forEach(
+              c -> {
+                IOUtils.closeQuietly(c);
+              });
+      solrClientByCollection.clear();
+      ;
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -746,6 +755,37 @@ public class MiniSolrCloudCluster {
     return solrClient;
   }
 
+  /**
+   * Returns a SolrClient that has a defaultCollection set for it. SolrClients are cached by their
+   * collectionName for reuse and are closed for you.
+   *
+   * @param collectionName The name of the collection to get a SolrClient for.
+   * @return CloudSolrClient configured for the specific collection.
+   */
+  public CloudSolrClient getSolrClient(String collectionName) {
+    return solrClientByCollection.computeIfAbsent(
+        collectionName,
+        k -> {
+          CloudSolrClient solrClient =
+              new CloudLegacySolrClient.Builder(
+                      Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+                  .withDefaultCollection(collectionName)
+                  .withSocketTimeout(90000)
+                  .withConnectionTimeout(15000)
+                  .build();
+
+          solrClient.connect();
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+                collectionName,
+                solrClient.isUpdatesToLeaders(),
+                solrClient.isParallelUpdates());
+          }
+          return solrClient;
+        });
+  }
+
   public SolrZkClient getZkClient() {
     return getZkStateReader().getZkClient();
   }
@@ -763,13 +803,25 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  protected CloudSolrClient buildSolrClient(
-      Optional<Integer> connectionTimeout, Optional<Integer> socketTimeout) {
+  protected CloudSolrClient buildSolrClient() {
     return new CloudLegacySolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(socketTimeout.orElse(90000))
-        .withConnectionTimeout(connectionTimeout.orElse(15000))
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .build(); // we choose 90 because we run in some harsh envs
+  }
+
+  /**
+   * creates a basic CloudSolrClient Builder that then can be customized by callers, for example by
+   * specifying what collection they want to use.
+   *
+   * @return CloudLegacySolrClient.Builder
+   */
+  public CloudLegacySolrClient.Builder basicSolrClientBuilder() {
+    return new CloudLegacySolrClient.Builder(
+            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+        .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
+        .withConnectionTimeout(15000);
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
@@ -1054,8 +1106,6 @@ public class MiniSolrCloudCluster {
     private boolean useDistributedCollectionConfigSetExecution;
     private boolean useDistributedClusterStateUpdate;
     private boolean formatZkServer = true;
-    private Optional<Integer> connectionTimeout = Optional.empty();
-    private Optional<Integer> socketTimeout = Optional.empty();
 
     /**
      * Create a builder
@@ -1216,16 +1266,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    public Builder withConnectionTimeout(Integer connectionTimeout) {
-      this.connectionTimeout = Optional.of(connectionTimeout);
-      return this;
-    }
-
-    public Builder withSocketTimeout(Integer socketTimeout) {
-      this.socketTimeout = Optional.of(socketTimeout);
-      return this;
-    }
-
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
@@ -1269,9 +1309,7 @@ public class MiniSolrCloudCluster {
               null,
               securityJson,
               trackJettyMetrics,
-              formatZkServer,
-              connectionTimeout,
-              socketTimeout);
+              formatZkServer);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }

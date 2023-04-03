@@ -21,6 +21,8 @@ Reduction functions reduce the values of xref:analytics-expression-sources.adoc[
 and/or unreduced xref:analytics-mapping-functions.adoc[mapping functions]
 for every Solr Document to a single value.
 
+WARNING: The analytics component is deprecated. We recommend looking into similar functionality found in xref:json-facet-api.adoc[JSON Facet API]. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+
 Below is a list of all reduction functions provided by the Analytics Component.
 These can be combined using mapping functions to implement more complex functionality.
 

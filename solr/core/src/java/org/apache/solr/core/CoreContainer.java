@@ -31,8 +31,6 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracer;
 import io.opentracing.noop.NoopTracerFactory;
@@ -44,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,6 +68,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -729,6 +729,14 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(apiObject);
   }
 
+  private void registerV2ApiIfEnabled(Class<? extends JerseyResource> clazz) {
+    if (containerHandlers.getJerseyEndpoints() == null) {
+      return;
+    }
+
+    containerHandlers.getJerseyEndpoints().register(clazz);
+  }
+
   // -------------------------------------------------------------------
   // Initialization / Cleanup
   // -------------------------------------------------------------------
@@ -798,9 +806,7 @@ public class CoreContainer {
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-
-      ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
-      registerV2ApiIfEnabled(zookeeperReadAPI);
+      registerV2ApiIfEnabled(ZookeeperReadAPI.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -1009,7 +1015,7 @@ public class CoreContainer {
                     try {
                       zkSys.registerInZk(core, true, false);
                     } catch (RuntimeException e) {
-                      SolrException.log(log, "Error registering SolrCore", e);
+                      log.error("Error registering SolrCore", e);
                     }
                     return core;
                   }));
@@ -1095,6 +1101,17 @@ public class CoreContainer {
                       .to(SolrNodeKeyPair.class)
                       .in(Singleton.class);
                 }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(
+                          new InjectionFactories.SingletonFactory<>(
+                              coreAdminHandler.getCoreAdminAsyncTracker()))
+                      .to(CoreAdminHandler.CoreAdminAsyncTracker.class)
+                      .in(Singleton.class);
+                }
               });
       jerseyAppHandler = new ApplicationHandler(containerHandlers.getJerseyEndpoints());
     }
@@ -1155,7 +1172,7 @@ public class CoreContainer {
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
-    Map<String, Path> addedCores = Maps.newHashMap();
+    Map<String, Path> addedCores = new HashMap<>();
     for (CoreDescriptor cd : cds) {
       final String name = cd.getName();
       if (addedCores.containsKey(name))
@@ -1363,7 +1380,7 @@ public class CoreContainer {
       try {
         core.getSolrCoreState().cancelRecovery();
       } catch (Exception e) {
-        SolrException.log(log, "Error canceling recovery for core", e);
+        log.error("Error canceling recovery for core", e);
       }
     }
   }
@@ -1523,11 +1540,11 @@ public class CoreContainer {
             getZkController().unregister(coreName, cd);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            SolrException.log(log, null, e);
+            log.error("interrupted", e);
           } catch (KeeperException e) {
-            SolrException.log(log, null, e);
+            log.error("KeeperException unregistering core {}", coreName, e);
           } catch (Exception e) {
-            SolrException.log(log, null, e);
+            log.error("Exception unregistering core {}", coreName, e);
           }
         }
 
@@ -1795,7 +1812,7 @@ public class CoreContainer {
         df.release(dir);
         df.doneWithDirectory(dir);
       } catch (IOException e) {
-        SolrException.log(log, e);
+        log.error("Exception releasing {}", dir, e);
       }
     }
   }
@@ -1878,7 +1895,7 @@ public class CoreContainer {
    * </ul>
    */
   public Map<String, CoreLoadFailure> getCoreInitFailures() {
-    return ImmutableMap.copyOf(coreInitFailures);
+    return Map.copyOf(coreInitFailures);
   }
 
   // ---------------- Core name related methods ---------------
@@ -2184,6 +2201,9 @@ public class CoreContainer {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name, UUID id) {
+    if (name == null) {
+      return null;
+    }
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
     SolrCore core = solrCores.getCoreFromAnyList(name, true, id);

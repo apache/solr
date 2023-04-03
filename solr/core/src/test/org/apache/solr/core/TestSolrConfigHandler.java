@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -639,18 +638,18 @@ public class TestSolrConfigHandler extends RestTestBase {
             TIMEOUT_S);
     assertEquals(
         "solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
+        getObjectByPath(map, true, List.of("overlay", "cache", "perSegFilter", "class")));
 
     map =
         getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter", writeHarness);
     assertEquals(
         "Actual output " + Utils.toJSONString(map),
         "org.apache.solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("caches", "perSegFilter")));
+        getObjectByPath(map, true, List.of("caches", "perSegFilter")));
     assertEquals(
         "Actual output " + Utils.toJSONString(map),
         "org.apache.solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("caches", "lfuCacheDecayFalse")));
+        getObjectByPath(map, true, List.of("caches", "lfuCacheDecayFalse")));
   }
 
   public void testFailures() throws Exception {

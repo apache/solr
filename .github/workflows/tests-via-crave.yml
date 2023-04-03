@@ -18,4 +18,4 @@ jobs:
     - name: Get the Crave binary
       run: curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
     - name: Initialize, build, test
-      run: ./crave run
+      run: ./crave run --clean

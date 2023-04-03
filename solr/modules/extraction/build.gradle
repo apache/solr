@@ -26,7 +26,6 @@ dependencies {
   implementation 'org.apache.lucene:lucene-core'
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'commons-io:commons-io'
   implementation 'org.apache.poi:poi'
   implementation 'org.apache.poi:poi-ooxml'
   implementation 'org.apache.tika:tika-core'

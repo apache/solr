@@ -16,15 +16,13 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -49,8 +47,8 @@ import org.junit.Test;
  */
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
-  private static InputStream getResponse() throws IOException {
-    return new ReaderInputStream(new StringReader("NO-OP test response"), StandardCharsets.UTF_8);
+  private static InputStream getResponse() {
+    return new ByteArrayInputStream("NO-OP test response".getBytes(StandardCharsets.UTF_8));
   }
 
   @BeforeClass
@@ -87,7 +85,8 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
   private void assertResponse(String responseString) throws IOException {
     ResponseParser xmlResponseParser = new XMLResponseParser();
     NamedList<?> expectedResponse =
-        xmlResponseParser.processResponse(IOUtils.toInputStream(responseString, "UTF-8"), "UTF-8");
+        xmlResponseParser.processResponse(
+            new ByteArrayInputStream(responseString.getBytes(StandardCharsets.UTF_8)), "UTF-8");
     @SuppressWarnings({"unchecked"})
     List<SolrDocument> documentList =
         (List<SolrDocument>) expectedResponse.getAll("response").get(0);
@@ -105,7 +104,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
       NamedList<Object> response = parser.processResponse(in);
       assertNotNull(response.get("response"));
-      String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
+      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals(expectedResponse, response.get("response"));
     }
   }
@@ -119,7 +118,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
       NamedList<Object> response = parser.processResponse(is, "UTF-8");
 
       assertNotNull(response.get("response"));
-      String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
+      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals(expectedResponse, response.get("response"));
     }
   }

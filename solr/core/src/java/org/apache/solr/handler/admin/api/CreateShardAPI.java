@@ -29,7 +29,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -69,9 +68,7 @@ public class CreateShardAPI {
       v1Params.put(CREATE_NODE_SET_PARAM, buildV1CreateNodeSetValue(v2Body.nodeSet));
     }
 
-    if (MapUtils.isNotEmpty(v2Body.coreProperties)) {
-      flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
-    }
+    flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
   }
 

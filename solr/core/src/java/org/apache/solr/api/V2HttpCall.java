@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -71,7 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // class that handle the '/v2' path
-@SolrThreadSafe
+@ThreadSafe
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
@@ -138,7 +138,7 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if ("c".equals(prefix) || "collections".equals(prefix)) {
+      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
         DocCollection collection =
@@ -149,6 +149,11 @@ public class V2HttpCall extends HttpSolrCall {
                 SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
+          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+            initAdminRequest(path);
+            return;
+          }
           boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {

@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
-import com.google.common.collect.Iterables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -89,6 +89,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -391,7 +392,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
+        cacheMap = CollectionUtil.newHashMap(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
           SolrCache<?, ?> cache = e.getValue().newInstance();
           if (cache != null) {
@@ -578,7 +579,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
-      SolrException.log(log, "Problem dec ref'ing reader", e);
+      log.error("Problem dec ref'ing reader", e);
     }
 
     if (directoryFactory.searchersReserveCommitPoints()) {
@@ -589,7 +590,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       try {
         cache.close();
       } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+        log.error("Exception closing cache {}", cache.name(), e);
       }
     }
 
@@ -615,7 +616,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** Returns a collection of all field names the index reader knows about. */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
+    return StreamSupport.stream(getFieldInfos().spliterator(), false)
+        .map(fieldInfo -> fieldInfo.name)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public SolrCache<Query, DocSet> getFilterCache() {
