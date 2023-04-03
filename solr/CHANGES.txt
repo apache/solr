@@ -92,6 +92,8 @@ Bug Fixes
 
 * SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
 
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
