@@ -35,6 +35,9 @@ org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Double[],double)
 @defaultMessage Use loop to convert from array to primitive
 org.apache.commons.lang3.ArrayUtils#toPrimitive(**)
 
+@defaultMessage Use org.apache.solr.util.LocaleUtils
+org.apache.commons.lang3.LocaleUtils
+
 @defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
 org.apache.commons.lang3.RandomStringUtils
 
