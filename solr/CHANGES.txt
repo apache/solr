@@ -71,6 +71,9 @@ Improvements
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
 
+* SOLR-13396: Add property to control the deletion of unknown cores.  Solr can be started with the system property
+  `solr.deleteUnknownCores` set to `false` to disable automatic deletion of cores without corresponding ZooKeeper entries. (Colvin Cowie)
+
 Optimizations
 ---------------------
 
