@@ -1015,7 +1015,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       boolean leaderLogic)
       throws IOException {
     if (versionsStored) {
-      final boolean leaderLogic = isLeader && !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
