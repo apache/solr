@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
  */
-@Path("/api/collections/backups/{backupName}/versions")
+@Path("/api/collections/{collectionName}/backups/{backupName}/versions")
 public class CreateCollectionBackupAPI extends AdminAPIBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -96,6 +96,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createCollectionBackup(
+          @PathParam("collectionName") String collectionName,
       @PathParam("backupName") String backupName, CreateCollectionBackupRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
@@ -105,18 +106,18 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'backupName'");
     }
-    if (requestBody.collection == null) {
+    if (collectionName == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'collection'");
     }
     // final SolrJerseyResponse response =
     // instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    recordCollectionForLogAndTracing(requestBody.collection, solrQueryRequest);
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    requestBody.collection =
+    collectionName =
         resolveAndValidateAliasIfEnabled(
-            requestBody.collection, BooleanUtils.isTrue(requestBody.followAliases));
+            collectionName, BooleanUtils.isTrue(requestBody.followAliases));
 
     final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
     requestBody.location = getLocation(repository, requestBody.location);
@@ -145,7 +146,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
           "Unknown index backup strategy " + requestBody.backupStrategy);
     }
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
+    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, backupName, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -164,10 +165,10 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
-      String backupName, CreateCollectionBackupRequestBody requestBody) {
+  public static ZkNodeProps createRemoteMessage(String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
     final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
+    remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(NAME, backupName);
     if (!StringUtils.isBlank(requestBody.backupStrategy)) {
       remoteMessage.put(INDEX_BACKUP_STRATEGY, remoteMessage.remove("backupStrategy"));
@@ -181,11 +182,10 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   public static CreateCollectionBackupRequestBody createRequestBodyFromV1Params(SolrParams params) {
     var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
 
-    requestBody.collection = params.get(COLLECTION_PROP);
     requestBody.location = params.get(BACKUP_LOCATION);
     requestBody.repository = params.get(BACKUP_REPOSITORY);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
-    requestBody.backupStrategy = params.get(requestBody.backupStrategy);
+    requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
     requestBody.snapshotName = params.get(COMMIT_NAME);
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
@@ -197,12 +197,13 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   public static SolrJerseyResponse invokeFromV1Params(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer coreContainer) throws Exception {
     req.getParams().required().check(NAME, COLLECTION_PROP);
-    var backupName = req.getParams().get(NAME);
-    var requestBody = createRequestBodyFromV1Params(req.getParams());
+    final var collectionName = req.getParams().get(COLLECTION_PROP);
+    final var backupName = req.getParams().get(NAME);
+    final var requestBody = createRequestBodyFromV1Params(req.getParams());
 
-    var createBackupApi =
+    final var createBackupApi =
         new CreateCollectionBackupAPI(coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
-    return createBackupApi.createCollectionBackup(backupName, requestBody);
+    return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
   }
 
   private String getLocation(BackupRepository repository, String location) throws IOException {
@@ -227,9 +228,6 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   }
 
   public static class CreateCollectionBackupRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(required = true)
-    public String collection;
-
     @JsonProperty public String location;
     @JsonProperty public String repository;
     @JsonProperty public Boolean followAliases;
