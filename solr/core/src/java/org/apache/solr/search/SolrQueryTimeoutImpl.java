@@ -45,7 +45,6 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
     return timeoutAt.get();
   }
 
-  @Override
   public boolean isTimeoutEnabled() {
     return getTimeoutAtNs() != null;
   }
