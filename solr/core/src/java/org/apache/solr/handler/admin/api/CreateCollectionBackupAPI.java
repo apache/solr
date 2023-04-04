@@ -180,6 +180,9 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
 
         @JsonProperty("deleted")
         public List<BackupDeletionData> deleted;
+
+        @JsonProperty
+        public String collection;
     }
 
     public static class CollectionBackupData implements JacksonReflectMapWriter {
