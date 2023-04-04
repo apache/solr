@@ -74,22 +74,18 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
  */
-@Path("/api/collections/{collectionName}/backups/{backupName}/versions")
+@Path("/collections/{collectionName}/backups/{backupName}/versions")
 public class CreateCollectionBackupAPI extends AdminAPIBase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final ObjectMapper objectMapper;
 
   @Inject
   public CreateCollectionBackupAPI(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
-      SolrQueryResponse solrQueryResponse,
-      ObjectMapper objectMapper) {
+      SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
 
-    this.objectMapper = objectMapper;
+    this.objectMapper = SolrJacksonMapper.getObjectMapper();
   }
 
   @POST
@@ -110,8 +106,6 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'collection'");
     }
-    // final SolrJerseyResponse response =
-    // instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
@@ -202,7 +196,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     final var requestBody = createRequestBodyFromV1Params(req.getParams());
 
     final var createBackupApi =
-        new CreateCollectionBackupAPI(coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
+        new CreateCollectionBackupAPI(coreContainer, req, rsp);
     return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
   }
 
