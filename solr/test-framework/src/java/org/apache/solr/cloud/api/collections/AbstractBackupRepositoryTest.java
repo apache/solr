@@ -78,8 +78,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   public void testCanDetermineWhetherFilesAndDirectoriesExist() throws Exception {
     try (BackupRepository repo = getRepository()) {
       // Create 'emptyDir/', 'nonEmptyDir/', and 'nonEmptyDir/file.txt'
-      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir/");
-      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir/");
+      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
+      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
       final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
       repo.createDirectory(emptyDirUri);
       repo.createDirectory(nonEmptyDirUri);
@@ -88,7 +88,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       assertTrue(repo.exists(emptyDirUri));
       assertTrue(repo.exists(nonEmptyDirUri));
       assertTrue(repo.exists(nestedFileUri));
-      final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir/");
+      final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir");
       assertFalse(repo.exists(nonexistedDirUri));
     }
   }
@@ -96,8 +96,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   @Test
   public void testCanDistinguishBetweenFilesAndDirectories() throws Exception {
     try (BackupRepository repo = getRepository()) {
-      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir/");
-      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir/");
+      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
+      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
       final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
       repo.createDirectory(emptyDirUri);
       repo.createDirectory(nonEmptyDirUri);
@@ -151,10 +151,10 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       assertFalse(repo.exists(fileUri));
 
       // Delete the middle directory in a deeply nested structure (/nest1/nest2/nest3/nest4)
-      final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1/");
-      final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2/");
-      final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3/");
-      final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4/");
+      final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1");
+      final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2");
+      final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3");
+      final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4");
       repo.createDirectory(level1DeeplyNestedUri);
       repo.createDirectory(level2DeeplyNestedUri);
       repo.createDirectory(level3DeeplyNestedUri);
