@@ -103,6 +103,7 @@ Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
+* SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 Other Changes
 ---------------------

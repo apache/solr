@@ -465,19 +465,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
-    // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
-    assert field != null;
-    // SlowAtomicReader has a cache of MultiTerms
-    Terms terms = getSlowAtomicReader().terms(field);
-    if (terms == null) {
-      return null;
-    }
-    return new CollectionStatistics(
-        field,
-        reader.maxDoc(),
-        terms.getDocCount(),
-        terms.getSumTotalTermFreq(),
-        terms.getSumDocFreq());
+    return super.collectionStatistics(field);
   }
 
   public boolean isCachingEnabled() {

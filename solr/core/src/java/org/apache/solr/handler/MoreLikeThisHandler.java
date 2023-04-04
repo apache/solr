@@ -291,7 +291,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     final boolean needDocSet;
     Map<String, Float> boostFields;
 
-    public MoreLikeThisHelper(SolrParams params, SolrIndexSearcher searcher) {
+    public MoreLikeThisHelper(SolrParams params, SolrIndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.reader = searcher.getIndexReader();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
