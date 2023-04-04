@@ -492,7 +492,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "0");
       doc.addField("vector", Arrays.asList(1.1, 2.2, 3.3, 4.4));
-      doc.addField("vector_byte_encoding", Arrays.asList(5.5, 6.6, 7.7, 8.8));
+      doc.addField("vector_byte_encoding", Arrays.asList(5, 6, 7, 8));
       doc.addField("string_field", "test");
 
       assertU(adoc(doc));
@@ -528,7 +528,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "0");
       doc.addField("vector", Arrays.asList(1.1, 2.2, 3.3, 4.4));
-      doc.addField("vector_byte_encoding", Arrays.asList(5.5, 6.6, 7.7, 8.8));
+      doc.addField("vector_byte_encoding", Arrays.asList(5, 6, 7, 8));
       doc.addField("string_field", "test");
 
       assertU(adoc(doc));
@@ -543,8 +543,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrInputDocument updateDoc = new SolrInputDocument();
       updateDoc.addField("id", "0");
       updateDoc.addField("vector", ImmutableMap.of("set", Arrays.asList(9.2, 2.2, 3.3, 5.2)));
-      updateDoc.addField(
-          "vector_byte_encoding", ImmutableMap.of("set", Arrays.asList(8.1, 3.2, 1.3, 3.2)));
+      updateDoc.addField("vector_byte_encoding", ImmutableMap.of("set", Arrays.asList(8, 3, 1, 3)));
       assertU(adoc(updateDoc));
       assertU(commit());
 
@@ -579,7 +578,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]'"));
 
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
@@ -600,7 +599,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]'"));
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
           is("Vector value at 1 is out of range [-128.127]: -128.3"));

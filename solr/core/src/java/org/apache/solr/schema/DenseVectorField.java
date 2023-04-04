@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -53,12 +54,12 @@ public class DenseVectorField extends FloatPointField {
   public static final String HNSW_ALGORITHM = "hnsw";
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
-  static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
   static final String KNN_ALGORITHM = "knnAlgorithm";
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
   static final String VECTOR_ENCODING = "vectorEncoding";
   private final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
+  static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
   private final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
@@ -186,12 +187,15 @@ public class DenseVectorField extends FloatPointField {
         fields.add(createField(field, vectorValue));
       }
       if (field.stored()) {
-        if (vectorEncoding.equals(VectorEncoding.FLOAT32)) {
-          for (float vectorElement : vectorValue.getFloatVector()) {
-            fields.add(getStoredField(field, vectorElement));
-          }
-        } else {
-          fields.add(new StoredField(field.getName(), vectorValue.getByteVector()));
+        switch (vectorEncoding) {
+          case FLOAT32:
+            for (float vectorElement : vectorValue.getFloatVector()) {
+              fields.add(getStoredField(field, vectorElement));
+            }
+            break;
+          case BYTE:
+            fields.add(new StoredField(field.getName(), vectorValue.getByteVector()));
+            break;
         }
       }
       return fields;
@@ -202,7 +206,7 @@ public class DenseVectorField extends FloatPointField {
               + field
               + "' from value '"
               + value
-              + "', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]",
+              + "', expected format:'[f1, f2, f3...fn]'",
           e);
     }
   }
@@ -211,12 +215,16 @@ public class DenseVectorField extends FloatPointField {
   public IndexableField createField(SchemaField field, Object vectorValue) {
     if (vectorValue == null) return null;
     VectorValue typedVectorValue = (VectorValue) vectorValue;
-    if (vectorEncoding.equals(VectorEncoding.BYTE)){
-      return new KnnByteVectorField(field.getName(), typedVectorValue.getByteVector().bytes , similarityFunction);
-    } else {
-      return new KnnVectorField(
-          field.getName(), typedVectorValue.getFloatVector(), similarityFunction);
+    switch (vectorEncoding) {
+      case BYTE:
+        return new KnnByteVectorField(
+            field.getName(), typedVectorValue.getByteVector().bytes, similarityFunction);
+      case FLOAT32:
+        return new KnnVectorField(
+            field.getName(), typedVectorValue.getFloatVector(), similarityFunction);
     }
+
+    return null;
   }
 
   @Override
@@ -224,7 +232,7 @@ public class DenseVectorField extends FloatPointField {
     if (vectorEncoding.equals(VectorEncoding.BYTE)) {
       BytesRef bytesRef = f.binaryValue();
       if (bytesRef != null) {
-        List<Number> ret = new ArrayList<>();
+        List<Number> ret = new ArrayList<>(dimension);
         for (byte b : bytesRef.bytes) {
           ret.add((int) b);
         }
