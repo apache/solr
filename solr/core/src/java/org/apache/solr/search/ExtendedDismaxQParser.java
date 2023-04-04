@@ -49,6 +49,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -1404,7 +1406,14 @@ public class ExtendedDismaxQParser extends QParser {
         if (nthQuery instanceof BoostQuery) {
           nthQuery = ((BoostQuery) nthQuery).getQuery();
         }
-        if (nthQuery.getClass() != firstQuery.getClass()) {
+
+        if ((nthQuery instanceof TermQuery && firstQuery instanceof TermQuery)
+            || (nthQuery instanceof SynonymQueryWithOffset && firstQuery instanceof SynonymQuery)
+            || (nthQuery instanceof SynonymQuery && firstQuery instanceof SynonymQueryWithOffset)) {
+          // bypass class equality requirement when dealing with a TermQuery with and without
+          // offset,
+          // or a SynonymQuery with and without offset
+        } else if (nthQuery.getClass() != firstQuery.getClass()) {
           allSame = false;
           break;
         }
@@ -1416,9 +1425,21 @@ public class ExtendedDismaxQParser extends QParser {
             break;
           }
           for (int c = 0; c < firstBooleanClauses.size(); ++c) {
-            if (nthBooleanClauses.get(c).getQuery().getClass()
-                    != firstBooleanClauses.get(c).getQuery().getClass()
-                || nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
+            if ((nthBooleanClauses.get(c).getQuery() instanceof TermQuery
+                    && firstBooleanClauses.get(c).getQuery() instanceof TermQuery)
+                || (nthBooleanClauses.get(c).getQuery() instanceof SynonymQueryWithOffset
+                    && firstBooleanClauses.get(c).getQuery() instanceof SynonymQuery)
+                || (nthBooleanClauses.get(c).getQuery() instanceof SynonymQuery
+                    && firstBooleanClauses.get(c).getQuery() instanceof SynonymQueryWithOffset)) {
+              // bypass class equality requirement when dealing with a TermQuery with and without
+              // offset,
+              // or a SynonymQuery with and without offset
+            } else if (nthBooleanClauses.get(c).getQuery().getClass()
+                != firstBooleanClauses.get(c).getQuery().getClass()) {
+              allSame = false;
+              break;
+            }
+            if (nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
               allSame = false;
               break;
             }
