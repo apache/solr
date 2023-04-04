@@ -33,7 +33,6 @@ import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -324,10 +323,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

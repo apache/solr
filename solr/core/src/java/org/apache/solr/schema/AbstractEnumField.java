@@ -27,7 +27,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
@@ -343,9 +342,13 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
       final Integer entry = enumMapping.enumStringToIntMap.get(str);
       if (entry != null) {
         return new EnumFieldValue(entry, str);
-      } else if (NumberUtils.isCreatable(str)) {
-        final int num = Integer.parseInt(str);
-        return new EnumFieldValue(num, enumMapping.enumIntToStringMap.get(num));
+      } else {
+        try {
+          final int num = Integer.parseInt(str);
+          return new EnumFieldValue(num, enumMapping.enumIntToStringMap.get(num));
+        } catch (NumberFormatException ignore) {
+          // Could not convert to Integer so fall through.
+        }
       }
     } else if (val instanceof Number) {
       final int num = ((Number) val).intValue();

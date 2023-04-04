@@ -32,8 +32,8 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -213,7 +213,7 @@ public abstract class ConfigSetService {
     for (CoreDescriptor cd : cds) {
       String coreName = cd.getName();
       String confName = cd.getCollectionName();
-      if (StringUtils.isEmpty(confName)) confName = coreName;
+      if (StrUtils.isNullOrEmpty(confName)) confName = coreName;
       Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
       cc.getConfigSetService().uploadConfig(confName, udir);

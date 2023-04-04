@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.ASYNC_PREEMPTIVE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.NONE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.SYNCHRONOUS;
@@ -55,6 +54,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.RoutedAliasUpdateProcessor;
@@ -553,7 +553,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           }
 
           if (candidate.getCreationType() == NONE
-              && isNotBlank(getPreemptiveCreateWindow())
+              && StrUtils.isNotBlank(getPreemptiveCreateWindow())
               && !this.preemptiveCreateOnceAlready) {
             // are we getting close enough to the (as yet uncreated) next collection to warrant
             // preemptive creation?

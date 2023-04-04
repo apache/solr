@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -437,7 +436,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+        systemOut
+            .toString(StandardCharsets.UTF_8)
+            .replace(System.lineSeparator(), "")
             .getBytes(StandardCharsets.UTF_8));
   }
 
@@ -460,7 +461,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+        systemOut
+            .toString(StandardCharsets.UTF_8)
+            .replace(System.lineSeparator(), "")
             .getBytes(StandardCharsets.UTF_8));
   }
 

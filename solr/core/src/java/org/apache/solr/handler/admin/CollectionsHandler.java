@@ -145,7 +145,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -194,6 +193,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -632,7 +632,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String collectionName =
               SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
           final String shardsParam = (String) props.get(SHARDS_PROP);
-          if (StringUtils.isNotEmpty(shardsParam)) {
+          if (StrUtils.isNotNullOrEmpty(shardsParam)) {
             verifyShardsParam(shardsParam);
           }
           if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
@@ -1335,7 +1335,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               copy(req.getParams().required(), null, COLLECTION_PROP, PROPERTY_PROP);
           Boolean shardUnique = Boolean.parseBoolean(req.getParams().get(SHARD_UNIQUE));
           String prop = req.getParams().get(PROPERTY_PROP).toLowerCase(Locale.ROOT);
-          if (!StringUtils.startsWith(prop, PROPERTY_PREFIX)) {
+          if (!prop.startsWith(PROPERTY_PREFIX)) {
             prop = PROPERTY_PREFIX + prop;
           }
 

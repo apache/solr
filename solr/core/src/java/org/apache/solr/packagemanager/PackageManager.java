@@ -486,7 +486,7 @@ public class PackageManager implements Closeable {
                   plugin.name);
 
           Command cmd = plugin.setupCommand;
-          if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -641,7 +641,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.setupCommand;
-        if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -764,7 +764,7 @@ public class PackageManager implements Closeable {
     boolean success = true;
     for (Plugin plugin : pkg.plugins) {
       Command cmd = plugin.verifyCommand;
-      if (plugin.verifyCommand != null && !StrUtils.isNullOrEmpty(cmd.path)) {
+      if (plugin.verifyCommand != null && StrUtils.isNotNullOrEmpty(cmd.path)) {
         if ("cluster".equalsIgnoreCase(plugin.type)) {
           if (!shouldDeployClusterPlugins) continue; // Plugins of type "cluster"
           Map<String, String> overridesMap = getParameterOverrides(overrides);
@@ -998,7 +998,7 @@ public class PackageManager implements Closeable {
                   "plugin-name",
                   plugin.name);
           Command cmd = plugin.uninstallCommand;
-          if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
+          if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
                 String payload =
@@ -1054,7 +1054,7 @@ public class PackageManager implements Closeable {
                 "plugin-name",
                 plugin.name);
         Command cmd = plugin.uninstallCommand;
-        if (cmd != null && !StrUtils.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && StrUtils.isNotNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
               String payload =

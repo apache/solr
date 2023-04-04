@@ -291,7 +291,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return !StrUtils.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
+    return StrUtils.isNotNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /**

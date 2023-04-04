@@ -75,8 +75,6 @@ import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
@@ -91,6 +89,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -4183,8 +4182,7 @@ public class SolrCLI implements CLIO {
     private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
       if (cli.hasOption(argName)) {
         final String value = cli.getOptionValue(argName);
-        final Boolean parsedBoolean = BooleanUtils.toBooleanObject(value);
-        if (parsedBoolean == null) {
+        if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
           echo("Argument [" + argName + "] must be either true or false, but was [" + value + "]");
           exit(1);
         }
@@ -4580,7 +4578,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void printAuthEnablingInstructions(String username, String password) {
-      if (SystemUtils.IS_OS_WINDOWS) {
+      if (Constants.WINDOWS) {
         CLIO.out(
             "\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
         CLIO.out(
@@ -4604,7 +4602,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void printAuthEnablingInstructions(String kerberosConfig) {
-      if (SystemUtils.IS_OS_WINDOWS) {
+      if (Constants.WINDOWS) {
         CLIO.out(
             "\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
         CLIO.out(
@@ -4653,7 +4651,7 @@ public class SolrCLI implements CLIO {
       includeFileLines.add(""); // blank line
 
       if (basicAuthConfFile != null) { // for basicAuth
-        if (SystemUtils.IS_OS_WINDOWS) {
+        if (Constants.WINDOWS) {
           includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
           includeFileLines.add("set SOLR_AUTH_TYPE=basic");
           includeFileLines.add(
@@ -4667,7 +4665,7 @@ public class SolrCLI implements CLIO {
               "SOLR_AUTHENTICATION_OPTS=\"-Dsolr.httpclient.config=" + basicAuthConfFile + "\"");
         }
       } else { // for kerberos
-        if (SystemUtils.IS_OS_WINDOWS) {
+        if (Constants.WINDOWS) {
           includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
           includeFileLines.add("set SOLR_AUTH_TYPE=kerberos");
           includeFileLines.add(

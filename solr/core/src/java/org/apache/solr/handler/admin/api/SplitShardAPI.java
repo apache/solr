@@ -27,13 +27,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.SplitShardPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 /**
@@ -64,7 +64,7 @@ public class SplitShardAPI {
     v1Params.put(ACTION, CollectionParams.CollectionAction.SPLITSHARD.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
-    if (StringUtils.isNotEmpty(v2Body.splitKey)) {
+    if (StrUtils.isNotNullOrEmpty(v2Body.splitKey)) {
       v1Params.put(CommonAdminParams.SPLIT_KEY, v2Body.splitKey);
     }
     flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);

@@ -18,7 +18,6 @@ package org.apache.solr.search.neural;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -116,7 +115,7 @@ public class KnnQParser extends QParser {
               + " The expected format is:'[f1,f2..f3]' where each element f is a float");
     }
 
-    String[] elements = StringUtils.split(value.substring(1, value.length() - 1), ',');
+    String[] elements = value.substring(1, value.length() - 1).split(",");
     if (elements.length != dimension) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

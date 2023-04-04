@@ -46,7 +46,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 import org.slf4j.Logger;
@@ -171,7 +171,7 @@ class SolrFilter extends Filter implements SolrRel {
       RexNode valuesNode = operands.get(1);
       if (valuesNode instanceof RexLiteral) {
         String literal = toSolrLiteral(fieldName, (RexLiteral) valuesNode);
-        if (!StringUtils.isEmpty(literal)) {
+        if (StrUtils.isNotNullOrEmpty(literal)) {
           return fieldName + ":\"" + ClientUtils.escapeQueryChars(literal.trim()) + "\"";
         } else {
           return null;
@@ -181,7 +181,7 @@ class SolrFilter extends Filter implements SolrRel {
         String valuesString =
             valuesRexCall.getOperands().stream()
                 .map(op -> toSolrLiteral(fieldName, (RexLiteral) op))
-                .filter(value -> !StringUtils.isEmpty(value))
+                .filter(StrUtils::isNotNullOrEmpty)
                 .map(value -> "\"" + ClientUtils.escapeQueryChars(value.trim()) + "\"")
                 .collect(Collectors.joining(" " + booleanOperator + " "));
         return fieldName + ":(" + valuesString + ")";

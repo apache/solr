@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -255,7 +254,7 @@ public class StatsField {
       SchemaField sf = null;
       ValueSource vs = null;
 
-      if (StringUtils.isBlank(parserName)) {
+      if (StrUtils.isBlank(parserName)) {
 
         // basic request for field stats
         sf = searcher.getSchema().getField(localParams.get(QueryParsing.V));
@@ -679,7 +678,7 @@ public class StatsField {
         throws SolrException {
 
       String cardinalityOpt = localParams.get(Stat.cardinality.name());
-      if (StringUtils.isBlank(cardinalityOpt)) {
+      if (StrUtils.isBlank(cardinalityOpt)) {
         return null;
       }
 
