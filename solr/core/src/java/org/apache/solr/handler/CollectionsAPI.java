@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;

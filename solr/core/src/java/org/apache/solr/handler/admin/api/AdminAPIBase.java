@@ -47,23 +47,26 @@ public abstract class AdminAPIBase extends JerseyResource {
     return coreContainer;
   }
 
-  protected String resolveAndValidateAliasIfEnabled(String unresolvedCollectionName, boolean aliasResolutionEnabled) {
-    final String resolvedCollectionName = aliasResolutionEnabled ? resolveAlias(unresolvedCollectionName) : unresolvedCollectionName;
+  protected String resolveAndValidateAliasIfEnabled(
+      String unresolvedCollectionName, boolean aliasResolutionEnabled) {
+    final String resolvedCollectionName =
+        aliasResolutionEnabled ? resolveAlias(unresolvedCollectionName) : unresolvedCollectionName;
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     if (!clusterState.hasCollection(resolvedCollectionName)) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Collection '" + resolvedCollectionName + "' does not exist, no action taken.");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + resolvedCollectionName + "' does not exist, no action taken.");
     }
 
     return resolvedCollectionName;
   }
 
   private String resolveAlias(String aliasName) {
-    return coreContainer.getZkController()
-            .getZkStateReader()
-            .getAliases()
-            .resolveSimpleAlias(aliasName);
+    return coreContainer
+        .getZkController()
+        .getZkStateReader()
+        .getAliases()
+        .resolveSimpleAlias(aliasName);
   }
 
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {

@@ -49,7 +49,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -114,11 +113,9 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
@@ -148,10 +145,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -241,7 +234,6 @@ import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -1398,21 +1390,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BACKUP_OP(
         BACKUP,
         (req, rsp, h) -> {
-          req.getParams().required().check(NAME, COLLECTION_PROP);
-          var backupName = req.getParams().get(NAME);
-          var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
-          requestBody.collection = req.getParams().get(COLLECTION);
-          requestBody.location = req.getParams().get(BACKUP_LOCATION);
-          requestBody.repository = req.getParams().get(BACKUP_REPOSITORY);
-          requestBody.followAliases = req.getParams().getBool(FOLLOW_ALIASES);
-          requestBody.indexBackup = req.getParams().get(INDEX_BACKUP_STRATEGY);
-          requestBody.commitName = req.getParams().get(COMMIT_NAME);
-          requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
-          requestBody.maxNumBackupPoints = req.getParams().getInt(MAX_NUM_BACKUP_POINTS);
-          requestBody.async = req.getParams().get(ASYNC);
-
-          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
-          final SolrJerseyResponse response = createBackupApi.createCollectionBackup(backupName, requestBody);
+          final var response =
+              CreateCollectionBackupAPI.invokeWithV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),

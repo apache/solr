@@ -17,8 +17,35 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
+import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -31,9 +58,9 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.AsyncJerseyResponse;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
@@ -42,176 +69,205 @@ import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
+/**
+ * V2 API for creating a new "backup" of a specified collection
+ *
+ * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
+ */
 @Path("/api/collections/backups/{backupName}/versions")
 public class CreateCollectionBackupAPI extends AdminAPIBase {
 
-    private final ObjectMapper objectMapper;
-    @Inject
-    public CreateCollectionBackupAPI(CoreContainer coreContainer, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse, ObjectMapper objectMapper) {
-        super(coreContainer, solrQueryRequest, solrQueryResponse);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-        this.objectMapper = objectMapper;
+  private final ObjectMapper objectMapper;
+
+  @Inject
+  public CreateCollectionBackupAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse,
+      ObjectMapper objectMapper) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
+
+    this.objectMapper = objectMapper;
+  }
+
+  @POST
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @PermissionName(COLL_EDIT_PERM)
+  public SolrJerseyResponse createCollectionBackup(
+      @PathParam("backupName") String backupName, CreateCollectionBackupRequestBody requestBody)
+      throws Exception {
+    if (requestBody == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
+    if (StringUtils.isBlank(backupName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'backupName'");
+    }
+    if (requestBody.collection == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'collection'");
+    }
+    // final SolrJerseyResponse response =
+    // instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
+    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(requestBody.collection, solrQueryRequest);
 
-    private String getLocation(BackupRepository repository, String location) throws IOException {
-        location = repository.getBackupLocation(location);
-        if (location != null) {
-            return location;
-        }
+    requestBody.collection =
+        resolveAndValidateAliasIfEnabled(
+            requestBody.collection, BooleanUtils.isTrue(requestBody.followAliases));
 
-        // Refresh the cluster property file to make sure the value set for location is the
-        // latest. Check if the location is specified in the cluster property.
-        location = new ClusterProperties(coreContainer.getZkController().getZkClient())
-                .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
-        if (location != null) {
-            return location;
-        }
+    final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
+    requestBody.location = getLocation(repository, requestBody.location);
+    requestBody.incremental = ObjectUtils.defaultIfNull(requestBody.incremental, Boolean.TRUE);
 
+    // Check if the specified location is valid for this repository.
+    final URI uri = repository.createDirectoryURI(requestBody.location);
+    try {
+      if (!repository.exists(uri)) {
         throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "'location' is not specified as a query"
-                        + " parameter or as a default repository property or as a cluster property.");
+            SolrException.ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
+      }
+    } catch (IOException ex) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to check the existence of " + uri + ". Is it valid?",
+          ex);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    @POST
-    @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-    @PermissionName(COLL_EDIT_PERM)
-    public SolrJerseyResponse createCollectionBackup(@PathParam("backupName") String backupName, CreateCollectionBackupRequestBody requestBody) throws Exception {
-        if (requestBody == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
-        }
-        if (StringUtils.isBlank(backupName)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'backupName'");
-        }
-        if (requestBody.collection == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: 'collection'");
-        }
-        //final SolrJerseyResponse response = instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
-        final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-        recordCollectionForLogAndTracing(requestBody.collection, solrQueryRequest);
-
-        requestBody.collection = resolveAndValidateAliasIfEnabled(requestBody.collection, BooleanUtils.isTrue(requestBody.followAliases));
-
-        final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
-        requestBody.location = getLocation(repository, requestBody.location);
-        requestBody.incremental = ObjectUtils.defaultIfNull(requestBody.incremental, Boolean.TRUE);
-
-        // Check if the specified location is valid for this repository.
-        final URI uri = repository.createDirectoryURI(requestBody.location);
-        try {
-            if (!repository.exists(uri)) {
-                throw new SolrException(
-                        SolrException.ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
-            }
-        } catch (IOException ex) {
-            throw new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR,
-                    "Failed to check the existence of " + uri + ". Is it valid?",
-                    ex);
-        }
-
-        requestBody.indexBackup = ObjectUtils.defaultIfNull(requestBody.indexBackup, CollectionAdminParams.COPY_FILES_STRATEGY);
-        if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(requestBody.indexBackup)) {
-            throw new SolrException(
-                    SolrException.ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + requestBody.indexBackup);
-        }
-
-        final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
-        final SolrResponse remoteResponse =
-                CollectionsHandler.submitCollectionApiCommand(
-                        coreContainer,
-                        coreContainer.getDistributedCollectionCommandRunner(),
-                        remoteMessage,
-                        CollectionParams.CollectionAction.BACKUP,
-                        DEFAULT_COLLECTION_OP_TIMEOUT);
-        if (remoteResponse.getException() != null) {
-            throw remoteResponse.getException();
-        }
-
-        final SolrJerseyResponse response = objectMapper.convertValue(remoteResponse.getResponse(), CreateCollectionBackupResponseBody.class);
-
-        return response;
+    requestBody.indexBackup =
+        ObjectUtils.defaultIfNull(
+            requestBody.indexBackup, CollectionAdminParams.COPY_FILES_STRATEGY);
+    if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(requestBody.indexBackup)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Unknown index backup strategy " + requestBody.indexBackup);
     }
 
-    public static ZkNodeProps createRemoteMessage(String backupName, CreateCollectionBackupRequestBody requestBody) {
-        final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
-        remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
-        remoteMessage.put(NAME, backupName);
-        return new ZkNodeProps(remoteMessage);
+    final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            CollectionParams.CollectionAction.BACKUP,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
     }
 
-    public static class CreateCollectionBackupRequestBody implements JacksonReflectMapWriter {
-        @JsonProperty(required = true)
-        public String collection;
+    final SolrJerseyResponse response =
+        objectMapper.convertValue(
+            remoteResponse.getResponse(), CreateCollectionBackupResponseBody.class);
 
-        @JsonProperty public String location;
+    return response;
+  }
 
-        @JsonProperty public String repository;
+  public static ZkNodeProps createRemoteMessage(
+      String backupName, CreateCollectionBackupRequestBody requestBody) {
+    final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
+    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
+    remoteMessage.put(NAME, backupName);
+    return new ZkNodeProps(remoteMessage);
+  }
 
-        @JsonProperty public Boolean followAliases;
+  public static SolrJerseyResponse invokeWithV1Params(
+      SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer coreContainer) throws Exception {
+    req.getParams().required().check(NAME, COLLECTION_PROP);
+    var backupName = req.getParams().get(NAME);
+    var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+    requestBody.collection = req.getParams().get(COLLECTION);
+    requestBody.location = req.getParams().get(BACKUP_LOCATION);
+    requestBody.repository = req.getParams().get(BACKUP_REPOSITORY);
+    requestBody.followAliases = req.getParams().getBool(FOLLOW_ALIASES);
+    requestBody.indexBackup = req.getParams().get(INDEX_BACKUP_STRATEGY);
+    requestBody.commitName = req.getParams().get(COMMIT_NAME);
+    requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
+    requestBody.maxNumBackupPoints = req.getParams().getInt(MAX_NUM_BACKUP_POINTS);
+    requestBody.async = req.getParams().get(ASYNC);
 
-        @JsonProperty public String indexBackup;
+    var createBackupApi =
+        new CreateCollectionBackupAPI(coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
+    return createBackupApi.createCollectionBackup(backupName, requestBody);
+  }
 
-        @JsonProperty public String commitName;
-
-        @JsonProperty public Boolean incremental;
-
-        @JsonProperty public Integer maxNumBackupPoints;
-
-        @JsonProperty public String async;
+  private String getLocation(BackupRepository repository, String location) throws IOException {
+    location = repository.getBackupLocation(location);
+    if (location != null) {
+      return location;
     }
 
-    public static class CreateCollectionBackupResponseBody extends SubResponseAccumulatingJerseyResponse {
-        @JsonProperty("response")
-        public CollectionBackupData backupDataResponse;
-
-        @JsonProperty("deleted")
-        public List<BackupDeletionData> deleted;
-
-        @JsonProperty
-        public String collection;
+    // Refresh the cluster property file to make sure the value set for location is the
+    // latest. Check if the location is specified in the cluster property.
+    location =
+        new ClusterProperties(coreContainer.getZkController().getZkClient())
+            .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
+    if (location != null) {
+      return location;
     }
 
-    public static class CollectionBackupData implements JacksonReflectMapWriter {
-        @JsonProperty public String collection;
-        @JsonProperty public Integer numShards;
-        @JsonProperty public Integer backupId;
-        @JsonProperty public String indexVersion;
-        @JsonProperty public String startTime;
-        @JsonProperty public String endTime;
-        @JsonProperty public Integer indexFileCount;
-        @JsonProperty public Integer uploadedIndexFileCount;
-        @JsonProperty public Double indexSizeMB;
-        @JsonProperty("uploadedIndexFileMB") public Double uploadedIndexSizeMB;
-        @JsonProperty public List<String> shardBackupIds;
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "'location' is not specified as a query"
+            + " parameter or as a default repository property or as a cluster property.");
+  }
 
-        // TODO Still need to add here: properties from maxNumBackups deletion, actual shard requests?
-    }
+  public static class CreateCollectionBackupRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty(required = true)
+    public String collection;
 
-    public static class BackupDeletionData implements JacksonReflectMapWriter {
-        @JsonProperty public String startTime;
-        @JsonProperty public Integer backupId;
-        @JsonProperty public Long size;
-        @JsonProperty public Integer numFiles;
-    }
+    @JsonProperty public String location;
+
+    @JsonProperty public String repository;
+
+    @JsonProperty public Boolean followAliases;
+
+    @JsonProperty public String indexBackup;
+
+    @JsonProperty public String commitName;
+
+    @JsonProperty public Boolean incremental;
+
+    @JsonProperty public Integer maxNumBackupPoints;
+
+    @JsonProperty public String async;
+  }
+
+  public static class CreateCollectionBackupResponseBody
+      extends SubResponseAccumulatingJerseyResponse {
+    @JsonProperty("response")
+    public CollectionBackupData backupDataResponse;
+
+    @JsonProperty("deleted")
+    public List<BackupDeletionData> deleted;
+
+    @JsonProperty public String collection;
+  }
+
+  public static class CollectionBackupData implements JacksonReflectMapWriter {
+    @JsonProperty public String collection;
+    @JsonProperty public Integer numShards;
+    @JsonProperty public Integer backupId;
+    @JsonProperty public String indexVersion;
+    @JsonProperty public String startTime;
+    @JsonProperty public String endTime;
+    @JsonProperty public Integer indexFileCount;
+    @JsonProperty public Integer uploadedIndexFileCount;
+    @JsonProperty public Double indexSizeMB;
+
+    @JsonProperty("uploadedIndexFileMB")
+    public Double uploadedIndexSizeMB;
+
+    @JsonProperty public List<String> shardBackupIds;
+
+    // TODO Still need to add here: properties from maxNumBackups deletion, actual shard requests?
+  }
+
+  public static class BackupDeletionData implements JacksonReflectMapWriter {
+    @JsonProperty public String startTime;
+    @JsonProperty public Integer backupId;
+    @JsonProperty public Long size;
+    @JsonProperty public Integer numFiles;
+  }
 }
