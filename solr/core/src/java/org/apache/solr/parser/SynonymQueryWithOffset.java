@@ -74,7 +74,7 @@ public final class SynonymQueryWithOffset extends Query {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof SynonymQueryWithOffset) {
-      return query.equals(((SynonymQueryWithOffset)obj).getQuery());
+      return query.equals(((SynonymQueryWithOffset) obj).getQuery());
     }
     return query.equals(obj);
   }

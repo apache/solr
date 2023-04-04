@@ -34,7 +34,6 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.tests.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockSynonymFilter;
@@ -44,9 +43,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-/**
- * Adapted from org.apache.lucene.util.TestQueryBuilder
- */
+/** Adapted from org.apache.lucene.util.TestQueryBuilder */
 public class SolrQueryBuilderTest extends LuceneTestCase {
 
   public void testTerm() {
@@ -69,29 +66,31 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     expected.add(new TermQueryWithOffset(new Term("field", "bar"), 4), BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(
-      expected.build(), builder.createBooleanQuery("field", "foo bar", BooleanClause.Occur.MUST));
+        expected.build(), builder.createBooleanQuery("field", "foo bar", BooleanClause.Occur.MUST));
   }
 
   public void testMinShouldMatchNone() {
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(
-      builder.createBooleanQuery("field", "one two three four"),
-      builder.createMinShouldMatchQuery("field", "one two three four", 0f));
+        builder.createBooleanQuery("field", "one two three four"),
+        builder.createMinShouldMatchQuery("field", "one two three four", 0f));
   }
 
   public void testMinShouldMatchAll() {
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(
-      builder.createBooleanQuery("field", "one two three four", BooleanClause.Occur.MUST),
-      builder.createMinShouldMatchQuery("field", "one two three four", 1f));
+        builder.createBooleanQuery("field", "one two three four", BooleanClause.Occur.MUST),
+        builder.createMinShouldMatchQuery("field", "one two three four", 1f));
   }
 
   public void testMinShouldMatch() {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQueryWithOffset(new Term("field", "one"), 0), BooleanClause.Occur.SHOULD);
     expectedB.add(new TermQueryWithOffset(new Term("field", "two"), 4), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQueryWithOffset(new Term("field", "three"), 8), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQueryWithOffset(new Term("field", "four"), 14), BooleanClause.Occur.SHOULD);
+    expectedB.add(
+        new TermQueryWithOffset(new Term("field", "three"), 8), BooleanClause.Occur.SHOULD);
+    expectedB.add(
+        new TermQueryWithOffset(new Term("field", "four"), 14), BooleanClause.Occur.SHOULD);
     expectedB.setMinimumNumberShouldMatch(0);
     Query expected = expectedB.build();
 
@@ -123,7 +122,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     pqBuilder.add(new Term("field", "2"), 2);
     PhraseQuery expected = pqBuilder.build();
     CharacterRunAutomaton stopList =
-      new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
+        new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopList);
 
@@ -148,10 +147,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** simple synonyms test */
   public void testSynonyms() throws Exception {
     SynonymQueryWithOffset expected =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "dogs"))
-        .addTerm(new Term("field", "dog"))
-        .build(), 0);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "dogs"))
+                .addTerm(new Term("field", "dog"))
+                .build(),
+            0);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
@@ -171,10 +172,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** forms graph query */
   public void testMultiWordSynonymsPhrase() {
     Query expected =
-      new BooleanQuery.Builder()
-        .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
-        .add(new TermQueryWithOffset(new Term("field", "cavy"), null), BooleanClause.Occur.SHOULD)
-        .build();
+        new BooleanQuery.Builder()
+            .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
+            .add(
+                new TermQueryWithOffset(new Term("field", "cavy"), null),
+                BooleanClause.Occur.SHOULD)
+            .build();
 
     SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, queryBuilder.createPhraseQuery("field", "guinea pig"));
@@ -182,16 +185,16 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
   public void testMultiWordSynonymsPhraseWithSlop() throws Exception {
     BooleanQuery expected =
-      new BooleanQuery.Builder()
-        .add(
-          new PhraseQuery.Builder()
-            .setSlop(4)
-            .add(new Term("field", "guinea"))
-            .add(new Term("field", "pig"))
-            .build(),
-          BooleanClause.Occur.SHOULD)
-        .add(new TermQueryWithOffset(new Term("field", "cavy"), 0), BooleanClause.Occur.SHOULD)
-        .build();
+        new BooleanQuery.Builder()
+            .add(
+                new PhraseQuery.Builder()
+                    .setSlop(4)
+                    .add(new Term("field", "guinea"))
+                    .add(new Term("field", "pig"))
+                    .build(),
+                BooleanClause.Occur.SHOULD)
+            .add(new TermQueryWithOffset(new Term("field", "cavy"), 0), BooleanClause.Occur.SHOULD)
+            .build();
     SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, queryBuilder.createPhraseQuery("field", "guinea pig", 4));
   }
@@ -199,109 +202,112 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** forms graph query */
   public void testMultiWordSynonymsBoolean() throws Exception {
     for (BooleanClause.Occur occur :
-      new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
+        new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
       Query syn1 =
-        new BooleanQuery.Builder()
-          .add(new TermQueryWithOffset(new Term("field", "guinea"), null), BooleanClause.Occur.MUST)
-          .add(new TermQueryWithOffset(new Term("field", "pig"), null), BooleanClause.Occur.MUST)
-          .build();
+          new BooleanQuery.Builder()
+              .add(
+                  new TermQueryWithOffset(new Term("field", "guinea"), null),
+                  BooleanClause.Occur.MUST)
+              .add(
+                  new TermQueryWithOffset(new Term("field", "pig"), null), BooleanClause.Occur.MUST)
+              .build();
       Query syn2 = new TermQueryWithOffset(new Term("field", "cavy"), null);
 
       BooleanQuery synQuery =
-        new BooleanQuery.Builder()
-          .add(syn1, BooleanClause.Occur.SHOULD)
-          .add(syn2, BooleanClause.Occur.SHOULD)
-          .build();
+          new BooleanQuery.Builder()
+              .add(syn1, BooleanClause.Occur.SHOULD)
+              .add(syn2, BooleanClause.Occur.SHOULD)
+              .build();
 
       BooleanQuery expectedGraphQuery = new BooleanQuery.Builder().add(synQuery, occur).build();
 
       SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
       assertEquals(
-        expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
+          expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
 
       BooleanQuery expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
       expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
       expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .add(synQuery, occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .add(synQuery, occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
     }
   }
 
   /** forms graph query */
   public void testMultiWordPhraseSynonymsBoolean() throws Exception {
     for (BooleanClause.Occur occur :
-      new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
+        new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
       Query syn1 =
-        new PhraseQuery.Builder()
-          .add(new Term("field", "guinea"))
-          .add(new Term("field", "pig"))
-          .build();
+          new PhraseQuery.Builder()
+              .add(new Term("field", "guinea"))
+              .add(new Term("field", "pig"))
+              .build();
       Query syn2 = new TermQueryWithOffset(new Term("field", "cavy"), null);
 
       BooleanQuery synQuery =
-        new BooleanQuery.Builder()
-          .add(syn1, BooleanClause.Occur.SHOULD)
-          .add(syn2, BooleanClause.Occur.SHOULD)
-          .build();
+          new BooleanQuery.Builder()
+              .add(syn1, BooleanClause.Occur.SHOULD)
+              .add(syn2, BooleanClause.Occur.SHOULD)
+              .build();
       BooleanQuery expectedGraphQuery = new BooleanQuery.Builder().add(synQuery, occur).build();
       SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
       queryBuilder.setAutoGenerateMultiTermSynonymsPhraseQuery(true);
       assertEquals(
-        expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
+          expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
 
       BooleanQuery expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
       expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
       expectedBooleanQuery =
-        new BooleanQuery.Builder()
-          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
-          .add(synQuery, occur)
-          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
-          .add(synQuery, occur)
-          .build();
+          new BooleanQuery.Builder()
+              .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
+              .add(synQuery, occur)
+              .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
+              .add(synQuery, occur)
+              .build();
       assertEquals(
-        expectedBooleanQuery,
-        queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
+          expectedBooleanQuery,
+          queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
     }
   }
 
@@ -401,10 +407,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
     SynonymQueryWithOffset expected =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 0);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            0);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "国"));
     assertEquals(expected, builder.createPhraseQuery("field", "国"));
@@ -416,10 +424,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.SHOULD);
     SynonymQueryWithOffset inner =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 1);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            1);
     expected.add(inner, BooleanClause.Occur.SHOULD);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国"));
@@ -430,16 +440,20 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.SHOULD);
     SynonymQueryWithOffset inner =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 1);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            1);
     expected.add(inner, BooleanClause.Occur.SHOULD);
     SynonymQueryWithOffset inner2 =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 2);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            2);
     expected.add(inner2, BooleanClause.Occur.SHOULD);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国国"));
@@ -450,14 +464,16 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.MUST);
     SynonymQueryWithOffset inner =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 1);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            1);
     expected.add(inner, BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(
-      expected.build(), builder.createBooleanQuery("field", "中国", BooleanClause.Occur.MUST));
+        expected.build(), builder.createBooleanQuery("field", "中国", BooleanClause.Occur.MUST));
   }
 
   /** more complex synonyms with default AND operator */
@@ -465,20 +481,24 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
     expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.MUST);
     SynonymQueryWithOffset inner =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 1);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            1);
     expected.add(inner, BooleanClause.Occur.MUST);
     SynonymQueryWithOffset inner2 =
-      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-        .addTerm(new Term("field", "国"))
-        .addTerm(new Term("field", "國"))
-        .build(), 2);
+        new SynonymQueryWithOffset(
+            new SynonymQuery.Builder("field")
+                .addTerm(new Term("field", "国"))
+                .addTerm(new Term("field", "國"))
+                .build(),
+            2);
     expected.add(inner2, BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(
-      expected.build(), builder.createBooleanQuery("field", "中国国", BooleanClause.Occur.MUST));
+        expected.build(), builder.createBooleanQuery("field", "中国国", BooleanClause.Occur.MUST));
   }
 
   /** forms multiphrase query */
@@ -495,28 +515,28 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   public void testNoTermAttribute() {
     // Can't use MockTokenizer because it adds TermAttribute and we don't want that
     Analyzer analyzer =
-      new Analyzer() {
-        @Override
-        protected TokenStreamComponents createComponents(String fieldName) {
-          return new TokenStreamComponents(
-            new Tokenizer() {
-              boolean wasReset = false;
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(
+                new Tokenizer() {
+                  boolean wasReset = false;
 
-              @Override
-              public void reset() throws IOException {
-                super.reset();
-                assertFalse(wasReset);
-                wasReset = true;
-              }
+                  @Override
+                  public void reset() throws IOException {
+                    super.reset();
+                    assertFalse(wasReset);
+                    wasReset = true;
+                  }
 
-              @Override
-              public boolean incrementToken() throws IOException {
-                assertTrue(wasReset);
-                return false;
-              }
-            });
-        }
-      };
+                  @Override
+                  public boolean incrementToken() throws IOException {
+                    assertTrue(wasReset);
+                    return false;
+                  }
+                });
+          }
+        };
     SolrQueryBuilder builder = new SolrQueryBuilder(analyzer);
     assertNull(builder.createBooleanQuery("field", "whatever"));
   }
@@ -539,13 +559,13 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     SolrQueryBuilder qb = new SolrQueryBuilder(null);
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
       expectThrows(
-        IndexSearcher.TooManyClauses.class,
-        () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.MUST));
+          IndexSearcher.TooManyClauses.class,
+          () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.MUST));
     }
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
       expectThrows(
-        IndexSearcher.TooManyClauses.class,
-        () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.SHOULD));
+          IndexSearcher.TooManyClauses.class,
+          () -> qb.analyzeGraphBoolean("", ts, BooleanClause.Occur.SHOULD));
     }
     try (TokenStream ts = new CannedBinaryTokenStream(tokens)) {
       expectThrows(IndexSearcher.TooManyClauses.class, () -> qb.analyzeGraphPhrase(ts, "", 0));
@@ -576,34 +596,36 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   public void testTokenStreamBoosts() {
     Analyzer msa = new MockSynonymAnalyzer();
     Analyzer a =
-      new AnalyzerWrapper(msa.getReuseStrategy()) {
-        @Override
-        protected Analyzer getWrappedAnalyzer(String fieldName) {
-          return msa;
-        }
+        new AnalyzerWrapper(msa.getReuseStrategy()) {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return msa;
+          }
 
-        @Override
-        protected TokenStreamComponents wrapComponents(
-          String fieldName, TokenStreamComponents components) {
-          return new TokenStreamComponents(
-            components.getSource(), new MockBoostTokenFilter(components.getTokenStream()));
-        }
-      };
+          @Override
+          protected TokenStreamComponents wrapComponents(
+              String fieldName, TokenStreamComponents components) {
+            return new TokenStreamComponents(
+                components.getSource(), new MockBoostTokenFilter(components.getTokenStream()));
+          }
+        };
 
     SolrQueryBuilder builder = new SolrQueryBuilder(a);
     Query q = builder.createBooleanQuery("field", "hot dogs");
     Query expected =
-      new BooleanQuery.Builder()
-        .add(
-          new BoostQuery(new TermQueryWithOffset(new Term("field", "hot"), 0), 0.5f),
-          BooleanClause.Occur.SHOULD)
-        .add(
-          new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
-            .addTerm(new Term("field", "dogs"))
-            .addTerm(new Term("field", "dog"), 0.5f)
-            .build(), 4),
-          BooleanClause.Occur.SHOULD)
-        .build();
+        new BooleanQuery.Builder()
+            .add(
+                new BoostQuery(new TermQueryWithOffset(new Term("field", "hot"), 0), 0.5f),
+                BooleanClause.Occur.SHOULD)
+            .add(
+                new SynonymQueryWithOffset(
+                    new SynonymQuery.Builder("field")
+                        .addTerm(new Term("field", "dogs"))
+                        .addTerm(new Term("field", "dog"), 0.5f)
+                        .build(),
+                    4),
+                BooleanClause.Occur.SHOULD)
+            .build();
 
     // TODO
     assertEquals(expected, q);
