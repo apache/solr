@@ -35,7 +35,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -66,8 +65,6 @@ import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * V2 API for creating a new "backup" of a specified collection
@@ -92,8 +89,9 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createCollectionBackup(
-          @PathParam("collectionName") String collectionName,
-      @PathParam("backupName") String backupName, CreateCollectionBackupRequestBody requestBody)
+      @PathParam("collectionName") String collectionName,
+      @PathParam("backupName") String backupName,
+      CreateCollectionBackupRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -159,7 +157,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
+  public static ZkNodeProps createRemoteMessage(
+      String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
     final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
@@ -195,8 +194,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     final var backupName = req.getParams().get(NAME);
     final var requestBody = createRequestBodyFromV1Params(req.getParams());
 
-    final var createBackupApi =
-        new CreateCollectionBackupAPI(coreContainer, req, rsp);
+    final var createBackupApi = new CreateCollectionBackupAPI(coreContainer, req, rsp);
     return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
   }
 

@@ -37,7 +37,9 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     requestBody.maxNumBackupPoints = 123;
     requestBody.async = "someId";
 
-    var message = CreateCollectionBackupAPI.createRemoteMessage("someCollectionName", "someBackupName", requestBody);
+    var message =
+        CreateCollectionBackupAPI.createRemoteMessage(
+            "someCollectionName", "someBackupName", requestBody);
     var messageProps = message.getProperties();
 
     assertEquals(11, messageProps.size());
@@ -59,7 +61,9 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     final var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
     requestBody.location = "/some/location";
 
-    var message = CreateCollectionBackupAPI.createRemoteMessage("someCollectionName", "someBackupName", requestBody);
+    var message =
+        CreateCollectionBackupAPI.createRemoteMessage(
+            "someCollectionName", "someBackupName", requestBody);
     var messageProps = message.getProperties();
 
     assertEquals(4, messageProps.size());
