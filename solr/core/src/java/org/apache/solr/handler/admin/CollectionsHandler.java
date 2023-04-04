@@ -1391,7 +1391,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         BACKUP,
         (req, rsp, h) -> {
           final var response =
-              CreateCollectionBackupAPI.invokeWithV1Params(req, rsp, h.coreContainer);
+              CreateCollectionBackupAPI.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),

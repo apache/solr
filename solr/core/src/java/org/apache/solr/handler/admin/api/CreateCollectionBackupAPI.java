@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -55,6 +54,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -172,20 +172,27 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     return new ZkNodeProps(remoteMessage);
   }
 
-  public static SolrJerseyResponse invokeWithV1Params(
+  public static CreateCollectionBackupRequestBody createRequestBodyFromV1Params(SolrParams params) {
+    var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+
+    requestBody.collection = params.get(COLLECTION_PROP);
+    requestBody.location = params.get(BACKUP_LOCATION);
+    requestBody.repository = params.get(BACKUP_REPOSITORY);
+    requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
+    requestBody.indexBackup = params.get(INDEX_BACKUP_STRATEGY);
+    requestBody.commitName = params.get(COMMIT_NAME);
+    requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
+    requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
+    requestBody.async = params.get(ASYNC);
+
+    return requestBody;
+  }
+
+  public static SolrJerseyResponse invokeFromV1Params(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer coreContainer) throws Exception {
     req.getParams().required().check(NAME, COLLECTION_PROP);
     var backupName = req.getParams().get(NAME);
-    var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
-    requestBody.collection = req.getParams().get(COLLECTION);
-    requestBody.location = req.getParams().get(BACKUP_LOCATION);
-    requestBody.repository = req.getParams().get(BACKUP_REPOSITORY);
-    requestBody.followAliases = req.getParams().getBool(FOLLOW_ALIASES);
-    requestBody.indexBackup = req.getParams().get(INDEX_BACKUP_STRATEGY);
-    requestBody.commitName = req.getParams().get(COMMIT_NAME);
-    requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
-    requestBody.maxNumBackupPoints = req.getParams().getInt(MAX_NUM_BACKUP_POINTS);
-    requestBody.async = req.getParams().get(ASYNC);
+    var requestBody = createRequestBodyFromV1Params(req.getParams());
 
     var createBackupApi =
         new CreateCollectionBackupAPI(coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
@@ -218,19 +225,12 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     public String collection;
 
     @JsonProperty public String location;
-
     @JsonProperty public String repository;
-
     @JsonProperty public Boolean followAliases;
-
     @JsonProperty public String indexBackup;
-
     @JsonProperty public String commitName;
-
     @JsonProperty public Boolean incremental;
-
     @JsonProperty public Integer maxNumBackupPoints;
-
     @JsonProperty public String async;
   }
 
