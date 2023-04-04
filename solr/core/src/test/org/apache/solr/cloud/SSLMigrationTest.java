@@ -26,6 +26,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -128,7 +129,8 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
     }
     // Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[] {}))) {
+    try (SolrClient client =
+        new LBHttpSolrClient.Builder().withBaseSolrUrls(urls.toArray(new String[] {})).build()) {
       client.request(request);
     }
   }

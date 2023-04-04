@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -858,8 +859,8 @@ public class Overseer implements SolrCloseable {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
                 Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withHttpClient(updateShardHandler.getDefaultHttpClient())
             .build()) {
       CollectionAdminRequest.ColStatus req =

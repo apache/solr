@@ -110,8 +110,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
@@ -771,7 +771,7 @@ public class Utils {
           "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException(
           "nodeName does not contain expected '_' separator: " + nodeName);

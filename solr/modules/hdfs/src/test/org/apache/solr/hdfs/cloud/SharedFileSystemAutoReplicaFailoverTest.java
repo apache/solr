@@ -39,6 +39,7 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -309,9 +310,9 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
         fail("expected: " + expectedResultSize + ", actual: " + actualResultSize);
       }
       SolrParams queryAll = new SolrQuery("*:*");
-      cloudClient.setDefaultCollection(collection);
+      CloudSolrClient solrClient = this.getSolrClient(collection);
       try {
-        QueryResponse queryResponse = cloudClient.query(queryAll);
+        QueryResponse queryResponse = solrClient.query(queryAll);
         actualResultSize = queryResponse.getResults().getNumFound();
         if (expectedResultSize == actualResultSize) {
           return;
@@ -327,15 +328,16 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private void addDocs(String collection, int numDocs, boolean commit)
       throws SolrServerException, IOException {
+    CloudSolrClient solrClient = this.getSolrClient(collection);
     for (int docId = 1; docId <= numDocs; docId++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docId);
       doc.addField("text", "shard" + docId % 5);
-      cloudClient.setDefaultCollection(collection);
-      cloudClient.add(doc);
+
+      solrClient.add(doc);
     }
     if (commit) {
-      cloudClient.commit();
+      solrClient.commit();
     }
   }
 

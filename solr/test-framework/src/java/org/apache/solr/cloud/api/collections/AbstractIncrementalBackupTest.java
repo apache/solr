@@ -228,7 +228,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -577,7 +576,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
       URI backupPropertiesFile =
           repository.resolve(backupURI, "backup_" + numBackup + ".properties");
-      URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_" + numBackup);
+      URI zkBackupFolder = repository.resolveDirectory(backupURI, "zk_backup_" + numBackup);
       assertTrue(repository.exists(backupPropertiesFile));
       assertTrue(repository.exists(zkBackupFolder));
       assertFolderAreSame(

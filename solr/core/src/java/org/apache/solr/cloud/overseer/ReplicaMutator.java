@@ -51,6 +51,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -427,7 +428,7 @@ public class ReplicaMutator {
       sliceProps = slice.getProperties();
       replicas = slice.getReplicasCopy();
     } else {
-      replicas = new HashMap<>(1);
+      replicas = CollectionUtil.newHashMap(1);
       sliceProps = new HashMap<>();
       sliceProps.put(SliceStateProps.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);

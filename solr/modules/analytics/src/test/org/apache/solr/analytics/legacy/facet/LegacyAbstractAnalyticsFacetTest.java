@@ -16,19 +16,20 @@
  */
 package org.apache.solr.analytics.legacy.facet;
 
-import com.google.common.collect.ObjectArrays;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -269,8 +270,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     } else if (stat.equals("unique")) {
       result = new ArrayList<Long>();
       for (List<T> list : lists) {
-        HashSet<T> set = new HashSet<>();
-        set.addAll(list);
+        HashSet<T> set = new HashSet<>(list);
         result.add((long) set.size());
       }
     } else if (stat.equals("max")) {
@@ -306,17 +306,18 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   public static SolrQueryRequest request(String... args) {
-    return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
+    return SolrTestCaseJ4.req(
+        Stream.concat(Arrays.stream(BASEPARMS), Arrays.stream(args)).toArray(String[]::new));
   }
 
-  public static final String[] BASEPARMS =
+  private static final String[] BASEPARMS =
       new String[] {"q", "*:*", "indent", "true", "olap", "true", "rows", "0"};
 
   public static String[] fileToStringArr(Class<?> clazz, String fileName)
       throws FileNotFoundException {
     InputStream in = clazz.getResourceAsStream("/solr/analytics/legacy/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
-    Scanner file = new Scanner(in, "UTF-8");
+    Scanner file = new Scanner(in, StandardCharsets.UTF_8);
     try {
       ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
@@ -343,7 +344,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected void removeNodes(String xPath, List<Double> string) throws XPathExpressionException {
     NodeList missingNodes = getNodes(xPath);
-    List<Double> result = new ArrayList<Double>();
+    List<Double> result = new ArrayList<>();
     for (int idx = 0; idx < missingNodes.getLength(); ++idx) {
       result.add(Double.parseDouble(missingNodes.item(idx).getTextContent()));
     }
@@ -351,8 +352,6 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   protected NodeList getNodes(String xPath) throws XPathExpressionException {
-    StringBuilder sb = new StringBuilder(xPath);
-    return (NodeList)
-        xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+    return (NodeList) xPathFact.newXPath().compile(xPath).evaluate(doc, XPathConstants.NODESET);
   }
 }

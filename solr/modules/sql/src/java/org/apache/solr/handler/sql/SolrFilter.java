@@ -444,7 +444,7 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String toEqualsClause(String key, RexLiteral value) {
-      if ("".equals(key)) {
+      if (key != null && key.isEmpty()) {
         // special handling for 1 = 0 kind of clause
         return "-*:*";
       }
@@ -589,14 +589,15 @@ class SolrFilter extends Filter implements SolrRel {
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
         return translateBinary2(
-            ((RexCall) left).operands.get(0), ((RexCall) right).operands.get(0));
+            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
       }
 
       // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
         final RexCall cast = ((RexCall) right);
-        if (cast.operands.size() == 1 && cast.operands.get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.operands.get(0));
+        if (cast.getOperands().size() == 1
+            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, cast.getOperands().get(0));
         }
       }
 
@@ -633,7 +634,7 @@ class SolrFilter extends Filter implements SolrRel {
           String name = fieldNames.get(left1.getIndex());
           return new Pair<>(name, rightLiteral);
         case CAST:
-          return translateBinary2(((RexCall) left).operands.get(0), right);
+          return translateBinary2(((RexCall) left).getOperands().get(0), right);
           //        case OTHER_FUNCTION:
           //          String itemName = SolrRules.isItem((RexCall) left);
           //          if (itemName != null) {
@@ -649,7 +650,8 @@ class SolrFilter extends Filter implements SolrRel {
       final String fieldName = getSolrFieldName(condition);
 
       RexCall expanded = (RexCall) RexUtil.expandSearch(builder, null, condition);
-      final RexNode peekAt0 = !expanded.operands.isEmpty() ? expanded.operands.get(0) : null;
+      final RexNode peekAt0 =
+          !expanded.getOperands().isEmpty() ? expanded.getOperands().get(0) : null;
       if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
         if (peekAt0 instanceof RexCall) {
@@ -679,7 +681,7 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected String toOrSetOnSameField(String solrField, RexCall search) {
       String orClause =
-          search.operands.stream()
+          search.getOperands().stream()
               .map(
                   n -> {
                     RexCall next = (RexCall) n;

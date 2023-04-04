@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security.jwt;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +45,6 @@ import java.util.stream.Collectors;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -228,7 +228,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     if (trustedCerts != null) {
       log.info("Reading trustedCerts PEM from configuration string");
       trustedSslCerts =
-          CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8));
+          CryptoKeys.parseX509Certs(
+              new ByteArrayInputStream(trustedCerts.getBytes(StandardCharsets.UTF_8)));
     }
 
     long jwkCacheDuration =

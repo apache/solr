@@ -20,7 +20,6 @@ import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.google.common.collect.Maps;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -2525,7 +2524,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     solrClient.commit(true, true);
     doc.removeField("single_s");
     doc.removeField("multi_ss");
-    Map<String, Object> map = Maps.newHashMap();
+    Map<String, Object> map = new HashMap<>();
     map.put("set", null);
     doc.addField("multi_ss", map);
     solrClient.add(doc);
@@ -2548,7 +2547,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     solrClient.add(doc);
     solrClient.commit(true, true);
 
-    Map<String, Object> map = Maps.newHashMap();
+    Map<String, Object> map = new HashMap<>();
     map.put("set", null);
     doc = new SolrInputDocument();
     doc.addField("multi_ss", map);

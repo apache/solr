@@ -20,7 +20,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
 import java.io.InputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -89,7 +88,7 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
       // singleFilePath is not passed.
       createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
       configSetService.uploadFileToConfig(
-          configSetName, fixedSingleFilePath, IOUtils.toByteArray(inputStream), allowOverwrite);
+          configSetName, fixedSingleFilePath, inputStream.readAllBytes(), allowOverwrite);
     }
   }
 }

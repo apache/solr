@@ -761,7 +761,7 @@ public class SolrZkClient implements Closeable {
             .append("DATA:\n")
             .append(dent)
             .append("    ")
-            .append(dataString.replaceAll("\n", "\n" + dent + "    "))
+            .append(dataString.replace("\n", "\n" + dent + "    "))
             .append(NEWL);
       } else {
         string.append(dent).append("DATA: ...supressed...").append(NEWL);
@@ -834,13 +834,13 @@ public class SolrZkClient implements Closeable {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkCallbackExecutor", e);
     }
 
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkConnManagerCallbackExecutor", e);
     }
   }
 

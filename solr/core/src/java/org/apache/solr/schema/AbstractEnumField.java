@@ -212,16 +212,19 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
 
       Integer intValue;
       final Integer enumInt = enumStringToIntMap.get(stringVal);
-      if (enumInt != null) // enum int found for string
-      return enumInt;
+      if (enumInt != null) { // enum int found for string
+        return enumInt;
+      }
 
       // enum int not found for string
       intValue = tryParseInt(stringVal);
-      if (intValue == null) // not Integer
-      intValue = DEFAULT_VALUE;
+      if (intValue == null) { // not Integer
+        intValue = DEFAULT_VALUE;
+      }
       final String enumString = enumIntToStringMap.get(intValue);
-      if (enumString != null) // has matching string
-      return intValue;
+      if (enumString != null) { // has matching string
+        return intValue;
+      }
 
       return DEFAULT_VALUE;
     }
@@ -230,7 +233,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
       Integer intValue = null;
       try {
         intValue = Integer.parseInt(valueStr);
-      } catch (NumberFormatException e) {
+      } catch (NumberFormatException ignore) {
       }
       return intValue;
     }

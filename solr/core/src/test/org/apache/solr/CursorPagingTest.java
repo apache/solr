@@ -62,9 +62,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
   /** values from enumConfig.xml */
-  public static final String[] SEVERITY_ENUM_VALUES = {
-    "Not Available", "Low", "Medium", "High", "Critical"
-  };
+  public static final List<String> SEVERITY_ENUM_VALUES =
+      List.of("Not Available", "Low", "Medium", "High", "Critical");
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -1273,7 +1272,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   private static String randomEnumValue() {
-    return SEVERITY_ENUM_VALUES[random().nextInt(SEVERITY_ENUM_VALUES.length)];
+    return SEVERITY_ENUM_VALUES.get(random().nextInt(SEVERITY_ENUM_VALUES.size()));
   }
 
   /**

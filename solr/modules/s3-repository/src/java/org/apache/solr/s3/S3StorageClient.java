@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -344,6 +345,9 @@ public class S3StorageClient {
    */
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
+    if (isDirectory(s3Path)) {
+      throw new S3Exception("Path is Directory");
+    }
     try {
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
@@ -422,6 +426,7 @@ public class S3StorageClient {
    * @param batchSize number of deletes to send to S3 at a time
    */
   @VisibleForTesting
+  @SuppressForbidden(reason = "Lists.partition")
   Collection<String> deleteObjects(Collection<String> entries, int batchSize) throws S3Exception {
     List<ObjectIdentifier> keysToDelete =
         entries.stream()

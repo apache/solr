@@ -49,8 +49,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "test_col";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
 
   /** A client for talking directly to the leader of shard1 */
   private static SolrClient S_ONE_LEADER_CLIENT;
@@ -75,9 +75,9 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
     if (null != S_ONE_LEADER_CLIENT) {
       S_ONE_LEADER_CLIENT.close();
@@ -119,8 +119,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     ZkStateReader zkStateReader = cluster.getZkStateReader();
 
@@ -181,17 +180,17 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     // routing
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(doc(f("id", S_ONE_PRE + random().nextInt()), f("expected_shard_s", "shard1")))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(doc(f("id", S_TWO_PRE + random().nextInt()), f("expected_shard_s", "shard2")))
             .getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
     SolrDocumentList docs =
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .query(
                 params(
                     "q", "*:*",
@@ -219,8 +218,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   @Before
   public void clearCloudCollection() throws Exception {
-    assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.deleteByQuery("*:*").getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
   }
 
   public void testMalformedDBQ(SolrClient client) {
@@ -235,7 +234,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   //
   public void testMalformedDBQViaCloudClient() {
-    testMalformedDBQ(CLOUD_CLIENT);
+    testMalformedDBQ(COLLECTION_CLIENT);
   }
 
   public void testMalformedDBQViaShard1LeaderClient() {

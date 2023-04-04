@@ -33,6 +33,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -327,7 +328,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
+    LinkedHashMap<String, Object> all = CollectionUtil.newLinkedHashMap(slices.size() + 1);
     all.putAll(propMap);
     all.put(CollectionStateProps.SHARDS, slices);
     jsonWriter.write(all);

@@ -27,7 +27,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
-import com.google.common.base.Strings;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -503,7 +502,7 @@ public class ZkController implements Closeable {
               register(descriptor.getName(), descriptor, true, true, false);
             }
           } catch (Exception e) {
-            SolrException.log(log, "Error registering SolrCore", e);
+            log.error("Error registering SolrCore", e);
           }
         }
       }
@@ -537,7 +536,7 @@ public class ZkController implements Closeable {
     } catch (SessionExpiredException e) {
       throw e;
     } catch (Exception e) {
-      SolrException.log(log, "", e);
+      log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
     }
   }
@@ -866,11 +865,9 @@ public class ZkController implements Closeable {
       }
       cloudSolrClient =
           new CloudLegacySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
               .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
-              .withConnectionTimeout(15000)
-              .withSocketTimeout(30000)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
               .build();
       cloudManager =
           new SolrClientCloudManager(
@@ -908,7 +905,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (Exception e) {
-          SolrException.log(log, "Error while looking for a better host name than 127.0.0.1", e);
+          log.error("Error while looking for a better host name than 127.0.0.1", e);
         }
       }
       host = hostaddress;
@@ -1190,11 +1187,11 @@ public class ZkController implements Closeable {
       return true;
     }
     log.trace("zkHost includes chroot");
-    String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
+    String chrootPath = zkHost.substring(zkHost.indexOf('/'), zkHost.length());
 
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
-            .withUrl(zkHost.substring(0, zkHost.indexOf("/")))
+            .withUrl(zkHost.substring(0, zkHost.indexOf('/')))
             .withTimeout(60000, TimeUnit.MILLISECONDS)
             .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
             .build();
@@ -1220,7 +1217,8 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+    List<Op> ops = new ArrayList<>(roles.size() + 1);
     ops.add(
         Op.create(
             nodePath,
@@ -1229,16 +1227,14 @@ public class ZkController implements Closeable {
             CreateMode.EPHEMERAL));
 
     // Create the roles node as well
-    cc.nodeRoles
-        .getRoles()
-        .forEach(
-            (role, mode) ->
-                ops.add(
-                    Op.create(
-                        NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
-                        null,
-                        zkClient.getZkACLProvider().getACLsToAdd(nodePath),
-                        CreateMode.EPHEMERAL)));
+    roles.forEach(
+        (role, mode) ->
+            ops.add(
+                Op.create(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
+                    null,
+                    zkClient.getZkACLProvider().getACLsToAdd(nodePath),
+                    CreateMode.EPHEMERAL)));
 
     zkClient.multi(ops, true);
   }
@@ -1250,8 +1246,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
-    List<Op> ops = new ArrayList<>(2);
-    ops.add(Op.delete(nodePath, -1));
+    List<Op> ops = List.of(Op.delete(nodePath, -1));
 
     try {
       zkClient.multi(ops, true);
@@ -1856,7 +1851,7 @@ public class ZkController implements Closeable {
     getCollectionTerms(collection).remove(cd.getCloudDescriptor().getShardId(), cd);
     replicasMetTragicEvent.remove(collection + ":" + coreNodeName);
 
-    if (Strings.isNullOrEmpty(collection)) {
+    if (StrUtils.isNullOrEmpty(collection)) {
       log.error("No collection was specified.");
       assert false : "No collection was specified [" + collection + "]";
       return;
@@ -2175,12 +2170,12 @@ public class ZkController implements Closeable {
               leaderProps.getCoreUrl());
         }
 
-        // short timeouts, we may be in a storm and this is best effort and maybe we should be the
+        // short timeouts, we may be in a storm and this is best effort, and maybe we should be the
         // leader now
         try (SolrClient client =
             new Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000)
-                .withSocketTimeout(30000)
+                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
+                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
@@ -2222,7 +2217,7 @@ public class ZkController implements Closeable {
                 }
               }
 
-              SolrException.log(log, "There was a problem making a request to the leader", e);
+              log.error("There was a problem making a request to the leader", e);
               try {
                 Thread.sleep(2000);
               } catch (InterruptedException e1) {
@@ -2235,7 +2230,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (IOException e) {
-          SolrException.log(log, "Error closing HttpSolrClient", e);
+          log.error("Error closing HttpSolrClient", e);
         }
       }
     }
@@ -2950,7 +2945,7 @@ public class ZkController implements Closeable {
               && processedCollections.add(collName)
               && (coll = zkStateReader.getCollection(collName)) != null
               && coll.isPerReplicaState()) {
-            final List<String> replicasToDown = new ArrayList<>();
+            final List<String> replicasToDown = new ArrayList<>(coll.getSlicesMap().size());
             coll.forEachReplica(
                 (s, replica) -> {
                   if (replica.getNodeName().equals(nodeName)) {

@@ -2120,7 +2120,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       FieldType minMaxFieldType = null;
       if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
         final String text = groupHeadSelector.selectorText;
-        if (text.indexOf("(") == -1) {
+        if (!text.contains("(")) {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
@@ -2268,7 +2268,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * sources if they depend on score
      */
     public static boolean wantsCScore(final String text) {
-      return (0 <= text.indexOf("cscore()"));
+      return (text.contains("cscore()"));
     }
 
     private CollapseScore() {

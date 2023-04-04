@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -37,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Cluster;
@@ -716,11 +715,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes
       // suitable for placement on the AZ, so we can easily select the next AZ to get a replica
       // assignment and quickly (constant time) decide if placement on this AZ is possible or not.
-      TreeMultimap<Integer, AzWithNodes> azByExistingReplicas =
-          TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
+      Map<Integer, Set<AzWithNodes>> azByExistingReplicas =
+          new TreeMap<>(Comparator.naturalOrder());
       for (Map.Entry<String, List<Node>> e : nodesPerAz.entrySet()) {
-        azByExistingReplicas.put(
-            azToNumReplicas.get(e.getKey()), new AzWithNodes(e.getKey(), e.getValue()));
+        azByExistingReplicas
+            .computeIfAbsent(azToNumReplicas.get(e.getKey()), k -> new HashSet<>())
+            .add(new AzWithNodes(e.getKey(), e.getValue()));
       }
 
       CoresAndDiskComparator coresAndDiskComparator =
@@ -741,27 +741,29 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // things: 1. remove those AZ's that have no nodes, no use iterating over these again and
         // again (as we compute placement for more replicas), and 2. collect all those AZ with a
         // minimal number of replicas.
-        for (Iterator<Map.Entry<Integer, AzWithNodes>> it =
-                azByExistingReplicas.entries().iterator();
-            it.hasNext(); ) {
-          Map.Entry<Integer, AzWithNodes> entry = it.next();
-          int numberOfNodes = entry.getValue().availableNodesForPlacement.size();
-          if (numberOfNodes == 0) {
-            it.remove();
-          } else { // AZ does have node(s) for placement
-            if (candidateAzEntries == null) {
-              // First AZ with nodes that can take the replica. Initialize tracking structures
-              minNumberOfReplicasPerAz = numberOfNodes;
-              candidateAzEntries = new HashSet<>();
+        for (Map.Entry<Integer, Set<AzWithNodes>> mapEntry : azByExistingReplicas.entrySet()) {
+          Iterator<AzWithNodes> it = mapEntry.getValue().iterator();
+          while (it.hasNext()) {
+            Map.Entry<Integer, AzWithNodes> entry = Map.entry(mapEntry.getKey(), it.next());
+            int numberOfNodes = entry.getValue().availableNodesForPlacement.size();
+            if (numberOfNodes == 0) {
+              it.remove();
+            } else { // AZ does have node(s) for placement
+              if (candidateAzEntries == null) {
+                // First AZ with nodes that can take the replica. Initialize tracking structures
+                minNumberOfReplicasPerAz = numberOfNodes;
+                candidateAzEntries = new HashSet<>();
+              }
+              if (minNumberOfReplicasPerAz != numberOfNodes) {
+                // AZ's with more replicas than the minimum number seen are not placement candidates
+                break;
+              }
+              candidateAzEntries.add(entry);
+              // We remove all entries that are candidates: the "winner" will be modified, all
+              // entries
+              // might also be sorted, so we'll insert back the updated versions later.
+              it.remove();
             }
-            if (minNumberOfReplicasPerAz != numberOfNodes) {
-              // AZ's with more replicas than the minimum number seen are not placement candidates
-              break;
-            }
-            candidateAzEntries.add(entry);
-            // We remove all entries that are candidates: the "winner" will be modified, all entries
-            // might also be sorted, so we'll insert back the updated versions later.
-            it.remove();
           }
         }
 
@@ -822,14 +824,18 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // Insert back all the qualifying but non winning AZ's removed while searching for the one
         for (Map.Entry<Integer, AzWithNodes> removedAzs : candidateAzEntries) {
           if (removedAzs != selectedAz) {
-            azByExistingReplicas.put(removedAzs.getKey(), removedAzs.getValue());
+            azByExistingReplicas
+                .computeIfAbsent(removedAzs.getKey(), k -> new HashSet<>())
+                .add(removedAzs.getValue());
           }
         }
 
         // Insert back a corrected entry for the winning AZ: one more replica living there and one
         // less node that can accept new replicas (the remaining candidate node list might be empty,
         // in which case it will be cleaned up on the next iteration).
-        azByExistingReplicas.put(selectedAz.getKey() + 1, azWithNodes);
+        azByExistingReplicas
+            .computeIfAbsent(selectedAz.getKey() + 1, k -> new HashSet<>())
+            .add(azWithNodes);
 
         // Do not assign that node again for replicas of other replica type for this shard (this
         // update of the set is not useful in the current execution of this method but for following

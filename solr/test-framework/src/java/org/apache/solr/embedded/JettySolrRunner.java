@@ -21,6 +21,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -53,7 +54,6 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.output.NullPrintStream;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -745,7 +745,7 @@ public class JettySolrRunner {
         MetricRegistry metricsRegisty = metricsManager.registry(registryName);
         try (PrintStream ps =
             outputDirectory == null
-                ? new NullPrintStream()
+                ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
                 : new PrintStream(
                     new File(outputDirectory, registryName + "_" + fileName),
                     StandardCharsets.UTF_8)) {
@@ -871,8 +871,8 @@ public class JettySolrRunner {
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
     return new HttpSolrClient.Builder(getBaseUrl().toString())
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
+        .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();
   }
 

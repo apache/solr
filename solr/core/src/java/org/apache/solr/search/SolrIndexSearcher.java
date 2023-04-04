@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
-import com.google.common.collect.Iterables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -81,6 +81,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -89,6 +90,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -131,6 +133,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final AtomicLong numCloses = new AtomicLong();
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
+
+  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
+  private static final boolean useExitableDirectoryReader =
+      Boolean.getBoolean("solr.useExitableDirectoryReader");
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -196,9 +202,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
-    return ExitableDirectoryReader.wrap(
-        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
-        SolrQueryTimeoutImpl.getInstance());
+    reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
+    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
+      reader = ExitableDirectoryReader.wrap(reader, SolrQueryTimeoutImpl.getInstance());
+    }
+    return reader;
   }
 
   /**
@@ -391,7 +399,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
+        cacheMap = CollectionUtil.newHashMap(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
           SolrCache<?, ?> cache = e.getValue().newInstance();
           if (cache != null) {
@@ -464,19 +472,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
-    // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
-    assert field != null;
-    // SlowAtomicReader has a cache of MultiTerms
-    Terms terms = getSlowAtomicReader().terms(field);
-    if (terms == null) {
-      return null;
-    }
-    return new CollectionStatistics(
-        field,
-        reader.maxDoc(),
-        terms.getDocCount(),
-        terms.getSumTotalTermFreq(),
-        terms.getSumDocFreq());
+    return super.collectionStatistics(field);
   }
 
   public boolean isCachingEnabled() {
@@ -578,7 +574,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
-      SolrException.log(log, "Problem dec ref'ing reader", e);
+      log.error("Problem dec ref'ing reader", e);
     }
 
     if (directoryFactory.searchersReserveCommitPoints()) {
@@ -589,7 +585,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       try {
         cache.close();
       } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+        log.error("Exception closing cache {}", cache.name(), e);
       }
     }
 
@@ -615,7 +611,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** Returns a collection of all field names the index reader knows about. */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
+    return StreamSupport.stream(getFieldInfos().spliterator(), false)
+        .map(fieldInfo -> fieldInfo.name)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public SolrCache<Query, DocSet> getFilterCache() {
@@ -713,23 +711,42 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
-  // FIXME: This option has been dead/noop since 3.1, should we re-enable or remove it?
-  // public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-  // // todo - when Solr starts accepting filters, need to
-  // // change this conditional check (filter!=null) and create a new filter
-  // // that ANDs them together if it already exists.
-  //
-  // if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
-  // ) {
-  // return super.search(query,filter,sort);
-  // } else {
-  // Query[] newQuery = new Query[1];
-  // Filter[] newFilter = new Filter[1];
-  // optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
-  //
-  // return super.search(newQuery[0], newFilter[0], sort);
-  // }
-  // }
+  @Override
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+      throws IOException {
+    final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
+    if (useExitableDirectoryReader || queryTimeout.isTimeoutEnabled() == false) {
+      // no timeout.  Pass through to super class
+      super.search(leaves, weight, collector);
+    } else {
+      // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
+      // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
+      //   that timedOut() might race with concurrent queries (dubious design).
+      // So we need to make a new IndexSearcher instead of using "this".
+      new IndexSearcher(reader) { // cheap, actually!
+        void searchWithTimeout() throws IOException {
+          setTimeout(queryTimeout.makeLocalImpl());
+          super.search(leaves, weight, collector); // FYI protected access
+          if (timedOut()) {
+            throw new TimeAllowedExceededFromScorerException("timeAllowed exceeded");
+          }
+        }
+      }.searchWithTimeout();
+    }
+  }
+
+  /**
+   * Thrown when {@link org.apache.solr.common.params.CommonParams#TIME_ALLOWED} is exceeded.
+   * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
+   * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
+   */
+  public static class TimeAllowedExceededFromScorerException
+      extends ExitableDirectoryReader.ExitingReaderException {
+
+    public TimeAllowedExceededFromScorerException(String msg) {
+      super(msg);
+    }
+  }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.

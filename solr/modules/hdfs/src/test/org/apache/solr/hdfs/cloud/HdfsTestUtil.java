@@ -368,12 +368,7 @@ public class HdfsTestUtil {
       return null;
     }
     String dir =
-        "/"
-            + new File(dataDir)
-                .toString()
-                .replaceAll(":", "_")
-                .replaceAll("/", "_")
-                .replaceAll(" ", "_");
+        "/" + new File(dataDir).toString().replace(":", "_").replace("/", "_").replace(" ", "_");
 
     return getURI(dfsCluster) + dir;
   }

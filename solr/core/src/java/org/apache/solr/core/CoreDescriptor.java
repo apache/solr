@@ -16,17 +16,15 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -93,20 +91,19 @@ public class CoreDescriptor {
     return originalExtraProperties;
   }
 
-  private static ImmutableMap<String, String> defaultProperties =
-      new ImmutableMap.Builder<String, String>()
-          .put(CORE_CONFIG, "solrconfig.xml")
-          .put(CORE_SCHEMA, "schema.xml")
-          .put(CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME)
-          .put(CORE_DATADIR, "data" + File.separator)
-          .put(CORE_TRANSIENT, "false")
-          .put(CORE_LOADONSTARTUP, "true")
-          .build();
+  private static final Map<String, String> defaultProperties =
+      Map.of(
+          CORE_CONFIG, "solrconfig.xml",
+          CORE_SCHEMA, "schema.xml",
+          CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
+          CORE_DATADIR, "data" + File.separator,
+          CORE_TRANSIENT, "false",
+          CORE_LOADONSTARTUP, "true");
 
-  private static ImmutableList<String> requiredProperties = ImmutableList.of(CORE_NAME);
+  private static final List<String> requiredProperties = List.of(CORE_NAME);
 
-  public static ImmutableList<String> standardPropNames =
-      ImmutableList.of(
+  public static List<String> standardPropNames =
+      List.of(
           CORE_NAME,
           CORE_CONFIG,
           CORE_DATADIR,
@@ -214,9 +211,11 @@ public class CoreDescriptor {
       if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
       else originalCoreProperties.put(propname, propvalue);
 
-      if (!requiredProperties.contains(propname)) // Required props are already dealt with
-      coreProperties.setProperty(
+      // Required props are already dealt with
+      if (!requiredProperties.contains(propname)) {
+        coreProperties.setProperty(
             propname, PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      }
     }
 
     loadExtraProperties();
@@ -244,17 +243,13 @@ public class CoreDescriptor {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
-      try (InputStream is = Files.newInputStream(propertiesFile)) {
+      try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+        externalProps.load(r);
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message =
-            String.format(
-                Locale.ROOT,
-                "Could not load properties from %s: %s:",
-                propertiesFile.toString(),
-                e.toString());
+            String.format(Locale.ROOT, "Could not load properties from %s: %s:", propertiesFile, e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     }
