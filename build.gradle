@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "2.11.0"
+  id "com.palantir.consistent-versions" version "2.16.0"
   id "org.owasp.dependencycheck" version "8.0.1"
   id 'ca.cutterslade.analyze' version "1.9.0"
   id 'de.thetaphi.forbiddenapis' version '3.6' apply false
