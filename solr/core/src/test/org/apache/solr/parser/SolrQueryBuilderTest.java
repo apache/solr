@@ -38,13 +38,13 @@ import org.apache.lucene.tests.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockSynonymFilter;
 import org.apache.lucene.tests.analysis.MockTokenizer;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.apache.solr.SolrTestCase;
 
 /** Adapted from org.apache.lucene.util.TestQueryBuilder */
-public class SolrQueryBuilderTest extends LuceneTestCase {
+public class SolrQueryBuilderTest extends SolrTestCase {
 
   public void testTerm() {
     TermQueryWithOffset expected = new TermQueryWithOffset(new Term("field", "test"), 0);
