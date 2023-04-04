@@ -136,13 +136,13 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
           ex);
     }
 
-    requestBody.indexBackup =
+    requestBody.backupStrategy =
         ObjectUtils.defaultIfNull(
-            requestBody.indexBackup, CollectionAdminParams.COPY_FILES_STRATEGY);
-    if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(requestBody.indexBackup)) {
+            requestBody.backupStrategy, CollectionAdminParams.COPY_FILES_STRATEGY);
+    if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(requestBody.backupStrategy)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Unknown index backup strategy " + requestBody.indexBackup);
+          "Unknown index backup strategy " + requestBody.backupStrategy);
     }
 
     final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
@@ -169,6 +169,12 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
     remoteMessage.put(NAME, backupName);
+    if (!StringUtils.isBlank(requestBody.backupStrategy)) {
+      remoteMessage.put(INDEX_BACKUP_STRATEGY, remoteMessage.remove("backupStrategy"));
+    }
+    if (!StringUtils.isBlank(requestBody.snapshotName)) {
+      remoteMessage.put(COMMIT_NAME, remoteMessage.remove("snapshotName"));
+    }
     return new ZkNodeProps(remoteMessage);
   }
 
@@ -179,8 +185,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     requestBody.location = params.get(BACKUP_LOCATION);
     requestBody.repository = params.get(BACKUP_REPOSITORY);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
-    requestBody.indexBackup = params.get(INDEX_BACKUP_STRATEGY);
-    requestBody.commitName = params.get(COMMIT_NAME);
+    requestBody.backupStrategy = params.get(requestBody.backupStrategy);
+    requestBody.snapshotName = params.get(COMMIT_NAME);
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.async = params.get(ASYNC);
@@ -227,8 +233,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     @JsonProperty public String location;
     @JsonProperty public String repository;
     @JsonProperty public Boolean followAliases;
-    @JsonProperty public String indexBackup;
-    @JsonProperty public String commitName;
+    @JsonProperty public String backupStrategy;
+    @JsonProperty public String snapshotName;
     @JsonProperty public Boolean incremental;
     @JsonProperty public Integer maxNumBackupPoints;
     @JsonProperty public String async;
@@ -260,8 +266,6 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     public Double uploadedIndexSizeMB;
 
     @JsonProperty public List<String> shardBackupIds;
-
-    // TODO Still need to add here: properties from maxNumBackups deletion, actual shard requests?
   }
 
   public static class BackupDeletionData implements JacksonReflectMapWriter {

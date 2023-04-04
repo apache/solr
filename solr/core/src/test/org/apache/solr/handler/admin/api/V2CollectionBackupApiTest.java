@@ -16,8 +16,8 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     requestBody.location = "/some/location";
     requestBody.repository = "someRepoName";
     requestBody.followAliases = true;
-    requestBody.indexBackup = COPY_FILES_STRATEGY;
-    requestBody.commitName = "someSnapshotName";
+    requestBody.backupStrategy = COPY_FILES_STRATEGY;
+    requestBody.snapshotName = "someSnapshotName";
     requestBody.incremental = true;
     requestBody.maxNumBackupPoints = 123;
     requestBody.async = "someId";
@@ -74,8 +74,8 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     assertEquals("/some/location", requestBody.location);
     assertEquals("someRepoName", requestBody.repository);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
-    assertEquals("copy-files", requestBody.indexBackup);
-    assertEquals("someSnapshotName", requestBody.commitName);
+    assertEquals("copy-files", requestBody.backupStrategy);
+    assertEquals("someSnapshotName", requestBody.snapshotName);
     assertEquals(Boolean.TRUE, requestBody.incremental);
     assertEquals(Integer.valueOf(123), requestBody.maxNumBackupPoints);
     assertEquals("someId", requestBody.async);
