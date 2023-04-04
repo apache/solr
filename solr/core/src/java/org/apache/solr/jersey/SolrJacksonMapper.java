@@ -33,15 +33,25 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 @SuppressWarnings("rawtypes")
 @Provider
 public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
+
+  private static final ObjectMapper objectMapper = createObjectMapper();
+
   @Override
   public ObjectMapper getContext(Class<?> type) {
+    return objectMapper;
+  }
+
+  public static ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  private static ObjectMapper createObjectMapper() {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
-    customTypeModule.addSerializer(new SOMSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        .registerModule(customTypeModule);
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .registerModule(customTypeModule);
   }
 
   public static class NamedListSerializer extends StdSerializer<NamedList> {
@@ -57,23 +67,6 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
     @Override
     public void serialize(NamedList value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
-      gen.writeObject(value.asShallowMap());
-    }
-  }
-
-  public static class SOMSerializer extends StdSerializer<SimpleOrderedMap> {
-
-    public SOMSerializer() {
-      this(null);
-    }
-
-    public SOMSerializer(Class<SimpleOrderedMap> nlClazz) {
-      super(nlClazz);
-    }
-
-    @Override
-    public void serialize(SimpleOrderedMap value, JsonGenerator gen, SerializerProvider provider)
-            throws IOException {
       gen.writeObject(value.asShallowMap());
     }
   }

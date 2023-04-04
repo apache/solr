@@ -1408,17 +1408,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           requestBody.indexBackup = req.getParams().get(INDEX_BACKUP_STRATEGY);
           requestBody.commitName = req.getParams().get(COMMIT_NAME);
           requestBody.incremental = req.getParams().getBool(BACKUP_INCREMENTAL);
+          requestBody.maxNumBackupPoints = req.getParams().getInt(MAX_NUM_BACKUP_POINTS);
           requestBody.async = req.getParams().get(ASYNC);
 
-          // TODO NOCOMMIT Hack to get things compiling for intermediate testing
-          final SimpleModule customTypeModule = new SimpleModule();
-          customTypeModule.addSerializer(new SolrJacksonMapper.NamedListSerializer(NamedList.class));
-
-          ObjectMapper om = new ObjectMapper()
-                  .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                  .registerModule(customTypeModule);
-
-          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp, om);
+          var createBackupApi = new CreateCollectionBackupAPI(h.coreContainer, req, rsp, SolrJacksonMapper.getObjectMapper());
           final SolrJerseyResponse response = createBackupApi.createCollectionBackup(backupName, requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;

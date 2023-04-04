@@ -39,6 +39,8 @@ import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.POST;
@@ -46,6 +48,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -87,6 +90,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
                 "'location' is not specified as a query"
                         + " parameter or as a default repository property or as a cluster property.");
     }
+
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @POST
     @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -170,6 +175,8 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         @JsonProperty public String commitName;
 
         @JsonProperty public Boolean incremental;
+
+        @JsonProperty public Integer maxNumBackupPoints;
 
         @JsonProperty public String async;
     }
