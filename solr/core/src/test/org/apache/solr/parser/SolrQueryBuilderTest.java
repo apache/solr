@@ -50,23 +50,23 @@ import org.apache.lucene.util.automaton.RegExp;
 public class SolrQueryBuilderTest extends LuceneTestCase {
 
   public void testTerm() {
-    TermQuery expected = new TermQuery(new Term("field", "test"));
+    TermQueryWithOffset expected = new TermQueryWithOffset(new Term("field", "test"), 0);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(expected, builder.createBooleanQuery("field", "test"));
   }
 
   public void testBoolean() {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "bar")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQueryWithOffset(new Term("field", "foo"), 0), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQueryWithOffset(new Term("field", "bar"), 4), BooleanClause.Occur.SHOULD);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(expected.build(), builder.createBooleanQuery("field", "foo bar"));
   }
 
   public void testBooleanMust() {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
-    expected.add(new TermQuery(new Term("field", "bar")), BooleanClause.Occur.MUST);
+    expected.add(new TermQueryWithOffset(new Term("field", "foo"), 0), BooleanClause.Occur.MUST);
+    expected.add(new TermQueryWithOffset(new Term("field", "bar"), 4), BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockAnalyzer(random()));
     assertEquals(
       expected.build(), builder.createBooleanQuery("field", "foo bar", BooleanClause.Occur.MUST));
@@ -88,10 +88,10 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
   public void testMinShouldMatch() {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
-    expectedB.add(new TermQuery(new Term("field", "one")), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQuery(new Term("field", "three")), BooleanClause.Occur.SHOULD);
-    expectedB.add(new TermQuery(new Term("field", "four")), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQueryWithOffset(new Term("field", "one"), 0), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQueryWithOffset(new Term("field", "two"), 4), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQueryWithOffset(new Term("field", "three"), 8), BooleanClause.Occur.SHOULD);
+    expectedB.add(new TermQueryWithOffset(new Term("field", "four"), 14), BooleanClause.Occur.SHOULD);
     expectedB.setMinimumNumberShouldMatch(0);
     Query expected = expectedB.build();
 
@@ -147,11 +147,11 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
   /** simple synonyms test */
   public void testSynonyms() throws Exception {
-    SynonymQuery expected =
-      new SynonymQuery.Builder("field")
+    SynonymQueryWithOffset expected =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "dogs"))
         .addTerm(new Term("field", "dog"))
-        .build();
+        .build(), 0);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
@@ -173,7 +173,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     Query expected =
       new BooleanQuery.Builder()
         .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("field", "cavy")), BooleanClause.Occur.SHOULD)
+        .add(new TermQueryWithOffset(new Term("field", "cavy"), null), BooleanClause.Occur.SHOULD)
         .build();
 
     SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
@@ -190,7 +190,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
             .add(new Term("field", "pig"))
             .build(),
           BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("field", "cavy")), BooleanClause.Occur.SHOULD)
+        .add(new TermQueryWithOffset(new Term("field", "cavy"), 0), BooleanClause.Occur.SHOULD)
         .build();
     SolrQueryBuilder queryBuilder = new SolrQueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expected, queryBuilder.createPhraseQuery("field", "guinea pig", 4));
@@ -202,10 +202,10 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
       new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
       Query syn1 =
         new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field", "guinea")), BooleanClause.Occur.MUST)
-          .add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.MUST)
+          .add(new TermQueryWithOffset(new Term("field", "guinea"), null), BooleanClause.Occur.MUST)
+          .add(new TermQueryWithOffset(new Term("field", "pig"), null), BooleanClause.Occur.MUST)
           .build();
-      Query syn2 = new TermQuery(new Term("field", "cavy"));
+      Query syn2 = new TermQueryWithOffset(new Term("field", "cavy"), null);
 
       BooleanQuery synQuery =
         new BooleanQuery.Builder()
@@ -222,7 +222,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
       BooleanQuery expectedBooleanQuery =
         new BooleanQuery.Builder()
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .build();
       assertEquals(
         expectedBooleanQuery,
@@ -230,9 +230,9 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
       expectedBooleanQuery =
         new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field", "the")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .build();
       assertEquals(
         expectedBooleanQuery,
@@ -240,9 +240,9 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
       expectedBooleanQuery =
         new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field", "the")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .add(synQuery, occur)
           .build();
       assertEquals(
@@ -260,7 +260,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
           .add(new Term("field", "guinea"))
           .add(new Term("field", "pig"))
           .build();
-      Query syn2 = new TermQuery(new Term("field", "cavy"));
+      Query syn2 = new TermQueryWithOffset(new Term("field", "cavy"), null);
 
       BooleanQuery synQuery =
         new BooleanQuery.Builder()
@@ -276,7 +276,7 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
       BooleanQuery expectedBooleanQuery =
         new BooleanQuery.Builder()
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .build();
       assertEquals(
         expectedBooleanQuery,
@@ -284,9 +284,9 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
       expectedBooleanQuery =
         new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field", "the")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .build();
       assertEquals(
         expectedBooleanQuery,
@@ -294,9 +294,9 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
       expectedBooleanQuery =
         new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("field", "the")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "the"), null), occur)
           .add(synQuery, occur)
-          .add(new TermQuery(new Term("field", "story")), occur)
+          .add(new TermQueryWithOffset(new Term("field", "story"), null), occur)
           .add(synQuery, occur)
           .build();
       assertEquals(
@@ -334,8 +334,8 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
 
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQueryWithOffset(new Term("field", "国"), 1), BooleanClause.Occur.SHOULD);
 
     SolrQueryBuilder builder = new SolrQueryBuilder(analyzer);
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国"));
@@ -400,11 +400,11 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
 
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
-    SynonymQuery expected =
-      new SynonymQuery.Builder("field")
+    SynonymQueryWithOffset expected =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 0);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected, builder.createBooleanQuery("field", "国"));
     assertEquals(expected, builder.createPhraseQuery("field", "国"));
@@ -414,12 +414,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** synonyms with default OR operator */
   public void testCJKSynonymsOR() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner =
-      new SynonymQuery.Builder("field")
+    expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.SHOULD);
+    SynonymQueryWithOffset inner =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 1);
     expected.add(inner, BooleanClause.Occur.SHOULD);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国"));
@@ -428,18 +428,18 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** more complex synonyms with default OR operator */
   public void testCJKSynonymsOR2() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner =
-      new SynonymQuery.Builder("field")
+    expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.SHOULD);
+    SynonymQueryWithOffset inner =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 1);
     expected.add(inner, BooleanClause.Occur.SHOULD);
-    SynonymQuery inner2 =
-      new SynonymQuery.Builder("field")
+    SynonymQueryWithOffset inner2 =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 2);
     expected.add(inner2, BooleanClause.Occur.SHOULD);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(expected.build(), builder.createBooleanQuery("field", "中国国"));
@@ -448,12 +448,12 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** synonyms with default AND operator */
   public void testCJKSynonymsAND() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    SynonymQuery inner =
-      new SynonymQuery.Builder("field")
+    expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.MUST);
+    SynonymQueryWithOffset inner =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 1);
     expected.add(inner, BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(
@@ -463,18 +463,18 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
   /** more complex synonyms with default AND operator */
   public void testCJKSynonymsAND2() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    SynonymQuery inner =
-      new SynonymQuery.Builder("field")
+    expected.add(new TermQueryWithOffset(new Term("field", "中"), 0), BooleanClause.Occur.MUST);
+    SynonymQueryWithOffset inner =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 1);
     expected.add(inner, BooleanClause.Occur.MUST);
-    SynonymQuery inner2 =
-      new SynonymQuery.Builder("field")
+    SynonymQueryWithOffset inner2 =
+      new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
         .addTerm(new Term("field", "国"))
         .addTerm(new Term("field", "國"))
-        .build();
+        .build(), 2);
     expected.add(inner2, BooleanClause.Occur.MUST);
     SolrQueryBuilder builder = new SolrQueryBuilder(new MockCJKSynonymAnalyzer());
     assertEquals(
@@ -595,16 +595,17 @@ public class SolrQueryBuilderTest extends LuceneTestCase {
     Query expected =
       new BooleanQuery.Builder()
         .add(
-          new BoostQuery(new TermQuery(new Term("field", "hot")), 0.5f),
+          new BoostQuery(new TermQueryWithOffset(new Term("field", "hot"), 0), 0.5f),
           BooleanClause.Occur.SHOULD)
         .add(
-          new SynonymQuery.Builder("field")
+          new SynonymQueryWithOffset(new SynonymQuery.Builder("field")
             .addTerm(new Term("field", "dogs"))
             .addTerm(new Term("field", "dog"), 0.5f)
-            .build(),
+            .build(), 4),
           BooleanClause.Occur.SHOULD)
         .build();
 
+    // TODO
     assertEquals(expected, q);
   }
 }
