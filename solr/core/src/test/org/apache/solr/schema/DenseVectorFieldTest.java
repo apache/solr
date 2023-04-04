@@ -357,6 +357,25 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
+  @Test
+  public void query_vectorByteEncoded_storedField_shouldBeReturnedWithoutDecimals() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+
+      SolrInputDocument doc1 = new SolrInputDocument();
+      doc1.addField("id", "0");
+      doc1.addField("vector_byte_encoding", Arrays.asList(1, 2, 3, 4));
+
+      assertU(adoc(doc1));
+      assertU(commit());
+
+      assertJQ(req("q", "id:0", "fl", "vector_byte_encoding"), "/response/docs/[0]=={'vector_byte_encoding':[1,2,3,4]}");
+
+    } finally {
+      deleteCore();
+    }
+  }
+
   /** Not Supported */
   @Test
   public void query_rangeSearch_shouldThrowException() throws Exception {

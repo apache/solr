@@ -33,6 +33,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   String IDField = "id";
   String vectorField = "vector";
   String vectorField2 = "vector2";
+  String vectorFieldByteEncoding = "vector_byte_encoding";
 
   @Before
   public void prepareIndex() throws Exception {
@@ -57,7 +58,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     }
 
     docs.get(0)
-        .addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector1= 1.0
+        .addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f));
+        // cosine distance vector1= 1.0
     docs.get(1)
         .addField(
             vectorField, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector1= 0.998
@@ -83,7 +85,6 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     docs.get(9)
         .addField(
             vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f)); // cosine distance vector1= 0.997
-
     docs.get(10)
         .addField(vectorField2, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector2= 1
     docs.get(11)
@@ -93,6 +94,15 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     docs.get(12)
         .addField(
             vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
+
+    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2.0f, 2.0f, 1.0f, 4.0f));
+    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(10.0f, 2.0f, 1.0f, 2.0f));
+    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7.0f, 2.0f, 1.0f, 3.0f));
+    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19.0f, 2.0f, 4.0f, 4.0f));
+    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19.9f, 2.9f, 4.9f, 4.9f));
+    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18.0f, 2.0f, 4.0f, 4.0f));
+    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8.0f, 3.0f, 2.0f, 4.0f));
 
     return docs;
   }
@@ -203,6 +213,44 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='11']",
         "//result/doc[2]/str[@name='id'][.='13']",
         "//result/doc[3]/str[@name='id'][.='12']");
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldSearchOnThatField() {
+    String vectorToSearch = "[2.0, 2.0, 1.0, 3.0]";
+
+    assertQ(
+            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+            "//result[@numFound='2']",
+            "//result/doc[1]/str[@name='id'][.='2']",
+            "//result/doc[2]/str[@name='id'][.='1']");
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldApproximateIndexVectorValuesToIntegerValues() {
+    String vectorToSearch = "[19.0, 2.0, 4.0, 4.0]";
+
+    // If we consider the vectors with floating values, document 7 has an higher score than document 6.
+    // If instead we take only the integer part, document 6 gets an higher score.
+    assertQ(
+            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3}" + vectorToSearch, "fl", "id"),
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='5']",
+            "//result/doc[2]/str[@name='id'][.='6']",
+            "//result/doc[2]/str[@name='id'][.='7']");
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldNotApproximateQueryVectorValueToIntegerValues() {
+    String vectorToSearch = "[7.9f, 2.9f, 1.9f, 3.9f]";
+
+    // If we consider the vectors with floating values, document 7 has an higher score than document 6.
+    // If instead we take only the integer part, document 6 gets an higher score.
+    assertQ(
+            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+            "//result[@numFound='2']",
+            "//result/doc[1]/str[@name='id'][.='4']",
+            "//result/doc[2]/str[@name='id'][.='8']");
   }
 
   @Test
