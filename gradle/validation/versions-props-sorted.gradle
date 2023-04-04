@@ -23,6 +23,7 @@ configure(rootProject) {
   task versionsPropsAreSorted() {
     doFirst {
       def versionsProps = file('versions.props')
+      // remove # commented lines and blank lines
       def lines = versionsProps.readLines("UTF-8").stream().filter(l -> !l.matches(/^(#.*|\s*)$/)).collect(Collectors.toList())
       def sorted = lines.toSorted()
 
