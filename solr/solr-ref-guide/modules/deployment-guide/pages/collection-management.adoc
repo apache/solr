@@ -1563,9 +1563,8 @@ http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_bac
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
   {
-    "collection": "techproducts",
     "location": "file:///path/to/my/shared/drive"
   }
 '
@@ -1602,6 +1601,7 @@ s|Required |Default: none
 |===
 +
 The name of the collection to be backed up.
+Provided as a query parameter for v1 requests, and as a path segment for v2 requests.
 
 `name`::
 +
