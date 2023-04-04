@@ -72,7 +72,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
@@ -87,6 +86,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
@@ -341,8 +341,8 @@ public class CollApiCmds {
     @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
-      if (StringUtils.isBlank(message.getStr(COLLECTION_PROP))
-          || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
+      if (StrUtils.isBlank(message.getStr(COLLECTION_PROP))
+          || StrUtils.isBlank(message.getStr(PROPERTY_PROP))) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "The '"

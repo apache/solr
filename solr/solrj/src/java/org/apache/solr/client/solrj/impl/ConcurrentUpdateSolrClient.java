@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -45,7 +46,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -267,7 +267,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                         UpdateRequest req = upd.getRequest();
                         SolrParams currentParams = new ModifiableSolrParams(req.getParams());
                         if (!origParams.toNamedList().equals(currentParams.toNamedList())
-                            || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
+                            || !Objects.equals(origTargetCollection, upd.getCollection())) {
                           // Request has different params or destination core/collection, return to
                           // queue
                           queue.add(upd);

@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -59,6 +58,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This class is experimental and subject to change.
@@ -792,7 +792,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CollectionParams.SOURCE_NODE, sourceNode);
-      if (!StringUtils.isEmpty(targetNode)) {
+      if (StrUtils.isNotNullOrEmpty(targetNode)) {
         params.set(CollectionParams.TARGET_NODE, targetNode);
       }
       if (parallel != null) params.set("parallel", parallel.toString());

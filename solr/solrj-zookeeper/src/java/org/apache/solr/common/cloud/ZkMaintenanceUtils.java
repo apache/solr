@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -521,7 +521,7 @@ public class ZkMaintenanceUtils {
   // Will return empty string if the path is just "/"
   // Will return empty string if the path is just ""
   public static String getZkParent(String path) {
-    if (StringUtils.isEmpty(path) || "/".equals(path)) {
+    if (StrUtils.isNullOrEmpty(path) || "/".equals(path)) {
       return "";
     }
     // Remove trailing slash if present.
@@ -578,7 +578,7 @@ public class ZkMaintenanceUtils {
           String userForbiddenFileTypes =
               System.getProperty(
                   FORBIDDEN_FILE_TYPES_PROP, System.getenv(FORBIDDEN_FILE_TYPES_ENV));
-          if (StringUtils.isEmpty(userForbiddenFileTypes)) {
+          if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
             USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
           } else {
             USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));

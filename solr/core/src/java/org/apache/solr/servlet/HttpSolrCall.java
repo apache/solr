@@ -57,7 +57,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
@@ -1002,9 +1001,9 @@ public class HttpSolrCall {
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
       // many have multiple collections separated by |
-      pairs = StringUtils.split(stateVer, '|');
+      pairs = stateVer.split("\\|");
       for (String pair : pairs) {
-        String[] pcs = StringUtils.split(pair, ':');
+        String[] pcs = pair.split(":");
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
           Integer status =
               cores

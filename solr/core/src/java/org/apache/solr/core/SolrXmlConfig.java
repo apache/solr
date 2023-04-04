@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
@@ -81,14 +80,14 @@ public class SolrXmlConfig {
    * us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
-    if (null != props && !StringUtils.isEmpty(props.getProperty(ZK_HOST))) {
+    if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
       // nothing to do...
       return props;
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
     final String sysprop = System.getProperty(ZK_HOST);
-    if (!StringUtils.isEmpty(sysprop)) {
+    if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
     return results;
@@ -728,7 +727,7 @@ public class SolrXmlConfig {
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && !StringUtils.isEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt())) props.add(it.txt());
           return Boolean.TRUE;
         });
     if (props.isEmpty()) {

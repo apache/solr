@@ -27,10 +27,10 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -262,7 +262,7 @@ public class SolrExporter {
 
       int port = res.getInt(ARG_PORT_DEST);
       String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
-      if (StringUtils.isEmpty(clusterId)) {
+      if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
       }
 

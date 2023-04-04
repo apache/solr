@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -51,6 +50,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -269,7 +269,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // standard core create parameters
     for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
       String value = params.get(entry.getKey(), null);
-      if (StringUtils.isNotEmpty(value)) {
+      if (StrUtils.isNotNullOrEmpty(value)) {
         coreParams.put(entry.getValue(), value);
       }
     }
