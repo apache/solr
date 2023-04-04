@@ -57,9 +57,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
       docs.add(doc);
     }
 
-    docs.get(0)
-        .addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f));
-        // cosine distance vector1= 1.0
+    docs.get(0).addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f));
+    // cosine distance vector1= 1.0
     docs.get(1)
         .addField(
             vectorField, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector1= 0.998
@@ -220,37 +219,39 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[2.0, 2.0, 1.0, 3.0]";
 
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
-            "//result[@numFound='2']",
-            "//result/doc[1]/str[@name='id'][.='2']",
-            "//result/doc[2]/str[@name='id'][.='1']");
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='1']");
   }
 
   @Test
   public void vectorByteEncodingField_shouldApproximateIndexVectorValuesToIntegerValues() {
     String vectorToSearch = "[19.0, 2.0, 4.0, 4.0]";
 
-    // If we consider the vectors with floating values, document 7 has an higher score than document 6.
+    // If we consider the vectors with floating values, document 7 has an higher score than document
+    // 6.
     // If instead we take only the integer part, document 6 gets an higher score.
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3}" + vectorToSearch, "fl", "id"),
-            "//result[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='5']",
-            "//result/doc[2]/str[@name='id'][.='6']",
-            "//result/doc[2]/str[@name='id'][.='7']");
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='5']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='7']");
   }
 
   @Test
   public void vectorByteEncodingField_shouldNotApproximateQueryVectorValueToIntegerValues() {
     String vectorToSearch = "[7.9f, 2.9f, 1.9f, 3.9f]";
 
-    // If we consider the vectors with floating values, document 7 has an higher score than document 6.
+    // If we consider the vectors with floating values, document 7 has an higher score than document
+    // 6.
     // If instead we take only the integer part, document 6 gets an higher score.
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
-            "//result[@numFound='2']",
-            "//result/doc[1]/str[@name='id'][.='4']",
-            "//result/doc[2]/str[@name='id'][.='8']");
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='8']");
   }
 
   @Test

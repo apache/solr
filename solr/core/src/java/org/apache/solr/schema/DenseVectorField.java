@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -78,8 +77,8 @@ public class DenseVectorField extends FloatPointField {
   private int hnswBeamWidth;
 
   /**
-   * Encoding for vector value representation. The possible values are FLOAT32 or BYTE.
-   * The default encoding is FLOAT32
+   * Encoding for vector value representation. The possible values are FLOAT32 or BYTE. The default
+   * encoding is FLOAT32
    */
   private VectorEncoding vectorEncoding;
 
@@ -121,9 +120,9 @@ public class DenseVectorField extends FloatPointField {
     args.remove(KNN_ALGORITHM);
 
     this.vectorEncoding =
-            ofNullable(args.get(VECTOR_ENCODING))
-              .map(value -> VectorEncoding.valueOf(value.toUpperCase(Locale.ROOT)))
-              .orElse(DEFAULT_VECTOR_ENCODING);;
+        ofNullable(args.get(VECTOR_ENCODING))
+            .map(value -> VectorEncoding.valueOf(value.toUpperCase(Locale.ROOT)))
+            .orElse(DEFAULT_VECTOR_ENCODING);
     args.remove(VECTOR_ENCODING);
 
     this.hnswMaxConn =
@@ -184,7 +183,6 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
-
   @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
 
@@ -195,7 +193,7 @@ public class DenseVectorField extends FloatPointField {
       fields.add(createField(field, vectorValue));
     }
     if (field.stored()) {
-      if (vectorEncoding.equals(VectorEncoding.FLOAT32)){
+      if (vectorEncoding.equals(VectorEncoding.FLOAT32)) {
         for (float vectorElement : vectorValue.getFloatVector()) {
           fields.add(getStoredField(field, vectorElement));
         }
@@ -213,18 +211,19 @@ public class DenseVectorField extends FloatPointField {
     if (vectorEncoding.equals(VectorEncoding.BYTE)){
       return new KnnByteVectorField(field.getName(), typedVectorValue.getByteVector().bytes , similarityFunction);
     } else {
-      return new KnnVectorField(field.getName(), typedVectorValue.getFloatVector() , similarityFunction);
+      return new KnnVectorField(
+          field.getName(), typedVectorValue.getFloatVector(), similarityFunction);
     }
   }
 
   @Override
   public Object toObject(IndexableField f) {
 
-    if (vectorEncoding.equals(VectorEncoding.BYTE)){
+    if (vectorEncoding.equals(VectorEncoding.BYTE)) {
       BytesRef bytesRef = f.binaryValue();
       if (bytesRef != null) {
         List<Number> ret = new ArrayList<>();
-        for (byte b : bytesRef.bytes){
+        for (byte b : bytesRef.bytes) {
           ret.add((int) b);
         }
         return ret;
@@ -235,7 +234,6 @@ public class DenseVectorField extends FloatPointField {
 
     return super.toObject(f);
   }
-
 
   /**
    * Index Time Parsing The inputValue is an ArrayList with a type that depends on the loader used:
@@ -250,19 +248,19 @@ public class DenseVectorField extends FloatPointField {
   float[] parseVector(Object inputValue) {
     if (!(inputValue instanceof List)) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "incorrect vector format."
-                      + " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "incorrect vector format."
+              + " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
     }
     List<?> inputVector = (List<?>) inputValue;
     if (inputVector.size() != dimension) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "incorrect vector dimension."
-                      + " The vector value has size "
-                      + inputVector.size()
-                      + " while it is expected a vector with size "
-                      + dimension);
+          SolrException.ErrorCode.BAD_REQUEST,
+          "incorrect vector dimension."
+              + " The vector value has size "
+              + inputVector.size()
+              + " while it is expected a vector with size "
+              + dimension);
     }
 
     float[] vector = new float[dimension];
@@ -272,10 +270,10 @@ public class DenseVectorField extends FloatPointField {
           vector[i] = Float.parseFloat(inputVector.get(i).toString());
         } catch (NumberFormatException e) {
           throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "incorrect vector element: '"
-                          + inputVector.get(i)
-                          + "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
+              SolrException.ErrorCode.BAD_REQUEST,
+              "incorrect vector element: '"
+                  + inputVector.get(i)
+                  + "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
         }
       }
     } else if (inputVector.get(0) instanceof Number) {
@@ -284,14 +282,13 @@ public class DenseVectorField extends FloatPointField {
       }
     } else {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "incorrect vector format."
-                      + " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "incorrect vector format."
+              + " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
     }
 
     return vector;
   }
-
 
   @Override
   public UninvertingReader.Type getUninversionType(SchemaField sf) {
@@ -347,9 +344,10 @@ public class DenseVectorField extends FloatPointField {
     private float[] floatVector;
     private BytesRef byteVector;
 
-    public VectorValue(Object value){
+    public VectorValue(Object value) {
       this.rawValue = value;
     }
+
     public BytesRef getByteVector() {
       if (byteVector != null) {
         getFloatVector();
@@ -369,5 +367,4 @@ public class DenseVectorField extends FloatPointField {
       return floatVector;
     }
   }
-
 }
