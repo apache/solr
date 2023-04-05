@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -138,10 +137,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return states.get(p);
     }
 
-    static Map<String, State> states =
-        Collections.unmodifiableMap(
-            Stream.of(State.values())
-                .collect(Collectors.toMap(State::toLower, Function.identity())));
+    static final Map<String, State> states =
+        Stream.of(State.values())
+            .collect(Collectors.toUnmodifiableMap(State::toLower, Function.identity()));
   }
 
   public enum Cmd {
@@ -161,9 +159,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return cmds.get(p);
     }
 
-    static Map<String, Cmd> cmds =
-        Collections.unmodifiableMap(
-            Stream.of(Cmd.values()).collect(Collectors.toMap(Cmd::toLower, Function.identity())));
+    static final Map<String, Cmd> cmds =
+        Stream.of(Cmd.values())
+            .collect(Collectors.toUnmodifiableMap(Cmd::toLower, Function.identity()));
   }
 
   private String zkHost;

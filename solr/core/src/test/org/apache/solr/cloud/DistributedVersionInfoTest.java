@@ -154,6 +154,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final Random rand = new Random(5150);
     Thread docSenderThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -182,6 +183,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread reloaderThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(300) + 1);
@@ -204,6 +206,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread deleteThread =
         new Thread() {
+          @Override
           public void run() {
 
             // brief delay before sending docs
@@ -232,6 +235,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     Thread committerThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               Thread.sleep(rand.nextInt(200) + 1);
@@ -319,9 +323,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getSolrClient(leader);
+    SolrClient leaderSolr = getHttpSolrClient(leader.getCoreUrl());
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getSolrClient(r));
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r.getCoreUrl()));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -342,10 +346,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         replicaSolr.close();
       }
     }
-  }
-
-  protected SolrClient getSolrClient(Replica replica) {
-    return getHttpSolrClient(replica.getCoreUrl());
   }
 
   protected void sendDoc(int docId) throws Exception {

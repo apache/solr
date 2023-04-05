@@ -44,8 +44,10 @@ public class SolrQueryParserBaseTest extends SolrTestCaseJ4 {
   private static final String DEFAULT_FIELD_NAME = "TestDefaultFieldname";
 
   private static class MockSolrQueryParser extends SolrQueryParserBase {
+    @Override
     public void ReInit(CharStream stream) {}
 
+    @Override
     public Query TopLevelQuery(String field) {
       return null;
     }
@@ -59,6 +61,7 @@ public class SolrQueryParserBaseTest extends SolrTestCaseJ4 {
 
   private MockSolrQueryParser solrQueryParser;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

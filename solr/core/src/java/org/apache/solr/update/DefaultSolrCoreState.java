@@ -76,7 +76,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private RefCounted<IndexWriter> refCntWriter;
 
-  protected final ReentrantLock commitLock = new ReentrantLock();
+  private final ReentrantLock commitLock = new ReentrantLock();
 
   @Deprecated
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
@@ -204,14 +204,14 @@ public final class DefaultSolrCoreState extends SolrCoreState
           log.debug("Closing old IndexWriter... core= {}", coreName);
           iw.close();
         } catch (Exception e) {
-          SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, e);
+          log.error("Error closing old IndexWriter. core={}", coreName, e);
         }
       } else {
         try {
           log.debug("Rollback old IndexWriter... core={}", coreName);
           iw.rollback();
         } catch (Exception e) {
-          SolrException.log(log, "Error rolling back old IndexWriter. core=" + coreName, e);
+          log.error("Error rolling back old IndexWriter. core={}", coreName, e);
         }
       }
     }
@@ -254,7 +254,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
     changeWriter(core, true, true);
   }
 
-  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
+  private SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
     return SolrIndexWriter.create(
         core,
         name,
@@ -267,6 +267,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
         core.getCodec());
   }
 
+  @Override
   public Sort getMergePolicySort() throws IOException {
     lock(iwLock.readLock());
     try {

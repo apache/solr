@@ -300,7 +300,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     val.setExists(false);
-    comp.setValue(3124123.32F).setExists(true);
+    comp.setValue(3124123.2F).setExists(true);
     fill.setValue(-32473.336F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
@@ -333,8 +333,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.getFloat();
     assertFalse(func.exists());
 
-    fill.setValue(4353434.234F).setExists(true);
-    assertEquals(4353434.234F, func.getFloat(), .0000001);
+    fill.setValue(4353434.0F).setExists(true);
+    assertEquals(4353434.0F, func.getFloat(), .0000001);
     assertTrue(func.exists());
   }
 
@@ -783,18 +783,18 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
 
     val.setValues();
     comp.setValue(-230.32F).setExists(true);
-    fill.setValue(9459.3458F).setExists(true);
+    fill.setValue(9459.346F).setExists(true);
     func.streamFloats(
         value -> {
           fail("There should be no values to stream");
         });
 
     // Comp doesn't exist
-    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
+    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43933F, 423.4323F);
     comp.setExists(false);
     fill.setValue(234.234F).setExists(true);
     Iterator<Float> values1 =
-        Arrays.asList(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F).iterator();
+        Arrays.asList(1423.3F, 423.4323F, -2349.2F, -343.43933F, 423.4323F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values1.hasNext());
@@ -803,10 +803,10 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values1.hasNext());
 
     // Values exist
-    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
+    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43933F, 423.4323F);
     comp.setValue(423.4323F).setExists(true);
     fill.setExists(false);
-    Iterator<Float> values2 = Arrays.asList(1423.3F, -2349.2F, -343.43934F).iterator();
+    Iterator<Float> values2 = Arrays.asList(1423.3F, -2349.2F, -343.43933F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values2.hasNext());
@@ -814,11 +814,11 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
         });
     assertFalse(values2.hasNext());
 
-    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
+    val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43933F, 423.4323F);
     comp.setValue(423.4323F).setExists(true);
     fill.setValue(-1000F).setExists(true);
     Iterator<Float> values3 =
-        Arrays.asList(1423.3F, -1000F, -2349.2F, -343.43934F, -1000F).iterator();
+        Arrays.asList(1423.3F, -1000F, -2349.2F, -343.43933F, -1000F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values3.hasNext());

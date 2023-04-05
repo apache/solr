@@ -68,6 +68,7 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

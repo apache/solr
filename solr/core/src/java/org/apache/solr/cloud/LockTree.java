@@ -18,8 +18,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
@@ -54,7 +54,7 @@ public class LockTree {
 
     @Override
     public String toString() {
-      return StrUtils.join(node.constructPath(new LinkedList<>()), '/');
+      return StrUtils.join(node.constructPath(new ArrayDeque<>()), '/');
     }
   }
 
@@ -175,7 +175,7 @@ public class LockTree {
       }
     }
 
-    LinkedList<String> constructPath(LinkedList<String> collect) {
+    ArrayDeque<String> constructPath(ArrayDeque<String> collect) {
       if (name != null) collect.addFirst(name);
       if (mom != null) mom.constructPath(collect);
       return collect;

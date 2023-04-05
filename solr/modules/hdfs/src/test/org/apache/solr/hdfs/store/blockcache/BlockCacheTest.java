@@ -19,13 +19,17 @@ package org.apache.solr.hdfs.store.blockcache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BlockCacheTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testBlockCache() {
@@ -33,7 +37,7 @@ public class BlockCacheTest extends SolrTestCase {
     int blockSize = 1024;
 
     int slabSize = blockSize * 4096;
-    long totalMemory = 2 * slabSize;
+    long totalMemory = 2L * slabSize;
 
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
@@ -158,7 +162,7 @@ public class BlockCacheTest extends SolrTestCase {
 
               } catch (Throwable e) {
                 failed.set(true);
-                e.printStackTrace();
+                log.error("failure", e);
               }
             }
 
@@ -321,7 +325,7 @@ public class BlockCacheTest extends SolrTestCase {
                 test(readsPerThread);
               } catch (Throwable e) {
                 failed.set(true);
-                e.printStackTrace();
+                log.error("failure", e);
               }
             }
 

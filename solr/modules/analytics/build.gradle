@@ -28,9 +28,9 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-annotations'
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
-  implementation 'com.google.guava:guava'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'org.slf4j:slf4j-api'
 }

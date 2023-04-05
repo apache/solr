@@ -39,6 +39,7 @@ public class SolrResponseBase extends SolrResponse implements MapWriter {
     return elapsedTime;
   }
 
+  @Override
   public void setElapsedTime(long elapsedTime) {
     this.elapsedTime = elapsedTime;
   }

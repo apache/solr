@@ -1179,6 +1179,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   /** sentinel object for {@link #checkReplay} */
   public Object SOFTCOMMIT =
       new Object() {
+        @Override
         public String toString() {
           return "SOFTCOMMIT";
         }
@@ -1186,6 +1187,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   /** sentinel object for {@link #checkReplay} */
   public Object HARDCOMMIT =
       new Object() {
+        @Override
         public String toString() {
           return "HARDCOMMIT";
         }

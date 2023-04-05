@@ -31,12 +31,13 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -147,7 +148,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private volatile Set<String> queryParams = Collections.emptySet();
+  private volatile Set<String> urlParamNames = Set.of();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
 
@@ -164,35 +165,33 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
 
     if (builder.httpClient != null) {
-      this.httpClient = builder.httpClient;
       this.internalClient = false;
+      this.followRedirects = builder.followRedirects;
+      this.httpClient = builder.httpClient;
+
     } else {
       this.internalClient = true;
+      this.followRedirects = builder.followRedirects;
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
       params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, builder.compression);
       httpClient = HttpClientUtil.createClient(params);
     }
 
+    if (builder.requestWriter != null) {
+      this.requestWriter = builder.requestWriter;
+    }
+
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
+    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
+    this.useMultiPartPost = builder.useMultiPartPost;
+    this.urlParamNames = builder.urlParamNames;
   }
 
-  public Set<String> getQueryParams() {
-    return queryParams;
-  }
-
-  /**
-   * Expert Method
-   *
-   * @param queryParams set of param keys to only send via the query string Note that the param will
-   *     be sent as a query string if the key is part of this Set or the SolrRequest's query params.
-   * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
+  public Set<String> getUrlParamNames() {
+    return urlParamNames;
   }
 
   /**
@@ -393,7 +392,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                   || (streams != null && streams.size() > 1))
               && !hasNullStreamName;
 
-      LinkedList<NameValuePair> postOrPutParams = new LinkedList<>();
+      List<NameValuePair> postOrPutParams = new ArrayList<>();
 
       if (contentWriter != null) {
         String fullQueryUrl = url + wparams.toQueryString();
@@ -421,7 +420,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
-        ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
         String fullQueryUrl = url + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
@@ -475,7 +474,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       Collection<ContentStream> streams,
       ModifiableSolrParams wparams,
       boolean isMultipart,
-      LinkedList<NameValuePair> postOrPutParams,
+      List<NameValuePair> postOrPutParams,
       String fullQueryUrl)
       throws IOException {
     HttpEntityEnclosingRequestBase postOrPut =
@@ -487,7 +486,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       postOrPut.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
     }
 
-    List<FormBodyPart> parts = new LinkedList<>();
+    List<FormBodyPart> parts = new ArrayList<>();
     Iterator<String> iter = wparams.getParameterNamesIterator();
     while (iter.hasNext()) {
       String p = iter.next();
@@ -508,7 +507,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       for (ContentStream content : streams) {
         String contentType = content.getContentType();
         if (contentType == null) {
-          contentType = BinaryResponseParser.BINARY_CONTENT_TYPE; // default
+          contentType = "multipart/form-data"; // default
         }
         String name = content.getName();
         if (name == null) {
@@ -787,68 +786,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return baseUrl;
   }
 
-  /**
-   * Change the base-url used when sending requests to Solr.
-   *
-   * <p>Two different paths can be specified as a part of this URL:
-   *
-   * <p>1) A path pointing directly at a particular core
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr/core1");
-   *   QueryResponse resp = httpSolrClient.query(new SolrQuery("*:*"));
-   * </pre>
-   *
-   * Note that when a core is provided in the base URL, queries and other requests can be made
-   * without mentioning the core explicitly. However, the client can only send requests to that
-   * core.
-   *
-   * <p>2) The path of the root Solr path ("/solr")
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr");
-   *   QueryResponse resp = httpSolrClient.query("core1", new SolrQuery("*:*"));
-   * </pre>
-   *
-   * In this case the client is more flexible and can be used to send requests to any cores. The
-   * cost of this is that the core must be specified on each request.
-   */
-  public void setBaseURL(String baseURL) {
-    this.baseUrl = baseURL;
-  }
-
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   */
-  public void setParser(ResponseParser processor) {
-    parser = processor;
   }
 
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
-  }
-
-  /**
-   * Configure whether the client should follow redirects or not.
-   *
-   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is misconfigured somewhere.
-   */
-  public void setFollowRedirects(boolean followRedirects) {
-    this.followRedirects = followRedirects;
-  }
-
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   /** Close the {@link HttpClientConnectionManager} from the internal client. */
@@ -861,11 +805,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   public boolean isUseMultiPartPost() {
     return useMultiPartPost;
-  }
-
-  /** Set the multipart connection properties */
-  public void setUseMultiPartPost(boolean useMultiPartPost) {
-    this.useMultiPartPost = useMultiPartPost;
   }
 
   /**
@@ -940,7 +879,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      * In this case the client is more flexible and can be used to send requests to any cores. This
      * flexibility though requires that the core be specified on all requests.
      *
-     * <p>By default, compression is not enabled on created HttpSolrClient objects.
+     * <p>By default, compression is not enabled on created HttpSolrClient objects. By default,
+     * redirects are not followed in created HttpSolrClient objects. By default, {@link
+     * BinaryRequestWriter} is used for composing requests. By default, {@link BinaryResponseParser}
+     * is used for parsing responses.
+     *
+     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created
+     *     clients.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -993,6 +938,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
         return new HttpSolrClient(this);
       } else {
+        urlParamNames =
+            urlParamNames == null
+                ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
+                : urlParamNames;
+        if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
+          urlParamNames = new HashSet<>(urlParamNames);
+          urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
+        }
+        urlParamNames = Set.copyOf(urlParamNames);
         return new DelegationTokenHttpSolrClient(this);
       }
     }

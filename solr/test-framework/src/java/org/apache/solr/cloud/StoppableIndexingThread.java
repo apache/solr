@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -25,8 +26,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.StoppableThread {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   static String t1 = "a_t";
   static String i1 = "a_i";
   private volatile boolean stop = false;
@@ -99,11 +104,9 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
 
           cloudClient.deleteById(deleteId);
         } catch (Exception e) {
-          System.err.println("REQUEST FAILED for id=" + deleteId);
-          e.printStackTrace();
+          log.error("REQUEST FAILED for id={}", deleteId, e);
           if (e instanceof SolrServerException) {
-            System.err.println("ROOT CAUSE for id=" + deleteId);
-            ((SolrServerException) e).getRootCause().printStackTrace();
+            log.error("ROOT CAUSE for id={}", deleteId, ((SolrServerException) e).getRootCause());
           }
           deleteFails.add(deleteId);
         }
@@ -123,11 +126,9 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         }
       } catch (Exception e) {
         addFailed = true;
-        System.err.println("REQUEST FAILED for id=" + id);
-        e.printStackTrace();
+        log.error("REQUEST FAILED for id={}", id, e);
         if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE for id=" + id);
-          ((SolrServerException) e).getRootCause().printStackTrace();
+          log.error("ROOT CAUSE for id={}", id, ((SolrServerException) e).getRootCause());
         }
         addFails.add(id);
       }

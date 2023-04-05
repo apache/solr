@@ -118,7 +118,7 @@ public class RelatednessAgg extends AggValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!Objects.equals(this.getClass(), o.getClass())) {
+    if (!(o instanceof RelatednessAgg)) {
       return false;
     }
     RelatednessAgg that = (RelatednessAgg) o;
@@ -138,6 +138,7 @@ public class RelatednessAgg extends AggValueSource {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
+  @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
       throws IOException {
     // TODO: Ideally this is where we should check fgQ/bgQ for 'null' and apply defaults...
@@ -259,6 +260,7 @@ public class RelatednessAgg extends AggValueSource {
       }
     }
 
+    @Override
     public int compare(int slotA, int slotB) {
       int r = Double.compare(getRelatedness(slotA), getRelatedness(slotB));
       if (0 == r) {
@@ -440,6 +442,7 @@ public class RelatednessAgg extends AggValueSource {
       return docs.size();
     }
 
+    @Override
     public int compare(int slotA, int slotB) {
       final BucketData a = slotvalues[slotA];
       final BucketData b = slotvalues[slotB];
@@ -565,7 +568,7 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public boolean equals(Object other) {
-      if (!Objects.equals(this.getClass(), other.getClass())) {
+      if (!(other instanceof BucketData)) {
         return false;
       }
       BucketData that = (BucketData) other;

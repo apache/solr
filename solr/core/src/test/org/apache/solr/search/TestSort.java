@@ -314,9 +314,11 @@ public class TestSort extends SolrTestCaseJ4 {
         Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
 
         final String nullRep =
-            luceneSort || sortMissingFirst && !reverse || sortMissingLast && reverse ? "" : "zzz";
+            luceneSort || (sortMissingFirst && !reverse) || (sortMissingLast && reverse)
+                ? ""
+                : "zzz";
         final String nullRep2 =
-            luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2
+            luceneSort2 || (sortMissingFirst2 && !reverse2) || (sortMissingLast2 && reverse2)
                 ? ""
                 : "zzz";
 

@@ -23,13 +23,16 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -95,24 +98,24 @@ public class MoreLikeThisComponent extends SearchComponent {
             rb.rsp.add("moreLikeThis", new NamedList<DocList>());
             return;
           }
-
           MoreLikeThisHandler.MoreLikeThisHelper mlt =
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
-
-          NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb.getResults().docList);
-
-          NamedList<String> temp = new NamedList<>();
-          Iterator<Entry<String, BooleanQuery>> idToQueryIt = bQuery.iterator();
-
-          while (idToQueryIt.hasNext()) {
-            Entry<String, BooleanQuery> idToQuery = idToQueryIt.next();
-            String s = idToQuery.getValue().toString();
-
-            log.debug("MLT Query:{}", s);
-            temp.add(idToQuery.getKey(), idToQuery.getValue().toString());
+          NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
+          for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
+            int docId = results.nextDoc();
+            final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
+                mlt.getInterestingTerms(mlt.getBoostedMLTQuery(docId), -1);
+            if (interestingTerms.isEmpty()) {
+              continue;
+            }
+            final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
+            final Document document = rb.req.getSearcher().doc(docId);
+            final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
+            final NamedList<String> mltQ =
+                mltViaQueryParams(rb.req.getSchema(), interestingTerms, uniqueKey, uniqueVal);
+            mltQueryByDocKey.add(uniqueVal, mltQ);
           }
-
-          rb.rsp.add("moreLikeThis", temp);
+          rb.rsp.add("moreLikeThis", mltQueryByDocKey);
         } else {
           NamedList<DocList> sim =
               getMoreLikeThese(rb, rb.req.getSearcher(), rb.getResults().docList, flags);
@@ -127,6 +130,53 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
   }
 
+  private static NamedList<String> mltViaQueryParams(
+      IndexSchema schema,
+      List<MoreLikeThisHandler.InterestingTerm> terms,
+      String uniqueField,
+      String uniqueVal) {
+    final NamedList<String> mltQ = new NamedList<>();
+    StringBuilder q = new StringBuilder("{!bool");
+    q.append(" must_not=$");
+    int cnt = 0;
+    String param = "mltq" + (cnt++);
+    q.append(param);
+    mltQ.add(param, "{!field f=" + uniqueField + "}" + uniqueVal);
+    final StringBuilder reuseStr = new StringBuilder();
+    final CharsRefBuilder reuseChar = new CharsRefBuilder();
+    for (MoreLikeThisHandler.InterestingTerm term : terms) {
+      param = "mltq" + (cnt++);
+      q.append(" should=$");
+      q.append(param);
+      mltQ.add(param, toParserParam(schema, term.term, term.boost, reuseStr, reuseChar));
+    }
+    q.append("}");
+    mltQ.add(CommonParams.Q, q.toString());
+    return mltQ;
+  }
+
+  private static String toParserParam(
+      IndexSchema schema,
+      Term term1,
+      float boost,
+      StringBuilder reuseStr,
+      CharsRefBuilder reuseChar) {
+    reuseStr.setLength(0);
+    if (boost != 1f) {
+      reuseStr.append("{!boost b=");
+      reuseStr.append(boost);
+      reuseStr.append("}");
+    }
+    final String field = term1.field();
+    final CharsRef val =
+        schema.getField(field).getType().indexedToReadable(term1.bytes(), reuseChar);
+    reuseStr.append("{!term f=");
+    reuseStr.append(ClientUtils.encodeLocalParamVal(field));
+    reuseStr.append("}");
+    reuseStr.append(val);
+    return reuseStr.toString();
+  }
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0
@@ -139,17 +189,18 @@ public class MoreLikeThisComponent extends SearchComponent {
           // This should only happen in case of using shards.tolerant=true. Omit this ShardResponse
           continue;
         }
-        NamedList<?> moreLikeThisReponse =
-            (NamedList<?>) r.getSolrResponse().getResponse().get("moreLikeThis");
+        @SuppressWarnings("unchecked")
+        NamedList<NamedList<String>> moreLikeThisReponse =
+            (NamedList<NamedList<String>>) r.getSolrResponse().getResponse().get("moreLikeThis");
         if (log.isDebugEnabled()) {
           log.debug("ShardRequest.response.shard: {}", r.getShard());
         }
         if (moreLikeThisReponse != null) {
-          for (Entry<String, ?> entry : moreLikeThisReponse) {
+          for (Entry<String, NamedList<String>> entry : moreLikeThisReponse) {
             if (log.isDebugEnabled()) {
               log.debug("id: '{}' Query: '{}'", entry.getKey(), entry.getValue());
             }
-            ShardRequest s = buildShardQuery(rb, (String) entry.getValue(), entry.getKey());
+            ShardRequest s = buildShardQuery(rb, entry.getValue(), entry.getKey());
             rb.addRequest(this, s);
           }
         }
@@ -273,6 +324,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     // hmm...we are ordering by scores that are not really comparable...
     Comparator<SolrDocument> c =
         new Comparator<SolrDocument>() {
+          @Override
           public int compare(SolrDocument o1, SolrDocument o2) {
             Float f1 = getFloat(o1);
             Float f2 = getFloat(o2);
@@ -308,7 +360,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     return result;
   }
 
-  ShardRequest buildShardQuery(ResponseBuilder rb, String q, String key) {
+  ShardRequest buildShardQuery(ResponseBuilder rb, NamedList<String> q, String key) {
     ShardRequest s = new ShardRequest();
     s.params = new ModifiableSolrParams(rb.req.getParams());
     s.purpose |= ShardRequest.PURPOSE_GET_MLT_RESULTS;
@@ -336,24 +388,9 @@ public class MoreLikeThisComponent extends SearchComponent {
     s.params.set(CommonParams.FL, "score," + id);
     s.params.set(SORT, "score desc");
     // MLT Query is submitted as normal query to shards.
-    s.params.set(CommonParams.Q, q);
+    s.params.remove(CommonParams.Q);
+    q.forEach((k, v) -> s.params.add(k, v));
 
-    return s;
-  }
-
-  ShardRequest buildMLTQuery(ResponseBuilder rb, String q) {
-    ShardRequest s = new ShardRequest();
-    s.params = new ModifiableSolrParams();
-
-    s.params.set(CommonParams.START, 0);
-
-    String id = rb.req.getSchema().getUniqueKeyField().getName();
-
-    s.params.set(CommonParams.FL, "score," + id);
-    // MLT Query is submitted as normal query to shards.
-    s.params.set(CommonParams.Q, q);
-
-    s.shards = ShardRequest.ALL_SHARDS;
     return s;
   }
 
@@ -374,12 +411,8 @@ public class MoreLikeThisComponent extends SearchComponent {
     SimpleOrderedMap<Object> interestingTermsResponse = null;
     MoreLikeThisParams.TermStyle interestingTermsConfig =
         MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
-    List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
-        (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
-            ? null
-            : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
 
-    if (interestingTerms != null) {
+    if (interestingTermsConfig != MoreLikeThisParams.TermStyle.NONE) {
       interestingTermsResponse = new SimpleOrderedMap<>();
     }
 
@@ -387,8 +420,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
 
-      DocListAndSet similarDocuments =
-          mltHelper.getMoreLikeThis(id, 0, rows, null, interestingTerms, flags);
+      DocListAndSet similarDocuments = mltHelper.getMoreLikeThis(id, 0, rows, null, flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
       mltResponse.add(name, similarDocuments.docList);
 
@@ -409,6 +441,9 @@ public class MoreLikeThisComponent extends SearchComponent {
       }
 
       if (interestingTermsResponse != null) {
+        List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
+            mltHelper.getInterestingTerms(
+                mltHelper.getBoostedMLTQuery(), mltHelper.getMoreLikeThis().getMaxQueryTerms());
         if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
           SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
           for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {

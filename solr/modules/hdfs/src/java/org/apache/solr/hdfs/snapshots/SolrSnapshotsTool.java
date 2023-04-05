@@ -17,7 +17,6 @@
 
 package org.apache.solr.hdfs.snapshots;
 
-import com.google.common.base.Preconditions;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -121,9 +120,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     CollectionAdminResponse resp;
     try {
       resp = createSnap.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
+      if (resp.getStatus() != 0) {
+        throw new IllegalStateException(
+            "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
+      }
       CLIO.out(
           "Successfully created snapshot with name "
               + snapshotName
@@ -152,9 +152,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     CollectionAdminResponse resp;
     try {
       resp = deleteSnap.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
+      checkResponse(resp, "DELETESNAPSHOT");
       CLIO.out(
           "Successfully deleted snapshot with name "
               + snapshotName
@@ -177,15 +175,20 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
+  private static void checkResponse(CollectionAdminResponse resp, String requestType) {
+    if (resp.getStatus() != 0) {
+      throw new IllegalStateException(
+          "The " + requestType + " request failed. The status code is " + resp.getStatus());
+    }
+  }
+
   public void listSnapshots(String collectionName) {
     CollectionAdminRequest.ListSnapshots listSnaps =
         new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp;
     try {
       resp = listSnaps.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
+      checkResponse(resp, "LISTSNAPSHOTS");
 
       NamedList<?> apiResult =
           (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
@@ -327,8 +330,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     backup.setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
     backup.setLocation(backupLoc);
     CollectionAdminResponse resp = backup.process(solrClient);
-    Preconditions.checkState(
-        resp.getStatus() == 0, "The request failed. The status code is " + resp.getStatus());
+    checkResponse(resp, "BACKUP");
   }
 
   /**
@@ -569,7 +571,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp = listSnapshots.process(solrClient);
 
-    Preconditions.checkState(resp.getStatus() == 0);
+    checkResponse(resp, "LISTSNAPSHOTS");
 
     NamedList<?> apiResult =
         (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
@@ -599,6 +601,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   private static class OptionComarator<T extends Option> implements Comparator<T> {
 
+    @Override
     public int compare(T o1, T o2) {
       String s1 = o1.hasLongOpt() ? o1.getLongOpt() : o1.getOpt();
       String s2 = o2.hasLongOpt() ? o2.getLongOpt() : o2.getOpt();

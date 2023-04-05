@@ -19,14 +19,11 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Locale;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
-import org.apache.solr.util.SolrVersion;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -54,25 +51,15 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   private static LocalWebServer repositoryServer;
 
-  @SuppressWarnings("AssertionFailureIgnored")
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // Checks that semver4j works with configured locale */
-    try {
-      assertTrue(SolrVersion.valueOf("9.0.1").satisfies("~9.0"));
-    } catch (AssertionError e) {
-      SolrTestCaseJ4.assumeNoException(
-          "See SOLR-16467 - semver4j doesn't work with " + Locale.getDefault().toLanguageTag(),
-          new Exception(e));
-    }
-
     System.setProperty("enable.packages", "true");
 
     configureCluster(1)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
-            "conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+            "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     repositoryServer =
@@ -116,7 +103,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf2", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 

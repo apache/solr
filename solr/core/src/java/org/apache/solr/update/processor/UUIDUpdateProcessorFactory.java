@@ -18,8 +18,8 @@ package org.apache.solr.update.processor;
 
 import java.util.Locale;
 import java.util.UUID;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
@@ -61,6 +61,7 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   protected String fieldName = null;
 
+  @Override
   public void init(NamedList<?> args) {
 
     Object obj = args.remove(FIELD_PARAM);
@@ -69,16 +70,17 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     }
   }
 
+  @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     String fieldName = this.fieldName;
 
     String fname = req.getParams().get(PREFIX_PARAM + FIELD_PARAM);
-    if (!StringUtils.isEmpty(fname)) {
+    if (StrUtils.isNotNullOrEmpty(fname)) {
       fieldName = fname;
     }
 
-    if (StringUtils.isEmpty(fieldName)) {
+    if (StrUtils.isNullOrEmpty(fieldName)) {
       SchemaField schemaField = req.getSchema().getUniqueKeyField();
       fieldName = schemaField.getName();
     }

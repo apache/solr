@@ -103,6 +103,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return interceptorRegistered;
   }
 
+  // TODO We only use PublicKeyHandler here to gain access to the underlying keypair; let's nuke the
+  // indirection and
+  //  just pass in the SolrNodeKeyPair instance directly
   public PKIAuthenticationPlugin(
       CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
     this.publicKeyHandler = publicKeyHandler;
@@ -176,7 +179,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
 
     final Principal principal =
-        "$".equals(headerData.userName) ? SU : new BasicUserPrincipal(headerData.userName);
+        "$".equals(headerData.userName)
+            ? CLUSTER_MEMBER_NODE
+            : new BasicUserPrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -399,7 +404,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {
-    return req.getUserPrincipal() != SU;
+    return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
   }
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
@@ -461,7 +466,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
     String s = usr + " " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(myNodeName + " " + base64Cipher);
@@ -476,7 +481,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     String s = myNodeName + " " + user + " " + Instant.now().toEpochMilli();
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] signature = publicKeyHandler.keyPair.signSha256(payload);
+    byte[] signature = publicKeyHandler.getKeyPair().signSha256(payload);
     String base64Signature = Base64.getEncoder().encodeToString(signature);
     return Optional.of(s + " " + base64Signature);
   }
@@ -505,12 +510,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @VisibleForTesting
   public String getPublicKey() {
-    return publicKeyHandler.getPublicKey();
+    return publicKeyHandler.getKeyPair().getPublicKeyStr();
   }
 
   public static final String HEADER = "SolrAuth";
   public static final String HEADER_V2 = "SolrAuthV2";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
-  private static final Principal SU = new BasicUserPrincipal("$");
+  public static final Principal CLUSTER_MEMBER_NODE = new BasicUserPrincipal("$");
 }

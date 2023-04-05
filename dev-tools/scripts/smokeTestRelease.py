@@ -204,9 +204,9 @@ def checkAllJARs(topDir, gitRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
+            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
+            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -277,16 +277,19 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   if os.path.exists(gpgHomeDir):
     shutil.rmtree(gpgHomeDir)
   os.makedirs(gpgHomeDir, 0o700)
-  run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
-      '%s/solr.gpg.import.log' % tmpDir)
+  gpgLogFile = '%s/solr.gpg.import.log' % tmpDir
+  run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile), gpgLogFile)
 
   if mavenURL is None:
+    stopGpgAgent(gpgHomeDir, logFile)
     raise RuntimeError('solr is missing maven')
 
   if dockerURL is None:
+    stopGpgAgent(gpgHomeDir, logFile)
     raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
+    stopGpgAgent(gpgHomeDir, logfile)
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
@@ -324,6 +327,11 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
           if line.lower().find('warning') != -1:
             print('      GPG: %s' % line.strip())
 
+      # Make sure to shutdown the GPG agent at the end
+      stopGpgAgent(gpgHomeDir, logFile)
+
+def stopGpgAgent(gpgHomeDir, logFile):
+  run('gpgconf --homedir %s --kill gpg-agent' % (gpgHomeDir), logFile)
 
 def testChanges(version, changesURLString):
   print('  check changes HTML...')
@@ -568,10 +576,10 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   in_solr_folder = []
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE', 'NOTICE', 'README'])
-    is_in_list(in_solr_folder, ['CHANGES', 'README'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
+    is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
   else:
-    is_in_list(in_root_folder, ['LICENSE', 'NOTICE', 'README', 'CHANGES'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
 
   if SOLR_NOTICE is None:
     SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -592,7 +600,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -600,7 +608,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -923,6 +931,8 @@ def verifyMavenSigs(tmpDir, artifacts, keysFile):
     sys.stdout.write('.')
   print()
 
+  # Make sure to shutdown the GPG agent at the end
+  stopGpgAgent(gpgHomeDir, logFile)
 
 def print_warnings_in_file(file):
   with open(file) as f:

@@ -17,8 +17,8 @@
 package org.apache.solr.security.hadoop;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -149,11 +149,11 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       throw new IllegalArgumentException("zkClient required");
     }
     String zkHost = zkClient.getZkServerAddress();
-    String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : "";
+    String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : "";
     String zkNamespace = zkChroot + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH;
     zkNamespace = zkNamespace.startsWith("/") ? zkNamespace.substring(1) : zkNamespace;
     String zkConnectionString =
-        zkHost.contains("/") ? zkHost.substring(0, zkHost.indexOf("/")) : zkHost;
+        zkHost.contains("/") ? zkHost.substring(0, zkHost.indexOf('/')) : zkHost;
     SolrZkToCuratorCredentialsACLs curatorToSolrZk = new SolrZkToCuratorCredentialsACLs(zkClient);
     final int connectionTimeoutMs = 30000; // this value is currently hard coded, see SOLR-7561.
 
@@ -191,7 +191,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       this.aclProvider = createACLProvider(zkClient);
       this.authInfos = createAuthInfo(zkClient);
       String zkHost = zkClient.getZkServerAddress();
-      this.zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
+      this.zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : null;
     }
 
     public ACLProvider getACLProvider() {
@@ -231,7 +231,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     }
 
     private List<AuthInfo> createAuthInfo(SolrZkClient zkClient) {
-      List<AuthInfo> ret = new LinkedList<AuthInfo>();
+      List<AuthInfo> ret = new ArrayList<>();
 
       // In theory the credentials to add could change here if zookeeper hasn't been initialized
       ZkCredentialsProvider credentialsProvider =

@@ -92,11 +92,8 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory
     @SuppressWarnings("unused")
     private final SolrQueryRequest req;
 
-    private final UpdateRequestProcessor next;
-
     private AtomicUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next) {
       super(next);
-      this.next = next;
       this.req = req;
     }
 

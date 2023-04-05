@@ -24,13 +24,15 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
 /**
- * @since solr 1.3
+ * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the streaming update
+ * client for communication.
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
@@ -41,21 +43,13 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      // smaller queue size hits locks more often
-      ConcurrentUpdateSolrClient concurrentClient =
-          new ErrorTrackingConcurrentUpdateSolrClient.Builder(url)
-              .withQueueSize(2)
-              .withThreadCount(5)
-              .build();
-      concurrentClient.setParser(new XMLResponseParser());
-      concurrentClient.setRequestWriter(new RequestWriter());
-      return concurrentClient;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    // smaller queue size hits locks more often
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
+        .withQueueSize(2)
+        .withThreadCount(5)
+        .withResponseParser(new XMLResponseParser())
+        .withRequestWriter(new RequestWriter())
+        .build();
   }
 
   public void testWaitOptions() throws Exception {
@@ -69,7 +63,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
             .withThreadCount(2)
             .build()) {
       int docId = 42;
-      for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+      for (AbstractUpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
           for (boolean waitFlush : Arrays.asList(true, false)) {
             UpdateRequest updateRequest = new UpdateRequest();

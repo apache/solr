@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,14 +30,9 @@ import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
   private static SolrResourceLoader loader = null;

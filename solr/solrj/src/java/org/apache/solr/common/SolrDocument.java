@@ -89,6 +89,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
    * Set a field with the given object. If the object is an Array, it will set multiple fields with
    * the included contents. This will replace any existing field with the given name
    */
+  @Override
   public void setField(String name, Object value) {
     if (value instanceof Object[]) {
       value = new ArrayList<>(Arrays.asList((Object[]) value));

@@ -522,7 +522,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     cond.setValue(false).setExists(true);
-    then.setValue(1234324.454F).setExists(true);
+    then.setValue(1234324.5F).setExists(true);
     els.setExists(false);
     func.getObject();
     assertFalse(func.exists());
@@ -769,7 +769,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
         });
 
     cond.setExists(false);
-    then.setValues(2134.2345F, -234.23F, 20000.0F);
+    then.setValues(2134.2346F, -234.23F, 20000.0F);
     els.setValues(.1111F, -.22222F, .333F);
     func.streamFloats(
         value -> {
@@ -786,7 +786,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
         });
 
     cond.setValue(false).setExists(true);
-    then.setValues(2134.2345F, -234.23F, 20000.0F);
+    then.setValues(2134.2346F, -234.23F, 20000.0F);
     els.setValues();
     func.streamFloats(
         value -> {
@@ -795,9 +795,9 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
 
     // Values exist
     cond.setValue(true).setExists(true);
-    then.setValues(2134.2345F, -234.23F, 20000.0F);
+    then.setValues(2134.2346F, -234.23F, 20000.0F);
     els.setValues(.1111F, -.22222F, .333F);
-    Iterator<Float> values1 = Arrays.asList(2134.2345F, -234.23F, 20000.0F).iterator();
+    Iterator<Float> values1 = Arrays.asList(2134.2346F, -234.23F, 20000.0F).iterator();
     func.streamFloats(
         value -> {
           assertTrue(values1.hasNext());
@@ -806,7 +806,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values1.hasNext());
 
     cond.setValue(false).setExists(true);
-    then.setValues(2134.2345F, -234.23F, 20000.0F);
+    then.setValues(2134.2346F, -234.23F, 20000.0F);
     els.setValues(.1111F, -.22222F, .333F);
     Iterator<Float> values2 = Arrays.asList(.1111F, -.22222F, .333F).iterator();
     func.streamFloats(
@@ -1049,7 +1049,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
 
     cond.setExists(false);
     then.setValues(new Date(142341), "abcsdafasd", 1234.1324123);
-    els.setValues(324923.0234F, 123, Boolean.TRUE, "if statement");
+    els.setValues(324923.03F, 123, Boolean.TRUE, "if statement");
     func.streamObjects(
         value -> {
           fail("There should be no values to stream");
@@ -1058,7 +1058,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
     // Result doesn't exist
     cond.setValue(true).setExists(true);
     then.setValues();
-    els.setValues(324923.0234F, 123, Boolean.TRUE, "if statement");
+    els.setValues(324923.03F, 123, Boolean.TRUE, "if statement");
     func.streamObjects(
         value -> {
           fail("There should be no values to stream");
@@ -1075,7 +1075,7 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
     // Values exist
     cond.setValue(true).setExists(true);
     then.setValues(new Date(142341), "abcsdafasd", 1234.1324123);
-    els.setValues(324923.0234F, 123, Boolean.TRUE, "if statement");
+    els.setValues(324923.03F, 123, Boolean.TRUE, "if statement");
     Iterator<Object> values1 =
         Arrays.<Object>asList(new Date(142341), "abcsdafasd", 1234.1324123).iterator();
     func.streamObjects(
@@ -1087,9 +1087,9 @@ public class IfFunctionTest extends SolrTestCaseJ4 {
 
     cond.setValue(false).setExists(true);
     then.setValues(new Date(142341), "abcsdafasd", 1234.1324123);
-    els.setValues(324923.0234F, 123, Boolean.TRUE, "if statement");
+    els.setValues(324923.03F, 123, Boolean.TRUE, "if statement");
     Iterator<Object> values2 =
-        Arrays.<Object>asList(324923.0234F, 123, Boolean.TRUE, "if statement").iterator();
+        Arrays.<Object>asList(324923.03F, 123, Boolean.TRUE, "if statement").iterator();
     func.streamObjects(
         value -> {
           assertTrue(values2.hasNext());

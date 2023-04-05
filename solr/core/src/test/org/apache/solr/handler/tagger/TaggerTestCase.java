@@ -30,9 +30,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
-import org.apache.commons.lang3.builder.CompareToBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -211,7 +210,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  class TestTag implements Comparable<TestTag> {
+  static class TestTag implements Comparable<TestTag> {
     final int startOffset, endOffset;
     final String substring;
     final String docName;
@@ -242,12 +241,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object obj) {
+      if (!(obj instanceof TestTag)) return false;
       TestTag that = (TestTag) obj;
-      return new EqualsBuilder()
-          .append(this.startOffset, that.startOffset)
-          .append(this.endOffset, that.endOffset)
-          .append(this.docName, that.docName)
-          .isEquals();
+      return this.startOffset == that.startOffset
+          && this.endOffset == that.endOffset
+          && Objects.equals(this.docName, that.docName);
     }
 
     @Override
@@ -257,11 +255,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public int compareTo(TestTag that) {
-      return new CompareToBuilder()
-          .append(this.startOffset, that.startOffset)
-          .append(this.endOffset, that.endOffset)
-          .append(this.docName, that.docName)
-          .toComparison();
+      int startOffsetCompare = Integer.compare(this.startOffset, that.startOffset);
+      if (startOffsetCompare != 0) return startOffsetCompare;
+      int endOffsetCompare = Integer.compare(this.endOffset, that.endOffset);
+      if (endOffsetCompare != 0) return endOffsetCompare;
+      return this.docName.compareTo(that.docName);
     }
   }
 }

@@ -363,6 +363,7 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @Override
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
@@ -617,6 +618,7 @@ public class StatsValuesFactory {
       }
     }
 
+    @Override
     protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
       if (computeMin) { // nested if to encourage JIT to optimize aware final var?
         if (null != min) {

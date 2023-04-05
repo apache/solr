@@ -22,15 +22,16 @@ import com.codahale.metrics.Timer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,11 +62,14 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrInfoBean;
@@ -152,7 +156,8 @@ public class Overseer implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = ZkStateReader.STATE_UPDATE_DELAY;
   public static final int STATE_UPDATE_BATCH_SIZE =
       Integer.getInteger("solr.OverseerStateUpdateBatchSize", 10000);
-  public static final int STATE_UPDATE_MAX_QUEUE = 20000;
+  public static final int STATE_UPDATE_MAX_QUEUE =
+      Integer.getInteger("solr.OverseerStateUpdateMaxQueueSize", 20000);
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
@@ -198,9 +203,18 @@ public class Overseer implements SolrCloseable {
 
     private SolrMetricsContext clusterStateUpdaterMetricContext;
 
+    private final int minStateByteLenForCompression;
+
+    private final Compressor compressor;
+
     private boolean isClosed = false;
 
-    public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
+    public ClusterStateUpdater(
+        final ZkStateReader reader,
+        final String myId,
+        Stats zkStats,
+        int minStateByteLenForCompression,
+        Compressor compressor) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
       this.stateUpdateQueue = getStateUpdateQueue(zkStats);
@@ -210,6 +224,8 @@ public class Overseer implements SolrCloseable {
       this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
 
       clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
       clusterStateUpdaterMetricContext.gauge(
@@ -262,7 +278,8 @@ public class Overseer implements SolrCloseable {
             try {
               reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
-              zkStateWriter = new ZkStateWriter(reader, stats);
+              zkStateWriter =
+                  new ZkStateWriter(reader, stats, minStateByteLenForCompression, compressor);
               refreshClusterState = false;
 
               // if there were any errors while processing
@@ -314,11 +331,11 @@ public class Overseer implements SolrCloseable {
             }
           }
 
-          LinkedList<Pair<String, byte[]>> queue = null;
+          ArrayDeque<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we
             // flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
+            queue = new ArrayDeque<>(stateUpdateQueue.peekElements(1000, 3000L, (x) -> true));
           } catch (KeeperException.SessionExpiredException e) {
             log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
             return;
@@ -368,7 +385,7 @@ public class Overseer implements SolrCloseable {
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together
               queue =
-                  new LinkedList<>(
+                  new ArrayDeque<>(
                       stateUpdateQueue.peekElements(
                           1000, 100, node -> !processedNodes.contains(node)));
             }
@@ -727,9 +744,20 @@ public class Overseer implements SolrCloseable {
     createOverseerNode(reader.getZkClient());
     // launch cluster state updater thread
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
+    String stateCompressionProviderClass = config.getStateCompressorClass();
+    Compressor compressor =
+        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
+            ? new ZLibCompressor()
+            : zkController
+                .getCoreContainer()
+                .getResourceLoader()
+                .newInstance(stateCompressionProviderClass, Compressor.class);
     updaterThread =
         new OverseerThread(
-            tg, new ClusterStateUpdater(reader, id, stats), "OverseerStateUpdate-" + id);
+            tg,
+            new ClusterStateUpdater(
+                reader, id, stats, config.getMinStateByteLenForCompression(), compressor),
+            "OverseerStateUpdate-" + id);
     updaterThread.setDaemon(true);
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
@@ -831,8 +859,8 @@ public class Overseer implements SolrCloseable {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
                 Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withHttpClient(updateShardHandler.getDefaultHttpClient())
             .build()) {
       CollectionAdminRequest.ColStatus req =
@@ -929,6 +957,7 @@ public class Overseer implements SolrCloseable {
     return updaterThread;
   }
 
+  @Override
   public synchronized void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
@@ -1220,7 +1249,8 @@ public class Overseer implements SolrCloseable {
   public void sendQuitToOverseer(String overseerId) throws KeeperException, InterruptedException {
     getOverseerQuitNotificationQueue()
         .offer(
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(), ID, overseerId));
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())
+                    .put(ID, overseerId));
   }
 }

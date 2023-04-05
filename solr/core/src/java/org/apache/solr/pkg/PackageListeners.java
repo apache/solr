@@ -71,11 +71,11 @@ public class PackageListeners {
     }
   }
 
-  synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
+  synchronized void packagesUpdated(List<SolrPackageLoader.SolrPackage> pkgs) {
     MDCLoggingContext.setCore(core);
     Listener.Ctx ctx = new Listener.Ctx();
     try {
-      for (PackageLoader.Package pkgInfo : pkgs) {
+      for (SolrPackageLoader.SolrPackage pkgInfo : pkgs) {
         invokeListeners(pkgInfo, ctx);
       }
     } finally {
@@ -84,7 +84,7 @@ public class PackageListeners {
     }
   }
 
-  private synchronized void invokeListeners(PackageLoader.Package pkg, Listener.Ctx ctx) {
+  private synchronized void invokeListeners(SolrPackageLoader.SolrPackage pkg, Listener.Ctx ctx) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if (listener == null) continue;
@@ -113,7 +113,7 @@ public class PackageListeners {
     Map<String, PackageAPI.PkgVersion> packageDetails();
 
     /** A callback when the package is updated */
-    void changed(PackageLoader.Package pkg, Ctx ctx);
+    void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx);
 
     default MapWriter getPackageVersion(PluginInfo.ClassName cName) {
       return null;
@@ -124,9 +124,9 @@ public class PackageListeners {
 
       /**
        * If there are multiple packages to be updated and there are multiple listeners, This is
-       * executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)} calls are
-       * invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
-       * If no deduplication is required, use null as the name
+       * executed after all of the {@link Listener#changed(SolrPackageLoader.SolrPackage, Ctx)}
+       * calls are invoked. The name is a unique identifier that can be used by consumers to avoid
+       * duplicate If no deduplication is required, use null as the name
        */
       public void runLater(String name, Runnable runnable) {
         if (runLater == null) runLater = new LinkedHashMap<>();

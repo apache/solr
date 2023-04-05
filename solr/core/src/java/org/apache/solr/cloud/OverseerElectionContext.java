@@ -60,7 +60,7 @@ final class OverseerElectionContext extends ElectionContext {
       return;
     }
     log.info("I am going to be the leader {}", id);
-    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf("/") + 1);
+    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
     zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL, true);

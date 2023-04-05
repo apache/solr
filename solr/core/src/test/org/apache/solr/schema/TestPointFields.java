@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -667,7 +666,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         .toArray(new String[list.size()]);
   }
 
-  private class PosVal<T extends Comparable<T>> {
+  private static class PosVal<T extends Comparable<T>> {
     int pos;
     T val;
 
@@ -676,6 +675,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return "(" + pos + ": " + val.toString() + ")";
     }
@@ -1321,13 +1321,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc(sdoc("id", "1", field, String.valueOf(number1))));
     assertU(commit());
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("inc", (float) inc1))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("inc", (float) inc1))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/float[@name='" + field + "'][.='" + number2 + "']");
 
     float number3 = getRandomFloats(1, false).get(0);
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", number3))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", number3))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/float[@name='" + field + "'][.='" + number3 + "']");
@@ -1348,13 +1348,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc(sdoc("id", "1", field, String.valueOf(number1))));
     assertU(commit());
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("inc", inc1.doubleValue()))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("inc", inc1.doubleValue()))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/double[@name='" + field + "'][.='" + number2 + "']");
 
     double number3 = getRandomDoubles(1, false).get(0);
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", number3))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", number3))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/double[@name='" + field + "'][.='" + number3 + "']");
@@ -4662,7 +4662,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='" + values[0] + "']",
         "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=1");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("add", values[1]))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("add", values[1]))));
     assertU(commit());
 
     assertQ(
@@ -4671,7 +4671,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='" + values[1] + "']",
         "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=2");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("remove", values[0]))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("remove", values[0]))));
     assertU(commit());
 
     assertQ(
@@ -4679,7 +4679,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='" + values[1] + "']",
         "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=1");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", Arrays.asList(values)))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", Arrays.asList(values)))));
     assertU(commit());
 
     assertQ(
@@ -4689,7 +4689,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='" + field + "']/" + type + "[.='" + values[2] + "']",
         "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=3");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("removeregex", ".*"))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("removeregex", ".*"))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "count(//result/doc[1]/arr[@name='" + field + "']/" + type + ")=0");
@@ -4701,7 +4701,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     long inc1;
     for (; ; ) {
       number2 = random().nextInt();
-      inc1 = number2 - number1;
+      inc1 = (long) number2 - number1;
       if (Math.abs(inc1) < (long) Integer.MAX_VALUE) {
         break;
       }
@@ -4709,13 +4709,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc(sdoc("id", "1", field, String.valueOf(number1))));
     assertU(commit());
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("inc", (int) inc1))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("inc", (int) inc1))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/int[@name='" + field + "'][.='" + number2 + "']");
 
     int number3 = random().nextInt();
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", number3))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", number3))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/int[@name='" + field + "'][.='" + number3 + "']");
@@ -4735,13 +4735,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc(sdoc("id", "1", field, String.valueOf(number1))));
     assertU(commit());
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("inc", inc1.longValueExact()))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("inc", inc1.longValueExact()))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/long[@name='" + field + "'][.='" + number2 + "']");
 
     long number3 = random().nextLong();
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", number3))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", number3))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/long[@name='" + field + "'][.='" + number3 + "']");
@@ -5715,7 +5715,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
     assertQ(req("q", "id:1"), "//result/doc[1]/date[@name='" + field + "'][.='" + date1 + "']");
 
-    assertU(adoc(sdoc("id", "1", field, ImmutableMap.of("set", date1 + gap))));
+    assertU(adoc(sdoc("id", "1", field, Map.of("set", date1 + gap))));
     assertU(commit());
 
     assertQ(req("q", "id:1"), "//result/doc[1]/date[@name='" + field + "'][.='" + date2 + "']");

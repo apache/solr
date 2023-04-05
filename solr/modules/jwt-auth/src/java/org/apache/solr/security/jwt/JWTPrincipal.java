@@ -62,7 +62,7 @@ public class JWTPrincipal implements Principal {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof JWTPrincipal)) return false;
     JWTPrincipal that = (JWTPrincipal) o;
     return Objects.equals(username, that.username)
         && Objects.equals(token, that.token)

@@ -38,7 +38,6 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -51,6 +50,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -104,6 +104,15 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           getFileContent("runtimecode/runtimelibs.jar.bin"),
           "/package/mypkg/v1.0/runtimelibs.jar",
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
+
+      NavigableObject rsp =
+          postFile(
+              cluster.getSolrClient(),
+              getFileContent("runtimecode/runtimelibs.jar.bin"),
+              "/package/mypkg/v1.0/runtimelibs.jar",
+              "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
+
+      assertTrue(rsp._getStr("message", "").contains("File with same metadata exists "));
 
       assertResponseValues(
           10,
@@ -323,7 +332,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         false);
   }
 
-  public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
+  public static NavigableObject postFile(
+      SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/cluster/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -338,6 +348,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
             .build()
             .process(client);
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
+    return rsp;
   }
 
   /**

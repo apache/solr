@@ -17,7 +17,6 @@
 
 package org.apache.solr.hdfs.backup.repository;
 
-import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -104,6 +103,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (this.fileSystem != null) {
       this.fileSystem.close();
@@ -138,7 +138,9 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public URI resolve(URI baseUri, String... pathComponents) {
-    Preconditions.checkArgument(baseUri.isAbsolute());
+    if (!baseUri.isAbsolute()) {
+      throw new IllegalArgumentException("baseUri must be absolute");
+    }
 
     Path result = new Path(baseUri);
     for (String path : pathComponents) {

@@ -52,6 +52,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
     init(_fieldName, _analyzerField);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");

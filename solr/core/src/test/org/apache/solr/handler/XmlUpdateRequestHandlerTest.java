@@ -17,8 +17,8 @@
 package org.apache.solr.handler;
 
 import java.io.StringReader;
+import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 import javax.xml.stream.XMLInputFactory;
@@ -213,7 +213,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
   private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {
 
-    private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<>();
+    private final Queue<DeleteUpdateCommand> deleteCommands = new ArrayDeque<>();
 
     public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
       super(next);

@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +55,6 @@ import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
@@ -183,6 +181,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return new CommitVersionInfo(generation, version);
     }
 
+    @Override
     public String toString() {
       return "generation=" + generation + ",version=" + version;
     }
@@ -483,7 +482,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
-      SolrException.log(log, "Index fetch failed ", e);
+      log.error("Index fetch failed", e);
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }
@@ -776,7 +775,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             core.getDirectoryFactory().release(dir);
           } catch (IOException e) {
-            SolrException.log(log, "Could not release directory after fetching file list", e);
+            log.error("Could not release directory after fetching file list", e);
           }
         }
       }
@@ -1458,7 +1457,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     {
       final String reserve = (String) initArgs.get(RESERVE);
-      if (reserve != null && !reserve.trim().equals("")) {
+      if (reserve != null && !reserve.trim().isEmpty()) {
         reserveCommitDuration = readIntervalMs(reserve);
       }
     }
@@ -1628,9 +1627,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     // Throw exception on directory traversal attempts
-    protected String validateFilenameOrError(String filename) {
-      if (filename != null) {
-        Path filePath = Paths.get(filename);
+    protected String validateFilenameOrError(String fileName) {
+      if (fileName != null) {
+        Path filePath = Paths.get(fileName);
         filePath.forEach(
             subpath -> {
               if ("..".equals(subpath.toString())) {
@@ -1640,7 +1639,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (filePath.isAbsolute()) {
           throw new SolrException(ErrorCode.FORBIDDEN, "File name must be relative");
         }
-        return filename;
+        return fileName;
       } else return null;
     }
 
@@ -1681,6 +1680,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
+    @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
 
@@ -1759,7 +1759,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
-      FileInputStream inputStream = null;
       try {
         initWrite();
 
@@ -1795,7 +1794,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (IOException e) {
         log.warn("Exception while writing response for params: {}", params, e);
       } finally {
-        IOUtils.closeQuietly(inputStream);
         extendReserveAndReleaseCommitPoint();
       }
     }
@@ -1807,6 +1805,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
       return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
@@ -1819,6 +1818,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     protected Path initFile() {
       // if it is a conf file read from config directory
       return core.getResourceLoader().getConfigPath().resolve(cfileName);

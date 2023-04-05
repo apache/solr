@@ -497,7 +497,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float1_f")); // should match dynamic field "*_f"
     assertNotNull(schema.getFieldOrNull("float2_f")); // should match dynamic field "*_f"
-    float value = 10898.83491f;
+    float value = 10898.835f;
     String floatString1 = "10898.83491";
     String floatString2 = "10,898.83491";
     SolrInputDocument d =
@@ -522,7 +522,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     final char groupChar = fr_FR.getGroupingSeparator();
     final char decimalChar = fr_FR.getDecimalSeparator();
 
-    float value = 10898.83491F;
+    float value = 10898.835F;
     String floatString1 = "10898" + decimalChar + "83491";
     String floatString2 = "10" + groupChar + "898" + decimalChar + "83491";
 
@@ -544,7 +544,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float1_tf")); // should match dynamic field "*_tf"
     assertNotNull(schema.getFieldOrNull("float2_tf")); // should match dynamic field "*_tf"
-    float value = 10898.83491f;
+    float value = 10898.835f;
     String floatString1 = "10898.83491";
     String floatString2 = "10,898.83491";
     SolrInputDocument d =
@@ -571,7 +571,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     mixedFloats.put(85.0f, "85");
     mixedFloats.put(2894518.0f, "2,894,518");
     mixedFloats.put(2.94423E-9f, 2.94423E-9f); // Float-typed field value
-    mixedFloats.put(48794721.937f, "48,794,721.937");
+    mixedFloats.put(4.879472E+7f, "48,794,721.937");
     SolrInputDocument d =
         processAdd(
             "parse-float-no-run-processor",

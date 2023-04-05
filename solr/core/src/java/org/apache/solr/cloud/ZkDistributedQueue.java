@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,14 +33,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -189,7 +186,9 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] peek(long wait) throws KeeperException, InterruptedException {
-    Preconditions.checkArgument(wait > 0);
+    if (wait < 0) {
+      throw new IllegalArgumentException("Wait must be greater than 0. Wait was " + wait);
+    }
     Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");
@@ -309,10 +308,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  public void offer(MapWriter mw) throws KeeperException, InterruptedException {
-    offer(Utils.toJSON(mw));
-  }
-
   /**
    * Inserts data into queue. If there are no other queue consumers, the offered element will be
    * immediately visible when this method returns.
@@ -387,6 +382,7 @@ public class ZkDistributedQueue implements DistributedQueue {
                     Map<String, Object> fo = new HashMap<>();
                     fo.put("req", failedOp.req);
                     fo.put("resp", failedOp.resp);
+                    failed.add(fo);
                   });
               statsMap.put(op, statMap);
             });

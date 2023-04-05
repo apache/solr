@@ -130,17 +130,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
 
     compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{delete-alias:{ name: aliasName}}",
-        "{operation : deletealias, name: aliasName}");
-
-    compareOutput(
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
-
-    compareOutput(
-        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
 
     compareOutput(
         apiBag,
@@ -201,13 +191,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     compareOutput(
         apiBag,
-        "/collections/collName",
-        POST,
-        "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }",
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}");
-
-    compareOutput(
-        apiBag,
         "/cluster",
         POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }",
@@ -233,13 +216,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
-        "{set-collection-property : {name: 'foo', value:'bar'} }",
-        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}");
   }
 
   static ZkNodeProps compareOutput(

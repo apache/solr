@@ -22,7 +22,7 @@ import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.api.EndPoint;
@@ -53,7 +53,7 @@ public class RequestCoreCommandStatusAPI {
 
   @EndPoint(method = GET, path = "/cores/{core}/command-status/{id}", permission = CORE_READ_PERM)
   public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
+    final Map<String, Object> v1Params = new HashMap<>();
     v1Params.put(
         ACTION, CoreAdminParams.CoreAdminAction.REQUESTSTATUS.name().toLowerCase(Locale.ROOT));
     v1Params.put(CoreAdminParams.REQUESTID, req.getPathTemplateValues().get("id"));

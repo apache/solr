@@ -33,7 +33,6 @@ import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -139,7 +138,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
             try {
               String credentials =
                   new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -286,7 +285,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private class BasicAuthUserPrincipal implements Principal, Serializable {
+  private static class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 
@@ -312,7 +311,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof BasicAuthUserPrincipal)) return false;
       BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
       return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
@@ -324,10 +323,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

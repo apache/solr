@@ -200,6 +200,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       this.fieldName = field;
     }
 
+    @Override
     public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost)
         throws IOException {
       if (!(searcher instanceof SolrIndexSearcher)) {
@@ -225,6 +226,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       }
 
       return new ConstantScoreWeight(this, boost) {
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           if (!matchesAtLeastOneTerm) {
             return null;
@@ -241,6 +243,7 @@ public class TermsQParserPlugin extends QParserPlugin {
               this.score(),
               scoreMode,
               new TwoPhaseIterator(segmentDocValues) {
+                @Override
                 public boolean matches() throws IOException {
                   topLevelDocValues.advanceExact(docBase + approximation.docID());
                   for (long ord = topLevelDocValues.nextOrd();
@@ -254,12 +257,14 @@ public class TermsQParserPlugin extends QParserPlugin {
                   return false;
                 }
 
+                @Override
                 public float matchCost() {
                   return 10.0F;
                 }
               });
         }
 
+        @Override
         public boolean isCacheable(LeafReaderContext ctx) {
           return DocValues.isCacheable(ctx, new String[] {fieldName});
         }

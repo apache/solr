@@ -121,9 +121,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
-    assertConditions(
-        api.getSpec(),
-        Map.of("/methods[0]", "POST", "/commands/delete-replica-property", NOT_NULL));
+    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     api =
@@ -139,7 +137,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
-    assertTrue(methodNames.contains("DELETE"));
     assertTrue(methodNames.contains("POST"));
     assertTrue(methodNames.contains("GET"));
 
@@ -258,7 +255,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       path = "/node/filestore/*",
       method = SolrRequest.METHOD.GET,
       permission = PermissionNameProvider.Name.ALL)
-  public class DummyTest {
+  public static class DummyTest {
     @Command
     public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("FSRead.called", "true");
@@ -266,7 +263,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
   }
 
-  public class DummyTest1 {
+  public static class DummyTest1 {
     @EndPoint(
         path = "/node/filestore/*",
         method = SolrRequest.METHOD.GET,

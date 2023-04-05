@@ -55,6 +55,7 @@ public class SSLConfigurationsTest extends SolrTestCase {
           SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
           SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

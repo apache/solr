@@ -98,11 +98,18 @@ public class SliceMutator {
         new Replica(
             coreNodeName,
             Utils.makeMap(
-                ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
-                ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-                ZkStateReader.NODE_NAME_PROP, nodeName,
-                ZkStateReader.BASE_URL_PROP, baseUrl,
-                ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)),
+                ZkStateReader.CORE_NAME_PROP,
+                message.getStr(ZkStateReader.CORE_NAME_PROP),
+                ZkStateReader.STATE_PROP,
+                message.getStr(ZkStateReader.STATE_PROP),
+                ZkStateReader.NODE_NAME_PROP,
+                nodeName,
+                ZkStateReader.BASE_URL_PROP,
+                baseUrl,
+                ZkStateReader.FORCE_SET_STATE_PROP,
+                "false",
+                ZkStateReader.REPLICA_TYPE,
+                message.get(ZkStateReader.REPLICA_TYPE)),
             coll,
             slice);
 
@@ -160,7 +167,7 @@ public class SliceMutator {
           ZkCoreNodeProps.getCoreUrl(
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
-      if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
+      if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
         newLeader = replica = ReplicaMutator.setLeader(replica);

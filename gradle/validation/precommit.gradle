@@ -29,7 +29,6 @@ configure(rootProject) {
 
     // Solr validation tasks.
     dependsOn ":solr:validateConfigFileSanity"
-    dependsOn ":solr:validateRefGuideFiles"
 
     // Attach all these tasks from all projects that have them.
     // This uses lazy collections as they may not yet be defined.

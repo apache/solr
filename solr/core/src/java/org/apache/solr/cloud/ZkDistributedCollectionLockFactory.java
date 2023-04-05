@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,19 +38,22 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(
       boolean isWriteLock,
       CollectionParams.LockLevel level,
       String collName,
       String shardId,
       String replicaName) {
-    Preconditions.checkArgument(collName != null, "collName can't be null");
-    Preconditions.checkArgument(
-        level == CollectionParams.LockLevel.COLLECTION || shardId != null,
-        "shardId can't be null when getting lock for shard or replica");
-    Preconditions.checkArgument(
-        level != CollectionParams.LockLevel.REPLICA || replicaName != null,
-        "replicaName can't be null when getting lock for replica");
+    Objects.requireNonNull(collName, "collName can't be null");
+    if (level != CollectionParams.LockLevel.COLLECTION) {
+      Objects.requireNonNull(
+          shardId, "shardId can't be null when getting lock for shard or replica");
+    }
+    if (level == CollectionParams.LockLevel.REPLICA) {
+      Objects.requireNonNull(
+          replicaName, "replicaName can't be null when getting lock for replica");
+    }
 
     String lockPath = getLockPath(level, collName, shardId, replicaName);
     return doCreateLock(isWriteLock, lockPath);
@@ -62,19 +65,19 @@ public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
    *
    * <p>The tree of lock directories for a given collection {@code collName} is as follows:
    *
-   * <pre>
-   *   rootPath/
-   *      collName/
-   *         Locks   <-- EPHEMERAL collection level locks go here
-   *         _ShardName1/
-   *            Locks   <-- EPHEMERAL shard level locks go here
-   *            _replicaNameS1R1   <-- EPHEMERAL replica level locks go here
-   *            _replicaNameS1R2   <-- EPHEMERAL replica level locks go here
-   *         _ShardName2/
-   *            Locks   <-- EPHEMERAL shard level locks go here
-   *            _replicaNameS2R1   <-- EPHEMERAL replica level locks go here
-   *            _replicaNameS2R2   <-- EPHEMERAL replica level locks go here
-   * </pre>
+   * <pre>{@code
+   * rootPath/
+   *    collName/
+   *       Locks   <-- EPHEMERAL collection level locks go here
+   *       _ShardName1/
+   *          Locks   <-- EPHEMERAL shard level locks go here
+   *          _replicaNameS1R1   <-- EPHEMERAL replica level locks go here
+   *          _replicaNameS1R2   <-- EPHEMERAL replica level locks go here
+   *       _ShardName2/
+   *          Locks   <-- EPHEMERAL shard level locks go here
+   *          _replicaNameS2R1   <-- EPHEMERAL replica level locks go here
+   *          _replicaNameS2R2   <-- EPHEMERAL replica level locks go here
+   * }</pre>
    *
    * This method will create the path where the {@code EPHEMERAL} lock nodes should go. That path
    * is:

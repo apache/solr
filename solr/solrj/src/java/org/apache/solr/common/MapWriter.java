@@ -18,13 +18,11 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import org.apache.solr.common.util.Utils;
 
 /**
@@ -39,49 +37,19 @@ public interface MapWriter extends MapSerializable, NavigableObject {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   default Map<String, Object> toMap(Map<String, Object> map) {
-    try {
-      writeMap(
-          new EntryWriter() {
-            @Override
-            public EntryWriter put(CharSequence k, Object v) {
-              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
-              if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
-              if (v instanceof Iterable) {
-                List lst = new ArrayList();
-                for (Object vv : (Iterable) v) {
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
-                  if (vv instanceof IteratorWriter)
-                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
-                  lst.add(vv);
-                }
-                v = lst;
-              }
-              if (v instanceof Map) {
-                Map map = new LinkedHashMap();
-                for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
-                  Object vv = entry.getValue();
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
-                  if (vv instanceof IteratorWriter)
-                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
-                  map.put(entry.getKey(), vv);
-                }
-                v = map;
-              }
-              map.put(k == null ? null : k.toString(), v);
-              // note: It'd be nice to assert that there is no previous value at 'k' but it's
-              // possible the passed map is already populated and the intention is to overwrite.
-              return this;
-            }
-          });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return map;
+    return Utils.convertToMap(this, map);
   }
 
   void writeMap(EntryWriter ew) throws IOException;
+
+  default MapWriter append(MapWriter another) {
+    MapWriter m = this;
+    return ew -> {
+      m.writeMap(ew);
+      another.writeMap(ew);
+    };
+  }
 
   /**
    * An interface to push one entry at a time to the output. The order of the keys is not defined,
@@ -117,8 +85,11 @@ public interface MapWriter extends MapSerializable, NavigableObject {
       return this;
     }
 
-    default EntryWriter putStringIfNotNull(CharSequence k, Object v) throws IOException {
-      if (v != null) put(k, String.valueOf(v));
+    default EntryWriter putIfNotNull(CharSequence k, Supplier<Object> v) throws IOException {
+      Object val = v == null ? null : v.get();
+      if (val != null) {
+        putIfNotNull(k, val);
+      }
       return this;
     }
 

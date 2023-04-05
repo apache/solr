@@ -130,7 +130,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
       field2.setLongValue(val);
       fieldNoTrie.setLongValue(val);
 
-      val = l - (noDocs / 2);
+      val = (long) l - (noDocs / 2);
       ascfield8.setLongValue(val);
       ascfield6.setLongValue(val);
       ascfield4.setLongValue(val);
@@ -419,7 +419,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     q = LegacyNumericRangeQuery.newDoubleRange("double", Double.NaN, Double.NaN, true, true);
     topDocs = s.search(q, 10);
     assertEquals(
-        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.length, topDocs.scoreDocs.length);
+        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.size(), topDocs.scoreDocs.length);
 
     r.close();
     dir.close();

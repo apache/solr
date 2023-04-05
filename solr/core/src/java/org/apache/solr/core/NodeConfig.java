@@ -31,11 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -92,9 +94,7 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
-  @Deprecated
-  // This should be part of the transientCacheConfig, remove in 7.0
-  private final int transientCacheSize;
+  @Deprecated private final int transientCacheSize;
 
   private final boolean useSchemaCache;
 
@@ -103,8 +103,6 @@ public class NodeConfig {
   private final PluginInfo[] backupRepositoryPlugins;
 
   private final MetricsConfig metricsConfig;
-
-  private final PluginInfo transientCacheConfig;
 
   private final PluginInfo tracerConfig;
 
@@ -141,7 +139,6 @@ public class NodeConfig {
       Properties solrProperties,
       PluginInfo[] backupRepositoryPlugins,
       MetricsConfig metricsConfig,
-      PluginInfo transientCacheConfig,
       PluginInfo tracerConfig,
       boolean fromZookeeper,
       String defaultZkHost,
@@ -176,7 +173,6 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
     this.metricsConfig = metricsConfig;
-    this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
@@ -206,18 +202,26 @@ public class NodeConfig {
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+    if (StrUtils.isNotNullOrEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn(
           "Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (!StringUtils.isEmpty(zkHost)) {
+    if (StrUtils.isNotNullOrEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkHost)
+              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
+          DeprecationLog.log(
+              "solrxml-zookeeper",
+              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);
@@ -253,13 +257,13 @@ public class NodeConfig {
   /**
    * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
    *
-   * @return path to install dir
-   * @throws SolrException if property 'solr.install.dir' has not been initialized
+   * @return path to install dir or null if solr.install.dir not set.
    */
   public Path getSolrInstallDir() {
     String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (prop == null || prop.isBlank()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "solr.install.dir property not initialized");
+      log.debug("solr.install.dir property not initialized.");
+      return null;
     }
     return Paths.get(prop);
   }
@@ -378,10 +382,6 @@ public class NodeConfig {
     return metricsConfig;
   }
 
-  public PluginInfo getTransientCachePluginInfo() {
-    return transientCacheConfig;
-  }
-
   public PluginInfo getTracerConfiguratorPluginInfo() {
     return tracerConfig;
   }
@@ -436,10 +436,17 @@ public class NodeConfig {
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
 
-    // Always add $SOLR_TIP/lib to the shared resource loader
-    libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+    Path solrInstallDir = getSolrInstallDir();
+    if (solrInstallDir == null) {
+      log.warn(
+          "Unable to add $SOLR_HOME/lib for shared lib since {} was not set.",
+          SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    } else {
+      // Always add $SOLR_TIP/lib to the shared resource loader
+      libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
+    }
 
-    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+    if (StrUtils.isNotBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
       libDirs.addAll(sharedLibs);
     }
@@ -478,16 +485,30 @@ public class NodeConfig {
   private void initModules() {
     var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
     boolean modified = false;
+
+    Path solrInstallDir = getSolrInstallDir();
+    if (solrInstallDir == null) {
+      if (!moduleNames.isEmpty()) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Unable to setup modules "
+                + moduleNames
+                + " because "
+                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE
+                + " was not set.");
+      }
+      return;
+    }
     for (String m : moduleNames) {
-      if (!ModuleUtils.moduleExists(getSolrInstallDir(), m)) {
+      if (!ModuleUtils.moduleExists(solrInstallDir, m)) {
         log.error(
             "No module with name {}, available modules are {}",
             m,
-            ModuleUtils.listAvailableModules(getSolrInstallDir()));
+            ModuleUtils.listAvailableModules(solrInstallDir));
         // Fail-fast if user requests a non-existing module
         throw new SolrException(ErrorCode.SERVER_ERROR, "No module with name " + m);
       }
-      Path moduleLibPath = ModuleUtils.getModuleLibPath(getSolrInstallDir(), m);
+      Path moduleLibPath = ModuleUtils.getModuleLibPath(solrInstallDir, m);
       if (Files.exists(moduleLibPath)) {
         try {
           List<URL> urls = SolrResourceLoader.getURLs(moduleLibPath);
@@ -535,17 +556,12 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
-
-    @Deprecated
-    // Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
-    private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
-
+    @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
-    private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
@@ -558,8 +574,6 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
-
-    public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
@@ -684,7 +698,7 @@ public class NodeConfig {
       return this;
     }
 
-    // Remove in Solr 7.0
+    // Remove in Solr 10.0
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
@@ -713,11 +727,6 @@ public class NodeConfig {
 
     public NodeConfigBuilder setMetricsConfig(MetricsConfig metricsConfig) {
       this.metricsConfig = metricsConfig;
-      return this;
-    }
-
-    public NodeConfigBuilder setSolrCoreCacheFactoryConfig(PluginInfo transientCacheConfig) {
-      this.transientCacheConfig = transientCacheConfig;
       return this;
     }
 
@@ -795,7 +804,6 @@ public class NodeConfig {
           solrProperties,
           backupRepositoryPlugins,
           metricsConfig,
-          transientCacheConfig,
           tracerConfig,
           fromZookeeper,
           defaultZkHost,

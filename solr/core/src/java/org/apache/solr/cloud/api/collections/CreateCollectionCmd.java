@@ -330,8 +330,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           // update strategies
           ZkWriteCommand command =
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
-          byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-          zkStateReader.getZkClient().setData(collectionPath, data, true);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -372,9 +370,15 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         coresToCreate.put(coreName, sreq);
       }
 
-      // PRS collections updated ZK state.json in the loop above. When Overseer is managing cluster
-      // state updates, need to tell it to refresh itself to know about the replicas and be able to
-      // execute nodes shard requests regarding the replicas.
+      // Update the state.json for PRS collection in a single operation
+      if (isPRS) {
+        byte[] data =
+            Utils.toJSON(
+                Collections.singletonMap(
+                    collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
+      }
+
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
       // directly. For non PRS collections, distributed updates have to be executed if that's how
       // the cluster is configured
@@ -623,7 +627,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.info("Only one config set found in zk - using it: {}", configName);
       }
     }
-    return "".equals(configName) ? null : configName;
+    return configName != null && configName.isEmpty() ? null : configName;
   }
 
   /** Copies the _default configset to the specified configset name (overwrites if pre-existing) */

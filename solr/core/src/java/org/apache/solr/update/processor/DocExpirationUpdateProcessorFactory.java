@@ -241,6 +241,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             1,
             new SolrNamedThreadFactory("autoExpireDocs"),
             new RejectedExecutionHandler() {
+              @Override
               public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
                 log.warn("Skipping execution of '{}' using '{}'", r, e);
               }
@@ -248,6 +249,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
 
     core.addCloseHook(
         new CloseHook() {
+          @Override
           public void postClose(SolrCore core) {
             // update handler is gone, terminate anything that's left.
 
@@ -257,6 +259,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             }
           }
 
+          @Override
           public void preClose(SolrCore core) {
             log.info("Triggering Graceful close of DocExpiration Executor");
             executor.shutdown();
@@ -358,6 +361,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
       this.expireField = factory.expireField;
     }
 
+    @Override
     public void run() {
       // setup the request context early so the logging (including any from
       // shouldWeDoPeriodicDelete() ) includes the core context info
@@ -377,7 +381,9 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             // No-Op
             return;
           }
-          log.info("Beginning periodic deletion of expired docs");
+          if (log.isInfoEnabled()) {
+            log.info("Beginning periodic deletion of expired docs on core: {}", core.getName());
+          }
 
           UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(deleteChainName);
           UpdateRequestProcessor proc = chain.createProcessor(req, rsp);
@@ -412,7 +418,9 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
             }
           }
 
-          log.info("Finished periodic deletion of expired docs");
+          if (log.isInfoEnabled()) {
+            log.info("Finished periodic deletion of expired docs on core: {}", core.getName());
+          }
         } catch (IOException ioe) {
           log.error("IOException in periodic deletion of expired docs: ", ioe);
           // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions

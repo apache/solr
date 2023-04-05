@@ -45,10 +45,12 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
   public static String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
   public static RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
+  @Override
   protected String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   protected RandVal[] getRandValues() {
     return randVals;
   }
@@ -86,6 +88,7 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
 
     Thread expireThread =
         new Thread("expireThread") {
+          @Override
           public void run() {
             while (!stopExpire) {
               try {

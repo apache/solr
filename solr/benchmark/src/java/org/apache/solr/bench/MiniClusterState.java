@@ -22,9 +22,12 @@ import static org.apache.solr.bench.BaseBenchState.log;
 import com.codahale.metrics.Meter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,10 +38,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.output.NullPrintStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -50,6 +51,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrTestNonSecureRandomProvider;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
@@ -112,6 +114,8 @@ public class MiniClusterState {
 
     private SplittableRandom random;
     private String workDir;
+
+    private boolean useHttp1 = false;
 
     /**
      * Tear down.
@@ -273,7 +277,7 @@ public class MiniClusterState {
         nodes.add(runner.getBaseUrl().toString());
       }
 
-      client = new Http2SolrClient.Builder().build();
+      client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
 
       log("done starting mini cluster");
       log("");
@@ -316,6 +320,15 @@ public class MiniClusterState {
           throw e;
         }
       }
+    }
+
+    /** Setting useHttp1 to true will make the {@link #client} use http1 */
+    public void setUseHttp1(boolean useHttp1) {
+      if (client != null) {
+        throw new IllegalStateException(
+            "You can only change this setting before starting the Mini Cluster");
+      }
+      this.useHttp1 = useHttp1;
     }
 
     /**
@@ -452,7 +465,10 @@ public class MiniClusterState {
      */
     @SuppressForbidden(reason = "JMH uses std out for user output")
     public void dumpCoreInfo() throws IOException {
-      cluster.dumpCoreInfo(!BaseBenchState.QUIET_LOG ? System.out : new NullPrintStream());
+      cluster.dumpCoreInfo(
+          !BaseBenchState.QUIET_LOG
+              ? System.out
+              : new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8));
     }
   }
 

@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -51,9 +50,6 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
     configureCluster(1)
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
-
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -604,7 +600,7 @@ public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTest
         new FacetBucket("currency", 4));
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 

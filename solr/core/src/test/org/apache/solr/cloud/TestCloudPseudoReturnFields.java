@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -36,13 +36,16 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.TestPseudoReturnFields;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * @see TestPseudoReturnFields
@@ -53,8 +56,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -79,10 +82,9 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
@@ -90,30 +92,30 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa"))
+        COLLECTION_CLIENT
+            .add(sdoc("id", "42", "newid", "420", "val_i", "1", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb"))
+        COLLECTION_CLIENT
+            .add(sdoc("id", "43", "newid", "430", "val_i", "9", "ssto", "X", "subject", "bbb"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa"))
+        COLLECTION_CLIENT
+            .add(sdoc("id", "44", "newid", "440", "val_i", "4", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa"))
+        COLLECTION_CLIENT
+            .add(sdoc("id", "45", "newid", "450", "val_i", "6", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"))
+        COLLECTION_CLIENT
+            .add(sdoc("id", "46", "newid", "460", "val_i", "3", "ssto", "X", "subject", "ggg"))
             .getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
   }
 
   @Before
@@ -123,16 +125,27 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // will get another copy of doc 99 in the ulog
     assertEquals(
         0,
-        CLOUD_CLIENT
-            .add(sdoc("id", "99", "val_i", "1", "ssto", "X", "subject", "uncommitted"))
+        COLLECTION_CLIENT
+            .add(
+                sdoc(
+                    "id",
+                    "99",
+                    "newid",
+                    "990",
+                    "val_i",
+                    "1",
+                    "ssto",
+                    "X",
+                    "subject",
+                    "uncommitted"))
             .getStatus());
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
     for (SolrClient client : CLIENTS) {
       client.close();
@@ -155,7 +168,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
                     params(
                         "includeDynamic", "true",
                         "showDefaults", "true"))
-                .process(CLOUD_CLIENT);
+                .process(COLLECTION_CLIENT);
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
@@ -234,7 +247,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
       // shouldn't matter what doc we pick...
       for (SolrDocument doc : docs) {
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);
@@ -245,12 +258,49 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testCopyPk() throws Exception {
+    String fl = "oldid:id,newid";
+    SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
+    for (SolrDocument doc : docs) {
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("420", "430", "440", "450", "460")
+                  .indexOf((String) doc.getFieldValue("newid"))
+              >= 0);
+      assertTrue(
+          fl + " => " + doc,
+          Arrays.asList("42", "43", "44", "45", "46").indexOf((String) doc.getFieldValue("oldid"))
+              >= 0);
+    }
+  }
+
+  public void testMovePk() throws Exception {
+    try {
+      String fl = "oldid:id,id:newid"; // "id:newid";//
+      SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
+      fail("attempting to move PK causes 400");
+      for (SolrDocument doc : docs) {
+        assertTrue(
+            fl + " => " + doc,
+            Arrays.asList("420", "430", "440", "450", "460")
+                    .indexOf((String) doc.getFieldValue("id"))
+                >= 0);
+      }
+    } catch (SolrException sse) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, sse.code());
+      final String message = sse.getMessage().toLowerCase(Locale.ROOT);
+      assertTrue(message.contains("uniqueKey".toLowerCase(Locale.ROOT)));
+      assertTrue(message.contains("fl".toLowerCase(Locale.ROOT)));
+    }
+  }
+
   public void testAllRealFieldsRTG() throws Exception {
     // shouldn't matter if we use RTG (committed or otherwise)
     for (String fl : TestPseudoReturnFields.ALL_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);
@@ -283,7 +333,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       SolrDocumentList docs = assertSearch(params("q", "*:*", "rows", "10", "fl", fl));
       // shouldn't matter what doc we pick...
       for (SolrDocument doc : docs) {
-        assertEquals(fl + " => " + doc, 6, doc.size());
+        assertEquals(fl + " => " + doc, 6 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("score") instanceof Float);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
@@ -300,7 +350,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     for (String fl : TestPseudoReturnFields.SCORE_AND_REAL_FIELDS) {
       for (int i : Arrays.asList(42, 43, 44, 45, 46, 99)) {
         SolrDocument doc = getRandClient(random()).getById("" + i, params("fl", fl));
-        assertEquals(fl + " => " + doc, 5, doc.size());
+        assertEquals(fl + " => " + doc, 5 + 1, doc.size());
         assertTrue(fl + " => " + doc, doc.getFieldValue("id") instanceof String);
         assertTrue(fl + " => " + doc, doc.getFieldValue("val_i") instanceof Integer);
         assertTrue(fl + " => " + doc, doc.getFieldValue("subject") instanceof String);
@@ -976,7 +1026,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
+    return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {

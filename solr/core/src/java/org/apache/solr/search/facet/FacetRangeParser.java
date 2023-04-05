@@ -28,6 +28,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     facet = new FacetRange();
   }
 
+  @Override
   public FacetRange parse(Object arg) throws SyntaxError {
     parseCommonParams(arg);
 

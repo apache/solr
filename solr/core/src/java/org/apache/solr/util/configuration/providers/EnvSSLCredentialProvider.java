@@ -44,6 +44,7 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
     this.envVars = System.getenv();
   }
 
+  @Override
   protected EnumMap<CredentialType, String> getCredentialKeyMap() {
     return new EnumMap<>(
         Map.of(
@@ -53,6 +54,7 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
             SSL_CLIENT_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD));
   }
 
+  @Override
   protected String getCredential(String envKey) {
     if (envVars.containsKey(envKey)) {
       return envVars.get(envKey);

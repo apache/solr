@@ -21,7 +21,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 
-import com.google.common.collect.Sets;
 import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -60,8 +59,7 @@ public abstract class RoutedAlias {
   public static final String CREATE_COLLECTION_PREFIX = "create-collection.";
 
   @SuppressWarnings("WeakerAccess")
-  public static final Set<String> MINIMAL_REQUIRED_PARAMS =
-      Sets.newHashSet(ROUTER_TYPE_NAME, ROUTER_FIELD);
+  public static final Set<String> MINIMAL_REQUIRED_PARAMS = Set.of(ROUTER_TYPE_NAME, ROUTER_FIELD);
 
   public static final String ROUTED_ALIAS_NAME_CORE_PROP = "routedAliasName"; // core prop
   private static final String DIMENSIONAL = "Dimensional[";
@@ -309,7 +307,7 @@ public abstract class RoutedAlias {
 
   abstract CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd);
 
-  class CandidateCollection {
+  static class CandidateCollection {
     private final CreationType creationType;
     private final String destinationCollection;
     private final String creationCollection;
@@ -488,7 +486,7 @@ public abstract class RoutedAlias {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof Action)) return false;
       Action action = (Action) o;
       return Objects.equals(sourceAlias, action.sourceAlias)
           && actionType == action.actionType

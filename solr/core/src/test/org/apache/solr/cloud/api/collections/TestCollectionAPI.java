@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -52,6 +50,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
@@ -77,9 +76,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
               .getIsCollectionApiDistributed();
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 0, 1, 1);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 0, 2, 1);
       } else {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 1, 0, 1);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2, 0, 1);
       }
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
@@ -381,7 +380,15 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           (liveNodes, docCollection) ->
               docCollection != null
                   && docCollection.getReplicas().stream()
-                      .anyMatch(r -> r.getState().equals(Replica.State.DOWN)));
+                      .anyMatch(r -> r.getState().equals(Replica.State.DOWN) && !r.isLeader()));
+      zkStateReader.waitForState(
+          COLLECTION_NAME,
+          30,
+          TimeUnit.SECONDS,
+          (liveNodes, docCollection) ->
+              docCollection != null
+                  && docCollection.getActiveSlices().stream()
+                      .allMatch(r -> r.getLeader() != null && r.getLeader().isActive(liveNodes)));
 
       rsp = request.process(client).getResponse();
       collection =
@@ -620,7 +627,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(DEFAULT_COLLECTION);
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
-      assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
+      assertEquals("Aliases not found", List.of("myalias"), collAlias);
 
       // status request on the alias itself
       params = new ModifiableSolrParams();
@@ -1252,7 +1259,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   public void testRecreateCollectionAfterFailure() throws Exception {
     // Upload a bad configset
     SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT, ZkTestServer.TIMEOUT, null);
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(ZkTestServer.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkTestServer.putConfig(
         "badconf",
         zkClient,

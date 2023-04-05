@@ -317,6 +317,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       this.waitBeforeOfferMs = waitBeforeOfferMs;
     }
 
+    @Override
     public void run() {
       try {
         Thread.sleep(waitBeforeOfferMs);
@@ -352,7 +353,11 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     assertTrue(zkClient.isConnected());
   }
 

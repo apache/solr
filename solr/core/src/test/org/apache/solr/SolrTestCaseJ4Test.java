@@ -17,6 +17,8 @@
 package org.apache.solr;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.AfterClass;
@@ -31,15 +33,14 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     // configuration sets we can, so we don't copy that much junk around.
     String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
 
-    File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
-    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
+    Path subHome = Path.of(tmpSolrHome, "core0", "conf");
+    Files.createDirectories(subHome);
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
-    FileUtils.copyFile(
-        new File(top, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(Path.of(top, "schema-tiny.xml"), subHome.resolve("schema-tiny.xml"));
+    Files.copy(Path.of(top, "solrconfig-minimal.xml"), subHome.resolve("solrconfig-minimal.xml"));
+    Files.copy(
+        Path.of(top, "solrconfig.snippet.randomindexconfig.xml"),
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
     // Core discovery will default to the name of the dir the core.properties file is in. So if
@@ -47,7 +48,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     FileUtils.touch(new File(tmpSolrHome, "core0/core.properties"));
     FileUtils.touch(new File(tmpSolrHome, "core1/core.properties"));
 
-    FileUtils.copyFile(getFile("solr/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+    Files.copy(getFile("solr/solr.xml").toPath(), Path.of(tmpSolrHome, "solr.xml"));
 
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }

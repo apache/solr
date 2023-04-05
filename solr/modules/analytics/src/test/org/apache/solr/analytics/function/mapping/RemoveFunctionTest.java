@@ -242,24 +242,24 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
 
     val.setExists(false);
-    remover.setValue(3124123.32F).setExists(true);
+    remover.setValue(3124123.2F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
 
     // Value exists
     val.setValue(-21.324F).setExists(true);
-    remover.setValue(23423.423342F).setExists(true);
+    remover.setValue(23423.424F).setExists(true);
     assertEquals(-21.324F, func.getFloat(), .00000001);
     assertTrue(func.exists());
 
-    val.setValue(84353.452F).setExists(true);
-    remover.setValue(84353.452F).setExists(true);
+    val.setValue(84353.45F).setExists(true);
+    remover.setValue(84353.45F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
 
-    val.setValue(2345.345543F).setExists(true);
+    val.setValue(2345.3455F).setExists(true);
     remover.setExists(false);
-    assertEquals(2345.345543F, func.getFloat(), .00000001);
+    assertEquals(2345.3455F, func.getFloat(), .00000001);
     assertTrue(func.exists());
   }
 
@@ -659,7 +659,7 @@ public class RemoveFunctionTest extends SolrTestCaseJ4 {
     assertFalse(values2.hasNext());
 
     val.setValues(-1234.9478F, -9423.5F, -1234.9478F, 23423.324F, 942.0F);
-    remover.setValue(23423.5845F).setExists(true);
+    remover.setValue(23423.584F).setExists(true);
     Iterator<Float> values3 =
         Arrays.asList(-1234.9478F, -9423.5F, -1234.9478F, 23423.324F, 942.0F).iterator();
     func.streamFloats(

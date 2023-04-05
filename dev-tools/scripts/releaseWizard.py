@@ -102,6 +102,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'release_version_refguide': state.get_refguide_release() ,
+        'release_version_jira': state.get_jira_release(),
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
@@ -603,6 +604,13 @@ class ReleaseState:
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
+
+    def get_jira_release(self):
+        if self.release_type == 'major' or self.release_type == 'minor':
+            return "%s.%s" % (self.release_version_major, self.release_version_minor)
+        if self.release_type == 'bugfix':
+            return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix)
+        return None
 
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)
@@ -1151,14 +1159,14 @@ def configure_pgp(gpg_todo):
         res = run("gpg --list-secret-keys %s" % gpg_fingerprint)
         print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
-        match = re.search(r'^sec +((rsa|dsa)(\d{4})) ', res)
+        match = re.search(r'^sec#? +((rsa|dsa)(\d{4})) ', res)
         type = "(unknown)"
         length = -1
         if match:
             type = match.group(2)
             length = int(match.group(3))
         else:
-            match = re.search(r'^sec +((\d{4})([DR])/.*?) ', res)
+            match = re.search(r'^sec#? +((\d{4})([DR])/.*?) ', res)
             if match:
                 type = 'rsa' if match.group(3) == 'R' else 'dsa'
                 length = int(match.group(2))
@@ -1229,21 +1237,6 @@ def configure_pgp(gpg_todo):
     gpg_state['apache_id'] = id
     gpg_state['gpg_key'] = gpg_id
     gpg_state['gpg_fingerprint'] = gpg_fingerprint
-
-    print(textwrap.dedent("""\
-            You can choose between signing the release with the gpg program or with
-            the gradle signing plugin. Read about the difference by running
-            ./gradlew helpPublishing"""))
-
-    gpg_state['use_gradle'] = ask_yes_no("Do you want to sign the release with gradle plugin? No means gpg")
-
-    print(textwrap.dedent("""\
-            You need the passphrase to sign the release.
-            This script can prompt you securely for your passphrase (will not be stored) and pass it on to
-            buildAndPushRelease in a secure way. However, you can also configure your passphrase in advance 
-            and avoid having to type it in the terminal. This can be done with either a gpg-agent (for gpg tool)
-            or in gradle.properties or an ENV.var (for gradle), See ./gradlew helpPublishing for details."""))
-    gpg_state['prompt_pass'] = ask_yes_no("Do you want this wizard to prompt you for your gpg password? ")
 
     return True
 

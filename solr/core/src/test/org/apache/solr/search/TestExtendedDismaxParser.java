@@ -3198,7 +3198,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new MultilanguageDismaxConfiguration(localParams, params, req);
     }
 
-    class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
+    static class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
 
       public MultilanguageDismaxConfiguration(
           SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -3226,7 +3226,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new FuzzyQueryParser(qParser, field);
     }
 
-    class FuzzyQueryParser extends ExtendedSolrQueryParser {
+    static class FuzzyQueryParser extends ExtendedSolrQueryParser {
 
       private Set<String> frequentlyMisspelledWords;
 

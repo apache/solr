@@ -552,7 +552,7 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 
 [source,bash]
 ----
-http://localhost:8982/solr/admin/collections?action=LISTALIASES
+curl -X GET 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
 ----
 ====
 
@@ -562,12 +562,21 @@ http://localhost:8982/solr/admin/collections?action=LISTALIASES
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/aliases
+curl -X GET http://localhost:8983/api/aliases
 ----
 ====
 --
 
-The LISTALIASES action does not take any parameters.
+=== LISTALIASES Getting details for a single alias
+[example.tab-pane#v2listsinglealias]
+====
+[.tab-label]*V2 API only*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+====
 
 === LISTALIASES Response
 
@@ -575,39 +584,67 @@ The output will contain a list of aliases with the corresponding collection name
 
 === Examples using LISTALIASES
 
+==== List the existing aliases
+
 *Input*
 
-List the existing aliases, requesting information as XML from Solr:
-
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
+curl -X GET http://localhost:8983/api/aliases
 ----
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
-<response>
-    <lst name="responseHeader">
-        <int name="status">0</int>
-        <int name="QTime">0</int>
-    </lst>
-    <lst name="aliases">
-        <str name="testalias1">collection1</str>
-        <str name="testalias2">collection1,collection2</str>
-    </lst>
-    <lst name="properties">
-        <lst name="testalias1"/>
-        <lst name="testalias2">
-            <str name="someKey">someValue</str>
-        </lst>
-    </lst>
-</response>
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "aliases": {
+    "testalias1": "collection1",
+    "testalias2": "collection2,collection1"
+  },
+  "properties": {
+    "testalias2": {
+      "someKey": "someValue"
+    }
+  }
+}
+----
+
+==== Getting details for a single alias
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "name": "testalias2",
+  "collections": [
+    "collection2",
+    "collection1"
+  ],
+  "properties": {
+    "someKey": "someValue"
+  }
+}
 ----
 
 [[aliasprop]]
-== ALIASPROP: Modify Alias Properties for a Collection
+== ALIASPROP: Modify Alias Properties
 
 The `ALIASPROP` action modifies the properties (metadata) on an alias.
 If a key is set with a value that is empty it will be removed.
@@ -620,7 +657,7 @@ If a key is set with a value that is empty it will be removed.
 
 [source,bash]
 ----
-http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar
+curl -X POST 'http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar'
 ----
 ====
 
@@ -630,17 +667,39 @@ http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
 {
-  "set-alias-property":{
-    "name":"techproducts_alias",
-    "properties": {"foo":"bar"}
-  }
-}
-'
+  "properties": {"foo":"bar"}
+}'
 ----
 
 ====
+
+[example.tab-pane#v2aliasplevelprop]
+====
+[.tab-label]*V2 API* Update via property level api
+
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
+{
+  "value": "baz"
+}'
+----
+
+====
+
+[example.tab-pane#v2deleteplevelprop]
+====
+[.tab-label]*V2 API* Delete via property level api
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json'
+----
+
+====
+
 --
 
 
@@ -689,7 +748,66 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 === ALIASPROP Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
-To confirm the creation of the property or properties, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file or use the LISTALIASES api command.
+Alias property creation can be confirmed using the "List Alias Properties" APIs described below, or by inspecting the `aliases.json` in the "Cloud" section of the Solr Admin UI.
+
+[[aliaspropread]]
+== Listing Alias Properties
+
+Retrieves the metadata properties associated with a specified alias.
+Solr's v2 API supports either listing out these properties in bulk or accessing them individually by name, as necessary.
+
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v2listallprops]
+====
+[.tab-label]*V2 API* Get all properties on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "properties": {
+    "foo": "bar"
+  }
+}
+----
+====
+
+[example.tab-pane#v2listsingleprop]
+====
+[.tab-label]*V2 API* Get single property value on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "value": "bar"
+}
+----
+====
+--
+
 
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
@@ -712,13 +830,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
-{
-  "delete-alias":{
-    "name":"testalias"
-  }
-}
-'
+curl -X DELETE http://localhost:8983/api/aliases/testalias
 ----
 ====
 --
@@ -733,7 +845,7 @@ curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application
 s|Required |Default: none
 |===
 +
-The name of the alias to delete.
+The name of the alias to delete.  Specified in the path of v2 requests, and as an explicit request parameter for v1 requests.
 
 `async`::
 +

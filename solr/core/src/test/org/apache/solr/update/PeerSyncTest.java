@@ -46,6 +46,7 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SuppressWarnings("JdkObsolete")
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 100; // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();

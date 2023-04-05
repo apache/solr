@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,14 +35,8 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   // tmp dir, cleaned up automatically.
   private Path solrHome;
 
@@ -179,20 +172,29 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testIntAsLongBad() {
     String bad = "" + TestUtil.nextLong(random(), Integer.MAX_VALUE, Long.MAX_VALUE);
-    String solrXml = "<solr><long name=\"transientCacheSize\">" + bad + "</long></solr>";
-
+    String solrXml =
+        "<solr><updateshardhandler>"
+            + "<long name=\"maxUpdateConnections\">"
+            + bad
+            + "</long>"
+            + "</updateshardhandler></solr>";
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
-        "Error parsing 'transientCacheSize', value '" + bad + "' cannot be parsed",
+        "Error parsing 'maxUpdateConnections', value '" + bad + "' cannot be parsed as int",
         thrown.getMessage());
   }
 
   public void testIntAsLongOk() {
     int ok = random().nextInt();
-    String solrXml = "<solr><long name=\"transientCacheSize\">" + ok + "</long></solr>";
+    String solrXml =
+        "<solr><updateshardhandler>"
+            + "<long name=\"maxUpdateConnections\">"
+            + ok
+            + "</long>"
+            + "</updateshardhandler></solr>";
     NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
-    assertEquals(ok, cfg.getTransientCacheSize());
+    assertEquals(ok, cfg.getUpdateShardHandlerConfig().getMaxUpdateConnections());
   }
 
   public void testMultiCloudSectionError() {

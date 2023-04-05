@@ -27,7 +27,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import com.google.common.collect.Sets;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +45,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -169,7 +167,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new LinkedList<>();
+    final List<String> collections = new ArrayList<>();
     Map<String, ClusterState.CollectionRef> states =
         zkStateReader().getClusterState().getCollectionStates();
     for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
@@ -670,7 +668,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   ManagedIndexSchema deleteNestedDocsFieldsIfNeeded(ManagedIndexSchema schema, boolean persist) {
-    List<String> toDelete = new LinkedList<>();
+    List<String> toDelete = new ArrayList<>();
     if (schema.hasExplicitField(ROOT_FIELD_NAME)) {
       toDelete.add(ROOT_FIELD_NAME);
     }
@@ -807,7 +805,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           schema.getCopyFieldsList(fieldName).stream()
               .map(cf -> cf.getDestination().getName())
               .collect(Collectors.toSet());
-      Set<String> add = Sets.difference(desired, existing);
+      Set<String> add =
+          desired.stream()
+              .filter(e -> !existing.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!add.isEmpty()) {
         SchemaRequest.AddCopyField addAction =
             new SchemaRequest.AddCopyField(fieldName, new ArrayList<>(add));
@@ -819,7 +820,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
         updated = true;
       } // no additions ...
 
-      Set<String> del = Sets.difference(existing, desired);
+      Set<String> del =
+          existing.stream()
+              .filter(e -> !desired.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!del.isEmpty()) {
         SchemaRequest.DeleteCopyField delAction =
             new SchemaRequest.DeleteCopyField(fieldName, new ArrayList<>(del));

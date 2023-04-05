@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.request.json;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -58,9 +57,6 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
-
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -592,7 +588,7 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     assertEquals(7, topLevelFacetData.getBucketBasedFacets("price_range").getBetween());
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
 

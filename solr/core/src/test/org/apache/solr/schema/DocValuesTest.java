@@ -63,6 +63,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));
@@ -1109,11 +1110,11 @@ public class DocValuesTest extends SolrTestCaseJ4 {
           long minSortable = toSortableLong.get(i).apply(minVal);
           long maxSortable = toSortableLong.get(i).apply(maxVal);
 
-          if ((minInclusive && minSortable <= valSortable
-                  || !minInclusive && minSortable < valSortable
+          if (((minInclusive && minSortable <= valSortable)
+                  || (!minInclusive && minSortable < valSortable)
                   || (min.equals("*") && Objects.equals(val, negativeInfinity[i])))
-              && (maxInclusive && maxSortable >= valSortable
-                  || !maxInclusive && maxSortable > valSortable
+              && ((maxInclusive && maxSortable >= valSortable)
+                  || (!maxInclusive && maxSortable > valSortable)
                   || (max.equals("*") && Objects.equals(val, positiveInfinity[i])))) {
             counter++;
             tests.add("//result/doc[" + counter + "]/str[@name='id'][.=" + (k + 1) + "]");

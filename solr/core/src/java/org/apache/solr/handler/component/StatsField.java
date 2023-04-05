@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -74,7 +73,8 @@ public class StatsField {
    * @lucene.internal
    * @lucene.experimental
    */
-  public static enum Stat {
+  @SuppressWarnings("ImmutableEnumChecker")
+  public enum Stat {
     min(true),
     max(true),
     missing(true),
@@ -87,6 +87,7 @@ public class StatsField {
     countDistinct(false, distinctValues),
     percentiles(true) {
       /** special for percentiles * */
+      @Override
       boolean parseParams(StatsField sf) {
         String percentileParas = sf.localParams.get(this.name());
         if (percentileParas != null) {
@@ -118,6 +119,7 @@ public class StatsField {
     },
     cardinality(true) {
       /** special for percentiles * */
+      @Override
       boolean parseParams(StatsField sf) {
         try {
           sf.hllOpts = HllOptions.parseHllOptions(sf.localParams, sf.schemaField);
@@ -252,7 +254,7 @@ public class StatsField {
       SchemaField sf = null;
       ValueSource vs = null;
 
-      if (StringUtils.isBlank(parserName)) {
+      if (StrUtils.isBlank(parserName)) {
 
         // basic request for field stats
         sf = searcher.getSchema().getField(localParams.get(QueryParsing.V));
@@ -551,6 +553,7 @@ public class StatsField {
     return tagList;
   }
 
+  @Override
   public String toString() {
     return "StatsField<" + originalParam + ">";
   }
@@ -675,7 +678,7 @@ public class StatsField {
         throws SolrException {
 
       String cardinalityOpt = localParams.get(Stat.cardinality.name());
-      if (StringUtils.isBlank(cardinalityOpt)) {
+      if (StrUtils.isBlank(cardinalityOpt)) {
         return null;
       }
 

@@ -192,7 +192,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       CountsForEachShard lastCounts = null;
       for (CoreDescriptor resultDesc : resultDescs) {
         CountsForEachShard counts = myDescsToCounts.get(resultDesc);
-        if (counts != lastCounts) {
+        if (!counts.equals(lastCounts)) {
           resultCounts.add(counts);
         }
         lastCounts = counts;

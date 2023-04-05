@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,15 +51,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   static final String COLLECTION = "dv_coll";
 
   static volatile List<FieldProps> fieldsToTestSingle = null;
@@ -160,8 +153,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     SchemaResponse.UpdateResponse multipleUpdatesResponse =
         multiUpdateRequest.process(cluster.getSolrClient(), COLLECTION);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
-
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
   }
 
   @AfterClass
@@ -171,7 +162,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Before
   public void clean() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
     client.deleteByQuery("*:*");
     client.commit();
     resetFields(fieldsToTestSingle);
@@ -191,7 +182,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     // For this test, I want to ensure that there are shards that do _not_ have a doc with any of
     // the DV_only fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1");
@@ -232,7 +223,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // one server.
   @Test
   public void testGroupingSorting() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
 
     // The point of these is to have at least one shard w/o the value.
     // While getting values for each of these fields starts _out_ random, each successive

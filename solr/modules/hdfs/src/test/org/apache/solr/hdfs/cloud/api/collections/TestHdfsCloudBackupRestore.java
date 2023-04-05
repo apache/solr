@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -46,6 +45,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.api.collections.AbstractCloudBackupRestoreTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
@@ -195,6 +195,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     return null;
   }
 
+  @Override
   protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
     String backupName = "configonlybackup";
     CloudSolrClient solrClient = cluster.getSolrClient();

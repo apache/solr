@@ -32,20 +32,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -230,6 +232,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg =
           new Thread() {
+            @Override
             public void run() {
               try {
                 standaloneSolr.start();
@@ -294,6 +297,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   protected List<Closeable> closeables = new ArrayList<>();
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -320,6 +324,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   @LuceneTestCase.Nightly
   public void testSchemalessExample() throws Exception {
     testExample("schemaless");
+  }
+
+  @Test
+  @LuceneTestCase.Nightly
+  public void testFilmsExample() throws Exception {
+    testExample("films");
   }
 
   protected void testExample(String exampleName) throws Exception {
@@ -508,12 +518,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     // index some docs - to verify all is good for both shards
-    CloudSolrClient cloudClient = null;
-
-    try {
-      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
-      cloudClient.connect();
-      cloudClient.setDefaultCollection(collectionName);
+    try (CloudSolrClient cloudClient =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
+                Optional.empty())
+            .withDefaultCollection(collectionName)
+            .build()) {
 
       int numDocs = 10;
       for (int d = 0; d < numDocs; d++) {
@@ -533,13 +543,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                 + collectionName
                 + " collection but only found "
                 + qr.getResults().getNumFound());
-      }
-    } finally {
-      if (cloudClient != null) {
-        try {
-          cloudClient.close();
-        } catch (Exception ignore) {
-        }
       }
     }
 

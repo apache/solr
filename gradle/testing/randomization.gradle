@@ -34,6 +34,23 @@ buildscript {
   }
 }
 
+class SecurityArgumentProvider implements CommandLineArgumentProvider {
+  @Internal
+  Directory commonSolrDir
+
+  @InputFile
+  @PathSensitive(PathSensitivity.RELATIVE)
+  RegularFile javaSecurityPolicy
+
+  @Override
+  Iterable<String> asArguments() {
+    [
+        "-Dcommon-solr.dir=${commonSolrDir.getAsFile()}",
+        "-Djava.security.policy=${javaSecurityPolicy.getAsFile()}"
+    ]
+  }
+}
+
 def resources = scriptResources(buildscript)
 
 // Pick the "root" seed from which everything else is derived.
@@ -109,11 +126,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'common-solr.dir',
-           value: project(":solr").projectDir,
-           description: "Solr base dir.",
-           includeInReproLine: false
-          ],
           [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
@@ -176,7 +188,7 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.failfast"])) {
           failFast true
         }
-        
+
         // The Lucene version is only available after resolving was done, so add lately using a provider:
         jvmArgumentProviders.add({
           def luceneMatchVersion = rootProject.luceneBaseVersionProvider.get()
@@ -185,13 +197,19 @@ allprojects {
             "-Dtests.luceneMatchVersion=${luceneMatchVersion}",
           ]
         } as CommandLineArgumentProvider)
-        
+
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
-          systemProperty 'common-solr.dir', commonSolrDir
+          def commonSolrDir = project(':solr').layout.projectDirectory
+          def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
+          jvmArgumentProviders.add(
+              new SecurityArgumentProvider(
+                  commonSolrDir: commonSolrDir,
+                  javaSecurityPolicy: javaSecurityPolicy
+              )
+          )
           systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
-          systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
           systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')

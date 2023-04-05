@@ -244,7 +244,7 @@ public class TestUninvertingReader extends SolrTestCase {
     final int NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
     final int MIN = TestUtil.nextInt(random(), 10, 100);
     final int MAX = MIN + TestUtil.nextInt(random(), 10, 100);
-    final long EXPECTED_VALSET_SIZE = 1 + MAX - MIN;
+    final long EXPECTED_VALSET_SIZE = 1L + MAX - MIN;
 
     { // (at least) one doc should have every value, so that at least one segment has every value
       final Document doc = new Document();

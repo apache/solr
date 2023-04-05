@@ -76,7 +76,9 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             "solr_dt",
             "2000-01-01T01:01:01Z",
             "solr_tdt",
-            "2000-01-01T01:01:01Z"));
+            "2000-01-01T01:01:01Z",
+            "solr_bin",
+            "PS9cPQ=="));
     assertU(commit());
   }
 

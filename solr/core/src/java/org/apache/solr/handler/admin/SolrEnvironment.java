@@ -40,7 +40,7 @@ public class SolrEnvironment {
   }
 
   public String getLabel() {
-    return label == null ? null : label.replaceAll("\\+", " ");
+    return label == null ? null : label.replace("+", " ");
   }
 
   public String getColor() {

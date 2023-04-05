@@ -159,10 +159,9 @@ assemble.dependsOn installDist
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "bats@1.8.0",
-                     "ztombol/bats-support#v0.2.0",
-                     "ztombol/bats-assert#v0.3.0",
-                     "ztombol/bats-file#v0.2.0",
+  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
+                     "https://github.com/bats-core/bats-assert#v2.0.0",
+                     "https://github.com/bats-core/bats-file#v0.3.0",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")

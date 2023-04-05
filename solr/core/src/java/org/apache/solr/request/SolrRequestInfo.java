@@ -19,14 +19,14 @@ package org.apache.solr.request;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -42,7 +42,7 @@ public class SolrRequestInfo {
   private static final int MAX_STACK_SIZE = 10;
 
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
-      ThreadLocal.withInitial(LinkedList::new);
+      ThreadLocal.withInitial(ArrayDeque::new);
 
   private int refCount = 1; // prevent closing when still used
 
@@ -121,7 +121,7 @@ public class SolrRequestInfo {
         try {
           hook.close();
         } catch (Exception e) {
-          SolrException.log(log, "Exception during close hook", e);
+          log.error("Exception during close hook", e);
         }
       }
     }
@@ -204,7 +204,7 @@ public class SolrRequestInfo {
         throw new IllegalStateException("Already closed!");
       }
       if (closeHooks == null) {
-        closeHooks = new LinkedList<>();
+        closeHooks = new ArrayList<>();
       }
       closeHooks.add(hook);
     }

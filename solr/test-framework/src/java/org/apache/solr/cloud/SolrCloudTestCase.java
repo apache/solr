@@ -34,8 +34,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -293,9 +294,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (SolrClient client =
-        getHttpSolrClient(
-            jetty.getBaseUrl().toString(),
-            ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
+            .build()) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

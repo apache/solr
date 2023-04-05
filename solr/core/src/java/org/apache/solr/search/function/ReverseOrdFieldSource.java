@@ -122,7 +122,7 @@ public class ReverseOrdFieldSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (o == null || (o.getClass() != ReverseOrdFieldSource.class)) return false;
+    if (!(o instanceof ReverseOrdFieldSource)) return false;
     ReverseOrdFieldSource other = (ReverseOrdFieldSource) o;
     return this.field.equals(other.field);
   }

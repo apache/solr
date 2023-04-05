@@ -188,7 +188,7 @@ public class LazySolrCluster implements SolrCluster {
       return null;
     }
     SolrCollectionImpl existing = cached.get(key);
-    if (existing == null || existing.coll != c) {
+    if (existing == null || !Objects.equals(existing.coll, c)) {
       cached.put(key, existing = new SolrCollectionImpl(c, zkStateReader));
     }
     return existing;

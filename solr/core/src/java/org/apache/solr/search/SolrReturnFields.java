@@ -166,7 +166,7 @@ public class SolrReturnFields extends ReturnFields {
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
     _wantsScore = false;
     _wantsAllFields = false;
-    if (fl == null || fl.length == 0 || fl.length == 1 && fl[0].length() == 0) {
+    if (fl == null || fl.length == 0 || (fl.length == 1 && fl[0].length() == 0)) {
       _wantsAllFields = true;
       return;
     }
