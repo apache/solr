@@ -29,20 +29,41 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.kubernetes.client.informer.ResourceEventHandler;
+import io.kubernetes.client.informer.SharedIndexInformer;
+import io.kubernetes.client.informer.SharedInformerFactory;
 import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.openapi.models.V1ConfigMapList;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1Status;
+import io.kubernetes.client.util.CallGeneratorParams;
 import io.kubernetes.client.util.ClientBuilder;
+import io.kubernetes.client.util.labels.LabelSelector;
+import io.kubernetes.client.util.labels.SetMatcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,25 +74,95 @@ import org.slf4j.LoggerFactory;
  * the configSet property value underneath a base directory. If no configSet property is set, loads
  * the ConfigSet instead from the core's instance directory.
  */
-public class KubernetesConfigSetService extends ConfigSetService {
+public class KubernetesConfigSetService extends ConfigSetService implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ApiClient kubeClient;
-  private final CoreV1Api corev1Api;
+  private final CoreV1Api coreV1Api;
+
+  private final String solrCloudNamespace;
+  private final String solrCloudName;
+
+  private final Map<String, V1ConfigMap> existingConfigSetConfigMaps;
 
   /** ConfigMapLabel */
-  public static final String CONFIGS_ZKNODE = "solr.apache.org/configSet";
+  public static final String CONFIG_SET_LABEL_KEY = "solr.apache.org/cloud/%s/resource";
+  public static final String CONFIG_SET_LABEL_VALUE = "configSet";
+  public static final String CONFIG_SET_NAME_ANNOTATION_KEY = "solr.apache.org/configSet/name";
 
-  public ZkConfigSetService(CoreContainer cc) throws IOException {
+  // These are always set on pods by the Solr Operator
+  public static final String POD_NAMESPACE_ENV_VAR = "POD_NAMESPACE";
+  public static final String SOLR_CLOUD_NAME_ENV_VAR = "SOLR_CLOUD_NAME";
+
+  public KubernetesConfigSetService(CoreContainer cc) throws IOException {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
     kubeClient = ClientBuilder.cluster().build();
-    corev1Api = new CoreV1Api(kubeClient);
+    coreV1Api = new CoreV1Api(kubeClient);
+
+    existingConfigSetConfigMaps = new ConcurrentHashMap<>();
+    // TODO: Finalize these
+    solrCloudNamespace = System.getenv(POD_NAMESPACE_ENV_VAR);
+    solrCloudName = System.getenv(SOLR_CLOUD_NAME_ENV_VAR);
   }
 
-  /** This is for ZkCLI and some tests */
-  public ZkConfigSetService(SolrZkClient zkClient) {
-    super(null, false);
-    this.zkController = null;
-    this.zkClient = zkClient;
+  public void init() {
+    SharedInformerFactory factory = new SharedInformerFactory(kubeClient);
+
+    // Node informer
+    SharedIndexInformer<V1ConfigMap> nodeInformer =
+        factory.sharedIndexInformerFor(
+            // **NOTE**:
+            // The following "CallGeneratorParams" lambda merely generates a stateless
+            // HTTPs requests, the effective apiClient is the one specified when constructing
+            // the informer-factory.
+            (CallGeneratorParams params) ->
+              coreV1Api.listNamespacedConfigMapCall(
+                  solrCloudNamespace,
+                  null,
+                  null,
+                  null,
+                  null,
+                  SetMatcher.in(String.format(Locale.ROOT, CONFIG_SET_LABEL_KEY, solrCloudName), CONFIG_SET_LABEL_VALUE).toString(),
+                  null,
+                  params.resourceVersion,
+                  null,
+                  params.timeoutSeconds,
+                  params.watch,
+                  null),
+            V1ConfigMap.class,
+            V1ConfigMapList.class);
+
+    nodeInformer.addEventHandler(
+        new ResourceEventHandler<>() {
+          @Override
+          public void onAdd(V1ConfigMap configMap) {
+            log.info("{} configMap added!\n", configMap.getMetadata().getName());
+            existingConfigSetConfigMaps.put(extractConfigSetName(configMap), configMap);
+          }
+
+          @Override
+          public void onUpdate(V1ConfigMap oldConfigMap, V1ConfigMap newConfigMap) {
+            log.info(
+                "{} => {} configMap updated!\n",
+                oldConfigMap.getMetadata().getName(), newConfigMap.getMetadata().getName());
+            existingConfigSetConfigMaps.put(extractConfigSetName(newConfigMap), newConfigMap);
+          }
+
+          @Override
+          public void onDelete(V1ConfigMap configMap, boolean deletedFinalStateUnknown) {
+            log.info("{} configMap deleted!\n", configMap.getMetadata().getName());
+            existingConfigSetConfigMaps.remove(extractConfigSetName(configMap));
+          }
+        });
+
+    factory.startAllRegisteredInformers();
+  }
+
+  private String extractConfigSetName(V1ConfigMap configMap) {
+    return
+        Optional.ofNullable(configMap.getMetadata())
+            .map(V1ObjectMeta::getAnnotations)
+            .map(ann -> ann.get(CONFIG_SET_NAME_ANNOTATION_KEY))
+            .orElse(configMap.getMetadata().getName());
   }
 
   @Override
@@ -112,7 +203,8 @@ public class KubernetesConfigSetService extends ConfigSetService {
   protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader)
       throws IOException {
     try {
-      return ConfigSetProperties.readFromResourceLoader(loader, ".");
+      // TODO: Makesure this name is right (maybe properties/flags/metadata)
+      return ConfigSetProperties.readFromResourceLoader(loader, "properties");
     } catch (Exception ex) {
       log.debug("No configSet flags", ex);
       return null;
@@ -121,48 +213,48 @@ public class KubernetesConfigSetService extends ConfigSetService {
 
   @Override
   protected Long getCurrentSchemaModificationVersion(
-      String configSet, SolrConfig solrConfig, String schemaFile) throws IOException {
-    String zkPath = CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
-    Stat stat;
-    try {
-      stat = zkClient.exists(zkPath, null, true);
-    } catch (KeeperException e) {
-      log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
-      return null; // debatable; we'll see an error soon if there's a real problem
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    if (stat == null) { // not found
-      return null;
-    }
-    return (long) stat.getVersion();
+      String configSet, SolrConfig solrConfig, String schemaFile) {
+    // Individual values/files in ConfigMaps do not have versions,
+    // we can only use the ConfigMap version as a whole.
+    //
+    // Return null if this configMap does not exist.
+    return
+        Optional.ofNullable(existingConfigSetConfigMaps.get(configSet))
+            .map(V1ConfigMap::getMetadata)
+            .map(V1ObjectMeta::getGeneration)
+            .orElse(null);
   }
 
   @Override
   public String configSetName(CoreDescriptor cd) {
-    return "configset " + cd.getConfigSet();
+    return "configmap " + cd.getConfigSet();
   }
 
   @Override
-  public boolean checkConfigExists(String configName) throws IOException {
-    try {
-      Boolean existsSolrConfigXml =
-          zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
-      if (existsSolrConfigXml == null) return false;
-      return existsSolrConfigXml;
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException(
-          "Error checking whether config exists", SolrZkClient.checkInterrupted(e));
-    }
+  public boolean checkConfigExists(String configName) {
+    return existingConfigSetConfigMaps.containsKey(configName);
   }
 
   @Override
   public void deleteConfig(String configName) throws IOException {
+    String configMapName = ""
     try {
-      zkClient.clean(CONFIGS_ZKNODE + "/" + configName);
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error deleting config", SolrZkClient.checkInterrupted(e));
+      if (existingConfigSetConfigMaps.containsKey(configName)) {
+        V1ConfigMap configMap = existingConfigSetConfigMaps.get(configName);
+        configMapName = configMap.getMetadata().getName();
+        coreV1Api.deleteNamespacedConfigMap(
+            configMapName,
+            configMap.getMetadata().getNamespace(),
+            null,
+            null,
+            15, // TODO: What should this be?
+            null,
+            "Background",
+            null
+            );
+      }
+    } catch (ApiException e) {
+      throw new IOException(String.format(Locale.ROOT, "Error deleting configMap %s, representing the configSet %s", configMapName, configName), e);
     }
   }
 
@@ -205,25 +297,23 @@ public class KubernetesConfigSetService extends ConfigSetService {
   public void uploadFileToConfig(
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
-    String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
+    String configMapName = "";
     try {
       if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
         log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
       } else {
-        // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
-        zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
+        V1ConfigMap configMap = existingConfigSetConfigMaps.get(configName);
+        if (configMap == null) {
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, String.format(Locale.ROOT, "ConfigSet %s does not exist", configName))
+        }
+        configMapName = configMap.getMetadata().getName();
+        var existingData = configMap.getData();
+        if (existingData == null || !existingData.containsKey(fileName) || overwriteOnExists) {
+          // TODO: Patch the data
+        }
       }
-    } catch (KeeperException.NodeExistsException nodeExistsException) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "The path "
-              + filePath
-              + " for configSet "
-              + configName
-              + " already exists. "
-              + "In order to overwrite, provide overwrite=true or use an HTTP PUT with the V2 API.");
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error creating file in config", SolrZkClient.checkInterrupted(e));
+    } catch (ApiException e) {
+      throw new IOException(String.format(Locale.ROOT, "Error creating item %s in configMap %s, representing the configSet %s", fileName, configMapName, configName), e);
     }
   }
 
