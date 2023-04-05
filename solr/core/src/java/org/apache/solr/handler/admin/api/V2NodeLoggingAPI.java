@@ -17,36 +17,36 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.logging.LogWatcher;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
+import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.logging.LogWatcher;
 
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 /**
- * V2 API for getting  log levels on an individual node.
+ * V2 API for getting log levels on an individual node.
  *
- * <p>The endpoint is defined as  api/node/logging/levels
+ * <p>The endpoint is defined as api/node/logging/levels
  */
 @Path("/api/node/logging")
 public class V2NodeLoggingAPI {
-    private final LogWatcher<?>watcher;
+  private final LogWatcher<?> watcher;
 
-    @Inject
-    public V2NodeLoggingAPI(LogWatcher<?> watcher) {
-        this.watcher = watcher;
-    }
+  @Inject
+  public V2NodeLoggingAPI(LogWatcher<?> watcher) {
+    this.watcher = watcher;
+  }
 
-    @GET
-    @Path("/levels")
-    @PermissionName(CONFIG_EDIT_PERM)
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<String>getAllLevels(){
-        return this.watcher.getAllLevels();
-    }
+  @GET
+  @Path("/levels")
+  @PermissionName(CONFIG_EDIT_PERM)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<String> getAllLevels() {
+    return this.watcher.getAllLevels();
+  }
 }
