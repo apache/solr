@@ -46,7 +46,11 @@ version = {
   //  -Dversion.suffix=jenkins123
   
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
-  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  if (v.endsWith("-")) {
+    v = v.substring(0, v.length() - 1)
+  }
+  return v
 }()
 description = 'Grandparent project for Apache Solr'
 
