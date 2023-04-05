@@ -101,6 +101,9 @@ Bug Fixes
 * SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
   SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
 
+* SOLR-16720: PKI headers are now populated closer to when inter-node requests are actually sent,
+  making TTL expiry less likely. (Jason Gerlowski, Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
