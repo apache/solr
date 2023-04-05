@@ -37,7 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -46,6 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -157,11 +157,9 @@ public class JsonLoader extends ContentStreamLoader {
 
     private Reader getReader(ContentStream stream) throws IOException {
       if (log.isTraceEnabled()) {
-        try (Reader reader = stream.getReader()) {
-          String body = IOUtils.toString(reader);
-          log.trace("body: {}", body);
-          return new StringReader(body);
-        }
+        String body = StrUtils.stringFromReader(stream.getReader());
+        log.trace("body: {}", body);
+        return new StringReader(body);
       }
       return stream.getReader();
     }

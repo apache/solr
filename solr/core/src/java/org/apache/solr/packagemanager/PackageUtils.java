@@ -195,18 +195,19 @@ public class PackageUtils {
 
     if (str == null) return null;
     if (defaults != null) {
-      for (String param : defaults.keySet()) {
+      for (Map.Entry<String, String> entry : defaults.entrySet()) {
+        String param = entry.getKey();
         str =
-            str.replaceAll(
-                "\\$\\{" + param + "\\}",
-                overrides.containsKey(param) ? overrides.get(param) : defaults.get(param));
+            str.replace(
+                "${" + param + "}",
+                overrides.containsKey(param) ? overrides.get(param) : entry.getValue());
       }
     }
-    for (String param : overrides.keySet()) {
-      str = str.replaceAll("\\$\\{" + param + "\\}", overrides.get(param));
+    for (Map.Entry<String, String> entry : overrides.entrySet()) {
+      str = str.replace("${" + entry.getKey() + "}", entry.getValue());
     }
-    for (String param : systemParams.keySet()) {
-      str = str.replaceAll("\\$\\{" + param + "\\}", systemParams.get(param));
+    for (Map.Entry<String, String> entry : systemParams.entrySet()) {
+      str = str.replace("${" + entry.getKey() + "}", entry.getValue());
     }
     return str;
   }

@@ -488,7 +488,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
-            .replaceAll("\n", "\\\\n"); // Use literal \n to play well with JSON
+            .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
     return "{\n"
         + "  \"authentication\" : {\n"
         + "    \"class\": \"solr.JWTAuthPlugin\",\n"

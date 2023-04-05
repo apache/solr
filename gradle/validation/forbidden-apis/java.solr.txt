@@ -26,4 +26,3 @@ java.util.LinkedHashMap#<init>(int)
 
 @defaultMessage Use CollectionUtil.newHashSet(int)
 java.util.HashSet#<init>(int)
-

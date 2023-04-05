@@ -72,7 +72,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
@@ -349,21 +348,21 @@ public class ZkController implements Closeable {
 
     String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
     ZkCredentialsInjector zkCredentialsInjector =
-        StringUtils.isEmpty(zkCredentialsInjectorClass)
+        StrUtils.isNullOrEmpty(zkCredentialsInjectorClass)
             ? new DefaultZkCredentialsInjector()
             : cc.getResourceLoader()
                 .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
 
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider =
-        StringUtils.isEmpty(zkACLProviderClass)
+        StrUtils.isNullOrEmpty(zkACLProviderClass)
             ? new DefaultZkACLProvider()
             : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
     zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     ZkCredentialsProvider zkCredentialsProvider =
-        StringUtils.isEmpty(zkCredentialsProviderClass)
+        StrUtils.isNullOrEmpty(zkCredentialsProviderClass)
             ? new DefaultZkCredentialsProvider()
             : cc.getResourceLoader()
                 .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
@@ -374,7 +373,7 @@ public class ZkController implements Closeable {
 
     String stateCompressionProviderClass = cloudConfig.getStateCompressorClass();
     Compressor compressor =
-        StringUtils.isEmpty(stateCompressionProviderClass)
+        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
             ? new ZLibCompressor()
             : cc.getResourceLoader().newInstance(stateCompressionProviderClass, Compressor.class);
 
@@ -502,7 +501,7 @@ public class ZkController implements Closeable {
               register(descriptor.getName(), descriptor, true, true, false);
             }
           } catch (Exception e) {
-            SolrException.log(log, "Error registering SolrCore", e);
+            log.error("Error registering SolrCore", e);
           }
         }
       }
@@ -536,7 +535,7 @@ public class ZkController implements Closeable {
     } catch (SessionExpiredException e) {
       throw e;
     } catch (Exception e) {
-      SolrException.log(log, "", e);
+      log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
     }
   }
@@ -905,7 +904,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (Exception e) {
-          SolrException.log(log, "Error while looking for a better host name than 127.0.0.1", e);
+          log.error("Error while looking for a better host name than 127.0.0.1", e);
         }
       }
       host = hostaddress;
@@ -1187,11 +1186,11 @@ public class ZkController implements Closeable {
       return true;
     }
     log.trace("zkHost includes chroot");
-    String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
+    String chrootPath = zkHost.substring(zkHost.indexOf('/'), zkHost.length());
 
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
-            .withUrl(zkHost.substring(0, zkHost.indexOf("/")))
+            .withUrl(zkHost.substring(0, zkHost.indexOf('/')))
             .withTimeout(60000, TimeUnit.MILLISECONDS)
             .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
             .build();
@@ -2217,7 +2216,7 @@ public class ZkController implements Closeable {
                 }
               }
 
-              SolrException.log(log, "There was a problem making a request to the leader", e);
+              log.error("There was a problem making a request to the leader", e);
               try {
                 Thread.sleep(2000);
               } catch (InterruptedException e1) {
@@ -2230,7 +2229,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (IOException e) {
-          SolrException.log(log, "Error closing HttpSolrClient", e);
+          log.error("Error closing HttpSolrClient", e);
         }
       }
     }

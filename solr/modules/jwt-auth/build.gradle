@@ -61,5 +61,4 @@ dependencies {
   testImplementation 'com.squareup.okhttp3:mockwebserver'
   testImplementation 'com.squareup.okhttp3:okhttp'
   testRuntimeOnly 'io.netty:netty-codec-http'
-  testImplementation 'org.apache.commons:commons-lang3'
 }

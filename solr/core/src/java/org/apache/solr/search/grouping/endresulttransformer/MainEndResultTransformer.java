@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search.grouping.endresulttransformer;
 
+import java.lang.reflect.Array;
 import java.util.Map;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
@@ -40,9 +40,9 @@ public class MainEndResultTransformer implements EndResultTransformer {
       Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     String[] entries = groupingSpec.getFields();
-    if (ArrayUtils.isEmpty(entries)) {
+    if (entries == null || Array.getLength(entries) == 0) {
       entries = groupingSpec.getQueries();
-      if (ArrayUtils.isEmpty(entries)) {
+      if (entries == null || Array.getLength(entries) == 0) {
         // group.func is not supported in distributed mode
         // so when group.field or group.query is not specified return
         return;

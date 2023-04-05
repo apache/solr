@@ -217,7 +217,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
         final String managedSchemaPath = lookupZKManagedSchemaPath();
         managedSchemaResourceName =
-            managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1); // not loving this
+            managedSchemaPath.substring(managedSchemaPath.lastIndexOf('/') + 1); // not loving this
         Stat stat = new Stat();
         try {
           // Attempt to load the managed schema

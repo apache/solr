@@ -54,8 +54,8 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
@@ -206,7 +206,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
-    if (!StringUtils.isEmpty(requiredScopesStr)) {
+    if (StrUtils.isNotNullOrEmpty(requiredScopesStr)) {
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 

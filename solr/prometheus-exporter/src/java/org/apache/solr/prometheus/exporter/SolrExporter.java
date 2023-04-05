@@ -27,10 +27,10 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -248,10 +248,10 @@ public class SolrExporter {
       SolrScrapeConfiguration scrapeConfiguration = null;
 
       String defaultClusterId = "";
-      if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
+      if (!res.getString(ARG_ZK_HOST_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_ZK_HOST_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
-      } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
+      } else if (!res.getString(ARG_BASE_URL_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_BASE_URL_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
       }
@@ -262,7 +262,7 @@ public class SolrExporter {
 
       int port = res.getInt(ARG_PORT_DEST);
       String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
-      if (StringUtils.isEmpty(clusterId)) {
+      if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
       }
 

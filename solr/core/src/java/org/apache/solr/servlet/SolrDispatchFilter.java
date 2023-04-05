@@ -49,7 +49,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
@@ -161,8 +160,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Dispatch Filter.");
-      SolrCore.log(t);
+      log.error("Could not start Dispatch Filter.", t);
       if (t instanceof Error) {
         throw (Error) t;
       }

@@ -859,7 +859,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   protected boolean shouldCloneCmdDoc() {
     boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-    return willDistrib & cloneRequiredOnLeader;
+    return willDistrib && cloneRequiredOnLeader;
   }
 
   // helper method, processAdd was getting a bit large.

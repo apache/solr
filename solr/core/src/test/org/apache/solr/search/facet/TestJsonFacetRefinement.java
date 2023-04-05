@@ -1428,7 +1428,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     */
     for (String method :
         new String[] {"", "dv", "dvhash", "stream", "uif", "enum", "stream", "smart"}) {
-      if (method.equals("")) {
+      if (method.isEmpty()) {
         p.remove("terms");
       } else {
         p.set("terms", "method:" + method + ", ");

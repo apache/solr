@@ -179,7 +179,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
 
     final Principal principal =
-        "$".equals(headerData.userName) ? SU : new BasicUserPrincipal(headerData.userName);
+        "$".equals(headerData.userName)
+            ? CLUSTER_MEMBER_NODE
+            : new BasicUserPrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -424,7 +426,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {
-    return req.getUserPrincipal() != SU;
+    return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
   }
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
@@ -538,5 +540,5 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   public static final String HEADER_V2 = "SolrAuthV2";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
-  private static final Principal SU = new BasicUserPrincipal("$");
+  public static final Principal CLUSTER_MEMBER_NODE = new BasicUserPrincipal("$");
 }
