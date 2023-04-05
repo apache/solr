@@ -746,6 +746,7 @@ public class CoreContainer {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
+    Thread.currentThread().setContextClassLoader(loader.getClassLoader());
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
