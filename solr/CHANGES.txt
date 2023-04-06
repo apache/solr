@@ -71,6 +71,9 @@ Improvements
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
 
+* SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
+  `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
