@@ -95,7 +95,7 @@ public class CommandOperation {
   }
 
   private Object getMapVal(String key) {
-    if ("".equals(key)) {
+    if (key != null && key.isEmpty()) {
       if (commandData instanceof Map) {
         addError("value of the command is an object should be primitive");
       }

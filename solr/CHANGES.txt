@@ -29,6 +29,7 @@ Deprecation Removals
 
 * SOLR-16601: Removed deprecated methods on the various Solr Clients. (Eric Pugh, Kevin Risden)
 
+* SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
 ---------------------
 (No changes)
@@ -83,17 +84,39 @@ Optimizations
   Solr can also be started with the system property `solr.http.disableCookies` set to `true`, so that the internal clients
   that Solr uses to communicate between nodes use `HttpCookieStore.Empty`. (Tomás Fernández Löbbe)
 
+* SOLR-16693: For query timeAllowed, switch from ExitableDirectoryReader to TimeLimitingBulkScorer (David Smiley)
+
 Bug Fixes
 ---------------------
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
 * SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
+
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
+* SOLR-16720: PKI headers are now populated closer to when inter-node requests are actually sent,
+  making TTL expiry less likely. (Jason Gerlowski, Alex Deparvu)
+
+* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
+  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
+
+* NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
+* SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 Other Changes
 ---------------------
@@ -109,6 +132,10 @@ Other Changes
 * SOLR-16715: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap / CollectionUtil.newHashSet (Kevin Risden)
 
 * SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
+
+* SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
+
+* SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
 
 ==================  9.2.0 ==================
 

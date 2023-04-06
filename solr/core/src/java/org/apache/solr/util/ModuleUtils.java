@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +59,11 @@ public class ModuleUtils {
     // Fall back to sysprop and env.var if nothing configured through solr.xml
     Set<String> mods = new HashSet<>();
     String modulesFromProps = System.getProperty("solr.modules");
-    if (!StringUtils.isEmpty(modulesFromProps)) {
+    if (StrUtils.isNotNullOrEmpty(modulesFromProps)) {
       mods.addAll(StrUtils.splitSmart(modulesFromProps, ',', true));
     }
     String modulesFromEnv = System.getenv("SOLR_MODULES");
-    if (!StringUtils.isEmpty(modulesFromEnv)) {
+    if (StrUtils.isNotNullOrEmpty(modulesFromEnv)) {
       mods.addAll(StrUtils.splitSmart(modulesFromEnv, ',', true));
     }
     return mods.stream().map(String::trim).collect(Collectors.toSet());

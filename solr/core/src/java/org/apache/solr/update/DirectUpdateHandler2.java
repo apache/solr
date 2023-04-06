@@ -812,7 +812,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
-        SolrException.log(log, e);
+        log.error("Exception waiting for searcher", e);
       }
     }
   }

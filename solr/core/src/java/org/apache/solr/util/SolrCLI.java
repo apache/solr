@@ -75,8 +75,6 @@ import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NoHttpResponseException;
@@ -91,6 +89,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -670,11 +669,13 @@ public class SolrCLI implements CLIO {
           throw exc;
         }
         if (--attempts > 0 && checkCommunicationError(exc)) {
-          if (!isFirstAttempt) // only show the log warning after the second attempt fails
-          log.warn(
+          if (!isFirstAttempt) {
+            // only show the log warning after the second attempt fails
+            log.warn(
                 "Request to {} failed, sleeping for 5 seconds before re-trying the request ...",
                 getUrl,
                 exc);
+          }
           try {
             Thread.sleep(5000);
           } catch (InterruptedException ie) {
@@ -1600,7 +1601,7 @@ public class SolrCLI implements CLIO {
 
       boolean configExistsInZk =
           confname != null
-              && !"".equals(confname.trim())
+              && !confname.trim().isEmpty()
               && ZkStateReader.from(cloudSolrClient)
                   .getZkClient()
                   .exists("/configs/" + confname, true);
@@ -1609,8 +1610,8 @@ public class SolrCLI implements CLIO {
         // do nothing
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory " + confname);
-      } else if (confdir != null && !"".equals(confdir.trim())) {
-        if (confname == null || "".equals(confname.trim())) {
+      } else if (confdir != null && !confdir.trim().isEmpty()) {
+        if (confname == null || confname.trim().isEmpty()) {
           confname = collectionName;
         }
         Path confPath = ConfigSetService.getConfigsetPath(confdir, configsetsDir);
@@ -1649,7 +1650,7 @@ public class SolrCLI implements CLIO {
               collectionName,
               numShards,
               replicationFactor);
-      if (confname != null && !"".equals(confname.trim())) {
+      if (confname != null && !confname.trim().isEmpty()) {
         createCollectionUrl =
             createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
       }
@@ -1682,7 +1683,7 @@ public class SolrCLI implements CLIO {
                 collectionName,
                 numShards,
                 replicationFactor);
-        if (confname != null && !"".equals(confname.trim())) {
+        if (confname != null && !confname.trim().isEmpty()) {
           endMessage += String.format(Locale.ROOT, " with config-set '%s'", confname);
         }
 
@@ -4181,8 +4182,7 @@ public class SolrCLI implements CLIO {
     private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
       if (cli.hasOption(argName)) {
         final String value = cli.getOptionValue(argName);
-        final Boolean parsedBoolean = BooleanUtils.toBooleanObject(value);
-        if (parsedBoolean == null) {
+        if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
           echo("Argument [" + argName + "] must be either true or false, but was [" + value + "]");
           exit(1);
         }
@@ -4304,12 +4304,12 @@ public class SolrCLI implements CLIO {
 
           String config = StrUtils.join(Arrays.asList(cli.getOptionValues("config")), ' ');
           // config is base64 encoded (to get around parsing problems), decode it
-          config = config.replaceAll(" ", "");
+          config = config.replace(" ", "");
           config =
               new String(
                   Base64.getDecoder().decode(config.getBytes(StandardCharsets.UTF_8)),
                   StandardCharsets.UTF_8);
-          config = config.replaceAll("\n", "").replaceAll("\r", "");
+          config = config.replace("\n", "").replace("\r", "");
 
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
           File includeFile = new File(solrIncludeFilename);
@@ -4578,7 +4578,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void printAuthEnablingInstructions(String username, String password) {
-      if (SystemUtils.IS_OS_WINDOWS) {
+      if (Constants.WINDOWS) {
         CLIO.out(
             "\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
         CLIO.out(
@@ -4602,7 +4602,7 @@ public class SolrCLI implements CLIO {
     }
 
     private void printAuthEnablingInstructions(String kerberosConfig) {
-      if (SystemUtils.IS_OS_WINDOWS) {
+      if (Constants.WINDOWS) {
         CLIO.out(
             "\nAdd the following lines to the solr.in.cmd file so that the solr.cmd script can use subsequently.\n");
         CLIO.out(
@@ -4651,7 +4651,7 @@ public class SolrCLI implements CLIO {
       includeFileLines.add(""); // blank line
 
       if (basicAuthConfFile != null) { // for basicAuth
-        if (SystemUtils.IS_OS_WINDOWS) {
+        if (Constants.WINDOWS) {
           includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
           includeFileLines.add("set SOLR_AUTH_TYPE=basic");
           includeFileLines.add(
@@ -4665,7 +4665,7 @@ public class SolrCLI implements CLIO {
               "SOLR_AUTHENTICATION_OPTS=\"-Dsolr.httpclient.config=" + basicAuthConfFile + "\"");
         }
       } else { // for kerberos
-        if (SystemUtils.IS_OS_WINDOWS) {
+        if (Constants.WINDOWS) {
           includeFileLines.add("REM The following lines added by solr.cmd for enabling BasicAuth");
           includeFileLines.add("set SOLR_AUTH_TYPE=kerberos");
           includeFileLines.add(

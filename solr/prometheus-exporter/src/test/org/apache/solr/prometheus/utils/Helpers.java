@@ -50,7 +50,7 @@ public class Helpers {
   //   solr_exporter_duration_seconds_bucket{le="1.0",} 1.0
   //   first="solr_exporter_duration_seconds_bucket{le="1.0",}," second=1.0
   public static Pair<String, Double> parseMetricsLine(String line) {
-    int spaceIdx = line.lastIndexOf(" ");
+    int spaceIdx = line.lastIndexOf(' ');
     if (spaceIdx == -1) {
       throw new IllegalArgumentException(
           "Failed parsing metrics line, must contain a space. Line was: " + line);

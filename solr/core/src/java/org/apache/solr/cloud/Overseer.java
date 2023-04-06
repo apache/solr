@@ -54,7 +54,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
@@ -68,6 +67,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
@@ -746,7 +746,7 @@ public class Overseer implements SolrCloseable {
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     String stateCompressionProviderClass = config.getStateCompressorClass();
     Compressor compressor =
-        StringUtils.isEmpty(stateCompressionProviderClass)
+        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
             ? new ZLibCompressor()
             : zkController
                 .getCoreContainer()

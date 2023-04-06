@@ -75,7 +75,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   protected void runImpl(CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
-      solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
+      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
       if (zkHost == null) {
