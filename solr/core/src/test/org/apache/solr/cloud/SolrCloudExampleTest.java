@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
@@ -225,10 +224,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> configJson =
           solrClient.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/" + testCollectionName + "/config",
-                  new ModifiableSolrParams()));
+              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
       Object maxTimeFromConfig =
           configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
@@ -254,10 +250,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
       configJson =
           solrClient.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/" + testCollectionName + "/config",
-                  new ModifiableSolrParams()));
+              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
       maxTimeFromConfig =
           configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
       assertNotNull(maxTimeFromConfig);
@@ -310,8 +303,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
             solrClient.request(
                 new GenericSolrRequest(
                     SolrRequest.METHOD.GET,
-                    "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config",
-                    new ModifiableSolrParams()));
+                    "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config"));
         Integer maxTime =
             (Integer)
                 configJson._get(

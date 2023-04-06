@@ -169,8 +169,7 @@ public class PackageManager implements Closeable {
       DistribPackageStore.deleteZKFileEntry(zkClient, filePath);
       String path = "/api/cluster/files" + filePath;
       PackageUtils.printGreen("Deleting " + path);
-      solrClient.request(
-          new GenericSolrRequest(SolrRequest.METHOD.DELETE, path, new ModifiableSolrParams()));
+      solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
     }
 
     PackageUtils.printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
@@ -236,8 +235,7 @@ public class PackageManager implements Closeable {
           solrClient.request(
               new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
-                  PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
-                  new ModifiableSolrParams().add("omitHeader", "true").add("wt", "javabin")));
+                  PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS"));
       packages =
           (Map<String, String>)
               result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
@@ -274,10 +272,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  PackageUtils.CLUSTERPROPS_PATH,
-                  new ModifiableSolrParams()));
+              new GenericSolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
@@ -426,8 +421,7 @@ public class PackageManager implements Closeable {
                 .request(
                     new GenericSolrRequest(
                         SolrRequest.METHOD.GET,
-                        PackageUtils.getCollectionParamsPath(collection) + "/packages",
-                        new ModifiableSolrParams()))
+                        PackageUtils.getCollectionParamsPath(collection) + "/packages"))
                 .asShallowMap()
                 .containsKey("params");
         SolrCLI.postJsonToSolr(
@@ -732,15 +726,12 @@ public class PackageManager implements Closeable {
           solrClient.request(
               new GenericSolrRequest(
                   SolrRequest.METHOD.GET,
-                  PackageUtils.getCollectionParamsPath(collection) + "/packages",
-                  new ModifiableSolrParams()));
+                  PackageUtils.getCollectionParamsPath(collection) + "/packages"));
       return (Map<String, String>)
           response._get("/response/params/packages/" + packageName, Collections.emptyMap());
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
-      if (log.isWarnEnabled()) {
-        log.warn("There are no parameters to return for package: {}", packageName);
-      }
+      log.warn("There are no parameters to return for package: {}", packageName);
       return Collections.emptyMap();
     }
   }

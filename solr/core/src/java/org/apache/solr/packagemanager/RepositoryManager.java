@@ -140,8 +140,7 @@ public class RepositoryManager {
     // get solr_home directory from info servlet
     NamedList<Object> systemInfo =
         solrClient.request(
-            new GenericSolrRequest(
-                SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH, new ModifiableSolrParams()));
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH));
     String solrHome = (String) systemInfo.get("solr_home");
 
     // put the public key into package store's trusted key store and request a sync.
@@ -233,8 +232,7 @@ public class RepositoryManager {
       add.manifestSHA512 = manifestSHA512;
 
       GenericSolrRequest request =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH, new ModifiableSolrParams()) {
+          new GenericSolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
             @Override
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
               return new RequestWriter.StringPayloadContentWriter(

@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
@@ -112,8 +111,7 @@ public class DefaultPackageRepository extends PackageRepository {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(repositoryURL).useHttp1_1(true).build()) {
       GenericSolrRequest request =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.GET, "/repository.json", new ModifiableSolrParams());
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/repository.json");
       request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> resp = client.request(request);
       SolrPackage[] items =

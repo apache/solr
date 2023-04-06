@@ -719,10 +719,7 @@ public class SolrCLI implements CLIO {
       try (var solrClient = getSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
             solrClient.request(
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET,
-                    CommonParams.SYSTEM_INFO_PATH,
-                    new ModifiableSolrParams()));
+                new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
         // convert raw JSON into user-friendly output
         status = reportStatus(systemInfo, solrClient);
       }
@@ -1078,9 +1075,7 @@ public class SolrCLI implements CLIO {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(
-                          SolrRequest.METHOD.GET,
-                          CommonParams.SYSTEM_INFO_PATH,
-                          new ModifiableSolrParams()));
+                          SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
               uptime = uptime((Long) systemInfo.findRecursive("jvm", "jmx", "upTimeMS"));
               String usedMemory = (String) systemInfo.findRecursive("jvm", "memory", "used");
               String totalMemory = (String) systemInfo.findRecursive("jvm", "memory", "total");
@@ -1228,10 +1223,7 @@ public class SolrCLI implements CLIO {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  CommonParams.SYSTEM_INFO_PATH,
-                  new ModifiableSolrParams()));
+              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
@@ -1512,10 +1504,7 @@ public class SolrCLI implements CLIO {
         Map<String, Object> systemInfo =
             solrClient
                 .request(
-                    new GenericSolrRequest(
-                        SolrRequest.METHOD.GET,
-                        CommonParams.SYSTEM_INFO_PATH,
-                        new ModifiableSolrParams()))
+                    new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH))
                 .asMap();
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           throw new IllegalStateException(
@@ -1621,9 +1610,7 @@ public class SolrCLI implements CLIO {
       ToolBase tool = null;
       try (var solrClient = getSolrClient(solrUrl)) {
         NamedList<Object> systemInfo =
-            solrClient.request(
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()));
+            solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           tool = new CreateCollectionTool(stdout);
         } else {
@@ -2201,9 +2188,7 @@ public class SolrCLI implements CLIO {
       try (var solrClient = getSolrClient(solrUrl)) {
         Map<String, Object> systemInfo =
             solrClient
-                .request(
-                    new GenericSolrRequest(
-                        SolrRequest.METHOD.GET, SYSTEM_INFO_PATH, new ModifiableSolrParams()))
+                .request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH))
                 .asMap();
         if ("solrcloud".equals(systemInfo.get("mode"))) {
           deleteCollection(cli);

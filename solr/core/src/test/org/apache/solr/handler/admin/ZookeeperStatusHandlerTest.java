@@ -39,7 +39,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -78,8 +77,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
     mntrReq.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 

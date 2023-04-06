@@ -173,10 +173,7 @@ public class PackageUtils {
       SolrClient solrClient, String manifestFilePath, String expectedSHA512)
       throws IOException, SolrServerException {
     GenericSolrRequest request =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/api/node/files" + manifestFilePath,
-            new ModifiableSolrParams());
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
     request.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");

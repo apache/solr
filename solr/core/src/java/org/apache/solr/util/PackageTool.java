@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
@@ -374,10 +373,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  CommonParams.SYSTEM_INFO_PATH,
-                  new ModifiableSolrParams()));
+              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
