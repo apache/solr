@@ -106,6 +106,9 @@ public class DefaultPackageRepository extends PackageRepository {
   }
 
   private void initPackages() {
+    // We need http 1.1 protocol here because we are talking to the repository server and not to
+    // solr actually.
+    // We use an Http2SolrClient so that we do not need a raw jetty http client for this GET.
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(repositoryURL).useHttp1_1(true).build()) {
       GenericSolrRequest request =
