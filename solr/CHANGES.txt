@@ -107,6 +107,8 @@ Bug Fixes
 * SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
   All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
 
+* NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
