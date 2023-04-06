@@ -44,8 +44,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -109,11 +107,13 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
 
     collectionName =
         resolveAndValidateAliasIfEnabled(
-            collectionName, BooleanUtils.isTrue(requestBody.followAliases));
+            collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
     final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
     requestBody.location = getLocation(repository, requestBody.location);
-    requestBody.incremental = ObjectUtils.defaultIfNull(requestBody.incremental, Boolean.TRUE);
+    if (requestBody.incremental == null) {
+      requestBody.incremental = Boolean.TRUE;
+    }
 
     // Check if the specified location is valid for this repository.
     final URI uri = repository.createDirectoryURI(requestBody.location);
@@ -129,9 +129,9 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
           ex);
     }
 
-    requestBody.backupStrategy =
-        ObjectUtils.defaultIfNull(
-            requestBody.backupStrategy, CollectionAdminParams.COPY_FILES_STRATEGY);
+    if (requestBody.backupStrategy == null) {
+      requestBody.backupStrategy = CollectionAdminParams.COPY_FILES_STRATEGY;
+    }
     if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(requestBody.backupStrategy)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
