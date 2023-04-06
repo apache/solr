@@ -236,6 +236,7 @@ public abstract class ConfigSetService {
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
       NamedList<?> flags = loadConfigSetFlags(dcore, coreLoader);
 
+      // TODO: Need to accept Kube resource loader as well without the dependency
       boolean trusted =
           (coreLoader instanceof ZkSolrResourceLoader
                   && flags != null

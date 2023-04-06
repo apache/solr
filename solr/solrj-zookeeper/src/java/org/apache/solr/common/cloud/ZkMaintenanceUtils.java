@@ -56,7 +56,7 @@ public class ZkMaintenanceUtils {
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String ZKNODE_DATA_FILE = "zknode.data";
+  public static final String ZKNODE_DATA_FILE = "zknode.data";
 
   private ZkMaintenanceUtils() {} // don't let it be instantiated, all methods are static.
 
