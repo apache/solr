@@ -24,7 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * Class holding the dynamic config of a Zookeeper ensemble as fetched from znode <code>
@@ -54,7 +54,7 @@ public class ZkDynamicConfig {
    */
   public static ZkDynamicConfig parseLines(String lines) {
     ZkDynamicConfig zkDynamicConfig = new ZkDynamicConfig();
-    if (!StringUtils.isEmpty(lines)) {
+    if (StrUtils.isNotNullOrEmpty(lines)) {
       lines
           .lines()
           .forEach(

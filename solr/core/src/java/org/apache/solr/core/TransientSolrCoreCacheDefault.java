@@ -20,14 +20,11 @@ package org.apache.solr.core;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +32,15 @@ import org.slf4j.LoggerFactory;
  * Cache of the most frequently accessed transient cores. Keeps track of all the registered
  * transient cores descriptors, including the cores in the cache as well as all the others.
  */
+@Deprecated(since = "9.2")
 public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
+  // TODO move into TransientSolrCores; remove TransientSolrCoreCache base/abstraction.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
+  public static final String TRANSIENT_CACHE_SIZE = "transientCacheSize";
 
-  protected final CoreContainer coreContainer;
+  private final TransientSolrCores solrCores;
 
   /**
    * "Lazily loaded" cores cache with limited size. When the max size is reached, the least accessed
@@ -53,12 +54,8 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
    */
   protected final Map<String, CoreDescriptor> transientDescriptors;
 
-  /**
-   * @param coreContainer The enclosing {@link CoreContainer}.
-   */
-  public TransientSolrCoreCacheDefault(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
-    int cacheMaxSize = getConfiguredCacheMaxSize(coreContainer);
+  public TransientSolrCoreCacheDefault(TransientSolrCores solrCores, int cacheMaxSize) {
+    this.solrCores = solrCores;
 
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
@@ -85,11 +82,10 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     transientCores = transientCoresCacheBuilder.build();
 
-    transientDescriptors = new LinkedHashMap<>(initialCapacity);
+    transientDescriptors = CollectionUtil.newLinkedHashMap(initialCapacity);
   }
 
   private void onEvict(SolrCore core) {
-    final SolrCores solrCores = coreContainer.solrCores;
     assert Thread.holdsLock(solrCores.getModifyLock());
     // note: the cache's maximum size isn't strictly enforced; it can grow some if we un-evict
     if (solrCores.hasPendingCoreOps(core.getName())) {
@@ -119,38 +115,10 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
   }
 
-  private int getConfiguredCacheMaxSize(CoreContainer container) {
-    int configuredCacheMaxSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
-    NodeConfig cfg = container.getNodeConfig();
-    if (cfg.getTransientCachePluginInfo() == null) {
-      // Still handle just having transientCacheSize defined in the body of solr.xml
-      // not in a transient handler clause.
-      configuredCacheMaxSize = cfg.getTransientCacheSize();
-    } else {
-      NamedList<?> args = cfg.getTransientCachePluginInfo().initArgs;
-      Object obj = args.get("transientCacheSize");
-      if (obj != null) {
-        configuredCacheMaxSize = (int) obj;
-      }
-    }
-    if (configuredCacheMaxSize < 0) { // Trap old flag
-      configuredCacheMaxSize = Integer.MAX_VALUE;
-    }
-    return configuredCacheMaxSize;
-  }
-
   @Override
-  public Collection<SolrCore> prepareForShutdown() {
-    // Return a copy of the values.
-    List<SolrCore> ret = new ArrayList<>(transientCores.asMap().values());
+  public void close() {
     transientCores.invalidateAll();
     transientCores.cleanUp();
-    return ret;
-  }
-
-  @Override
-  public CoreContainer getContainer() {
-    return coreContainer;
   }
 
   @Override

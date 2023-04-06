@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -49,19 +50,18 @@ import org.junit.Test;
  * are never expected in the same request.
  */
 public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHandler> {
+
   @Override
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteCollectionAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteReplicaPropertyAPI(collectionsHandler));
     apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
     apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
-    apiBag.registerObject(new SetCollectionPropertyAPI(collectionsHandler));
     apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
+    apiBag.registerObject(new RenameCollectionAPI(collectionsHandler));
   }
 
   @Override
@@ -83,6 +83,21 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals(CollectionParams.CollectionAction.CLUSTERSTATUS.toString(), v1Params.get(ACTION));
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals("shard2", v1Params.get(SHARD));
+  }
+
+  @Test
+  public void testRenameCollectionAllParams() throws Exception {
+    final SolrParams v1Params =
+        captureConvertedV1Params(
+            "/collections/collName/rename",
+            "POST",
+            "{\"to\": \"targetColl\", \"async\": \"requestTrackingId\", \"followAliases\": true}");
+
+    assertEquals("rename", v1Params.get(ACTION));
+    assertEquals("collName", v1Params.get(NAME));
+    assertEquals("targetColl", v1Params.get(TARGET));
+    assertEquals("requestTrackingId", v1Params.get(ASYNC));
+    assertEquals(true, v1Params.getPrimitiveBool("followAliases"));
   }
 
   @Test
@@ -209,42 +224,5 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals(123, v1Params.getPrimitiveInt("maxAtOnce"));
     assertEquals(456, v1Params.getPrimitiveInt("maxWaitSeconds"));
-  }
-
-  @Test
-  public void testDeleteReplicaPropertyAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'delete-replica-property': {"
-                + "'shard': 'someShardName', "
-                + "'replica': 'someReplicaName', "
-                + "'property': 'somePropertyName' "
-                + "}}");
-
-    assertEquals(
-        CollectionParams.CollectionAction.DELETEREPLICAPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("someShardName", v1Params.get("shard"));
-    assertEquals("someReplicaName", v1Params.get("replica"));
-    assertEquals("somePropertyName", v1Params.get("property"));
-  }
-
-  @Test
-  public void testSetCollectionPropertyAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'set-collection-property': {"
-                + "'name': 'somePropertyName', "
-                + "'value': 'somePropertyValue' "
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.COLLECTIONPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(NAME));
-    assertEquals("somePropertyName", v1Params.get("propertyName"));
-    assertEquals("somePropertyValue", v1Params.get("propertyValue"));
   }
 }

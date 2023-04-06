@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,7 +135,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public List<CoreDescriptor> discover(final CoreContainer cc) {
     log.debug("Looking for core definitions underneath {}", rootDirectory);
-    final List<CoreDescriptor> cds = Lists.newArrayList();
+    final List<CoreDescriptor> cds = new ArrayList<>();
     try {
       Set<FileVisitOption> options = new HashSet<>();
       options.add(FileVisitOption.FOLLOW_LINKS);

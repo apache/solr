@@ -25,11 +25,11 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -51,8 +51,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -61,10 +59,13 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -159,7 +160,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       }
     }
     // paranoia, we *really* don't want to ever get "//" in a path...
-    final String hc = hostContext.toString().replaceAll("\\/+", "/");
+    final String hc = hostContext.toString().replaceAll("/+", "/");
 
     log.info("Setting hostContext system property: {}", hc);
     System.setProperty("hostContext", hc);
@@ -189,9 +190,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private static String getHostContextSuitableForServletContext() {
     String ctx = System.getProperty("hostContext", "/solr");
-    if ("".equals(ctx)) ctx = "/solr";
+    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
     if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    ;
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
     return ctx;
   }
@@ -534,16 +534,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    try {
-      // setup the client...
-      String baseUrl = buildUrl(port);
-      if (baseUrl.endsWith("/")) {
-        return getHttpSolrClient(baseUrl + DEFAULT_TEST_CORENAME);
-      } else {
-        return getHttpSolrClient(baseUrl + "/" + DEFAULT_TEST_CORENAME);
-      }
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    return getHttpSolrClient(getServerUrl(port));
+  }
+
+  protected String getServerUrl(int port) {
+    String baseUrl = buildUrl(port);
+    if (baseUrl.endsWith("/")) {
+      return baseUrl + DEFAULT_TEST_CORENAME;
+    } else {
+      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
     }
   }
 
@@ -809,14 +808,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     boolean ordered = (flags & UNORDERED) == 0;
 
     if (!ordered) {
-      @SuppressWarnings({"rawtypes"})
-      Map mapA = new HashMap(a.size());
+      Map<String, Object> mapA = CollectionUtil.newHashMap(a.size());
       for (int i = 0; i < a.size(); i++) {
         Object prev = mapA.put(a.getName(i), a.getVal(i));
       }
 
-      @SuppressWarnings({"rawtypes"})
-      Map mapB = new HashMap(b.size());
+      Map<String, Object> mapB = CollectionUtil.newHashMap(b.size());
       for (int i = 0; i < b.size(); i++) {
         Object prev = mapB.put(b.getName(i), b.getVal(i));
       }
@@ -1275,7 +1272,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
     String solrxml = getSolrXml();
     if (solrxml != null) {
-      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
+      Files.copy(
+          Path.of(getSolrHome(), solrxml),
+          jettyHome.toPath().resolve("solr.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
     }
   }
 

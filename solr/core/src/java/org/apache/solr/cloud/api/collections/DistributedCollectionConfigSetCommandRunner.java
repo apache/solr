@@ -454,9 +454,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         }
         // Output some error logs
         if (collName == null) {
-          SolrException.log(log, "Operation " + action + " failed", e);
+          log.error("Operation {} failed", action, e);
         } else {
-          SolrException.log(log, "Collection " + collName + ", operation " + action + " failed", e);
+          log.error("Collection {}}, operation {} failed", collName, action, e);
         }
 
         results.add("Operation " + action + " caused exception:", e);

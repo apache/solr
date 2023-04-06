@@ -21,7 +21,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -34,13 +36,13 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.blockcache.BlockCache;
 import org.apache.solr.hdfs.store.blockcache.BlockDirectory;
@@ -112,8 +114,11 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     List<CloudSolrClient> cloudClients = new ArrayList<>();
     List<StoppableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
-      CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress());
-      client.setDefaultCollection(ACOLLECTION + i);
+      CloudSolrClient client =
+          new RandomizingCloudSolrClientBuilder(
+                  Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+              .withDefaultCollection(ACOLLECTION + i)
+              .build();
       cloudClients.add(client);
       StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, client, "1", true, docCount, 1, true);

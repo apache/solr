@@ -24,15 +24,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -67,13 +69,12 @@ public class TestRestoreCore extends SolrJettyTestBase {
   }
 
   private static SolrClient createNewSolrClient(int port) {
-    try {
-      // set up the client...
-      final String baseUrl = buildUrl(port, context);
-      return getHttpSolrClient(baseUrl, 15000, 60000);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+
+    final String baseUrl = buildUrl(port, context);
+    return new HttpSolrClient.Builder(baseUrl)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   @Override

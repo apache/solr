@@ -31,7 +31,6 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
@@ -40,6 +39,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
@@ -146,10 +146,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
     assertNotNull(gauge.getValue());
-    h.getCore().close();
+    deleteCore(); // closes TestHarness which closes CoreContainer which closes SolrCore
     assertEquals(metricManager.nullString(), gauge.getValue());
-
-    deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
       SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
@@ -262,7 +260,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         assertNotNull(zkMmetrics.get(k));
       }
       Utils.executeGET(
-          httpClient, j.getBaseURLV2() + "/cluster/zk/ls/live_nodes", Utils.JSONCONSUMER);
+          httpClient,
+          j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
+          Utils.JSONCONSUMER);
       @SuppressWarnings("unchecked")
       Map<String, Object> zkMmetricsNew =
           (Map<String, Object>)

@@ -196,7 +196,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         UpdateParams.OPTIMIZE,
         UpdateParams.MAX_OPTIMIZE_SEGMENTS,
         UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
-        ShardParams._ROUTE_);
+        ShardParams._ROUTE_,
+        CommonParams.FAIL_ON_VERSION_CONFLICTS);
 
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -1001,7 +1002,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync)
       throws IOException {
     if (versionsStored) {
-      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
+      final boolean leaderLogic = isLeader && !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);

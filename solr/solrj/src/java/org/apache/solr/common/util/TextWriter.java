@@ -105,8 +105,6 @@ public interface TextWriter extends PushWriter {
       } else {
         writeStr(name, val.toString(), true);
       }
-    } else if (val instanceof MapWriter.StringValue) {
-      writeStr(name, val.toString(), true);
     } else {
       // default... for debugging only.  Would be nice to "assert false" ?
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);

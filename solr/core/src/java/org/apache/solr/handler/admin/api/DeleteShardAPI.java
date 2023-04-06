@@ -24,7 +24,7 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.params.CollectionParams;
@@ -52,7 +52,7 @@ public class DeleteShardAPI {
   public void deleteShard(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final Map<String, String> pathParams = req.getPathTemplateValues();
 
-    final Map<String, Object> addedV1Params = Maps.newHashMap();
+    final Map<String, Object> addedV1Params = new HashMap<>();
     addedV1Params.put(ACTION, CollectionParams.CollectionAction.DELETESHARD.toLower());
     addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
     addedV1Params.put(SHARD, pathParams.get(SHARD));

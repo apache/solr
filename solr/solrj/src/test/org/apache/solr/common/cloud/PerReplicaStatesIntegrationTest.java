@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -39,7 +39,13 @@ import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
 @LogLevel(
-    "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;org.apache.solr.cloud.Overseer=INFO;org.apache.solr.common.cloud=INFO;org.apache.solr.cloud.api.collections=INFO;org.apache.solr.cloud.overseer=INFO")
+    "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
+        + "org.apache.solr.handler.admin.CollectionsHandler=DEBUG;"
+        + "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;"
+        + "org.apache.solr.cloud.Overseer=INFO;"
+        + "org.apache.solr.common.cloud=INFO;"
+        + "org.apache.solr.cloud.api.collections=INFO;"
+        + "org.apache.solr.cloud.overseer=INFO")
 public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -314,8 +320,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica
       // will go through recovery, direct write PRS to RECOVERING
-      // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
-      assertEquals(57, stat.getCversion());
+      assertEquals(55, stat.getCversion());
 
       String addedCore = response.getCollectionCoresStatus().entrySet().iterator().next().getKey();
       Replica addedReplica =
@@ -331,9 +336,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For replica deletion
       // +1 for ZkController#unregister, which delete the PRS entry from data node
-      // +2 for state.json overseer writes, even though there's no longer PRS updates from
       // overseer, current code would still do a "TOUCH" on the PRS entry
-      assertEquals(60, stat.getCversion());
+      assertEquals(56, stat.getCversion());
 
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();

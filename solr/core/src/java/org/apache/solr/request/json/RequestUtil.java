@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -76,6 +75,11 @@ public class RequestUtil {
       String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
+        // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
+        // adjusted the content without updating the content type
+        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // node query (HttpSolrCall's request proxy)
+
         String contentType = cs.getContentType();
         if (contentType == null || !contentType.contains("/json")) {
           throw new SolrException(
@@ -84,10 +88,8 @@ public class RequestUtil {
         }
 
         try {
-          String jsonString = IOUtils.toString(cs.getReader());
-          if (jsonString != null) {
-            MultiMapSolrParams.addParam(JSON, jsonString, map);
-          }
+          String jsonString = StrUtils.stringFromReader(cs.getReader());
+          MultiMapSolrParams.addParam(JSON, jsonString, map);
         } catch (IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -324,7 +326,7 @@ public class RequestUtil {
   }
 
   private static void getParamsFromJSON(Map<String, String[]> params, String json) {
-    if (json.indexOf("params") < 0) {
+    if (!json.contains("params")) {
       return;
     }
 

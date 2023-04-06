@@ -113,6 +113,7 @@ public interface CollectionParams {
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
+    INSTALLSHARDDATA(true, LockLevel.SHARD),
     LISTBACKUP(false, LockLevel.NONE),
     DELETEBACKUP(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),

@@ -16,10 +16,8 @@
  */
 package org.apache.solr.search.neural;
 
+import java.io.IOException;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -31,6 +29,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
@@ -53,7 +52,7 @@ public class KnnQParser extends QParser {
   }
 
   @Override
-  public Query parse() {
+  public Query parse() throws SyntaxError {
     String denseVectorField = localParams.get(QueryParsing.F);
     String vectorToSearch = localParams.get(QueryParsing.V);
     int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
@@ -83,31 +82,21 @@ public class KnnQParser extends QParser {
         schemaField.getName(), parsedVectorToSearch, topK, getFilterQuery());
   }
 
-  private Query getFilterQuery() throws SolrException {
-    if (!isFilter()) {
+  private Query getFilterQuery() throws SolrException, SyntaxError {
+    boolean isSubQuery = recurseCount != 0;
+    if (!isFilter() && !isSubQuery) {
       String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
       if (filterQueries != null && filterQueries.length != 0) {
-        List<Query> filters;
-
         try {
-          filters = QueryUtils.parseFilterQueries(req, true);
-        } catch (SyntaxError e) {
+          List<Query> filters = QueryUtils.parseFilterQueries(req);
+          SolrIndexSearcher.ProcessedFilter processedFilter =
+              req.getSearcher().getProcessedFilter(filters);
+          return processedFilter.filter;
+        } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-
-        if (filters.size() == 1) {
-          return filters.get(0);
-        }
-
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Query query : filters) {
-          builder.add(query, BooleanClause.Occur.FILTER);
-        }
-
-        return builder.build();
       }
     }
-
     return null;
   }
 
@@ -118,6 +107,7 @@ public class KnnQParser extends QParser {
    * @return a float array
    */
   private static float[] parseVector(String value, int dimension) {
+
     if (!value.startsWith("[") || !value.endsWith("]")) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -125,7 +115,7 @@ public class KnnQParser extends QParser {
               + " The expected format is:'[f1,f2..f3]' where each element f is a float");
     }
 
-    String[] elements = StringUtils.split(value.substring(1, value.length() - 1), ',');
+    String[] elements = value.substring(1, value.length() - 1).split(",");
     if (elements.length != dimension) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

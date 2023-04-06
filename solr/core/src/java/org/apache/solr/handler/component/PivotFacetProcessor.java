@@ -28,7 +28,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -122,7 +121,7 @@ public class PivotFacetProcessor extends SimpleFacets {
               FacetComponent.FacetContext.getFacetContext(req);
 
           String taggedQueries = parsed.localParams.get(QUERY);
-          if (StringUtils.isEmpty(taggedQueries)) {
+          if (StrUtils.isNullOrEmpty(taggedQueries)) {
             facetQueries = Collections.emptyList();
           } else {
             List<String> localParamValue = StrUtils.splitSmart(taggedQueries, ',');
@@ -141,7 +140,7 @@ public class PivotFacetProcessor extends SimpleFacets {
           }
 
           String taggedRanges = parsed.localParams.get(RANGE);
-          if (StringUtils.isEmpty(taggedRanges)) {
+          if (StrUtils.isNullOrEmpty(taggedRanges)) {
             facetRanges = Collections.emptyList();
           } else {
             List<String> localParamValue = StrUtils.splitSmart(taggedRanges, ',');

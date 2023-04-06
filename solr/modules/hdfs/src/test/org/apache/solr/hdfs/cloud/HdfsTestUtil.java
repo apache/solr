@@ -31,7 +31,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -149,7 +148,7 @@ public class HdfsTestUtil {
   @SuppressForbidden(reason = "Call FastDateFormat.format same way Hadoop calls it")
   private static void checkFastDateFormat() {
     try {
-      FastDateFormat.getInstance().format(System.currentTimeMillis());
+      org.apache.commons.lang3.time.FastDateFormat.getInstance().format(System.currentTimeMillis());
     } catch (ArrayIndexOutOfBoundsException e) {
       SolrTestCaseJ4.assumeNoException(
           "commons-lang3 FastDateFormat doesn't work with " + Locale.getDefault().toLanguageTag(),
@@ -368,12 +367,7 @@ public class HdfsTestUtil {
       return null;
     }
     String dir =
-        "/"
-            + new File(dataDir)
-                .toString()
-                .replaceAll(":", "_")
-                .replaceAll("/", "_")
-                .replaceAll(" ", "_");
+        "/" + new File(dataDir).toString().replace(":", "_").replace("/", "_").replace(" ", "_");
 
     return getURI(dfsCluster) + dir;
   }

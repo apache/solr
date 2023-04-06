@@ -20,9 +20,9 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
 import java.io.InputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -71,6 +71,12 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file path provided for upload, '" + singleFilePath + "', is not valid.");
+    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fixedSingleFilePath)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file type provided for upload, '"
+              + singleFilePath
+              + "', is forbidden for use in configSets.");
     } else if (cleanup) {
       // Cleanup is not allowed while using singleFilePath upload
       throw new SolrException(
@@ -82,7 +88,7 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
       // singleFilePath is not passed.
       createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
       configSetService.uploadFileToConfig(
-          configSetName, fixedSingleFilePath, IOUtils.toByteArray(inputStream), allowOverwrite);
+          configSetName, fixedSingleFilePath, inputStream.readAllBytes(), allowOverwrite);
     }
   }
 }

@@ -81,6 +81,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,8 +110,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
@@ -213,6 +214,65 @@ public class Utils {
     return writer;
   }
 
+  private static class MapWriterJSONWriter extends JSONWriter {
+
+    public MapWriterJSONWriter(CharArr out, int indentSize) {
+      super(out, indentSize);
+    }
+
+    @Override
+    public void handleUnknownClass(Object o) {
+      // avoid materializing MapWriter / IteratorWriter to Map / List
+      // instead serialize them directly
+      if (o instanceof MapWriter) {
+        MapWriter mapWriter = (MapWriter) o;
+        startObject();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        int sz = mapWriter._size();
+        mapWriter._forEachEntry(
+            (k, v) -> {
+              if (first[0]) {
+                first[0] = false;
+              } else {
+                writeValueSeparator();
+              }
+              if (sz > 1) indent();
+              writeString(k.toString());
+              writeNameSeparator();
+              write(v);
+            });
+        endObject();
+      } else if (o instanceof IteratorWriter) {
+        IteratorWriter iteratorWriter = (IteratorWriter) o;
+        startArray();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        try {
+          iteratorWriter.writeIter(
+              new IteratorWriter.ItemWriter() {
+                @Override
+                public IteratorWriter.ItemWriter add(Object o) throws IOException {
+                  if (first[0]) {
+                    first[0] = false;
+                  } else {
+                    writeValueSeparator();
+                  }
+                  indent();
+                  write(o);
+                  return this;
+                }
+              });
+        } catch (IOException e) {
+          throw new RuntimeException("this should never happen", e);
+        }
+        endArray();
+      } else {
+        super.handleUnknownClass(o);
+      }
+    }
+  }
+
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
@@ -223,7 +283,7 @@ public class Utils {
     //        o = ((IteratorWriter) o).toList(new ArrayList<>());
     //      }
     //    }
-    new NoggitJSONWriter(out, 2).write(o); // indentation by default
+    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
 
@@ -711,7 +771,7 @@ public class Utils {
           "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException(
           "nodeName does not contain expected '_' separator: " + nodeName);
@@ -965,7 +1025,54 @@ public class Utils {
     }
   }
 
-  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
+    try {
+      m.writeMap(
+          new MapWriter.EntryWriter() {
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              return writeEntry(k, v);
+            }
+
+            private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
+              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+              if (v instanceof Iterable) {
+                List lst = new ArrayList();
+                for (Object vv : (Iterable) v) {
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  lst.add(vv);
+                }
+                v = lst;
+              }
+              if (v instanceof Map) {
+                Map map = new LinkedHashMap();
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
+                  Object vv = entry.getValue();
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  map.put(entry.getKey(), vv);
+                }
+                v = map;
+              }
+              map.put(k == null ? null : k.toString(), v);
+              // note: It'd be nice to assert that there is no previous value at 'k' but it's
+              // possible the passed map is already populated and the intention is to overwrite.
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return map;
+  }
+
+  private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
+      new ConcurrentHashMap<>();
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;

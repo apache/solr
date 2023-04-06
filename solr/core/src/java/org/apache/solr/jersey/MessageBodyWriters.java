@@ -40,6 +40,7 @@ import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 
@@ -76,6 +77,20 @@ public class MessageBodyWriters {
     @Override
     public String getSupportedMediaType() {
       return BINARY_CONTENT_TYPE_V2;
+    }
+  }
+
+  @Produces(RawResponseWriter.CONTENT_TYPE)
+  public static class RawMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<JacksonReflectMapWriter> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new RawResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return RawResponseWriter.CONTENT_TYPE;
     }
   }
 

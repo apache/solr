@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -209,7 +208,7 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       RequestHandlerBase mockHandler)
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
-    final Map<String, String[]> inputParamsMap = Maps.newHashMap();
+    final Map<String, String[]> inputParamsMap = new HashMap<>();
     inputParams.stream()
         .forEach(
             e -> {

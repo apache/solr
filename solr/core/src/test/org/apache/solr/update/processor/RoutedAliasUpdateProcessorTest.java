@@ -34,7 +34,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -56,6 +55,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
@@ -217,27 +217,23 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   void assertRouting(int numShards, List<UpdateCommand> updateCommands) throws IOException {
-    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster)) {
-      ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
-      clusterStateProvider.connect();
-      Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
-      assertEquals(
-          "should have " + 3 * numShards + " leaders, " + numShards + " per collection",
-          3 * numShards,
-          leaders.size());
+    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
+    clusterStateProvider.connect();
+    Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
+    assertEquals(
+        "should have " + 3 * numShards + " leaders, " + numShards + " per collection",
+        3 * numShards,
+        leaders.size());
 
-      assertEquals(3, updateCommands.size());
-      for (UpdateCommand updateCommand : updateCommands) {
-        String node =
-            (String)
-                updateCommand
-                    .getReq()
-                    .getContext()
-                    .get(TrackingUpdateProcessorFactory.REQUEST_NODE);
-        assertTrue(
-            "Update was not routed to a leader (" + node + " not in list of leaders" + leaders,
-            leaders.contains(node));
-      }
+    assertEquals(3, updateCommands.size());
+    for (UpdateCommand updateCommand : updateCommands) {
+      String node =
+          (String)
+              updateCommand.getReq().getContext().get(TrackingUpdateProcessorFactory.REQUEST_NODE);
+      assertTrue(
+          "Update was not routed to a leader (" + node + " not in list of leaders" + leaders,
+          leaders.contains(node));
     }
   }
 
@@ -325,33 +321,32 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        try {
-          exec =
-              ExecutorUtil.newMDCAwareFixedThreadPool(
-                  1 + random().nextInt(2), new SolrNamedThreadFactory(getSaferTestName()));
-          List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
-          for (SolrInputDocument solrInputDocument : solrInputDocuments) {
-            String col = collections.get(random().nextInt(collections.size()));
-            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
-          }
-          for (Future<UpdateResponse> future : futures) {
-            assertUpdateResponse(future.get());
-          }
-          // at this point there shouldn't be any tasks running
-          assertEquals(0, exec.shutdownNow().size());
-        } finally {
-          if (exec != null) {
-            exec.shutdownNow();
-          }
+      CloudSolrClient solrClient = cluster.getSolrClient();
+      try {
+        exec =
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                1 + random().nextInt(2), new SolrNamedThreadFactory(getSaferTestName()));
+        List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
+        for (SolrInputDocument solrInputDocument : solrInputDocuments) {
+          String col = collections.get(random().nextInt(collections.size()));
+          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+        }
+        for (Future<UpdateResponse> future : futures) {
+          assertUpdateResponse(future.get());
+        }
+        // at this point there shouldn't be any tasks running
+        assertEquals(0, exec.shutdownNow().size());
+      } finally {
+        if (exec != null) {
+          exec.shutdownNow();
         }
       }
+
     } else {
       // send in a batch.
       String col = collections.get(random().nextInt(collections.size()));
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
-      }
+      CloudSolrClient solrClient = cluster.getSolrClient();
+      assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
     }
     String col = collections.get(random().nextInt(collections.size()));
     if (commitWithin == -1) {

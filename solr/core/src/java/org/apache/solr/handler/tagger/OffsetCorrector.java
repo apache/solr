@@ -131,8 +131,9 @@ public abstract class OffsetCorrector {
   protected int correctEndOffsetForCloseElement(int endOffset) {
     if (docText.charAt(endOffset - 1) == '>') {
       final int newEndOffset = docText.lastIndexOf('<', endOffset - 2);
-      if (newEndOffset > offsetPair[0]) // just to be sure
-      return newEndOffset;
+      if (newEndOffset > offsetPair[0]) { // just to be sure
+        return newEndOffset;
+      }
     }
     return endOffset;
   }

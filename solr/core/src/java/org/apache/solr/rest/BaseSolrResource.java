@@ -94,7 +94,7 @@ public abstract class BaseSolrResource {
       final String path = solrRequest.getPath();
       if (!RestManager.SCHEMA_BASE_PATH.equals(path)) {
         // don't set webapp property on the request when context and core/collection are excluded
-        final int cutoffPoint = path.indexOf("/", 1);
+        final int cutoffPoint = path.indexOf('/', 1);
         final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
         solrRequest.getContext().put("webapp", firstPathElement); // Context path
       }

@@ -77,7 +77,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     BaseHttpSolrClient.RemoteSolrException ex =
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
-            () -> v2Request.process(cluster.getSolrClient()));
+            () -> {
+              v2Request.process(cluster.getSolrClient());
+            });
     assertEquals(expectedCode, ex.code());
   }
 

@@ -24,12 +24,12 @@ import static org.mockito.Mockito.mock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -94,7 +94,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
 
         ZkController.createClusterZkNodes(client);
 
@@ -285,13 +289,15 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
         }
 
-        HashMap<String, Object> propMap = new HashMap<>();
-        propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
-        propMap.put(COLLECTION_PROP, collectionName);
-        propMap.put(SHARD_ID_PROP, "shard1");
-        propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:1_");
-        propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
-        propMap.put(ZkStateReader.STATE_PROP, "active");
+        MapWriter propMap =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
+                    .put(COLLECTION_PROP, collectionName)
+                    .put(SHARD_ID_PROP, "shard1")
+                    .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:1_")
+                    .put(ZkStateReader.CORE_NAME_PROP, collectionName)
+                    .put(ZkStateReader.STATE_PROP, "active");
+
         if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           zkController
               .getDistributedClusterStateUpdater()
@@ -301,16 +307,17 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                   zkController.getSolrCloudManager(),
                   zkController.getZkStateReader());
         } else {
-          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+          zkController.getOverseerJobQueue().offer(propMap);
         }
 
-        propMap = new HashMap<>();
-        propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
-        propMap.put(COLLECTION_PROP, collectionName);
-        propMap.put(SHARD_ID_PROP, "shard1");
-        propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:2_");
-        propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
-        propMap.put(ZkStateReader.STATE_PROP, "down");
+        propMap =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
+                    .put(COLLECTION_PROP, collectionName)
+                    .put(SHARD_ID_PROP, "shard1")
+                    .put(ZkStateReader.NODE_NAME_PROP, "non_existent_host:2_")
+                    .put(ZkStateReader.CORE_NAME_PROP, collectionName)
+                    .put(ZkStateReader.STATE_PROP, "down");
         if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           zkController
               .getDistributedClusterStateUpdater()
@@ -320,7 +327,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                   zkController.getSolrCloudManager(),
                   zkController.getZkStateReader());
         } else {
-          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+          zkController.getOverseerJobQueue().offer(propMap);
         }
 
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
@@ -346,7 +353,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
         CoreContainer cc = getCoreContainer();
         try {
           CloudConfig cloudConfig =

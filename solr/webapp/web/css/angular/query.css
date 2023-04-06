@@ -156,6 +156,17 @@ limitations under the License.
   display: block;
 }
 
+#content #query #add_advanced {
+  background-image: url( ../../img/ico/chevron-small-expand.png );
+  background-position: 100% 50%;
+  cursor: pointer;
+  padding-right: 21px;
+}
+
+#content #query #add_advanced.open {
+    background-image: url( ../../img/ico/chevron-small.png );
+}
+
 #content #query #result
 {
   float: right;

@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -127,19 +128,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually
         // more than one replica.
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.LEADER.toLower(),
-                ZkStateReader.SHARD_ID_PROP,
-                shardId,
-                ZkStateReader.COLLECTION_PROP,
-                collection);
-
+        MapWriter m =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower())
+                    .put(ZkStateReader.SHARD_ID_PROP, shardId)
+                    .put(ZkStateReader.COLLECTION_PROP, collection);
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader,
-              m,
+              new ZkNodeProps(m),
               zkController.getSolrCloudManager(),
               zkStateReader);
         } else {
@@ -210,7 +207,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
           success = result.isSuccess();
         } catch (Exception e) {
-          SolrException.log(log, "Exception while trying to sync", e);
+          log.error("Exception while trying to sync", e);
           result = PeerSync.PeerSyncResult.failure();
         }
 
@@ -314,7 +311,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          SolrException.log(log, "There was a problem trying to register as the leader", e);
+          log.error("There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {
 
@@ -457,7 +454,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 ErrorCode.SERVER_ERROR,
                 "ZK session expired - cancelling election for " + collection + " " + shardId);
           }
-          SolrException.log(log, "Error checking for the number of election participants", e);
+          log.error("Error checking for the number of election participants", e);
         }
 
         // on startup and after connection timeout, wait for all known shards
@@ -516,7 +513,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         }
-        SolrException.log(log, "Error checking for the number of election participants", e);
+        log.error("Error checking for the number of election participants", e);
       }
 
       if (found >= slices.getReplicasMap().size()) {

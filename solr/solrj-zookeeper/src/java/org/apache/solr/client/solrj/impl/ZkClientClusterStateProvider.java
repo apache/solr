@@ -25,16 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
    *
    * @param bytes a byte array of a Json representation of a mapping from collection name to the
    *     Json representation of a {@link DocCollection} as written by {@link
-   *     ClusterState#writeMap(MapWriter.EntryWriter)}. It can represent one or more collections.
+   *     ClusterState#write(JSONWriter)}. It can represent one or more collections.
    * @param liveNodes list of live nodes
    * @param coll collection name
    * @param zkClient ZK client
@@ -113,7 +114,12 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         }
       }
     }
-    return ClusterState.createFromCollectionMap(version, stateMap, liveNodes);
+    return ClusterState.createFromCollectionMap(
+        version,
+        stateMap,
+        liveNodes,
+        new PerReplicaStatesFetcher.LazyPrsSupplier(
+            zkClient, DocCollection.getCollectionPath(coll)));
   }
 
   @Override

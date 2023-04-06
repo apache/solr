@@ -103,6 +103,8 @@ Upon creation of a collection using an "untrusted" configset, the following func
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
 
+Not all file types are supported for use in configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[] for more information.
+
 The `upload` command takes the following parameters:
 
 `name`::

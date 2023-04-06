@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response.transform;
 
-import com.google.common.base.Strings;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -25,6 +24,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
@@ -69,7 +69,7 @@ public class RawValueTransformerFactory extends TransformerFactory
       Map<String, String> renamedFields,
       Set<String> reqFieldNames) {
     String field = params.get("f");
-    if (Strings.isNullOrEmpty(field)) {
+    if (StrUtils.isNullOrEmpty(field)) {
       field = display;
     }
     field = renamedFields.getOrDefault(field, field);

@@ -37,7 +37,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -59,6 +58,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
@@ -1487,6 +1487,14 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     return slice.getLeader().getCoreUrl();
+  }
+
+  protected String getBaseUrl(HttpSolrClient client) {
+    // take a complete Solr url that ends with /collection1 and truncates it to the root url
+    // that is used for admin api calls.
+    return client
+        .getBaseURL()
+        .substring(0, client.getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
   }
 
   UpdateRequest regularUpdateRequest(Object... fields) {
