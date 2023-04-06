@@ -37,15 +37,13 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.AsyncJerseyResponse;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -61,7 +59,7 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT */
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT) */
   @DELETE
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -77,28 +75,16 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
           @DefaultValue("false")
           @QueryParam("followAliases")
           boolean followAliases,
-      @QueryParam("asyncId") String asyncId)
+      @QueryParam("async") String asyncId)
       throws Exception {
     final DeleteSnapshotResponse response = instantiateJerseyResponse(DeleteSnapshotResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    String collectionName =
-        coreContainer
-            .getZkController()
-            .getZkStateReader()
-            .getAliases()
-            .resolveSimpleAlias(collName);
-
-    ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if (!clusterState.hasCollection(collectionName)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Collection '" + collectionName + "' does not exist, no action taken.");
-    }
+    final String collectionName = resolveCollectionName(collName, followAliases);
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(collName, followAliases, snapshotName, asyncId);
+        createRemoteMessage(collectionName, followAliases, snapshotName, asyncId);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -113,6 +99,7 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
 
     response.collection = collName;
     response.snapshotName = snapshotName;
+    response.followAliases = followAliases;
     response.requestId = asyncId;
 
     return response;
@@ -122,7 +109,7 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
    * The Response for {@link DeleteCollectionSnapshotAPI}'s {@link #deleteSnapshot(String, String,
    * boolean, String)}
    */
-  public static class DeleteSnapshotResponse extends SolrJerseyResponse {
+  public static class DeleteSnapshotResponse extends AsyncJerseyResponse {
     @Schema(description = "The name of the collection.")
     @JsonProperty(COLLECTION_PROP)
     String collection;
@@ -131,11 +118,12 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
     @JsonProperty("snapshot")
     String snapshotName;
 
-    @JsonProperty("requestId")
-    String requestId;
+    @Schema(description = "A flag that treats the collName parameter as a collection alias.")
+    @JsonProperty("followAliases")
+    boolean followAliases;
   }
 
-  private ZkNodeProps createRemoteMessage(
+  public static ZkNodeProps createRemoteMessage(
       String collectionName, boolean followAliases, String snapshotName, String asyncId) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 

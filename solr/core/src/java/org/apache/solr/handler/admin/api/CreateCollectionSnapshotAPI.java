@@ -27,18 +27,16 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -46,8 +44,9 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.AsyncJerseyResponse;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -63,7 +62,7 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  /** This API is analogous to V1's (POST /solr/admin/collections?action=CREATESNAPSHOT */
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=CREATESNAPSHOT) */
   @POST
   @Path("/{snapshotName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
@@ -75,32 +74,15 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
       @Parameter(description = "The name of the snapshot to be created.", required = true)
           @PathParam("snapshotName")
           String snapshotName,
-      @Parameter(description = "A flag that treats the collName parameter as a collection alias.")
-          @DefaultValue("false")
-          @QueryParam("followAliases")
-          boolean followAliases,
-      @QueryParam("asyncId") String asyncId)
+      @RequestBody(description = "Contains user provided parameters", required = true)
+          CreateSnapshotRequestBody requestBody)
       throws Exception {
 
     final CreateSnapshotResponse response = instantiateJerseyResponse(CreateSnapshotResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    final String collectionName =
-        followAliases
-            ? coreContainer
-                .getZkController()
-                .getZkStateReader()
-                .getAliases()
-                .resolveSimpleAlias(collName)
-            : collName;
-
-    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if (!clusterState.hasCollection(collectionName)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Collection '" + collectionName + "' does not exist, no action taken.");
-    }
+    final String collectionName = resolveCollectionName(collName, requestBody.followAliases);
 
     final SolrZkClient client = coreContainer.getZkController().getZkClient();
     if (SolrSnapshotManager.snapshotExists(client, collectionName, snapshotName)) {
@@ -114,7 +96,7 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     }
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(collName, followAliases, snapshotName, asyncId);
+        createRemoteMessage(collName, requestBody.followAliases, snapshotName, requestBody.asyncId);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
@@ -128,18 +110,30 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     }
 
     response.collection = collName;
-    response.followAliases = followAliases;
+    response.followAliases = requestBody.followAliases;
     response.snapshotName = snapshotName;
-    response.requestId = asyncId;
+    response.requestId = requestBody.asyncId;
 
     return response;
   }
 
   /**
-   * The Response for {@link CreateCollectionSnapshotAPI}'s {@link #createSnapshot(String, String,
-   * boolean, String)}
+   * The RequestBody for {@link CreateCollectionSnapshotAPI}'s {@link #createSnapshot(String,
+   * String, CreateSnapshotRequestBody)}
    */
-  public static class CreateSnapshotResponse extends SolrJerseyResponse {
+  public static class CreateSnapshotRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty(value = "followAliases", defaultValue = "false")
+    public boolean followAliases;
+
+    @JsonProperty("async")
+    public String asyncId;
+  }
+
+  /**
+   * The Response for {@link CreateCollectionSnapshotAPI}'s {@link #createSnapshot(String, String,
+   * CreateSnapshotRequestBody)}
+   */
+  public static class CreateSnapshotResponse extends AsyncJerseyResponse {
     @Schema(description = "The name of the collection.")
     @JsonProperty(COLLECTION_PROP)
     String collection;
@@ -151,12 +145,9 @@ public class CreateCollectionSnapshotAPI extends AdminAPIBase {
     @Schema(description = "A flag that treats the collName parameter as a collection alias.")
     @JsonProperty("followAliases")
     boolean followAliases;
-
-    @JsonProperty("requestId")
-    String requestId;
   }
 
-  private ZkNodeProps createRemoteMessage(
+  public static ZkNodeProps createRemoteMessage(
       String collectionName, boolean followAliases, String snapshotName, String asyncId) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 

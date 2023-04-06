@@ -23,21 +23,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.jersey.AsyncJerseyResponse;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -53,7 +51,7 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  /** This API is analogous to V1's (POST /solr/admin/collections?action=LISTSNAPSHOTS */
+  /** This API is analogous to V1's (POST /solr/admin/collections?action=LISTSNAPSHOTS) */
   @GET
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_READ_PERM)
@@ -67,24 +65,13 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    String collectionName =
-        coreContainer
-            .getZkController()
-            .getZkStateReader()
-            .getAliases()
-            .resolveSimpleAlias(collName);
-    ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    if (!clusterState.hasCollection(collectionName)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Collection '" + collectionName + "' does not exist, no action taken.");
-    }
+    final String collectionName = resolveCollectionName(collName, true);
 
     SolrZkClient client = coreContainer.getZkController().getZkClient();
     Collection<CollectionSnapshotMetaData> m =
         SolrSnapshotManager.listSnapshots(client, collectionName);
 
-    Map<String, CollectionSnapshotMetaData> snapshots = new HashMap<>(m.size());
+    Map<String, CollectionSnapshotMetaData> snapshots = CollectionUtil.newHashMap(m.size());
     for (CollectionSnapshotMetaData metaData : m) {
       snapshots.put(metaData.getName(), metaData);
     }
@@ -95,7 +82,7 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
   }
 
   /** The Response for {@link ListCollectionSnapshotsAPI}'s {@link #listSnapshots(String)} */
-  public static class ListSnapshotsResponse extends SolrJerseyResponse {
+  public static class ListSnapshotsResponse extends AsyncJerseyResponse {
     @Schema(description = "The snapshots for the collection.")
     @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)
     public Map<String, CollectionSnapshotMetaData> snapshots;

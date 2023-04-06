@@ -202,8 +202,6 @@ import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaAPI;
 import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
@@ -1736,9 +1734,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final CreateCollectionSnapshotAPI createCollectionSnapshotAPI =
               new CreateCollectionSnapshotAPI(h.coreContainer, req, rsp);
 
+          final CreateCollectionSnapshotAPI.CreateSnapshotRequestBody requestBody =
+              new CreateCollectionSnapshotAPI.CreateSnapshotRequestBody();
+          requestBody.followAliases = followAliases;
+          requestBody.asyncId = asyncId;
+
           final CreateCollectionSnapshotAPI.CreateSnapshotResponse createSnapshotResponse =
               createCollectionSnapshotAPI.createSnapshot(
-                  extCollectionName, commitName, followAliases, asyncId);
+                  extCollectionName, commitName, requestBody);
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
 
@@ -1775,12 +1778,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
-          NamedList<Object> snapshots = new NamedList<>();
-          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
-            snapshots.add(meta.getName(), meta.toNamedList());
-          }
-
-          rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
+          //          NamedList<Object> snapshots = new NamedList<>();
+          //          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
+          //            snapshots.add(meta.getName(), meta.toNamedList());
+          //          }
+          //
+          //          rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
     REPLACENODE_OP(
