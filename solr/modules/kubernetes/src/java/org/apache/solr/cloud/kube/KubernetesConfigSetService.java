@@ -21,6 +21,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -93,6 +94,10 @@ public class KubernetesConfigSetService extends ConfigSetService implements Auto
   public static final String POD_NAMESPACE_ENV_VAR = "POD_NAMESPACE";
   public static final String SOLR_CLOUD_NAME_ENV_VAR = "SOLR_CLOUD_NAME";
 
+  // Special ConfigMap data paths
+  public static final String CONFIG_SET_METADATA_KEY = "_metadata";
+  public static final String CONFIG_SET_PROPERTIES_KEY = "_properties";
+
   public KubernetesConfigSetService(CoreContainer cc) throws IOException {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
     kubeClient = ClientBuilder.cluster().build();
@@ -163,6 +168,17 @@ public class KubernetesConfigSetService extends ConfigSetService implements Auto
             .map(V1ObjectMeta::getAnnotations)
             .map(ann -> ann.get(CONFIG_SET_NAME_ANNOTATION_KEY))
             .orElse(configMap.getMetadata().getName());
+  }
+
+  private V1ConfigMap getCachedConfigMap(String configName) throws SolrException {
+    V1ConfigMap configMap = existingConfigSetConfigMaps.get(configName);
+    if (configMap == null) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, String.format(Locale.ROOT, "No ConfigMap exists for ConfigSet %s ", configName));
+    }
+    if (configMap.getMetadata() == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, String.format(Locale.ROOT, "ConfigMap exists for ConfigSet %s, but it contains no metadata", configName));
+    }
+    return configMap;
   }
 
   @Override
@@ -302,10 +318,7 @@ public class KubernetesConfigSetService extends ConfigSetService implements Auto
       if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
         log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
       } else {
-        V1ConfigMap configMap = existingConfigSetConfigMaps.get(configName);
-        if (configMap == null) {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, String.format(Locale.ROOT, "ConfigSet %s does not exist", configName))
-        }
+        V1ConfigMap configMap = getCachedConfigMap(configName);
         configMapName = configMap.getMetadata().getName();
         var existingData = configMap.getData();
         if (existingData == null || !existingData.containsKey(fileName) || overwriteOnExists) {
@@ -319,30 +332,36 @@ public class KubernetesConfigSetService extends ConfigSetService implements Auto
 
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
+    String configMapName = "";
     try {
-      zkClient.makePath(
-          CONFIGS_ZKNODE + "/" + configName,
-          Utils.toJSON(data),
-          CreateMode.PERSISTENT,
-          null,
-          false,
-          true);
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
+      V1ConfigMap configMap = getCachedConfigMap(configName);
+      configMapName = configMap.getMetadata().getName();
+      var existingData = configMap.getData();
+      String newMetadata = Utils.toJSONString(data);
+
+      String patchType;
+      if (existingData == null || !existingData.containsKey(CONFIG_SET_METADATA_KEY)) {
+        patchType = "insert";
+      } else if (!data.get(CONFIG_SET_METADATA_KEY).equals(newMetadata)) {
+        patchType = "replace";
+      } else {
+        return;
+      }
+      // TODO: Patch the data
+    } catch (ApiException e) {
+      throw new IOException(String.format(Locale.ROOT, "Error updating metadata item %s in configMap %s, representing the configSet %s", CONFIG_SET_METADATA_KEY, configMapName, configName), e);
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
-    try {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> data =
-          (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
-      return data;
-    } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
-    }
+    V1ConfigMap configMap = getCachedConfigMap(configName);
+    return
+        Optional.ofNullable(configMap.getData())
+            .map(data -> data.get(CONFIG_SET_METADATA_KEY))
+            .map(md -> (Map<String,Object>)Utils.fromJSON(md))
+            .orElseGet(HashMap::new);
   }
 
   @Override
@@ -410,6 +429,28 @@ public class KubernetesConfigSetService extends ConfigSetService implements Auto
   // 3> configSetDir/confDir/conf/solrconfig.xml exists (canned configs)
 
   private void copyConfigDirFromZk(String fromZkPath, String toZkPath) throws IOException {
+    if (!fromZkPath.endsWith("/")) {
+      fromZkPath += "/";
+    }
+    if (!toZkPath.endsWith("/")) {
+      toZkPath += "/";
+    }
+    String configMapName = "";
+    try {
+      if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+        log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+      } else {
+
+        configMapName = configMap.getMetadata().getName();
+        var existingData = configMap.getData();
+        if (existingData == null || !existingData.containsKey(fileName) || overwriteOnExists) {
+          // TODO: Patch the data
+        }
+      }
+    } catch (ApiException e) {
+      throw new IOException(String.format(Locale.ROOT, "Error creating item %s in configMap %s, representing the configSet %s", fileName, configMapName, configName), e);
+    }
+
     try {
       List<String> files = zkClient.getChildren(fromZkPath, null, true);
       for (String file : files) {
