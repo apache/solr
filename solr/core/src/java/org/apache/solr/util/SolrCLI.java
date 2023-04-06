@@ -810,6 +810,10 @@ public class SolrCLI implements CLIO {
         try (var solrClient = getSolrClient(solrUrl)) {
           NamedList<Object> response =
               solrClient.request(
+                  // For path parameter we need the path without the root so from the second / char
+                  // (because root can be configured)
+                  // E.g URL is http://localhost:8983/solr/admin/info/system path is
+                  // /solr/admin/info/system and the path without root is /admin/info/system
                   new GenericSolrRequest(
                       SolrRequest.METHOD.GET,
                       path.substring(path.indexOf("/", path.indexOf("/") + 1)),
@@ -1067,9 +1071,8 @@ public class SolrCLI implements CLIO {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set(DISTRIB, "false");
-            int lastSlash = coreUrl.substring(0, coreUrl.length() - 1).lastIndexOf('/');
-            try (var solrClient = getSolrClient(coreUrl.substring(0, lastSlash))) {
-              qr = solrClient.query(coreUrl.substring(lastSlash + 1, coreUrl.length() - 1), q);
+            try (var solrClient = getSolrClient(coreUrl)) {
+              qr = solrClient.query(q);
               numDocs = qr.getResults().getNumFound();
 
               NamedList<Object> systemInfo =
