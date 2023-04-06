@@ -297,6 +297,14 @@ public class Utils {
     return Arrays.copyOf(arr, nBytes);
   }
 
+  public static Object fromJSON(String str) {
+    if (str == null || str.length() == 0) {
+      return Collections.emptyMap();
+    }
+    byte[] utf8 = str.getBytes(StandardCharsets.UTF_8);
+    return fromJSON(utf8, 0, utf8.length);
+  }
+
   public static Object fromJSON(byte[] utf8) {
     // Need below check in both fromJSON methods since
     // utf8.length returns a NPE without this check.
