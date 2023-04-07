@@ -93,6 +93,8 @@ Other Changes
 
 * SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
 
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
 ==================  9.2.0 ==================
 
 New Features
