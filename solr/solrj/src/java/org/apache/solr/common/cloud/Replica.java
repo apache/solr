@@ -415,6 +415,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Map<String, Object> map = new LinkedHashMap<>();
     // this serializes also our declared properties
     _allPropsWriter().toMap(map);
+    boolean isLeader = isLeader();
+    if (isLeader) {
+      map.put(ReplicaStateProps.LEADER, isLeader);
+    } else {
+      map.remove(ReplicaStateProps.LEADER);
+    }
+    map.put(ReplicaStateProps.STATE, getState());
     jsonWriter.write(map);
   }
 
