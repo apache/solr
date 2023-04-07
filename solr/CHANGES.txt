@@ -15,6 +15,10 @@ Bug Fixes
 * SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
   All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
 
+Other Changes
+---------------------
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 (No changes)
