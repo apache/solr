@@ -178,7 +178,7 @@ public class NodeLoggingAPI extends JerseyResource {
   /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
   public static class LoggingResponse extends SolrJerseyResponse {
     @JsonProperty("watcher")
-    String watcherName;
+    public String watcherName;
   }
 
   /** A user-requested modification in the level that a specified logger reports at. */
