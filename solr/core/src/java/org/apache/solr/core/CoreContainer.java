@@ -101,6 +101,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -742,10 +743,14 @@ public class CoreContainer {
   // -------------------------------------------------------------------
 
   /** Load the cores defined for this CoreContainer */
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
+    // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
     Thread.currentThread().setContextClassLoader(loader.getClassLoader());
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
