@@ -78,7 +78,7 @@ public class TestRequestId extends SolrTestCaseJ4 {
           assertEquals("yyy", reqEvent.getContextData().getValue("rid"));
           MatcherAssert.assertThat(
               reqEvent.getMessage().getFormattedMessage(),
-              containsString("status=" + ErrorCode.BAD_REQUEST.code));
+              containsString("\"status\":" + ErrorCode.BAD_REQUEST.code));
         }
         {
           var errEvent = errLog.getQueue().poll();
