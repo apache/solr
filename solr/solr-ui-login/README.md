@@ -1,79 +1,113 @@
+> The POC is built from an example from the NextJS [monorepo](https://github.com/nextauthjs/next-auth/tree/main/apps/example-nextjs). Pull Requests should be opened against [`nextauthjs/next-auth`](https://github.com/nextauthjs/next-auth).
 
-# Getting Started with Create React App
+<p align="center">
+   <br/>
+   <a href="https://next-auth.js.org" target="_blank"><img width="150px" src="https://next-auth.js.org/img/logo/logo-sm.png" /></a>
+   <h3 align="center">NextAuth.js Example App</h3>
+   <p align="center">
+   Open Source. Full Stack. Own Your Data.
+   </p>
+   <p align="center" style="align: center;">
+      <a href="https://npm.im/next-auth">
+        <img alt="npm" src="https://img.shields.io/npm/v/next-auth?color=green&label=next-auth">
+      </a>
+      <a href="https://bundlephobia.com/result?p=next-auth-example">
+        <img src="https://img.shields.io/bundlephobia/minzip/next-auth?label=next-auth" alt="Bundle Size"/>
+      </a>
+      <a href="https://www.npmtrends.com/next-auth">
+        <img src="https://img.shields.io/npm/dm/next-auth?label=next-auth%20downloads" alt="Downloads" />
+      </a>
+      <a href="https://npm.im/next-auth">
+        <img src="https://img.shields.io/badge/npm-TypeScript-blue" alt="TypeScript" />
+      </a>
+   </p>
+</p>
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+NextAuth.js is a complete open source authentication solution.
 
-The application can be started several ways. The recommended way is to start each service, `client` and `server` independently.
+This is an example application that shows how `next-auth` is applied to a basic Next.js app.
 
-### `npm run start-server`
+The deployed version can be found at [`next-auth-example.vercel.app`](https://next-auth-example.vercel.app)
 
-The backend Express app will start running on port `3001`. This service is a thin layer to handle communication between the front end and Solr or Zookeeper backends. Today, the service is only being built to support standalone, where there is no Zookeeper, to prevent the likelihood of it being run in a production environment, though there is still some configuration need to do so in standalone.
+### About NextAuth.js
 
-You can test the backend endpoints with `cURL`, just as you could target the Solr directly. 
+NextAuth.js is an easy to implement, full-stack (client/server) open source authentication library originally designed for [Next.js](https://nextjs.org) and [Serverless](https://vercel.com). Our goal is to [support even more frameworks](https://github.com/nextauthjs/next-auth/issues/2294) in the future.
 
-### `npm run start-client`
+Go to [next-auth.js.org](https://next-auth.js.org) for more information and documentation.
 
-The frontend Express app will start. This service purely handles the presentation layer and user actions. It does not actually communicate with the backend at all. If you are working only on styling or markup related edits, you may find running in this mode faster as it will pickup changes quickly. 
+> *NextAuth.js is not officially associated with Vercel or Next.js.*
 
-In the project directory, to start both the server and the client you can run. It works, but not as well and is not recommended yet:
+## Getting Started
 
-### `npm start`
+### 1. Clone the repository and install dependencies
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+git clone https://github.com/nextauthjs/next-auth-example.git
+cd next-auth-example
+npm install
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 2. Configure your local environment
 
-### `npm test`
+Copy the .env.local.example file in this directory to .env.local (which will be ignored by Git):
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+cp .env.local.example .env.local
+```
 
-### `npm run build`
+Add details for one or more providers (e.g. Google, Twitter, GitHub, Email, etc).
 
-This project is months from being production ready, however this section is here for reference and will evolve. 
+#### Database
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance. 
+A database is needed to persist user accounts and to support email sign in. However, you can still use NextAuth.js for authentication without a database by using OAuth for authentication. If you do not specify a database, [JSON Web Tokens](https://jwt.io/introduction) will be enabled by default.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+You **can** skip configuring a database and come back to it later if you want.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+For more information about setting up a database, please check out the following links:
 
-## Learn More
+* Docs: [next-auth.js.org/adapters/overview](https://next-auth.js.org/adapters/overview)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 3. Configure Authentication Providers
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. Review and update options in `pages/api/auth/[...nextauth].js` as needed.
 
-### Code Splitting
+2. When setting up OAuth, in the developer admin page for each of your OAuth services, you should configure the callback URL to use a callback path of `{server}/api/auth/callback/{provider}`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+  e.g. For Google OAuth you would use: `http://localhost:3000/api/auth/callback/google`
 
-### Analyzing the Bundle Size
+  A list of configured providers and their callback URLs is available from the endpoint `/api/auth/providers`. You can find more information at https://next-auth.js.org/configuration/providers/oauth
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. You can also choose to specify an SMTP server for passwordless sign in via email.
 
-### Making a Progressive Web App
+### 4. Start the application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+To run your site locally, use:
 
-### Advanced Configuration
+```
+npm run dev
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+To run it in production mode, use:
 
-### Deployment
+```
+npm run build
+npm run start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 5. Preparing for Production
 
-### `npm run build` fails to minify
+Follow the [Deployment documentation](https://next-auth.js.org/deployment)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Acknowledgements
 
-### Express Documentation
+<a href="https://vercel.com?utm_source=nextauthjs&utm_campaign=oss">
+<img width="170px" src="https://raw.githubusercontent.com/nextauthjs/next-auth/canary/www/static/img/powered-by-vercel.svg" alt="Powered By Vercel" />
+</a>
+<p align="left">Thanks to Vercel sponsoring this project by allowing it to be deployed for free for the entire NextAuth.js Team</p>
 
-https://expressjs.com/
+## License
+
+ISC
+
