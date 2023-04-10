@@ -63,7 +63,6 @@ bin/
    Scripts to startup, manage and interact with Solr instances.
 
 example/
-  (Not included in the "slim" release)
   Contains example documents and an alternative Solr home
   directory containing various examples.
 

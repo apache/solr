@@ -30,8 +30,8 @@ Download the latest release https://solr.apache.org/downloads.html.
 
 There are three separate packages:
 
-* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules, examples and accessories (e.g. the `prometheus-exporter`).
-* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules, examples and accessories (e.g. the `prometheus-exporter`) are not included.
+* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories (e.g. the `prometheus-exporter`).
+* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories (e.g. the `prometheus-exporter`) are not included.
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
@@ -122,7 +122,6 @@ The `docs` directory includes a link to online Javadocs for Solr.
 example/::
 The `example` directory includes several types of examples that demonstrate various Solr capabilities.
 See the section <<Solr Examples>> below for more details on what is in this directory.
-*This is not included in the `slim` distribution.*
 
 licenses/::
 The `licenses` directory includes all of the licenses for 3rd party libraries used by that distribution of Solr.

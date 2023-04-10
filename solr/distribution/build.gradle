@@ -82,8 +82,10 @@ task computeChecksums(type: Checksum) {
   outputDir = file("${buildDir}/checksums")
 }
 
-task signBinaryTgz(type: Sign) {
+task signFullBinaryTgz(type: Sign) {
   sign fullDistTarTask
+}
+task signSlimBinaryTgz(type: Sign) {
   sign slimDistTarTask
 }
 task signSourceTgz(type: Sign) {
@@ -93,7 +95,8 @@ task signSourceTgz(type: Sign) {
 }
 
 task signReleaseArchives(type: Sync) {
-  from tasks.signBinaryTgz
+  from tasks.signFullBinaryTgz
+  from tasks.signSlimBinaryTgz
   from tasks.signSourceTgz
 
   into "${buildDir}/signatures"

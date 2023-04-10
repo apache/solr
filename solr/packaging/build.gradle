@@ -41,8 +41,10 @@ configurations {
   server
   docs
   docker
-  solrTgz
-  solrTgzSignature
+  solrFullTgz
+  solrSlimTgz
+  solrFullTgzSignature
+  solrSlimTgzSignature
 }
 
 dependencies {
@@ -60,8 +62,12 @@ dependencies {
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
-  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
-    builtBy ":solr:distribution:signBinaryTgz"
+  solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signFullBinaryTgz"
+  }
+
+  solrSlimTgzSignature files("$buildDir/distributions/solr-slim-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signSlimBinaryTgz"
   }
 }
 
@@ -90,6 +96,10 @@ distributions {
         into 'lib'
       })
 
+      from(configurations.example, {
+        into "example"
+      })
+
       from(configurations.server, {
         into "server"
       })
@@ -114,7 +124,6 @@ distributions {
           "**/bin/postlogs",
           "**/bin/solr",
           "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
       ]) { copy ->
         copy.setMode(0755)
       }
@@ -131,12 +140,13 @@ distributions {
         into "modules"
       })
 
-      from(configurations.example, {
-        into "example"
-      })
-
       from(configurations.prometheusExporter, {
         into "prometheus-exporter"
+        filesMatching([
+            "bin/*",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
       })
     }
   }
@@ -199,7 +209,8 @@ assemble.dependsOn installDist
 assemble.dependsOn installSlimDist
 
 artifacts {
-  solrTgz(fullDistTar)
+  solrFullTgz(fullDistTar)
+  solrSlimTgz(slimDistTar)
 }
 
 task downloadBats(type: NpmTask) {
