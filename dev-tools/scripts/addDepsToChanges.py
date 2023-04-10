@@ -79,6 +79,7 @@ def update_changes(filename, version, changes_lines):
     buffer = []
     found_ver = False
     found_header = False
+    checked_no_changes = False
     appended = False
     with open(filename) as f:
         version_re = re.compile(r' %s ===' % (version))
@@ -103,6 +104,11 @@ def update_changes(filename, version, changes_lines):
                         buffer.append(change_line)
                         buffer.append("\n")
                     continue
+            else:
+                if not checked_no_changes:
+                    checked_no_changes = True
+                    if re.compile(r'^\(No changes\)').search(line):
+                        continue
             buffer.append(line)
     if appended:
         with open(filename, 'w') as f:
