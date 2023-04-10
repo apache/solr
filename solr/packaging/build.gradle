@@ -124,25 +124,8 @@ distributions {
   full {
     distributionBaseName = 'solr'
     contents {
-      from(rootDir, {
-        include "LICENSE.txt"
-        include "NOTICE.txt"
-      })
-
-      from(project(":solr").projectDir, {
-        include "bin/**"
-        include "licenses/**"
-        exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
-      })
-
-      from(projectDir, {
-        include "README.txt"
-      })
-
-      from ('static/lib', {
-        into 'lib'
-      })
+      // Build on-top of the slim distribution
+      with(distributions.slim.getContents())
 
       from(configurations.modules, {
         into "modules"
@@ -155,36 +138,6 @@ distributions {
       from(configurations.prometheusExporter, {
         into "prometheus-exporter"
       })
-
-      from(configurations.server, {
-        into "server"
-      })
-
-      from(configurations.docs, {
-        into "docs"
-      })
-
-      from(configurations.docker, {
-        into "docker"
-        filesMatching([
-            "scripts/**",
-        ]) { copy ->
-          copy.setMode(0755)
-        }
-      })
-
-      // Manually correct posix permissions (matters when packaging on Windows).
-      filesMatching([
-          "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
-          "**/bin/solr",
-          "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
-      ]) { copy ->
-        copy.setMode(0755)
-      }
-
     }
   }
 }

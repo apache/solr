@@ -26,6 +26,9 @@ Each module produces a separate `.jar` file in the build, packaged in the module
 All additional dependencies required by the module, and not provided by Solr core, are also packaged there.
 This helps keep the main core of Solr small and lean.
 
+Solr modules are not included in the `slim` variant of the Solr binary release.
+Please download/install the full Solr binary release in order to use Solr modules.
+
 == Installing a module
 
 The easiest way to enable a module is to list the modules you intend to use either in the
