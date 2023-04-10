@@ -68,7 +68,10 @@ Bug Fixes
 * SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
   All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
 
-* NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+* SOLR-9775: NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
 
 Dependency Upgrades
 ---------------------
