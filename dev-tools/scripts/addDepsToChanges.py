@@ -68,7 +68,8 @@ def gitlog_to_changes(line, user="solrbot"):
         pr_num = match.group(2)
         return "* PR#%s: %s (%s)\n" % (pr_num, text, user)
     else:
-        return None
+        print("Skipped un-parsable line: %s" % line)
+        return ""
 
 
 def update_changes(filename, version, changes_lines):
@@ -124,8 +125,11 @@ def main():
         gitlog_lines = run(
             'git log --author=' + newconf.user + ' --oneline --no-merges --pretty=format:"%s" ' + prev_tag + '..').split(
             "\n")
-        changes_lines = list(map(lambda l: gitlog_to_changes(l, newconf.user), gitlog_lines))
-        update_changes('solr/CHANGES.txt', newconf.version, changes_lines)
+        changes_lines = list(map(lambda l: gitlog_to_changes(l, newconf.user), list(filter(None, gitlog_lines))))
+        if changes_lines and len(changes_lines) > 0:
+            update_changes('solr/CHANGES.txt', newconf.version, changes_lines)
+        else:
+            print("No changes found for version %s" % newconf.version.dot)
         print("Done")
     except subprocess.CalledProcessError:
         print("Error running git log - check your --version")
