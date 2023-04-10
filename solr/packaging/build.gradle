@@ -29,7 +29,9 @@ description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
+  slimDistDir = file("$buildDir/solr-slim-${version}")
   devDir = file("$buildDir/dev")
+  slimDevDir = file("$buildDir/dev-slim")
 }
 
 configurations {
@@ -41,10 +43,6 @@ configurations {
   docker
   solrTgz
   solrTgzSignature
-}
-
-artifacts {
-  solrTgz(distTar)
 }
 
 dependencies {
@@ -68,10 +66,64 @@ dependencies {
 }
 
 distributions {
-  main {
-    distributionBaseName = 'solr'
+  slim {
+    distributionBaseName = 'solr-slim'
     contents {
 
+      from(rootDir, {
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+      })
+
+      from(project(":solr").projectDir, {
+        include "bin/**"
+        include "licenses/**"
+        exclude "licenses/README.committers.txt"
+        include "CHANGES.txt"
+      })
+
+      from(projectDir, {
+        include "README.txt"
+      })
+
+      from ('static/lib', {
+        into 'lib'
+      })
+
+      from(configurations.server, {
+        into "server"
+      })
+
+      from(configurations.docs, {
+        into "docs"
+      })
+
+      from(configurations.docker, {
+        into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
+
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/post",
+          "**/bin/postlogs",
+          "**/bin/solr",
+          "**/bin/init.d/solr",
+          "**/bin/solr-exporter",
+      ]) { copy ->
+        copy.setMode(0755)
+      }
+
+    }
+  }
+  full {
+    distributionBaseName = 'solr'
+    contents {
       from(rootDir, {
         include "LICENSE.txt"
         include "NOTICE.txt"
@@ -137,25 +189,65 @@ distributions {
   }
 }
 
-installDist {
+installFullDist {
   into distDir
 }
 
-task dev(type: Copy) {
-  description "Assemble Solr distribution into 'development' folder at ${devDir}"
+installSlimDist {
+  into slimDistDir
+}
+
+assembleDist {
+  dependsOn tasks.assembleFullDist
+  dependsOn tasks.assembleSlimDist
+}
+
+installDist {
+  dependsOn tasks.installFullDist
+  dependsOn tasks.installSlimDist
+}
+
+task devFull(type: Copy) {
+  description "Assemble Full Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
-  from installDist.outputs
+  from installFullDist.outputs
   into devDir
 }
 
-distTar {
+task devSlim(type: Copy) {
+  description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
+  group "build"
+
+  from installSlimDist.outputs
+  into slimDevDir
+}
+
+task dev {
+  description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
+  group "build"
+
+  dependsOn tasks.devFull
+  dependsOn tasks.devSlim
+}
+
+fullDistTar {
   compression = Compression.GZIP
 }
 
-distZip.enabled = false
+slimDistTar {
+  compression = Compression.GZIP
+}
+
+fullDistZip.enabled = false
+slimDistZip.enabled = false
 
 assemble.dependsOn installDist
+assemble.dependsOn installSlimDist
+
+artifacts {
+  solrTgz(fullDistTar)
+}
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
@@ -172,7 +264,7 @@ task downloadBats(type: NpmTask) {
 }
 
 task integrationTests(type: BatsTask) {
-  dependsOn installDist
+  dependsOn installFullDist
   dependsOn downloadBats
 
   def integrationTestOutput = "$buildDir/test-output"
