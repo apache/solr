@@ -368,20 +368,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   public void setup(Http2SolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
-          private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
-
           @Override
           public void onQueued(Request request) {
-            // The onBegin hook below (potentially) runs in a separate Jetty thread than was
-            // used to submit the request.  While we're still in the submitting thread, fetch
-            // the user information from the SolrRequestInfo thread local and cache it on the
-            // Request so it can be accessed accurately in onBegin
-            cachePreFetchedUserOnJettyRequest(request);
-          }
-
-          @Override
-          public void onBegin(Request request) {
-            log.trace("onBegin: {}", request);
+            log.trace("onQueued: {}", request);
             if (cores.getAuthenticationPlugin() == null) {
               log.trace("no authentication plugin, skipping");
               return;
@@ -390,12 +379,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
               if (log.isDebugEnabled()) {
                 log.debug("{} secures this internode request", this.getClass().getSimpleName());
               }
-
-              final Optional<String> preFetchedUser = getUserFromJettyRequest(request);
               if ("v1".equals(System.getProperty(SEND_VERSION))) {
-                generateToken(preFetchedUser).ifPresent(s -> request.header(HEADER, s));
+                generateToken().ifPresent(s -> request.header(HEADER, s));
               } else {
-                generateTokenV2(preFetchedUser).ifPresent(s -> request.header(HEADER_V2, s));
+                generateTokenV2().ifPresent(s -> request.header(HEADER_V2, s));
               }
             } else {
               if (log.isDebugEnabled()) {
@@ -404,15 +391,6 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                     cores.getAuthenticationPlugin().getClass().getSimpleName());
               }
             }
-          }
-
-          private void cachePreFetchedUserOnJettyRequest(Request request) {
-            request.attribute(CACHED_REQUEST_USER_KEY, getUser());
-          }
-
-          private Optional<String> getUserFromJettyRequest(Request request) {
-            return Optional.ofNullable(
-                (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
     client.addListenerFactory(() -> listener);
@@ -480,8 +458,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  private Optional<String> generateToken(Optional<String> preFetchedUser) {
-    String usr = preFetchedUser.orElse(getUser());
+  private Optional<String> generateToken() {
+    String usr = getUser();
     if (usr == null) {
       return Optional.empty();
     }
@@ -494,9 +472,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return Optional.of(myNodeName + " " + base64Cipher);
   }
 
-  private Optional<String> generateTokenV2(Optional<String> preFetchedUser) {
-
-    String user = preFetchedUser.orElse(getUser());
+  private Optional<String> generateTokenV2() {
+    String user = getUser();
     if (user == null) {
       return Optional.empty();
     }
@@ -511,9 +488,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   void setHeader(HttpRequest httpRequest) {
     if ("v1".equals(System.getProperty(SEND_VERSION))) {
-      generateToken(Optional.empty()).ifPresent(s -> httpRequest.setHeader(HEADER, s));
+      generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, s));
     } else {
-      generateTokenV2(Optional.empty()).ifPresent(s -> httpRequest.setHeader(HEADER_V2, s));
+      generateTokenV2().ifPresent(s -> httpRequest.setHeader(HEADER_V2, s));
     }
   }
 
