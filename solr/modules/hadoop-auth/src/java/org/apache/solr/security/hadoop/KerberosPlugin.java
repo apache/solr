@@ -98,7 +98,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       kerberosFilter.init(conf);
     } catch (ServletException e) {
       throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: " + e);
+          ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin", e);
     }
   }
 

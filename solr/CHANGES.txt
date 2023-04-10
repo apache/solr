@@ -21,6 +21,9 @@ Bug Fixes
 
 * SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
 
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
