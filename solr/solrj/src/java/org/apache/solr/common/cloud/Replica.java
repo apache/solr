@@ -16,19 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
-import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
@@ -392,37 +387,27 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   private MapWriter _allPropsWriter() {
-    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>()).and(NON_NULL_VAL);
-    return writer -> {
-      // XXX this is why this class should be immutable - it's a mess !!!
-
-      // propMap takes precedence because it's mutable and we can't control its
-      // contents, so a third party may override some declared fields
+    return w -> {
+      w.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
+          .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
+          .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
+          .putIfNotNull(ReplicaStateProps.STATE, getState().toString().toLowerCase(Locale.ROOT))
+          .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? Boolean.TRUE : null)
+          .putIfNotNull(
+              ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
+          .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        writer.put(e.getKey(), e.getValue(), p);
+        if (e.getKey().startsWith(ReplicaStateProps.PROPERTY_PREFIX)) {
+          w.putIfNotNull(e.getKey(), e.getValue());
+        }
       }
-
-      writer
-          .put(ReplicaStateProps.CORE_NAME, core, p)
-          .put(ReplicaStateProps.NODE_NAME, node, p)
-          .put(ReplicaStateProps.TYPE, type.toString(), p)
-          .put(ReplicaStateProps.STATE, shard, p);
     };
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    Map<String, Object> map = new LinkedHashMap<>();
     // this serializes also our declared properties
-    _allPropsWriter().toMap(map);
-    boolean isLeader = isLeader();
-    if (isLeader) {
-      map.put(ReplicaStateProps.LEADER, isLeader);
-    } else {
-      map.remove(ReplicaStateProps.LEADER);
-    }
-    map.put(ReplicaStateProps.STATE, getState());
-    jsonWriter.write(map);
+    jsonWriter.write(_allPropsWriter());
   }
 
   @Override
@@ -444,5 +429,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     String NODE_NAME = "node_name";
     String BASE_URL = "base_url";
     String PROPERTY_PREFIX = "property.";
+    String FORCE_SET_STATE = "force_set_state";
   }
 }
