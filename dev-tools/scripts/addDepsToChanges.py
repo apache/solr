@@ -104,11 +104,13 @@ def update_changes(filename, version, changes_lines):
                         buffer.append(change_line)
                         buffer.append("\n")
                     continue
-            else:
-                if not checked_no_changes:
-                    checked_no_changes = True
-                    if re.compile(r'^\(No changes\)').search(line):
-                        continue
+                else:
+                    print("Mismatch in CHANGES.txt, expected '----' line after header, got: %s" % line)
+                    exit(1)
+            if not checked_no_changes:
+                checked_no_changes = True
+                if re.compile(r'^\(No changes\)').search(line):
+                    continue
             buffer.append(line)
     if appended:
         with open(filename, 'w') as f:
