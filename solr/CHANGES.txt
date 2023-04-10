@@ -27,6 +27,10 @@ Deprecation Removals
 
 * SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
 
+* SOLR-16601: Removed deprecated methods on the various Solr Clients. (Eric Pugh, Kevin Risden)
+
+* SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -68,6 +72,9 @@ Improvements
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
 
+* SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
+  `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -78,15 +85,39 @@ Optimizations
   Solr can also be started with the system property `solr.http.disableCookies` set to `true`, so that the internal clients
   that Solr uses to communicate between nodes use `HttpCookieStore.Empty`. (Tomás Fernández Löbbe)
 
+* SOLR-16693: For query timeAllowed, switch from ExitableDirectoryReader to TimeLimitingBulkScorer (David Smiley)
+
 Bug Fixes
 ---------------------
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
+* SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
+
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
+* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
+  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
+
+* SOLR-9775: NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
+* SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 Other Changes
 ---------------------
@@ -100,6 +131,14 @@ Other Changes
 * SOLR-16716: Replace commons-io usages with pure Java (Kevin Risden)
 
 * SOLR-16715: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap / CollectionUtil.newHashSet (Kevin Risden)
+
+* SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
+
+* SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
+
+* SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
+
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
 ==================  9.2.0 ==================
 

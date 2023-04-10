@@ -89,6 +89,7 @@ public interface QueryParserConstants {
   int DEFAULT = 3;
 
   /** Literal token values. */
+  @SuppressWarnings("MutablePublicArray")
   String[] tokenImage = {
     "<EOF>",
     "<_NUM_CHAR>",

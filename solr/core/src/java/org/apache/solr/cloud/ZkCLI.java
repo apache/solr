@@ -42,11 +42,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
@@ -239,7 +239,7 @@ public class ZkCLI implements CLIO {
       // start up a tmp zk server first
       String zkServerAddress = line.getOptionValue(ZKHOST);
       String solrHome = line.getOptionValue(SOLRHOME);
-      if (StringUtils.isEmpty(solrHome)) {
+      if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
 
@@ -277,7 +277,7 @@ public class ZkCLI implements CLIO {
           minStateByteLenForCompression =
               nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
           String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
-          if (!StringUtils.isEmpty(stateCompressorClass)) {
+          if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
             Class<? extends Compressor> compressionClass =
                 Class.forName(stateCompressorClass).asSubclass(Compressor.class);
             compressor = compressionClass.getDeclaredConstructor().newInstance();
@@ -401,7 +401,7 @@ public class ZkCLI implements CLIO {
           byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data);
+            data = compressor.compressBytes(data, data.length / 10);
           }
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
@@ -422,7 +422,7 @@ public class ZkCLI implements CLIO {
           byte[] data = Files.readAllBytes(Path.of(arglist.get(1)));
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data);
+            data = compressor.compressBytes(data, data.length / 10);
           }
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);

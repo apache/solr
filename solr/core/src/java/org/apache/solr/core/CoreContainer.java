@@ -59,7 +59,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -101,6 +100,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -742,10 +743,15 @@ public class CoreContainer {
   // -------------------------------------------------------------------
 
   /** Load the cores defined for this CoreContainer */
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
+    // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+    Thread.currentThread().setContextClassLoader(loader.getClassLoader());
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
@@ -1015,7 +1021,7 @@ public class CoreContainer {
                     try {
                       zkSys.registerInZk(core, true, false);
                     } catch (RuntimeException e) {
-                      SolrException.log(log, "Error registering SolrCore", e);
+                      log.error("Error registering SolrCore", e);
                     }
                     return core;
                   }));
@@ -1165,7 +1171,7 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StringUtils.isEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
@@ -1380,7 +1386,7 @@ public class CoreContainer {
       try {
         core.getSolrCoreState().cancelRecovery();
       } catch (Exception e) {
-        SolrException.log(log, "Error canceling recovery for core", e);
+        log.error("Error canceling recovery for core", e);
       }
     }
   }
@@ -1540,11 +1546,11 @@ public class CoreContainer {
             getZkController().unregister(coreName, cd);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            SolrException.log(log, null, e);
+            log.error("interrupted", e);
           } catch (KeeperException e) {
-            SolrException.log(log, null, e);
+            log.error("KeeperException unregistering core {}", coreName, e);
           } catch (Exception e) {
-            SolrException.log(log, null, e);
+            log.error("Exception unregistering core {}", coreName, e);
           }
         }
 
@@ -1802,7 +1808,7 @@ public class CoreContainer {
         df.release(dir);
         df.doneWithDirectory(dir);
       } catch (IOException e) {
-        SolrException.log(log, e);
+        log.error("Exception releasing {}", dir, e);
       }
     }
   }

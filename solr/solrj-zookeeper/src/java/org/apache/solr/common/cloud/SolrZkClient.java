@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.Compressor;
@@ -44,6 +43,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
@@ -233,7 +233,7 @@ public class SolrZkClient implements Closeable {
   protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
     String zkCredentialsProviderClassName =
         System.getProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-    if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
+    if (StrUtils.isNotNullOrEmpty(zkCredentialsProviderClassName)) {
       try {
         log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         ZkCredentialsProvider zkCredentialsProvider =
@@ -258,7 +258,7 @@ public class SolrZkClient implements Closeable {
 
   protected ZkACLProvider createZkACLProvider() {
     String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-    if (!StringUtils.isEmpty(zkACLProviderClassName)) {
+    if (StrUtils.isNotNullOrEmpty(zkACLProviderClassName)) {
       try {
         log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
         ZkACLProvider zkACLProvider =
@@ -286,7 +286,7 @@ public class SolrZkClient implements Closeable {
   protected ZkCredentialsInjector createZkCredentialsInjector() {
     String zkCredentialsInjectorClassName =
         System.getProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
-    if (!StringUtils.isEmpty(zkCredentialsInjectorClassName)) {
+    if (StrUtils.isNotNullOrEmpty(zkCredentialsInjectorClassName)) {
       try {
         log.info("Using ZkCredentialsInjector: {}", zkCredentialsInjectorClassName);
         return Class.forName(zkCredentialsInjectorClassName)
@@ -774,7 +774,7 @@ public class SolrZkClient implements Closeable {
             .append("DATA:\n")
             .append(dent)
             .append("    ")
-            .append(dataString.replaceAll("\n", "\n" + dent + "    "))
+            .append(dataString.replace("\n", "\n" + dent + "    "))
             .append(NEWL);
       } else {
         string.append(dent).append("DATA: ...supressed...").append(NEWL);
@@ -847,13 +847,13 @@ public class SolrZkClient implements Closeable {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkCallbackExecutor", e);
     }
 
     try {
       ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Error shutting down zkConnManagerCallbackExecutor", e);
     }
   }
 

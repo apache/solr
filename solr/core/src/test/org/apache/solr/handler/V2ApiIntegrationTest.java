@@ -192,19 +192,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     String tempDir = createTempDir().toFile().getPath();
-    Map<String, Object> backupPayload = new HashMap<>();
     Map<String, Object> backupParams = new HashMap<>();
-    backupPayload.put("backup-collection", backupParams);
-    backupParams.put("name", "backup_test");
-    backupParams.put("collection", COLL_NAME);
     backupParams.put("location", tempDir);
     cluster
         .getJettySolrRunners()
         .forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
     client.request(
-        new V2Request.Builder("/c")
+        new V2Request.Builder("/collections/" + COLL_NAME + "/backups/backup_test/versions")
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Utils.toJSONString(backupPayload))
+            .withPayload(Utils.toJSONString(backupParams))
             .build());
   }
 

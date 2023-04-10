@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,7 +86,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals("{name={n8=88, n9=99}}", link.args.toString());
   }
 
-  public void testUpdateDistribChainSkipping() {
+  public void testUpdateDistribChainSkipping() throws IOException {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because
     // it is a @RunAlways processor -- but in order for that to work, we have to sanity check that

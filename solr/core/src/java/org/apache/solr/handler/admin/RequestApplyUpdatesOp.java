@@ -51,7 +51,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       }
       UpdateLog.RecoveryInfo report = future.get();
       if (report.failed) {
-        SolrException.log(CoreAdminOperation.log(), "Replay failed");
+        CoreAdminOperation.log().error("Replay failed");
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Replay failed");
       }
       coreContainer.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
@@ -61,7 +61,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       Thread.currentThread().interrupt();
       CoreAdminOperation.log().warn("Recovery was interrupted", e);
     } catch (Exception e) {
-      if (e instanceof SolrException) throw (SolrException) e;
+      if (e instanceof SolrException) throw e;
       else
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);

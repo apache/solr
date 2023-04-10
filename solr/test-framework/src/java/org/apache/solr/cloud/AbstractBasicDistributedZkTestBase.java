@@ -1300,7 +1300,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(urlString)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
       // collection);
@@ -1398,7 +1402,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
-        getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
+        new HttpSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
 
@@ -1715,7 +1722,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
 
     SolrClient client =
-        getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
+        new HttpSolrClient.Builder(baseUrl + "/" + collection)
+            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
+            .build();
 
     return client;
   }

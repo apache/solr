@@ -55,6 +55,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
@@ -630,8 +631,7 @@ public class SolrRequestParsers {
       for (Part part : req.getParts()) {
         if (part.getSubmittedFileName() == null) { // thus a form field and not file upload
           // If it's a form field, put it in our parameter map
-          String partAsString =
-              org.apache.commons.io.IOUtils.toString(new PartContentStream(part).getReader());
+          String partAsString = StrUtils.stringFromReader(new PartContentStream(part).getReader());
           MultiMapSolrParams.addParam(part.getName().trim(), partAsString, params.getMap());
         } else { // file upload
           streams.add(new PartContentStream(part));

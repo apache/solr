@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.AggregateBackupStats;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -237,7 +238,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     List<NamedList<Object>> shardBackupIdDetails = new ArrayList<>();
     results.add("deleted", shardBackupIdDetails);
     for (BackupId backupId : backupIdDeletes) {
-      NamedList<Object> backupIdResult = new NamedList<>();
+      NamedList<Object> backupIdResult = new SimpleOrderedMap<>();
 
       try {
         BackupProperties props =

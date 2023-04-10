@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Locale;
-import org.apache.commons.collections4.IterableUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.request.beans.RenameCollectionPayload;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -86,14 +85,18 @@ public class RenameCollectionAPI {
   //  something that's already somewhat built-in when this eventually moves to JAX-RS
   private RenameCollectionPayload parseRenameParamsFromRequestBody(
       SolrQueryRequest solrQueryRequest) throws IOException {
-    if (IterableUtils.isEmpty(solrQueryRequest.getContentStreams())) {
+    Iterable<ContentStream> contentStreams = solrQueryRequest.getContentStreams();
+    ContentStream cs = null;
+    if (contentStreams != null) {
+      cs = contentStreams.iterator().next();
+    }
+    if (cs == null) {
       // An empty request-body is invalid (the 'to' field is required at a minimum), but we'll lean
       // on the input-validation in CollectionsHandler to
       // catch this, rather than duplicating the check for that here
       return new RenameCollectionPayload();
     }
 
-    final ContentStream cs = solrQueryRequest.getContentStreams().iterator().next();
     return REQUEST_BODY_PARSER.readValue(cs.getStream(), RenameCollectionPayload.class);
   }
 }

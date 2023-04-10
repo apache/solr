@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -55,6 +55,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.GroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.Bits;
@@ -785,7 +786,8 @@ public class SimpleFacets {
       throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
-    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
+    final String groupField =
+        groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -805,16 +807,16 @@ public class SimpleFacets {
     boolean orderByCount =
         sort.equals(FacetParams.FACET_SORT_COUNT)
             || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result =
+    GroupFacetCollector.GroupedFacetResult result =
         collector.mergeSegmentResults(
             limit < 0 ? Integer.MAX_VALUE : (offset + limit), mincount, orderByCount);
 
     CharsRefBuilder charsRef = new CharsRefBuilder();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries =
+    List<GroupFacetCollector.FacetEntry> scopedEntries =
         result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
-    for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
+    for (GroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       // :TODO:can we filter earlier than this to make it more efficient?
       if (termFilter != null && !termFilter.test(facetEntry.getValue())) {
         continue;
