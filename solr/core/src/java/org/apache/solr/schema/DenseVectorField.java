@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
@@ -208,11 +207,7 @@ public class DenseVectorField extends FloatPointField {
     } catch (RuntimeException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Error while creating field '"
-              + field
-              + "' from value '"
-              + value
-              + "', expected format:'[f1, f2, f3...fn]'",
+          "Error while creating field '" + field + "' from value '" + value + "'",
           e);
     }
   }
@@ -279,11 +274,11 @@ public class DenseVectorField extends FloatPointField {
     protected Object inputValue;
 
     public float[] getFloatVector() {
-      throw new RuntimeException("Not implemented");
+      throw new UnsupportedOperationException("Requested wrong vector type");
     }
 
     protected BytesRef getByteVector() {
-      throw new RuntimeException("Not implemented");
+      throw new UnsupportedOperationException("Requested wrong vector type");
     }
 
     protected void parseVector() {
@@ -359,7 +354,7 @@ public class DenseVectorField extends FloatPointField {
 
       @Override
       protected String errorMessage() {
-        return "The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)";
+        return "The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)";
       }
     }
 

@@ -199,7 +199,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
+            "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
 
     thrown =
         assertThrows(
@@ -223,7 +223,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
+            "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   @Test
@@ -262,7 +262,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector format. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
+            "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   @Test
@@ -322,7 +322,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "incorrect vector element: 'string'. The expected format is:'[fb,b2..b3]' where each element b is a byte (-128 to 127)"));
+            "incorrect vector element: 'string'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
   }
 
   /**
@@ -427,7 +427,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void query_storedField_shouldBeReturnedInResults() throws Exception {
+  public void query_floatEncoded_storedField_shouldBeReturnedInResults() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
@@ -668,11 +668,12 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]'"));
 
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
-          is("Vector value at 0 is out of range [-128.127]: 127.5"));
+          is(
+              "incorrect vector element: '127.5'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
 
       SolrInputDocument doc1 = new SolrInputDocument();
       doc1.addField("id", "1");
@@ -689,10 +690,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]', expected format:'[f1, f2, f3...fn]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]'"));
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
-          is("Vector value at 1 is out of range [-128.127]: -128.3"));
+          is(
+              "incorrect vector element: '1.0'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
     } finally {
       deleteCore();
     }
