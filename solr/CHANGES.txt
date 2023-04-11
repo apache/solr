@@ -31,6 +31,7 @@ Deprecation Removals
 
 * SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
+Dependency Upgrades
 ---------------------
 (No changes)
 
@@ -71,6 +72,9 @@ Improvements
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
 
+* SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
+  `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
+
 * SOLR-16458: Solr's v2 "logging" APIs have been tweaked slightly to be more intuitive.  The single v2 endpoint that existing previously
   (GET /api/node/logging) has been split into several different APIs.  Logger levels can be fetched or modified at
   `GET /api/node/logging/levels` and `PUT /api/node/logging/levels`, respectively.  Log messages can be returned from a "listener" at
@@ -107,13 +111,13 @@ Bug Fixes
 * SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
   SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
 
-* SOLR-16720: PKI headers are now populated closer to when inter-node requests are actually sent,
-  making TTL expiry less likely. (Jason Gerlowski, Alex Deparvu)
-
 * SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
   All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
 
-* NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+* SOLR-9775: NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
 
 Dependency Upgrades
 ---------------------
@@ -139,6 +143,8 @@ Other Changes
 * SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
 
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
+
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
 ==================  9.2.0 ==================
 
