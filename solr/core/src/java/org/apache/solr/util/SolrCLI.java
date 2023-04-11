@@ -804,7 +804,7 @@ public class SolrCLI implements CLIO {
     protected void runImpl(CommandLine cli) throws Exception {
       String getUrl = cli.getOptionValue("get");
       if (getUrl != null) {
-        getUrl = getUrl.replaceAll("\\+", "%20");
+        getUrl = getUrl.replace("+", "%20");
         URI uri = new URI(getUrl);
         String solrUrl = getSolrUrlFromUri(uri);
         String path = uri.getPath();
