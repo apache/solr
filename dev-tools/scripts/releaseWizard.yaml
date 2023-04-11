@@ -865,7 +865,7 @@ groups:
 
       DIST_BASE={{ dist_url_base }} && \
         RC_FOLDER={{ release_candidate_rc_folder }} && \
-        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official \
+        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-full \
         --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
         -t solr-rc:{{ release_version }}-{{ rc_number }}
 
@@ -1055,19 +1055,24 @@ groups:
           comment: Checkout the most recent main version
           logfile: solr_docker_git_checkout.log
         - !Command
-          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official'] | path_join }} {{ docker_version }}/Dockerfile"
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official-full'] | path_join }} {{ docker_version }}/Dockerfile"
           cwd: solr-docker
-          comment: Add the new Dockerfile to the repo
-          logfile: solr_docker_add_dockerfile.log
+          comment: Add the new full distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_full.log
         - !Command
-          cmd: 'git add {{ docker_version }}/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official-slim'] | path_join }} {{ docker_version }}-slim/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new slim distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_slim.log
+        - !Command
+          cmd: 'git add {{ docker_version }}/Dockerfile {{ docker_version }}-slim/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
           cwd: solr-docker
           comment: Commit the new Dockerfile
           logfile: solr_docker_commit.log
         - !Command
           cmd: git show HEAD
           cwd: solr-docker
-          comment: Check that the commit look correct. Only one Dockerfile should be added or updated.
+          comment: Check that the commit looks correct. Only two Dockerfiles (full and slim) should be added or updated.
           logfile: solr_docker_check_commit.log
           tee: true
         - !Command
