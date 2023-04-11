@@ -16,7 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -79,7 +81,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
             new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
 
     @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> loggers = (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+    List<Map<String, Object>> loggers = (List<Map<String, Object>>) rsp._get("loggers", null);
 
     // check log levels
     assertTrue(checkLoggerLevel(loggers, PARENT_LOGGER_NAME, ""));
@@ -92,8 +94,8 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
             new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
 
     @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> updatedLoggerLevel =
-        (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+    List<Map<String, Object>> updatedLoggerLevel =
+        (List<Map<String, Object>>) rsp._get("loggers", null);
 
     // check new parent logger level
     assertTrue(checkLoggerLevel(updatedLoggerLevel, PARENT_LOGGER_NAME, "TRACE"));
@@ -109,8 +111,8 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
             new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
 
     @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> removedLoggerLevel =
-        (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+    List<Map<String, Object>> removedLoggerLevel =
+        (List<Map<String, Object>>) rsp._get("loggers", null);
 
     assertTrue(checkLoggerLevel(removedLoggerLevel, PARENT_LOGGER_NAME, "OFF"));
 
@@ -119,10 +121,10 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   }
 
   private boolean checkLoggerLevel(
-      ArrayList<NamedList<Object>> properties, String logger, String level) {
-    for (NamedList<Object> property : properties) {
-      String loggerProperty = property._get("name", "").toString();
-      String levelProperty = property._get("level", "").toString();
+      List<Map<String, Object>> properties, String logger, String level) {
+    for (Map<String, Object> property : properties) {
+      String loggerProperty = ObjectUtils.firstNonNull(property.get("name"), "").toString();
+      String levelProperty = ObjectUtils.firstNonNull(property.get("level"), "").toString();
       if (loggerProperty.equals(logger) && levelProperty.equals(level)) {
         return true;
       }

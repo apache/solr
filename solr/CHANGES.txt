@@ -75,6 +75,12 @@ Improvements
 * SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
   `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
 
+* SOLR-16458: Solr's v2 "logging" APIs have been tweaked slightly to be more intuitive.  The single v2 endpoint that existing previously
+  (GET /api/node/logging) has been split into several different APIs.  Logger levels can be fetched or modified at
+  `GET /api/node/logging/levels` and `PUT /api/node/logging/levels`, respectively.  Log messages can be returned from a "listener" at
+  `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
+  `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
+
 Optimizations
 ---------------------
 
