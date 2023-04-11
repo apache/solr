@@ -266,7 +266,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
 
   expected = ['solr-%s-src.tgz' % version,
-              'solr-%s.tgz' % version]
+              'solr-%s.tgz' % version,
+              'solr-slim-%s.tgz' % version]
 
   actual = [x[0] for x in artifacts]
   if expected != actual:
@@ -535,12 +536,14 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   os.chdir(destDir)
   print('  unpack %s...' % artifact)
   unpackLogFile = '%s/solr-unpack-%s.log' % (tmpDir, artifact)
+  expected = artifact
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
+    expected = artifact[:artifact.find('.t')]
+    expected = expected.replace("-src", "") # Remove when the src tgz subdirectory has "-src" appended
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
-  expected = 'solr-%s' % version
   if l != [expected]:
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
@@ -569,6 +572,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
+  isSlim = artifact.find('-slim') != -1
 
   # Check text files in release
   print("  %s" % artifact)
@@ -607,6 +611,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     is_in_list(in_solr_folder, expected_src_solr_files)
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
+  elif isSlim:
+    is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
   else:
     is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
 
@@ -1147,6 +1153,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
+    unpackAndVerify(java, tmpDir, 'solr-slim-%s.tgz' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
