@@ -890,17 +890,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
                 if (usually(random)) {
                   String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
-                  if (deleted.contains(delId)) continue;
+                  if (deleted.contains(delId)) {
+                    continue;
+                  }
                   try {
                     deleteAndUpdateCount(router, ranges, docCounts, delId);
                     deleted.add(delId);
                     documentIds.remove(delId);
-                    log.info("Deleted doc id = {}", id);
-
                   } catch (Exception e) {
                     log.error("Exception while deleting doc id = {}", delId, e);
-                    // TODO disabling this check for now to improve 'add' scenario (see SOLR-7609)
-                    // errors.add(e.getMessage());
+                    errors.add(e.getMessage());
                   }
                 }
               }

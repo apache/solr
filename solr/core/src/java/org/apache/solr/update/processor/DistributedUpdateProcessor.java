@@ -280,19 +280,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
   }
 
-  private boolean leaderLogicWithVersionIntegrityCheck(
-      boolean isReplayOrPeersync, long versionOnUpdate) {
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
-    if (!leaderLogic && versionOnUpdate == 0) {
-      // refreshing leaderLogic status in case this is a race (see SOLR-7609)
-      leaderLogic = isSubShardLeader && !isReplayOrPeersync;
-      if (!leaderLogic) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-      }
-    }
-    return leaderLogic;
-  }
-
   /**
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
@@ -342,7 +329,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, versionOnUpdate);
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
@@ -977,12 +965,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    // TODO replace below with a call to leaderLogicWithVersionIntegrityCheck (see SOLR-7609)
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
 
     vinfo.blockUpdates();
     try {
@@ -1084,13 +1068,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    // TODO replace below with a call to leaderLogicWithVersionIntegrityCheck (see SOLR-7609)
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -1216,6 +1196,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } finally {
       bucket.unlock();
     }
+  }
+
+  private static boolean leaderLogicWithVersionIntegrityCheck(
+      boolean isReplayOrPeersync, boolean isLeader, long versionOnUpdate) {
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    if (!leaderLogic && versionOnUpdate == 0) {
+      throw new SolrException(ErrorCode.INVALID_STATE, "missing _version_ on update from leader");
+    }
+    return leaderLogic;
   }
 
   @Override

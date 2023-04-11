@@ -687,7 +687,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkCheck(cmd);
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand) cmd;
-      nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), cmd);
+      nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), null, cmd);
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand) cmd;
       nodes =
@@ -699,11 +699,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                   : req.getParams().get(ShardParams._ROUTE_)),
               cmd);
     }
-  }
-
-  protected List<SolrCmdDistributor.Node> setupRequest(
-      String id, SolrInputDocument doc, UpdateCommand updateCommand) {
-    return setupRequest(id, doc, null, updateCommand);
   }
 
   protected List<SolrCmdDistributor.Node> setupRequest(
