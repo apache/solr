@@ -23,14 +23,16 @@ description = 'Solr Docker image'
 
 apply plugin: 'base'
 
+def distToSuffix = {String variant -> variant.toLowerCase(Locale.ROOT) == "slim" ? "-slim" : ""}
+
 // Solr Docker inputs
 def dockerImageSolrDist = "${ -> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full') }"
-def dockerImageDistSuffix = "${ -> dockerImageSolrDist.toLowerCase(Locale.ROOT) == "slim" ? "-slim" : ""}"
-def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr${dockerImageDistSuffix}") }"
-def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version) }"
+def dockerImageDistSuffix = "${ -> distToSuffix(dockerImageSolrDist)}"
+def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
+def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
 def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}") }"
 def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-jammy') }"
-def officialDockerImageName = {String variant -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official-${variant.toLowerCase(Locale.ROOT)}:${dockerImageTag}") }" }
+def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
 
@@ -38,7 +40,7 @@ def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',pro
 def imageIdFile = "$buildDir/image-id"
 
 def smokeTestOfficial = "$buildDir/smoke-check-official"
-def imageIdFileOfficial = { String variant -> "$smokeTestOfficial/$variant/image-id" }
+def imageIdFileOfficial = { String dist -> "$smokeTestOfficial/$dist/image-id" }
 
 configurations {
   packaging {
@@ -164,7 +166,7 @@ task dockerBuild() {
     exec {
       standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr${dockerImageDistSuffix}-${ -> project.version }/docker/Dockerfile",
+              "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
               "-"
@@ -467,8 +469,8 @@ if (''.equals(releaseGpgFingerprint)) {
                 '--add-host', "mock-solr-dl-server:${mockServerIp}",
                 '--no-cache', // force fresh downloads from our current network
                 "--iidfile", imageIdFileOfficial(variant),
-                '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr${lowerVariant == "slim" ? "-slim" : ""}-${-> project.version}.tgz",
-                '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr${lowerVariant == "slim" ? "-slim" : ""}-${-> project.version}.tgz",
+                '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${-> project.version}${distToSuffix(variant)}.tgz",
+                '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${-> project.version}${distToSuffix(variant)}.tgz",
                 '--tag', officialDockerImageName(variant),
                 '-'
           }

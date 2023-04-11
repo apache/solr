@@ -65,7 +65,7 @@ RUN set -ex; \
   chmod 0664 /etc/default/solr.in.sh; \
   mkdir -p -m0770 /var/solr; \
   chown -R "$SOLR_USER:0" /var/solr; \
-  test ! -e /opt/solr/modules || ln -s /opt/solr/modules /opt/solr/contrib || true; \
+  test ! -e /opt/solr/modules || ln -s /opt/solr/modules /opt/solr/contrib; \
   test ! -e /opt/solr/prometheus-exporter || ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
 
 RUN set -ex; \

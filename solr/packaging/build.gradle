@@ -29,7 +29,7 @@ description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
-  slimDistDir = file("$buildDir/solr-slim-${version}")
+  slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
   slimDevDir = file("$buildDir/dev-slim")
 }
@@ -66,14 +66,15 @@ dependencies {
     builtBy ":solr:distribution:signFullBinaryTgz"
   }
 
-  solrSlimTgzSignature files("$buildDir/distributions/solr-slim-${version}.tgz.asc") {
+  solrSlimTgzSignature files("$buildDir/distributions/solr-${version}-slim.tgz.asc") {
     builtBy ":solr:distribution:signSlimBinaryTgz"
   }
 }
 
 distributions {
   slim {
-    distributionBaseName = 'solr-slim'
+    distributionBaseName = 'solr'
+    distributionClassifier = "slim"
     contents {
 
       from(rootDir, {
@@ -202,11 +203,14 @@ slimDistTar {
   compression = Compression.GZIP
 }
 
+distTar.dependsOn tasks.fullDistTar
+distTar.dependsOn tasks.slimDistTar
+
 fullDistZip.enabled = false
 slimDistZip.enabled = false
 
-assemble.dependsOn installDist
-assemble.dependsOn installSlimDist
+assemble.dependsOn tasks.installDist
+assemble.dependsOn tasks.installSlimDist
 
 artifacts {
   solrFullTgz(fullDistTar)

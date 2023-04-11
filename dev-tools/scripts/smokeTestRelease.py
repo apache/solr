@@ -267,9 +267,11 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
 
   expected = ['solr-%s-src.tgz' % version,
               'solr-%s.tgz' % version,
-              'solr-slim-%s.tgz' % version]
+              'solr-%s-slim.tgz' % version]
 
   actual = [x[0] for x in artifacts]
+  expected.sort()
+  actual.sort()
   if expected != actual:
     raise RuntimeError('solr: wrong artifacts: expected %s but got %s' % (expected, actual))
 
@@ -1153,7 +1155,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-slim-%s.tgz' % version, gitRevision, version, testArgs)
+    unpackAndVerify(java, tmpDir, 'solr-%s-slim.tgz' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')

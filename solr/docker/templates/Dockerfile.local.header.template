@@ -32,10 +32,10 @@
 # locally.
 #    Examples:
 #      docker build -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
-#      docker build -f solr-slim-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-slim-X.Y.Z.tgz
+#      docker build -f solr-X.Y.Z-slim/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z-slim.tgz
 #    Examples:
 #      docker build -f solr-X.Y.Z/docker/Dockerfile - < solr-X.Y.Z.tgz
-#      docker build -f solr-slim-X.Y.Z/docker/Dockerfile - < solr-slim-X.Y.Z.tgz
+#      docker build -f solr-X.Y.Z-slim/docker/Dockerfile - < solr-X.Y.Z-slim.tgz
 
 
 ARG BASE_IMAGE=_REPLACE_BASE_IMAGE_
