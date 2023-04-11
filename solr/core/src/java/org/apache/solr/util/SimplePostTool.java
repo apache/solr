@@ -641,7 +641,7 @@ public class SimplePostTool {
    * @return the normalized URL string
    */
   protected static String normalizeUrlEnding(String link) {
-    if (link.indexOf("#") > -1) link = link.substring(0, link.indexOf("#"));
+    if (link.contains("#")) link = link.substring(0, link.indexOf('#'));
     if (link.endsWith("?")) link = link.substring(0, link.length() - 1);
     if (link.endsWith("/")) link = link.substring(0, link.length() - 1);
     return link;
@@ -782,7 +782,7 @@ public class SimplePostTool {
         }
         String path = baseUrl.getPath();
         if (!path.endsWith("/")) {
-          int sep = path.lastIndexOf("/");
+          int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
           if (file.contains(".") || file.contains("?")) path = path.substring(0, sep);
         }
@@ -821,7 +821,7 @@ public class SimplePostTool {
    * @return true if "on"
    */
   protected static boolean isOn(String property) {
-    return ("true,on,yes,1".indexOf(property) > -1);
+    return ("true,on,yes,1".contains(property));
   }
 
   static void warn(String msg) {
@@ -862,7 +862,7 @@ public class SimplePostTool {
       if (p.trim().length() == 0) continue;
       String[] kv = p.split("=");
       if (kv.length == 2) {
-        url = url + (url.indexOf('?') > 0 ? "&" : "?") + kv[0] + "=" + kv[1];
+        url = url + (url.contains("?") ? "&" : "?") + kv[0] + "=" + kv[1];
       } else {
         warn("Skipping param " + p + " which is not on form key=value");
       }
@@ -895,11 +895,11 @@ public class SimplePostTool {
           // SolrCell
           suffix = "/extract";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
-          if (urlStr.indexOf("resource.name") == -1)
+          if (!urlStr.contains("resource.name"))
             urlStr =
                 appendParam(
                     urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
-          if (urlStr.indexOf("literal.id") == -1)
+          if (!urlStr.contains("literal.id"))
             urlStr =
                 appendParam(
                     urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
@@ -954,7 +954,7 @@ public class SimplePostTool {
    */
   protected static String guessType(File file) {
     String name = file.getName();
-    String suffix = name.substring(name.lastIndexOf(".") + 1);
+    String suffix = name.substring(name.lastIndexOf('.') + 1);
     String type = mimeMap.get(suffix.toLowerCase(Locale.ROOT));
     return (type != null) ? type : "application/octet-stream";
   }

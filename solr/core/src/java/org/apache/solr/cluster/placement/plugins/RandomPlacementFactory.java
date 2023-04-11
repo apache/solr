@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.plugins;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -35,6 +34,7 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random
@@ -79,7 +79,7 @@ public class RandomPlacementFactory
         }
 
         Set<ReplicaPlacement> replicaPlacements =
-            new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+            CollectionUtil.newHashSet(totalReplicasPerShard * request.getShardNames().size());
 
         // Now place randomly all replicas of all shards on available nodes
         for (String shardName : request.getShardNames()) {

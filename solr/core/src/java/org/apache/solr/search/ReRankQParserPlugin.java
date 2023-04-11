@@ -17,12 +17,12 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
 /*
@@ -63,7 +63,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     @Override
     public Query parse() throws SyntaxError {
       String reRankQueryString = localParams.get(RERANK_QUERY);
-      if (StringUtils.isBlank(reRankQueryString)) {
+      if (StrUtils.isBlank(reRankQueryString)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY + " parameter is mandatory");
       }

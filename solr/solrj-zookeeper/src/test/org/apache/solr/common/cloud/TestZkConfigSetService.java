@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -220,10 +219,10 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
         buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
-      configSetService.uploadConfig("acltest2", configPath);
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+      IOException ioException =
+          assertThrows(
+              IOException.class, () -> configSetService.uploadConfig("acltest2", configPath));
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
 
     // Client with no auth whatsoever can't even get the list of configs
@@ -232,11 +231,9 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
             .withUrl(zkServer.getZkAddress("/acl"))
             .withTimeout(10000, TimeUnit.MILLISECONDS)
             .build()) {
-      ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.listConfigs();
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+      IOException ioException =
+          assertThrows(IOException.class, () -> new ZkConfigSetService(client).listConfigs());
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
   }
 

@@ -28,6 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -60,6 +61,9 @@ public class CollectionPropertyAPI extends AdminAPIBase {
       @PathParam("propName") String propName,
       UpdateCollectionPropertyRequestBody requestBody)
       throws Exception {
+    if (requestBody == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
+    }
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
     modifyCollectionProperty(collName, propName, requestBody.value);

@@ -32,7 +32,6 @@ import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -204,9 +203,8 @@ public class ClusterAPI {
 
   @EndPoint(method = DELETE, path = "/cluster/command-status/{id}", permission = COLL_EDIT_PERM)
   public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(ACTION, DELETESTATUS.lowerName);
-    v1Params.put(REQUESTID, req.getPathTemplateValues().get("id"));
+    final Map<String, Object> v1Params =
+        Map.of(ACTION, DELETESTATUS.lowerName, REQUESTID, req.getPathTemplateValues().get("id"));
     collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
@@ -238,9 +236,8 @@ public class ClusterAPI {
 
   @EndPoint(method = GET, path = "/cluster/command-status/{id}", permission = COLL_READ_PERM)
   public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(ACTION, REQUESTSTATUS.lowerName);
-    v1Params.put(REQUESTID, req.getPathTemplateValues().get("id"));
+    final Map<String, Object> v1Params =
+        Map.of(ACTION, REQUESTSTATUS.lowerName, REQUESTID, req.getPathTemplateValues().get("id"));
     collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
@@ -251,8 +248,8 @@ public class ClusterAPI {
 
   @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
   public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params = Maps.newHashMap();
-    v1Params.put(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
+    final Map<String, Object> v1Params =
+        Map.of(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
     collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 

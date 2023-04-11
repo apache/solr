@@ -22,7 +22,6 @@ import static org.apache.solr.client.solrj.io.stream.FacetStream.defaultTieredEn
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,6 +50,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -84,7 +84,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -421,7 +421,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   // Map the rollup metric to the original metric name so that we can project out the correct field
   // names in the tuple
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    Map<String, String> map = CollectionUtil.newHashMap(rollupMetrics.length * 2);
     for (Metric m : rollupMetrics) {
       String[] cols = m.getColumns();
       map.put(m.getIdentifier(), cols != null && cols.length > 0 ? cols[0] : "*");

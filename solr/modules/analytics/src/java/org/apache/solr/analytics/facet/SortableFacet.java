@@ -16,12 +16,12 @@
  */
 package org.apache.solr.analytics.facet;
 
-import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.solr.analytics.facet.compare.FacetResultsComparator;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.common.util.NamedList;
@@ -81,18 +81,18 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     Comparator<FacetBucket> comp = sort.getComparator();
     facetResults.sort(comp);
-
-    Iterable<FacetBucket> facetResultsIter = facetResults;
     // apply the limit
     if (sort.getLimit() > 0) {
       if (sort.getOffset() > 0) {
-        facetResultsIter = Iterables.skip(facetResultsIter, sort.getOffset());
+        facetResults =
+            facetResults.stream().skip(sort.getOffset()).collect(Collectors.toUnmodifiableList());
       }
-      facetResultsIter = Iterables.limit(facetResultsIter, sort.getLimit());
+      facetResults =
+          facetResults.stream().limit(sort.getLimit()).collect(Collectors.toUnmodifiableList());
     } else if (sort.getLimit() == 0) {
       return new ArrayList<>();
     }
-    return facetResultsIter;
+    return facetResults;
   }
 
   /** Specifies how to sort the buckets of a sortable facet. */

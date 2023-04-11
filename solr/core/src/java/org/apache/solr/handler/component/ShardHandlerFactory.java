@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -69,7 +69,7 @@ public abstract class ShardHandlerFactory {
   public static final PluginInfo DEFAULT_SHARDHANDLER_INFO =
       new PluginInfo(
           "shardHandlerFactory",
-          ImmutableMap.of("class", HttpShardHandlerFactory.class.getName()),
+          Map.of("class", HttpShardHandlerFactory.class.getName()),
           null,
           Collections.<PluginInfo>emptyList());
 }

@@ -27,10 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * during the APIs execution. (e.g. the collection-deletion response itself contains the responses
  * from the 'UNLOAD' call send to each core.) This class encapsulates those responses as possible.
  */
-public class SubResponseAccumulatingJerseyResponse extends SolrJerseyResponse {
-
-  @JsonProperty("requestid")
-  public String requestId;
+public class SubResponseAccumulatingJerseyResponse extends AsyncJerseyResponse {
 
   // TODO The 'Object' value in this and the failure prop below have a more defined structure.
   //  Specifically, each value is a map whose keys are node names and whose values are full

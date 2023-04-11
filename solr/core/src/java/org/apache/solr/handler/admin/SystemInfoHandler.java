@@ -50,6 +50,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
@@ -328,11 +329,10 @@ public class SystemInfoHandler extends RequestHandlerBase {
       }
     }
 
-    // User principal
-    String username = null;
-    if (req.getUserPrincipal() != null) {
-      username = req.getUserPrincipal().getName();
-      info.add("username", username);
+    if (req.getUserPrincipal() != null
+        && req.getUserPrincipal() != PKIAuthenticationPlugin.CLUSTER_MEMBER_NODE) {
+      // User principal
+      info.add("username", req.getUserPrincipal().getName());
 
       // Mapped roles for this principal
       @SuppressWarnings("resource")
@@ -341,18 +341,20 @@ public class SystemInfoHandler extends RequestHandlerBase {
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
-        info.add(
-            "permissions",
-            rbap.getPermissionNamesForRoles(
-                Stream.concat(roles.stream(), Stream.of("*", null)).collect(Collectors.toSet())));
+        if (roles == null) {
+          info.add("permissions", Set.of());
+        } else {
+          info.add(
+              "permissions",
+              rbap.getPermissionNamesForRoles(
+                  Stream.concat(roles.stream(), Stream.of("*", null)).collect(Collectors.toSet())));
+        }
       }
     }
 
     if (cc != null && cc.getZkController() != null) {
       String urlScheme =
-          cc.getZkController()
-              .zkStateReader
-              .getClusterProperty(ZkStateReader.BASE_URL_PROP, "http");
+          cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
       info.add("tls", ZkStateReader.HTTPS.equals(urlScheme));
     }
 
@@ -411,9 +413,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf("=")))) {
+          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf('=')))) {
         list.add(
-            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf("=")), REDACT_STRING));
+            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf('=')), REDACT_STRING));
       } else {
         list.add(arg);
       }

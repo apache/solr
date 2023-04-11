@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUCollationKeyAnalyzer;
@@ -232,16 +231,12 @@ public class ICUCollationField extends FieldType {
    * as # might be in the rules!
    */
   static Collator createFromRules(String fileName, ResourceLoader loader) {
-    InputStream input = null;
-    try {
-      input = loader.openResource(fileName);
-      String rules = IOUtils.toString(input, StandardCharsets.UTF_8);
+    try (InputStream input = loader.openResource(fileName)) {
+      String rules = new String(input.readAllBytes(), StandardCharsets.UTF_8);
       return new RuleBasedCollator(rules);
     } catch (Exception e) {
       // io error or invalid rules
       throw new RuntimeException(e);
-    } finally {
-      IOUtils.closeQuietly(input);
     }
   }
 

@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
@@ -440,10 +439,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     @Override
     public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
-      try {
-        InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");
+      try (InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class")) {
         byte[] buf = new byte[1024 * 5];
-        int sz = IOUtils.read(is, buf);
+        int sz = is.read(buf);
         classData = ByteBuffer.wrap(buf, 0, sz);
       } catch (IOException e) {
         // do not do anything

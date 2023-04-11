@@ -824,7 +824,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs)
       throws Exception {
     if (!anonChildDocs) {
-      rawJsonStr = rawJsonStr.replaceAll("_childDocuments_", "childLabel");
+      rawJsonStr = rawJsonStr.replace("_childDocuments_", "childLabel");
     }
     SolrQueryRequest req = req("commit", "true");
     SolrQueryResponse rsp = new SolrQueryResponse();

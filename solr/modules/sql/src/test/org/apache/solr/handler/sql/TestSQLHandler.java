@@ -17,6 +17,9 @@
 package org.apache.solr.handler.sql;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +28,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -3131,10 +3133,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @Test
   public void testManyInValues() throws Exception {
     int maxSize = 1000;
-    int width = 4;
+    NumberFormat formatter =
+        new DecimalFormat("0000", DecimalFormatSymbols.getInstance(Locale.ROOT));
     List<String> bigList = new ArrayList<>(maxSize);
     for (int i = 0; i < maxSize; i++) {
-      bigList.add(StringUtils.leftPad(String.valueOf(i), width, "0"));
+      bigList.add(formatter.format(i));
     }
 
     UpdateRequest update = new UpdateRequest();

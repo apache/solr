@@ -18,7 +18,6 @@ package org.apache.solr.search.facet;
 
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -187,7 +186,7 @@ public abstract class FacetRequest {
       private static final String TO_PARAM = "to";
       private static final String METHOD_PARAM = "method";
       private static final Set<String> SUPPORTED_JOIN_PROPERTIES =
-          Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
+          Set.of(FROM_PARAM, TO_PARAM, METHOD_PARAM);
 
       public final String from;
       public final String to;
