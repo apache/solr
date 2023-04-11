@@ -30,15 +30,15 @@ public class ApiToolTest extends SolrTestCase {
   public void testParsingGetUrl() throws URISyntaxException {
     SolrCLI.ApiTool apiTool = new SolrCLI.ApiTool();
 
-    String getWithPercent20SpaceDelimiter =
+    String urlWithPercent20SpaceDelimiter =
         "http://localhost:8983/solr/COLL_NAME/sql?stmt=select%20id%20from%20COLL_NAME%20limit%2010";
-    String getWithPlusSpaceDelimiter =
+    String urlWithPlusSpaceDelimiter =
         "http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10";
 
-    for (String getUrl : Arrays.asList(getWithPercent20SpaceDelimiter, getWithPlusSpaceDelimiter)) {
-      getUrl = getUrl.replaceAll("\\+", "%20");
+    for (String url : Arrays.asList(urlWithPercent20SpaceDelimiter, urlWithPlusSpaceDelimiter)) {
+      url = url.replace("+", "%20");
 
-      URI uri = new URI(getUrl);
+      URI uri = new URI(url);
       ModifiableSolrParams params = SolrCLI.getSolrParamsFromUri(uri);
       assertEquals(1, params.size());
       assertEquals("select id from COLL_NAME limit 10", params.get("stmt"));
