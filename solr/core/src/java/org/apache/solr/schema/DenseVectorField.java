@@ -25,17 +25,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.document.KnnByteVectorField;
-import org.apache.lucene.document.KnnVectorField;
+import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.KnnVectorQuery;
+import org.apache.lucene.search.KnnByteVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
@@ -185,7 +185,7 @@ public class DenseVectorField extends FloatPointField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     try {
       ArrayList<IndexableField> fields = new ArrayList<>();
-      VectorBuilder vectorBuilder = getVectorBuilder(value);
+      VectorBuilder vectorBuilder = getVectorBuilder(value, VectorBuilder.BuilderPhase.INDEX);
 
       if (field.indexed()) {
         fields.add(createField(field, vectorBuilder));
@@ -219,9 +219,9 @@ public class DenseVectorField extends FloatPointField {
     switch (vectorEncoding) {
       case BYTE:
         return new KnnByteVectorField(
-            field.getName(), vectorBuilder.getByteVector().bytes, similarityFunction);
+            field.getName(), vectorBuilder.getByteVector(), similarityFunction);
       case FLOAT32:
-        return new KnnVectorField(
+        return new KnnFloatVectorField(
             field.getName(), vectorBuilder.getFloatVector(), similarityFunction);
       default:
         throw new SolrException(
@@ -255,12 +255,12 @@ public class DenseVectorField extends FloatPointField {
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
-  public VectorBuilder getVectorBuilder(Object inputValue) {
+  public VectorBuilder getVectorBuilder(Object inputValue, VectorBuilder.BuilderPhase phase) {
     switch (vectorEncoding) {
       case FLOAT32:
-        return new VectorBuilder.Float32VectorBuilder(dimension, inputValue);
+        return new VectorBuilder.Float32VectorBuilder(dimension, inputValue, phase);
       case BYTE:
-        return new VectorBuilder.ByteVectorBuilder(dimension, inputValue);
+        return new VectorBuilder.ByteVectorBuilder(dimension, inputValue, phase);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -270,6 +270,13 @@ public class DenseVectorField extends FloatPointField {
 
   abstract static class VectorBuilder {
 
+    public static enum BuilderPhase {
+      INDEX,
+      QUERY
+    }
+
+    protected BuilderPhase builderPhase;
+
     protected int dimension;
     protected Object inputValue;
 
@@ -277,11 +284,22 @@ public class DenseVectorField extends FloatPointField {
       throw new UnsupportedOperationException("Requested wrong vector type");
     }
 
-    protected BytesRef getByteVector() {
+    public byte[] getByteVector() {
       throw new UnsupportedOperationException("Requested wrong vector type");
     }
 
     protected void parseVector() {
+      switch (builderPhase) {
+        case INDEX:
+          parseIndexVector();
+          break;
+        case QUERY:
+          parseQueryVector();
+          break;
+      }
+    }
+
+    protected void parseIndexVector() {
       if (!(inputValue instanceof List)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
@@ -317,6 +335,36 @@ public class DenseVectorField extends FloatPointField {
       }
     }
 
+    protected void parseQueryVector() {
+
+      String value = inputValue.toString();
+      if (!value.startsWith("[") || !value.endsWith("]")) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
+      }
+
+      String[] elements = value.substring(1, value.length() - 1).split(",");
+      if (elements.length != dimension) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "incorrect vector dimension. "
+                + "The vector value has size "
+                + elements.length
+                + " while it is expected a vector with size "
+                + dimension);
+      }
+
+      for (int i = 0; i < dimension; i++) {
+        try {
+          addStringElement(elements[i].trim());
+        } catch (NumberFormatException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "incorrect vector element: '" + elements[i] + "'. " + errorMessage());
+        }
+      }
+    }
+
     protected abstract void addNumberElement(Number element);
 
     protected abstract void addStringElement(String element);
@@ -324,32 +372,33 @@ public class DenseVectorField extends FloatPointField {
     protected abstract String errorMessage();
 
     static class ByteVectorBuilder extends VectorBuilder {
-      private BytesRefBuilder byteRefBuilder;
-      private BytesRef byteVector;
+      private byte[] byteVector;
+      private int curPosition;
 
-      public ByteVectorBuilder(int dimension, Object inputValue) {
+      public ByteVectorBuilder(int dimension, Object inputValue, BuilderPhase builderPhase) {
         this.dimension = dimension;
         this.inputValue = inputValue;
+        this.builderPhase = builderPhase;
+        this.curPosition = 0;
       }
 
       @Override
-      public BytesRef getByteVector() {
+      public byte[] getByteVector() {
         if (byteVector == null) {
-          byteRefBuilder = new BytesRefBuilder();
+          byteVector = new byte[dimension];
           parseVector();
-          byteVector = byteRefBuilder.toBytesRef();
         }
         return byteVector;
       }
 
       @Override
       protected void addNumberElement(Number element) {
-        byteRefBuilder.append(element.byteValue());
+        byteVector[curPosition++] = element.byteValue();
       }
 
       @Override
       protected void addStringElement(String element) {
-        byteRefBuilder.append(Byte.parseByte(element));
+        byteVector[curPosition++] = Byte.parseByte(element);
       }
 
       @Override
@@ -362,10 +411,11 @@ public class DenseVectorField extends FloatPointField {
       private float[] vector;
       private int curPosition;
 
-      public Float32VectorBuilder(int dimension, Object inputValue) {
+      public Float32VectorBuilder(int dimension, Object inputValue, BuilderPhase builderPhase) {
         this.dimension = dimension;
         this.inputValue = inputValue;
         this.curPosition = 0;
+        this.builderPhase = builderPhase;
       }
 
       @Override
@@ -407,8 +457,22 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, float[] vectorToSearch, int topK, Query filterQuery) {
-    return new KnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery);
+      String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+
+    VectorBuilder vectorBuilder =
+        getVectorBuilder(vectorToSearch, VectorBuilder.BuilderPhase.QUERY);
+
+    switch (vectorEncoding) {
+      case FLOAT32:
+        return new KnnFloatVectorQuery(
+            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+      case BYTE:
+        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Unexpected state. Vector Encoding: " + vectorEncoding);
+    }
   }
 
   /**

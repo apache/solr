@@ -216,27 +216,52 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void vectorByteEncodingField_shouldSearchOnThatField() {
-    String vectorToSearch = "[2.0, 2.0, 1.0, 3.0]";
+    String vectorToSearch = "[2, 2, 1, 3]";
 
     assertQ(
         req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='3']");
-  }
 
-  @Test
-  public void vectorByteEncodingField_shouldNotApproximateQueryVectorValueToIntegerValues() {
-    String vectorToSearch = "[7.9f, 2.9f, 1.9f, 3.9f]";
+    vectorToSearch = "[8, 3, 2, 4]";
 
-    // If we consider the vectors with floating values, document 7 has an higher score than document
-    // 6.
-    // If instead we take only the integer part, document 6 gets an higher score.
     assertQ(
         req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.='4']",
-        "//result/doc[2]/str[@name='id'][.='8']");
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldRaiseExceptionIfQueryUsesFloatVectors() {
+    String vectorToSearch = "[8.3, 4.3, 2.1, 4.1]";
+
+    assertQEx(
+        "incorrect vector element: '8.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: '8.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void
+      vectorByteEncodingField_shouldRaiseExceptionWhenQueryContainsValuesOutsideByteValueRange() {
+    String vectorToSearch = "[1, -129, 3, 5]";
+
+    assertQEx(
+        "incorrect vector element: ' -129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: ' -129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    vectorToSearch = "[1, 3, 156, 5]";
+
+    assertQEx(
+        "incorrect vector element: ' 156'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: ' 156'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test
