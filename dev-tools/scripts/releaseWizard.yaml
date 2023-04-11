@@ -861,13 +861,16 @@ groups:
       python3 -u dev-tools/scripts/smokeTestRelease.py \
       {{ release_candidate_location }}
 
-      You can build a release-candidate of the official docker image using the following command:
+      You can build a release-candidate of the official docker images (full & slim) using the following command:
 
       DIST_BASE={{ dist_url_base }} && \
         RC_FOLDER={{ release_candidate_rc_folder }} && \
         docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-full \
         --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
-        -t solr-rc:{{ release_version }}-{{ rc_number }}
+        -t solr-rc:{{ release_version }}-{{ rc_number }}} && \
+        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-slim \
+        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}-slim.tgz \
+        -t solr-rc:{{ release_version }}-{{ rc_number }}-slim
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
