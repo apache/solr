@@ -17,67 +17,22 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
-import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_STATE;
-import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
-import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.START;
-import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
-import static org.apache.solr.common.params.CoreAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
-import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -87,6 +42,30 @@ import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TimeZoneUtils;
+
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.START;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 @Path("/aliases")
 public class CreateAliasAPI extends AdminAPIBase {
@@ -109,10 +88,10 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     ZkNodeProps remoteMessage;
     // Validation ensures that the request has either collections or a router but not both.
-    if (CollectionUtils.isNotEmpty(requestBody.collections)) {
+    if (CollectionUtil.isNotEmpty(requestBody.collections)) {
       remoteMessage = createRemoteMessageForTraditionalAlias(requestBody);
     } else { // Creating a routed alias
-      assert CollectionUtils.isNotEmpty(requestBody.routers);
+      assert CollectionUtil.isNotEmpty(requestBody.routers);
       final Aliases aliases = coreContainer.getAliases();
       if (aliases.hasAlias(requestBody.name) && !aliases.isRoutedAlias(requestBody.name)) {
         throw new SolrException(
@@ -180,16 +159,16 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     SolrIdentifierValidator.validateAliasName(requestBody.name);
 
-    if (CollectionUtils.isEmpty(requestBody.collections)
-        && CollectionUtils.isEmpty(requestBody.routers)) {
+    if (CollectionUtil.isEmpty(requestBody.collections)
+        && CollectionUtil.isEmpty(requestBody.routers)) {
       throw new SolrException(
           BAD_REQUEST,
           "Alias creation requires either a list of either collections (for creating a traditional alias) or routers (for creating a routed alias)");
     }
 
-    if (CollectionUtils.isNotEmpty(requestBody.routers)) {
+    if (CollectionUtil.isNotEmpty(requestBody.routers)) {
       requestBody.routers.forEach(r -> r.validate());
-      if (CollectionUtils.isNotEmpty(requestBody.collections)) {
+      if (CollectionUtil.isNotEmpty(requestBody.collections)) {
         throw new SolrException(
             BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
       }
