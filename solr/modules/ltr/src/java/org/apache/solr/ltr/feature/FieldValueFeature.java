@@ -177,7 +177,8 @@ public class FieldValueFeature extends Feature {
       public float score() throws IOException {
 
         try {
-          final Document document = context.reader().document(itr.docID(), fieldAsSet);
+          final Document document =
+              context.reader().storedFields().document(itr.docID(), fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
             return getDefaultValue();

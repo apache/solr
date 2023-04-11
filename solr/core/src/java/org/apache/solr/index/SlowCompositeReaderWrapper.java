@@ -309,6 +309,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public Fields getTermVectors(int docID) throws IOException {
     return in.getTermVectors(docID);
   }
@@ -338,6 +339,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     in.document(docID, visitor);

@@ -303,6 +303,7 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      @Deprecated
       public Fields getTermVectors(int docID) {
         return null;
       }
@@ -398,6 +399,7 @@ public class TestDocSet extends SolrTestCase {
       protected void doClose() {}
 
       @Override
+      @Deprecated
       public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override

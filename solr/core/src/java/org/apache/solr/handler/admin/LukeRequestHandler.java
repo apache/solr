@@ -161,7 +161,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       }
       Document doc = null;
       try {
-        doc = reader.document(docId);
+        doc = reader.storedFields().document(docId);
       } catch (Exception ex) {
       }
       if (doc == null) {
@@ -353,7 +353,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       // If we have a term vector, return that
       if (field.fieldType().storeTermVectors()) {
         try {
-          Terms v = reader.getTermVector(docId, field.name());
+          Terms v = reader.termVectors().get(docId, field.name());
           if (v != null) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator();
@@ -476,7 +476,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
         if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
           continue;
         }
-        return reader.document(postingsEnum.docID());
+        return reader.storedFields().document(postingsEnum.docID());
       }
     }
     return null;

@@ -695,7 +695,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? reader.getTermVectors(docId) : null;
+    final Fields tvFields = schemaField.storeTermOffsets() ? reader.termVectors().get(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
@@ -1099,6 +1099,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     @Override
+    @Deprecated
     public Fields getTermVectors(int docID) throws IOException {
       if (docID != lastDocId) {
         lastDocId = docID;

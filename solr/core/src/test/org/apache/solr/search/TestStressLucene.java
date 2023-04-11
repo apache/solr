@@ -347,7 +347,7 @@ public class TestStressLucene extends TestRTGBase {
                       verbose("ERROR: Couldn't find a doc for id", id, "using reader", r);
                     }
                     assertTrue(docid >= 0); // we should have found the document, or its tombstone
-                    Document doc = r.document(docid);
+                    Document doc = r.storedFields().document(docid);
                     long foundVal = Long.parseLong(doc.get(FIELD));
                     if (foundVal < Math.abs(val)) {
                       verbose(

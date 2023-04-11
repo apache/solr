@@ -5798,7 +5798,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
               for (LeafReaderContext leave : ir.leaves()) {
                 LeafReader reader = leave.reader();
                 for (int i = 0; i < reader.numDocs(); i++) {
-                  Document doc = reader.document(i);
+                  Document doc = reader.storedFields().document(i);
                   if (sf.stored()) {
                     assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
                   } else {

@@ -175,7 +175,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
 
           BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
           for (int docID = 0; docID < docBytes.size(); docID++) {
-            Document doc = ar.document(docID);
+            Document doc = ar.storedFields().document(docID);
             assertEquals(docID, s.nextDoc());
             BytesRef bytes = s.binaryValue();
             byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));

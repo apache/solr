@@ -388,7 +388,7 @@ public class IndexSizeEstimator {
         if (liveDocs != null && !liveDocs.get(docId)) {
           continue;
         }
-        Fields termVectors = leafReader.getTermVectors(docId);
+        Fields termVectors = leafReader.termVectors().get(docId);
         if (termVectors == null) {
           continue;
         }
@@ -612,7 +612,7 @@ public class IndexSizeEstimator {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          leafReader.document(docId, visitor);
+          leafReader.storedFields().document(docId, visitor);
         }
       }
     }

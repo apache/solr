@@ -270,7 +270,7 @@ public class SolrDocumentFetcher {
     final DirectoryReader reader = searcher.getIndexReader();
     final SolrDocumentStoredFieldVisitor visitor =
         new SolrDocumentStoredFieldVisitor(fields, reader, i);
-    reader.document(i, visitor);
+    reader.storedFields().document(i, visitor);
     return visitor.getDocument();
   }
 
@@ -372,7 +372,7 @@ public class SolrDocumentFetcher {
       Document cached = doc(docId);
       visitFromCached(cached, visitor);
     } else {
-      searcher.getIndexReader().document(docId, visitor);
+      searcher.getIndexReader().storedFields().document(docId, visitor);
     }
   }
 
@@ -490,6 +490,7 @@ public class SolrDocumentFetcher {
         BytesRef bytesRef = new BytesRef();
         searcher
             .getIndexReader()
+            .storedFields()
             .document(
                 docId,
                 new StoredFieldVisitor() {
