@@ -188,7 +188,7 @@ task devSlim(type: Copy) {
 }
 
 task dev {
-  description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
+  description "Assemble Solr distributions into 'development' folders at ${devDir} and ${slimDevDir}"
   group "build"
 
   dependsOn tasks.devFull

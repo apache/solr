@@ -23,10 +23,11 @@ description = 'Solr Docker image'
 
 apply plugin: 'base'
 
-def distToSuffix = {String variant -> variant.toLowerCase(Locale.ROOT) == "slim" ? "-slim" : ""}
-
 // Solr Docker inputs
 def dockerImageSolrDist = "${ -> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full') }"
+def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
+def isImageSlim = { -> isDistSlim(dockerImageSolrDist) }
+def distToSuffix = {String dist -> isDistSlim(dist) ? "-slim" : ""}
 def dockerImageDistSuffix = "${ -> distToSuffix(dockerImageSolrDist)}"
 def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
@@ -158,8 +159,9 @@ task dockerBuild() {
   inputs.properties([
           baseDockerImage: baseDockerImage
   ])
-  var solrTgzConfiguration = dockerImageDistSuffix.isEmpty() ? configurations.solrFullTgz : configurations.solrSlimTgz
+  var solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
   inputs.files(solrTgzConfiguration)
+  inputs.property("isSlimImage", isImageSlim())
   dependsOn(solrTgzConfiguration)
 
   doLast {
@@ -220,7 +222,12 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
 
   // include/exclude options are designed for people who know their customizations will break some tests
   testCasesInclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(",")))
-  testCasesExclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
+  var excludeCases = new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
+  if (isImageSlim()) {
+    // The slim image does not contain the prometheus-exporter.
+    excludeCases.add("prometheus-exporter")
+  }
+  testCasesExclude.value(excludeCases)
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {
