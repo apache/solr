@@ -81,7 +81,6 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,75 +213,9 @@ public class Utils {
     return writer;
   }
 
-  private static class MapWriterJSONWriter extends JSONWriter {
-
-    public MapWriterJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
-    }
-
-    @Override
-    public void handleUnknownClass(Object o) {
-      // avoid materializing MapWriter / IteratorWriter to Map / List
-      // instead serialize them directly
-      if (o instanceof MapWriter) {
-        MapWriter mapWriter = (MapWriter) o;
-        startObject();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        int sz = mapWriter._size();
-        mapWriter._forEachEntry(
-            (k, v) -> {
-              if (first[0]) {
-                first[0] = false;
-              } else {
-                writeValueSeparator();
-              }
-              if (sz > 1) indent();
-              writeString(k.toString());
-              writeNameSeparator();
-              write(v);
-            });
-        endObject();
-      } else if (o instanceof IteratorWriter) {
-        IteratorWriter iteratorWriter = (IteratorWriter) o;
-        startArray();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        try {
-          iteratorWriter.writeIter(
-              new IteratorWriter.ItemWriter() {
-                @Override
-                public IteratorWriter.ItemWriter add(Object o) throws IOException {
-                  if (first[0]) {
-                    first[0] = false;
-                  } else {
-                    writeValueSeparator();
-                  }
-                  indent();
-                  write(o);
-                  return this;
-                }
-              });
-        } catch (IOException e) {
-          throw new RuntimeException("this should never happen", e);
-        }
-        endArray();
-      } else {
-        super.handleUnknownClass(o);
-      }
-    }
-  }
-
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    //    if (!(o instanceof List) && !(o instanceof Map)) {
-    //      if (o instanceof MapWriter) {
-    //        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-    //      } else if (o instanceof IteratorWriter) {
-    //        o = ((IteratorWriter) o).toList(new ArrayList<>());
-    //      }
-    //    }
     new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }

@@ -601,6 +601,31 @@ groups:
     types:
     - bugfix
   - !Todo
+    id: dependency_updates_changes
+    title: Add dependency updates to CHANGES.txt
+    description: Bulk add all 'solrbot' dependency updates since last release
+    depends: clean_git_checkout
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        stdout: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
+        tee: true
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: |
+          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
+          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
+  - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
     description: |-

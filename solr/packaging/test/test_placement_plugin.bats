@@ -34,7 +34,7 @@ teardown() {
   solr assert -c http://localhost:8983/solr -t 3000
   run solr create_collection -c COLL_NAME
   collection_exists COLL_NAME
-  assert_file_contains ${SOLR_LOGS_DIR}/solr.log 'Default replica placement plugin set in solr\.placementplugin\.default to affinity'
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to affinity'
 }
 
 @test "Affinity placement plugin using ENV" {
@@ -43,5 +43,5 @@ teardown() {
   solr assert -c http://localhost:8983/solr -t 3000
   run solr create_collection -c COLL_NAME
   collection_exists COLL_NAME
-  assert_file_contains ${SOLR_LOGS_DIR}/solr.log 'Default replica placement plugin set in solr\.placementplugin\.default to random'
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to random'
 }
