@@ -78,6 +78,8 @@ Bug Fixes
 * SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
   Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
 
+* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
