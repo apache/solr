@@ -90,6 +90,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -1564,15 +1565,10 @@ public class SolrCLI implements CLIO {
 
       echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
 
-      try (var solrClient = getSolrClient(solrUrl); ) {
-        Map<String, Object> json =
-            CoreAdminRequest.createCore(coreName, coreName, solrClient)
-                .getCoreStatus(coreName)
-                .asMap();
+      try (var solrClient = getSolrClient(solrUrl)) {
+        CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
         if (cli.hasOption(OPTION_VERBOSE.getOpt())) {
-          CharArr arr = new CharArr();
-          new JSONWriter(arr, 2).write(json);
-          echo(arr.toString());
+          echo(res.jsonStr());
           echo("\n");
         } else {
           echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
