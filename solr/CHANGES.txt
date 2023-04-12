@@ -105,6 +105,8 @@ Other Changes
 
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
+* SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
+
 ==================  9.2.0 ==================
 
 New Features
