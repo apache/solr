@@ -50,6 +50,8 @@ New Features
   them into SolrCloud shards.  The API is available at `POST /api/collections/collName/shards/shardName/install`
   (v2), or at `GET /solr/admin/collections?action=INSTALLSHARD` (v1). (Jason Gerlowski)
 
+* SOLR-16742: Produce a slim Solr binary and docker image, without the Prometheus Exporter and Solr Modules. (Houston Putman)
+
 Improvements
 ---------------------
 

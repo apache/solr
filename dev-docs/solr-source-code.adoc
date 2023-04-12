@@ -18,6 +18,9 @@ command to see the available options for building, testing, and packaging Solr.
 `./gradlew dev` will create a Solr executable suitable for development.
 cd to `./solr/packaging/build/dev` and run the `bin/solr` script
 to start Solr.
+It will also create a "slim" Solr executable based on the "slim" Solr distribution.
+You can find this environment at `./solr/packaging/build/dev-slim`.
+Use either `./gradlew devSlim` or `./gradlew devFull` to create just one/
 
 NOTE: `gradlew` is the "Gradle Wrapper" and will automatically download and
 start using the correct version of Gradle for Solr.
