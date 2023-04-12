@@ -35,6 +35,9 @@ There are three separate packages:
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
+Two docker images are provided that utilize the full and slim binaries.
+Please refer to the xref:solr-in-docker.adoc[] page for information on how to use them.
+
 == Preparing for Installation
 
 When getting started with Solr, all you need to do is extract the Solr distribution archive to a directory of your choosing.
