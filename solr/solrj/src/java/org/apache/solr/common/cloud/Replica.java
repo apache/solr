@@ -392,12 +392,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
           .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
           .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
           .putIfNotNull(ReplicaStateProps.STATE, getState().toString().toLowerCase(Locale.ROOT))
-          .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? Boolean.TRUE : null)
+          .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
           .putIfNotNull(
               ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
           .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        if (e.getKey().startsWith(ReplicaStateProps.PROPERTY_PREFIX)) {
+        if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
           w.putIfNotNull(e.getKey(), e.getValue());
         }
       }
@@ -430,5 +430,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
     String BASE_URL = "base_url";
     String PROPERTY_PREFIX = "property.";
     String FORCE_SET_STATE = "force_set_state";
+    Set<String> WELL_KNOWN_PROPS =
+        Set.of(
+            LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
   }
 }
