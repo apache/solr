@@ -84,7 +84,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String STATE_PROP = "state";
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
-  public static final String FORCE_SET_STATE_PROP = "force_set_state";
+  public static final String FORCE_SET_STATE_PROP = Replica.ReplicaStateProps.FORCE_SET_STATE;
   /** SolrCore name. */
   public static final String CORE_NAME_PROP = "core";
 
