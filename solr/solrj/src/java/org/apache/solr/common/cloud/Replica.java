@@ -78,13 +78,16 @@ public class Replica extends ZkNodeProps implements MapWriter {
      */
     public final String shortName;
 
+    public final String longName;
+
     State(String c) {
       this.shortName = c;
+      this.longName = super.toString().toLowerCase(Locale.ROOT);
     }
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ROOT);
+      return longName;
     }
 
     /** Converts the state string to a State instance. */
@@ -391,7 +394,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
       w.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
           .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
           .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
-          .putIfNotNull(ReplicaStateProps.STATE, getState().toString().toLowerCase(Locale.ROOT))
+          .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
           .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
           .putIfNotNull(
               ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
