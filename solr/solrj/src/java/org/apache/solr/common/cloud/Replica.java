@@ -373,7 +373,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   @Override
   public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    ew.put(name, _allPropsWriter());
+    _allPropsWriter().writeMap(ew);
   }
 
   private static final Map<String, State> STATES = new HashMap<>();
