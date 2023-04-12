@@ -32,7 +32,7 @@ teardown() {
 @test "create for non cloud mode" {
   run solr start
   run solr create -c COLL_NAME
-  assert_output --partial "Created core 'COLL_NAME'"
+  assert_output --partial "Created new core 'COLL_NAME'"
 }
 
 @test "create for cloud mode" {
