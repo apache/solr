@@ -4,6 +4,20 @@ The Apache Solr Github Repository is located here: https://github.com/apache/sol
 
 Please keep in mind that the project is community driven, with many members taking their own personal time to help respond to issue and review PRs. Be open to feedback and discussions and maintain a respectful approach. Read our https://solr.apache.org/community.html#code-of-conduct[code of conduct] for more.
 
+## Getting Your Feet Wet: Where to Begin?
+
+New to Solr? Want to find JIRA issues that you can work on without taking on the whole world?
+
+The Solr developers use the **newdev** label to mark issues that developers new to Solr might be interested in working on. The rough criteria used to make this selection are:
+
+* Nobody has done any work on the issue yet.
+* The issue is likely not controversial.
+* The issue is likely self-contained with limited scope.
+
+To see a list of open issues with the **newdev** label, look at this link https://s.apache.org/newdevsolr
+
+Note: Fixing these issues may require asking questions on the developer list to figure out what they mean - there is no guarantee that any of these will be either quick or easy.
+
 ## Setup for Contributing
 In order to get setup you will need a fork of the Apache Solr repository and an account in the ASF Jira (usable for all Apache projects).
 
