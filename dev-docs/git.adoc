@@ -31,32 +31,42 @@ The goal here is to provide a super-simple guide without getting off into the al
 
 Here are some recommended defaults to configure Globally for Git:
 
+```
 git config [--global] user.name <real-name>
 git config [--global] user.email <email>@apache.org
+```
 
-#Is this really recommended?
+*Is this really recommended?*
+
+```
 git config --global pull.rebase true
+```
 
 ## Simple commits
 
-For simple commits for simple JIRAs for simple people, here are a few ways of going about it.
-
-### method 1
+For simple commits for simple JIRAs for simple people...
 
 update your repo (perhaps with .gitconfig making this use rebasing)
 
 `git checkout origin/main`
+
 Make changes, get through `gradlew test` and `gradlew precommit` targets
+
 `git add`
+
 `git commit m "SOLR#### additional comments, often the title of the JIRA"` (commits locally, nothing in ASF yet)
+
 `git pull`
+
 `git push`
 
 
 Notes:
 
 at any time git status tells you whether you have anything local that isn't in sync with the branch you're on. This includes changes not committed locally, new files not added to the local repository.
-`git diff --stat origin/main` will show you committed (locally) but not pushed changes
+
+`git diff --stat origin/main` will show you committed (locally) but not pushed changes.
+
 If you omit the -m flag you'll find yourself in a vi-like editor where you can enter long commit messages.
 
 Backporting changes from `main` to a branch like `branch_9x`
@@ -64,9 +74,13 @@ Backporting changes from `main` to a branch like `branch_9x`
 The usual recommendation is to "cherry pick".
 
 `git checkout branch_9x`
+
 `git cherry-pick hash` (You should have seen the hash echoed when you committed to origin/master, if not and you included the SOLR-####, the JIRA will have it)
+
 Check patch, perhaps run `gradlew test` and `gradlew precommit` targets again
+
 `git commit` (note this may already preserve the comments from the hash you're cherry-picking from)
+
 `git push`
 
 
@@ -74,40 +88,44 @@ There has been some issue with Solr's CHANGES.txt file "cherry picking" all of t
 
 
 ## Working with Branches
-Creating a Branch
+
+### Creating a Branch
 
 Some feature work may be easier accomplished with a dedicated branch in Git. This allows several people to work together at once. Dawid's Git Page has details on how to create a branch and push it to the remote repository for others to pull and collaborate.
 
 Preferred practice is to name your branch jira/solr-XXXXX (where "solr-XXXXX" is the JIRA ID), unless your feature does not yet have a single JIRA that's appropriate. In that case, you can use feature/<name>. If you name your branch in this way, commits to the branch will not pollute the comments of your JIRA issue.
 
-Merging master with Your Branch
+### Merging main with Your Branch
 
 While working on your branch, you should periodically bring it up to date with "master". This will make eventual merging with master later simpler, because you resolve any conflicts as you go. To do this:
 
-git checkout master - first checkout master to be sure you have all the latest changes. If you are already on master, git pull to make sure you have the latest.
-git checkout <branch> - next checkout your branch.
-git merge master - this will apply all the changes in master that are not local to your branch.
+`git checkout main` - first checkout main to be sure you have all the latest changes. If you are already on main, git pull to make sure you have the latest.
+
+`git checkout <branch>` - next checkout your branch.
+
+`git merge main` - this will apply all the changes in master that are not local to your branch.
 
 
 At this point, you likely have conflicts. You need to resolve those, and there are a number of ways to do that.
 
 Once the conflicts have been resolved:
 
-git commit - add your files. The commit message may be already populated with a message, edit it as needed.
-git push - push the merged branch to the remote repository.
+`git commit` - add your files. The commit message may be already populated with a message, edit it as needed.
+
+`git push` - push the merged branch to the remote repository.
 
 
-Git may prompt you to git rebase --continue, if conflicts are resolved, that should end up in the same place, of prompting you to git push your final changes to the remote repository.
+Git may prompt you to `git rebase --continue`, if conflicts are resolved, that should end up in the same place, of prompting you to git push your final changes to the remote repository.
 
-You may want to consider doing git merge --squash master - this will merge all commits from master into a single commit locally. Then when you commit the changes to your branch, the branch history won't become polluted with commits that didn't originate from the branch.
+You may want to consider doing `git merge --squash main` - this will merge all commits from `main` into a single commit locally. Then when you commit the changes to your branch, the branch history won't become polluted with commits that didn't originate from the branch.
 
-Merging Your Branch with master
+### Merging Your Branch with main
 
-When your feature is complete, and you want to merge the branch to master, you definitely want to do a squash merge so all of the little commits you made in the branch don't pollute the project master history.
+When your feature is complete, and you want to merge the branch to main, you definitely want to do a squash merge so all of the little commits you made in the branch don't pollute the project history.
 
-You may also want to merge with master only after doing one last merge of master to your branch. This will allow you to resolve conflicts in your branch before having to deal with them on master, and will make this process cleaner.
+You may also want to merge with main only after doing one last merge of main to your branch. This will allow you to resolve conflicts in your branch before having to deal with them on main, and will make this process cleaner.
 
-Be sure you have run ant precommit on your branch to find any unexpected problems. Best to resolve those on your branch instead of waiting for Jenkins builds to fail, or other committers to notice problems. Running any tests you can is also preferred.
+Be sure you have run `gradlew precommit` on your branch to find any unexpected problems. Best to resolve those on your branch instead of waiting for Jenkins builds to fail, or other committers to notice problems. Running any tests you can is also preferred.
 
 To merge your branch with master:
 
