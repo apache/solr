@@ -52,13 +52,10 @@ update your repo (perhaps with .gitconfig making this use rebasing)
 
 Make changes, get through `gradlew test` and `gradlew precommit` targets
 
-`git add`
-
-`git commit m "SOLR#### additional comments, often the title of the JIRA"` (commits locally, nothing in ASF yet)
-
-`git pull`
-
-`git push`
+1. `git add`
+1. `git commit m "SOLR#### additional comments, often the title of the JIRA"` (commits locally, nothing in ASF yet)
+1. `git pull`
+1. `git push`
 
 
 Notes:
@@ -71,17 +68,15 @@ If you omit the -m flag you'll find yourself in a vi-like editor where you can e
 
 Backporting changes from `main` to a branch like `branch_9x`
 
-The usual recommendation is to "cherry pick".
+The usual recommendation is to "cherry pick":
 
-`git checkout branch_9x`
-
-`git cherry-pick hash` (You should have seen the hash echoed when you committed to origin/master, if not and you included the SOLR-####, the JIRA will have it)
+1. `git checkout branch_9x`
+1. `git cherry-pick <hash>` (You should have seen the hash echoed when you committed to origin/main, if not and you included the SOLR-####, the JIRA will have it)
 
 Check patch, perhaps run `gradlew test` and `gradlew precommit` targets again
 
-`git commit` (note this may already preserve the comments from the hash you're cherry-picking from)
-
-`git push`
+1. `git commit` (note this may already preserve the comments from the hash you're cherry-picking from)
+1. `git push`
 
 
 There has been some issue with Solr's CHANGES.txt file "cherry picking" all of the changes for trunk, so check this file especially.
@@ -97,22 +92,19 @@ Preferred practice is to name your branch jira/solr-XXXXX (where "solr-XXXXX" is
 
 ### Merging main with Your Branch
 
-While working on your branch, you should periodically bring it up to date with "master". This will make eventual merging with master later simpler, because you resolve any conflicts as you go. To do this:
+While working on your branch, you should periodically bring it up to date with "main". This will make eventual merging with main later simpler, because you resolve any conflicts as you go. To do this:
 
-`git checkout main` - first checkout main to be sure you have all the latest changes. If you are already on main, git pull to make sure you have the latest.
-
-`git checkout <branch>` - next checkout your branch.
-
-`git merge main` - this will apply all the changes in master that are not local to your branch.
+1. `git checkout main` - first checkout main to be sure you have all the latest changes. If you are already on main, git pull to make sure you have the latest.
+1. `git checkout <branch>` - next checkout your branch.
+1. `git merge main` - this will apply all the changes in main that are not local to your branch.
 
 
 At this point, you likely have conflicts. You need to resolve those, and there are a number of ways to do that.
 
 Once the conflicts have been resolved:
 
-`git commit` - add your files. The commit message may be already populated with a message, edit it as needed.
-
-`git push` - push the merged branch to the remote repository.
+1. `git commit` - add your files. The commit message may be already populated with a message, edit it as needed.
+1. `git push` - push the merged branch to the remote repository.
 
 
 Git may prompt you to `git rebase --continue`, if conflicts are resolved, that should end up in the same place, of prompting you to git push your final changes to the remote repository.
@@ -127,11 +119,11 @@ You may also want to merge with main only after doing one last merge of main to 
 
 Be sure you have run `gradlew precommit` on your branch to find any unexpected problems. Best to resolve those on your branch instead of waiting for Jenkins builds to fail, or other committers to notice problems. Running any tests you can is also preferred.
 
-To merge your branch with master:
+To merge your branch with main:
 
-* `git checkout <branch>` - make sure you git pull to have the absolute latest changes from the remote repository.
-* `git checkout main` - also, pull to make sure to git pull to have the absolute latest changes from the remote repository.
-* `git merge --squash <branch>` - this will merge your branch with master.
+1. `git checkout <branch>` - make sure you git pull to have the absolute latest changes from the remote repository.
+1. `git checkout main` - also, pull to make sure to git pull to have the absolute latest changes from the remote repository.
+1. `git merge --squash <branch>` - this will merge your branch with main.
 
 
 Hopefully you have minimal or maybe no conflicts. If so, resolve them. When you're ready:
