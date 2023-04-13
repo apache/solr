@@ -40,6 +40,26 @@ To build the final Solr artifacts run `./gradlew assemble`.
 
 Lastly, there is developer oriented documentation in `./dev-docs/README.adoc` that you may find useful in working with Solr.
 
+## Unit Tests
+
+Please make sure that all unit tests succeed before constructing your patch.
+
+> gradlew clean test
+
+
+After a while, if you see a success or failure message.
+
+Solr testing makes extensive use of randomization.
+Each test starts with a "seed" for the random number generator, allowing repeatability.
+We had one test, for instance, that only failed when the locale was set to a particular locale.
+Re-using the seed reproduces these kinds of cases.
+
+You'll find a "reproduce with..." message either on the screen or in the output that gives the exact command necessary.
+
+Carefully read the errors messages and check your code.
+If the test fails you may want to repeatedly rerun a single test as you debug and sort out any problems.
+In which case you could run the "reproduce with" command in the output.
+
 ## Additional Information
 
 You can review the https://github.com/apache/solr/blob/main/CONTRIBUTING.md[contribution guide] for information on how to contribute.
