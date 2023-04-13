@@ -26,9 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -283,10 +285,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
   }
 
   /** Helper class for MoreLikeThis that can be called from other request handlers */
+  @NotThreadSafe
   public static class MoreLikeThisHelper {
     final SolrIndexSearcher searcher;
     final MoreLikeThis mlt;
     final IndexReader reader;
+    final StoredFields storedFields;
     final SchemaField uniqueKeyField;
     final boolean needDocSet;
     Map<String, Float> boostFields;
@@ -294,6 +298,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     public MoreLikeThisHelper(SolrParams params, SolrIndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.reader = searcher.getIndexReader();
+      this.storedFields = this.reader.storedFields();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
       this.needDocSet = params.getBool(FacetParams.FACET, false);
 

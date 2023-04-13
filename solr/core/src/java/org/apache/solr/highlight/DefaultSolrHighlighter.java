@@ -37,6 +37,7 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
@@ -569,7 +570,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       fieldHighlights =
           doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvhContainer, reader, req);
     } else { // standard/default highlighter
-      fieldHighlights = doHighlightingByHighlighter(doc, docId, schemaField, query, reader, req);
+      fieldHighlights =
+          doHighlightingByHighlighter(doc, docId, schemaField, query, reader.termVectors(), req);
     }
     return fieldHighlights;
   }
@@ -655,7 +657,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId,
       SchemaField schemaField,
       Query query,
-      IndexReader reader,
+      TermVectors termVectors,
       SolrQueryRequest req)
       throws IOException {
     final SolrParams params = req.getParams();
@@ -695,7 +697,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? reader.termVectors().get(docId) : null;
+    final Fields tvFields = schemaField.storeTermOffsets() ? termVectors.get(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
