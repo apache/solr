@@ -88,7 +88,7 @@ There has been some issue with Solr's CHANGES.txt file "cherry picking" all of t
 
 Some feature work may be easier accomplished with a dedicated branch in Git. This allows several people to work together at once. Dawid's Git Page has details on how to create a branch and push it to the remote repository for others to pull and collaborate.
 
-Preferred practice is to name your branch jira/solr-XXXXX (where "solr-XXXXX" is the JIRA ID), unless your feature does not yet have a single JIRA that's appropriate. In that case, you can use feature/<name>. If you name your branch in this way, commits to the branch will not pollute the comments of your JIRA issue.
+Preferred practice is to name your branch `SOLR-XXXXX` (where "SOLR-XXXXX" is the JIRA ID), unless your feature does not yet have a single JIRA that's appropriate. In that case, you can use feature/<name>. If you name your branch in this way, commits to the branch will not pollute the comments of your JIRA issue.
 
 ### Merging main with Your Branch
 
