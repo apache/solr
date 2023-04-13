@@ -18,6 +18,8 @@ To see a list of open issues with the **newdev** label, look at this link https:
 
 Note: Fixing these issues may require asking questions on the developer list to figure out what they mean - there is no guarantee that any of these will be either quick or easy.
 
+Emailing individual committers with questions about specific Solr issues is discouraged. See http://people.apache.org/~hossman/#private_q.
+
 ## Setup for Contributing
 In order to get setup you will need a fork of the Apache Solr repository and an account in the ASF Jira (usable for all Apache projects).
 
