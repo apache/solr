@@ -46,9 +46,11 @@ Other Changes
 
 New Features
 ---------------------
-* Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
+* SOLR-16697: Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
   them into SolrCloud shards.  The API is available at `POST /api/collections/collName/shards/shardName/install`
   (v2), or at `GET /solr/admin/collections?action=INSTALLSHARD` (v1). (Jason Gerlowski)
+
+* SOLR-16742: Produce a slim Solr binary and docker image, without the Prometheus Exporter and Solr Modules. (Houston Putman)
 
 Improvements
 ---------------------
@@ -74,6 +76,12 @@ Improvements
 
 * SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
   `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
+
+* SOLR-16458: Solr's v2 "logging" APIs have been tweaked slightly to be more intuitive.  The single v2 endpoint that existing previously
+  (GET /api/node/logging) has been split into several different APIs.  Logger levels can be fetched or modified at
+  `GET /api/node/logging/levels` and `PUT /api/node/logging/levels`, respectively.  Log messages can be returned from a "listener" at
+  `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
+  `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
 
 Optimizations
 ---------------------
@@ -113,6 +121,8 @@ Bug Fixes
 * SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
   Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
 
+* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
@@ -139,6 +149,8 @@ Other Changes
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
 
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
+* SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
 
 ==================  9.2.0 ==================
 
