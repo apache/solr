@@ -119,11 +119,6 @@ $ git commit # Commit the fixes for conflicts. The message may be already popula
 $ git push fork branch # Push the merged feature branch to your fork
 ----
 
-Git may prompt you to `git rebase --continue`, if conflicts are resolved, that should end up in the same place, of prompting you to git push your final changes to the remote repository.
-
-You may want to consider doing `git merge --squash main` - this will merge all commits from `main` into a single commit locally.
-Then when you commit the changes to your branch, the branch history won't become polluted with commits that didn't originate from the branch.
-
 === Merging Your PR/Branch with main
 
 Once all development is done and you are ready to make your commit to `main`, the process should be easy.
@@ -236,5 +231,3 @@ $ git push apache branch_9x
 ----
 
 There has been some issue with Solr's CHANGES.txt file "cherry picking" all of the changes for trunk, so check this file especially.
-
-
