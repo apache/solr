@@ -60,6 +60,22 @@ Carefully read the errors messages and check your code.
 If the test fails you may want to repeatedly rerun a single test as you debug and sort out any problems.
 In which case you could run the "reproduce with" command in the output.
 
+### Frequently failing Tests
+
+There are some tests that fail sometimes on some systems, but run on Jenkins fine.
+It's always a good idea to be sure you can run the full test suite successfully before you start making code changes.
+Or keep an un-changed version of the code around to see if your changes are really to blame.
+
+One of the great things about Open Source is so many people run the tests on so many different systems.
+Occasionally you'll be the lucky person who has the system that wins the prize by having the environment that exposes a new failure mode, see the discussion at https://issues.apache.org/jira/browse/SOLR-3846 for an example.
+
+If you do find one of these, here's what you should do:
+
+1. If tests continue to fail, ask on the dev list if anyone else has seen the issue. This is the case where having the un-changed code helps. If the tests fail on both the changed and un-changed versions, discuss on the dev list whether the test should be disabled.
+1. If tests fail with your changes but not on un-altered code, well, you need to understand why. By far the most frequent reason is a bug or unintended side-effect of your code, but occasionally it's a test that needs modification. Again, the dev list is a good place to discuss this.
+1. Be very cautious about adding anything like @Ignore to a test. This is generally the wrong thing to do unless you get some consensus, and it'll surely generate "spirited debate".
+1. Of course any effort you want to make towards tracking down the reason a test fails in your particular environment is greatly appreciated!
+
 ## Additional Information
 
 You can review the https://github.com/apache/solr/blob/main/CONTRIBUTING.md[contribution guide] for information on how to contribute.
