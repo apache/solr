@@ -21,8 +21,8 @@ Thank you for your interest in contributing to the Apache Solr project. Solr con
 
 Your suggestions and comments can be made directly through the [Apache Solr JIRA](https://issues.apache.org/jira/projects/SOLR/issues).
 
-There are many ways to participate in and contribute to Solr, such as: code implementation, test implementation, documentation improvements.  Participating in the user mailing list, being active on Slack[https://s.apache.org/solr-slack] answering questions and providing feedback to developers are also powerful ways to contribute to Solr.
-The community is also always looking for moderators for the mailing lists.
+There are many ways to participate in and contribute to Solr, such as: code implementation, test implementation, documentation improvements.  Participating in the user mailing list, being active on [Slack](https://s.apache.org/solr-slack) answering questions and providing feedback to developers are also powerful ways to contribute to Solr.
+The community is also always looking for [moderators](#be-a-mailing-list-moderator) for the mailing lists.
 
 If you have any questions along the way, you can reach out to the community using the resources provided [here](https://solr.apache.org/community.html#mailing-lists-chat).
 
