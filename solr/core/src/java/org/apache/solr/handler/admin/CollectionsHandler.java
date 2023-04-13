@@ -47,7 +47,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -111,13 +110,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -292,17 +289,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return this.coreContainer;
   }
 
-  // TODO NOCOMMIT Delete this method as it should only ever be used in CreateCollectionAPI
-  protected void copyFromClusterProp(Map<String, Object> props, String prop) throws IOException {
-    if (props.get(prop) != null) return; // if it's already specified , return
-    Object defVal =
-        new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
-            .getClusterProperty(
-                List.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop),
-                null);
-    if (defVal != null) props.put(prop, String.valueOf(defVal));
-  }
-
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
@@ -372,15 +358,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Exception exp = overseerResponse.getException();
     if (exp != null) {
       rsp.setException(exp);
-    }
-
-    // Even if Overseer does wait for the collection to be created, it sees a different cluster
-    // state than this node, so this wait is required to make sure the local node Zookeeper watches
-    // fired and now see the collection.
-    if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-      if (rsp.getException() == null) {
-        waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
-      }
     }
   }
 
@@ -495,7 +472,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return collectionQueue.containsTaskWithRequestId(ASYNC, asyncId);
   }
 
-  // TODO NOCOMMIT - move this into some utility class
   /**
    * Copy prefixed params into a map. There must only be one value for these parameters.
    *
@@ -505,7 +481,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    * @param prefix The prefix to select.
    * @return the map supplied in the props parameter, modified to contain the prefixed params.
    */
-  public static Map<String, Object> copyPropertiesWithPrefix(
+  private static Map<String, Object> copyPropertiesWithPrefix(
       SolrParams params, Map<String, Object> props, String prefix) {
     Iterator<String> iter = params.getParameterNamesIterator();
     while (iter.hasNext()) {
@@ -542,42 +518,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return Category.ADMIN;
   }
 
-  public static void createSysConfigSet(CoreContainer coreContainer)
-      throws KeeperException, InterruptedException {
-    SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
-    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
-    cmdExecutor.ensureExists(
-        ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
-
-    try {
-      String path =
-          ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
-      byte[] data;
-      try (InputStream inputStream =
-          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml")) {
-        assert inputStream != null;
-        data = inputStream.readAllBytes();
-      }
-      assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
-      path =
-          ZkStateReader.CONFIGS_ZKNODE
-              + "/"
-              + CollectionAdminParams.SYSTEM_COLL
-              + "/solrconfig.xml";
-      try (InputStream inputStream =
-          CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml")) {
-        assert inputStream != null;
-        data = inputStream.readAllBytes();
-      }
-      assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
   private static void addStatusToResponse(
       NamedList<Object> results, RequestStatusState state, String msg) {
     SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
@@ -591,7 +531,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATE_OP(
         CREATE,
         (req, rsp, h) -> {
-          final SolrParams params = req.getParams();
           final CreateCollectionAPI.CreateCollectionRequestBody requestBody =
               CreateCollectionAPI.buildRequestBodyFromParams(req.getParams(), true);
           final CreateCollectionAPI createApi = new CreateCollectionAPI(h.coreContainer, req, rsp);

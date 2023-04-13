@@ -32,6 +32,8 @@ public class V2ApiConstants {
   /** Parameter name for the configset used by a collection */
   public static final String CONFIG = "config";
 
+  public static final String SHARD_NAMES = "shardNames";
+
   /** Property controlling whether 'nodeSet' should be shuffled before use. */
   public static final String SHUFFLE_NODES = "shuffleNodes";
 

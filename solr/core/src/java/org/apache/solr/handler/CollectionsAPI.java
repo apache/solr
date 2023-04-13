@@ -42,10 +42,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 /** All V2 APIs for collection management */
 public class CollectionsAPI {
 
-  public static final String V2_CREATE_COLLECTION_CMD = "create";
   public static final String V2_RESTORE_CMD = "restore-collection";
-  public static final String V2_CREATE_ALIAS_CMD = "create-alias";
-
   private final CollectionsHandler collectionsHandler;
 
   public final CollectionsCommands collectionsCommands = new CollectionsCommands();

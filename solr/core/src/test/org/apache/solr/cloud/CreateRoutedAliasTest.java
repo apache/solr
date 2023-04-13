@@ -95,7 +95,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
 
-    final String foo =
+    final String aliasJson =
         "{\n"
             + "    \"name\": \""
             + aliasName
@@ -128,9 +128,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             + "      }\n"
             + "    }\n"
             + "  }\n";
-    System.out.println("JEGERLOW: Foo is " + foo);
     HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
-    post.setEntity(new StringEntity(foo, ContentType.APPLICATION_JSON));
+    post.setEntity(new StringEntity(aliasJson, ContentType.APPLICATION_JSON));
     assertSuccess(post);
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");

@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -55,18 +56,27 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CATEGORY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.TIME;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.START;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+/**
+ * V2 API for creating an alias
+ *
+ * <p>This API is analogous to the v1 /admin/collections?action=CREATEALIAS command.
+ */
 @Path("/aliases")
 public class CreateAliasAPI extends AdminAPIBase {
   @Inject
@@ -193,7 +203,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     final CreateAliasRequestBody createBody = new CreateAliasRequestBody();
     createBody.name = params.required().get(NAME);
 
-    final String collections = params.get("collections");
+    final String collections = params.get(COLLECTIONS);
     createBody.collections =
         StringUtils.isEmpty(collections)
             ? new ArrayList<>()
@@ -207,10 +217,9 @@ public class CreateAliasAPI extends AdminAPIBase {
     }
 
     createBody.routers = new ArrayList<>();
-    // TODO NOCOMMIT constants for these values
-    if (typeStr.startsWith("Dimensional[")) {
+    if (typeStr.startsWith(RoutedAlias.DIMENSIONAL)) {
       final String commaSeparatedDimensions =
-          typeStr.substring("Dimensional[".length(), typeStr.length() - 1);
+          typeStr.substring(RoutedAlias.DIMENSIONAL.length(), typeStr.length() - 1);
       final String[] dimensions = commaSeparatedDimensions.split(",");
       if (dimensions.length > 2) {
         throw new SolrException(
@@ -220,10 +229,10 @@ public class CreateAliasAPI extends AdminAPIBase {
       }
 
       for (int i = 0; i < dimensions.length; i++) {
-        createBody.routers.add(createFromSolrParams(dimensions[i], params, "router." + i + "."));
+        createBody.routers.add(createFromSolrParams(dimensions[i], params, ROUTER_PREFIX + i + "."));
       }
     } else {
-      createBody.routers.add(createFromSolrParams(typeStr, params, "router."));
+      createBody.routers.add(createFromSolrParams(typeStr, params, ROUTER_PREFIX));
     }
 
     final SolrParams createCollectionParams =
@@ -235,10 +244,10 @@ public class CreateAliasAPI extends AdminAPIBase {
 
   public static RoutedAliasProperties createFromSolrParams(
       String type, SolrParams params, String propertyPrefix) {
-    if (type.startsWith("time")) {
-      return TimeRoutedAliasProperties.createFromSolrParams(params, "router.");
-    } else if (type.startsWith("category")) {
-      return CategoryRoutedAliasProperties.createFromSolrParams(params, "router.");
+    if (type.startsWith(TIME)) {
+      return TimeRoutedAliasProperties.createFromSolrParams(params, ROUTER_PREFIX);
+    } else if (type.startsWith(CATEGORY)) {
+      return CategoryRoutedAliasProperties.createFromSolrParams(params, ROUTER_PREFIX);
     } else {
       throw new SolrException(
           BAD_REQUEST,
@@ -253,7 +262,6 @@ public class CreateAliasAPI extends AdminAPIBase {
     @JsonProperty(required = true)
     public String name;
 
-    // TODO v1 takes this in as a comma-delimited string
     @JsonProperty("collections")
     public List<String> collections;
 

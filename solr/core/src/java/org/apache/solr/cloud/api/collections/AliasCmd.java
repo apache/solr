@@ -71,9 +71,8 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
     }
     createReqParams.set(NAME, createCollName);
     // a CollectionOperation reads params and produces a message (ZkNodeProps) that is supposed to
-    // be sent
-    // to the Overseer. Although we could create the Map without it, there are a fair amount of
-    // rules we don't want to reproduce.
+    // be sent to the Overseer. Although we could create the Map without it, there are a fair
+    // amount of rules we don't want to reproduce.
     final CreateCollectionAPI.CreateCollectionRequestBody createReqBody =
         CreateCollectionAPI.buildRequestBodyFromParams(createReqParams, true);
     final ZkNodeProps createMessage =

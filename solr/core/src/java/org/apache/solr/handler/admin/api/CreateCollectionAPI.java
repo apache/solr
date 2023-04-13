@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.SHARD_NAMES;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
@@ -38,12 +39,15 @@ import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STA
 import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.handler.admin.CollectionsHandler.waitForActiveCollection;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.schema.IndexSchema.FIELD;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,12 +60,14 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.apache.commons.lang3.StringUtils;
+
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -75,7 +81,14 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 
+/**
+ * V2 API for creating a SolrCLoud collection
+ *
+ * <p>This API is analogous to the v1 /admin/collections?action=CREATE command.
+ */
 @Path("/collections")
 public class CreateCollectionAPI extends AdminAPIBase {
 
@@ -100,8 +113,8 @@ public class CreateCollectionAPI extends AdminAPIBase {
     // We must always create a .system collection with only a single shard
     if (CollectionAdminParams.SYSTEM_COLL.equals(requestBody.name)) {
       requestBody.numShards = 1;
-      requestBody.shards = null;
-      CollectionsHandler.createSysConfigSet(coreContainer);
+      requestBody.shardNames = null;
+      createSysConfigSet(coreContainer);
     }
 
     validateRequestBody(requestBody);
@@ -126,6 +139,13 @@ public class CreateCollectionAPI extends AdminAPIBase {
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
 
+    // Even if Overseer does wait for the collection to be created, it sees a different cluster
+    // state than this node, so this wait is required to make sure the local node Zookeeper watches
+    // fired and now see the collection.
+    if (requestBody.async == null) {
+        waitForActiveCollection(requestBody.name, coreContainer, remoteResponse);
+    }
+
     return response;
   }
 
@@ -140,13 +160,17 @@ public class CreateCollectionAPI extends AdminAPIBase {
 
     SolrIdentifierValidator.validateCollectionName(reqBody.name);
 
-    if (StringUtils.isNotEmpty(reqBody.shards)) {
-      verifyShardsParam(reqBody.shards);
+    if (reqBody.shardNames != null && !reqBody.shardNames.isEmpty()) {
+      verifyShardsParam(reqBody.shardNames);
+    }
+
+    if (Boolean.FALSE.equals(reqBody.createReplicas)) {
+
     }
   }
 
-  private static void verifyShardsParam(String shardsParam) {
-    for (String shard : shardsParam.split(",")) {
+  private static void verifyShardsParam(List<String> shardNames) {
+    for (String shard : shardNames) {
       SolrIdentifierValidator.validateShardName(shard);
     }
   }
@@ -154,23 +178,27 @@ public class CreateCollectionAPI extends AdminAPIBase {
   public static ZkNodeProps createRemoteMessage(
       CoreContainer coreContainer, CreateCollectionRequestBody reqBody) throws IOException {
     final Map<String, Object> rawProperties = new HashMap<>();
-    rawProperties.put("fromApi", "true"); // TODO NOCOMMIT Wtf is this for?
+    rawProperties.put("fromApi", "true");
 
     rawProperties.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
     rawProperties.put(NAME, reqBody.name);
     rawProperties.put(COLL_CONF, reqBody.config);
     rawProperties.put(NUM_SLICES, reqBody.numShards);
     rawProperties.put(CREATE_NODE_SET_SHUFFLE, reqBody.shuffleNodes);
-    rawProperties.put(SHARDS_PROP, reqBody.shards);
+    rawProperties.put(SHARDS_PROP, reqBody.shardNames);
     rawProperties.put(PULL_REPLICAS, reqBody.pullReplicas);
     rawProperties.put(TLOG_REPLICAS, reqBody.tlogReplicas);
     rawProperties.put(WAIT_FOR_FINAL_STATE, reqBody.waitForFinalState);
     rawProperties.put(PER_REPLICA_STATE, reqBody.perReplicaState);
     rawProperties.put(ALIAS, reqBody.alias);
     rawProperties.put(ASYNC, reqBody.async);
-    // The remote message expects a single comma-delimited string, so nodeSet requires flattening
-    if (reqBody.nodeSet != null) {
-      rawProperties.put(CREATE_NODE_SET, String.join(",", reqBody.nodeSet));
+    if (reqBody.createReplicas == null || reqBody.createReplicas) {
+      // The remote message expects a single comma-delimited string, so nodeSet requires flattening
+      if (reqBody.nodeSet != null) {
+        rawProperties.put(CREATE_NODE_SET, String.join(",", reqBody.nodeSet));
+      }
+    } else {
+      rawProperties.put(CREATE_NODE_SET, "EMPTY");
     }
     // 'nrtReplicas' and 'replicationFactor' are both set on the remote message, despite being
     // functionally equivalent.
@@ -184,10 +212,8 @@ public class CreateCollectionAPI extends AdminAPIBase {
         rawProperties.put(REPLICATION_FACTOR, reqBody.nrtReplicas);
     }
 
-    // TODO Separate this out so it happens prior to message creation?  Might make it easier to
-    // test...
     // If needed, populate any 'null' creation parameters that support COLLECTIONPROP defaults.
-    if (reqBody.shards == null) {
+    if (reqBody.shardNames == null) {
       copyFromClusterProp(coreContainer, rawProperties, NUM_SLICES);
     }
     for (String prop : Set.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS)) {
@@ -217,10 +243,17 @@ public class CreateCollectionAPI extends AdminAPIBase {
     requestBody.config = params.get(COLL_CONF);
     requestBody.numShards = params.getInt(NUM_SLICES);
     if (params.get(CREATE_NODE_SET) != null) {
-      requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
+      final String commaDelimNodeSet = params.get(CREATE_NODE_SET);
+      if ("EMPTY".equals(commaDelimNodeSet)) {
+        requestBody.createReplicas = false;
+      } else {
+        requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
+      }
     }
     requestBody.shuffleNodes = params.getBool(CREATE_NODE_SET_SHUFFLE);
-    requestBody.shards = params.get(SHARDS_PROP);
+    requestBody.shardNames = params.get(SHARDS_PROP) != null ?
+            Arrays.stream(params.get(SHARDS_PROP).split(",")).collect(Collectors.toList()) :
+            new ArrayList<>();
     requestBody.tlogReplicas = params.getInt(ZkStateReader.TLOG_REPLICAS);
     requestBody.pullReplicas = params.getInt(ZkStateReader.PULL_REPLICAS);
     requestBody.nrtReplicas = params.getInt(ZkStateReader.NRT_REPLICAS);
@@ -270,6 +303,45 @@ public class CreateCollectionAPI extends AdminAPIBase {
     if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
 
+  private static void createSysConfigSet(CoreContainer coreContainer)
+          throws KeeperException, InterruptedException {
+    SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
+    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
+    cmdExecutor.ensureExists(
+            ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
+
+    try {
+      String path =
+              ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
+      byte[] data;
+      try (InputStream inputStream =
+                   CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
+      assert data != null && data.length > 0;
+      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+      path =
+              ZkStateReader.CONFIGS_ZKNODE
+                      + "/"
+                      + CollectionAdminParams.SYSTEM_COLL
+                      + "/solrconfig.xml";
+      try (InputStream inputStream =
+                   CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml")) {
+        assert inputStream != null;
+        data = inputStream.readAllBytes();
+      }
+      assert data != null && data.length > 0;
+      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  /**
+   * Request body for v2 "create collection" requests
+   */
   public static class CreateCollectionRequestBody implements JacksonReflectMapWriter {
     @JsonProperty(NAME)
     public String name;
@@ -286,13 +358,14 @@ public class CreateCollectionAPI extends AdminAPIBase {
     @JsonProperty("nodeSet") // V1 API uses 'createNodeSet'
     public List<String> nodeSet;
 
+    @JsonProperty("createReplicas") // v1 API uses createNodeSet=EMPTY
+    public Boolean createReplicas;
+
     @JsonProperty("shuffleNodes") // V1 API uses 'createNodeSet.shuffle'
     public Boolean shuffleNodes;
 
-    // TODO This is currently a comma-separate list of shard names.  We should change it to be an
-    // actual List<String> instead, and maybe rename to 'shardNames' or something similar
-    @JsonProperty(SHARDS_PROP)
-    public String shards;
+    @JsonProperty(SHARD_NAMES)
+    public List<String> shardNames;
 
     @JsonProperty(PULL_REPLICAS)
     public Integer pullReplicas;
@@ -347,6 +420,9 @@ public class CreateCollectionAPI extends AdminAPIBase {
             break;
           case V2ApiConstants.CONFIG:
             v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
+            break;
+          case SHARD_NAMES:
+            v2MapVals.put(SHARDS_PROP,  v2MapVals.remove(SHARD_NAMES));
             break;
           case V2ApiConstants.SHUFFLE_NODES:
             v2MapVals.put(
