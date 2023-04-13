@@ -413,7 +413,7 @@ public class ZkStateReader implements SolrCloseable {
         String path = event.getPath();
         if ((event.getType() == EventType.NodeCreated || event.getType() == EventType.NodeDeleted)
             && path.length() > collectionState.getZNode().length()
-            && path.startsWith(path)) {
+            && path.startsWith(collectionPath)) {
           collectionState =
               collectionState.copyWith(
                   PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
