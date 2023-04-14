@@ -168,6 +168,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       this.internalClient = false;
       this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
+      // The getParams() is not supported by this httpClient type!  Throws exception.
+      // this.soTimeout = builder.httpClient..getIntParameter(HttpClientUtil.PROP_SO_TIMEOUT,
+      // Math.toIntExact(builder.socketTimeoutMillis));
+      // this.connectionTimeout =
+      // builder.httpClient.getParams().getIntParameter(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+      // Math.toIntExact(builder.connectionTimeoutMillis));
 
     } else {
       this.internalClient = true;
@@ -192,6 +198,26 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
+  }
+
+  /**
+   * Returns the connection timeout, and should be based on httpClient overriding the solrClient.
+   * For unit testing.
+   *
+   * @return
+   */
+  int getConnectionTimeout() {
+    return this.connectionTimeout;
+  }
+
+  /**
+   * Returns the socket timeout, and should be based on httpClient overriding the solrClient. For
+   * unit testing.
+   *
+   * @return
+   */
+  int getSocketTimeout() {
+    return this.soTimeout;
   }
 
   /**
