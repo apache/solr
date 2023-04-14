@@ -82,6 +82,9 @@ Bug Fixes
 
 * SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
 
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
