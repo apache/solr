@@ -28,6 +28,9 @@ Other Changes
 ---------------------
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
