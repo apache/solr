@@ -185,7 +185,7 @@ public class DenseVectorField extends FloatPointField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     try {
       ArrayList<IndexableField> fields = new ArrayList<>();
-      VectorBuilder vectorBuilder = getVectorBuilder(value, VectorBuilder.BuilderPhase.INDEX);
+      DenseVectorParser vectorBuilder = getVectorBuilder(value, DenseVectorParser.BuilderPhase.INDEX);
 
       if (field.indexed()) {
         fields.add(createField(field, vectorBuilder));
@@ -215,7 +215,7 @@ public class DenseVectorField extends FloatPointField {
   @Override
   public IndexableField createField(SchemaField field, Object vectorValue) {
     if (vectorValue == null) return null;
-    VectorBuilder vectorBuilder = (VectorBuilder) vectorValue;
+    DenseVectorParser vectorBuilder = (DenseVectorParser) vectorValue;
     switch (vectorEncoding) {
       case BYTE:
         return new KnnByteVectorField(
@@ -255,192 +255,16 @@ public class DenseVectorField extends FloatPointField {
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
-  public VectorBuilder getVectorBuilder(Object inputValue, VectorBuilder.BuilderPhase phase) {
+  public DenseVectorParser getVectorBuilder(Object inputValue, DenseVectorParser.BuilderPhase phase) {
     switch (vectorEncoding) {
       case FLOAT32:
-        return new VectorBuilder.Float32VectorBuilder(dimension, inputValue, phase);
+        return new FloatDenseVectorParser(dimension, inputValue, phase);
       case BYTE:
-        return new VectorBuilder.ByteVectorBuilder(dimension, inputValue, phase);
+        return new ByteDenseVectorParser(dimension, inputValue, phase);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected state. Vector Encoding: " + vectorEncoding);
-    }
-  }
-
-  abstract static class VectorBuilder {
-
-    public static enum BuilderPhase {
-      INDEX,
-      QUERY
-    }
-
-    protected BuilderPhase builderPhase;
-
-    protected int dimension;
-    protected Object inputValue;
-
-    public float[] getFloatVector() {
-      throw new UnsupportedOperationException("Requested wrong vector type");
-    }
-
-    public byte[] getByteVector() {
-      throw new UnsupportedOperationException("Requested wrong vector type");
-    }
-
-    protected void parseVector() {
-      switch (builderPhase) {
-        case INDEX:
-          parseIndexVector();
-          break;
-        case QUERY:
-          parseQueryVector();
-          break;
-      }
-    }
-
-    protected void parseIndexVector() {
-      if (!(inputValue instanceof List)) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
-      }
-      List<?> inputVector = (List<?>) inputValue;
-      if (inputVector.size() != dimension) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "incorrect vector dimension."
-                + " The vector value has size "
-                + inputVector.size()
-                + " while it is expected a vector with size "
-                + dimension);
-      }
-
-      if (inputVector.get(0) instanceof CharSequence) {
-        for (int i = 0; i < dimension; i++) {
-          try {
-            addStringElement(inputVector.get(i).toString());
-          } catch (NumberFormatException e) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "incorrect vector element: '" + inputVector.get(i) + "'. " + errorMessage());
-          }
-        }
-      } else if (inputVector.get(0) instanceof Number) {
-        for (int i = 0; i < dimension; i++) {
-          addNumberElement((Number) inputVector.get(i));
-        }
-      } else {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
-      }
-    }
-
-    protected void parseQueryVector() {
-
-      String value = inputValue.toString();
-      if (!value.startsWith("[") || !value.endsWith("]")) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format. " + errorMessage());
-      }
-
-      String[] elements = value.substring(1, value.length() - 1).split(",");
-      if (elements.length != dimension) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "incorrect vector dimension. "
-                + "The vector value has size "
-                + elements.length
-                + " while it is expected a vector with size "
-                + dimension);
-      }
-
-      for (int i = 0; i < dimension; i++) {
-        try {
-          addStringElement(elements[i].trim());
-        } catch (NumberFormatException e) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "incorrect vector element: '" + elements[i] + "'. " + errorMessage());
-        }
-      }
-    }
-
-    protected abstract void addNumberElement(Number element);
-
-    protected abstract void addStringElement(String element);
-
-    protected abstract String errorMessage();
-
-    static class ByteVectorBuilder extends VectorBuilder {
-      private byte[] byteVector;
-      private int curPosition;
-
-      public ByteVectorBuilder(int dimension, Object inputValue, BuilderPhase builderPhase) {
-        this.dimension = dimension;
-        this.inputValue = inputValue;
-        this.builderPhase = builderPhase;
-        this.curPosition = 0;
-      }
-
-      @Override
-      public byte[] getByteVector() {
-        if (byteVector == null) {
-          byteVector = new byte[dimension];
-          parseVector();
-        }
-        return byteVector;
-      }
-
-      @Override
-      protected void addNumberElement(Number element) {
-        byteVector[curPosition++] = element.byteValue();
-      }
-
-      @Override
-      protected void addStringElement(String element) {
-        byteVector[curPosition++] = Byte.parseByte(element);
-      }
-
-      @Override
-      protected String errorMessage() {
-        return "The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)";
-      }
-    }
-
-    static class Float32VectorBuilder extends VectorBuilder {
-      private float[] vector;
-      private int curPosition;
-
-      public Float32VectorBuilder(int dimension, Object inputValue, BuilderPhase builderPhase) {
-        this.dimension = dimension;
-        this.inputValue = inputValue;
-        this.curPosition = 0;
-        this.builderPhase = builderPhase;
-      }
-
-      @Override
-      public float[] getFloatVector() {
-        if (vector == null) {
-          vector = new float[dimension];
-          parseVector();
-        }
-        return vector;
-      }
-
-      @Override
-      protected void addNumberElement(Number element) {
-        vector[curPosition++] = element.floatValue();
-      }
-
-      @Override
-      protected void addStringElement(String element) {
-        vector[curPosition++] = Float.parseFloat(element);
-      }
-
-      @Override
-      protected String errorMessage() {
-        return "The expected format is:'[f1,f2..f3]' where each element f is a float";
-      }
     }
   }
 
@@ -459,8 +283,8 @@ public class DenseVectorField extends FloatPointField {
   public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, Query filterQuery) {
 
-    VectorBuilder vectorBuilder =
-        getVectorBuilder(vectorToSearch, VectorBuilder.BuilderPhase.QUERY);
+    DenseVectorParser vectorBuilder =
+        getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
     switch (vectorEncoding) {
       case FLOAT32:

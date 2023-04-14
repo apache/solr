@@ -183,7 +183,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             SolrException.class,
             () -> {
               toTestFloatEncoding
-                  .getVectorBuilder("string", DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                  .getVectorBuilder("string", DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
     MatcherAssert.assertThat(
@@ -197,7 +197,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             SolrException.class,
             () -> {
               toTestByteEncoding
-                  .getVectorBuilder("string", DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                  .getVectorBuilder("string", DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
     MatcherAssert.assertThat(
@@ -211,7 +211,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             SolrException.class,
             () -> {
               toTestFloatEncoding
-                  .getVectorBuilder(1.5f, DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                  .getVectorBuilder(1.5f, DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
     MatcherAssert.assertThat(
@@ -225,7 +225,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             SolrException.class,
             () -> {
               toTestByteEncoding
-                  .getVectorBuilder("1", DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                  .getVectorBuilder("1", DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
     MatcherAssert.assertThat(
@@ -247,7 +247,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                           new DenseVectorField(3),
                           new DenseVectorField(4),
                           new DenseVectorField(5)),
-                      DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                          DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
     MatcherAssert.assertThat(
@@ -266,7 +266,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                           new DenseVectorField(3),
                           new DenseVectorField(4),
                           new DenseVectorField(5)),
-                      DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                          DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
     MatcherAssert.assertThat(
@@ -286,7 +286,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             () -> {
               toTestFloatEncoding
                   .getVectorBuilder(
-                      Arrays.asList(1.0f, 1.5f), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                      Arrays.asList(1.0f, 1.5f), DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
     MatcherAssert.assertThat(
@@ -301,7 +301,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             () -> {
               toTestByteEncoding
                   .getVectorBuilder(
-                      Arrays.asList(2, 1), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                      Arrays.asList(2, 1), DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
     MatcherAssert.assertThat(
@@ -320,7 +320,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               toTestFloatEncoding
                   .getVectorBuilder(
                       Arrays.asList("1.0f", "string", "string2"),
-                      DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                          DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
     MatcherAssert.assertThat(
@@ -336,7 +336,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               toTestByteEncoding
                   .getVectorBuilder(
                       Arrays.asList("1", "string", "string2"),
-                      DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                          DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
     MatcherAssert.assertThat(
@@ -356,18 +356,18 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         toTestFloatEncoding
             .getVectorBuilder(
-                Arrays.asList(1.1f, 2.2f, 3.3f), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                Arrays.asList("1.1", "2.2", "3.3"), DenseVectorParser.BuilderPhase.INDEX)
             .getFloatVector(),
         is(expected));
   }
 
   @Test
   public void parseVector_StringArrayList_shouldParseByteArray() {
-    BytesRef expected = newBytesRef(new byte[] {1, 2, 3});
+    byte[] expected = new byte[] {1, 2, 3};
     MatcherAssert.assertThat(
         toTestByteEncoding
             .getVectorBuilder(
-                Arrays.asList(1, 2, 3), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                Arrays.asList("1", "2", "3"), DenseVectorParser.BuilderPhase.INDEX)
             .getByteVector(),
         is(expected));
   }
@@ -382,7 +382,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         toTestFloatEncoding
             .getVectorBuilder(
-                Arrays.asList(1.7d, 5.4d, 6.6d), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                Arrays.asList(1.7d, 5.4d, 6.6d), DenseVectorParser.BuilderPhase.INDEX)
             .getFloatVector(),
         is(expected));
   }
@@ -399,24 +399,24 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     MatcherAssert.assertThat(
         toTestFloatEncoding
             .getVectorBuilder(
-                Arrays.asList(5.5f, 7.7f, 9.8f), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                Arrays.asList(5.5f, 7.7f, 9.8f), DenseVectorParser.BuilderPhase.INDEX)
             .getFloatVector(),
         is(expected));
   }
 
   @Test
   public void parseVector_IntArrayList_shouldParseByteArray() {
-    BytesRef expected = new BytesRef(new byte[] {5, 7, 9});
+    byte[] expected = new byte[] {5, 7, 9};
     MatcherAssert.assertThat(
         toTestByteEncoding
             .getVectorBuilder(
-                Arrays.asList(5, 7, 9), DenseVectorField.VectorBuilder.BuilderPhase.INDEX)
+                Arrays.asList(5, 7, 9), DenseVectorParser.BuilderPhase.INDEX)
             .getByteVector(),
         is(expected));
   }
 
   @Test
-  public void indexing_incorrectVectorFormat_shouldThrowException() throws Exception {
+  public void indexing_notAVectorValue_shouldThrowException() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
@@ -464,7 +464,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void query_floatEncoded_storedField_shouldBeReturnedInResults() throws Exception {
+  public void query_vectorFloatEncoded_storedField_shouldBeReturnedInResults() throws Exception {
     try {
       initCore("solrconfig-basic.xml", "schema-densevector.xml");
 
@@ -477,13 +477,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertJQ(
           req("q", "id:0", "fl", "vector"), "/response/docs/[0]=={'vector':[1.1,2.1,3.1,4.1]}");
 
-      assertQ(
-          req("q", "id:0", "fl", "vector"),
-          "*[count(//doc)=1]",
-          "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.1 + "']",
-          "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.1 + "']",
-          "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.1 + "']",
-          "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.1 + "']");
     } finally {
       deleteCore();
     }
@@ -692,7 +685,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "0");
-      doc.addField("vector_byte_encoding", Arrays.asList(127.5, 6.6, 7.7, 8.8));
+      doc.addField("vector_byte_encoding", Arrays.asList(128, 6, 7, 8));
 
       RuntimeException thrown =
           assertThrows(
@@ -705,16 +698,16 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[127.5, 6.6, 7.7, 8.8]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[128, 6, 7, 8]'"));
 
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
-              "incorrect vector element: '127.5'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+              "incorrect vector element: '128'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
 
       SolrInputDocument doc1 = new SolrInputDocument();
       doc1.addField("id", "1");
-      doc1.addField("vector_byte_encoding", Arrays.asList(1.0, -128.3, 7.7, 8.8));
+      doc1.addField("vector_byte_encoding", Arrays.asList(1, -129, 7, 8));
 
       thrown =
           assertThrows(
@@ -727,11 +720,42 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       MatcherAssert.assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1.0, -128.3, 7.7, 8.8]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1, -129, 7, 8]'"));
       MatcherAssert.assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
-              "incorrect vector element: '1.0'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+              "incorrect vector element: '-129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorByteEncoding_shouldRaiseExceptionWithFloatValues()
+          throws Exception {
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector_byte_encoding", Arrays.asList(14.3, 6.2, 7.2, 8.1));
+
+      RuntimeException thrown =
+              assertThrows(
+                      "Incorrect elements should throw an exception",
+                      SolrException.class,
+                      () -> {
+                        assertU(adoc(doc));
+                      });
+
+      MatcherAssert.assertThat(
+              thrown.getCause().getMessage(),
+              is(
+                      "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[14.3, 6.2, 7.2, 8.1]'"));
+
+      MatcherAssert.assertThat(
+              thrown.getCause().getCause().getMessage(),
+              is(
+                      "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
     } finally {
       deleteCore();
     }
