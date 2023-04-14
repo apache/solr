@@ -1271,12 +1271,13 @@ public class SolrCLI implements CLIO {
           final int clamPeriodForStatusPollMs = 1000;
           Thread.sleep(clamPeriodForStatusPollMs);
         }
-        NamedList<Object> existsCheckResult = CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status =
-          (NamedList)existsCheckResult.get("status");
+        NamedList<Object> existsCheckResult =
+            CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
+        NamedList<Object> status = (NamedList) existsCheckResult.get("status");
         NamedList<Object> coreStatus = (NamedList) status.get(coreName);
-        Map<String, Object> failureStatus = (Map<String, Object>) existsCheckResult.get("initFailures");
-        String errorMsg = (String)failureStatus.get(coreName);
+        Map<String, Object> failureStatus =
+            (Map<String, Object>) existsCheckResult.get("initFailures");
+        String errorMsg = (String) failureStatus.get(coreName);
         final boolean hasName = coreStatus != null && coreStatus.asMap().containsKey(NAME);
         exists = hasName || errorMsg != null;
         wait = hasName && errorMsg == null && "true".equals(coreStatus.get("isLoading"));
