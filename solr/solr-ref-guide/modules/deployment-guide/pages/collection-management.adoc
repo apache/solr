@@ -2242,3 +2242,317 @@ The primary use-case is to redistribute the leader role if there are a large num
 Rebalancing will likely not improve performance unless the imbalance of leadership roles is measured in multiples of 10.
 
 NOTE: The BALANCESHARDUNIQUE command that distributes the preferredLeader property does not guarantee perfect distribution and in some collection topologies it is impossible to make that guarantee.
+
+[[createsnapshot]]
+== CREATESNAPSHOT: Create a snapshot of a collection
+
+Creates a snapshot of a specified collection.
+
+=== CREATESNAPSHOT Example
+
+*Input*
+
+The following API command creates a snapshot of a specified collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createsnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CREATESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
+----
+====
+
+[example.tab-pane#v2createsnapshot]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+  {
+    "followAliases": true,
+    "asyncId": "someAsyncId"
+  }
+'
+----
+====
+--
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 214
+  },
+  "requestid": "someAsyncId"
+  "collection": "techproducts",
+  "snapshot": "snapshot0",
+  "followAliases": true
+}
+----
+
+=== CREATESNAPSHOT Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to create a snapshot for.
+
+`snapshot`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the snapshot to create for the collection.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that treats the collection parameter as an alias for the actual collection name to be resolved.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+[[listsnapshots]]
+== LISTSNAPSHOTS: List all snapshots for a collection
+
+Lists all the snapshots taken of a collection.
+
+=== LISTSNAPSHOTS Example
+
+*Input*
+
+The following API command lists all the snapshots taken of a collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listsnapshots]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts
+----
+====
+
+[example.tab-pane#v2listsnapshots]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/techproducts/snapshots
+----
+====
+--
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "snapshots": {
+    "snapshot0": {
+      "name": "snapshot0",
+      "status": "Successful",
+      "creationDate": 1677985318116,
+      "replicaSnapshots": [
+        {
+          "coreName": "techproducts_shard1_replica_n6",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard1_replica_n6/data/index/",
+          "generationNumber": 2,
+          "leader": true,
+          "shardId": "shard1",
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard1_replica_n2",
+          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard1_replica_n2/data/index/",
+          "generationNumber": 2,
+          "leader": false,
+          "shardId": "shard1",
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard2_replica_n4",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard2_replica_n4/data/index/",
+          "generationNumber": 6,
+          "leader": true,
+          "shardId": "shard2",
+          "files": [
+            "segments_6"
+          ]
+        },
+        {
+          "coreName": "techproducts_shard2_replica_n1",
+          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard2_replica_n1/data/index/",
+          "generationNumber": 6,
+          "leader": false,
+          "shardId": "shard2",
+          "files": [
+            "segments_6"
+          ]
+        }
+      ],
+      "shards": [
+        "shard2",
+        "shard1"
+      ]
+    }
+  }
+}
+
+----
+
+=== LISTSNAPSHOTS Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to create a snapshot for.
+
+[[deletesnapshot]]
+== DELETESNAPSHOT: Delete a snapshot taken of a collection
+
+Deletes a snapshot taken of a specified collection.
+
+=== DELETESNAPSHOT Example
+
+*Input*
+
+The following API command deletes a snapshot taken of a collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletesnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESNAPSHOT&collection=techproducts&commitName=snapshot0&followAliases=true&async=someAsyncId
+----
+====
+
+[example.tab-pane#v2deletesnapshot]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts/snapshots/snapshot0?followAliases=true&async=someAsyncId
+----
+====
+--
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 20
+  },
+  "requestid": "someAsyncId",
+  "collection": "techproducts",
+  "snapshot": "snapshot0",
+  "followAliases": true
+}
+----
+
+=== DELETESNAPSHOT Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection to delete a snapshot from.
+
+`snapshot`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the snapshot to delete.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that treats the collectionName parameter as an alias for the actual collection name to be resolved.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
