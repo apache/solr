@@ -35,8 +35,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -51,7 +49,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
@@ -654,21 +651,6 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     final String collection1Url = jetty.getBaseUrl().toString() + "/collection1";
     try (Http2SolrClient client = new Http2SolrClient.Builder(collection1Url).build()) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
-    }
-  }
-
-  @Test
-  public void testUsesTimeoutProvidedByHttpClient() throws IOException {
-
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, 12345);
-    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 67890);
-    HttpClient httpClient = Http2SolrClient.Builder().build()
-    try (HttpSolrClient createdClient =
-                 new HttpSolrClient.Builder(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
-      assertEquals(createdClient.getHttpClient(), httpClient);
-      assertEquals(67890, createdClient.getConnectionTimeout());
-      assertEquals(12345, createdClient.getSocketTimeout());
     }
   }
 
