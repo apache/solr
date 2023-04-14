@@ -866,7 +866,7 @@ groups:
       DIST_BASE={{ dist_url_base }} && \
         RC_FOLDER={{ release_candidate_rc_folder }} && \
         docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-full \
-        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
+        --build-arg SOLR_DOWNLOAD_SERVER=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
         -t solr-rc:{{ release_version }}-{{ rc_number }}} && \
         docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-slim \
         --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}-slim.tgz \

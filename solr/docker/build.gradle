@@ -453,10 +453,10 @@ if (''.equals(releaseGpgFingerprint)) {
         exec {
           commandLine 'docker', 'run',
               '--cidfile', mockServerIdFile,
-              '--rm',
               '-d',
-              '-v', "${mockHttpdHome.absoluteFile}:/data",
+              '-v', "${mockHttpdHome.absoluteFile}:/data/${-> project.version}",
               '-w', '/data',
+              '-p', '9876:9876',
               'python:3-alpine', 'python', '-m', 'http.server', '9876'
         }
         try {
@@ -473,11 +473,10 @@ if (''.equals(releaseGpgFingerprint)) {
           exec {
             standardInput = file("${dockerfilesDirPath}/Dockerfile.official-${lowerVariant}").newDataInputStream()
             commandLine 'docker', 'build',
-                '--add-host', "mock-solr-dl-server:${mockServerIp}",
+                '--add-host', "mock-downloads.apache.org:${mockServerIp}",
                 '--no-cache', // force fresh downloads from our current network
                 "--iidfile", imageIdFileOfficial(variant),
-                '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${-> project.version}${distToSuffix(variant)}.tgz",
-                '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${-> project.version}${distToSuffix(variant)}.tgz",
+                '--build-arg', "SOLR_DOWNLOAD_SERVER=http://mock-downloads.apache.org:9876",
                 '--tag', officialDockerImageName(variant),
                 '-'
           }
