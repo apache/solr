@@ -400,7 +400,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
 
     public DocListAndSet getMoreLikeThis(
         int id, int start, int rows, List<Query> filters, int flags) throws IOException {
-      Document doc = reader.storedFields().document(id);
+      Document doc = this.storedFields.document(id);
       final Query boostedQuery = getBoostedMLTQuery(id);
 
       // exclude current document from results
