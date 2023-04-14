@@ -110,7 +110,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
     final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
-    requestBody.location = getLocation(repository, requestBody.location);
+    requestBody.location = getLocation(coreContainer, repository, requestBody.location);
     if (requestBody.incremental == null) {
       requestBody.incremental = Boolean.TRUE;
     }
@@ -198,7 +198,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
   }
 
-  private String getLocation(BackupRepository repository, String location) throws IOException {
+  public static String getLocation(CoreContainer coreContainer, BackupRepository repository, String location) throws IOException {
     location = repository.getBackupLocation(location);
     if (location != null) {
       return location;

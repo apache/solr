@@ -117,7 +117,7 @@ public class CreateCollectionAPI extends AdminAPIBase {
       createSysConfigSet(coreContainer);
     }
 
-    validateRequestBody(requestBody);
+    requestBody.validate();
     final ZkNodeProps remoteMessage = createRemoteMessage(coreContainer, requestBody);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
@@ -147,26 +147,6 @@ public class CreateCollectionAPI extends AdminAPIBase {
     }
 
     return response;
-  }
-
-  public static void validateRequestBody(CreateCollectionRequestBody reqBody) {
-    if (reqBody.replicationFactor != null
-        && reqBody.nrtReplicas != null
-        && reqBody.replicationFactor != reqBody.nrtReplicas) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
-    }
-
-    SolrIdentifierValidator.validateCollectionName(reqBody.name);
-
-    if (reqBody.shardNames != null && !reqBody.shardNames.isEmpty()) {
-      verifyShardsParam(reqBody.shardNames);
-    }
-
-    if (Boolean.FALSE.equals(reqBody.createReplicas)) {
-
-    }
   }
 
   private static void verifyShardsParam(List<String> shardNames) {
@@ -235,6 +215,7 @@ public class CreateCollectionAPI extends AdminAPIBase {
     return new ZkNodeProps(rawProperties);
   }
 
+  // TODO NOCOMMIT, move into REquestBody and rename 'fromV1Params'
   public static CreateCollectionRequestBody buildRequestBodyFromParams(SolrParams params, boolean nameRequired) {
     final CreateCollectionAPI.CreateCollectionRequestBody requestBody =
         new CreateCollectionAPI.CreateCollectionRequestBody();
@@ -393,6 +374,20 @@ public class CreateCollectionAPI extends AdminAPIBase {
 
     @JsonProperty("router")
     public RouterProperties router;
+
+    public void validate() {
+      if (replicationFactor != null && nrtReplicas != null && replicationFactor != nrtReplicas) {
+        throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+      }
+
+      SolrIdentifierValidator.validateCollectionName(name);
+
+      if (shardNames != null && !shardNames.isEmpty()) {
+        verifyShardsParam(shardNames);
+      }
+    }
 
     public void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix) {
       final Map<String, Object> v1Params = toMap(new HashMap<>());
