@@ -204,7 +204,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * Returns the connection timeout, and should be based on httpClient overriding the solrClient.
    * For unit testing.
    *
-   * @return
+   * @return the connection timeout
    */
   int getConnectionTimeout() {
     return this.connectionTimeout;
@@ -214,7 +214,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    * Returns the socket timeout, and should be based on httpClient overriding the solrClient. For
    * unit testing.
    *
-   * @return
+   * @return the socket timeout
    */
   int getSocketTimeout() {
     return this.soTimeout;
