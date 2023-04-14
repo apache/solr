@@ -185,7 +185,8 @@ public class DenseVectorField extends FloatPointField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     try {
       ArrayList<IndexableField> fields = new ArrayList<>();
-      DenseVectorParser vectorBuilder = getVectorBuilder(value, DenseVectorParser.BuilderPhase.INDEX);
+      DenseVectorParser vectorBuilder =
+          getVectorBuilder(value, DenseVectorParser.BuilderPhase.INDEX);
 
       if (field.indexed()) {
         fields.add(createField(field, vectorBuilder));
@@ -255,7 +256,8 @@ public class DenseVectorField extends FloatPointField {
    * org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double - {@link
    * org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
    */
-  public DenseVectorParser getVectorBuilder(Object inputValue, DenseVectorParser.BuilderPhase phase) {
+  public DenseVectorParser getVectorBuilder(
+      Object inputValue, DenseVectorParser.BuilderPhase phase) {
     switch (vectorEncoding) {
       case FLOAT32:
         return new FloatDenseVectorParser(dimension, inputValue, phase);
