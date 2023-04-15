@@ -48,6 +48,8 @@ Improvements
   `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
   `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
 
+* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
+
 Optimizations
 ---------------------
 
