@@ -69,7 +69,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
@@ -221,7 +220,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * Uses the SolrCLI config action to activate soft auto-commits for the getting started
    * collection.
    */
-  @SuppressWarnings("unchecked")
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
@@ -276,18 +274,18 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       // for all the cores have been done.
       boolean allGood = false;
       Map<String, Integer> curSoftCommitInterval = null;
-      for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+      for (int idx = 0; idx < 600 && !allGood; ++idx) {
         curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName, solrClient);
         // no point in even trying if they're not the same size!
         if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
           allGood = true;
           for (Map.Entry<String, Integer> currEntry : curSoftCommitInterval.entrySet()) {
-            if (currEntry.getValue().equals(maxTime) == false) {
+            if (!currEntry.getValue().equals(maxTime)) {
               allGood = false;
             }
           }
         }
-        if (allGood == false) {
+        if (!allGood) {
           Thread.sleep(100);
         }
       }
@@ -296,7 +294,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   // Collect all the autoSoftCommit intervals.
-  @SuppressWarnings("unchecked")
   private Map<String, Integer> getSoftAutocommitInterval(String collection, SolrClient solrClient)
       throws Exception {
     Map<String, Integer> ret = new HashMap<>();
