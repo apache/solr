@@ -21,7 +21,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
@@ -64,9 +63,7 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
     SolrClient client = new EmbeddedSolrServer(h.getCore());
 
     NamedList<Object> properties =
-        client.request(
-            new GenericSolrRequest(
-                SolrRequest.METHOD.GET, "/admin/info/properties", new ModifiableSolrParams()));
+        client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties"));
 
     return (NamedList<Object>) properties.get("system.properties");
   }

@@ -506,8 +506,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
-    String collectionListUrl = solrUrl + "/admin/collections?action=list";
-    if (!SolrCLI.safeCheckCollectionExists(collectionListUrl, collectionName)) {
+    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
       fail(
           "After running Solr cloud example, test collection '"
               + collectionName
