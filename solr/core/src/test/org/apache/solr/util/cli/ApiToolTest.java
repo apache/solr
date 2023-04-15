@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
 
-/** Unit test for SolrCLI's ApiTool */
 public class ApiToolTest extends SolrTestCase {
 
   @Test

@@ -41,6 +41,7 @@ import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.cli.ConfigSetUploadTool;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -417,7 +418,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           "-configsetsDir", configSetDir.toString(),
         };
 
-    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+    ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
     int res =
         tool.runTool(
