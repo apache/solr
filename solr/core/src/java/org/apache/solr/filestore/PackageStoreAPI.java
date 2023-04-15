@@ -362,26 +362,50 @@ public class PackageStoreAPI {
 
     private void writeRawFile(SolrQueryRequest req, SolrQueryResponse rsp, String path) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add(CommonParams.WT, FILE_STREAM);
-      req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-      rsp.add(
-          FILE_STREAM,
-          (SolrCore.RawWriter)
-              os ->
-                  packageStore.get(
-                      path,
-                      it -> {
-                        try {
-                          InputStream inputStream = it.getInputStream();
-                          if (inputStream != null) {
-                            inputStream.transferTo(os);
+      if ("json".equals(req.getParams().get(CommonParams.WT))) {
+        solrParams.add(CommonParams.WT, "json");
+        req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
+        try {
+          packageStore.get(
+              path,
+              it -> {
+                try {
+                  InputStream inputStream = it.getInputStream();
+                  if (inputStream != null) {
+                    rsp.addResponse(new String(inputStream.readAllBytes(), UTF_8));
+                  }
+                } catch (IOException e) {
+                  throw new SolrException(
+                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
+                }
+              },
+              false);
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Error getting file from path " + path);
+        }
+      } else {
+        solrParams.add(CommonParams.WT, FILE_STREAM);
+        req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
+        rsp.add(
+            FILE_STREAM,
+            (SolrCore.RawWriter)
+                os ->
+                    packageStore.get(
+                        path,
+                        it -> {
+                          try {
+                            InputStream inputStream = it.getInputStream();
+                            if (inputStream != null) {
+                              inputStream.transferTo(os);
+                            }
+                          } catch (IOException e) {
+                            throw new SolrException(
+                                SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + path);
                           }
-                        } catch (IOException e) {
-                          throw new SolrException(
-                              SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
-                        }
-                      },
-                      false));
+                        },
+                        false));
+      }
     }
   }
 
