@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.cli.HealthcheckTool;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,7 +193,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-collection", testCollectionName,
           "-zkHost", zkHost
         };
-    SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
+    HealthcheckTool tool = new HealthcheckTool();
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));

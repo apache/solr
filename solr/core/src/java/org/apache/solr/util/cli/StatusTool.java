@@ -1,0 +1,175 @@
+package org.apache.solr.util.cli;
+
+import java.io.PrintStream;
+import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.CLIO;
+import org.apache.solr.util.SolrCLI;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
+
+public class StatusTool extends ToolBase {
+  /** Get the status of a Solr server. */
+  public StatusTool() {
+    this(CLIO.getOutStream());
+  }
+
+  public StatusTool(PrintStream stdout) {
+    super(stdout);
+  }
+
+  @Override
+  public String getName() {
+    return "status";
+  }
+
+  @Override
+  public List<Option> getOptions() {
+    return List.of(
+        Option.builder("solr")
+            .argName("URL")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Address of the Solr Web application, defaults to: "
+                    + SolrCLI.DEFAULT_SOLR_URL
+                    + '.')
+            .build(),
+        Option.builder("maxWaitSecs")
+            .argName("SECS")
+            .hasArg()
+            .required(false)
+            .desc("Wait up to the specified number of seconds to see Solr running.")
+            .build());
+  }
+
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
+    String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
+    if (maxWaitSecs > 0) {
+      int solrPort = (new URL(solrUrl)).getPort();
+      echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
+      try {
+        waitToSeeSolrUp(solrUrl, maxWaitSecs);
+        echo("Started Solr server on port " + solrPort + ". Happy searching!");
+      } catch (TimeoutException timeout) {
+        throw new Exception(
+            "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
+      }
+    } else {
+      try {
+        CharArr arr = new CharArr();
+        new JSONWriter(arr, 2).write(getStatus(solrUrl));
+        echo(arr.toString());
+      } catch (Exception exc) {
+        if (SolrCLI.exceptionIsAuthRelated(exc)) {
+          throw exc;
+        }
+        if (SolrCLI.checkCommunicationError(exc)) {
+          // this is not actually an error from the tool as it's ok if Solr is not online.
+          CLIO.err("Solr at " + solrUrl + " not online.");
+        } else {
+          throw new Exception(
+              "Failed to get system information from " + solrUrl + " due to: " + exc);
+        }
+      }
+    }
+  }
+
+  public Map<String, Object> waitToSeeSolrUp(String solrUrl, int maxWaitSecs) throws Exception {
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      try {
+        return getStatus(solrUrl);
+      } catch (SSLPeerUnverifiedException exc) {
+        throw exc;
+      } catch (Exception exc) {
+        if (SolrCLI.exceptionIsAuthRelated(exc)) {
+          throw exc;
+        }
+        try {
+          Thread.sleep(2000L);
+        } catch (InterruptedException interrupted) {
+          timeout = 0; // stop looping
+        }
+      }
+    }
+    throw new TimeoutException(
+        "Did not see Solr at " + solrUrl + " come online within " + maxWaitSecs + " seconds!");
+  }
+
+  public Map<String, Object> getStatus(String solrUrl) throws Exception {
+    Map<String, Object> status = null;
+
+    if (!solrUrl.endsWith("/")) solrUrl += "/";
+
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+      NamedList<Object> systemInfo =
+          solrClient.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+      // convert raw JSON into user-friendly output
+      status = reportStatus(systemInfo, solrClient);
+    }
+
+    return status;
+  }
+
+  public Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
+      throws Exception {
+    Map<String, Object> status = new LinkedHashMap<>();
+
+    String solrHome = (String) info.get("solr_home");
+    status.put("solr_home", solrHome != null ? solrHome : "?");
+    status.put("version", (String) info.findRecursive("lucene", "solr-impl-version"));
+    status.put("startTime", info.findRecursive("jvm", "jmx", "startTime").toString());
+    status.put("uptime", SolrCLI.uptime((Long) info.findRecursive("jvm", "jmx", "upTimeMS")));
+
+    String usedMemory = (String) info.findRecursive("jvm", "memory", "used");
+    String totalMemory = (String) info.findRecursive("jvm", "memory", "total");
+    status.put("memory", usedMemory + " of " + totalMemory);
+
+    // if this is a Solr in solrcloud mode, gather some basic cluster info
+    if ("solrcloud".equals(info.get("mode"))) {
+      String zkHost = (String) info.get("zkHost");
+      status.put("cloud", getCloudStatus(solrClient, zkHost));
+    }
+
+    return status;
+  }
+
+  /**
+   * Calls the CLUSTERSTATUS endpoint in Solr to get basic status information about the SolrCloud
+   * cluster.
+   */
+  @SuppressWarnings("unchecked")
+  protected Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
+      throws Exception {
+    Map<String, String> cloudStatus = new LinkedHashMap<>();
+    cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
+
+    NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
+
+    List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
+    cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
+
+    Map<String, Object> collections =
+        ((NamedList) json.findRecursive("cluster", "collections")).asMap();
+    cloudStatus.put("collections", String.valueOf(collections.size()));
+
+    return cloudStatus;
+  }
+}

@@ -28,7 +28,6 @@ public class ApiToolTest extends SolrTestCase {
 
   @Test
   public void testParsingGetUrl() throws URISyntaxException {
-    SolrCLI.ApiTool apiTool = new SolrCLI.ApiTool();
 
     String urlWithPercent20SpaceDelimiter =
         "http://localhost:8983/solr/COLL_NAME/sql?stmt=select%20id%20from%20COLL_NAME%20limit%2010";
