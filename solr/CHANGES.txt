@@ -85,6 +85,9 @@ Improvements
 
 * SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
 
+* SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
+  `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
