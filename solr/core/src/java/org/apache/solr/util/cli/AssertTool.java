@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -48,7 +47,7 @@ public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static String message = null;
   private static boolean useExitCode = false;
-  private static Optional<Long> timeoutMs = Optional.empty();
+  private static Long timeoutMs = 1000l;
 
   public AssertTool() {
     this(CLIO.getOutStream());
@@ -182,7 +181,7 @@ public class AssertTool extends ToolBase {
       message = cli.getOptionValue("m");
     }
     if (cli.hasOption("t")) {
-      timeoutMs = Optional.of(Long.parseLong(cli.getOptionValue("t")));
+      timeoutMs = Long.parseLong(cli.getOptionValue("t"));
     }
     if (cli.hasOption("e")) {
       useExitCode = true;
@@ -222,13 +221,17 @@ public class AssertTool extends ToolBase {
   public static int assertSolrRunning(String url) throws Exception {
     StatusTool status = new StatusTool();
     try {
-      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+      status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
     } catch (Exception se) {
       if (SolrCLI.exceptionIsAuthRelated(se)) {
         throw se;
       }
       return exitOrException(
-          "Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+          "Solr is not running on url "
+              + url
+              + " after "
+              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+              + " seconds");
     }
     return 0;
   }
@@ -236,8 +239,7 @@ public class AssertTool extends ToolBase {
   public static int assertSolrNotRunning(String url) throws Exception {
     StatusTool status = new StatusTool();
     long timeout =
-        System.nanoTime()
-            + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
     try (SolrClient solrClient = SolrCLI.getSolrClient(url)) {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
@@ -250,7 +252,7 @@ public class AssertTool extends ToolBase {
     }
     while (System.nanoTime() < timeout) {
       try {
-        status.waitToSeeSolrUp(url, 1);
+        status.waitToSeeSolrUp(url, 1, TimeUnit.SECONDS);
         try {
           log.debug("Solr still up. Waiting before trying again to see if it was stopped");
           Thread.sleep(1000L);
@@ -265,13 +267,21 @@ public class AssertTool extends ToolBase {
       }
     }
     return exitOrException(
-        "Solr is still running at " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+        "Solr is still running at "
+            + url
+            + " after "
+            + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+            + " seconds");
   }
 
   public static int assertSolrRunningInCloudMode(String url) throws Exception {
     if (!isSolrRunningOn(url)) {
       return exitOrException(
-          "Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+          "Solr is not running on url "
+              + url
+              + " after "
+              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+              + " seconds");
     }
 
     if (!runningSolrIsCloud(url)) {
@@ -283,7 +293,11 @@ public class AssertTool extends ToolBase {
   public static int assertSolrNotRunningInCloudMode(String url) throws Exception {
     if (!isSolrRunningOn(url)) {
       return exitOrException(
-          "Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
+          "Solr is not running on url "
+              + url
+              + " after "
+              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+              + " seconds");
     }
 
     if (runningSolrIsCloud(url)) {
@@ -357,7 +371,7 @@ public class AssertTool extends ToolBase {
   private static boolean isSolrRunningOn(String url) throws Exception {
     StatusTool status = new StatusTool();
     try {
-      status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+      status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
       return true;
     } catch (Exception se) {
       if (SolrCLI.exceptionIsAuthRelated(se)) {
