@@ -152,7 +152,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           break;
         case 2:
           // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
           String requestBody =
               String.format(
                   Locale.ROOT,

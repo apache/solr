@@ -90,7 +90,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
-    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
+    HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
     post.setEntity(
         new StringEntity(
             "{\n"

@@ -211,6 +211,8 @@ import org.apache.solr.handler.admin.api.AliasPropertyAPI;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
+import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
@@ -230,6 +232,7 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollectionAPI;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
+import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -2047,6 +2050,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new CreateCollectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new CreateAliasAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RestoreCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CreateShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
