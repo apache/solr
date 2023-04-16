@@ -423,7 +423,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     int res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                tool.getName(), SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(),tool.getOptions(), args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
   }
 }

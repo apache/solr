@@ -372,7 +372,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         int status =
             tool.runTool(
                 SolrCLI.processCommandLineArgs(
-                    SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                    tool.getName(),tool.getOptions(), toolArgs));
 
         if (status == -1) {
           // maybe it's the port, try again
@@ -383,7 +383,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           status =
               tool.runTool(
                   SolrCLI.processCommandLineArgs(
-                      SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                          tool.getName(),tool.getOptions(), toolArgs));
         }
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
@@ -494,7 +494,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     try {
       tool.runTool(
           SolrCLI.processCommandLineArgs(
-              SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                  tool.getName(),tool.getOptions(), toolArgs));
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -560,7 +560,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String[] deleteArgs = new String[] {"-name", collectionName, "-solrUrl", solrUrl};
     deleteTool.runTool(
         SolrCLI.processCommandLineArgs(
-            SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
+                deleteTool.getName(),deleteTool.getOptions(), deleteArgs));
 
     // dump all the output written by the SolrCLI commands to stdout
     // System.out.println(toolOutput);
@@ -609,7 +609,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     int code =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+                    tool.getName(),tool.getOptions(), toolArgs));
     assertEquals("Execution should have failed with return code 1", 1, code);
   }
 }

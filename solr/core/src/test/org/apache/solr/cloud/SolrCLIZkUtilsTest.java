@@ -104,7 +104,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
     assertEquals("tool should have returned 0 for success ", 0, res);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig2");
@@ -125,7 +125,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
     assertTrue("tool should have returned non-zero for failure ", 0 != res);
 
     String content =
@@ -163,7 +163,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         downTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(downTool.getOptions()), args));
+                downTool.getName(), downTool.getOptions(), args));
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
@@ -190,7 +190,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         downTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(downTool.getOptions()), args));
+                downTool.getName(), downTool.getOptions(), args));
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
@@ -222,7 +222,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy from zk -> zk should have succeeded.", 0, res);
     verifyZnodesMatch("/configs/cp1", "/cp2");
 
@@ -243,7 +243,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(tmp, "/configs/cp1");
 
@@ -264,7 +264,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(tmp, "/configs/cp1");
 
@@ -284,7 +284,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp3");
 
@@ -304,7 +304,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp4");
 
@@ -317,7 +317,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertTrue("Copy should NOT have succeeded, recurse not specified.", 0 != res);
 
     // try with recurse = false
@@ -336,7 +336,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertTrue("Copy should NOT have succeeded, recurse set to false.", 0 != res);
 
     // NOTE: really can't test copying to '.' because the test framework doesn't allow altering the
@@ -353,7 +353,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should nave created intermediate directory locally.", 0, res);
     assertTrue(
         "File should have been copied to a directory successfully",
@@ -376,7 +376,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy up to intermediate file should have succeeded.", 0, res);
     assertTrue(
         "Should have created an intermediate node on ZK",
@@ -399,7 +399,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy up to named file should have succeeded.", 0, res);
     assertTrue(
         "Should NOT have created an intermediate node on ZK",
@@ -425,7 +425,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy to local named file should have succeeded.", 0, res);
     Path locPath = Paths.get(localNamed);
     assertTrue("Should have found file: " + localNamed, Files.exists(locPath));
@@ -452,7 +452,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy from somewhere in ZK to ZK root should have succeeded.", 0, res);
     assertTrue(
         "Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml", true));
@@ -474,7 +474,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp7/" + srcPathCheck.getFileName().toString());
 
@@ -500,7 +500,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     String content =
@@ -511,7 +511,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     tmp = createTempDir("cp8");
@@ -529,7 +529,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
@@ -552,7 +552,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     content =
@@ -579,7 +579,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path tmp2 = createTempDir("cp9");
@@ -598,7 +598,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     assertTrue("Empty files should NOT be copied down as directories", emptyDest.toFile().isFile());
@@ -620,7 +620,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Now copy it all back and make sure empty file is still a file when recursively copying.
@@ -639,7 +639,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         cpTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+                cpTool.getName(), cpTool.getOptions(), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path locEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
@@ -669,7 +669,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         mvTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
+                mvTool.getName(), mvTool.getOptions(), args));
     assertEquals("Move should have succeeded.", 0, res);
 
     // Now does the moved directory match the original on disk?
@@ -688,7 +688,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         mvTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
+                mvTool.getName(), mvTool.getOptions(), args));
     assertTrue("Move should NOT have succeeded with file: specified.", 0 != res);
 
     // Let's move it to yet another place with no zk: prefix.
@@ -702,7 +702,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         mvTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
+                mvTool.getName(), mvTool.getOptions(), args));
     assertEquals("Move should have succeeded.", 0, res);
 
     assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3", true));
@@ -720,7 +720,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         mvTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
+                mvTool.getName(), mvTool.getOptions(), args));
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
         "Should be able to move a single file",
@@ -739,7 +739,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         mvTool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(mvTool.getOptions()), args));
+                mvTool.getName(), mvTool.getOptions(), args));
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
         "Should be able to move a single file to a parent znode",
@@ -771,8 +771,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    String content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    String content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
@@ -789,8 +789,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
@@ -807,8 +807,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
@@ -825,8 +825,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
@@ -840,8 +840,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    content = baos.toString(StandardCharsets.UTF_8);
     assertEquals("List should have succeeded", res, 0);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
@@ -856,8 +856,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                tool.getName(), tool.getOptions(), args));
+    content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
@@ -884,7 +884,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
 
     assertTrue(
         "Should have failed to remove node with children unless -recurse is set to true", res != 0);
@@ -902,7 +902,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
 
     assertTrue(
         "Should have failed to remove node with children if -recurse is set to false", res != 0);
@@ -917,7 +917,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
     assertEquals("Should have removed node /configs/rm1", res, 0);
     assertFalse(
         "Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
@@ -933,7 +933,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
     assertEquals("Should have removed node /configs/rm2", res, 0);
     assertFalse(
         "Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
@@ -950,7 +950,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res =
         tool.runTool(
             SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+                tool.getName(), tool.getOptions(), args));
     assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
 

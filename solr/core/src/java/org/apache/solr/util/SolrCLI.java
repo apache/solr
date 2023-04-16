@@ -180,16 +180,7 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
-  /**
-   * @deprecated Use the method that takes a tool name as the first argument instead.
-   */
-  @Deprecated
-  public static CommandLine parseCmdLine(String[] args, List<Option> toolOptions) throws Exception {
-    return parseCmdLine(SolrCLI.class.getName(), args, toolOptions);
-  }
-
-  public static CommandLine parseCmdLine(String toolName, String[] args, List<Option> toolOptions)
-      throws Exception {
+  public static CommandLine parseCmdLine(String toolName, String[] args, List<Option> toolOptions) {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
     List<String> dashDList = new ArrayList<>();
@@ -205,7 +196,7 @@ public class SolrCLI implements CLIO {
 
     // process command-line args to configure this application
     CommandLine cli =
-        processCommandLineArgs(toolName, joinCommonAndToolOptions(toolOptions), toolArgs);
+        processCommandLineArgs(toolName, toolOptions, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -319,15 +310,11 @@ public class SolrCLI implements CLIO {
     Options options = new Options();
     options.addOption("help", false, "Print this message");
     options.addOption(OPTION_VERBOSE);
-    List<Option> toolOpts = joinCommonAndToolOptions(tool.getOptions());
+    List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
       options.addOption(toolOpt);
     }
     return options;
-  }
-
-  public static List<Option> joinCommonAndToolOptions(List<Option> toolOpts) {
-    return joinOptions(getCommonToolOptions(), toolOpts);
   }
 
   public static List<Option> joinOptions(List<Option> lhs, List<Option> rhs) {
@@ -340,14 +327,6 @@ public class SolrCLI implements CLIO {
     }
 
     return Stream.concat(lhs.stream(), rhs.stream()).collect(Collectors.toUnmodifiableList());
-  }
-
-  /**
-   * @deprecated Use the method that takes a tool name as the first argument instead.
-   */
-  @Deprecated
-  public static CommandLine processCommandLineArgs(List<Option> customOptions, String[] args) {
-    return processCommandLineArgs(SolrCLI.class.getName(), customOptions, args);
   }
 
   /** Parses the command-line arguments passed by the user. */

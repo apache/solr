@@ -297,7 +297,7 @@ public class RunExampleTool extends ToolBase {
           createTool.runTool(
               SolrCLI.processCommandLineArgs(
                   createTool.getName(),
-                  SolrCLI.joinCommonAndToolOptions(createTool.getOptions()),
+                  createTool.getOptions(),
                   createArgs));
       if (createCode != 0)
         throw new Exception(
@@ -525,22 +525,22 @@ public class RunExampleTool extends ToolBase {
     // update the config to enable soft auto-commit
     echo("\nEnabling auto soft-commits with maxTime 3 secs using the Config API");
     setCollectionConfigProperty(
-        solrUrl, collectionName, "updateHandler.autoSoftCommit.maxTime", "3000");
+        solrUrl, collectionName);
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
 
   protected void setCollectionConfigProperty(
-      String solrUrl, String collectionName, String propName, String propValue) {
+          String solrUrl, String collectionName) {
     ConfigTool configTool = new ConfigTool(stdout);
     String[] configArgs =
         new String[] {
           "-collection",
           collectionName,
           "-property",
-          propName,
+                "updateHandler.autoSoftCommit.maxTime",
           "-value",
-          propValue,
+                "3000",
           "-solrUrl",
           solrUrl
         };
@@ -550,30 +550,27 @@ public class RunExampleTool extends ToolBase {
       configTool.runTool(
           SolrCLI.processCommandLineArgs(
               configTool.getName(),
-              SolrCLI.joinCommonAndToolOptions(configTool.getOptions()),
+              configTool.getOptions(),
               configArgs));
     } catch (Exception exc) {
-      CLIO.err("Failed to update '" + propName + "' property due to: " + exc);
+      CLIO.err("Failed to update '" + "updateHandler.autoSoftCommit.maxTime" + "' property due to: " + exc);
     }
   }
 
   protected void waitToSeeLiveNodes(int maxWaitSecs, String zkHost, int numNodes) {
-    CloudSolrClient cloudClient = null;
-    try {
-      cloudClient =
-          new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build();
+    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
       cloudClient.connect();
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
       long timeout =
-          System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
+              System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
       while (System.nanoTime() < timeout && numLiveNodes < numNodes) {
         echo(
-            "\nWaiting up to "
-                + maxWaitSecs
-                + " seconds to see "
-                + (numNodes - numLiveNodes)
-                + " more nodes join the SolrCloud cluster ...");
+                "\nWaiting up to "
+                        + maxWaitSecs
+                        + " seconds to see "
+                        + (numNodes - numLiveNodes)
+                        + " more nodes join the SolrCloud cluster ...");
         try {
           Thread.sleep(2000);
         } catch (InterruptedException ie) {
@@ -584,23 +581,16 @@ public class RunExampleTool extends ToolBase {
       }
       if (numLiveNodes < numNodes) {
         echo(
-            "\nWARNING: Only "
-                + numLiveNodes
-                + " of "
-                + numNodes
-                + " are active in the cluster after "
-                + maxWaitSecs
-                + " seconds! Please check the solr.log for each node to look for errors.\n");
+                "\nWARNING: Only "
+                        + numLiveNodes
+                        + " of "
+                        + numNodes
+                        + " are active in the cluster after "
+                        + maxWaitSecs
+                        + " seconds! Please check the solr.log for each node to look for errors.\n");
       }
     } catch (Exception exc) {
       CLIO.err("Failed to see if " + numNodes + " joined the SolrCloud cluster due to: " + exc);
-    } finally {
-      if (cloudClient != null) {
-        try {
-          cloudClient.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
   }
 
@@ -663,7 +653,7 @@ public class RunExampleTool extends ToolBase {
         String.format(
             Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
 
-    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port, cli);
+    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port);
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
 
@@ -714,7 +704,7 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected Map<String, Object> checkPortConflict(
-      String solrUrl, File solrHomeDir, int port, CommandLine cli) {
+      String solrUrl, File solrHomeDir, int port) {
     // quickly check if the port is in use
     if (isPortAvailable(port)) return null; // not in use ... try to start
 
@@ -739,7 +729,7 @@ public class RunExampleTool extends ToolBase {
               "Solr is already setup and running on port "
                   + port
                   + " with status:\n"
-                  + arr.toString());
+                  + arr);
           echo(
               "\nIf this is not the example node you are trying to start, please choose a different port.");
           nodeStatus.put("baseUrl", solrUrl);
@@ -878,7 +868,7 @@ public class RunExampleTool extends ToolBase {
         createCollectionTool.runTool(
             SolrCLI.processCommandLineArgs(
                 createCollectionTool.getName(),
-                SolrCLI.joinCommonAndToolOptions(createCollectionTool.getOptions()),
+                createCollectionTool.getOptions(),
                 createArgs));
 
     if (createCode != 0)
@@ -894,9 +884,7 @@ public class RunExampleTool extends ToolBase {
 
     // not a built-in configset ... maybe it's a custom directory?
     configDir = new File(config);
-    if (configDir.isDirectory()) return true;
-
-    return false;
+    return configDir.isDirectory();
   }
 
   protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs) throws Exception {
@@ -916,7 +904,7 @@ public class RunExampleTool extends ToolBase {
               + " in "
               + mode
               + " mode with status:\n"
-              + arr.toString());
+              + arr);
 
     return nodeStatus;
   }
@@ -1018,7 +1006,6 @@ public class RunExampleTool extends ToolBase {
                           max,
                           defVal));
               inputAsInt = null;
-              continue;
             }
           }
 
