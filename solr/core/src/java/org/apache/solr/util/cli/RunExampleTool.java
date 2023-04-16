@@ -296,9 +296,7 @@ public class RunExampleTool extends ToolBase {
       int createCode =
           createTool.runTool(
               SolrCLI.processCommandLineArgs(
-                  createTool.getName(),
-                  createTool.getOptions(),
-                  createArgs));
+                  createTool.getName(), createTool.getOptions(), createArgs));
       if (createCode != 0)
         throw new Exception(
             "Failed to create " + collectionName + " using command: " + Arrays.asList(createArgs));
@@ -524,23 +522,21 @@ public class RunExampleTool extends ToolBase {
 
     // update the config to enable soft auto-commit
     echo("\nEnabling auto soft-commits with maxTime 3 secs using the Config API");
-    setCollectionConfigProperty(
-        solrUrl, collectionName);
+    setCollectionConfigProperty(solrUrl, collectionName);
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
 
-  protected void setCollectionConfigProperty(
-          String solrUrl, String collectionName) {
+  protected void setCollectionConfigProperty(String solrUrl, String collectionName) {
     ConfigTool configTool = new ConfigTool(stdout);
     String[] configArgs =
         new String[] {
           "-collection",
           collectionName,
           "-property",
-                "updateHandler.autoSoftCommit.maxTime",
+          "updateHandler.autoSoftCommit.maxTime",
           "-value",
-                "3000",
+          "3000",
           "-solrUrl",
           solrUrl
         };
@@ -549,28 +545,31 @@ public class RunExampleTool extends ToolBase {
     try {
       configTool.runTool(
           SolrCLI.processCommandLineArgs(
-              configTool.getName(),
-              configTool.getOptions(),
-              configArgs));
+              configTool.getName(), configTool.getOptions(), configArgs));
     } catch (Exception exc) {
-      CLIO.err("Failed to update '" + "updateHandler.autoSoftCommit.maxTime" + "' property due to: " + exc);
+      CLIO.err(
+          "Failed to update '"
+              + "updateHandler.autoSoftCommit.maxTime"
+              + "' property due to: "
+              + exc);
     }
   }
 
   protected void waitToSeeLiveNodes(int maxWaitSecs, String zkHost, int numNodes) {
-    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+    try (CloudSolrClient cloudClient =
+        new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
       cloudClient.connect();
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
       long timeout =
-              System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
+          System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
       while (System.nanoTime() < timeout && numLiveNodes < numNodes) {
         echo(
-                "\nWaiting up to "
-                        + maxWaitSecs
-                        + " seconds to see "
-                        + (numNodes - numLiveNodes)
-                        + " more nodes join the SolrCloud cluster ...");
+            "\nWaiting up to "
+                + maxWaitSecs
+                + " seconds to see "
+                + (numNodes - numLiveNodes)
+                + " more nodes join the SolrCloud cluster ...");
         try {
           Thread.sleep(2000);
         } catch (InterruptedException ie) {
@@ -581,13 +580,13 @@ public class RunExampleTool extends ToolBase {
       }
       if (numLiveNodes < numNodes) {
         echo(
-                "\nWARNING: Only "
-                        + numLiveNodes
-                        + " of "
-                        + numNodes
-                        + " are active in the cluster after "
-                        + maxWaitSecs
-                        + " seconds! Please check the solr.log for each node to look for errors.\n");
+            "\nWARNING: Only "
+                + numLiveNodes
+                + " of "
+                + numNodes
+                + " are active in the cluster after "
+                + maxWaitSecs
+                + " seconds! Please check the solr.log for each node to look for errors.\n");
       }
     } catch (Exception exc) {
       CLIO.err("Failed to see if " + numNodes + " joined the SolrCloud cluster due to: " + exc);
@@ -703,8 +702,7 @@ public class RunExampleTool extends ToolBase {
     return getNodeStatus(solrUrl, maxWaitSecs);
   }
 
-  protected Map<String, Object> checkPortConflict(
-      String solrUrl, File solrHomeDir, int port) {
+  protected Map<String, Object> checkPortConflict(String solrUrl, File solrHomeDir, int port) {
     // quickly check if the port is in use
     if (isPortAvailable(port)) return null; // not in use ... try to start
 
@@ -725,11 +723,7 @@ public class RunExampleTool extends ToolBase {
         if (solrHomePath.equals(solr_home)) {
           CharArr arr = new CharArr();
           new JSONWriter(arr, 2).write(nodeStatus);
-          echo(
-              "Solr is already setup and running on port "
-                  + port
-                  + " with status:\n"
-                  + arr);
+          echo("Solr is already setup and running on port " + port + " with status:\n" + arr);
           echo(
               "\nIf this is not the example node you are trying to start, please choose a different port.");
           nodeStatus.put("baseUrl", solrUrl);
@@ -867,9 +861,7 @@ public class RunExampleTool extends ToolBase {
     int createCode =
         createCollectionTool.runTool(
             SolrCLI.processCommandLineArgs(
-                createCollectionTool.getName(),
-                createCollectionTool.getOptions(),
-                createArgs));
+                createCollectionTool.getName(), createCollectionTool.getOptions(), createArgs));
 
     if (createCode != 0)
       throw new Exception(
@@ -892,7 +884,8 @@ public class RunExampleTool extends ToolBase {
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
     URL solrURL = new URL(solrUrl);
-    Map<String, Object> nodeStatus = statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs);
+    Map<String, Object> nodeStatus =
+        statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);

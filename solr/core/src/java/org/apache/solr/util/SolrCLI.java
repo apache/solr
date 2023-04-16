@@ -195,8 +195,7 @@ public class SolrCLI implements CLIO {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli =
-        processCommandLineArgs(toolName, toolOptions, toolArgs);
+    CommandLine cli = processCommandLineArgs(toolName, toolOptions, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
