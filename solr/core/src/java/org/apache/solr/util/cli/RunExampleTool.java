@@ -515,7 +515,7 @@ public class RunExampleTool extends ToolBase {
     if (solrUrl.endsWith("/")) solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
 
     // wait until live nodes == numNodes
-    waitToSeeLiveNodes(/* max wait */ zkHost, numNodes);
+    waitToSeeLiveNodes(zkHost, numNodes);
 
     // create the collection
     String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
@@ -555,6 +555,7 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
+  /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
     try (CloudSolrClient cloudClient =
         new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
@@ -659,7 +660,7 @@ public class RunExampleTool extends ToolBase {
     if (isWindows) {
       // On Windows, the execution doesn't return, so we have to execute async
       // and when calling the script, it seems to be inheriting the environment that launched this
-      // app so we have to prune out env vars that may cause issues
+      // app, so we have to prune out env vars that may cause issues
       Map<String, String> startEnv = new HashMap<>();
       Map<String, String> procEnv = EnvironmentUtils.getProcEnvironment();
       if (procEnv != null) {
@@ -778,7 +779,8 @@ public class RunExampleTool extends ToolBase {
                 "Please provide a name for your new collection: [" + collectionName + "] ",
                 collectionName);
 
-        // Test for existence and then prompt to either create another or skip the create step
+        // Test for existence and then prompt to either create another collection or skip the
+        // creation step
         if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
           echo("\nCollection '" + collectionName + "' already exists!");
           int oneOrTwo =
@@ -936,7 +938,7 @@ public class RunExampleTool extends ToolBase {
 
   protected boolean isPortAvailable(int port) {
     try (Socket s = new Socket("localhost", port)) {
-      assert s != null;
+      assert s != null; // To allow compilation..
       return false;
     } catch (IOException e) {
       return true;
