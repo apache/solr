@@ -1,9 +1,13 @@
 # IDEs
 
+Both Intellij and Eclipse are supported out of the box.
+
+For Solr 9x and later, executing "gradlew tasks" will list a section "IDE tasks" to get you started.
+The dev mailing list or the slack solr-dev channel are good places for detailed questions.
+
 ## IntelliJ IDEA
 
 Importing the project as a gradle project should just run out of the box.
-
 
 ## Eclipse
 

@@ -18,7 +18,7 @@
 
 Thank you for your interest in contributing to the Solr OSS Community! Solr continues to improve via the many contributions of developers around the world and new contributions are welcomed and encouraged.
 
-Instructions for how to contribute are located in GitHub alongside the Solr code here: https://github.com/apache/solr/blob/main/CONTIRBUTING.md.
+Instructions for how to contribute are located in GitHub alongside the Solr code here: https://github.com/apache/solr/blob/main/CONTRIBUTING.md.
 
 You can also get in contact with the community for additional assistance using the various avenues here: https://solr.apache.org/community.html.
 

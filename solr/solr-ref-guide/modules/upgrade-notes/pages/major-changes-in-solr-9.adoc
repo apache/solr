@@ -65,6 +65,11 @@ In Solr 8, it was possible to add docValues to a schema without re-indexing via 
 Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.3
+=== Binary Releases
+* Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
+The xref:deployment-guide:installing-solr.adoc#available-solr-packages[Installing Solr] page provides information on what is included in each.
+Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site for information on how to download these offerings.
+
 === Shard Management
 * Solr now provides an xref:deployment-guide:shard-management.adoc#installshard[INSTALLSHARD] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 

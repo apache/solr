@@ -187,6 +187,30 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                 collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
+        CollectionAdminResponse rsp =
+            new CollectionAdminRequest.ClusterStatus()
+                .setCollectionName(testCollection)
+                .process(cluster.getSolrClient());
+        assertEquals(
+            "true",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader",
+                null));
+        assertEquals(
+            "active",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state",
+                null));
+        assertNull(
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader",
+                null));
+        assertEquals(
+            "down",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state",
+                null));
+
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);
         prs =
@@ -260,11 +284,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               });
 
     } finally {
-      System.out.println("prs1 : " + original);
-      System.out.println(
-          "prs2 : "
-              + PerReplicaStatesFetcher.fetch(
-                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null));
       cluster.shutdown();
     }
   }
