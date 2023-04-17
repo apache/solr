@@ -52,6 +52,8 @@ New Features
 
 * SOLR-16742: Produce a slim Solr binary and docker image, without the Prometheus Exporter and Solr Modules. (Houston Putman)
 
+* SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
+
 Improvements
 ---------------------
 
