@@ -179,7 +179,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
               sendRequest(duplicateRequestIdParams);
             });
     MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Task with the same requestid already exists (1002)"));
+        thrown.getMessage(), containsString("Task with the same requestid already exists. (1002)"));
   }
 
   @SuppressWarnings("unchecked")

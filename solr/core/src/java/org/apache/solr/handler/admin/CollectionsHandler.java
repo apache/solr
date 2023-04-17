@@ -436,7 +436,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           }
         } else {
           throw new SolrException(
-              BAD_REQUEST, "Task with the same requestid already exists (" + asyncId + ")");
+              BAD_REQUEST, "Task with the same requestid already exists. (" + asyncId + ")");
         }
         r.add(CoreAdminParams.REQUESTID, m.get(ASYNC));
 
