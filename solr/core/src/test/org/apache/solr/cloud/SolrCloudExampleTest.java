@@ -16,16 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.common.util.Utils.fromJSONString;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,18 +33,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
@@ -222,109 +217,100 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * Uses the SolrCLI config action to activate soft auto-commits for the getting started
    * collection.
    */
+  @SuppressWarnings("unchecked")
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
-    String configUrl = solrUrl + testCollectionName + "/config";
 
-    Map<String, Object> configJson = SolrCLI.getJson(configUrl);
-    Object maxTimeFromConfig =
-        SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(-1L, maxTimeFromConfig);
+    try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
+      NamedList<Object> configJson =
+          solrClient.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
+      Object maxTimeFromConfig =
+          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
+      assertNotNull(maxTimeFromConfig);
+      assertEquals(-1, maxTimeFromConfig);
 
-    String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = 3000L;
-    String[] args =
-        new String[] {
-          "-collection", testCollectionName,
-          "-property", prop,
-          "-value", maxTime.toString(),
-          "-solrUrl", solrUrl
-        };
+      String prop = "updateHandler.autoSoftCommit.maxTime";
+      Integer maxTime = 3000;
+      String[] args =
+          new String[] {
+            "-collection", testCollectionName,
+            "-property", prop,
+            "-value", maxTime.toString(),
+            "-solrUrl", solrUrl
+          };
 
-    Map<String, Long> startTimes = getSoftAutocommitInterval(testCollectionName);
+      Map<String, Integer> startTimes = getSoftAutocommitInterval(testCollectionName, solrClient);
 
-    SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
-    assertEquals("Set config property failed!", 0, tool.runTool(cli));
+      SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
+      CommandLine cli =
+          SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+      log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
+      assertEquals("Set config property failed!", 0, tool.runTool(cli));
 
-    configJson = SolrCLI.getJson(configUrl);
-    maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(maxTime, maxTimeFromConfig);
+      configJson =
+          solrClient.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
+      maxTimeFromConfig =
+          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
+      assertNotNull(maxTimeFromConfig);
+      assertEquals(maxTime, maxTimeFromConfig);
 
-    // Just check that we can access paths with slashes in them both through an intermediate method
-    // and explicitly using atPath.
-    assertEquals(
-        "Should have been able to get a value from the /query request handler",
-        "explicit",
-        SolrCLI.asString("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+      if (log.isInfoEnabled()) {
+        log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
+      }
 
-    assertEquals(
-        "Should have been able to get a value from the /query request handler",
-        "explicit",
-        SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
+      // Need to use the _get(List, Object) here because of /query in the path
+      assertEquals(
+          "Should have been able to get a value from the /query request handler",
+          "explicit",
+          configJson._get(
+              Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams"),
+              Collections.emptyMap()));
 
-    if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
-    }
-
-    // Since it takes some time for this command to complete we need to make sure all the reloads
-    // for all the cores have been done.
-    boolean allGood = false;
-    Map<String, Long> curSoftCommitInterval = null;
-    for (int idx = 0; idx < 600 && allGood == false; ++idx) {
-      curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
-      // no point in even trying if they're not the same size!
-      if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
-        allGood = true;
-        for (Map.Entry<String, Long> currEntry : curSoftCommitInterval.entrySet()) {
-          if (currEntry.getValue().equals(maxTime) == false) {
-            allGood = false;
+      // Since it takes some time for this command to complete we need to make sure all the reloads
+      // for all the cores have been done.
+      boolean allGood = false;
+      Map<String, Integer> curSoftCommitInterval = null;
+      for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+        curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName, solrClient);
+        // no point in even trying if they're not the same size!
+        if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
+          allGood = true;
+          for (Map.Entry<String, Integer> currEntry : curSoftCommitInterval.entrySet()) {
+            if (currEntry.getValue().equals(maxTime) == false) {
+              allGood = false;
+            }
           }
         }
+        if (allGood == false) {
+          Thread.sleep(100);
+        }
       }
-      if (allGood == false) {
-        Thread.sleep(100);
-      }
+      assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
     }
-    assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
   }
 
   // Collect all the autoSoftCommit intervals.
-  private Map<String, Long> getSoftAutocommitInterval(String collection) throws Exception {
-    Map<String, Long> ret = new HashMap<>();
+  @SuppressWarnings("unchecked")
+  private Map<String, Integer> getSoftAutocommitInterval(String collection, SolrClient solrClient)
+      throws Exception {
+    Map<String, Integer> ret = new HashMap<>();
     DocCollection coll = cloudClient.getClusterState().getCollection(collection);
     for (Slice slice : coll.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String uri =
-            ""
-                + replica.get(ZkStateReader.BASE_URL_PROP)
-                + "/"
-                + replica.get(ZkStateReader.CORE_NAME_PROP)
-                + "/config";
-        Map<?, ?> respMap = getAsMap(cloudClient, uri);
-        Long maxTime =
-            (Long)
-                (getObjectByPath(
-                    respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
+        NamedList<Object> configJson =
+            solrClient.request(
+                new GenericSolrRequest(
+                    SolrRequest.METHOD.GET,
+                    "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config"));
+        Integer maxTime =
+            (Integer)
+                configJson._get(
+                    "/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
         ret.put(replica.getCoreName(), maxTime);
       }
     }
     return ret;
-  }
-
-  private Map<?, ?> getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
-    HttpGet get = new HttpGet(uri);
-    HttpEntity entity = null;
-    try {
-      entity = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map<?, ?>) fromJSONString(response);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
   }
 }

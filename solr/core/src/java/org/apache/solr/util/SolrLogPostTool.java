@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -65,8 +65,8 @@ public class SolrLogPostTool {
     String baseUrl = args[0];
     String root = args[1];
 
-    HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-    try (SolrClient client = builder.withBaseSolrUrl(baseUrl).build()) {
+    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
+    try (SolrClient client = builder.build()) {
       int rec = 0;
       UpdateRequest request = new UpdateRequest();
 
