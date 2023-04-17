@@ -235,7 +235,6 @@ import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -808,10 +807,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
           }
-          // note: could insist on a config name here as well.... or wait to throw at overseer
-          createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
-          CREATE_OP.execute(
-              new LocalSolrQueryRequest(null, createCollParams), rsp, h); // ignore results
+          final var createRequestBody =
+              CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(createCollParams, false);
+          createRequestBody.name = "TMP_name_TMP_name_TMP"; // just to pass validation
+          createRequestBody.validate();
 
           return result;
         }),

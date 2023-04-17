@@ -125,15 +125,7 @@ public class CreateCollectionAPI extends AdminAPIBase {
     requestBody.validate();
 
     // Populate any 'null' creation parameters that support COLLECTIONPROP defaults.
-    if (requestBody.shardNames == null && requestBody.numShards == null) {
-      requestBody.numShards = readIntegerDefaultFromClusterProp(NUM_SLICES);
-    }
-    if (requestBody.nrtReplicas == null)
-      requestBody.nrtReplicas = readIntegerDefaultFromClusterProp(NRT_REPLICAS);
-    if (requestBody.tlogReplicas == null)
-      requestBody.tlogReplicas = readIntegerDefaultFromClusterProp(TLOG_REPLICAS);
-    if (requestBody.pullReplicas == null)
-      requestBody.pullReplicas = readIntegerDefaultFromClusterProp(PULL_REPLICAS);
+    populateDefaultsIfNecessary(coreContainer, requestBody);
 
     final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
@@ -155,6 +147,7 @@ public class CreateCollectionAPI extends AdminAPIBase {
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    response.warning = (String) remoteResponse.getResponse().get("warning");
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches
@@ -164,6 +157,19 @@ public class CreateCollectionAPI extends AdminAPIBase {
     }
 
     return response;
+  }
+
+  public static void populateDefaultsIfNecessary(
+      CoreContainer coreContainer, CreateCollectionRequestBody requestBody) throws IOException {
+    if (CollectionUtil.isEmpty(requestBody.shardNames) && requestBody.numShards == null) {
+      requestBody.numShards = readIntegerDefaultFromClusterProp(coreContainer, NUM_SLICES);
+    }
+    if (requestBody.nrtReplicas == null)
+      requestBody.nrtReplicas = readIntegerDefaultFromClusterProp(coreContainer, NRT_REPLICAS);
+    if (requestBody.tlogReplicas == null)
+      requestBody.tlogReplicas = readIntegerDefaultFromClusterProp(coreContainer, TLOG_REPLICAS);
+    if (requestBody.pullReplicas == null)
+      requestBody.pullReplicas = readIntegerDefaultFromClusterProp(coreContainer, PULL_REPLICAS);
   }
 
   private static void verifyShardsParam(List<String> shardNames) {
@@ -242,7 +248,8 @@ public class CreateCollectionAPI extends AdminAPIBase {
     return props;
   }
 
-  private Integer readIntegerDefaultFromClusterProp(String propName) throws IOException {
+  private static Integer readIntegerDefaultFromClusterProp(
+      CoreContainer coreContainer, String propName) throws IOException {
     final Object defaultValue =
         new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
             .getClusterProperty(
