@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
@@ -80,7 +80,6 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.util.cli.ToolBase;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 

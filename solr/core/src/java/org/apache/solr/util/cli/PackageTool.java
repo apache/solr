@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.util.SolrCLI.getSolrClient;
+import static org.apache.solr.util.cli.SolrCLI.getSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -45,8 +45,6 @@ import org.apache.solr.packagemanager.RepositoryManager;
 import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
-import org.apache.solr.util.cli.StatusTool;
-import org.apache.solr.util.cli.ToolBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

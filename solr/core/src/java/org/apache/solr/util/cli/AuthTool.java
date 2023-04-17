@@ -37,8 +37,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 
 // Authentication tool

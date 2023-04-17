@@ -14,25 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
-import org.apache.solr.SolrTestCase;
-import org.junit.Test;
+import java.io.PrintStream;
+import org.apache.solr.common.util.SuppressForbidden;
 
-public class SolrCliUptimeTest extends SolrTestCase {
-  @Test
-  public void testUptime() {
-    assertEquals("?", SolrCLI.uptime(0));
-    assertEquals("0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(1));
+@SuppressForbidden(reason = "For use in command line tools only")
+public interface CLIO {
+  static void out(String s) {
+    System.out.println(s);
+  }
 
-    assertEquals(
-        "Should have rounded down", "0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(499));
-    assertEquals(
-        "Should have rounded up", "0 days, 0 hours, 0 minutes, 1 seconds", SolrCLI.uptime(501));
+  static void err(String s) {
+    System.err.println(s);
+  }
 
-    // Overflow
-    assertEquals("24 days, 20 hours, 31 minutes, 24 seconds", SolrCLI.uptime(Integer.MAX_VALUE));
-    assertEquals(
-        "106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
+  static PrintStream getOutStream() {
+    return System.out;
+  }
+
+  static PrintStream getErrStream() {
+    return System.err;
   }
 }

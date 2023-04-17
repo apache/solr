@@ -33,8 +33,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 

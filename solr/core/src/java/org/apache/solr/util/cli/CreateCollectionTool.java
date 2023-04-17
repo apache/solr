@@ -37,8 +37,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 

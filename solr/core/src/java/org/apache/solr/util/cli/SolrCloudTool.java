@@ -26,7 +26,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.util.SolrCLI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

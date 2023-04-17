@@ -26,8 +26,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 

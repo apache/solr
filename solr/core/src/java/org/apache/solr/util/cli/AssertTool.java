@@ -37,8 +37,6 @@ import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

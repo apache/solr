@@ -19,8 +19,6 @@ package org.apache.solr.util.cli;
 
 import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 
 public abstract class ToolBase implements Tool {
 

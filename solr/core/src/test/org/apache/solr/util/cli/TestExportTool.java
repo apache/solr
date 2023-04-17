@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import java.io.File;
 import java.io.FileInputStream;

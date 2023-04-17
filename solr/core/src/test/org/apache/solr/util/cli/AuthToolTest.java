@@ -17,8 +17,8 @@
 
 package org.apache.solr.util.cli;
 
-import static org.apache.solr.util.SolrCLI.findTool;
-import static org.apache.solr.util.SolrCLI.parseCmdLine;
+import static org.apache.solr.util.cli.SolrCLI.findTool;
+import static org.apache.solr.util.cli.SolrCLI.parseCmdLine;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

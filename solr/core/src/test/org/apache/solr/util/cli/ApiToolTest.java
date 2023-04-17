@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
 
 public class ApiToolTest extends SolrTestCase {

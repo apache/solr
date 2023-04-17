@@ -34,8 +34,6 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 
 public class CreateCoreTool extends ToolBase {
 

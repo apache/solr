@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
@@ -64,25 +64,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.cli.ApiTool;
-import org.apache.solr.util.cli.AssertTool;
-import org.apache.solr.util.cli.AuthTool;
-import org.apache.solr.util.cli.ConfigSetDownloadTool;
-import org.apache.solr.util.cli.ConfigSetUploadTool;
-import org.apache.solr.util.cli.ConfigTool;
-import org.apache.solr.util.cli.CreateCollectionTool;
-import org.apache.solr.util.cli.CreateCoreTool;
-import org.apache.solr.util.cli.CreateTool;
-import org.apache.solr.util.cli.DeleteTool;
-import org.apache.solr.util.cli.HealthcheckTool;
-import org.apache.solr.util.cli.RunExampleTool;
-import org.apache.solr.util.cli.StatusTool;
-import org.apache.solr.util.cli.Tool;
-import org.apache.solr.util.cli.ZkCpTool;
-import org.apache.solr.util.cli.ZkLsTool;
-import org.apache.solr.util.cli.ZkMkrootTool;
-import org.apache.solr.util.cli.ZkMvTool;
-import org.apache.solr.util.cli.ZkRmTool;
+import org.apache.solr.util.SolrVersion;
+import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

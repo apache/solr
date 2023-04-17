@@ -26,8 +26,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

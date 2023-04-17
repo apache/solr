@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,8 +48,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.cli.DeleteTool;
-import org.apache.solr.util.cli.RunExampleTool;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

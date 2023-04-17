@@ -40,8 +40,6 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.CLIO;
-import org.apache.solr.util.SolrCLI;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;

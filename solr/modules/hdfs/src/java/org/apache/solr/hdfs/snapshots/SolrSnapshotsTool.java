@@ -56,7 +56,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.util.CLIO;
+import org.apache.solr.util.cli.CLIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

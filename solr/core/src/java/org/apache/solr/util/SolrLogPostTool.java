@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.util.cli.CLIO;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class SolrLogPostTool {
