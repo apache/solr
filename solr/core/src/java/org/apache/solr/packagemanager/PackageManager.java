@@ -24,6 +24,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -180,7 +181,7 @@ public class PackageManager implements Closeable {
     List<SolrPackageInstance> ret = new ArrayList<>();
     packages = new HashMap<>();
     try {
-      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
+      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true)) {
         @SuppressWarnings("unchecked")
         Map<String, List<Map<?, ?>>> packagesZnodeMap =
             (Map<String, List<Map<?, ?>>>)
@@ -188,7 +189,7 @@ public class PackageManager implements Closeable {
                     .readValue(
                         new String(
                             zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true),
-                            "UTF-8"),
+                            StandardCharsets.UTF_8),
                         Map.class)
                     .get("packages");
         for (String packageName : packagesZnodeMap.keySet()) {
@@ -248,7 +249,7 @@ public class PackageManager implements Closeable {
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<>();
     for (String packageName : packages.keySet()) {
-      if (StrUtils.isNullOrEmpty(packageName) == false
+      if (!StrUtils.isNullOrEmpty(packageName)
           && // There can be an empty key, storing the version here
           packages.get(packageName)
               != null) { // null means the package was undeployed from this package before
@@ -323,9 +324,9 @@ public class PackageManager implements Closeable {
       List<String> existingCollections = zkClient.getChildren("/collections", null, true);
       Set<String> nonExistent = new HashSet<>(collections);
       nonExistent.removeAll(existingCollections);
-      if (nonExistent.isEmpty() == false) {
+      if (!nonExistent.isEmpty()) {
         throw new SolrException(
-            ErrorCode.BAD_REQUEST, "Collection(s) doesn't exist: " + nonExistent.toString());
+            ErrorCode.BAD_REQUEST, "Collection(s) doesn't exist: " + nonExistent);
       }
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(
@@ -356,7 +357,7 @@ public class PackageManager implements Closeable {
     List<String> previouslyDeployedOnCollections = deployResult.second();
 
     // Verify
-    boolean verifySuccess = true;
+    boolean verifySuccess;
     // Verify that package was successfully deployed
     verifySuccess =
         verify(packageInstance, deployedCollections, shouldDeployClusterPlugins, overrides);
@@ -415,7 +416,6 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        @SuppressWarnings("unchecked")
         boolean packageParamsExist =
             solrClient
                 .request(
@@ -468,8 +468,7 @@ public class PackageManager implements Closeable {
       // If it is a fresh deploy on a collection, run setup commands all the plugins in the package
       if (!isUpdate) {
         for (Plugin plugin : packageInstance.plugins) {
-          if ("collection".equalsIgnoreCase(plugin.type) == false || collections.isEmpty())
-            continue;
+          if (!"collection".equalsIgnoreCase(plugin.type) || collections.isEmpty()) continue;
           Map<String, String> systemParams =
               Map.of(
                   "collection",
@@ -531,7 +530,7 @@ public class PackageManager implements Closeable {
       }
     }
 
-    if (previouslyDeployed.isEmpty() == false) {
+    if (!previouslyDeployed.isEmpty()) {
       PackageUtils.printRed(
           "Already Deployed on "
               + previouslyDeployed
@@ -545,7 +544,7 @@ public class PackageManager implements Closeable {
         collections.stream()
             .filter(c -> !previouslyDeployed.contains(c))
             .collect(Collectors.toList());
-    return new Pair<List<String>, List<String>>(deployedCollections, previouslyDeployed);
+    return new Pair<>(deployedCollections, previouslyDeployed);
   }
 
   @SuppressWarnings("unchecked")
@@ -556,7 +555,7 @@ public class PackageManager implements Closeable {
 
     if (isUpdate) {
       for (Plugin plugin : packageInstance.plugins) {
-        if ("cluster".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"cluster".equalsIgnoreCase(plugin.type)) continue;
         SolrPackageInstance deployedPackage =
             getPackagesDeployedAsClusterLevelPlugins().get(packageInstance.name);
         if (deployedPackage == null) {
@@ -592,7 +591,7 @@ public class PackageManager implements Closeable {
       }
     } else {
       for (Plugin plugin : packageInstance.plugins) {
-        if ("cluster".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"cluster".equalsIgnoreCase(plugin.type)) continue;
         // Check if this cluster level plugin is already deployed
         {
           Map<String, Object> clusterprops = null;
@@ -680,7 +679,7 @@ public class PackageManager implements Closeable {
       PackageUtils.print(
           PackageUtils.YELLOW,
           "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): ");
-      try (Scanner scanner = new Scanner(System.in, "UTF-8")) {
+      try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
         if ("no".trim().equalsIgnoreCase(userInput) || "n".trim().equalsIgnoreCase(userInput)) {
           shouldExecute = false;
@@ -708,9 +707,7 @@ public class PackageManager implements Closeable {
       String[] overrides,
       String collection) {
     Map<String, String> collectionParameterOverrides =
-        isUpdate
-            ? getPackageParams(packageInstance.name, collection)
-            : new HashMap<String, String>();
+        isUpdate ? getPackageParams(packageInstance.name, collection) : new HashMap<>();
     if (overrides != null) {
       for (String override : overrides) {
         collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
@@ -719,7 +716,7 @@ public class PackageManager implements Closeable {
     return collectionParameterOverrides;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"unchecked"})
   Map<String, String> getPackageParams(String packageName, String collection) {
     try {
       NamedList<Object> response =
@@ -747,7 +744,7 @@ public class PackageManager implements Closeable {
       SolrPackageInstance pkg,
       List<String> collections,
       boolean shouldDeployClusterPlugins,
-      String overrides[]) {
+      String[] overrides) {
     boolean success = true;
     for (Plugin plugin : pkg.plugins) {
       Command cmd = plugin.verifyCommand;
@@ -871,8 +868,7 @@ public class PackageManager implements Closeable {
     SolrPackageInstance latest = null;
     if (versions != null && !versions.isEmpty()) {
       latest = versions.get(0);
-      for (int i = 0; i < versions.size(); i++) {
-        SolrPackageInstance pkg = versions.get(i);
+      for (SolrPackageInstance pkg : versions) {
         if (pkg.version.equals(version)) {
           return pkg;
         }
@@ -970,8 +966,7 @@ public class PackageManager implements Closeable {
             "Cluster level plugins from package " + packageName + " not deployed.");
       } else {
         for (Plugin plugin : deployedPackage.plugins) {
-          if (!shouldUndeployClusterPlugins || "cluster".equalsIgnoreCase(plugin.type) == false)
-            continue;
+          if (!shouldUndeployClusterPlugins || !"cluster".equalsIgnoreCase(plugin.type)) continue;
 
           Map<String, String> systemParams =
               Map.of(
@@ -1025,7 +1020,9 @@ public class PackageManager implements Closeable {
 
       // Run the uninstall command for all plugins
       for (Plugin plugin : deployedPackage.plugins) {
-        if ("collection".equalsIgnoreCase(plugin.type) == false) continue;
+        if (!"collection".equalsIgnoreCase(plugin.type)) {
+          continue;
+        }
 
         Map<String, String> systemParams =
             Map.of(
@@ -1096,7 +1093,7 @@ public class PackageManager implements Closeable {
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }
-    Map<String, String> deployed = new HashMap<String, String>();
+    Map<String, String> deployed = new HashMap<>();
     for (String collection : allCollections) {
       // Check package version installed
       String paramsJson =

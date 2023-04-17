@@ -73,7 +73,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * A simple utility class for posting raw updates to a Solr server, has a main method so it can be
+ * A simple utility class for posting raw updates to a Solr server.  It has a main method, so it can be
  * run on the command line. View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external jar dependencies.
  */
@@ -358,7 +358,7 @@ public class SimplePostTool {
     }
   }
 
-  private int doWebMode() {
+  private void doWebMode() {
     reset();
     int numPagesPosted = 0;
     try {
@@ -367,7 +367,7 @@ public class SimplePostTool {
       }
       if (args[0].equals("-")) {
         // Skip posting url if special param "-" given
-        return 0;
+        return;
       }
       // Set Extracting handler as default
       solrUrl = appendUrlPath(solrUrl, "/extract");
@@ -392,7 +392,7 @@ public class SimplePostTool {
     } catch (MalformedURLException e) {
       fatal("Wrong URL trying to append /extract to " + solrUrl);
     }
-    return numPagesPosted;
+    return;
   }
 
   private void doStdinMode() {
@@ -899,11 +899,11 @@ public class SimplePostTool {
           if (!urlStr.contains("resource.name"))
             urlStr =
                 appendParam(
-                    urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
+                    urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
           if (!urlStr.contains("literal.id"))
             urlStr =
                 appendParam(
-                    urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), "UTF-8"));
+                    urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
           url = new URL(urlStr);
         }
       } else {
