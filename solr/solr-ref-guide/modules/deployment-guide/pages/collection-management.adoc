@@ -2294,7 +2294,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESNAPSHOT&collection=te
 curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
   {
     "followAliases": true,
-    "asyncId": "someAsyncId"
+    "async": "someAsyncId"
   }
 '
 ----
