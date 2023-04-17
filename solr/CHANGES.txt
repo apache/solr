@@ -58,6 +58,10 @@ Improvements
 
 * SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
 
+* SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
+  /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
+  `DELETE /api/collections/collName/snapshots/snapshotName`. (John Durham via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
