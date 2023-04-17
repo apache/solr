@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,13 +33,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.handler.component.ShardRequest;
-import org.apache.solr.util.cli.CLIO;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class SolrLogPostTool {
@@ -80,7 +78,7 @@ public class SolrLogPostTool {
         try (LineNumberReader reader =
             new LineNumberReader(Files.newBufferedReader(file, Charset.defaultCharset()))) {
           LogRecordReader recordReader = new LogRecordReader(reader);
-          SolrInputDocument doc = null;
+          SolrInputDocument doc;
           String fileName = file.getFileName().toString();
           while (true) {
             try {
@@ -116,8 +114,7 @@ public class SolrLogPostTool {
     }
   }
 
-  private static void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest)
-      throws SolrServerException, IOException {
+  private static void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest) {
     final String beginMessage =
         lastRequest ? "Sending last batch ..." : "Sending batch of 300 log records...";
     CLIO.out(beginMessage);
@@ -217,7 +214,7 @@ public class SolrLogPostTool {
 
           if (!m.find() && buf.length() < 10000) {
             // Line does not start with a timestamp so append to the stack trace
-            buf.append(line.replace("\t", "    ") + "<br/>");
+            buf.append(line.replace("\t", "    ")).append("<br/>");
             if (line.startsWith("Caused by:")) {
               this.cause = line;
             }
@@ -267,8 +264,7 @@ public class SolrLogPostTool {
       doc.setField(fieldName, fieldValue);
     }
 
-    private void parseError(SolrInputDocument lineRecord, String line, String trace)
-        throws IOException {
+    private void parseError(SolrInputDocument lineRecord, String line, String trace) {
       lineRecord.setField("type_s", "error");
 
       // Don't include traces that have only the %html header.
@@ -328,7 +324,7 @@ public class SolrLogPostTool {
 
     private String parseCollection(String line) {
       char[] ca = {' ', ']', ','};
-      String parts[] = line.split("c:");
+      String[] parts = line.split("c:");
       if (parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -355,7 +351,7 @@ public class SolrLogPostTool {
 
     private String parseCore(String line) {
       char[] ca = {' ', ']', '}', ','};
-      String parts[] = line.split("x:");
+      String[] parts = line.split("x:");
       if (parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -365,7 +361,7 @@ public class SolrLogPostTool {
 
     private String parseShard(String line) {
       char[] ca = {' ', ']', '}', ','};
-      String parts[] = line.split("s:");
+      String[] parts = line.split("s:");
       if (parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -375,7 +371,7 @@ public class SolrLogPostTool {
 
     private String parseReplica(String line) {
       char[] ca = {' ', ']', '}', ','};
-      String parts[] = line.split("r:");
+      String[] parts = line.split("r:");
       if (parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -385,7 +381,7 @@ public class SolrLogPostTool {
 
     private String parsePath(String line) {
       char[] ca = {' '};
-      String parts[] = line.split(" path=");
+      String[] parts = line.split(" path=");
       if (parts.length == 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -395,7 +391,7 @@ public class SolrLogPostTool {
 
     private String parseQTime(String line) {
       char[] ca = {'\n', '\r'};
-      String parts[] = line.split(" QTime=");
+      String[] parts = line.split(" QTime=");
       if (parts.length == 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -405,7 +401,7 @@ public class SolrLogPostTool {
 
     private String parseNode(String line) {
       char[] ca = {' ', ']', '}', ','};
-      String parts[] = line.split("node_name=n:");
+      String[] parts = line.split("node_name=n:");
       if (parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -415,7 +411,7 @@ public class SolrLogPostTool {
 
     private String parseStatus(String line) {
       char[] ca = {' ', '\n', '\r'};
-      String parts[] = line.split(" status=");
+      String[] parts = line.split(" status=");
       if (parts.length == 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -425,7 +421,7 @@ public class SolrLogPostTool {
 
     private String parseHits(String line) {
       char[] ca = {' '};
-      String parts[] = line.split(" hits=");
+      String[] parts = line.split(" hits=");
       if (parts.length == 2) {
         return readUntil(parts[1], ca);
       } else {
@@ -435,7 +431,7 @@ public class SolrLogPostTool {
 
     private String parseParams(String line) {
       char[] ca = {' '};
-      String parts[] = line.split(" params=");
+      String[] parts = line.split(" params=");
       if (parts.length == 2) {
         String p = readUntil(parts[1].substring(1), ca);
         return p.substring(0, p.length() - 1);
@@ -457,11 +453,6 @@ public class SolrLogPostTool {
       }
 
       return builder.toString();
-    }
-
-    private void addOrReplaceFieldValue(
-        SolrInputDocument doc, String fieldName, String fieldValue) {
-      doc.setField(fieldName, fieldValue);
     }
 
     private void addParams(SolrInputDocument doc, String params) {
@@ -527,7 +518,7 @@ public class SolrLogPostTool {
 
       // Special params used to determine what stage a query is.
       // So we populate with defaults.
-      // The absence of the distrib params means its a distributed query.
+      // The absence of the distrib params means it's a distributed query.
       setFieldIfUnset(doc, "distrib_s", "true");
       setFieldIfUnset(doc, "shards_s", "false");
       setFieldIfUnset(doc, "ids_s", "false");

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.util.SolrLogPostTool.LogRecordReader;
+import org.apache.solr.util.cli.SolrLogPostTool.LogRecordReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -331,8 +331,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     ArrayList<SolrInputDocument> list = new ArrayList<>();
 
     try {
-      LogRecordReader logRecordReader = new SolrLogPostTool.LogRecordReader(bufferedReader);
-      SolrInputDocument doc = null;
+      LogRecordReader logRecordReader = new LogRecordReader(bufferedReader);
+      SolrInputDocument doc;
       while ((doc = logRecordReader.readRecord()) != null) {
         list.add(doc);
       }
