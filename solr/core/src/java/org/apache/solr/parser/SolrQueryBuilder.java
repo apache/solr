@@ -38,7 +38,9 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
 /**
@@ -52,11 +54,11 @@ import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
  * returns a SynonymQueryWithOffset instead of a SynonymQuery
  *
  * <p>Original source:
- * https://github.com/apache/lucene/blob/branch_9_4/lucene/core/src/java/org/apache/lucene/util/QueryBuilder.java
+ * https://github.com/apache/lucene/blob/branch_9_5/lucene/core/src/java/org/apache/lucene/util/QueryBuilder.java
  *
  * <p>Original doc:
  *
- * <p>Creates queries from the {@link Analyzer} chain.
+ * Creates queries from the {@link Analyzer} chain.
  *
  * <p>Example usage:
  *
@@ -80,15 +82,15 @@ public class SolrQueryBuilder {
   /** Wraps a term and boost */
   public static class TermAndBoost {
     /** the term */
-    public final Term term;
+    public final BytesRef term;
     /** the boost */
     public final float boost;
     /** the startOffset of the Token from which this Term was created */
     public final int startOffset;
 
     /** Creates a new TermAndBoost */
-    public TermAndBoost(Term term, float boost, int startOffset) {
-      this.term = term;
+    public TermAndBoost(BytesRef term, float boost, int startOffset) {
+      this.term = BytesRef.deepCopyOf(term);
       this.boost = boost;
       this.startOffset = startOffset;
     }
@@ -173,7 +175,7 @@ public class SolrQueryBuilder {
     }
 
     Query query =
-        createFieldQuery(analyzer, BooleanClause.Occur.SHOULD, field, queryText, false, 0);
+      createFieldQuery(analyzer, BooleanClause.Occur.SHOULD, field, queryText, false, 0);
     if (query instanceof BooleanQuery) {
       query = addMinShouldMatchToBoolean((BooleanQuery) query, fraction);
     }
@@ -261,12 +263,12 @@ public class SolrQueryBuilder {
    * @param phraseSlop slop factor for phrase/multiphrase queries
    */
   protected Query createFieldQuery(
-      Analyzer analyzer,
-      BooleanClause.Occur operator,
-      String field,
-      String queryText,
-      boolean quoted,
-      int phraseSlop) {
+    Analyzer analyzer,
+    BooleanClause.Occur operator,
+    String field,
+    String queryText,
+    boolean quoted,
+    int phraseSlop) {
     assert operator == BooleanClause.Occur.SHOULD || operator == BooleanClause.Occur.MUST;
 
     // Use the analyzer to get all the tokens, and then build an appropriate
@@ -306,11 +308,11 @@ public class SolrQueryBuilder {
    * @param phraseSlop slop factor for phrase/multiphrase queries
    */
   protected Query createFieldQuery(
-      TokenStream source,
-      BooleanClause.Occur operator,
-      String field,
-      boolean quoted,
-      int phraseSlop) {
+    TokenStream source,
+    BooleanClause.Occur operator,
+    String field,
+    boolean quoted,
+    int phraseSlop) {
     assert operator == BooleanClause.Occur.SHOULD || operator == BooleanClause.Occur.MUST;
 
     // Build an appropriate query based on the analysis chain.
@@ -398,8 +400,7 @@ public class SolrQueryBuilder {
     }
 
     OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
-    return newTermQuery(
-        new Term(field, termAtt.getBytesRef()), boostAtt.getBoost(), offsetAtt.startOffset());
+    return newTermQuery(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost(), offsetAtt.startOffset());
   }
 
   /** Creates simple boolean query from the cached tokenstream contents */
@@ -411,33 +412,30 @@ public class SolrQueryBuilder {
     stream.reset();
     List<TermAndBoost> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(
-          new TermAndBoost(
-              new Term(field, termAtt.getBytesRef()),
-              boostAtt.getBoost(),
-              offsetAtt.startOffset()));
+      terms.add(new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
 
-    return newSynonymQuery(terms.toArray(new TermAndBoost[0]));
+    return newSynonymQuery(field, terms.toArray(TermAndBoost[]::new));
   }
 
   protected void add(
-      BooleanQuery.Builder q, List<TermAndBoost> current, BooleanClause.Occur operator) {
+    String field,
+    BooleanQuery.Builder q,
+    List<TermAndBoost> current,
+    BooleanClause.Occur operator) {
     if (current.isEmpty()) {
       return;
     }
     if (current.size() == 1) {
-      q.add(
-          newTermQuery(current.get(0).term, current.get(0).boost, current.get(0).startOffset),
-          operator);
+      q.add(newTermQuery(new Term(field, current.get(0).term), current.get(0).boost, current.get(0).startOffset), operator);
     } else {
-      q.add(newSynonymQuery(current.toArray(new TermAndBoost[0])), operator);
+      q.add(newSynonymQuery(field, current.toArray(TermAndBoost[]::new)), operator);
     }
   }
 
   /** Creates complex boolean query from the cached tokenstream contents */
   protected Query analyzeMultiBoolean(
-      String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
+    String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
     BooleanQuery.Builder q = newBooleanQuery();
     List<TermAndBoost> currentQuery = new ArrayList<>();
 
@@ -449,16 +447,13 @@ public class SolrQueryBuilder {
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
-        add(q, currentQuery, operator);
+        add(field, q, currentQuery, operator);
         currentQuery.clear();
       }
       currentQuery.add(
-          new TermAndBoost(
-              new Term(field, termAtt.getBytesRef()),
-              boostAtt.getBoost(),
-              offsetAtt.startOffset()));
+        new TermAndBoost(termAtt.getBytesRef(), boostAtt.getBoost(), offsetAtt.startOffset()));
     }
-    add(q, currentQuery, operator);
+    add(field, q, currentQuery, operator);
 
     return q.build();
   }
@@ -492,7 +487,7 @@ public class SolrQueryBuilder {
 
   /** Creates complex phrase query from the cached tokenstream contents */
   protected Query analyzeMultiPhrase(String field, TokenStream stream, int slop)
-      throws IOException {
+    throws IOException {
     MultiPhraseQuery.Builder mpqb = newMultiPhraseQueryBuilder();
     mpqb.setSlop(slop);
 
@@ -532,7 +527,7 @@ public class SolrQueryBuilder {
    * query.
    */
   protected Query analyzeGraphBoolean(
-      String field, TokenStream source, BooleanClause.Occur operator) throws IOException {
+    String field, TokenStream source, BooleanClause.Occur operator) throws IOException {
     source.reset();
     GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(source);
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
@@ -549,42 +544,41 @@ public class SolrQueryBuilder {
       if (graph.hasSidePath(start)) {
         final Iterator<TokenStream> sidePathsIterator = graph.getFiniteStrings(start, end);
         Iterator<Query> queries =
-            new Iterator<Query>() {
-              @Override
-              public boolean hasNext() {
-                return sidePathsIterator.hasNext();
-              }
+          new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+              return sidePathsIterator.hasNext();
+            }
 
-              @Override
-              public Query next() {
-                TokenStream sidePath = sidePathsIterator.next();
-                return createFieldQuery(
-                    sidePath,
-                    BooleanClause.Occur.MUST,
-                    field,
-                    getAutoGenerateMultiTermSynonymsPhraseQuery(),
-                    0);
-              }
-            };
+            @Override
+            public Query next() {
+              TokenStream sidePath = sidePathsIterator.next();
+              return createFieldQuery(
+                sidePath,
+                BooleanClause.Occur.MUST,
+                field,
+                getAutoGenerateMultiTermSynonymsPhraseQuery(),
+                0);
+            }
+          };
         positionalQuery = newGraphSynonymQuery(queries);
       } else {
         List<AttributeSource> attributes = graph.getTerms(start);
         TermAndBoost[] terms =
-            attributes.stream()
-                .map(
-                    s -> {
-                      TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
-                      BoostAttribute b = s.addAttribute(BoostAttribute.class);
-                      OffsetAttribute o = s.getAttribute(OffsetAttribute.class);
-                      return new TermAndBoost(
-                          new Term(field, t.getBytesRef()), b.getBoost(), o.startOffset());
-                    })
-                .toArray(TermAndBoost[]::new);
+          attributes.stream()
+            .map(
+              s -> {
+                TermToBytesRefAttribute t = s.addAttribute(TermToBytesRefAttribute.class);
+                BoostAttribute b = s.addAttribute(BoostAttribute.class);
+                OffsetAttribute o = s.getAttribute(OffsetAttribute.class);
+                return new TermAndBoost(t.getBytesRef(), b.getBoost(), o.startOffset());
+              })
+            .toArray(TermAndBoost[]::new);
         assert terms.length > 0;
         if (terms.length == 1) {
-          positionalQuery = newTermQuery(terms[0].term, terms[0].boost, terms[0].startOffset);
+          positionalQuery = newTermQuery(new Term(field, terms[0].term), terms[0].boost, terms[0].startOffset);
         } else {
-          positionalQuery = newSynonymQuery(terms);
+          positionalQuery = newSynonymQuery(field, terms);
         }
       }
       if (positionalQuery != null) {
@@ -596,7 +590,7 @@ public class SolrQueryBuilder {
 
   /** Creates graph phrase query from the tokenstream contents */
   protected Query analyzeGraphPhrase(TokenStream source, String field, int phraseSlop)
-      throws IOException {
+    throws IOException {
     source.reset();
     GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(source);
 
@@ -632,8 +626,8 @@ public class SolrQueryBuilder {
    *
    * @return new Query instance
    */
-  protected Query newSynonymQuery(TermAndBoost[] terms) {
-    SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].term.field());
+  protected Query newSynonymQuery(String field, TermAndBoost[] terms) {
+    SynonymQuery.Builder builder = new SynonymQuery.Builder(field);
     for (TermAndBoost t : terms) {
       builder.addTerm(t.term, t.boost);
     }
