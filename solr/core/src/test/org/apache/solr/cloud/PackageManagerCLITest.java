@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import org.apache.solr.cli.PackageTool;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.cli.PackageTool;
-import org.apache.solr.cli.SolrCLI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

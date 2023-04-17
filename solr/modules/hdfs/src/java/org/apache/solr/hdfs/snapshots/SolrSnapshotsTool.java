@@ -44,6 +44,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
+import org.apache.solr.cli.CLIO;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -56,7 +57,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.cli.CLIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

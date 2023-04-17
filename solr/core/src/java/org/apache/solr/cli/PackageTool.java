@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.getSolrClient;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.cli.SolrCLI.getSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;

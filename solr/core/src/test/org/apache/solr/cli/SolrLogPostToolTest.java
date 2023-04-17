@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.SolrLogPostTool.LogRecordReader;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.cli.SolrLogPostTool.LogRecordReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
