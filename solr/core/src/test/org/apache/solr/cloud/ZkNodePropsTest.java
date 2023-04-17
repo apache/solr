@@ -23,7 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.cli.SimplePostTool;
+import org.apache.solr.cli.SimplePostTool;
 import org.junit.Test;
 
 public class ZkNodePropsTest extends SolrTestCaseJ4 {

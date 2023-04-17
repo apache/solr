@@ -61,7 +61,7 @@ import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.util.SolrVersion;
-import org.apache.solr.util.cli.SolrCLI;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

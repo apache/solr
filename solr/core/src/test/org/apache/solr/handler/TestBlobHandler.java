@@ -44,7 +44,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.cli.SimplePostTool;
+import org.apache.solr.cli.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;

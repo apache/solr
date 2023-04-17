@@ -38,7 +38,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.util.cli.SimplePostTool;
+import org.apache.solr.cli.SimplePostTool;
 import org.junit.BeforeClass;
 
 /**
