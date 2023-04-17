@@ -356,10 +356,8 @@ public class PackageManager implements Closeable {
     List<String> deployedCollections = deployResult.first();
     List<String> previouslyDeployedOnCollections = deployResult.second();
 
-    // Verify
-    boolean verifySuccess;
     // Verify that package was successfully deployed
-    verifySuccess =
+    boolean verifySuccess =
         verify(packageInstance, deployedCollections, shouldDeployClusterPlugins, overrides);
     if (verifySuccess) {
       PackageUtils.printGreen(
