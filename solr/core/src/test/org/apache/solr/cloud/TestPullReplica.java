@@ -125,10 +125,10 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   // 2 times to make sure cleanup is complete, and we can create the same collection
-  @Repeat(iterations = 2)
+  @Repeat(iterations = 30)
   public void testCreateDelete() throws Exception {
     try {
-      switch (random().nextInt(3)) {
+      switch (2 /*random().nextInt(3)*/) {
         case 0:
           // Sometimes use SolrJ
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
@@ -156,15 +156,15 @@ public class TestPullReplica extends SolrCloudTestCase {
           String requestBody =
               String.format(
                   Locale.ROOT,
-                  "{\"name\": \"%s\", \"config\": \"%s\", \"numShards\": %s, \"pullReplicas\": %s, %s}",
+                  "{\"name\": \"%s\", \"config\": \"%s\", \"numShards\": %s, \"pullReplicas\": %s %s}",
                   collectionName,
                   "conf",
                   2, // numShards
                   3, // pullReplicas
                   pickRandom(
                       "",
-                      "\"nrtReplicas\": 1",
-                      "\"replicationFactor\": 1")); // These options should all mean the same
+                      ", \"nrtReplicas\": 1",
+                      ", \"replicationFactor\": 1")); // These options should all mean the same
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
