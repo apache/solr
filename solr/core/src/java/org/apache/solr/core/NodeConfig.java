@@ -32,11 +32,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -201,13 +202,13 @@ public class NodeConfig {
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+    if (StrUtils.isNotNullOrEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn(
           "Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (!StringUtils.isEmpty(zkHost)) {
+    if (StrUtils.isNotNullOrEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
       try (SolrZkClient zkClient =
@@ -218,6 +219,9 @@ public class NodeConfig {
               .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
+          DeprecationLog.log(
+              "solrxml-zookeeper",
+              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);
@@ -442,7 +446,7 @@ public class NodeConfig {
       libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
     }
 
-    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+    if (StrUtils.isNotBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
       libDirs.addAll(sharedLibs);
     }

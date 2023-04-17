@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -39,6 +38,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -265,7 +265,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
    * all standard mime types. If an HTML type is requested, it is instead returned as text/plain
    */
   public static String getSafeContentType(String contentType) {
-    if (Strings.isNullOrEmpty(contentType)) {
+    if (StrUtils.isNullOrEmpty(contentType)) {
       log.debug("No contentType specified");
       return null;
     }
@@ -302,7 +302,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
     // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth
     // the effort though to fix it to handle all possibilities though.
-    if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
+    if (fname.contains("..") || fname.startsWith(".")) {
       if (reportError) {
         log.error("Invalid path: {}", fname);
         rsp.setException(

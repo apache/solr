@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
@@ -256,7 +255,7 @@ public class PluginBag<T> implements AutoCloseable {
             //  resource registers under?
             Collection<Class<? extends JerseyResource>> jerseyApis =
                 apiSupport.getJerseyResources();
-            if (!CollectionUtils.isEmpty(jerseyApis)) {
+            if (jerseyApis != null) {
               for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
                 if (log.isDebugEnabled()) {
                   log.debug("Registering jersey resource class: {}", jerseyClazz.getName());

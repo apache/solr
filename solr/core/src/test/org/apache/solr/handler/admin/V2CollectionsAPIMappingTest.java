@@ -31,11 +31,13 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.handler.CollectionsAPI;
+import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionAPI;
+import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.junit.Test;
 
 /**
- * Unit tests for the API mappings found in {@link org.apache.solr.handler.CollectionsAPI}.
+ * Unit tests for the "create collection", "create alias" and "restore collection" v2 APIs.
  *
  * <p>This test bears many similarities to {@link TestCollectionAPIs} which appears to test the
  * mappings indirectly by checking message sent to the ZK overseer (which is similar, but not
@@ -52,9 +54,9 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
 
   @Override
   public void populateApiBag() {
-    final CollectionsAPI collectionsAPI = new CollectionsAPI(getRequestHandler());
-    apiBag.registerObject(collectionsAPI);
-    apiBag.registerObject(collectionsAPI.collectionsCommands);
+    apiBag.registerObject(new CreateCollectionAPI(getRequestHandler()));
+    apiBag.registerObject(new CreateAliasAPI(getRequestHandler()));
+    apiBag.registerObject(new RestoreCollectionAPI(getRequestHandler()));
   }
 
   @Override
@@ -114,18 +116,10 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testListCollectionsAllProperties() throws Exception {
-    final String noBody = null;
-    final SolrParams v1Params = captureConvertedV1Params("/collections", "GET", noBody);
-
-    assertEquals(CollectionParams.CollectionAction.LIST.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
   public void testCreateAliasAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
-            "/collections",
+            "/aliases",
             "POST",
             "{'create-alias': {"
                 + "'name': 'aliasName', "
@@ -184,75 +178,12 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testDeleteAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'delete-alias': {" + "'name': 'aliasName', " + "'async': 'requestTrackingId'" + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.DELETEALIAS.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-  }
-
-  @Test
-  public void testSetAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'set-alias-property': {"
-                + "'name': 'aliasName', "
-                + "'async': 'requestTrackingId', "
-                + "'properties': {'foo':'bar', 'foo2':'bar2'}"
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.ALIASPROP.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertEquals("bar", v1Params.get("property.foo"));
-    assertEquals("bar2", v1Params.get("property.foo2"));
-  }
-
-  @Test
-  public void testBackupAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'backup-collection': {"
-                + "'name': 'backupName', "
-                + "'collection': 'collectionName', "
-                + "'location': '/some/location/uri', "
-                + "'repository': 'someRepository', "
-                + "'followAliases': true, "
-                + "'indexBackup': 'copy-files', "
-                + "'commitName': 'someSnapshotName', "
-                + "'incremental': true, "
-                + "'async': 'requestTrackingId' "
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.BACKUP.lowerName, v1Params.get(ACTION));
-    assertEquals("backupName", v1Params.get(CommonParams.NAME));
-    assertEquals("collectionName", v1Params.get(BackupManager.COLLECTION_NAME_PROP));
-    assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
-    assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
-    assertTrue(v1Params.getPrimitiveBool(CollectionAdminParams.FOLLOW_ALIASES));
-    assertEquals("copy-files", v1Params.get(CollectionAdminParams.INDEX_BACKUP_STRATEGY));
-    assertEquals("someSnapshotName", v1Params.get(CoreAdminParams.COMMIT_NAME));
-    assertTrue(v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-  }
-
-  @Test
   public void testRestoreAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
-            "/collections",
+            "/backups/backupName",
             "POST",
             "{'restore-collection': {"
-                + "'name': 'backupName', "
                 + "'collection': 'collectionName', "
                 + "'location': '/some/location/uri', "
                 + "'repository': 'someRepository', "

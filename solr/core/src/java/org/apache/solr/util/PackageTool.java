@@ -18,21 +18,26 @@ package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+import static org.apache.solr.util.SolrCLI.getSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -74,7 +79,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   protected void runImpl(CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
-      solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
+      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
       if (zkHost == null) {
@@ -84,7 +89,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0 ? "help" : cli.getArgs()[0];
 
-      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
           try {
@@ -314,64 +319,65 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
 
   @Override
-  public Option[] getOptions() {
-    return new Option[] {
-      Option.builder("solrUrl")
-          .argName("URL")
-          .hasArg()
-          .required(true)
-          .desc(
-              "Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL + '.')
-          .build(),
-      Option.builder("collections")
-          .argName("COLLECTIONS")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-          .build(),
-      Option.builder("cluster")
-          .required(false)
-          .desc("Specifies that this action should affect cluster-level plugins only.")
-          .build(),
-      Option.builder("p")
-          .argName("PARAMS")
-          .hasArgs()
-          .required(false)
-          .desc("List of parameters to be used with deploy command.")
-          .longOpt("param")
-          .build(),
-      Option.builder("u")
-          .required(false)
-          .desc("If a deployment is an update over a previous deployment.")
-          .longOpt("update")
-          .build(),
-      Option.builder("c")
-          .required(false)
-          .desc("The collection to apply the package to, not required.")
-          .longOpt("collection")
-          .build(),
-      Option.builder("y")
-          .required(false)
-          .desc("Don't prompt for input; accept all default choices, defaults to false.")
-          .longOpt("noprompt")
-          .build()
-    };
+  public List<Option> getOptions() {
+    return List.of(
+        Option.builder("solrUrl")
+            .argName("URL")
+            .hasArg()
+            .required(true)
+            .desc(
+                "Address of the Solr Web application, defaults to: "
+                    + SolrCLI.DEFAULT_SOLR_URL
+                    + '.')
+            .build(),
+        Option.builder("collections")
+            .argName("COLLECTIONS")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
+            .build(),
+        Option.builder("cluster")
+            .required(false)
+            .desc("Specifies that this action should affect cluster-level plugins only.")
+            .build(),
+        Option.builder("p")
+            .argName("PARAMS")
+            .hasArgs()
+            .required(false)
+            .desc("List of parameters to be used with deploy command.")
+            .longOpt("param")
+            .build(),
+        Option.builder("u")
+            .required(false)
+            .desc("If a deployment is an update over a previous deployment.")
+            .longOpt("update")
+            .build(),
+        Option.builder("c")
+            .required(false)
+            .desc("The collection to apply the package to, not required.")
+            .longOpt("collection")
+            .build(),
+        Option.builder("y")
+            .required(false)
+            .desc("Don't prompt for input; accept all default choices, defaults to false.")
+            .longOpt("noprompt")
+            .build());
   }
 
   private String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    String systemInfoUrl = solrUrl + "/admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
-    try {
+    try (SolrClient solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
-      Map<String, Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
+      NamedList<Object> systemInfo =
+          solrClient.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
       StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(solrUrl + "/", systemInfo, httpClient);
+      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -381,8 +387,6 @@ public class PackageTool extends SolrCLI.ToolBase {
         }
         zkHost = zookeeper;
       }
-    } finally {
-      HttpClientUtil.close(httpClient);
     }
 
     return zkHost;

@@ -39,6 +39,5 @@ dependencies {
     testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
     testImplementation 'junit:junit'
 
-    testImplementation 'com.google.guava:guava'
     testImplementation 'com.google.cloud:google-cloud-nio'
 }

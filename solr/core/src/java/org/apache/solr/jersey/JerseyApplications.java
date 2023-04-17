@@ -55,12 +55,14 @@ public class JerseyApplications {
       register(MessageBodyWriters.JavabinMessageBodyWriter.class);
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
+      register(MessageBodyWriters.RawMessageBodyWriter.class);
       register(JacksonJsonProvider.class);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
       register(CatchAllExceptionMapper.class);
       register(NotFoundExceptionMapper.class);
+      register(MediaTypeOverridingFilter.class);
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
@@ -83,9 +85,12 @@ public class JerseyApplications {
             }
           });
 
+      // Explicit Jersey logging is disabled by default but useful for debugging (pt 1)
+      // register(LoggingFeature.class);
+
       setProperties(
           Map.of(
-              // Explicit Jersey logging is disabled by default but useful for debugging
+              // Explicit Jersey logging is disabled by default but useful for debugging (pt 2)
               // "jersey.config.server.tracing.type", "ALL",
               // "jersey.config.server.tracing.threshold", "VERBOSE",
               "jersey.config.server.wadl.disableWadl", "true",

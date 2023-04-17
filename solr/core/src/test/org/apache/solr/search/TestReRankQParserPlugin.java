@@ -16,7 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.solr.SolrTestCaseJ4;
@@ -57,6 +59,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     assertEquals(ReRankQParserPlugin.RERANK_WEIGHT, "reRankWeight");
     assertEquals(ReRankQParserPlugin.RERANK_WEIGHT_DEFAULT, 2.0d, 0.0d);
+
+    assertEquals(ReRankQParserPlugin.RERANK_OPERATOR, "reRankOperator");
   }
 
   @Test
@@ -125,6 +129,48 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='6']",
         "//result/doc[5]/str[@name='id'][.='1']",
         "//result/doc[6]/str[@name='id'][.='5']");
+
+    // check each of the reRankOperators return the expected score for item 3
+    for (Map.Entry<String, String> scoreByOp :
+        Map.of("add", "10002.1", "multiply", "1000.2", "replace", "10002.0").entrySet()) {
+      params = new ModifiableSolrParams();
+      String operation = scoreByOp.getKey();
+      if (random().nextBoolean()) {
+        operation = operation.toUpperCase(Locale.ROOT);
+      }
+      final Function<String, String> rerankQueryByOp =
+          op ->
+              "{!"
+                  + ReRankQParserPlugin.NAME
+                  + " "
+                  + ReRankQParserPlugin.RERANK_QUERY
+                  + "=$rqq "
+                  + ReRankQParserPlugin.RERANK_OPERATOR
+                  + "="
+                  + op
+                  + " "
+                  + ReRankQParserPlugin.RERANK_DOCS
+                  + "=200}";
+      params.add("rq", rerankQueryByOp.apply(operation));
+      params.add("q", "term_s:YYYY^=0.1"); // force score=0.1
+      params.add("rqq", "{!edismax bf=$bff}*:*"); // returns 1 + $bff
+      params.add("bff", "field(test_ti)"); // test_ti=5000 for item 3
+      params.add("start", "0");
+      params.add("rows", "6");
+      params.add("df", "text");
+      params.add("fl", "id,score");
+      assertQ(
+          req(params),
+          "*[count(//doc)=6]",
+          "//result/doc[1]/str[@name='id'][.='3']",
+          "//result/doc[1]/float[@name='score'][.='" + scoreByOp.getValue() + "']");
+      final String badOp =
+          random().nextBoolean()
+              ? operation + operation
+              : operation.substring(0, operation.length() - 1);
+      params.set("rq", rerankQueryByOp.apply(badOp));
+      assertQEx("Wrong reRankOperation:" + badOp, req(params), SolrException.ErrorCode.BAD_REQUEST);
+    }
 
     params = new ModifiableSolrParams();
     params.add(
@@ -960,7 +1006,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
               "id_p_i", String.valueOf(i),
               "field_t",
                   IntStream.range(0, numDocs)
-                      .mapToObj(val -> Integer.toString(val))
+                      .mapToObj(Integer::toString)
                       .collect(Collectors.joining(" "))));
     }
     assertU(commit());

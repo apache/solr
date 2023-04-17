@@ -36,7 +36,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -76,17 +75,12 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Before
   public void doBefore() {
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
   }
 
   @After
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
-
-    if (null != solrClient) {
-      solrClient.close();
-      solrClient = null;
-    }
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the
@@ -100,7 +94,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
-    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
+    HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
     post.setEntity(
         new StringEntity(
             "{\n"
@@ -321,16 +315,15 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testTimezoneAbsoluteDate() throws Exception {
     final String aliasName = getSaferTestName();
-    try (SolrClient client = getCloudSolrClient(cluster)) {
-      CollectionAdminRequest.createTimeRoutedAlias(
-              aliasName,
-              "2018-01-15T00:00:00Z",
-              "+30MINUTE",
-              "evt_dt",
-              CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1))
-          .setTimeZone(TimeZone.getTimeZone("GMT-10"))
-          .process(client);
-    }
+
+    CollectionAdminRequest.createTimeRoutedAlias(
+            aliasName,
+            "2018-01-15T00:00:00Z",
+            "+30MINUTE",
+            "evt_dt",
+            CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1))
+        .setTimeZone(TimeZone.getTimeZone("GMT-10"))
+        .process(solrClient);
 
     assertCollectionExists(aliasName + TIME.getSeparatorPrefix() + "2018-01-15");
   }

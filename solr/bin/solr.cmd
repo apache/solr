@@ -103,7 +103,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 
   IF NOT DEFINED SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
+  )
+  IF "%SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION%"=="false" (
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=false"
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
@@ -1275,13 +1278,6 @@ REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-164
 if !JAVA_MAJOR_VERSION! GEQ 17  (
   set SOLR_OPTS=%SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
   echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
-)
-
-REM Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory. See https://issues.apache.org/jira/browse/SOLR-16500
-
-if !JAVA_MAJOR_VERSION! EQU 19  (
-  set SOLR_OPTS=%SOLR_OPTS% --enable-preview
-  echo Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (

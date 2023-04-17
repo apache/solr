@@ -57,12 +57,12 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
 
   @Test
   public void testSolrClusterWithNodeRoleWithSingleReplica() throws Exception {
-    doSplit("coll_NO_HA", 1, 1, 0);
+    doSplit("coll_ONLY_NRT", 1, 1, 0);
   }
 
   @Test
-  public void testSolrClusterWithNodeRoleWithHA() throws Exception {
-    doSplit("coll_HA", 1, 1, 1);
+  public void testSolrClusterWithNodeRoleWithPull() throws Exception {
+    doSplit("coll_NRT_PULL", 1, 1, 1);
   }
 
   public void doSplit(String collName, int shard, int nrtReplica, int pullReplica)

@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +49,8 @@ public class DigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
     for (ZkCredentialsInjector.ZkCredential zkCredential : zkCredentials) {
       if (zkCredential.isAll()) {
         // this is the "user" with all perms that SolrZooKeeper uses to connect to zookeeper
-        if (!StringUtils.isEmpty(zkCredential.getUsername())
-            && !StringUtils.isEmpty(zkCredential.getPassword())) {
+        if (StrUtils.isNotNullOrEmpty(zkCredential.getUsername())
+            && StrUtils.isNotNullOrEmpty(zkCredential.getPassword())) {
           result.add(
               new ZkCredentials(
                   "digest",

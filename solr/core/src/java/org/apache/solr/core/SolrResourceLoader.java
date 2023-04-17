@@ -224,7 +224,7 @@ public class SolrResourceLoader
           "Added {} libs to classloader, from paths: {}",
           urls.size(),
           urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
               .distinct()
               .collect(Collectors.toList()));

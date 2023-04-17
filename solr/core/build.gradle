@@ -107,7 +107,6 @@ dependencies {
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
   implementation 'com.carrotsearch:hppc'
-  implementation 'org.apache.commons:commons-collections4'
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 

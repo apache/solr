@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +31,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -327,10 +327,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
-    all.putAll(propMap);
-    all.put(CollectionStateProps.SHARDS, slices);
-    jsonWriter.write(all);
+    jsonWriter.write(
+        (MapWriter)
+            ew -> {
+              propMap.forEach(ew.getBiConsumer());
+              ew.put(CollectionStateProps.SHARDS, slices);
+            });
   }
 
   public Replica getReplica(String coreNodeName) {
