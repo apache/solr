@@ -62,7 +62,7 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.SimplePostTool.BAOS;
+import org.apache.solr.util.cli.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

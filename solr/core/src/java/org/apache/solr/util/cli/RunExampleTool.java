@@ -48,7 +48,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.util.SimplePostTool;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 

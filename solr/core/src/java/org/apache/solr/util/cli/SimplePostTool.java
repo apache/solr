@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.util.cli;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -66,15 +66,15 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.apache.solr.util.cli.CLIO;
+import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * A simple utility class for posting raw updates to a Solr server.  It has a main method, so it can be
- * run on the command line. View this not as a best-practice code example, but as a standalone
+ * A simple utility class for posting raw updates to a Solr server. It has a main method, so it can
+ * be run on the command line. View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external jar dependencies.
  */
 public class SimplePostTool {
