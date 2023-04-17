@@ -135,7 +135,7 @@ public class StatusTool extends ToolBase {
   }
 
   public Map<String, Object> getStatus(String solrUrl) throws Exception {
-    Map<String, Object> status = null;
+    Map<String, Object> status;
 
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
@@ -156,7 +156,7 @@ public class StatusTool extends ToolBase {
 
     String solrHome = (String) info.get("solr_home");
     status.put("solr_home", solrHome != null ? solrHome : "?");
-    status.put("version", (String) info.findRecursive("lucene", "solr-impl-version"));
+    status.put("version", info.findRecursive("lucene", "solr-impl-version"));
     status.put("startTime", info.findRecursive("jvm", "jmx", "startTime").toString());
     status.put("uptime", SolrCLI.uptime((Long) info.findRecursive("jvm", "jmx", "upTimeMS")));
 

@@ -54,7 +54,7 @@ public class CreateTool extends ToolBase {
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
-    ToolBase tool = null;
+    ToolBase tool;
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> systemInfo =
           solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));

@@ -515,7 +515,7 @@ public class RunExampleTool extends ToolBase {
     if (solrUrl.endsWith("/")) solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
 
     // wait until live nodes == numNodes
-    waitToSeeLiveNodes(10 /* max wait */, zkHost, numNodes);
+    waitToSeeLiveNodes(/* max wait */ zkHost, numNodes);
 
     // create the collection
     String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
@@ -555,18 +555,17 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected void waitToSeeLiveNodes(int maxWaitSecs, String zkHost, int numNodes) {
+  protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
     try (CloudSolrClient cloudClient =
         new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
       cloudClient.connect();
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
-      long timeout =
-          System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
+      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
       while (System.nanoTime() < timeout && numLiveNodes < numNodes) {
         echo(
             "\nWaiting up to "
-                + maxWaitSecs
+                + 10
                 + " seconds to see "
                 + (numNodes - numLiveNodes)
                 + " more nodes join the SolrCloud cluster ...");
@@ -585,7 +584,7 @@ public class RunExampleTool extends ToolBase {
                 + " of "
                 + numNodes
                 + " are active in the cluster after "
-                + maxWaitSecs
+                + 10
                 + " seconds! Please check the solr.log for each node to look for errors.\n");
       }
     } catch (Exception exc) {
@@ -936,19 +935,11 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected boolean isPortAvailable(int port) {
-    Socket s = null;
-    try {
-      s = new Socket("localhost", port);
+    try (Socket s = new Socket("localhost", port)) {
+      assert s != null;
       return false;
     } catch (IOException e) {
       return true;
-    } finally {
-      if (s != null) {
-        try {
-          s.close();
-        } catch (IOException ignore) {
-        }
-      }
     }
   }
 
@@ -1016,7 +1007,7 @@ public class RunExampleTool extends ToolBase {
           }
         }
       }
-      if (attempts == 0 && value != null && inputAsInt == null)
+      if (attempts == 0 && inputAsInt == null)
         echo("Too many failed attempts! Going with default value " + defVal);
     }
 

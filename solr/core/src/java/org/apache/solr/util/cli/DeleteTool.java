@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
@@ -112,7 +113,9 @@ public class DeleteTool extends ToolBase {
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
             .withInternalClientBuilder(
-                new Http2SolrClient.Builder().idleTimeout(30000).connectionTimeout(15000))
+                new Http2SolrClient.Builder()
+                    .withIdleTimeout(30, TimeUnit.SECONDS)
+                    .withConnectionTimeout(15, TimeUnit.SECONDS))
             .build()) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
@@ -128,9 +131,7 @@ public class DeleteTool extends ToolBase {
           "No live nodes found! Cannot delete a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String firstLiveNode = liveNodes.iterator().next();
     ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    String solrUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
     String collectionName = cli.getOptionValue(NAME);
     if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
       throw new IllegalArgumentException("Collection " + collectionName + " not found!");
@@ -179,7 +180,7 @@ public class DeleteTool extends ToolBase {
     echoIfVerbose(
         "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
-    NamedList<Object> response = null;
+    NamedList<Object> response;
     try {
       response = cloudSolrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
     } catch (SolrServerException sse) {
@@ -216,7 +217,7 @@ public class DeleteTool extends ToolBase {
 
     echo("\nDeleting core '" + coreName + "' using CoreAdminRequest\n");
 
-    NamedList<Object> response = null;
+    NamedList<Object> response;
     try {
       CoreAdminRequest.Unload unloadRequest = new CoreAdminRequest.Unload(true);
       unloadRequest.setDeleteIndex(true);

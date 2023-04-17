@@ -101,8 +101,9 @@ public class CreateCollectionTool extends ToolBase {
     String collectionName = cli.getOptionValue(NAME);
 
     // build a URL to create the collection
-    int numShards = optionAsInt(cli, "shards", 1);
-    int replicationFactor = optionAsInt(cli, "replicationFactor", 1);
+    int numShards = Integer.parseInt(cli.getOptionValue("shards", String.valueOf(1)));
+    int replicationFactor =
+        Integer.parseInt(cli.getOptionValue("replicationFactor", String.valueOf(1)));
 
     String confname = cli.getOptionValue("confname");
     String confdir = cli.getOptionValue("confdir");
@@ -152,7 +153,7 @@ public class CreateCollectionTool extends ToolBase {
     echoIfVerbose(
         "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
-    NamedList<Object> response = null;
+    NamedList<Object> response;
     try {
       response =
           cloudSolrClient.request(
@@ -181,9 +182,5 @@ public class CreateCollectionTool extends ToolBase {
 
       echo(endMessage);
     }
-  }
-
-  protected int optionAsInt(CommandLine cli, String option, int defaultVal) {
-    return Integer.parseInt(cli.getOptionValue(option, String.valueOf(defaultVal)));
   }
 }

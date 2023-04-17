@@ -47,7 +47,7 @@ public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static String message = null;
   private static boolean useExitCode = false;
-  private static Long timeoutMs = 1000l;
+  private static Long timeoutMs = 1000L;
 
   public AssertTool() {
     this(CLIO.getOutStream());
@@ -386,7 +386,7 @@ public class AssertTool extends ToolBase {
       final SolrRequest<CollectionAdminResponse> request =
           new CollectionAdminRequest.ClusterStatus();
       final CollectionAdminResponse response = request.process(client);
-      return response != null;
+      return true; // throws an exception otherwise
     } catch (Exception e) {
       if (SolrCLI.exceptionIsAuthRelated(e)) {
         throw e;

@@ -122,7 +122,7 @@ public class HealthcheckTool extends SolrCloudTool {
 
         String uptime = null;
         String memory = null;
-        String replicaStatus = null;
+        String replicaStatus;
         long numDocs = -1L;
 
         ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);

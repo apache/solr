@@ -107,7 +107,7 @@ public class CreateCoreTool extends ToolBase {
 
     String coreName = cli.getOptionValue(NAME);
 
-    String coreRootDirectory = null; // usually same as solr home, but not always
+    String coreRootDirectory; // usually same as solr home, but not always
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       Map<String, Object> systemInfo =
           solrClient

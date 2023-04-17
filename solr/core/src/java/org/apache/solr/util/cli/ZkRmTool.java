@@ -72,7 +72,7 @@ public class ZkRmTool extends ToolBase {
               + " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
     }
     String target = cli.getOptionValue("path");
-    Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+    boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
 
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {
@@ -87,7 +87,7 @@ public class ZkRmTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
-      if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
+      if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(
             "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
       }
@@ -97,7 +97,7 @@ public class ZkRmTool extends ToolBase {
               + " from ZooKeeper at "
               + zkHost
               + " recurse: "
-              + Boolean.toString(recurse));
+              + recurse);
       zkClient.clean(znode);
     } catch (Exception e) {
       log.error("Could not complete rm operation for reason: ", e);

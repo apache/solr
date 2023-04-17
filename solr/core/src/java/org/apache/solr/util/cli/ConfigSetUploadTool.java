@@ -96,7 +96,7 @@ public class ConfigSetUploadTool extends ToolBase {
 
       echo(
           "Uploading "
-              + confPath.toAbsolutePath().toString()
+              + confPath.toAbsolutePath()
               + " for config "
               + cli.getOptionValue("confname")
               + " to ZooKeeper at "
