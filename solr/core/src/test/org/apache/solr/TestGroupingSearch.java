@@ -1573,6 +1573,31 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupingOnEnumField() throws Exception {
+    assertU(add(doc("id", "1", "severity", "Low")));
+    assertU(add(doc("id", "2", "severity", "Medium")));
+    assertU(commit());
+
+    assertU(add(doc("id", "3", "severity", "Low")));
+    assertU(add(doc("id", "4", "severity", "Critical")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    ModifiableSolrParams params =
+        params(
+            "q", "*:*", "group.limit", "10", "group", "true", "fl", "id", "group.ngroups", "true");
+
+    assertJQ(
+        req(params, "group.field", "severity", "sort", "id asc"),
+        "/grouped=={'severity':{'matches':5,'ngroups':4, 'groups':"
+            + "[{'groupValue':'Low','doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'1'},{'id':'3'}]}},"
+            + "{'groupValue':'Medium','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'2'}]}},"
+            + "{'groupValue':'Critical','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'4'}]}},"
+            + "{'groupValue':null,'doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}"
+            + "]}}");
+  }
+
+  @Test
   public void testRandomGrouping() throws Exception {
     /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
