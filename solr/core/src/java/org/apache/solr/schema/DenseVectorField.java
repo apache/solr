@@ -40,6 +40,9 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.util.vector.ByteDenseVectorParser;
+import org.apache.solr.util.vector.DenseVectorParser;
+import org.apache.solr.util.vector.FloatDenseVectorParser;
 
 /**
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See

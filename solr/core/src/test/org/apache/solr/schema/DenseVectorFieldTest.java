@@ -25,6 +25,7 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.util.vector.DenseVectorParser;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
