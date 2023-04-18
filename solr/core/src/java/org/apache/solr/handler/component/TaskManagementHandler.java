@@ -110,7 +110,8 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
     }
   }
 
-  static void setShardAttributesToParams(ShardRequest sreq, String shard, ModifiableSolrParams params) {
+  static void setShardAttributesToParams(
+      ShardRequest sreq, String shard, ModifiableSolrParams params) {
     params.remove(ShardParams.SHARDS); // not a top-level request
     params.set(DISTRIB, "false"); // not a top-level request
     params.remove("indent");
