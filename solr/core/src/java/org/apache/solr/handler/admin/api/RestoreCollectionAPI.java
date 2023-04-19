@@ -21,7 +21,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.handler.admin.api.CreateCollectionAPI.convertV2CreateCollectionMapToV1ParamMap;
+import static org.apache.solr.handler.admin.api.CreateCollectionAPI.CreateCollectionRequestBody.convertV2CreateCollectionMapToV1ParamMap;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import java.util.HashMap;
