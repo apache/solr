@@ -94,6 +94,8 @@ Improvements
 * SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
   `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
 
+* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
+
 Optimizations
 ---------------------
 
