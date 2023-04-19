@@ -1370,6 +1370,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("SelfComparison")
   public void testCompareAffinityGroupWithNodes() {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
     final List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
