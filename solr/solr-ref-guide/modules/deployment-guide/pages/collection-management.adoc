@@ -54,11 +54,9 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 ----
 curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
   {
-    "create": {
-      "name": "techproducts_v2",
-      "config": "techproducts",
-      "numShards": 1
-    }
+    "name": "techproducts_v2",
+    "config": "techproducts",
+    "numShards": 1
   }
 '
 ----
@@ -109,15 +107,17 @@ For more information, see also the section xref:solrcloud-shards-indexing.adoc#d
 The number of shards to be created as part of the collection.
 This is a required parameter when the `router.name` is `compositeId`.
 
-`shards`::
+`shards` (v1), `shardNames` (v2)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`.
-This is a required parameter when the `router.name` is `implicit`.
+The shard names use when creating this collection.
+This is a required parameter when `router.name` is `implicit`.
+For v1 requests, these are provided as a single comma-delimited query parameter, e.g., `shard-x,shard-y,shard-z`.
+For v2 requests shard names are provided as a list of values in the request body, e.g., `["shard-x", "shard-y", "shard-z"]`
 
 `replicationFactor`::
 +
@@ -174,11 +174,26 @@ See the section xref:solrcloud-shards-indexing.adoc#types-of-replicas[Types of R
 |===
 +
 Allows defining the nodes to spread the new collection across.
-The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+For v1 requests, node names are provided as a single comma-separated list, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+For v2 requests, node names are provided as a list of individual values, such as `["localhost:8983_solr", "localhost:7574_solr"]`.
 +
-If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
+If not provided, the CREATE operation will use all live nodes in the cluster as its node set.
 +
-Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the xref:replica-management.adoc#addreplica[ADDREPLICA] operation to add shard-replicas when and where required.
+Alternatively, v1 requests allow the special value `EMPTY` to initially create no shard-replica within the new collection and then later use the xref:replica-management.adoc#addreplica[ADDREPLICA] operation to add shard-replicas when and where required.
+v2 requests may use this same functionality via the `createReplicas` boolean parameter.
+
+`createReplicas` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+Controls whether Solr creates replicas for each shard as a part of the collection-creation operation.
+(Replicas can always be created later using the xref:replica-management.adoc#addreplica[ADDREPLICA] operation.)
++
+Only available on v2 requests.
+v1 requests wishing to defer replica-creation may do so my providing the `EMPTY` flag value to the `createNodeSet` parameter.
 
 `createNodeSet.shuffle` (v1), `shuffleNodes` (v2)::
 +

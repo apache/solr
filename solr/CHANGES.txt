@@ -62,6 +62,9 @@ Improvements
   /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
   `DELETE /api/collections/collName/snapshots/snapshotName`. (John Durham via Jason Gerlowski)
 
+* SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
+  `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 

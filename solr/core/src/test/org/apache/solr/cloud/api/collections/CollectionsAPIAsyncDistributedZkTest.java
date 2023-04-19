@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,6 +43,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -274,12 +278,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
                   reloadCollectionRequest.processAsync(
                       "repeatedId", clients[random().nextInt(clients.length)]);
                   numSuccess.incrementAndGet();
-                } catch (SolrServerException e) {
+                } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException e) {
                   if (log.isInfoEnabled()) {
                     log.info("Exception during collection reloading, we were waiting for one: ", e);
                   }
-                  assertEquals(
-                      "Task with the same requestid already exists. (repeatedId)", e.getMessage());
+                  MatcherAssert.assertThat(
+                      e.getMessage(),
+                      containsString("Task with the same requestid already exists. (repeatedId)"));
                   numFailure.incrementAndGet();
                 } catch (IOException e) {
                   throw new RuntimeException();
