@@ -91,6 +91,9 @@ Improvements
   /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
   `DELETE /api/collections/collName/snapshots/snapshotName`. (John Durham via Jason Gerlowski)
 
+* SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
+  `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -133,6 +136,8 @@ Bug Fixes
 
 * SOLR-16747: The Solr source release can now be built/checked using gradle.
   The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
+* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
 
 Dependency Upgrades
 ---------------------

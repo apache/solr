@@ -88,35 +88,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       apiBag.registerObject(clusterAPI);
       apiBag.registerObject(clusterAPI.commands);
     }
-    // test a simple create collection call
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    // test a create collection operation with custom properties
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
 
     compareOutput(
         apiBag,
