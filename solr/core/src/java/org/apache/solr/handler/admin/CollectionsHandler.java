@@ -211,9 +211,11 @@ import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
@@ -221,6 +223,7 @@ import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
+import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
@@ -1597,96 +1600,60 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
-          String extCollectionName = req.getParams().get(COLLECTION_PROP);
-          boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
-          String collectionName =
-              followAliases
-                  ? h.coreContainer
-                      .getZkController()
-                      .getZkStateReader()
-                      .getAliases()
-                      .resolveSimpleAlias(extCollectionName)
-                  : extCollectionName;
-          String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
-          ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-          if (!clusterState.hasCollection(collectionName)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Collection '" + collectionName + "' does not exist, no action taken.");
-          }
+          final String extCollectionName = req.getParams().get(COLLECTION_PROP);
+          final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+          final String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
+          final String asyncId = req.getParams().get(ASYNC);
 
-          SolrZkClient client = h.coreContainer.getZkController().getZkClient();
-          if (SolrSnapshotManager.snapshotExists(client, collectionName, commitName)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Snapshot with name '"
-                    + commitName
-                    + "' already exists for collection '"
-                    + collectionName
-                    + "', no action taken.");
-          }
+          final CreateCollectionSnapshotAPI createCollectionSnapshotAPI =
+              new CreateCollectionSnapshotAPI(h.coreContainer, req, rsp);
 
-          Map<String, Object> params =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  FOLLOW_ALIASES,
-                  CoreAdminParams.COMMIT_NAME);
-          return params;
+          final CreateCollectionSnapshotAPI.CreateSnapshotRequestBody requestBody =
+              new CreateCollectionSnapshotAPI.CreateSnapshotRequestBody();
+          requestBody.followAliases = followAliases;
+          requestBody.asyncId = asyncId;
+
+          final CreateCollectionSnapshotAPI.CreateSnapshotResponse createSnapshotResponse =
+              createCollectionSnapshotAPI.createSnapshot(
+                  extCollectionName, commitName, requestBody);
+
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
+
+          return null;
         }),
     DELETESNAPSHOT_OP(
         DELETESNAPSHOT,
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
-          String extCollectionName = req.getParams().get(COLLECTION_PROP);
-          String collectionName =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getAliases()
-                  .resolveSimpleAlias(extCollectionName);
-          ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-          if (!clusterState.hasCollection(collectionName)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Collection '" + collectionName + "' does not exist, no action taken.");
-          }
+          final String extCollectionName = req.getParams().get(COLLECTION_PROP);
+          final String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
+          final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+          final String asyncId = req.getParams().get(ASYNC);
 
-          Map<String, Object> params =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  FOLLOW_ALIASES,
-                  CoreAdminParams.COMMIT_NAME);
-          return params;
+          final DeleteCollectionSnapshotAPI deleteCollectionSnapshotAPI =
+              new DeleteCollectionSnapshotAPI(h.coreContainer, req, rsp);
+
+          final DeleteCollectionSnapshotAPI.DeleteSnapshotResponse deleteSnapshotResponse =
+              deleteCollectionSnapshotAPI.deleteSnapshot(
+                  extCollectionName, commitName, followAliases, asyncId);
+
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteSnapshotResponse);
+          return null;
         }),
     LISTSNAPSHOTS_OP(
         LISTSNAPSHOTS,
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP);
 
-          String extCollectionName = req.getParams().get(COLLECTION_PROP);
-          String collectionName =
-              h.coreContainer
-                  .getZkController()
-                  .getZkStateReader()
-                  .getAliases()
-                  .resolveSimpleAlias(extCollectionName);
-          ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-          if (!clusterState.hasCollection(collectionName)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Collection '" + collectionName + "' does not exist, no action taken.");
-          }
+          final ListCollectionSnapshotsAPI listCollectionSnapshotsAPI =
+              new ListCollectionSnapshotsAPI(h.coreContainer, req, rsp);
 
-          NamedList<Object> snapshots = new NamedList<Object>();
-          SolrZkClient client = h.coreContainer.getZkController().getZkClient();
-          Collection<CollectionSnapshotMetaData> m =
-              SolrSnapshotManager.listSnapshots(client, collectionName);
-          for (CollectionSnapshotMetaData meta : m) {
+          final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
+              listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
+
+          NamedList<Object> snapshots = new NamedList<>();
+          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
             snapshots.add(meta.getName(), meta.toNamedList());
           }
 
@@ -1993,7 +1960,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CollectionPropertyAPI.class,
         DeleteNodeAPI.class,
         ListAliasesAPI.class,
-        AliasPropertyAPI.class);
+        AliasPropertyAPI.class,
+        ListCollectionSnapshotsAPI.class,
+        CreateCollectionSnapshotAPI.class,
+        DeleteCollectionSnapshotAPI.class);
   }
 
   @Override
