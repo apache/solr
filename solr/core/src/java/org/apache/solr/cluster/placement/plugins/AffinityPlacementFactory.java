@@ -39,7 +39,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -542,7 +541,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       private final List<Node> availableNodesForPlacement;
       private final AttributeValues attributeValues;
       private TreeSet<AffinityGroupWithNodes> sortedAntiAffinityGroups;
-      private final Map<String, MutableInt> currentAntiAffinityUsage;
+      private final Map<String, Integer> currentAntiAffinityUsage;
       private int numNodesForPlacement;
 
       AzWithNodes(
@@ -552,7 +551,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           Comparator<Node> nodeComparator,
           Random random,
           AttributeValues attributeValues,
-          Map<String, MutableInt> currentAntiAffinityUsage) {
+          Map<String, Integer> currentAntiAffinityUsage) {
         this.azName = azName;
         this.availableNodesForPlacement = availableNodesForPlacement;
         this.useAntiAffinity = useAntiAffinity;
@@ -576,7 +575,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       private void sort() {
         assert !listIsSorted && sortedAntiAffinityGroups == null
-                : "We shouldn't be sorting this list again";
+            : "We shouldn't be sorting this list again";
 
         // Make sure we do not tend to use always the same nodes (within an AZ) if all
         // conditions are identical (well, this likely is not the case since after having added
@@ -592,7 +591,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // When we use anti-affinity, we don't just sort the list of nodes, instead we generate a
           // TreeSet of AffinityGroupWithNodes,
           // sorted by the number of times the affinity label has been used. Each
-          // AffinityGroupWithNodes internally contains the list of nodes that use a particular affinity
+          // AffinityGroupWithNodes internally contains the list of nodes that use a particular
+          // affinity
           // label, and it's sorted internally by the comparator passed to this
           // class (which is the same that's used when not using anti-affinity).
           // Whenever a node from a particular AffinityGroupWithNodes is selected as the best
@@ -616,7 +616,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   return v;
                 });
           }
-          sortedAntiAffinityGroups = new TreeSet<>(new AntiAffinityComparator(currentAntiAffinityUsage));
+          sortedAntiAffinityGroups =
+              new TreeSet<>(new AntiAffinityComparator(currentAntiAffinityUsage));
 
           int i = 0;
           for (Map.Entry<String, List<Node>> entry : antiAffinityNameToListOfNodesMap.entrySet()) {
@@ -653,11 +654,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               group.affinityGroupName,
               (k, v) -> {
                 if (v == null) {
-                  v = new MutableInt(1);
-                } else {
-                  v.increment();
+                  return 1;
                 }
-                return v;
+                return v + 1;
               });
           if (!group.sortedNodesForPlacement.isEmpty()) {
             sortedAntiAffinityGroups.add(group);
@@ -898,7 +897,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // This Map will include the affinity labels for the nodes that are currently hosting replicas
       // of this shard. It will be modified with new placement decisions.
-      Map<String, MutableInt> affinityLabelsInUse = new HashMap<>();
+      Map<String, Integer> affinityLabelsInUse = new HashMap<>();
       Shard shard = solrCollection.getShard(shardName);
       if (shard != null) {
         // shard is non null if we're adding replicas to an already existing collection.
@@ -922,10 +921,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       .get(),
                   (k, v) -> {
                     if (v == null) {
-                      return new MutableInt(1);
+                      return 1;
                     }
-                    v.increment();
-                    return v;
+                    return v + 1;
                   });
             }
           }
@@ -1205,10 +1203,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     static class AntiAffinityComparator implements Comparator<AffinityGroupWithNodes> {
-      private static final MutableInt ZERO = new MutableInt(0);
-      private final Map<String, MutableInt> antiAffinityUsage;
+      private final Map<String, Integer> antiAffinityUsage;
 
-      AntiAffinityComparator(Map<String, MutableInt> antiAffinityUsage) {
+      AntiAffinityComparator(Map<String, Integer> antiAffinityUsage) {
         this.antiAffinityUsage = antiAffinityUsage;
       }
 
@@ -1220,8 +1217,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // 2. On equal number of usages, by the internal comparator (which uses core count and disk
         // space) on the best node for each group (which, since the list is sorted, it's always the
         // one in the position 0)
-        MutableInt usagesLabel1 = antiAffinityUsage.getOrDefault(group1.affinityGroupName, ZERO);
-        MutableInt usagesLabel2 = antiAffinityUsage.getOrDefault(group2.affinityGroupName, ZERO);
+        Integer usagesLabel1 = antiAffinityUsage.getOrDefault(group1.affinityGroupName, 0);
+        Integer usagesLabel2 = antiAffinityUsage.getOrDefault(group2.affinityGroupName, 0);
         if (usagesLabel1.equals(usagesLabel2)) {
           return group1.compareTo(group2);
         }
