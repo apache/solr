@@ -392,7 +392,9 @@ public class CreateCollectionAPI extends AdminAPIBase {
     }
 
     public void validate() {
-      if (replicationFactor != null && nrtReplicas != null && (!replicationFactor.equals(nrtReplicas))) {
+      if (replicationFactor != null
+          && nrtReplicas != null
+          && (!replicationFactor.equals(nrtReplicas))) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
