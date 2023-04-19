@@ -1198,22 +1198,16 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     int perNode = TOTAL_REPLICAS > numNodes ? TOTAL_REPLICAS / numNodes : 1;
     replicasPerNode.forEach(
         (node, count) -> {
-          if (count.get() != perNode) {
-            log.info("Node {} has {} replicas", node.getName(), count.get());
-          }
           assertEquals(perNode, count.get());
         });
     shardsPerNode.forEach(
         (node, names) -> {
-          assertEquals(names.size(), perNode);
-          if (names.size() != perNode) {
-            log.info("Node {} has {} shards: {}", node.getName(), names.size(), names);
-          }
+          assertEquals(perNode, names.size());
         });
 
     replicasPerShard.forEach(
         (shard, count) -> {
-          assertEquals(count.get(), REPLICAS_PER_SHARD);
+          assertEquals(REPLICAS_PER_SHARD, count.get());
         });
   }
 

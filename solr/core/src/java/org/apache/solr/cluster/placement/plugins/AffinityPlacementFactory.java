@@ -542,7 +542,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       private final List<Node> availableNodesForPlacement;
       private final AttributeValues attributeValues;
       private TreeSet<AffinityGroupWithNodes> sortedAntiAffinityGroups;
-      private final Map<String, MutableInt> antiAffinityUsage;
+      private final Map<String, MutableInt> currentAntiAffinityUsage;
       private int numNodesForPlacement;
 
       AzWithNodes(
@@ -552,16 +552,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           Comparator<Node> nodeComparator,
           Random random,
           AttributeValues attributeValues,
-          Map<String, MutableInt> antiAffinityUsage) {
+          Map<String, MutableInt> currentAntiAffinityUsage) {
         this.azName = azName;
-        // Once the list is sorted to an order we're happy with, this flag is set to true to avoid
-        // sorting multiple times unnecessarily.
         this.availableNodesForPlacement = availableNodesForPlacement;
         this.useAntiAffinity = useAntiAffinity;
         this.nodeComparator = nodeComparator;
         this.random = random;
         this.attributeValues = attributeValues;
-        this.antiAffinityUsage = antiAffinityUsage;
+        this.currentAntiAffinityUsage = currentAntiAffinityUsage;
         this.numNodesForPlacement = availableNodesForPlacement.size();
       }
 
@@ -577,6 +575,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       private void sort() {
+        assert !listIsSorted && sortedAntiAffinityGroups == null
+                : "We shouldn't be sorting this list again";
+
         // Make sure we do not tend to use always the same nodes (within an AZ) if all
         // conditions are identical (well, this likely is not the case since after having added
         // a replica to a node its number of cores increases for the next placement decision,
@@ -586,20 +587,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // 0 cores and same amount of free disk space, ideally we want to pick a random node for
         // placement, not always the same one due to some internal ordering.
         Collections.shuffle(availableNodesForPlacement, random);
-        assert !listIsSorted && sortedAntiAffinityGroups == null
-            : "We shouldn't be sorting this list again";
 
         if (useAntiAffinity) {
           // When we use anti-affinity, we don't just sort the list of nodes, instead we generate a
           // TreeSet of AffinityGroupWithNodes,
           // sorted by the number of times the affinity label has been used. Each
-          // AffinityGroupWithNodes internally contains
-          // The list of nodes that use a particular affinity label, and it's sorted internally by
-          // the comparator passed to this
+          // AffinityGroupWithNodes internally contains the list of nodes that use a particular affinity
+          // label, and it's sorted internally by the comparator passed to this
           // class (which is the same that's used when not using anti-affinity).
           // Whenever a node from a particular AffinityGroupWithNodes is selected as the best
-          // candidate, the call to "removeBestNode"
-          // will:
+          // candidate, the call to "removeBestNode" will:
           // 1. Remove the AffinityGroupWithNodes instance from the TreeSet
           // 2. Remove the best node from the list within the AffinityGroupWithNodes
           // 3. Increment the count of times the affinity label has been used
@@ -619,7 +616,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   return v;
                 });
           }
-          sortedAntiAffinityGroups = new TreeSet<>(new AntiAffinityComparator(antiAffinityUsage));
+          sortedAntiAffinityGroups = new TreeSet<>(new AntiAffinityComparator(currentAntiAffinityUsage));
 
           int i = 0;
           for (Map.Entry<String, List<Node>> entry : antiAffinityNameToListOfNodesMap.entrySet()) {
@@ -629,8 +626,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 new AffinityGroupWithNodes(entry.getKey(), entry.getValue(), i++, nodeComparator));
           }
         } else {
-          // Sort by increasing number of cores but pushing nodes with low free disk space to the
-          // end of the list.
           availableNodesForPlacement.sort(nodeComparator);
           listIsSorted = true;
         }
@@ -654,7 +649,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // re-add it, once the best node has been removed.
           AffinityGroupWithNodes group = sortedAntiAffinityGroups.pollFirst();
           Node n = group.sortedNodesForPlacement.remove(0);
-          this.antiAffinityUsage.compute(
+          this.currentAntiAffinityUsage.compute(
               group.affinityGroupName,
               (k, v) -> {
                 if (v == null) {
