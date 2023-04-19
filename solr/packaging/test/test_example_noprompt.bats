@@ -29,8 +29,6 @@ teardown() {
 }
 
 @test "SOLR16755 test works with noprompt" {
-  echo starting solr
   solr start -e cloud -noprompt
-  echo waiting for solr to start
   solr assert --started http://localhost:8983/solr --timeout 10000
 }
