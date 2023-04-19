@@ -1835,7 +1835,6 @@ fi
 # otherwise let this script proceed to process the user request
 #
 if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  # shellcheck disable=SC2086
   run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi
