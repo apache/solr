@@ -59,12 +59,18 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
   public static final String NODE_TYPE_SYSPROP = "node_type";
 
   /**
+   * Name of the system property on a node indicating the anti-affinity group. This is used (if
+   * {@link #useAntiAffinity} is set to true) to indicate this placement plugin that replicas for a
+   * particular shard should be placed in nodes that have different values for this system property
+   * (or, if not possible, try to distribute evenly across groups).
+   */
+  public static final String ANTI_AFFINITY_SYSPROP = "anti_affinity";
+
+  /**
    * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I
    * think we're safe)
    */
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
-
-  public static final String ANTI_AFFINITY_SYSPROP = "anti_affinity";
 
   /**
    * If a node has strictly less GB of free disk than this value, the node is excluded from
@@ -98,7 +104,24 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    */
   @JsonProperty public Map<String, String> collectionNodeType;
 
-  /** nocommit: Docs */
+  /**
+   * When this property is set to {@code true}, Solr will try to place replicas for the same shard
+   * in nodes that have different value for the {@link #ANTI_AFFINITY_SYSPROP} System property. If
+   * more replicas exist (or are being placed) than the number of different values for {@link
+   * #ANTI_AFFINITY_SYSPROP} System property in nodes in the cluster, Solr will attempt to
+   * distribute the placement of the replicas evenly across the anti-affinity groups. Note that the
+   * anti-affinity groups are evaluated within a particular AZ (i.e. Solr will not consider the
+   * placement of replicas in AZ1 when selecting candidate nodes for replicas in AZ2). Example
+   * usages for this config are:
+   *
+   * <ul>
+   *   <li>Rack diversity: You want replicas in different AZs but also, within the AZ you want them
+   *       in different racks
+   *   <li>Host diversity: You are running multiple Solr instances in the same host physical host.
+   *       You want replicas in different AZs but also, within an AZ you want replicas for the same
+   *       shard to go in nodes that run in different hosts
+   * </ul>
+   */
   @JsonProperty public Boolean useAntiAffinity = Boolean.FALSE;
 
   /** Zero-arguments public constructor required for deserialization - don't use. */
