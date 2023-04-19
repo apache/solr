@@ -1,22 +1,15 @@
 {
   "private": true,
-  "description": "An example project for NextAuth.js with Next.js",
+  "description": "The the first step to modernize NextAuth.js with Next.js",
   "repository": "https://github.com/nextauthjs/next-auth-example.git",
   "bugs": {
     "url": "https://github.com/nextauthjs/next-auth/issues"
   },
-  "homepage": "https://next-auth-example.vercel.app",
   "scripts": {
     "dev": "next",
     "build": "next build",
     "start": "next start"
   },
-  "author": "Iain Collins <me@iaincollins.com>",
-  "contributors": [
-    "Balázs Orbán <info@balazsorban.com>",
-    "Nico Domino <yo@ndo.dev>",
-    "Lluis Agusti <hi@llu.lu>"
-  ],
   "dependencies": {
     "next": "latest",
     "next-auth": "latest",
