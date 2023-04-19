@@ -52,6 +52,8 @@ Improvements
 
 * SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
 
+* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
+
 Optimizations
 ---------------------
 
