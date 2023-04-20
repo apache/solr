@@ -33,9 +33,13 @@ public abstract class FeatureLogger {
 
   protected final FeatureFormat featureFormat;
 
-  protected FeatureLogger(String fvCacheName, FeatureFormat f) {
+  protected final Boolean extractAll;
+
+
+  protected FeatureLogger(String fvCacheName, FeatureFormat f, Boolean extractAll) {
     this.fvCacheName = fvCacheName;
     this.featureFormat = f;
+    this.extractAll = extractAll;
   }
 
   /**

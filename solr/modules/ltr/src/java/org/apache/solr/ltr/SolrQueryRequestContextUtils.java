@@ -32,6 +32,9 @@ public class SolrQueryRequestContextUtils {
   /** key of the isExtractingFeatures flag in the request context */
   private static final String IS_EXTRACTING_FEATURES = LTR_PREFIX + "isExtractingFeatures";
 
+  /** key of the isExtractingFeatures flag in the request context */
+  private static final String IS_EXTRACTING_ALL_FEATURES = LTR_PREFIX + "isExtractingAllFeatures";
+
   /** key of the feature vector store name in the request context */
   private static final String STORE = LTR_PREFIX + "store";
 
@@ -65,6 +68,16 @@ public class SolrQueryRequestContextUtils {
   public static boolean isExtractingFeatures(SolrQueryRequest req) {
     return Boolean.TRUE.equals(req.getContext().get(IS_EXTRACTING_FEATURES));
   }
+
+  public static void setIsExtractingAllFeatures(SolrQueryRequest req, Boolean extractAll) {
+    req.getContext().put(IS_EXTRACTING_ALL_FEATURES, extractAll);
+  }
+
+  public static Boolean isExtractingAllFeatures(SolrQueryRequest req) {
+    return (Boolean) req.getContext().get(IS_EXTRACTING_ALL_FEATURES);
+  }
+
+ 
 
   /** feature vector store name accessors */
   public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {

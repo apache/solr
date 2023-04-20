@@ -23,14 +23,14 @@ public class CSVFeatureLogger extends FeatureLogger {
   private final char keyValueSep;
   private final char featureSep;
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f) {
-    super(fvCacheName, f);
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, boolean extractAll) {
+    super(fvCacheName, f, extractAll);
     this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
   }
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
-    super(fvCacheName, f);
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, Boolean extractAll, char keyValueSep, char featureSep) {
+    super(fvCacheName, f, extractAll);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;
   }
@@ -43,7 +43,7 @@ public class CSVFeatureLogger extends FeatureLogger {
     StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
-      if (isDense || featInfo.isUsed()) {
+      if (featInfo != null && (isDense || featInfo.isUsed())) {
         sb.append(featInfo.getName())
             .append(keyValueSep)
             .append(featInfo.getValue())

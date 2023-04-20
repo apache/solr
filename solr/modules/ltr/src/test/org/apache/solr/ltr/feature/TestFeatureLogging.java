@@ -76,7 +76,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.add("fl", "id,popularity,[fv]");
+    query.add("fl", "id,popularity,[fv extractAll=true]");
     query.add("rows", "3");
     query.add("debugQuery", "on");
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
@@ -87,7 +87,7 @@ public class TestFeatureLogging extends TestRerankBase {
         "/response/docs/[0]/=={'id':'7', 'popularity':2,  '[fv]':'" + docs0fv_default_csv + "'}");
 
     query.remove("fl");
-    query.add("fl", "[fv]");
+    query.add("fl", "[fv extractAll=true]");
     query.add("rows", "3");
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
 
@@ -241,7 +241,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("debugQuery", "on");
 
     query.remove("fl");
-    query.add("fl", "fv:[fv]");
+    query.add("fl", "fv:[fv extractAll=true]");
     query.add("rows", "3");
     query.add("group", "true");
     query.add("group.field", "title");
@@ -295,7 +295,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - no feature format specified i.e. use default
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4]");
+    query.add("fl", "*,score,fv:[fv store=test4 extractAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_default_csv + "'");
     assertJQ(
@@ -303,7 +303,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - sparse feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=sparse]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse extractAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_sparse_csv + "'");
     assertJQ(
@@ -311,7 +311,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - dense feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=dense]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense extractAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_dense_csv + "'");
     assertJQ(
@@ -405,7 +405,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv extractAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='Exception to be defined'");
+            "/error/msg=='you can only extract all features from the store \\'null\\' passed in input in the logger'");
   }
 
   @Test
@@ -495,7 +495,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv store=storeA extractAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='Exception to be defined'");
+            "/error/msg=='you can only extract all features from the store \\'storeA\\' passed in input in the logger'");
   }
 
   @Test
@@ -718,7 +718,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='Exception to be defined'");
+            "/error/msg=='the feature store \\'storeB\\' in the logger is different from the model feature store \\'storeA\\', you can only extract all the features'");
   }
 
   @Test

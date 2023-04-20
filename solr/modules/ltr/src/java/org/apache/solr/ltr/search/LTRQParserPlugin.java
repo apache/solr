@@ -156,7 +156,8 @@ public class LTRQParserPlugin extends QParserPlugin
       }
       final boolean isInterleaving = (modelNames.length > 1);
       final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
-      final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
+      Boolean extractAllFeatures = SolrQueryRequestContextUtils.isExtractingAllFeatures(req);
+      final String transformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
       LTRScoringQuery rerankingQuery = null;
@@ -179,39 +180,52 @@ public class LTRQParserPlugin extends QParserPlugin
           // Check if features are requested and if the model feature store and feature-transform
           // feature store are the same
           final boolean featuresRequestedFromSameStore =
-              (modelFeatureStoreName.equals(tranformerFeatureStoreName)
-                      || tranformerFeatureStoreName == null)
+              (modelFeatureStoreName.equals(transformerFeatureStoreName)
+                      || transformerFeatureStoreName == null)
                   ? extractFeatures
                   : false;
+          
+          if(!featuresRequestedFromSameStore){
+            if(extractAllFeatures == null){
+              extractAllFeatures = true;
+            }
 
+            if(!extractAllFeatures){
+              throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST,
+                      "the feature store '"+transformerFeatureStoreName+"' in the logger is different from the model feature store '"+modelFeatureStoreName+"', you can only extract all the features");
+            }
+          } else {
+            if (extractAllFeatures == null) {
+              extractAllFeatures = false;
+            }
+          }
+
+          SolrQueryRequestContextUtils.setIsExtractingAllFeatures(req, extractAllFeatures);
           if (isInterleaving) {
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
                         ltrScoringModel,
                         externalFeatureInfo,
-                        featuresRequestedFromSameStore,
+                            extractAllFeatures,
                         threadManager);
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
                     ltrScoringModel,
                     externalFeatureInfo,
-                    featuresRequestedFromSameStore,
+                        extractAllFeatures,
                     threadManager);
             rerankingQueries[i] = null;
           }
+          
+          rerankingQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
 
-          // Enable the feature vector caching if we are extracting features, and the features
-          // we requested are the same ones we are reranking with
-          if (featuresRequestedFromSameStore) {
-            rerankingQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
-          }
         } else {
           rerankingQuery =
               rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
         }
-
         // External features
         rerankingQuery.setRequest(req);
       }
