@@ -650,14 +650,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // re-add it, once the best node has been removed.
           AffinityGroupWithNodes group = sortedAntiAffinityGroups.pollFirst();
           Node n = group.sortedNodesForPlacement.remove(0);
-          this.currentAntiAffinityUsage.compute(
+          this.currentAntiAffinityUsage.merge(
               group.affinityGroupName,
-              (k, v) -> {
-                if (v == null) {
-                  return 1;
-                }
-                return v + 1;
-              });
+              1,
+              Integer::sum);
           if (!group.sortedNodesForPlacement.isEmpty()) {
             sortedAntiAffinityGroups.add(group);
           }
