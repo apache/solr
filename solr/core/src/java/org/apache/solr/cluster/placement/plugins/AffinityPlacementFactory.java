@@ -604,17 +604,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // available
           HashMap<String, List<Node>> antiAffinityNameToListOfNodesMap = new HashMap<>();
           for (Node node : availableNodesForPlacement) {
-            antiAffinityNameToListOfNodesMap.compute(
+            antiAffinityNameToListOfNodesMap.computeIfAbsent(
                 attributeValues
                     .getSystemProperty(node, AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP)
                     .get(),
-                (k, v) -> {
-                  if (v == null) {
-                    v = new ArrayList<>();
-                  }
-                  v.add(node);
-                  return v;
-                });
+                ArrayList<>::new).add(node);
           }
           sortedAntiAffinityGroups =
               new TreeSet<>(new AntiAffinityComparator(currentAntiAffinityUsage));
