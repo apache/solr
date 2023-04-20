@@ -52,7 +52,7 @@ A `defVal` defines a default value that will be used if there is no entry in the
 === Format of the External File
 
 The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`.
-The name of the file should be `external_fieldname_` or `external_fieldname_.*`.
+The name of the file should be `external_fieldname` or `external_fieldname.*`.
 For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
 
 [TIP]

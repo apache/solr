@@ -45,7 +45,7 @@ ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/solr/solr/$SOLR_VERSION/so
 
 RUN set -ex; \
   apt-get update; \
-  apt-get -y install wget gpg dirmngr; \
+  apt-get -y --no-install-recommends install wget gpg gnupg dirmngr; \
   rm -rf /var/lib/apt/lists/*; \
   export GNUPGHOME="/tmp/gnupg_home"; \
   mkdir -p "$GNUPGHOME"; \
