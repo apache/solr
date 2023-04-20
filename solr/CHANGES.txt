@@ -54,6 +54,8 @@ Improvements
 
 * SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
 
+* SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
+
 Optimizations
 ---------------------
 

@@ -17,21 +17,35 @@
 
 load bats_helper
 
-setup() {
+setup_file() {
   common_clean_setup
+  solr start -c
+}
+
+teardown_file() {
+  common_setup
+  solr stop -all
+}
+
+setup() {
+  common_setup
 }
 
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  delete_all_collections
 }
 
-@test "Check export command" {
-  run solr start -c
+@test "post solr log into solr" {
   run solr create_collection -c COLL_NAME
-  run solr export -url "http://localhost:8983/solr/COLL_NAME" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
-  refute_output --partial 'Unrecognized option'
-  assert_output --partial 'Export complete'
+  assert_output --partial "Created collection 'COLL_NAME'"
+
+  run postlogs http://localhost:8983/solr/COLL_NAME ${SOLR_LOGS_DIR}/solr.log
+  assert_output --partial 'Sending last batch'
+  assert_output --partial 'Committed'
+
+  run curl 'http://localhost:8983/solr/COLL_NAME/select?q=*:*'
+  refute_output --partial '"numFound":0'
 }

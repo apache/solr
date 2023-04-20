@@ -28,6 +28,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.cli.ConfigSetUploadTool;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -39,7 +41,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -417,12 +418,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           "-configsetsDir", configSetDir.toString(),
         };
 
-    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+    ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
-    int res =
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(
-                tool.getName(), SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
   }
 }
