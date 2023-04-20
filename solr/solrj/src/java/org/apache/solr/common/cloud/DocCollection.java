@@ -209,8 +209,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * <p>This does not create a new DocCollection.
    */
-  public final DocCollection setPerReplicaStates(PerReplicaStates perReplicaStates) {
-    this.perReplicaStatesRef.set(perReplicaStates);
+  public final DocCollection setPerReplicaStates(PerReplicaStates newPerReplicaStates) {
+    if (this.perReplicaStatesRef != null) {
+      log.debug("In-place update of PRS: {}", newPerReplicaStates);
+      this.perReplicaStatesRef.set(newPerReplicaStates);
+    }
 
     return this;
   }
