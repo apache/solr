@@ -82,6 +82,26 @@ public abstract class AdminAPIBase extends JerseyResource {
     }
   }
 
+  protected String resolveCollectionName(String collName, boolean followAliases) {
+    final String collectionName =
+        followAliases
+            ? coreContainer
+                .getZkController()
+                .getZkStateReader()
+                .getAliases()
+                .resolveSimpleAlias(collName)
+            : collName;
+
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(collectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + collectionName + "' does not exist, no action taken.");
+    }
+
+    return collectionName;
+  }
+
   /**
    * TODO Taken from CollectionsHandler.handleRequestBody, but its unclear where (if ever) this gets
    * cleared.

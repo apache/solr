@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -167,6 +168,17 @@ public class InfoHandler extends RequestHandlerBase {
     list.addAll(handlers.get("system").getApis());
     list.addAll(handlers.get("health").getApis());
     return List.copyOf(list);
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    final var apis = new ArrayList<Class<? extends JerseyResource>>();
+    apis.addAll(handlers.get("threads").getJerseyResources());
+    apis.addAll(handlers.get("properties").getJerseyResources());
+    apis.addAll(handlers.get("logging").getJerseyResources());
+    apis.addAll(handlers.get("system").getJerseyResources());
+    apis.addAll(handlers.get("health").getJerseyResources());
+    return apis;
   }
 
   @Override

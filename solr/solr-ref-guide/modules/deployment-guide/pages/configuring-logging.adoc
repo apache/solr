@@ -76,11 +76,32 @@ There is also a way of sending REST commands to the `admin/info/logging` endpoin
 
 Example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createcollection]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
-# Set the root logger to level WARN
-curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN"
+curl -X GET "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
 ----
+====
+
+[example.tab-pane#v2createcollection]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: application/json' -d '
+  [
+    {"logger": "root", "level": "WARN"}
+  ]
+'
+----
+====
+--
 
 === Choosing Log Level at Startup
 

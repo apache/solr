@@ -49,4 +49,7 @@ public class SubResponseAccumulatingJerseyResponse extends AsyncJerseyResponse {
 
   @JsonProperty("failure")
   public Object failedSubResponsesByNodeName;
+
+  @JsonProperty("warning")
+  public String warning;
 }

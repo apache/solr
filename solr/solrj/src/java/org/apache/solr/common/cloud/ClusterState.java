@@ -285,8 +285,8 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
-      props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
+      props = new HashMap<>(objs);
     }
 
     Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);

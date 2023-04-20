@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.cli;
 
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
@@ -59,10 +59,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrDocument;
@@ -83,7 +83,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-public class ExportTool extends SolrCLI.ToolBase {
+public class ExportTool extends ToolBase {
   @Override
   public String getName() {
     return "export";
@@ -146,7 +146,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      solrClient = new CloudLegacySolrClient.Builder(Collections.singletonList(baseurl)).build();
+      solrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl)).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -176,7 +176,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   static Set<String> formats = Set.of(JAVABIN, "jsonl");
 
   @Override
-  protected void runImpl(CommandLine cli) throws Exception {
+  public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
     Info info = new MultiThreadedRunner(url);
     info.query = cli.getOptionValue("query", "*:*");
@@ -492,7 +492,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
-        try (SolrClient client = new HttpSolrClient.Builder(baseurl).build()) {
+        try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
           expectedDocs = getDocCount(replica.getCoreName(), client);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
