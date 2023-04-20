@@ -26,7 +26,6 @@ import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME
 import static org.apache.solr.cloud.api.collections.RoutedAlias.TIME;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -62,6 +61,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -94,7 +94,11 @@ public class CreateAliasAPI extends AdminAPIBase {
     final SubResponseAccumulatingJerseyResponse response =
         instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
-    validateRequestBody(requestBody);
+
+    if (requestBody == null) {
+      throw new SolrException(BAD_REQUEST, "Request body is required but missing");
+    }
+    requestBody.validate();
 
     ZkNodeProps remoteMessage;
     // Validation ensures that the request has either collections or a router but not both.
@@ -145,7 +149,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
     remoteMessage.put(NAME, requestBody.name);
-    remoteMessage.put(ASYNC, requestBody.async);
+    if (StrUtils.isNotBlank(requestBody.async)) remoteMessage.put(ASYNC, requestBody.async);
 
     if (requestBody.routers.size() > 1) { // Multi-dimensional alias
       for (int i = 0; i < requestBody.routers.size(); i++) {
@@ -160,44 +164,6 @@ public class CreateAliasAPI extends AdminAPIBase {
           remoteMessage, "create-collection.");
     }
     return new ZkNodeProps(remoteMessage);
-  }
-
-  public static void validateRequestBody(CreateAliasRequestBody requestBody) {
-    if (requestBody == null) {
-      return;
-    }
-
-    SolrIdentifierValidator.validateAliasName(requestBody.name);
-
-    if (CollectionUtil.isEmpty(requestBody.collections)
-        && CollectionUtil.isEmpty(requestBody.routers)) {
-      throw new SolrException(
-          BAD_REQUEST,
-          "Alias creation requires either a list of either collections (for creating a traditional alias) or routers (for creating a routed alias)");
-    }
-
-    if (CollectionUtil.isNotEmpty(requestBody.routers)) {
-      requestBody.routers.forEach(r -> r.validate());
-      if (CollectionUtil.isNotEmpty(requestBody.collections)) {
-        throw new SolrException(
-            BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
-      }
-
-      final CreateCollectionAPI.CreateCollectionRequestBody createCollReqBody =
-          requestBody.collCreationParameters;
-      if (createCollReqBody != null) {
-        if (createCollReqBody.name != null) {
-          throw new SolrException(
-              BAD_REQUEST,
-              "routed aliases calculate names for their "
-                  + "dependent collections, you cannot specify the name.");
-        }
-        if (createCollReqBody.config == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "We require an explicit " + COLL_CONF);
-        }
-      }
-    }
   }
 
   public static CreateAliasRequestBody createFromSolrParams(SolrParams params) {
@@ -249,9 +215,9 @@ public class CreateAliasAPI extends AdminAPIBase {
       String type, SolrParams params, String propertyPrefix) {
     final String typeLower = type.toLowerCase(Locale.ROOT);
     if (typeLower.startsWith(TIME)) {
-      return TimeRoutedAliasProperties.createFromSolrParams(params, ROUTER_PREFIX);
+      return TimeRoutedAliasProperties.createFromSolrParams(params, propertyPrefix);
     } else if (typeLower.startsWith(CATEGORY)) {
-      return CategoryRoutedAliasProperties.createFromSolrParams(params, ROUTER_PREFIX);
+      return CategoryRoutedAliasProperties.createFromSolrParams(params, propertyPrefix);
     } else {
       throw new SolrException(
           BAD_REQUEST,
@@ -277,6 +243,40 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     @JsonProperty("create-collection")
     public CreateCollectionAPI.CreateCollectionRequestBody collCreationParameters;
+
+    public void validate() {
+      SolrIdentifierValidator.validateAliasName(name);
+
+      if (CollectionUtil.isEmpty(collections) && CollectionUtil.isEmpty(routers)) {
+        throw new SolrException(
+            BAD_REQUEST,
+            "Alias creation requires either a list of either collections (for creating a traditional alias) or routers (for creating a routed alias)");
+      }
+
+      if (CollectionUtil.isNotEmpty(routers)) {
+        routers.forEach(r -> r.validate());
+        if (CollectionUtil.isNotEmpty(collections)) {
+          throw new SolrException(
+              BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
+        }
+
+        final CreateCollectionAPI.CreateCollectionRequestBody createCollReqBody =
+            collCreationParameters;
+        if (createCollReqBody != null) {
+          if (createCollReqBody.name != null) {
+            throw new SolrException(
+                BAD_REQUEST,
+                "routed aliases calculate names for their "
+                    + "dependent collections, you cannot specify the name.");
+          }
+          if (createCollReqBody.config == null) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Routed alias creation requires a configset name to use for any collections created by the alias.");
+          }
+        }
+      }
+    }
   }
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -384,8 +384,8 @@ public class CreateAliasAPI extends AdminAPIBase {
       remoteMessage.put(prefix + CoreAdminParams.NAME, CATEGORY);
       remoteMessage.put(prefix + "field", field);
 
-      remoteMessage.put(prefix + "maxCardinality", maxCardinality);
-      remoteMessage.put(prefix + "mustMatch", mustMatch);
+      if (maxCardinality != null) remoteMessage.put(prefix + "maxCardinality", maxCardinality);
+      if (StrUtils.isNotBlank(mustMatch)) remoteMessage.put(prefix + "mustMatch", mustMatch);
     }
 
     public static CategoryRoutedAliasProperties createFromSolrParams(

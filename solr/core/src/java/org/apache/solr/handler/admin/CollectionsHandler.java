@@ -665,7 +665,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           final CreateAliasAPI.CreateAliasRequestBody reqBody =
               CreateAliasAPI.createFromSolrParams(req.getParams());
-          CreateAliasAPI.validateRequestBody(reqBody);
           final SolrJerseyResponse response =
               new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
