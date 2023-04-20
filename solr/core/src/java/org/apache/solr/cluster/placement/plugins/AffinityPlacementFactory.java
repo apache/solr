@@ -904,17 +904,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
             if (doUseAntiAffinity) {
-              affinityLabelsInUse.compute(
+              affinityLabelsInUse.merge(
                   attrValues
                       .getSystemProperty(
                           replica.getNode(), AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP)
                       .get(),
-                  (k, v) -> {
-                    if (v == null) {
-                      return 1;
-                    }
-                    return v + 1;
-                  });
+                  1,
+                  Integer::sum);
             }
           }
         }
