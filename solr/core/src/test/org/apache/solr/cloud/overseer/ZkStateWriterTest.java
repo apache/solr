@@ -184,7 +184,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     prsProps,
                     DocRouter.DEFAULT,
                     0,
-                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                    PerReplicaStatesFetcher.getZkClientPrsSupplier(
                         zkClient, DocCollection.getCollectionPath("c1"))));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
@@ -270,7 +270,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
                     prsProps,
                     DocRouter.DEFAULT,
                     0,
-                    new PerReplicaStatesFetcher.LazyPrsSupplier(
+                    PerReplicaStatesFetcher.getZkClientPrsSupplier(
                         zkClient, DocCollection.getCollectionPath("prs1"))));
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);

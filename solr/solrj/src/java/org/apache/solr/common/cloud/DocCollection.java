@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -64,7 +65,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
-  private PerReplicaStates perReplicaStates;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   @Deprecated
   public DocCollection(
@@ -90,12 +91,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     updates).
    */
   public DocCollection(
-      String name,
-      Map<String, Slice> slices,
-      Map<String, Object> props,
-      DocRouter router,
-      int zkVersion,
-      PerReplicaStates perReplicaStates) {
+          String name,
+          Map<String, Slice> slices,
+          Map<String, Object> props,
+          DocRouter router,
+          int zkVersion,
+          AtomicReference<PerReplicaStates> perReplicaStatesRef) {
     super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
     // overwrites
@@ -113,12 +114,15 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
-      if (perReplicaStates == null) {
+      if (perReplicaStatesRef == null || perReplicaStatesRef.get() == null) {
         throw new RuntimeException(
             CollectionStateProps.PER_REPLICA_STATE
                 + " = true , but perReplicatStates param is not provided");
       }
-      setPerReplicaStates(perReplicaStates);
+      this.perReplicaStatesRef = perReplicaStatesRef;
+      for (Slice s : this.slices.values()) { //set the same reference to all slices too
+        s.setPerReplicaStatesRef(this.perReplicaStatesRef);
+      }
     }
     Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
@@ -170,7 +174,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     } else {
       perReplicaStates = null;
     }
-    return new DocCollection(name, slices, props, router, zkVersion, perReplicaStates);
+    return new DocCollection(name, slices, props, router, zkVersion, perReplicaStates != null ? new AtomicReference<>(perReplicaStates) : null);
   }
 
   private static boolean hasAnyReplica(Map<String, Slice> slices) {
@@ -194,13 +198,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Update our state with a state of a {@link PerReplicaStates} which could override states of
    * {@link Replica}.
    *
+   * Take note that it updates the underlying AtomicReference such that all Slice and Replica that holds the same
+   * AtomicReference will see the same update
+   *
    * <p>This does not create a new DocCollection.
    */
   public final DocCollection setPerReplicaStates(PerReplicaStates perReplicaStates) {
-    this.perReplicaStates = perReplicaStates;
-    for (Slice s : this.slices.values()) {
-      s.setPerReplicaStates(perReplicaStates);
-    }
+    this.perReplicaStatesRef.set(perReplicaStates);
+
     return this;
   }
 
@@ -253,7 +258,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices) {
     DocCollection result =
-        new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStates);
+        new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStatesRef);
     return result;
   }
   /** Return collection name. */
@@ -320,7 +325,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public int getChildNodesVersion() {
-    return perReplicaStates == null ? 0 : perReplicaStates.cversion;
+    return perReplicaStatesRef == null ? 0 : perReplicaStatesRef.get().cversion;
   }
 
   public boolean isModified(int dataVersion, int childVersion) {
@@ -357,7 +362,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         + "/"
         + znodeVersion
         + " "
-        + (perReplicaStates == null ? "" : perReplicaStates)
+        + (perReplicaStatesRef == null ? "" : perReplicaStatesRef.get())
         + ")="
         + toJSONString(this);
   }
@@ -504,7 +509,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public PerReplicaStates getPerReplicaStates() {
-    return perReplicaStates;
+    return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
   }
 
   public int getExpectedReplicaCount(Replica.Type type, int def) {
@@ -528,26 +533,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     String PER_REPLICA_STATE = "perReplicaState";
   }
 
-  public static class PrsSupplier implements Supplier<PerReplicaStates> {
+  public interface PrsSupplier extends Supplier<PerReplicaStates> {
 
-    private volatile PerReplicaStates prs;
-
-    private Supplier<PerReplicaStates> supplier;
-
-    public PrsSupplier(Supplier<PerReplicaStates> supplier) {
-      this.supplier = supplier;
-    }
-
-    public PrsSupplier(PerReplicaStates prs) {
-      this.prs = prs;
-    }
-
-    @Override
-    public PerReplicaStates get() {
-      if (prs == null) {
-        prs = supplier.get();
-      }
-      return prs;
-    }
   }
 }

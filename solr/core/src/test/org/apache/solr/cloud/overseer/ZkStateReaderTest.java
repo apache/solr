@@ -144,7 +144,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
                 DocRouter.DEFAULT,
                 0,
-                new PerReplicaStatesFetcher.LazyPrsSupplier(
+                PerReplicaStatesFetcher.getZkClientPrsSupplier(
                     fixture.zkClient, DocCollection.getCollectionPath("c1"))));
 
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
@@ -171,7 +171,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -190,7 +190,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             props,
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -231,7 +231,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -269,7 +269,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 "true"),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
@@ -389,7 +389,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -411,7 +411,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             ref.get().getZNodeVersion(),
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -434,7 +434,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c2")));
     ZkWriteCommand wc2 = new ZkWriteCommand("c2", state);
 
@@ -550,7 +550,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
     ZkWriteCommand wc1 = new ZkWriteCommand("c1", state1);
     DocCollection state2 =
@@ -560,7 +560,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath("c1")));
 
     // do not listen to c2
@@ -615,7 +615,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                             ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
                         DocRouter.DEFAULT,
                         currentVersion,
-                        new PerReplicaStatesFetcher.LazyPrsSupplier(
+                        PerReplicaStatesFetcher.getZkClientPrsSupplier(
                             fixture.zkClient, DocCollection.getCollectionPath("c1")));
                 ZkWriteCommand wc = new ZkWriteCommand("c1", state);
                 writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);

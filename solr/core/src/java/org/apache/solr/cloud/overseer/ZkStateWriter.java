@@ -268,14 +268,13 @@ public class ZkStateWriter {
           // Update the Per Replica State znodes if needed
           if (cmd.ops != null) {
             cmd.ops.persist(path, reader.getZkClient());
-            cmd.collection.setPerReplicaStates(
-                PerReplicaStatesFetcher.fetch(
-                    cmd.collection.getZNode(), reader.getZkClient(), null));
-            // this is not strictly necessary as we are mutating currentCollState instead of
-            // creating a new
-            // instance, but keeping this just in case we are making PRS enabled DocCollection
-            // immutable in the future
-            clusterState = clusterState.copyWith(name, cmd.collection);
+
+            clusterState =
+                    clusterState.copyWith(
+                            name,
+                            cmd.collection.setPerReplicaStates(
+                                    PerReplicaStatesFetcher.fetch(
+                                            cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
           // Update the state.json file if needed
@@ -302,7 +301,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       stat.getVersion(),
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesFetcher.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
@@ -314,7 +313,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       0,
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesFetcher.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
@@ -322,14 +321,12 @@ public class ZkStateWriter {
           if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
-              currentCollState.setPerReplicaStates(
-                  PerReplicaStatesFetcher.fetch(
-                      currentCollState.getZNode(), reader.getZkClient(), null));
-              // this is not strictly necessary as we are mutating currentCollState instead of
-              // creating a new
-              // instance, but keeping this just in case we are making PRS enabled DocCollection
-              // immutable in the future
-              clusterState = clusterState.copyWith(name, currentCollState);
+              clusterState =
+                      clusterState.copyWith(
+                              name,
+                              currentCollState.setPerReplicaStates(
+                                      PerReplicaStatesFetcher.fetch(
+                                              currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
         }

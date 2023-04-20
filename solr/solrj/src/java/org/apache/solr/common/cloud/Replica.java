@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
@@ -147,13 +148,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
-  private PerReplicaStates perReplicaStates;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
   private State state;
 
-  void setPerReplicaStates(PerReplicaStates perReplicaStates) {
-    this.perReplicaStates = perReplicaStates;
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
   }
 
   public Replica(String name, Map<String, Object> map, String collection, String shard) {
@@ -295,8 +296,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   /** Returns the {@link State} of this replica. */
   public State getState() {
-    if (perReplicaStates != null) {
-      PerReplicaStates.State s = perReplicaStates.get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State s = perReplicaStatesRef.get().get(name);
       if (s != null) {
         return s.state;
       } else {
@@ -320,8 +321,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
-    if (perReplicaStates != null) {
-      PerReplicaStates.State st = perReplicaStates.get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State st = perReplicaStatesRef.get().get(name);
       return st == null ? false : st.isLeader;
     }
     return getBool(ReplicaStateProps.LEADER, false);
@@ -362,8 +363,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public PerReplicaStates.State getReplicaState() {
-    if (perReplicaStates != null) {
-      return perReplicaStates.get(name);
+    if (perReplicaStatesRef != null) {
+      return perReplicaStatesRef.get().get(name);
     }
     return null;
   }
