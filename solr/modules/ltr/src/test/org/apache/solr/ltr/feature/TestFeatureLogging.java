@@ -317,4 +317,481 @@ public class TestFeatureLogging extends TestRerankBase {
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[1]/fv/=='" + docs1fv_dense_csv + "'");
   }
+
+  @Test
+  public void testDefaultStoreDefaultExtractAllNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // No store specified, use default store for extraction
+    // No extractAll specified, use default: extractAll=true
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("defaultStoreFeature1", "1.0",
+                    "defaultStoreFeature2", "4.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefaultStoreExtractAllTrueNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // No store specified, use default store for extraction
+    // ExtractAll=true, return all the features in the default store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv extractAll=true]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("defaultStoreFeature1", "1.0",
+                    "defaultStoreFeature2", "4.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefaultStoreExtractAllFalseNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // No store specified, use default store for extraction
+    // ExtractAll=false, exception since no model used
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv extractAll=false]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/error/msg=='Exception to be defined'");
+  }
+
+  @Test
+  public void testDefinedStoreDefaultExtractAllNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // Store specified, used store for extraction
+    // No extractAll specified, use default: extractAll=true
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeA]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
+                    "storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefinedStoreExtractAllTrueNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // Store specified, used store for extraction
+    // ExtractAll=true, return all the features in the defined store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeA extractAll=true]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
+                    "storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefinedStoreExtractAllFalseNoRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+
+    // Store specified, used store for extraction
+    // ExtractAll=false, exception since no model used
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeA extractAll=false]");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/error/msg=='Exception to be defined'");
+  }
+
+  @Test
+  public void testDefaultStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // No store specified, use model store for extraction
+    // No extractAll specified, use default: extractAll=false
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefaultStoreExtractAllTrueRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // No store specified, use model store for extraction
+    // ExtractAll=true, return all the features in the model store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv extractAll=true]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
+                    "storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefaultStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // No store specified, use model store for extraction
+    // ExtractAll=false, only model features returned
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv extractAll=false]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefinedStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // Store specified, used store for extraction
+    // No extractAll specified, use default: extractAll=true
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeB]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeBFeature1", "3.0",
+                    "storeBFeature2", "7.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefinedStoreExtractAllTrueRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // Store specified, used store for extraction
+    // ExtractAll=true, return all the features in the defined store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeB extractAll=true]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeBFeature1", "3.0",
+                    "storeBFeature2", "7.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testDefinedStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // Store specified, used store for extraction
+    // ExtractAll=false, exception since the defined store is different from the model store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeB extractAll=false]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/error/msg=='Exception to be defined'");
+  }
+
+  @Test
+  public void testModelStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // Store specified, used store for extraction
+    // No extractAll specified, use default: extractAll=false since we pass the same store as the model store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeA]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+                    + "'}");
+  }
+
+  @Test
+  public void testModelStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+    loadFeature(
+            "defaultStoreFeature1",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":1.0}");
+    loadFeature(
+            "defaultStoreFeature2",
+            ValueFeature.class.getName(),
+            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+            "{\"value\":4.0}");
+    loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
+    loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
+    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
+    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
+    loadModel(
+            "modelA",
+            LinearModel.class.getName(),
+            new String[]{"storeAFeature2"},
+            "storeA",
+            "{\"weights\":{\"storeAFeature2\":6.0}}");
+
+    // Store specified, used store for extraction
+    // ExtractAll=false, only model features returned since the defined store is the same as the model store
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+    query.add("fl", "fv:[fv store=storeA extractAll=false]");
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
+    assertJQ(
+            "/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'fv':'"
+                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+                    + "'}");
+  }
 }
