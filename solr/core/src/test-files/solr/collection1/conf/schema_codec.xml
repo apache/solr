@@ -37,6 +37,9 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  <fieldType name="unsupported_knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="unknown"/>
+
   <field name="string_direct_f" type="string_direct" indexed="true" stored="true"/>
   <field name="string_standard_f" type="string_standard" indexed="true" stored="true"/>
 
@@ -49,6 +52,9 @@
   <dynamicField name="*_standard" type="string_standard" indexed="true" stored="true"/>
 
   <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true"/>
+
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  <field name="unsupported_vector" type="unsupported_knn_vector" indexed="true" stored="true"/>
 
   <uniqueKey>string_f</uniqueKey>
 </schema>

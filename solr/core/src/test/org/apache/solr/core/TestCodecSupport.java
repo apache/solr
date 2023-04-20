@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene95.Lucene95Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
+import org.apache.lucene.codecs.perfield.PerFieldKnnVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -264,5 +265,28 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       h.coreName = previousCoreName;
       coreContainer.unload(newCoreName);
     }
+  }
+
+  public void testKnnVectorsFormat() {
+    Codec codec = h.getCore().getCodec();
+    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
+    SchemaField schemaField = fields.get("vector");
+
+    PerFieldKnnVectorsFormat format = (PerFieldKnnVectorsFormat) codec.knnVectorsFormat();
+    assertEquals(
+        "Lucene95HnswVectorsFormat",
+        format.getKnnVectorsFormatForField(schemaField.getName()).getName());
+  }
+
+  public void testUnsupportedKnnVectorsFormat() {
+    Codec codec = h.getCore().getCodec();
+    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
+    SchemaField schemaField = fields.get("unsupported_vector");
+
+    PerFieldKnnVectorsFormat format = (PerFieldKnnVectorsFormat) codec.knnVectorsFormat();
+    SolrException thrown =
+        assertThrows(
+            SolrException.class, () -> format.getKnnVectorsFormatForField(schemaField.getName()));
+    assertEquals("unknown KNN algorithm is not supported", thrown.getMessage());
   }
 }
