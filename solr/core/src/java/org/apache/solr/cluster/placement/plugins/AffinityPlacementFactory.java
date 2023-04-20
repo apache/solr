@@ -172,7 +172,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         config.prioritizedFreeDiskGB,
         config.withCollection,
         config.collectionNodeType,
-        config.useAntiAffinity);
+        config.spreadAcrossDomains);
   }
 
   @Override
@@ -206,7 +206,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private final Random replicaPlacementRandom =
         new Random(); // ok even if random sequence is predictable.
 
-    private final boolean useAntiAffinity;
+    private final boolean spreadAcrossDomains;
 
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the
@@ -217,12 +217,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         long prioritizedFreeDiskGB,
         Map<String, String> withCollections,
         Map<String, String> collectionNodeTypes,
-        boolean useAntiAffinity) {
+        boolean spreadAcrossDomains) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       Objects.requireNonNull(withCollections, "withCollections must not be null");
       Objects.requireNonNull(collectionNodeTypes, "collectionNodeTypes must not be null");
-      this.useAntiAffinity = useAntiAffinity;
+      this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
       if (withCollections.isEmpty()) {
         colocatedWith = Map.of();
@@ -272,7 +272,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
           .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
           .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
-          .requestNodeSystemProperty(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP);
+          .requestNodeSystemProperty(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
       attributeFetcher
           .requestNodeMetric(NodeMetricImpl.NUM_CORES)
           .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
@@ -282,7 +282,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // to not end up always selecting the same node(s). This is used across placement requests
       Map<Node, Integer> allCoresOnNodes = getCoreCountPerNode(allNodes, attrValues);
 
-      boolean doUseAntiAffinity = shouldUseAntiAffinity(allNodes, attrValues);
+      boolean doSpreadAcrossDomains = shouldSpreadAcrossDomains(allNodes, attrValues);
 
       // Keep track with nodesWithReplicas across requests
       Map<String, Map<String, Set<Node>>> allNodesWithReplicas = new HashMap<>();
@@ -354,7 +354,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 allCoresOnNodes,
                 placementContext.getPlacementPlanFactory(),
                 replicaPlacements,
-                doUseAntiAffinity);
+                doSpreadAcrossDomains);
           }
         }
         placementPlans.add(
@@ -366,24 +366,24 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       return placementPlans;
     }
 
-    private boolean shouldUseAntiAffinity(Set<Node> allNodes, AttributeValues attrValues) {
-      boolean doUseAntiAffinity =
-          useAntiAffinity && antiAffinitySysPropPresent(allNodes, attrValues);
-      if (useAntiAffinity && !doUseAntiAffinity) {
+    private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
+      boolean doSpreadAcrossDomains =
+          spreadAcrossDomains && spreadDomainPropPresent(allNodes, attrValues);
+      if (spreadAcrossDomains && !doSpreadAcrossDomains) {
         log.warn(
-            "AffinityPlacementPlugin configured to use anti-affinity, but there are nodes in the cluster without the {} system property. Ignoring anti-affinity.",
-            AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP);
+            "AffinityPlacementPlugin configured to spread across domains, but there are nodes in the cluster without the {} system property. Ignoring spreadAcrossDomains.",
+            AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
       }
-      return doUseAntiAffinity;
+      return doSpreadAcrossDomains;
     }
 
-    private boolean antiAffinitySysPropPresent(Set<Node> allNodes, AttributeValues attrValues) {
-      // We can only use anti-affinity if all nodes have the system property
+    private boolean spreadDomainPropPresent(Set<Node> allNodes, AttributeValues attrValues) {
+      // We can only use spread domains if all nodes have the system property
       return allNodes.stream()
           .noneMatch(
               n ->
                   attrValues
-                      .getSystemProperty(n, AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP)
+                      .getSystemProperty(n, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
                       .isEmpty());
     }
 
@@ -534,37 +534,37 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      */
     private static class AzWithNodes {
       final String azName;
-      private final boolean useAntiAffinity;
+      private final boolean useSpreadDomains;
       private boolean listIsSorted = false;
       private final Comparator<Node> nodeComparator;
       private final Random random;
       private final List<Node> availableNodesForPlacement;
       private final AttributeValues attributeValues;
-      private TreeSet<AffinityGroupWithNodes> sortedAntiAffinityGroups;
-      private final Map<String, Integer> currentAntiAffinityUsage;
+      private TreeSet<SpreadDomainWithNodes> sortedSpreadDomains;
+      private final Map<String, Integer> currentSpreadDomainUsageUsage;
       private int numNodesForPlacement;
 
       AzWithNodes(
           String azName,
           List<Node> availableNodesForPlacement,
-          boolean useAntiAffinity,
+          boolean useSpreadDomains,
           Comparator<Node> nodeComparator,
           Random random,
           AttributeValues attributeValues,
-          Map<String, Integer> currentAntiAffinityUsage) {
+          Map<String, Integer> currentSpreadDomainUsageUsage) {
         this.azName = azName;
         this.availableNodesForPlacement = availableNodesForPlacement;
-        this.useAntiAffinity = useAntiAffinity;
+        this.useSpreadDomains = useSpreadDomains;
         this.nodeComparator = nodeComparator;
         this.random = random;
         this.attributeValues = attributeValues;
-        this.currentAntiAffinityUsage = currentAntiAffinityUsage;
+        this.currentSpreadDomainUsageUsage = currentSpreadDomainUsageUsage;
         this.numNodesForPlacement = availableNodesForPlacement.size();
       }
 
       private boolean hasBeenSorted() {
-        return (useAntiAffinity && sortedAntiAffinityGroups != null)
-            || (!useAntiAffinity && listIsSorted);
+        return (useSpreadDomains && sortedSpreadDomains != null)
+            || (!useSpreadDomains && listIsSorted);
       }
 
       void ensureSorted() {
@@ -574,7 +574,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       private void sort() {
-        assert !listIsSorted && sortedAntiAffinityGroups == null
+        assert !listIsSorted && sortedSpreadDomains == null
             : "We shouldn't be sorting this list again";
 
         // Make sure we do not tend to use always the same nodes (within an AZ) if all
@@ -587,38 +587,40 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // placement, not always the same one due to some internal ordering.
         Collections.shuffle(availableNodesForPlacement, random);
 
-        if (useAntiAffinity) {
-          // When we use anti-affinity, we don't just sort the list of nodes, instead we generate a
-          // TreeSet of AffinityGroupWithNodes,
-          // sorted by the number of times the affinity label has been used. Each
-          // AffinityGroupWithNodes internally contains the list of nodes that use a particular
-          // affinity
-          // label, and it's sorted internally by the comparator passed to this
-          // class (which is the same that's used when not using anti-affinity).
-          // Whenever a node from a particular AffinityGroupWithNodes is selected as the best
+        if (useSpreadDomains) {
+          // When we use spread domains, we don't just sort the list of nodes, instead we generate a
+          // TreeSet of SpreadDomainWithNodes,
+          // sorted by the number of times the domain has been used. Each
+          // SpreadDomainWithNodes internally contains the list of nodes that belong to that
+          // particular domain,
+          // and it's sorted internally by the comparator passed to this
+          // class (which is the same that's used when not using spread domains).
+          // Whenever a node from a particular SpreadDomainWithNodes is selected as the best
           // candidate, the call to "removeBestNode" will:
-          // 1. Remove the AffinityGroupWithNodes instance from the TreeSet
-          // 2. Remove the best node from the list within the AffinityGroupWithNodes
-          // 3. Increment the count of times the affinity label has been used
-          // 4. Re-add the AffinityGroupWithNodes instance to the TreeSet if there are still nodes
+          // 1. Remove the SpreadDomainWithNodes instance from the TreeSet
+          // 2. Remove the best node from the list within the SpreadDomainWithNodes
+          // 3. Increment the count of times the domain has been used
+          // 4. Re-add the SpreadDomainWithNodes instance to the TreeSet if there are still nodes
           // available
-          HashMap<String, List<Node>> antiAffinityNameToListOfNodesMap = new HashMap<>();
+          HashMap<String, List<Node>> spreadDomainToListOfNodesMap = new HashMap<>();
           for (Node node : availableNodesForPlacement) {
-            antiAffinityNameToListOfNodesMap.computeIfAbsent(
-                attributeValues
-                    .getSystemProperty(node, AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP)
-                    .get(),
-                ArrayList<>::new).add(node);
+            spreadDomainToListOfNodesMap
+                .computeIfAbsent(
+                    attributeValues
+                        .getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                        .get(),
+                    k -> new ArrayList<>())
+                .add(node);
           }
-          sortedAntiAffinityGroups =
-              new TreeSet<>(new AntiAffinityComparator(currentAntiAffinityUsage));
+          sortedSpreadDomains =
+              new TreeSet<>(new SpreadDomainComparator(currentSpreadDomainUsageUsage));
 
           int i = 0;
-          for (Map.Entry<String, List<Node>> entry : antiAffinityNameToListOfNodesMap.entrySet()) {
-            // Sort the nodes within the anti-affinity group by the provided comparator
+          for (Map.Entry<String, List<Node>> entry : spreadDomainToListOfNodesMap.entrySet()) {
+            // Sort the nodes within the spread domain by the provided comparator
             entry.getValue().sort(nodeComparator);
-            sortedAntiAffinityGroups.add(
-                new AffinityGroupWithNodes(entry.getKey(), entry.getValue(), i++, nodeComparator));
+            sortedSpreadDomains.add(
+                new SpreadDomainWithNodes(entry.getKey(), entry.getValue(), i++, nodeComparator));
           }
         } else {
           availableNodesForPlacement.sort(nodeComparator);
@@ -628,8 +630,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       Node getBestNode() {
         assert hasBeenSorted();
-        if (useAntiAffinity) {
-          return sortedAntiAffinityGroups.first().sortedNodesForPlacement.get(0);
+        if (useSpreadDomains) {
+          return sortedSpreadDomains.first().sortedNodesForPlacement.get(0);
         } else {
           return availableNodesForPlacement.get(0);
         }
@@ -638,18 +640,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       public Node removeBestNode() {
         assert hasBeenSorted();
         this.numNodesForPlacement--;
-        if (useAntiAffinity) {
-          // Since this AffinityGroupWithNodes needs to be re-sorted in the sortedAffinityGroups, we
-          // remove it and then
-          // re-add it, once the best node has been removed.
-          AffinityGroupWithNodes group = sortedAntiAffinityGroups.pollFirst();
+        if (useSpreadDomains) {
+          // Since this SpreadDomainWithNodes needs to be re-sorted in the sortedSpreadDomains, we
+          // remove it and then re-add it, once the best node has been removed.
+          SpreadDomainWithNodes group = sortedSpreadDomains.pollFirst();
           Node n = group.sortedNodesForPlacement.remove(0);
-          this.currentAntiAffinityUsage.merge(
-              group.affinityGroupName,
-              1,
-              Integer::sum);
+          this.currentSpreadDomainUsageUsage.merge(group.spreadDomainName, 1, Integer::sum);
           if (!group.sortedNodesForPlacement.isEmpty()) {
-            sortedAntiAffinityGroups.add(group);
+            sortedSpreadDomains.add(group);
           }
           return n;
         } else {
@@ -664,25 +662,25 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     /**
      * This class represents group of nodes with the same {@link
-     * AffinityPlacementConfig#ANTI_AFFINITY_SYSPROP} label.
+     * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
      */
-    static class AffinityGroupWithNodes implements Comparable<AffinityGroupWithNodes> {
+    static class SpreadDomainWithNodes implements Comparable<SpreadDomainWithNodes> {
 
       /**
        * This is the label that all nodes in this group have in {@link
-       * AffinityPlacementConfig#ANTI_AFFINITY_SYSPROP} label.
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
        */
-      final String affinityGroupName;
+      final String spreadDomainName;
 
       /**
        * The list of all nodes that contain the same {@link
-       * AffinityPlacementConfig#ANTI_AFFINITY_SYSPROP} label. They must be sorted before creating
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label. They must be sorted before creating
        * this class.
        */
       private final List<Node> sortedNodesForPlacement;
 
       /**
-       * This is used for tie breaking the sort of {@link AffinityGroupWithNodes}, when the
+       * This is used for tie breaking the sort of {@link SpreadDomainWithNodes}, when the
        * nodeComparator between the top nodes of each group return 0.
        */
       private final int tieBreaker;
@@ -694,19 +692,19 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
        */
       private final Comparator<Node> nodeComparator;
 
-      public AffinityGroupWithNodes(
-          String affinityGroupName,
+      public SpreadDomainWithNodes(
+          String spreadDomainName,
           List<Node> sortedNodesForPlacement,
           int tieBreaker,
           Comparator<Node> nodeComparator) {
-        this.affinityGroupName = affinityGroupName;
+        this.spreadDomainName = spreadDomainName;
         this.sortedNodesForPlacement = sortedNodesForPlacement;
         this.tieBreaker = tieBreaker;
         this.nodeComparator = nodeComparator;
       }
 
       @Override
-      public int compareTo(AffinityGroupWithNodes o) {
+      public int compareTo(SpreadDomainWithNodes o) {
         if (o == this) {
           return 0;
         }
@@ -864,7 +862,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Map<Node, Integer> coresOnNodes,
         PlacementPlanFactory placementPlanFactory,
         Set<ReplicaPlacement> replicaPlacements,
-        boolean doUseAntiAffinity)
+        boolean doSpreadAcrossDomains)
         throws PlacementException {
       // Count existing replicas per AZ. We count only instances of the type of replica for which we
       // need to do placement. If we ever want to balance replicas of any type across AZ's (and not
@@ -887,7 +885,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // This Map will include the affinity labels for the nodes that are currently hosting replicas
       // of this shard. It will be modified with new placement decisions.
-      Map<String, Integer> affinityLabelsInUse = new HashMap<>();
+      Map<String, Integer> spreadDomainsInUse = new HashMap<>();
       Shard shard = solrCollection.getShard(shardName);
       if (shard != null) {
         // shard is non null if we're adding replicas to an already existing collection.
@@ -903,11 +901,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               // the dereferencing below can't be assumed as the entry will not exist in the map.
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
-            if (doUseAntiAffinity) {
-              affinityLabelsInUse.merge(
+            if (doSpreadAcrossDomains) {
+              spreadDomainsInUse.merge(
                   attrValues
                       .getSystemProperty(
-                          replica.getNode(), AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP)
+                          replica.getNode(), AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
                       .get(),
                   1,
                   Integer::sum);
@@ -952,11 +950,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 new AzWithNodes(
                     e.getKey(),
                     e.getValue(),
-                    doUseAntiAffinity,
+                    doSpreadAcrossDomains,
                     interGroupNodeComparator,
                     replicaPlacementRandom,
                     attrValues,
-                    affinityLabelsInUse));
+                    spreadDomainsInUse));
       }
 
       for (int i = 0; i < numReplicas; i++) {
@@ -1187,23 +1185,23 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    static class AntiAffinityComparator implements Comparator<AffinityGroupWithNodes> {
-      private final Map<String, Integer> antiAffinityUsage;
+    static class SpreadDomainComparator implements Comparator<SpreadDomainWithNodes> {
+      private final Map<String, Integer> spreadDomainUsage;
 
-      AntiAffinityComparator(Map<String, Integer> antiAffinityUsage) {
-        this.antiAffinityUsage = antiAffinityUsage;
+      SpreadDomainComparator(Map<String, Integer> spreadDomainUsage) {
+        this.spreadDomainUsage = spreadDomainUsage;
       }
 
       @Override
-      public int compare(AffinityGroupWithNodes group1, AffinityGroupWithNodes group2) {
+      public int compare(SpreadDomainWithNodes group1, SpreadDomainWithNodes group2) {
         // This comparator will compare groups by:
-        // 1. The number of usages for the affinity label they represent: We want groups that are
+        // 1. The number of usages for the domain they represent: We want groups that are
         // less used to be the best ones
         // 2. On equal number of usages, by the internal comparator (which uses core count and disk
         // space) on the best node for each group (which, since the list is sorted, it's always the
         // one in the position 0)
-        Integer usagesLabel1 = antiAffinityUsage.getOrDefault(group1.affinityGroupName, 0);
-        Integer usagesLabel2 = antiAffinityUsage.getOrDefault(group2.affinityGroupName, 0);
+        Integer usagesLabel1 = spreadDomainUsage.getOrDefault(group1.spreadDomainName, 0);
+        Integer usagesLabel2 = spreadDomainUsage.getOrDefault(group2.spreadDomainName, 0);
         if (usagesLabel1.equals(usagesLabel2)) {
           return group1.compareTo(group2);
         }

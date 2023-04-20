@@ -1101,7 +1101,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 1000 : 30, 0, 0, false);
     runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0, false);
 
-    log.info("==== antiAffinity ====");
+    log.info("==== spread domains ====");
     runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
     runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, true);
   }
@@ -1112,19 +1112,19 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       int nrtReplicas,
       int tlogReplicas,
       int pullReplicas,
-      boolean useAntiAffinity)
+      boolean useSpreadDomains)
       throws Exception {
     String collectionName = "scaleCollection";
 
-    if (useAntiAffinity) {
-      defaultConfig.useAntiAffinity = true;
+    if (useSpreadDomains) {
+      defaultConfig.spreadAcrossDomains = true;
       configurePlugin(defaultConfig);
     } else {
-      defaultConfig.useAntiAffinity = false;
+      defaultConfig.spreadAcrossDomains = false;
       configurePlugin(defaultConfig);
     }
 
-    int numAntiAffinityLabels = 5;
+    int numSpreadDomains = 5;
 
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(numNodes);
@@ -1134,8 +1134,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       nodeBuilders
           .get(i)
           .setSysprop(
-              AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP,
-              String.valueOf(i % numAntiAffinityLabels));
+              AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, String.valueOf(i % numSpreadDomains));
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
@@ -1166,11 +1165,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int TOTAL_REPLICAS = numShards * REPLICAS_PER_SHARD;
 
     log.info(
-        "ComputePlacement: {} nodes, {} shards, {} total replicas, anti-affinity={}, elapsed time {} ms.",
+        "ComputePlacement: {} nodes, {} shards, {} total replicas, spread-domains={}, elapsed time {} ms.",
         numNodes,
         numShards,
         TOTAL_REPLICAS,
-        useAntiAffinity,
+        useSpreadDomains,
         TimeUnit.NANOSECONDS.toMillis(end - start)); // nowarn
     assertEquals(
         "incorrect number of calculated placements",
@@ -1213,7 +1212,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAntiAffinityIsSoft() throws Exception {
-    defaultConfig.useAntiAffinity = true;
+    defaultConfig.spreadAcrossDomains = true;
     configurePlugin(defaultConfig);
     String collectionName = "basicCollection";
 
@@ -1224,12 +1223,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         .get(0)
         .setCoreCount(1)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
-        .setSysprop(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP, "A");
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(1)
         .setCoreCount(2)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
-        .setSysprop(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP, "A");
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
@@ -1279,17 +1278,17 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAntiAffinityWithExistingCollection() throws Exception {
-    testAntiAffinity(true);
+  public void testSpreadDomainsWithExistingCollection() throws Exception {
+    testSpreadDomains(true);
   }
 
   @Test
-  public void testAntiAffinityWithEmptyCluster() throws Exception {
-    testAntiAffinity(false);
+  public void testSpreadDomainsWithEmptyCluster() throws Exception {
+    testSpreadDomains(false);
   }
 
-  private void testAntiAffinity(boolean hasExistingCollection) throws Exception {
-    defaultConfig.useAntiAffinity = true;
+  private void testSpreadDomains(boolean hasExistingCollection) throws Exception {
+    defaultConfig.spreadAcrossDomains = true;
     configurePlugin(defaultConfig);
     String collectionName = "basicCollection";
 
@@ -1299,17 +1298,17 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         .get(0)
         .setCoreCount(1)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
-        .setSysprop(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP, "A");
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(1)
         .setCoreCount(2)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
-        .setSysprop(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP, "A");
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(2)
         .setCoreCount(3)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
-        .setSysprop(AffinityPlacementConfig.ANTI_AFFINITY_SYSPROP, "B");
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
 
@@ -1371,7 +1370,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("SelfComparison")
-  public void testCompareAffinityGroupWithNodes() {
+  public void testCompareSpreadDomainWithNodes() {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
     final List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     nodeBuilders.get(0).setNodeName("nodeA");
@@ -1397,11 +1396,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Comparator<Node> nodeComparator = Comparator.comparing(Node::getName);
     List<Node> listInGroup1 = new ArrayList<>(List.of(nodeC, nodeA));
-    AffinityPlacementFactory.AffinityPlacementPlugin.AffinityGroupWithNodes group1 =
-        new AffinityPlacementFactory.AffinityPlacementPlugin.AffinityGroupWithNodes(
+    AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes group1 =
+        new AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes(
             "foo", listInGroup1, 0, nodeComparator);
-    AffinityPlacementFactory.AffinityPlacementPlugin.AffinityGroupWithNodes group2 =
-        new AffinityPlacementFactory.AffinityPlacementPlugin.AffinityGroupWithNodes(
+    AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes group2 =
+        new AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes(
             "bar", List.of(nodeB), 1, nodeComparator);
     assertEquals("Comparing to itself should return 0", 0, group1.compareTo(group1));
     assertEquals(

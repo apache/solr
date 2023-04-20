@@ -59,12 +59,12 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
   public static final String NODE_TYPE_SYSPROP = "node_type";
 
   /**
-   * Name of the system property on a node indicating the anti-affinity group. This is used (if
-   * {@link #useAntiAffinity} is set to true) to indicate this placement plugin that replicas for a
-   * particular shard should be placed in nodes that have different values for this system property
-   * (or, if not possible, try to distribute evenly across groups).
+   * Name of the system property on a node indicating the spread domain group. This is used (if
+   * {@link #spreadAcrossDomains} is set to true) to indicate this placement plugin that replicas
+   * for a particular shard should spread across nodes that have different values for this system
+   * property.
    */
-  public static final String ANTI_AFFINITY_SYSPROP = "anti_affinity";
+  public static final String SPREAD_DOMAIN_SYSPROP = "spread_domain";
 
   /**
    * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I
@@ -106,11 +106,12 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
 
   /**
    * When this property is set to {@code true}, Solr will try to place replicas for the same shard
-   * in nodes that have different value for the {@link #ANTI_AFFINITY_SYSPROP} System property. If
+   * in nodes that have different value for the {@link #SPREAD_DOMAIN_SYSPROP} System property. If
    * more replicas exist (or are being placed) than the number of different values for {@link
-   * #ANTI_AFFINITY_SYSPROP} System property in nodes in the cluster, Solr will attempt to
-   * distribute the placement of the replicas evenly across the anti-affinity groups. Note that the
-   * anti-affinity groups are evaluated within a particular AZ (i.e. Solr will not consider the
+   * #SPREAD_DOMAIN_SYSPROP} System property in nodes in the cluster, Solr will attempt to
+   * distribute the placement of the replicas evenly across the domains but will fail the placement
+   * if more than {@link #maxReplicasPerShardInDomain} are placed within a single domain. Note that
+   * the domain groups are evaluated within a particular AZ (i.e. Solr will not consider the
    * placement of replicas in AZ1 when selecting candidate nodes for replicas in AZ2). Example
    * usages for this config are:
    *
@@ -122,7 +123,14 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    *       shard to go in nodes that run in different hosts
    * </ul>
    */
-  @JsonProperty public Boolean useAntiAffinity = Boolean.FALSE;
+  @JsonProperty public Boolean spreadAcrossDomains = Boolean.FALSE;
+
+  /**
+   * Determines the maximum number of replicas of a particular type of a particular shard that can
+   * be placed within a single domain (as defined by the @link #SPREAD_DOMAIN_SYSPROP} System
+   * property.
+   */
+  @JsonProperty public Integer maxReplicasPerShardInDomain = -1;
 
   /** Zero-arguments public constructor required for deserialization - don't use. */
   public AffinityPlacementConfig() {
