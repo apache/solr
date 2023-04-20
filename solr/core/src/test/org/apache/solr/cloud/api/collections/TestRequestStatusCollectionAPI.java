@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.BasicDistributedZkTest;
@@ -223,7 +225,10 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
-    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 15000)) {
+    try (SolrClient baseServer =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .build()) {
       return baseServer.request(request);
     }
   }

@@ -20,10 +20,12 @@ package org.apache.solr.packagemanager;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,8 +36,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -129,7 +129,9 @@ public class RepositoryManager {
           true);
     }
 
-    addKey(IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), repoName + ".der");
+    try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
+      addKey(is.readAllBytes(), repoName + ".der");
+    }
   }
 
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
@@ -199,7 +201,7 @@ public class RepositoryManager {
       for (int i = 0; i < release.artifacts.size(); i++) {
         PackageUtils.postFile(
             solrClient,
-            ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.get(i).toFile())),
+            ByteBuffer.wrap(Files.readAllBytes(downloaded.get(i))),
             String.format(
                 Locale.ROOT,
                 "/package/%s/%s/%s",

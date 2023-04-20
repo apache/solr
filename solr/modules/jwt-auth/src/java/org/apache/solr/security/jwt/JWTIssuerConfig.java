@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
@@ -472,7 +471,7 @@ public class JWTIssuerConfig {
             }
           }
           SimpleResponse resp = httpGet.get(url.toString());
-          return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));
+          return parse(new ByteArrayInputStream(resp.getBody().getBytes(StandardCharsets.UTF_8)));
         }
       } catch (IOException e) {
         throw new SolrException(

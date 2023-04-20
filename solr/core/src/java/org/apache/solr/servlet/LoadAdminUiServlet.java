@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -57,29 +56,24 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
     // This attribute is set by the SolrDispatchFilter
     String admin = request.getRequestURI().substring(request.getContextPath().length());
     CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
-    InputStream in = getServletContext().getResourceAsStream(admin);
-    Writer out = null;
-    if (in != null && cores != null) {
-      try {
+    try (InputStream in = getServletContext().getResourceAsStream(admin)) {
+      if (in != null && cores != null) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
 
         // We have to close this to flush OutputStreamWriter buffer
-        out =
+        try (Writer out =
             new OutputStreamWriter(
-                CloseShieldOutputStream.wrap(response.getOutputStream()), StandardCharsets.UTF_8);
-
-        Package pack = SolrCore.class.getPackage();
-        String html =
-            IOUtils.toString(in, StandardCharsets.UTF_8)
-                .replace("${version}", pack.getSpecificationVersion());
-        out.write(html);
-      } finally {
-        IOUtils.closeQuietly(in);
-        IOUtils.closeQuietly(out);
+                CloseShieldOutputStream.wrap(response.getOutputStream()), StandardCharsets.UTF_8)) {
+          Package pack = SolrCore.class.getPackage();
+          String html =
+              new String(in.readAllBytes(), StandardCharsets.UTF_8)
+                  .replace("${version}", pack.getSpecificationVersion());
+          out.write(html);
+        }
+      } else {
+        response.sendError(404);
       }
-    } else {
-      response.sendError(404);
     }
   }
 }

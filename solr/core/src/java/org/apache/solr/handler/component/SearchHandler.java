@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -628,7 +628,7 @@ public class SearchHandler extends RequestHandlerBase
       // - ERRORs that may be logged during response writing
       MDC.put(CommonParams.REQUEST_ID, rid);
 
-      if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+      if (StrUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid); // add rid to the request so that shards see it
         rb.req.setParams(params);
@@ -653,7 +653,7 @@ public class SearchHandler extends RequestHandlerBase
    */
   public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
+    return StrUtils.isNotBlank(rid) ? rid : generateRid(req);
   }
 
   private static String generateRid(SolrQueryRequest req) {

@@ -32,11 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
 import org.apache.solr.client.solrj.request.beans.CreatePayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
@@ -49,7 +47,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 public class CollectionsAPI {
 
   public static final String V2_CREATE_COLLECTION_CMD = "create";
-  public static final String V2_BACKUP_CMD = "backup-collection";
   public static final String V2_RESTORE_CMD = "restore-collection";
   public static final String V2_CREATE_ALIAS_CMD = "create-alias";
 
@@ -66,15 +63,6 @@ public class CollectionsAPI {
       method = POST,
       permission = COLL_EDIT_PERM)
   public class CollectionsCommands {
-
-    @Command(name = V2_BACKUP_CMD)
-    public void backupCollection(PayloadObj<BackupCollectionPayload> obj) throws Exception {
-      final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
-      v1Params.put(ACTION, CollectionAction.BACKUP.toLower());
-
-      collectionsHandler.handleRequestBody(
-          wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
 
     @Command(name = V2_RESTORE_CMD)
     @SuppressWarnings("unchecked")
@@ -101,7 +89,7 @@ public class CollectionsAPI {
       final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
       v1Params.put(ACTION, CollectionAction.CREATEALIAS.toLower());
-      if (!CollectionUtils.isEmpty(v2Body.collections)) {
+      if (v2Body.collections != null && !v2Body.collections.isEmpty()) {
         final String collectionsStr = String.join(",", v2Body.collections);
         v1Params.remove(V2ApiConstants.COLLECTIONS);
         v1Params.put(V2ApiConstants.COLLECTIONS, collectionsStr);

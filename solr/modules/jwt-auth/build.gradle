@@ -35,7 +35,6 @@ dependencies {
 
   implementation 'org.bitbucket.b_c:jose4j'
 
-  implementation 'commons-io:commons-io'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
@@ -62,5 +61,4 @@ dependencies {
   testImplementation 'com.squareup.okhttp3:mockwebserver'
   testImplementation 'com.squareup.okhttp3:okhttp'
   testRuntimeOnly 'io.netty:netty-codec-http'
-  testImplementation 'org.apache.commons:commons-lang3'
 }

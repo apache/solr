@@ -287,7 +287,8 @@ public class ZkStateWriter {
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
-              data = compressor.compressBytes(data);
+              // When compressing state.json, we expect at least a 10:1 compression ratio.
+              data = compressor.compressBytes(data, data.length / 10);
             }
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {

@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -50,7 +51,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -65,7 +65,6 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -348,11 +347,8 @@ public class Http2SolrClient extends SolrClient {
 
     boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
-      if (!origParams.toNamedList().equals(solrParams.toNamedList())
-          || !StringUtils.equals(origCollection, collection)) {
-        return false;
-      }
-      return true;
+      return origParams.toNamedList().equals(solrParams.toNamedList())
+          && Objects.equals(origCollection, collection);
     }
 
     public void write(byte b[]) throws IOException {
@@ -824,7 +820,7 @@ public class Http2SolrClient extends SolrClient {
           }
       }
 
-      if (wantStream(parser)) {
+      if (wantStream(processor)) {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", is);
@@ -922,13 +918,15 @@ public class Http2SolrClient extends SolrClient {
     if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
       boolean processorAcceptsMimeType =
           processorSupportedContentTypes.stream()
-              .map(ct -> ContentType.parse(ct).getMimeType().trim())
+              .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
               .anyMatch(mimeType::equalsIgnoreCase);
       if (!processorAcceptsMimeType) {
         // unexpected mime type
         final String allSupportedTypes =
             processorSupportedContentTypes.stream()
-                .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+                .map(
+                    ct ->
+                        MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.joining(", "));
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
@@ -1309,7 +1307,7 @@ public class Http2SolrClient extends SolrClient {
   protected void updateDefaultMimeTypeForParser() {
     defaultParserMimeTypes =
         parser.getContentTypes().stream()
-            .map(ct -> ContentType.parse(ct).getMimeType().trim().toLowerCase(Locale.ROOT))
+            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
             .collect(Collectors.toSet());
   }
 

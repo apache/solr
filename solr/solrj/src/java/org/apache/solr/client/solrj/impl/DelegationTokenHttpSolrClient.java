@@ -17,9 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,17 +42,5 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
       throw new IllegalArgumentException(DELEGATION_TOKEN_PARAM + " parameter not supported");
     }
     return super.createMethod(request, collection);
-  }
-
-  @Deprecated
-  @Override
-  public void setQueryParams(Set<String> urlParamNames) {
-    urlParamNames = urlParamNames == null ? Set.of(DELEGATION_TOKEN_PARAM) : urlParamNames;
-    if (!urlParamNames.contains(DELEGATION_TOKEN_PARAM)) {
-      urlParamNames = new HashSet<>(urlParamNames);
-      urlParamNames.add(DELEGATION_TOKEN_PARAM);
-      urlParamNames = Collections.unmodifiableSet(urlParamNames);
-    }
-    super.setQueryParams(urlParamNames);
   }
 }

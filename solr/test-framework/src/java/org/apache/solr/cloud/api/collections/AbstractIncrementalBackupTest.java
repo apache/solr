@@ -495,7 +495,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void backupThenWait() throws SolrServerException, IOException {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
@@ -515,7 +515,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       } else {
         CollectionAdminResponse rsp = backup.process(cluster.getSolrClient());
         assertEquals(0, rsp.getStatus());
-        NamedList resp = (NamedList) rsp.getResponse().get("response");
+        Map<String, Object> resp = (Map<String, Object>) rsp.getResponse().get("response");
         numBackup++;
         assertEquals(numBackup, resp.get("backupId"));
         ;

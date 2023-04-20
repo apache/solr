@@ -69,7 +69,7 @@ public class SetAliasPropCmd implements CollectionApiCommand {
     // check & cleanup properties.  It's a mutable copy.
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       String key = entry.getKey();
-      if ("".equals(key.trim())) {
+      if (key.trim().isEmpty()) {
         throw new SolrException(BAD_REQUEST, "property keys must not be pure whitespace");
       }
       if (!key.equals(key.trim())) {
@@ -77,7 +77,7 @@ public class SetAliasPropCmd implements CollectionApiCommand {
             BAD_REQUEST, "property keys should not begin or end with whitespace");
       }
       String value = entry.getValue();
-      if ("".equals(value)) {
+      if (value != null && value.isEmpty()) {
         entry.setValue(null);
       }
     }

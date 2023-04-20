@@ -24,7 +24,7 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -56,7 +56,7 @@ public class SyncShardAPI {
 
   @Command(name = V2_SYNC_SHARD_CMD)
   public void syncShard(PayloadObj<SyncShardPayload> obj) throws Exception {
-    final Map<String, Object> addedV1Params = Maps.newHashMap();
+    final Map<String, Object> addedV1Params = new HashMap<>();
     final Map<String, String> pathParams = obj.getRequest().getPathTemplateValues();
     addedV1Params.put(ACTION, CollectionParams.CollectionAction.SYNCSHARD.toLower());
     addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
