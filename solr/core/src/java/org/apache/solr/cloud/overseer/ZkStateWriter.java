@@ -270,11 +270,11 @@ public class ZkStateWriter {
             cmd.ops.persist(path, reader.getZkClient());
 
             clusterState =
-                    clusterState.copyWith(
-                            name,
-                            cmd.collection.setPerReplicaStates(
-                                    PerReplicaStatesFetcher.fetch(
-                                            cmd.collection.getZNode(), reader.getZkClient(), null)));
+                clusterState.copyWith(
+                    name,
+                    cmd.collection.setPerReplicaStates(
+                        PerReplicaStatesFetcher.fetch(
+                            cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
           // Update the state.json file if needed
@@ -322,11 +322,11 @@ public class ZkStateWriter {
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
               clusterState =
-                      clusterState.copyWith(
-                              name,
-                              currentCollState.setPerReplicaStates(
-                                      PerReplicaStatesFetcher.fetch(
-                                              currentCollState.getZNode(), reader.getZkClient(), null)));
+                  clusterState.copyWith(
+                      name,
+                      currentCollState.setPerReplicaStates(
+                          PerReplicaStatesFetcher.fetch(
+                              currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
         }

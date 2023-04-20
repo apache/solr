@@ -91,12 +91,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     updates).
    */
   public DocCollection(
-          String name,
-          Map<String, Slice> slices,
-          Map<String, Object> props,
-          DocRouter router,
-          int zkVersion,
-          AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion,
+      AtomicReference<PerReplicaStates> perReplicaStatesRef) {
     super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
     // overwrites
@@ -120,7 +120,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
                 + " = true , but perReplicatStates param is not provided");
       }
       this.perReplicaStatesRef = perReplicaStatesRef;
-      for (Slice s : this.slices.values()) { //set the same reference to all slices too
+      for (Slice s : this.slices.values()) { // set the same reference to all slices too
         s.setPerReplicaStatesRef(this.perReplicaStatesRef);
       }
     }
@@ -174,7 +174,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     } else {
       perReplicaStates = null;
     }
-    return new DocCollection(name, slices, props, router, zkVersion, perReplicaStates != null ? new AtomicReference<>(perReplicaStates) : null);
+    return new DocCollection(
+        name,
+        slices,
+        props,
+        router,
+        zkVersion,
+        perReplicaStates != null ? new AtomicReference<>(perReplicaStates) : null);
   }
 
   private static boolean hasAnyReplica(Map<String, Slice> slices) {
@@ -198,8 +204,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Update our state with a state of a {@link PerReplicaStates} which could override states of
    * {@link Replica}.
    *
-   * Take note that it updates the underlying AtomicReference such that all Slice and Replica that holds the same
-   * AtomicReference will see the same update
+   * <p>Take note that it updates the underlying AtomicReference such that all Slice and Replica
+   * that holds the same AtomicReference will see the same update
    *
    * <p>This does not create a new DocCollection.
    */
@@ -533,7 +539,5 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     String PER_REPLICA_STATE = "perReplicaState";
   }
 
-  public interface PrsSupplier extends Supplier<PerReplicaStates> {
-
-  }
+  public interface PrsSupplier extends Supplier<PerReplicaStates> {}
 }

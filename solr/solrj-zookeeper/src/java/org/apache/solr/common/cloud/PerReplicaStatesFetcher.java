@@ -55,7 +55,8 @@ public class PerReplicaStatesFetcher {
     }
   }
 
-  public static DocCollection.PrsSupplier getZkClientPrsSupplier(SolrZkClient zkClient, String collectionPath) {
-      return () -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
+  public static DocCollection.PrsSupplier getZkClientPrsSupplier(
+      SolrZkClient zkClient, String collectionPath) {
+    return () -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
   }
 }
