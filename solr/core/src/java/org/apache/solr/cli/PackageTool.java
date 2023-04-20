@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.getSolrClient;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.util.SolrCLI.getSolrClient;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -45,11 +45,10 @@ import org.apache.solr.packagemanager.RepositoryManager;
 import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
-import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PackageTool extends SolrCLI.ToolBase {
+public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -76,7 +75,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           "We really need to print the stacktrace here, otherwise "
               + "there shall be little else information to debug problems. Other SolrCLI tools "
               + "don't print stack traces, hence special treatment is needed here.")
-  protected void runImpl(CommandLine cli) throws Exception {
+  public void runImpl(CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
@@ -282,7 +281,6 @@ public class PackageTool extends SolrCLI.ToolBase {
               default:
                 throw new RuntimeException("Unrecognized command: " + cmd);
             }
-            ;
           } finally {
             packageManager.close();
           }

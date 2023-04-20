@@ -33,6 +33,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.cli.ConfigTool;
+import org.apache.solr.cli.CreateCollectionTool;
+import org.apache.solr.cli.DeleteTool;
+import org.apache.solr.cli.HealthcheckTool;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -45,7 +50,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +69,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
@@ -104,9 +107,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    SolrCLI.CreateCollectionTool tool = new SolrCLI.CreateCollectionTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CreateCollectionTool tool = new CreateCollectionTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue(
@@ -192,9 +194,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-collection", testCollectionName,
           "-zkHost", zkHost
         };
-    SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    HealthcheckTool tool = new HealthcheckTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
@@ -204,9 +205,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-name", testCollectionName,
           "-solrUrl", solrUrl
         };
-    SolrCLI.DeleteTool tool = new SolrCLI.DeleteTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    DeleteTool tool = new DeleteTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
@@ -217,7 +217,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * Uses the SolrCLI config action to activate soft auto-commits for the getting started
    * collection.
    */
-  @SuppressWarnings("unchecked")
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
@@ -242,9 +241,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
       Map<String, Integer> startTimes = getSoftAutocommitInterval(testCollectionName, solrClient);
 
-      SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
-      CommandLine cli =
-          SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+      ConfigTool tool = new ConfigTool();
+      CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
       log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
       assertEquals("Set config property failed!", 0, tool.runTool(cli));
 
@@ -272,18 +270,18 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       // for all the cores have been done.
       boolean allGood = false;
       Map<String, Integer> curSoftCommitInterval = null;
-      for (int idx = 0; idx < 600 && allGood == false; ++idx) {
+      for (int idx = 0; idx < 600 && !allGood; ++idx) {
         curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName, solrClient);
         // no point in even trying if they're not the same size!
         if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
           allGood = true;
           for (Map.Entry<String, Integer> currEntry : curSoftCommitInterval.entrySet()) {
-            if (currEntry.getValue().equals(maxTime) == false) {
+            if (!currEntry.getValue().equals(maxTime)) {
               allGood = false;
             }
           }
         }
-        if (allGood == false) {
+        if (!allGood) {
           Thread.sleep(100);
         }
       }
@@ -292,7 +290,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   // Collect all the autoSoftCommit intervals.
-  @SuppressWarnings("unchecked")
   private Map<String, Integer> getSoftAutocommitInterval(String collection, SolrClient solrClient)
       throws Exception {
     Map<String, Integer> ret = new HashMap<>();

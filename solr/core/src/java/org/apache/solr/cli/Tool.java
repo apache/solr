@@ -14,26 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
 
-import java.io.PrintStream;
-import org.apache.solr.common.util.SuppressForbidden;
+package org.apache.solr.cli;
 
-@SuppressForbidden(reason = "For use in command line tools only")
-public interface CLIO {
-  static void out(String s) {
-    System.out.println(s);
-  }
+import java.util.List;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 
-  static void err(String s) {
-    System.err.println(s);
-  }
+public interface Tool {
+  /** Defines the interface to a Solr tool that can be run from this command-line app. */
+  String getName();
 
-  static PrintStream getOutStream() {
-    return System.out;
-  }
+  List<Option> getOptions();
 
-  static PrintStream getErrStream() {
-    return System.err;
-  }
+  int runTool(CommandLine cli) throws Exception;
 }

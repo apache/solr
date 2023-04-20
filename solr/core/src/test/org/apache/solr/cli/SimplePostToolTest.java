@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.cli;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -31,8 +31,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.SimplePostTool.PageFetcher;
-import org.apache.solr.util.SimplePostTool.PageFetcherResult;
+import org.apache.solr.cli.SimplePostTool.PageFetcher;
+import org.apache.solr.cli.SimplePostTool.PageFetcherResult;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -256,7 +256,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       sb.append("User-agent: * # match all bots\n");
       sb.append("Disallow:  # This is void\n");
       sb.append("Disallow: /disallow # Disallow this path\n");
-      sb.append("Disallow: /nonexistingpath # Disallow this path\n");
+      sb.append("Disallow: /nonexistentpath # Disallow this path\n");
       this.robotsCache.put(
           "[ff01::114]",
           super.parseRobotsTxt(
