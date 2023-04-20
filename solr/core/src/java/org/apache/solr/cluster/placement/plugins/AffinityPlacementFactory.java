@@ -939,7 +939,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       Comparator<Node> interGroupNodeComparator =
           new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
-      ;
 
       // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes
       // suitable for placement on the AZ, so we can easily select the next AZ to get a replica
