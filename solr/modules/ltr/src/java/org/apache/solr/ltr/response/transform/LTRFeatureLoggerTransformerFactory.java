@@ -189,7 +189,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private LTRScoringQuery[] rerankingQueries;
     private LTRScoringQuery.ModelWeight[] modelWeights;
     private FeatureLogger featureLogger;
-    private boolean docsWereNotReranked;
+    private boolean docsWereReranked;
 
     /**
      * @param name Name of the field to be added in a document representing the feature vectors
@@ -231,21 +231,20 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
 
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
-      docsWereNotReranked =
-          (rerankingQueriesFromContext == null || rerankingQueriesFromContext.length == 0);
+      docsWereReranked =
+          (rerankingQueriesFromContext != null && rerankingQueriesFromContext.length == 0);
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
       Boolean extractAll = SolrQueryRequestContextUtils.isExtractingAllFeatures(req);
 
       Map<String, String[]> transformerExternalFeatureInfo =
           LTRQParserPlugin.extractEFIParams(localparams);
       List<Feature> modelFeatures = null;
-      if (!docsWereNotReranked) {
+      if (docsWereReranked) {
         modelFeatures = rerankingQueriesFromContext[0].getScoringModel().getFeatures();
       } else {
         if (extractAll == null) {
           extractAll = true;
         }
-
         if (!extractAll) {
           throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
@@ -323,7 +322,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         String transformerFeatureStore,
         Map<String, String[]> transformerExternalFeatureInfo,
         LoggingModel loggingModel) {
-      if (docsWereNotReranked) { // no reranking query
+      if (!docsWereReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
                 loggingModel,
@@ -421,7 +420,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   LTRRescorer.extractFeaturesInfo(
                       rerankingModelWeight,
                       docid,
-                      (docsWereNotReranked ? score : null),
+                      (!docsWereReranked ? score : null),
                       leafContexts));
         }
         doc.addField(name, featureVector);
