@@ -319,7 +319,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testNoReranking_DefaultStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
+  public void testNoReranking_defaultStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -333,7 +333,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // No store specified, use default store for extraction
+    // No store specified, use default store for logging
     // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -348,7 +348,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testNoReranking_DefaultStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
+  public void testNoReranking_defaultStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -362,7 +362,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // No store specified, use default store for extraction
+    // No store specified, use default store for logging
     // logAll=true, return all the features in the default store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -377,7 +377,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testNoReranking_DefaultStoreExtractAllFalse_shouldRaiseException() throws Exception {
+  public void testNoReranking_defaultStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -391,7 +391,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // No store specified, use default store for extraction
+    // No store specified, use default store for logging
     // logAll=false, exception since no model used
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -399,11 +399,11 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv logAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='you can only extract all features from the store \\'null\\' passed in input in the logger'");
+            "/error/msg=='you can only log all features from the store \\'null\\' passed in input in the logger'");
   }
 
   @Test
-  public void testNoReranking_DefinedStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
+  public void testNoReranking_definedStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -417,7 +417,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -432,7 +432,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testNoReranking_DefinedStoreExtractAllTrue_shouldPrintAllFeature() throws Exception {
+  public void testNoReranking_definedStoreLogAllTrue_shouldPrintAllFeature() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -446,7 +446,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // logAll=true, return all the features in the defined store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -461,7 +461,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testNoReranking_DefinedStoreExtractAllFalse_shouldRaiseException() throws Exception {
+  public void testNoReranking_definedStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -475,7 +475,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // logAll=false, exception since no model used
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -483,11 +483,11 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv store=storeA logAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='you can only extract all features from the store \\'storeA\\' passed in input in the logger'");
+            "/error/msg=='you can only log all features from the store \\'storeA\\' passed in input in the logger'");
   }
 
   @Test
-  public void testReranking_DefaultStoreDefaultExtractAll_shouldPrintModelFeatures() throws Exception {
+  public void testReranking_defaultStoreDefaultLogAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -507,7 +507,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // No store specified, use model store for extraction
+    // No store specified, use model store for logging
     // No logAll specified, use default: logAll=false
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -522,7 +522,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_DefaultStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
+  public void testReranking_defaultStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -542,7 +542,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // No store specified, use model store for extraction
+    // No store specified, use model store for logging
     // logAll=true, return all the features in the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -558,7 +558,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_DefaultStoreExtractAllFalse_shouldPrintModelFeatures() throws Exception {
+  public void testReranking_defaultStoreLogAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -578,7 +578,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // No store specified, use model store for extraction
+    // No store specified, use model store for logging
     // logAll=false, only model features returned
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -593,7 +593,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_DifferentStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
+  public void testReranking_differentStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -615,7 +615,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -631,7 +631,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_DifferentStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
+  public void testReranking_differentStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -653,7 +653,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // logAll=true, return all the features in the defined store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -669,7 +669,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_DifferentStoreExtractAllFalse_shouldRaiseException() throws Exception {
+  public void testReranking_differentStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -691,7 +691,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // logAll=false, exception since the defined store is different from the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -700,11 +700,11 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
-            "/error/msg=='the feature store \\'storeB\\' in the logger is different from the model feature store \\'storeA\\', you can only extract all the features'");
+            "/error/msg=='the feature store \\'storeB\\' in the logger is different from the model feature store \\'storeA\\', you can only log all the features from the store'");
   }
 
   @Test
-  public void testReranking_ModelStoreDefaultExtractAll_shouldPrintModelFeatures() throws Exception {
+  public void testReranking_modelStoreDefaultLogAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -724,7 +724,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // No logAll specified, use default: logAll=false since we pass the same store as the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
@@ -739,7 +739,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testReranking_ModelStoreExtractAllFalse_shouldPrintModelFeatures() throws Exception {
+  public void testReranking_modelStoreLogAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -759,7 +759,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "storeA",
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
-    // Store specified, used store for extraction
+    // Store specified, used store for logging
     // logAll=false, only model features returned since the defined store is the same as the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");

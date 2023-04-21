@@ -153,7 +153,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String formatStr, Boolean extractAll) {
+  private FeatureLogger createFeatureLogger(String formatStr, Boolean logAll) {
     final FeatureLogger.FeatureFormat format;
     if (formatStr != null) {
       format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
@@ -163,7 +163,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, format, extractAll, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(fvCacheName, format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {
@@ -250,8 +250,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   "you can only log all features from the store '" + transformerFeatureStore + "' passed in input in the logger");
         }
       }
-      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, extractAll, modelFeatures, docsWereNotReranked);
-      SolrQueryRequestContextUtils.setIsExtractingAllFeatures(req, extractAll);
+      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereNotReranked);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
@@ -296,11 +295,18 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     /**
      * The loggingModel is an empty model that is just used to extract the features and log them.
-     *
-     * @param transformerFeatureStore the explicit transformer feature store
+     * @param transformerFeatureStore the container of features to extract
+     * @param logAll defines if it extracts all the features from the store or only the model features
+     * @param modelFeatures the list of model features
+     * @return
      */
-    private LoggingModel createLoggingModel(String transformerFeatureStore, List<Feature> featuresToLog) {
-      return new LoggingModel(loggingModelName, transformerFeatureStore, featuresToLog);
+    private LoggingModel createLoggingModel(String transformerFeatureStore, boolean logAll, List<Feature> modelFeatures) {
+      final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
+      final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
+      // if transformerFeatureStore was null before this gets actual name
+      transformerFeatureStore = store.getName();
+
+      return new LoggingModel(loggingModelName, transformerFeatureStore, (logAll ? store.getFeatures():modelFeatures));
     }
 
     /**

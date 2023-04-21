@@ -29,10 +29,10 @@ public class SolrQueryRequestContextUtils {
   /** key of the scoring queries in the request context */
   private static final String SCORING_QUERIES = LTR_PREFIX + "scoring_queries";
 
-  /** key of the isPrintingFeatures flag in the request context */
+  /** key of the isLoggingFeatures flag in the request context */
   private static final String IS_LOGGING_FEATURES = LTR_PREFIX + "isLoggingFeatures";
 
-  /** key of the isExtractingFeatures flag in the request context */
+  /** key of the isLoggingAllFeatures flag in the request context */
   private static final String IS_LOGGING_ALL_FEATURES = LTR_PREFIX + "isLoggingAllFeatures";
 
   /** key of the feature vector store name in the request context */
@@ -56,7 +56,7 @@ public class SolrQueryRequestContextUtils {
     return (LTRScoringQuery[]) req.getContext().get(SCORING_QUERIES);
   }
 
-  /** isExtractingFeatures flag accessors */
+  /** isLoggingFeatures flag accessors */
   public static void enableFeatureLogging(SolrQueryRequest req) {
     req.getContext().put(IS_LOGGING_FEATURES, Boolean.TRUE);
   }

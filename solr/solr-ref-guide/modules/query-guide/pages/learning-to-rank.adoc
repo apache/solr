@@ -350,7 +350,7 @@ To rerank the results of a query, interleaving two models using a specific algor
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100 interleavingAlgorithm=TeamDraft}&fl=id,score
 
-Currently the only (and default) algorithm supported is 'TeamDraft'.
+Currently, the only (and default) algorithm supported is 'TeamDraft'.
 
 === External Feature Information
 
@@ -490,7 +490,7 @@ Learning-To-Rank is a module and therefore its plugins must be configured in `so
 === Minimum Requirements
 
 * Include the required module JARs.
-Note that by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
+Note that by default paths are relative to the Solr core, so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
 +
 [source,xml]
 ----
@@ -539,7 +539,44 @@ Note that by default paths are relative to the Solr core so they may need adjust
 A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights.
 For details, please refer to the {solr-javadocs}/modules/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
-==== Feature Vector Customization
+==== Feature Vector Logging
+
+===== logAll parameter
+
+With `logAll = true` all the features from the feature store are printed.
+With `logAll = false` only the features used by the model are printed.
+
+Below the tables showing the different configuration possibilities and the corresponding results in both no re-ranking
+and re-ranking scenarios.
+
+NO RE-RANKING
+[cols=",,,"]
+|===
+2.2+h| 2+h|Logger store
+h|Default store h|Defined store
+.2+h|logAll h|Default |All the features logged |All the features logged
+h|True |All the features logged |All the features logged
+|===
+
+RE-RANKING
+[cols=",,,"]
+|===
+2.2+h| 2+h|Logger store
+h|Default store h|Model store
+.3+h|logAll h|Default |Model features logged |Model features logged
+h|True |All the features of the model store logged |All the features logged
+h|False |Model features logged |Model features logged
+|===
+
+[cols=",,"]
+|===
+2.2+h| h|Logger store
+h|Different from model store
+.2+h|logAll h|Default |All the features logged
+h|True |All the features logged
+|===
+
+===== format parameter
 
 The features transformer returns dense CSV values such as `featureA=0.1,featureB=0.2,featureC=0.3,featureD=0.0`.
 
@@ -728,12 +765,12 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 {
   "store" : "largeModelsFeatureStore",
   "name" : "myModel",
-  "class" : ...,
+  "class" : "...",
   "features" : [
-    ...
+    "..."
   ],
   "params" : {
-    ...
+    "...": "..."
   }
 }
 ----
