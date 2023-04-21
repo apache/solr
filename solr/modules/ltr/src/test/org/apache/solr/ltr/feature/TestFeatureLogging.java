@@ -319,7 +319,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreDefaultExtractAllNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefaultStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -332,8 +332,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // No store specified, use default store for extraction
     // No extractAll specified, use default: extractAll=true
@@ -350,7 +348,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreExtractAllTrueNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefaultStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -363,8 +361,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // No store specified, use default store for extraction
     // ExtractAll=true, return all the features in the default store
@@ -381,7 +377,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreExtractAllFalseNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefaultStoreExtractAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -394,8 +390,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // No store specified, use default store for extraction
     // ExtractAll=false, exception since no model used
@@ -409,7 +403,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreDefaultExtractAllNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefinedStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -422,8 +416,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // Store specified, used store for extraction
     // No extractAll specified, use default: extractAll=true
@@ -440,7 +432,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreExtractAllTrueNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefinedStoreExtractAllTrue_shouldPrintAllFeature() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -453,8 +445,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // Store specified, used store for extraction
     // ExtractAll=true, return all the features in the defined store
@@ -471,7 +461,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreExtractAllFalseNoRerankingFeatureExtraction() throws Exception {
+  public void testNoReranking_DefinedStoreExtractAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -484,8 +474,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
 
     // Store specified, used store for extraction
     // ExtractAll=false, exception since no model used
@@ -499,7 +487,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DefaultStoreDefaultExtractAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -512,8 +500,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
             "modelA",
             LinearModel.class.getName(),
@@ -536,7 +522,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreExtractAllTrueRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DefaultStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -549,8 +535,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
             "modelA",
             LinearModel.class.getName(),
@@ -574,7 +558,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefaultStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DefaultStoreExtractAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -587,8 +571,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
             "modelA",
             LinearModel.class.getName(),
@@ -611,7 +593,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DifferentStoreDefaultExtractAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -649,7 +631,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreExtractAllTrueRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DifferentStoreExtractAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -687,7 +669,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testDefinedStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+  public void testReranking_DifferentStoreExtractAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -722,7 +704,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testModelStoreDefaultExtractAllRerankingFeatureExtraction() throws Exception {
+  public void testReranking_ModelStoreDefaultExtractAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -735,8 +717,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
             "modelA",
             LinearModel.class.getName(),
@@ -759,7 +739,7 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
-  public void testModelStoreExtractAllFalseRerankingFeatureExtraction() throws Exception {
+  public void testReranking_ModelStoreExtractAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
             "defaultStoreFeature1",
             ValueFeature.class.getName(),
@@ -772,8 +752,6 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
-    loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
-    loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
             "modelA",
             LinearModel.class.getName(),
