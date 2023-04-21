@@ -155,8 +155,8 @@ public class LTRQParserPlugin extends QParserPlugin
             SolrException.ErrorCode.BAD_REQUEST, "Must provide one or two models in the request");
       }
       final boolean isInterleaving = (modelNames.length > 1);
-      final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
-      Boolean extractAllFeatures = SolrQueryRequestContextUtils.isExtractingAllFeatures(req);
+      final boolean isLoggingFeatures = SolrQueryRequestContextUtils.isLoggingFeatures(req);
+      Boolean isLoggingAllFeatures = SolrQueryRequestContextUtils.isLoggingAllFeatures(req);
       final String transformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
@@ -180,42 +180,43 @@ public class LTRQParserPlugin extends QParserPlugin
           // Check if features are requested and if the model feature store and feature-transform
           // feature store are the same
           final boolean featuresRequestedFromSameStore =
-              (modelFeatureStoreName.equals(transformerFeatureStoreName)
-                      || transformerFeatureStoreName == null)
-                  ? extractFeatures
-                  : false;
-          
-          if(!featuresRequestedFromSameStore){
-            if(extractAllFeatures == null){
-              extractAllFeatures = true;
-            }
+                  (modelFeatureStoreName.equals(transformerFeatureStoreName)
+                          || transformerFeatureStoreName == null);
 
-            if(!extractAllFeatures){
-              throw new SolrException(
-                      SolrException.ErrorCode.BAD_REQUEST,
-                      "the feature store '"+transformerFeatureStoreName+"' in the logger is different from the model feature store '"+modelFeatureStoreName+"', you can only extract all the features");
+          if (isLoggingFeatures) {
+            if (featuresRequestedFromSameStore) {
+              if (isLoggingAllFeatures == null) {
+                isLoggingAllFeatures = false; // default to log only model features
+              }
+            } else {
+              if (isLoggingAllFeatures == null) {
+                isLoggingAllFeatures = true; // default to log all features from the store
+              }
+              if (!isLoggingAllFeatures) {
+                throw new SolrException(
+                        SolrException.ErrorCode.BAD_REQUEST,
+                        "the feature store '" + transformerFeatureStoreName + "' in the logger is different from the model feature store '" + modelFeatureStoreName + "', you can only log all the features from the store");
+              }
             }
           } else {
-            if (extractAllFeatures == null) {
-              extractAllFeatures = false;
-            }
+            isLoggingAllFeatures = false;
           }
 
-          SolrQueryRequestContextUtils.setIsExtractingAllFeatures(req, extractAllFeatures);
+          SolrQueryRequestContextUtils.logAllFeatures(req, isLoggingAllFeatures);
           if (isInterleaving) {
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
                         ltrScoringModel,
                         externalFeatureInfo,
-                            extractAllFeatures,
+                            isLoggingAllFeatures,
                         threadManager);
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
                     ltrScoringModel,
                     externalFeatureInfo,
-                        extractAllFeatures,
+                        isLoggingAllFeatures,
                     threadManager);
             rerankingQueries[i] = null;
           }

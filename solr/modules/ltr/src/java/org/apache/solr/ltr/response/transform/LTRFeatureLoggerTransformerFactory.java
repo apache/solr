@@ -71,8 +71,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify the feature store to use for the feature extraction
   private static final String FV_STORE = "store";
 
-  // used inside fl to specify to extract (all|model only) features
-  private static final String FV_EXTRACT_ALL = "extractAll";
+  // used inside fl to specify to log (all|model only) features
+  private static final String FV_LOG_ALL = "logAll";
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
@@ -127,7 +127,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   public DocTransformer create(String name, SolrParams localparams, SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
-    SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
+    SolrQueryRequestContextUtils.enableFeatureLogging(req);
 
     // Communicate which feature store we are requesting features for
     final String fvStoreName = localparams.get(FV_STORE);
@@ -135,12 +135,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         req, (fvStoreName == null ? defaultStore : fvStoreName));
 
 
-    Boolean extractAll = localparams.getBool(FV_EXTRACT_ALL);
-    SolrQueryRequestContextUtils.setIsExtractingAllFeatures(req, extractAll);
+    Boolean logAll = localparams.getBool(FV_LOG_ALL);
+    SolrQueryRequestContextUtils.logAllFeatures(req, logAll);
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(
-        req, createFeatureLogger(localparams.get(FV_FORMAT), extractAll));
+        req, createFeatureLogger(localparams.get(FV_FORMAT), logAll));
 
     return new FeatureTransformer(
         name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */);
@@ -172,7 +172,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private final SolrParams localparams;
     private final SolrQueryRequest req;
     private final boolean hasExplicitFeatureStore;
-
     private List<LeafReaderContext> leafContexts;
     private SolrIndexSearcher searcher;
 
@@ -232,9 +231,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
       docsWereReranked =
-          (rerankingQueriesFromContext != null && rerankingQueriesFromContext.length == 0);
+          (rerankingQueriesFromContext != null && rerankingQueriesFromContext.length != 0);
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
-      Boolean extractAll = SolrQueryRequestContextUtils.isExtractingAllFeatures(req);
+      Boolean logAll = SolrQueryRequestContextUtils.isLoggingAllFeatures(req);
 
       Map<String, String[]> transformerExternalFeatureInfo =
           LTRQParserPlugin.extractEFIParams(localparams);
@@ -242,18 +241,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (docsWereReranked) {
         modelFeatures = rerankingQueriesFromContext[0].getScoringModel().getFeatures();
       } else {
-        if (extractAll == null) {
-          extractAll = true;
+        if (logAll == null) {
+          logAll = true;
         }
-        if (!extractAll) {
+        if (!logAll) {
           throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
-                  "you can only extract all features from the store '" + transformerFeatureStore + "' passed in input in the logger");
+                  "you can only log all features from the store '" + transformerFeatureStore + "' passed in input in the logger");
         }
-
       }
-      final LoggingModel loggingModel =
-          createLoggingModel(transformerFeatureStore, docsWereNotReranked);
+      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, extractAll, modelFeatures, docsWereNotReranked);
       SolrQueryRequestContextUtils.setIsExtractingAllFeatures(req, extractAll);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
@@ -291,8 +288,19 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       // if transformerFeatureStore was null before this gets actual name
       transformerFeatureStore = store.getName();
+      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll ? store.getFeatures() : modelFeatures);
+      setupRerankingQueriesForLogging(
+          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+      setupRerankingWeightsForLogging(context);
+    }
 
-      return new LoggingModel(loggingModelName, transformerFeatureStore, (extractAll ? store.getFeatures():modelFeatures));
+    /**
+     * The loggingModel is an empty model that is just used to extract the features and log them.
+     *
+     * @param transformerFeatureStore the explicit transformer feature store
+     */
+    private LoggingModel createLoggingModel(String transformerFeatureStore, List<Feature> featuresToLog) {
+      return new LoggingModel(loggingModelName, transformerFeatureStore, featuresToLog);
     }
 
     /**

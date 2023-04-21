@@ -29,11 +29,11 @@ public class SolrQueryRequestContextUtils {
   /** key of the scoring queries in the request context */
   private static final String SCORING_QUERIES = LTR_PREFIX + "scoring_queries";
 
-  /** key of the isExtractingFeatures flag in the request context */
-  private static final String IS_EXTRACTING_FEATURES = LTR_PREFIX + "isExtractingFeatures";
+  /** key of the isPrintingFeatures flag in the request context */
+  private static final String IS_LOGGING_FEATURES = LTR_PREFIX + "isLoggingFeatures";
 
   /** key of the isExtractingFeatures flag in the request context */
-  private static final String IS_EXTRACTING_ALL_FEATURES = LTR_PREFIX + "isExtractingAllFeatures";
+  private static final String IS_LOGGING_ALL_FEATURES = LTR_PREFIX + "isLoggingAllFeatures";
 
   /** key of the feature vector store name in the request context */
   private static final String STORE = LTR_PREFIX + "store";
@@ -57,28 +57,22 @@ public class SolrQueryRequestContextUtils {
   }
 
   /** isExtractingFeatures flag accessors */
-  public static void setIsExtractingFeatures(SolrQueryRequest req) {
-    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.TRUE);
+  public static void enableFeatureLogging(SolrQueryRequest req) {
+    req.getContext().put(IS_LOGGING_FEATURES, Boolean.TRUE);
   }
 
-  public static void clearIsExtractingFeatures(SolrQueryRequest req) {
-    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.FALSE);
+  public static boolean isLoggingFeatures(SolrQueryRequest req) {
+    return Boolean.TRUE.equals(req.getContext().get(IS_LOGGING_FEATURES));
   }
 
-  public static boolean isExtractingFeatures(SolrQueryRequest req) {
-    return Boolean.TRUE.equals(req.getContext().get(IS_EXTRACTING_FEATURES));
+  public static void logAllFeatures(SolrQueryRequest req, Boolean logAll) {
+    req.getContext().put(IS_LOGGING_ALL_FEATURES, logAll);
   }
 
-  public static void setIsExtractingAllFeatures(SolrQueryRequest req, Boolean extractAll) {
-    req.getContext().put(IS_EXTRACTING_ALL_FEATURES, extractAll);
+  public static Boolean isLoggingAllFeatures(SolrQueryRequest req) {
+    return (Boolean) req.getContext().get(IS_LOGGING_ALL_FEATURES);
   }
-
-  public static Boolean isExtractingAllFeatures(SolrQueryRequest req) {
-    return (Boolean) req.getContext().get(IS_EXTRACTING_ALL_FEATURES);
-  }
-
- 
-
+  
   /** feature vector store name accessors */
   public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
     req.getContext().put(STORE, fvStoreName);

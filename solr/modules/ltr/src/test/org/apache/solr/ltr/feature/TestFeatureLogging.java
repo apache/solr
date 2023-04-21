@@ -76,7 +76,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
-    query.add("fl", "id,popularity,[fv extractAll=true]");
+    query.add("fl", "id,popularity,[fv logAll=true]");
     query.add("rows", "3");
     query.add("debugQuery", "on");
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
@@ -87,7 +87,7 @@ public class TestFeatureLogging extends TestRerankBase {
         "/response/docs/[0]/=={'id':'7', 'popularity':2,  '[fv]':'" + docs0fv_default_csv + "'}");
 
     query.remove("fl");
-    query.add("fl", "[fv extractAll=true]");
+    query.add("fl", "[fv logAll=true]");
     query.add("rows", "3");
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
 
@@ -241,7 +241,7 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("debugQuery", "on");
 
     query.remove("fl");
-    query.add("fl", "fv:[fv extractAll=true]");
+    query.add("fl", "fv:[fv logAll=true]");
     query.add("rows", "3");
     query.add("group", "true");
     query.add("group.field", "title");
@@ -295,7 +295,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - no feature format specified i.e. use default
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 extractAll=true]");
+    query.add("fl", "*,score,fv:[fv store=test4 logAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_default_csv + "'");
     assertJQ(
@@ -303,7 +303,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - sparse feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=sparse extractAll=true]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse logAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_sparse_csv + "'");
     assertJQ(
@@ -311,7 +311,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     // csv - dense feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=dense extractAll=true]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense logAll=true]");
     assertJQ(
         "/query" + query.toQueryString(), "/response/docs/[0]/fv/=='" + docs0fv_dense_csv + "'");
     assertJQ(
@@ -334,7 +334,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // No store specified, use default store for extraction
-    // No extractAll specified, use default: extractAll=true
+    // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
@@ -363,11 +363,11 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // No store specified, use default store for extraction
-    // ExtractAll=true, return all the features in the default store
+    // logAll=true, return all the features in the default store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv extractAll=true]");
+    query.add("fl", "fv:[fv logAll=true]");
     assertJQ(
             "/query" + query.toQueryString(),
             "/response/docs/[0]/=={'fv':'"
@@ -392,11 +392,11 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // No store specified, use default store for extraction
-    // ExtractAll=false, exception since no model used
+    // logAll=false, exception since no model used
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv extractAll=false]");
+    query.add("fl", "fv:[fv logAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
             "/error/msg=='you can only extract all features from the store \\'null\\' passed in input in the logger'");
@@ -418,7 +418,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // Store specified, used store for extraction
-    // No extractAll specified, use default: extractAll=true
+    // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
@@ -447,11 +447,11 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // Store specified, used store for extraction
-    // ExtractAll=true, return all the features in the defined store
+    // logAll=true, return all the features in the defined store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv store=storeA extractAll=true]");
+    query.add("fl", "fv:[fv store=storeA logAll=true]");
     assertJQ(
             "/query" + query.toQueryString(),
             "/response/docs/[0]/=={'fv':'"
@@ -476,11 +476,11 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
     // Store specified, used store for extraction
-    // ExtractAll=false, exception since no model used
+    // logAll=false, exception since no model used
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv store=storeA extractAll=false]");
+    query.add("fl", "fv:[fv store=storeA logAll=false]");
     assertJQ(
             "/query" + query.toQueryString(),
             "/error/msg=='you can only extract all features from the store \\'storeA\\' passed in input in the logger'");
@@ -508,7 +508,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for extraction
-    // No extractAll specified, use default: extractAll=false
+    // No logAll specified, use default: logAll=false
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
@@ -543,11 +543,11 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for extraction
-    // ExtractAll=true, return all the features in the model store
+    // logAll=true, return all the features in the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv extractAll=true]");
+    query.add("fl", "fv:[fv logAll=true]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
@@ -579,11 +579,11 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for extraction
-    // ExtractAll=false, only model features returned
+    // logAll=false, only model features returned
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv extractAll=false]");
+    query.add("fl", "fv:[fv logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
@@ -616,7 +616,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for extraction
-    // No extractAll specified, use default: extractAll=true
+    // No logAll specified, use default: logAll=true
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
@@ -654,11 +654,11 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for extraction
-    // ExtractAll=true, return all the features in the defined store
+    // logAll=true, return all the features in the defined store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv store=storeB extractAll=true]");
+    query.add("fl", "fv:[fv store=storeB logAll=true]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
@@ -692,11 +692,11 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for extraction
-    // ExtractAll=false, exception since the defined store is different from the model store
+    // logAll=false, exception since the defined store is different from the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv store=storeB extractAll=false]");
+    query.add("fl", "fv:[fv store=storeB logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
@@ -725,7 +725,7 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for extraction
-    // No extractAll specified, use default: extractAll=false since we pass the same store as the model store
+    // No logAll specified, use default: logAll=false since we pass the same store as the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
@@ -760,11 +760,11 @@ public class TestFeatureLogging extends TestRerankBase {
             "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for extraction
-    // ExtractAll=false, only model features returned since the defined store is the same as the model store
+    // logAll=false, only model features returned since the defined store is the same as the model store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
-    query.add("fl", "fv:[fv store=storeA extractAll=false]");
+    query.add("fl", "fv:[fv store=storeA logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
             "/query" + query.toQueryString(),
