@@ -25,7 +25,6 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,7 +60,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrVersion;
@@ -220,11 +218,6 @@ public class SolrCLI implements CLIO {
     if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
-  }
-
-  /** Support options common to all tools. */
-  public static List<Option> getCommonToolOptions() {
-    return List.of();
   }
 
   // Creates an instance of the requested tool, using classpath scanning if necessary
@@ -430,30 +423,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
-    return new Http2SolrClient.Builder(solrUrl).maxConnectionsPerHost(32).build();
+    return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
   }
 
-  /**
-   * Get Solr base url with port if present and root from URI
-   *
-   * @param uri Full Solr URI (e.g. http://localhost:8983/solr/admin/info/system)
-   * @return Solr base url with port and root (from above example http://localhost:8983/solr)
-   */
-  public static String getSolrUrlFromUri(URI uri) {
-    return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
-  }
-
-  public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {
-    ModifiableSolrParams paramsMap = new ModifiableSolrParams();
-    String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
-    for (String param : params) {
-      String[] paramSplit = param.split("=");
-      paramsMap.add(paramSplit[0], paramSplit[1]);
-    }
-    return paramsMap;
-  }
-
-  public static final String JSON_CONTENT_TYPE = "application/json";
+  private static final String JSON_CONTENT_TYPE = "application/json";
 
   public static NamedList<Object> postJsonToSolr(
       SolrClient solrClient, String updatePath, String jsonBody) throws Exception {
@@ -471,7 +444,7 @@ public class SolrCLI implements CLIO {
   private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
 
   @VisibleForTesting
-  public static final String uptime(long uptimeMs) {
+  public static String uptime(long uptimeMs) {
     if (uptimeMs <= 0L) return "?";
 
     long numDays = (uptimeMs >= MS_IN_DAY) ? (uptimeMs / MS_IN_DAY) : 0L;
@@ -605,7 +578,7 @@ public class SolrCLI implements CLIO {
 
   public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl); ) {
+    try (var solrClient = getSolrClient(solrUrl) ) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
