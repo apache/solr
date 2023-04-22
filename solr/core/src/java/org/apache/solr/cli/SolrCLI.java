@@ -578,7 +578,7 @@ public class SolrCLI implements CLIO {
 
   public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl) ) {
+    try (var solrClient = getSolrClient(solrUrl)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
