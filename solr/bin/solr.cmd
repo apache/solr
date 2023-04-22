@@ -228,8 +228,6 @@ IF "%1"=="-usage" goto usage
 IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
-IF "%1"=="-i" goto get_info
-IF "%1"=="-info" goto get_info
 IF "%1"=="status" goto get_info
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version

@@ -919,7 +919,7 @@ if [ $# -eq 1 ]; then
         print_usage ""
         exit
     ;;
-    -info|-i|status)
+    status)
         get_info
         exit $?
     ;;
