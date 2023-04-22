@@ -744,8 +744,8 @@ function run_tool() {
   return $?
 } # end run_tool function
 
-# get information about any Solr nodes running on this host
-function get_info() {
+# get status about any Solr nodes running on this host
+function get_status() {
   CODE=4
   # first, see if Solr is running
   numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
@@ -789,7 +789,7 @@ function get_info() {
   fi
 
   return $CODE
-} # end get_info
+} # end get_status
 
 function run_package() {
   runningSolrUrl=""
@@ -920,7 +920,7 @@ if [ $# -eq 1 ]; then
         exit
     ;;
     status)
-        get_info
+        get_status
         exit $?
     ;;
     -version|-v|version)
@@ -948,7 +948,7 @@ fi
 if [ "$SCRIPT_CMD" == "status" ]; then
   # hacky - the script hits this if the user passes additional args with the status command,
   # which is not supported but also not worth complaining about either
-  get_info
+  get_status
   exit
 fi
 
