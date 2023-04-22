@@ -1377,7 +1377,9 @@ Examples of this command:
 
 `bin/solr zk mkroot /solr/production`
 
-== Exporting Documents to a File
+== Importing and Exporting
+
+=== Exporting Documents to a File
 
 The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
 All documents can be exported, or only those that match a query.
@@ -1466,7 +1468,7 @@ Export all documents of collection `gettingstarted` into a file called `1MDocs.j
 bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.json.gz
 ----
 
-=== Importing Documents to a Collection
+=== Importing Documents into a Collection
 
 Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
 
