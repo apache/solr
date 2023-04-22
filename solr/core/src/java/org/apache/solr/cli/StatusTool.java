@@ -51,6 +51,8 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
+  // These options are not exposed to the end user, and are
+  // used directly by the bin/solr status CLI.
   @Override
   public List<Option> getOptions() {
     return List.of(

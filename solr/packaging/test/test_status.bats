@@ -28,7 +28,7 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "status for non cloud mode" {
+@test "status detects locally running solr" {
   run solr status
   assert_output --partial "No Solr nodes are running."
   run solr start
@@ -38,4 +38,9 @@ teardown() {
   run solr status
   assert_output --partial "No Solr nodes are running."
 
+}
+
+@test "status does not expose cli parameters to end user" {
+  run solr status -solr http://localhost:8983/solr
+  assert_output --partial "ERROR: Unrecognized or misplaced argument: -solr!"
 }
