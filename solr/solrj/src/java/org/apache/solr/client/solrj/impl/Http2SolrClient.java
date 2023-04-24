@@ -189,11 +189,11 @@ public class Http2SolrClient extends SolrClient {
     }
     updateDefaultMimeTypeForParser();
     if (builder.requestTimeoutMillis != null) {
-      requestTimeoutMillis = builder.requestTimeoutMillis;
+      this.requestTimeoutMillis = builder.requestTimeoutMillis;
     } else {
-      requestTimeoutMillis = -1;
+      this.requestTimeoutMillis = -1;
     }
-    httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
+    this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
     } else {
@@ -1080,7 +1080,7 @@ public class Http2SolrClient extends SolrClient {
       if (this.followRedirects == null) {
         this.followRedirects = http2SolrClient.httpClient.isFollowRedirects();
       }
-      if (idleTimeoutMillis == null) {
+      if (this.idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
       if (this.requestWriter == null) {
