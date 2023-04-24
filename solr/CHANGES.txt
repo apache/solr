@@ -147,6 +147,8 @@ Bug Fixes
 
 * SOLR-7609: Internal update requests should fail back to the client in some edge cases for shard splits. Use HTTP status 510 so the client can retry the operation. (Alex Deparvu, David Smiley, Tomás Fernández Löbbe)
 
+* SOLR-16737: Http2SolrClient needs to inherit all properties when initialized with another http2 client (Alex Deparvu, Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
