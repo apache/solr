@@ -187,7 +187,7 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
-  public static void jsonAssert(String expected, String actual) {
+  public static void assertJSONEquals(String expected, String actual) {
     Object json1 = fromJSONString(expected);
     Object json2 = fromJSONString(actual);
     if (Objects.equals(json2, json1)) return;

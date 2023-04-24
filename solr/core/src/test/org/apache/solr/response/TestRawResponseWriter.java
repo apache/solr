@@ -155,7 +155,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";
-    jsonAssert(json, writerJsonBase.serializeResponse(req(), rsp));
+    assertJSONEquals(json, writerJsonBase.serializeResponse(req(), rsp));
 
     // javabin
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
