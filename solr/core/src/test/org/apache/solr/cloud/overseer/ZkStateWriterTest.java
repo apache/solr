@@ -247,17 +247,17 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkWriteCommand c1 =
             new ZkWriteCommand(
                 "c1",
-                new DocCollection(
+                DocCollection.buildDocCollection(
                     "c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         ZkWriteCommand c2 =
             new ZkWriteCommand(
                 "c2",
-                new DocCollection(
+                DocCollection.buildDocCollection(
                     "c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         ZkWriteCommand c3 =
             new ZkWriteCommand(
                 "c3",
-                new DocCollection(
+                DocCollection.buildDocCollection(
                     "c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, null));
         Map<String, Object> prsProps = new HashMap<>();
         prsProps.put("perReplicaState", Boolean.TRUE);

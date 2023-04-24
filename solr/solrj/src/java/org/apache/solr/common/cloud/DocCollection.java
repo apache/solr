@@ -67,12 +67,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Map<String, Replica> replicaMap = new HashMap<>();
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
+  /**
+   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
+   */
   @Deprecated
   public DocCollection(
       String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, Integer.MAX_VALUE, null);
   }
 
+  /**
+   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
+   */
   @Deprecated
   public DocCollection(
       String name,
@@ -89,8 +95,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props The properties of the slice. This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
    *     updates).
+   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
    */
-  public DocCollection(
+  private DocCollection(
       String name,
       Map<String, Slice> slices,
       Map<String, Object> props,
@@ -147,6 +154,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     assert name != null && slices != null;
   }
 
+  /**
+   * Builds a DocCollection with an optional PrsSupplier
+   *
+   * @param name The name of the collection
+   * @param slices The logical shards of the collection. This is used directly and a copy is not
+   *     made.
+   * @param props The properties of the slice. This is used directly and a copy is not made.
+   * @param router router to partition int range into n ranges
+   * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
+   * @param prsSupplier optional supplier for PerReplicaStates (PRS) for PRS enabled collections
+   * @return a newly constructed DocCollection
+   */
   public static DocCollection buildDocCollection(
       String name,
       Map<String, Slice> slices,
