@@ -163,6 +163,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props The properties of the slice. This is used directly and a copy is not made.
    * @param router router to partition int range into n ranges
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
+   *     updates).
    * @param prsSupplier optional supplier for PerReplicaStates (PRS) for PRS enabled collections
    * @return a newly constructed DocCollection
    */
