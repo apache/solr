@@ -950,7 +950,7 @@
           "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
-              "unit": "ms"
+              "custom": {}
             },
             "overrides": []
           },
@@ -1152,7 +1152,7 @@
           "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
-              "unit": "ms"
+              "custom": {}
             },
             "overrides": []
           },
@@ -1355,7 +1355,7 @@
           "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
-              "unit": "ms"
+              "custom": {}
             },
             "overrides": []
           },
@@ -1661,7 +1661,7 @@
           "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
-              "unit": "ms"
+              "custom": {}
             },
             "overrides": []
           },
