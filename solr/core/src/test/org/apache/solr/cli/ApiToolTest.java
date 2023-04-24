@@ -37,7 +37,7 @@ public class ApiToolTest extends SolrTestCase {
       url = url.replace("+", "%20");
 
       URI uri = new URI(url);
-      ModifiableSolrParams params = SolrCLI.getSolrParamsFromUri(uri);
+      ModifiableSolrParams params = ApiTool.getSolrParamsFromUri(uri);
       assertEquals(1, params.size());
       assertEquals("select id from COLL_NAME limit 10", params.get("stmt"));
     }
