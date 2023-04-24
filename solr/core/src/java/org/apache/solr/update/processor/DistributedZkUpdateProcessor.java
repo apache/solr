@@ -886,7 +886,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private List<SolrCmdDistributor.Node> getCollectionUrls(
       String collection, EnumSet<Replica.Type> types, boolean onlyLeaders) {
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (collection == null || docCollection.getSlicesMap() == null) {
+    if (docCollection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(
           SolrException.ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + clusterState);
     }
