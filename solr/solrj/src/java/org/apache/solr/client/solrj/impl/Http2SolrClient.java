@@ -1074,22 +1074,22 @@ public class Http2SolrClient extends SolrClient {
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
       this.httpClient = http2SolrClient.httpClient;
 
-      if(this.basicAuthAuthorizationStr == null) {
+      if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
       if (this.followRedirects == null) {
         this.followRedirects = http2SolrClient.httpClient.isFollowRedirects();
       }
-      if(idleTimeoutMillis == null) {
+      if (idleTimeoutMillis == null) {
         this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
       }
-      if(this.requestWriter == null) {
+      if (this.requestWriter == null) {
         this.requestWriter = http2SolrClient.requestWriter;
       }
       if (this.requestTimeoutMillis == null) {
         this.requestTimeoutMillis = http2SolrClient.requestTimeoutMillis;
       }
-      if(this.responseParser == null) {
+      if (this.responseParser == null) {
         this.responseParser = http2SolrClient.parser;
       }
       if (this.urlParamNames == null) {
