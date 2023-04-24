@@ -14,26 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
 
-import java.io.PrintStream;
-import org.apache.solr.common.util.SuppressForbidden;
-
-@SuppressForbidden(reason = "For use in command line tools only")
-public interface CLIO {
-  static void out(String s) {
-    System.out.println(s);
-  }
-
-  static void err(String s) {
-    System.err.println(s);
-  }
-
-  static PrintStream getOutStream() {
-    return System.out;
-  }
-
-  static PrintStream getErrStream() {
-    return System.err;
-  }
-}
+/** Utilities for dense vector search */
+package org.apache.solr.util.vector;

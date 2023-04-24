@@ -52,6 +52,8 @@ New Features
 
 * SOLR-16742: Produce a slim Solr binary and docker image, without the Prometheus Exporter and Solr Modules. (Houston Putman)
 
+* SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
+
 Improvements
 ---------------------
 
@@ -82,6 +84,19 @@ Improvements
   `GET /api/node/logging/levels` and `PUT /api/node/logging/levels`, respectively.  Log messages can be returned from a "listener" at
   `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
   `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
+
+* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
+
+* SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
+  /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
+  `DELETE /api/collections/collName/snapshots/snapshotName`. (John Durham via Jason Gerlowski)
+
+* SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
+  `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
+
+* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
+
+* SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
 
 Optimizations
 ---------------------
@@ -122,6 +137,11 @@ Bug Fixes
   Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
 
 * SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
+* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
 
 Dependency Upgrades
 ---------------------

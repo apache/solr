@@ -96,7 +96,7 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted&n
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"create": {"name": "gettingstarted", "numShards": "1", "property.my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
+curl -X POST -H 'Content-type: application/json' -d '{"name": "gettingstarted", "numShards": 1, "properties": {"my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
 ----
 ====
 --

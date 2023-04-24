@@ -20,12 +20,17 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   public SolrParams params;
   public SimpleSolrResponse response = new SimpleSolrResponse();
   public ContentWriter contentWriter;
+
+  public GenericSolrRequest(METHOD m, String path) {
+    this(m, path, new ModifiableSolrParams());
+  }
 
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
     super(m, path);

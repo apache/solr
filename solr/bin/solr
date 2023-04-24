@@ -739,7 +739,7 @@ function run_tool() {
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
-    org.apache.solr.util.SolrCLI "$@"
+    org.apache.solr.cli.SolrCLI "$@"
 
   return $?
 } # end run_tool function
@@ -1645,14 +1645,14 @@ fi
 FG="false"
 FORCE=false
 SOLR_OPTS=(${SOLR_OPTS:-})
-PASS_TO_RUN_EXAMPLE=
+PASS_TO_RUN_EXAMPLE=()
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -c"
+            PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
         -d|-dir)
@@ -1706,7 +1706,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=" -h $SOLR_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-h" "$SOLR_HOST")
             shift 2
         ;;
         -m|-memory)
@@ -1715,7 +1715,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HEAP="$2"
-            PASS_TO_RUN_EXAMPLE+=" -m $SOLR_HEAP"
+            PASS_TO_RUN_EXAMPLE+=("-m" "$SOLR_HEAP")
             shift 2
         ;;
         -p|-port)
@@ -1724,7 +1724,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
-            PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
+            PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
         -z|-zkhost|-zkHost)
@@ -1734,17 +1734,17 @@ if [ $# -gt 0 ]; then
             fi
             ZK_HOST="$2"
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -z $ZK_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
-            PASS_TO_RUN_EXAMPLE+=" -a \"$ADDITIONAL_CMD_OPTS\""
+            PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|-jettyconfig)
             ADDITIONAL_JETTY_CONFIG="$2"
-            PASS_TO_RUN_EXAMPLE+=" -j \"$ADDITIONAL_JETTY_CONFIG\""
+            PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|-key)
@@ -1756,22 +1756,22 @@ if [ $# -gt 0 ]; then
             exit 0
         ;;
         -noprompt)
-            PASS_TO_RUN_EXAMPLE+=" -noprompt"
+            PASS_TO_RUN_EXAMPLE+=("-noprompt")
             shift
         ;;
         -V|-verbose)
             verbose=true
-            PASS_TO_RUN_EXAMPLE+=" --verbose"
+            PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
+            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
+            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -all)
@@ -1780,7 +1780,7 @@ if [ $# -gt 0 ]; then
         ;;
         -force)
             FORCE=true
-            PASS_TO_RUN_EXAMPLE+=" -force"
+            PASS_TO_RUN_EXAMPLE+=("-force")
             shift
         ;;
         --)
@@ -1793,7 +1793,7 @@ if [ $# -gt 0 ]; then
             elif [ "${1:0:2}" == "-D" ]; then
               # pass thru any opts that begin with -D (java system props)
               SOLR_OPTS+=("$1")
-              PASS_TO_RUN_EXAMPLE+=" $1"
+              PASS_TO_RUN_EXAMPLE+=("$1")
               shift
             else
               print_usage "$SCRIPT_CMD" "$1 is not supported by this script"
@@ -1835,7 +1835,7 @@ fi
 # otherwise let this script proceed to process the user request
 #
 if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "$PASS_TO_RUN_EXAMPLE"
+  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi
 

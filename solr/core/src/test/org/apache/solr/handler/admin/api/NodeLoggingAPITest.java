@@ -46,6 +46,7 @@ import org.apache.solr.logging.LoggerInfo;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
+import org.glassfish.jersey.test.TestProperties;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -63,6 +64,7 @@ public class NodeLoggingAPITest extends JerseyTest {
 
   @Override
   protected Application configure() {
+    forceSet(TestProperties.CONTAINER_PORT, "0");
     setUpMocks();
     final ResourceConfig config = new ResourceConfig();
     config.register(NodeLoggingAPI.class);

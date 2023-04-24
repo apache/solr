@@ -947,36 +947,8 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>By default, {@link BinaryRequestWriter} is used.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link Http2SolrClient.Builder#withRequestWriter(RequestWriter)} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
-  }
-
   protected RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-
-  /**
-   * Configure whether the client should follow redirects or not.
-   *
-   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is configured wrong somewhere.
-   *
-   * @deprecated use {@link Http2SolrClient.Builder#withFollowRedirects(boolean)}
-   *     Redirects(boolean)} instead
-   */
-  @Deprecated
-  public void setFollowRedirects(boolean follow) {
-    httpClient.setFollowRedirects(follow);
   }
 
   public String getBaseURL() {
@@ -1243,30 +1215,8 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  /**
-   * @deprecated use {@link #getUrlParamNames()}
-   */
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return getUrlParamNames();
-  }
-
   public Set<String> getUrlParamNames() {
     return urlParamNames;
-  }
-
-  /**
-   * Expert Method
-   *
-   * @param urlParamNames set of param keys that are only sent via the query string. Note that the
-   *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
-   *     query params.
-   * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Http2SolrClient.Builder#withTheseParamNamesInTheUrl(Set)} instead
-   */
-  @Deprecated
-  public void setUrlParamNames(Set<String> urlParamNames) {
-    this.urlParamNames = urlParamNames;
   }
 
   private ModifiableSolrParams calculateQueryParams(
@@ -1288,20 +1238,6 @@ public class Http2SolrClient extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link Http2SolrClient.Builder#withResponseParser(ResponseParser)} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
-    updateDefaultMimeTypeForParser();
   }
 
   protected void updateDefaultMimeTypeForParser() {

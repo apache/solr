@@ -14,25 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
 
-import org.apache.solr.SolrTestCase;
-import org.junit.Test;
+package org.apache.solr.cli;
 
-public class SolrCliUptimeTest extends SolrTestCase {
-  @Test
-  public void testUptime() {
-    assertEquals("?", SolrCLI.uptime(0));
-    assertEquals("0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(1));
+import java.util.List;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 
-    assertEquals(
-        "Should have rounded down", "0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(499));
-    assertEquals(
-        "Should have rounded up", "0 days, 0 hours, 0 minutes, 1 seconds", SolrCLI.uptime(501));
+public interface Tool {
+  /** Defines the interface to a Solr tool that can be run from this command-line app. */
+  String getName();
 
-    // Overflow
-    assertEquals("24 days, 20 hours, 31 minutes, 24 seconds", SolrCLI.uptime(Integer.MAX_VALUE));
-    assertEquals(
-        "106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
-  }
+  List<Option> getOptions();
+
+  int runTool(CommandLine cli) throws Exception;
 }

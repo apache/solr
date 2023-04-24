@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.cli;
 
-import static org.apache.solr.util.SolrCLI.findTool;
-import static org.apache.solr.util.SolrCLI.parseCmdLine;
+import static org.apache.solr.cli.SolrCLI.findTool;
+import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit test for SolrCLI's AuthTool */
 public class AuthToolTest extends SolrCloudTestCase {
   private Path dir;
 
@@ -80,8 +79,8 @@ public class AuthToolTest extends SolrCloudTestCase {
   }
 
   private int runTool(String[] args) throws Exception {
-    SolrCLI.Tool tool = findTool(args);
-    assertTrue(tool instanceof SolrCLI.AuthTool);
+    Tool tool = findTool(args);
+    assertTrue(tool instanceof AuthTool);
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     return tool.runTool(cli);
   }
