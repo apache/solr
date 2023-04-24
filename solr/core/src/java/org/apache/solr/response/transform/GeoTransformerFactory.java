@@ -135,7 +135,8 @@ public class GeoTransformerFactory extends TransformerFactory
 
     QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
     updater.isJSON =
-        (qw.getClass() == JSONResponseWriter.class || qw.getClass()== JacksonJsonWriter.class) && (updater.writer instanceof GeoJSONWriter);
+        (qw.getClass() == JSONResponseWriter.class || qw.getClass() == JacksonJsonWriter.class)
+            && (updater.writer instanceof GeoJSONWriter);
 
     // Using ValueSource
     if (shapes != null) {

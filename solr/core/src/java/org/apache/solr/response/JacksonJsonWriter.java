@@ -32,24 +32,26 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
   protected final JsonFactory jsonfactory;
   protected static final PrettyPrinter pretty =
-          new DefaultPrettyPrinter()
-                  .withoutSpacesInObjectEntries()
-                  .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+      new DefaultPrettyPrinter()
+          .withoutSpacesInObjectEntries()
+          .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+
   public JacksonJsonWriter() {
     super();
     jsonfactory = new JsonFactory();
   }
+
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
-    try (WriterImpl sw = new WriterImpl(out, request, response)) {
+    try (WriterImpl sw = new WriterImpl(jsonfactory, out, request, response)) {
       sw.writeResponse();
     }
   }
 
   public PushWriter getWriter(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response) {
-    return new WriterImpl(out, request, response);
+    return new WriterImpl(jsonfactory, out, request, response);
   }
 
   @Override
@@ -58,15 +60,18 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   }
   // So we extend JSONWriter and override the relevant methods
 
-  public class WriterImpl extends JSONWriter {
+  public static class WriterImpl extends JSONWriter {
 
-    protected final JsonGenerator gen;
+    protected JsonGenerator gen;
 
-    public WriterImpl(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
+    public WriterImpl(
+        JsonFactory j, OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(null, req, rsp);
       try {
-        gen =  jsonfactory.createGenerator(out, JsonEncoding.UTF8);
-        gen.setPrettyPrinter(pretty);
+        gen = j.createGenerator(out, JsonEncoding.UTF8);
+        if (doIndent) {
+          gen.setPrettyPrinter(pretty);
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
