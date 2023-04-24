@@ -250,7 +250,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                   "you can only log all features from the store '" + transformerFeatureStore + "' passed in input in the logger");
         }
       }
-      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereNotReranked);
+      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereReranked);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
@@ -261,23 +261,24 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      *
      * @param transformerFeatureStore the explicit transformer feature store
      */
-    private LoggingModel createLoggingModel(String transformerFeatureStore, boolean extractAll, List<Feature> modelFeatures, boolean docsWereNotReranked) {
+    private LoggingModel createLoggingModel(String transformerFeatureStore, boolean logAll, List<Feature> modelFeatures, boolean docsWereReranked) {
       final ManagedFeatureStore featureStores =
-              ManagedFeatureStore.getManagedFeatureStore(req.getCore());
+          ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
       // check for non-existent feature store name
       if (transformerFeatureStore != null) {
         if (!featureStores.getStores().containsKey(transformerFeatureStore)) {
           throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "Missing feature store: " + transformerFeatureStore);
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Missing feature store: " + transformerFeatureStore);
         }
       }
+
       final FeatureStore store = featureStores.getFeatureStore(transformerFeatureStore);
 
       // check for empty feature store only if there is no reranking query, otherwise the model
       // store will be used later for feature extraction
-      if (docsWereNotReranked) {
+      if (!docsWereReranked) {
         if (store.getFeatures().isEmpty()) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -285,24 +286,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
 
-      // if transformerFeatureStore was null before this gets actual name
-      transformerFeatureStore = store.getName();
-      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll ? store.getFeatures() : modelFeatures);
-      setupRerankingQueriesForLogging(
-          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
-      setupRerankingWeightsForLogging(context);
-    }
-
-    /**
-     * The loggingModel is an empty model that is just used to extract the features and log them.
-     * @param transformerFeatureStore the container of features to extract
-     * @param logAll defines if it extracts all the features from the store or only the model features
-     * @param modelFeatures the list of model features
-     * @return
-     */
-    private LoggingModel createLoggingModel(String transformerFeatureStore, boolean logAll, List<Feature> modelFeatures) {
-      final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
-      final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
       // if transformerFeatureStore was null before this gets actual name
       transformerFeatureStore = store.getName();
 

@@ -72,7 +72,7 @@ public class SolrQueryRequestContextUtils {
   public static Boolean isLoggingAllFeatures(SolrQueryRequest req) {
     return (Boolean) req.getContext().get(IS_LOGGING_ALL_FEATURES);
   }
-  
+
   /** feature vector store name accessors */
   public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
     req.getContext().put(STORE, fvStoreName);
