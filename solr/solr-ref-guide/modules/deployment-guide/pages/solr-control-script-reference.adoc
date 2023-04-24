@@ -1377,7 +1377,9 @@ Examples of this command:
 
 `bin/solr zk mkroot /solr/production`
 
-== Exporting Documents to a File
+== Exporting and Importing
+
+=== Exporting Documents to a File
 
 The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
 All documents can be exported, or only those that match a query.
@@ -1466,7 +1468,7 @@ Export all documents of collection `gettingstarted` into a file called `1MDocs.j
 bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.json.gz
 ----
 
-=== Importing Documents to a Collection
+=== Importing Documents into a Collection
 
 Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
 
@@ -1477,3 +1479,42 @@ Once you have exported documents in a file, you can use the xref:indexing-guide:
 *Example: import `javabin` files*
 
 `curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin http://localhost:8983/solr/gettingstarted/update?commit=true`
+
+== Interacting with API
+
+The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+
+`bin/solr api -get `
+
+http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
+
+`bin/solr export -help`
+
+The `bin/solr export` command takes the following parameters:
+
+`get`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Fully-qualified address to a collection.
++
+*Example*: `-get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+
+=== API
+
+The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
+
+[source,bash]
+$ bin/solr api api -get http://localhost:8983/solr/techproducts/select?q=*:*
+
+
+Here is an example of sending a SQL query to the techproducts /sql end point (assumes you start Solr in Cloud mode with the SQL module enabled):
+
+[source,bash]
+$ bin/solr api api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+
+Results are streamed to the console.
