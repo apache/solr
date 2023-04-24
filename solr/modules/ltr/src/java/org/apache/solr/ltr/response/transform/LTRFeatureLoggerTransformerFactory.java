@@ -230,7 +230,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       Map<String, String[]> transformerExternalFeatureInfo =
           LTRQParserPlugin.extractEFIParams(localparams);
 
-      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
+      final LoggingModel loggingModel =
+          createLoggingModel(transformerFeatureStore, docsWereNotReranked);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
@@ -241,10 +242,31 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      *
      * @param transformerFeatureStore the explicit transformer feature store
      */
-    private LoggingModel createLoggingModel(String transformerFeatureStore) {
-      final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
+    private LoggingModel createLoggingModel(
+        String transformerFeatureStore, Boolean docsWereNotReranked) {
+      final ManagedFeatureStore featureStores =
+          ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
-      final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
+      // check for non-existent feature store name
+      if (transformerFeatureStore != null) {
+        if (!featureStores.getStores().containsKey(transformerFeatureStore)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Missing feature store: " + transformerFeatureStore);
+        }
+      }
+
+      final FeatureStore store = featureStores.getFeatureStore(transformerFeatureStore);
+
+      // check for empty feature store only if there is no reranking query, otherwise the model
+      // store will be used later for feature extraction
+      if (docsWereNotReranked) {
+        if (store.getFeatures().isEmpty()) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Empty feature store. If no ranking query (rq) is passed and DEFAULT feature store is empty, an existing feature store name must be passed for feature extraction.");
+        }
+      }
 
       // if transformerFeatureStore was null before this gets actual name
       transformerFeatureStore = store.getName();

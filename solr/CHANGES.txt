@@ -56,6 +56,8 @@ Improvements
 
 * SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
 
+* SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
+
 Optimizations
 ---------------------
 

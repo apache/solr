@@ -153,6 +153,74 @@ public class TestFeatureLogging extends TestRerankBase {
   }
 
   @Test
+  public void featureExtraction_nonExistentFeatureStore_shouldThrowException() throws Exception {
+    loadFeature("store9f1", ValueFeature.class.getName(), "store9", "{\"value\":3.0}");
+    loadModel(
+        "store9m1",
+        LinearModel.class.getName(),
+        new String[] {"store9f1"},
+        "store9",
+        "{\"weights\":{\"store9f1\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+
+    // Non-existent store specified, should throw exception
+    query.add("fl", "fv:[fv store=nonExistentFeatureStore]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg=='Missing feature store: nonExistentFeatureStore'");
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
+  }
+
+  @Test
+  public void featureExtraction_nonExistentFeatureStoreReRanking_shouldThrowException()
+      throws Exception {
+    loadFeature("store9f1", ValueFeature.class.getName(), "store9", "{\"value\":3.0}");
+    loadModel(
+        "store9m1",
+        LinearModel.class.getName(),
+        new String[] {"store9f1"},
+        "store9",
+        "{\"weights\":{\"store9f1\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+
+    // Non-existent store specified + model specified, should throw exception
+    query.add("fl", "fv:[fv store=nonExistentFeatureStore]");
+    query.add("rq", "{!ltr reRankDocs=3 model=store9m1}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg=='Missing feature store: nonExistentFeatureStore'");
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
+  }
+
+  @Test
+  public void featureExtraction_noFeatureAndModelStore_shouldThrowException() throws Exception {
+    loadFeature("store9f1", ValueFeature.class.getName(), "store9", "{\"value\":3.0}");
+    loadModel(
+        "store9m1",
+        LinearModel.class.getName(),
+        new String[] {"store9f1"},
+        "store9",
+        "{\"weights\":{\"store9f1\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:7");
+    query.add("rows", "1");
+
+    // No store specified + no model specified + empty default store, should throw exception
+    query.add("fl", "fv:[fv]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg=='Empty feature store. If no ranking query (rq) is passed and DEFAULT feature store is empty, an existing feature store name must be passed for feature extraction.'");
+    assertJQ("/query" + query.toQueryString(), "/error/code==400");
+  }
+
+  @Test
   public void testGeneratedGroup() throws Exception {
     loadFeature("c1", ValueFeature.class.getName(), "testgroup", "{\"value\":1.0}");
     loadFeature("c2", ValueFeature.class.getName(), "testgroup", "{\"value\":2.0}");
