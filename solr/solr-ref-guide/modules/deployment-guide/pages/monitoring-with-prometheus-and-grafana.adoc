@@ -18,14 +18,15 @@
 
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
+The Prometheus exporter is included with the full Solr distribution, and is located under `prometheus-exporter/`.
+It is not included in the `slim` Solr distribution.
+
 A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:faceting.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
 
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
 image::monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
-
-The Prometheus exporter is included with the Solr distribution, and is located under `prometheus-exporter/`.
 
 There are three aspects to running `solr-exporter`:
 

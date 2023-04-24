@@ -120,7 +120,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     List<MockSpan> finishedSpans;
 
     // Admin API call
-    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params()));
+    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
     finishedSpans = getAndClearSpans();
     assertEquals("get:/admin/metrics", finishedSpans.get(0).operationName());
 

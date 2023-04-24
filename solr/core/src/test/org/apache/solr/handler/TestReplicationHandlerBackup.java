@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.IOUtils;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,6 +42,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
@@ -85,7 +86,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   private static SolrClient createNewSolrClient(int port) {
     final String baseUrl = buildUrl(port, context);
-    return getHttpSolrClient(baseUrl, 15000, 60000);
+    return new HttpSolrClient.Builder(baseUrl)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   @Override
@@ -258,13 +262,9 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             + "?wt=xml&command="
             + cmd
             + params;
-    InputStream stream = null;
-    try {
-      URL url = new URL(leaderUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
+    URL url = new URL(leaderUrl);
+    try (InputStream stream = url.openStream()) {
+      assert stream != null;
     }
   }
 }

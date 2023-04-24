@@ -50,7 +50,6 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
@@ -176,7 +175,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                       singletonList(singletonMap("EXCEPTION", e.getMessage()))));
         });
     if (logException) {
-      SolrException.log(log, e);
+      log.error("Exception", e);
     }
   }
 

@@ -19,7 +19,7 @@ package org.apache.solr.util.configuration;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,15 +60,17 @@ public class SSLConfigurations {
     String clientTruststorePassword = getClientTrustStorePassword();
     String truststorePassword = getTrustStorePassword();
 
-    if (isEmpty(System.getProperty(SysProps.SSL_CLIENT_KEY_STORE_PASSWORD))
-        && !(isEmpty(clientKeystorePassword) && isEmpty(keystorePassword))) {
+    if (StrUtils.isNullOrEmpty(System.getProperty(SysProps.SSL_CLIENT_KEY_STORE_PASSWORD))
+        && !(StrUtils.isNullOrEmpty(clientKeystorePassword)
+            && StrUtils.isNullOrEmpty(keystorePassword))) {
       log.info("Setting {}", SysProps.SSL_CLIENT_KEY_STORE_PASSWORD);
       System.setProperty(
           SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
           clientKeystorePassword != null ? clientKeystorePassword : keystorePassword);
     }
-    if (isEmpty(System.getProperty(SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD))
-        && !(isEmpty(clientTruststorePassword) && isEmpty(truststorePassword))) {
+    if (StrUtils.isNullOrEmpty(System.getProperty(SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD))
+        && !(StrUtils.isNullOrEmpty(clientTruststorePassword)
+            && StrUtils.isNullOrEmpty(truststorePassword))) {
       log.info("Setting {}", SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
       System.setProperty(
           SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD,
@@ -118,9 +120,5 @@ public class SSLConfigurations {
       if (credential != null) return credential;
     }
     return null;
-  }
-
-  private boolean isEmpty(String str) {
-    return StringUtils.isEmpty(str);
   }
 }

@@ -56,8 +56,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -82,10 +82,9 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
@@ -93,30 +92,30 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(sdoc("id", "42", "newid", "420", "val_i", "1", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(sdoc("id", "43", "newid", "430", "val_i", "9", "ssto", "X", "subject", "bbb"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(sdoc("id", "44", "newid", "440", "val_i", "4", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(sdoc("id", "45", "newid", "450", "val_i", "6", "ssto", "X", "subject", "aaa"))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(sdoc("id", "46", "newid", "460", "val_i", "3", "ssto", "X", "subject", "ggg"))
             .getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
   }
 
   @Before
@@ -126,7 +125,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // will get another copy of doc 99 in the ulog
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(
                 sdoc(
                     "id",
@@ -144,9 +143,9 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
     for (SolrClient client : CLIENTS) {
       client.close();
@@ -169,7 +168,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
                     params(
                         "includeDynamic", "true",
                         "showDefaults", "true"))
-                .process(CLOUD_CLIENT);
+                .process(COLLECTION_CLIENT);
         assertNotNull(
             "Test depends on a (dynamic) field matching '" + name + "', Null response", frsp);
         assertEquals(
@@ -1027,7 +1026,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
+    return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {

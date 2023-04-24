@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -53,7 +54,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
@@ -67,6 +67,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.CloudConfig;
@@ -745,7 +746,7 @@ public class Overseer implements SolrCloseable {
     ThreadGroup tg = new ThreadGroup("Overseer state updater.");
     String stateCompressionProviderClass = config.getStateCompressorClass();
     Compressor compressor =
-        StringUtils.isEmpty(stateCompressionProviderClass)
+        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
             ? new ZLibCompressor()
             : zkController
                 .getCoreContainer()
@@ -858,8 +859,8 @@ public class Overseer implements SolrCloseable {
     try (CloudSolrClient client =
         new CloudLegacySolrClient.Builder(
                 Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withHttpClient(updateShardHandler.getDefaultHttpClient())
             .build()) {
       CollectionAdminRequest.ColStatus req =

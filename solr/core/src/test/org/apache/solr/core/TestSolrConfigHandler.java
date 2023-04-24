@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,6 +37,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -53,7 +53,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -639,18 +638,18 @@ public class TestSolrConfigHandler extends RestTestBase {
             TIMEOUT_S);
     assertEquals(
         "solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
+        getObjectByPath(map, true, List.of("overlay", "cache", "perSegFilter", "class")));
 
     map =
         getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter", writeHarness);
     assertEquals(
         "Actual output " + Utils.toJSONString(map),
         "org.apache.solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("caches", "perSegFilter")));
+        getObjectByPath(map, true, List.of("caches", "perSegFilter")));
     assertEquals(
         "Actual output " + Utils.toJSONString(map),
         "org.apache.solr.search.CaffeineCache",
-        getObjectByPath(map, true, ImmutableList.of("caches", "lfuCacheDecayFalse")));
+        getObjectByPath(map, true, List.of("caches", "lfuCacheDecayFalse")));
   }
 
   public void testFailures() throws Exception {

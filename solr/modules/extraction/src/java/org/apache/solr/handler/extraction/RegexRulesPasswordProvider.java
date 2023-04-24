@@ -83,7 +83,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
         String[] arr = line.split("#");
         if (arr.length > 0) line = arr[0].trim();
         if (line.length() == 0) continue;
-        int sep = line.indexOf("=");
+        int sep = line.indexOf('=');
         if (sep <= 0) {
           log.warn("Wrong format of password line {}", linenum);
           continue;

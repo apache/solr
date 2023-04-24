@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,6 +40,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.cli.SimplePostTool.BAOS;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -63,7 +63,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -359,9 +358,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {

@@ -64,9 +64,13 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
         "collection2", new DocCollection("collection2", slices, props, DocRouter.DEFAULT, 0, null));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
+    assertFalse(clusterState.getCollection("collection1").getProperties().containsKey("shards"));
+
     byte[] bytes = Utils.toJSON(clusterState);
-    // System.out.println("#################### " + new String(bytes));
+
     ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes, null);
+    assertFalse(
+        loadedClusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());

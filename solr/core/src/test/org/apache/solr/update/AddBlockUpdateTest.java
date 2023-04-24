@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,7 +46,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -707,6 +707,110 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
+  }
+
+  @Test
+  public void testXMLSingleLabeledNestedChild() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >"
+            + "  <field name=\"id\">1</field>"
+            + "  <field name=\"parent_s\">A</field>"
+            + "  <doc name=\"single_child\">"
+            + "    <field name=\"id\">2</field>"
+            + "    <field name=\"child_s\">b</field>"
+            + "  </doc>"
+            + "  <field name=\"children\">"
+            + "    <doc>"
+            + "      <field name=\"id\">3</field>"
+            + "      <field name=\"child_s\">c</field>"
+            + "    </doc>"
+            + "    <doc>"
+            + "      <field name=\"id\">4</field>"
+            + "      <field name=\"child_s\">d</field>"
+            + "    </doc>"
+            + "  </field>"
+            + "</doc>";
+
+    String xml_doc2 =
+        "<doc >"
+            + "  <field name=\"id\">5</field>"
+            + "  <field name=\"parent_s\">E</field>"
+            + "  <doc name=\"single_child_1\">"
+            + "    <field name=\"id\">6</field>"
+            + "    <field name=\"child_s\">f</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_2\">"
+            + "    <field name=\"id\">7</field>"
+            + "    <field name=\"child_s\">g</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_3\">"
+            + "    <field name=\"id\">8</field>"
+            + "    <field name=\"child_s\">h</field>"
+            + "  </doc>"
+            + "</doc>";
+
+    XMLStreamReader parser = inputFactory.createXMLStreamReader(new StringReader(xml_doc1));
+    parser.next(); // read the START document...
+    // null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc(parser);
+
+    XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
+    parser2.next(); // read the START document...
+    // null for the processor is all right here
+    // XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc(parser2);
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(
+        document1.toString(),
+        sdoc(
+                "id",
+                "1",
+                "parent_s",
+                "A",
+                "single_child",
+                sdoc("id", "2", "child_s", "b"),
+                "children",
+                sdocs(sdoc("id", "3", "child_s", "c"), sdoc("id", "4", "child_s", "d")))
+            .toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(
+        document2.toString(),
+        sdoc(
+                "id",
+                "5",
+                "parent_s",
+                "E",
+                "single_child_1",
+                sdoc("id", "6", "child_s", "f"),
+                "single_child_2",
+                sdoc("id", "7", "child_s", "g"),
+                "single_child_3",
+                sdoc("id", "8", "child_s", "h"))
+            .toString());
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new RequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, "b", "A");
+    assertSingleParentOf(searcher, one("bcd"), "A");
+    assertSingleParentOf(searcher, one("fgh"), "E");
   }
 
   @Test

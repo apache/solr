@@ -23,13 +23,12 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
 
@@ -61,9 +60,9 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
   @Override
   public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
       throws IOException {
-    final List<Boolean> results = Lists.newArrayList();
+    final List<Boolean> results = new ArrayList<>();
 
-    final List<String> filesOrdered = files.stream().collect(Collectors.toList());
+    final List<String> filesOrdered = new ArrayList<>(files);
     for (String file : filesOrdered) {
       final String prefix = path.toString().endsWith("/") ? path.toString() : path.toString() + "/";
       results.add(storage.delete(BlobId.of(bucketName, prefix + file)));
