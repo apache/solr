@@ -35,7 +35,6 @@ public abstract class FeatureLogger {
 
   protected final Boolean logAll;
 
-
   protected FeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
     this.fvCacheName = fvCacheName;
     this.featureFormat = f;

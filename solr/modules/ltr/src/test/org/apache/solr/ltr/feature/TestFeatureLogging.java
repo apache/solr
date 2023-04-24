@@ -321,15 +321,15 @@ public class TestFeatureLogging extends TestRerankBase {
   @Test
   public void testNoReranking_defaultStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -340,25 +340,25 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("defaultStoreFeature1", "1.0",
-                    "defaultStoreFeature2", "4.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "defaultStoreFeature1", "1.0", "defaultStoreFeature2", "4.0")
+            + "'}");
   }
 
   @Test
   public void testNoReranking_defaultStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -369,25 +369,25 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv logAll=true]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("defaultStoreFeature1", "1.0",
-                    "defaultStoreFeature2", "4.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "defaultStoreFeature1", "1.0", "defaultStoreFeature2", "4.0")
+            + "'}");
   }
 
   @Test
   public void testNoReranking_defaultStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -398,22 +398,22 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv logAll=false]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/error/msg=='you can only log all features from the store \\'null\\' passed in input in the logger'");
+        "/query" + query.toQueryString(),
+        "/error/msg=='you can only log all features from the store \\'null\\' passed in input in the logger'");
   }
 
   @Test
   public void testNoReranking_definedStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -424,25 +424,25 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv store=storeA]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
-                    "storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "storeAFeature1", "2.0", "storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testNoReranking_definedStoreLogAllTrue_shouldPrintAllFeature() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -453,25 +453,25 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv store=storeA logAll=true]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
-                    "storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "storeAFeature1", "2.0", "storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testNoReranking_definedStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
 
@@ -482,30 +482,30 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("rows", "1");
     query.add("fl", "fv:[fv store=storeA logAll=false]");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/error/msg=='you can only log all features from the store \\'storeA\\' passed in input in the logger'");
+        "/query" + query.toQueryString(),
+        "/error/msg=='you can only log all features from the store \\'storeA\\' passed in input in the logger'");
   }
 
   @Test
   public void testReranking_defaultStoreDefaultLogAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for logging
     // No logAll specified, use default: logAll=false
@@ -515,32 +515,32 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_defaultStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for logging
     // logAll=true, return all the features in the model store
@@ -550,33 +550,33 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv logAll=true]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature1", "2.0",
-                    "storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "storeAFeature1", "2.0", "storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_defaultStoreLogAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // No store specified, use model store for logging
     // logAll=false, only model features returned
@@ -586,34 +586,34 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_differentStoreDefaultLogAll_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
     loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for logging
     // No logAll specified, use default: logAll=true
@@ -623,35 +623,35 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv store=storeB]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeBFeature1", "3.0",
-                    "storeBFeature2", "7.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "storeBFeature1", "3.0", "storeBFeature2", "7.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_differentStoreLogAllTrue_shouldPrintAllFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
     loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for logging
     // logAll=true, return all the features in the defined store
@@ -661,35 +661,35 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv store=storeB logAll=true]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeBFeature1", "3.0",
-                    "storeBFeature2", "7.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector(
+                "storeBFeature1", "3.0", "storeBFeature2", "7.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_differentStoreLogAllFalse_shouldRaiseException() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadFeature("storeBFeature1", ValueFeature.class.getName(), "storeB", "{\"value\":3.0}");
     loadFeature("storeBFeature2", ValueFeature.class.getName(), "storeB", "{\"value\":7.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for logging
     // logAll=false, exception since the defined store is different from the model store
@@ -699,77 +699,79 @@ public class TestFeatureLogging extends TestRerankBase {
     query.add("fl", "fv:[fv store=storeB logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/error/msg=='the feature store \\'storeB\\' in the logger is different from the model feature store \\'storeA\\', you can only log all the features from the store'");
+        "/query" + query.toQueryString(),
+        "/error/msg=='the feature store \\'storeB\\' in the logger is different from the model feature store \\'storeA\\', you can only log all the features from the store'");
   }
 
   @Test
   public void testReranking_modelStoreDefaultLogAll_shouldPrintModelFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for logging
-    // No logAll specified, use default: logAll=false since we pass the same store as the model store
+    // No logAll specified, use default: logAll=false since we pass the same store as the model
+    // store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
     query.add("fl", "fv:[fv store=storeA]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+            + "'}");
   }
 
   @Test
   public void testReranking_modelStoreLogAllFalse_shouldPrintModelFeatures() throws Exception {
     loadFeature(
-            "defaultStoreFeature1",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":1.0}");
+        "defaultStoreFeature1",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":1.0}");
     loadFeature(
-            "defaultStoreFeature2",
-            ValueFeature.class.getName(),
-            FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-            "{\"value\":4.0}");
+        "defaultStoreFeature2",
+        ValueFeature.class.getName(),
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "{\"value\":4.0}");
     loadFeature("storeAFeature1", ValueFeature.class.getName(), "storeA", "{\"value\":2.0}");
     loadFeature("storeAFeature2", ValueFeature.class.getName(), "storeA", "{\"value\":6.0}");
     loadModel(
-            "modelA",
-            LinearModel.class.getName(),
-            new String[]{"storeAFeature2"},
-            "storeA",
-            "{\"weights\":{\"storeAFeature2\":6.0}}");
+        "modelA",
+        LinearModel.class.getName(),
+        new String[] {"storeAFeature2"},
+        "storeA",
+        "{\"weights\":{\"storeAFeature2\":6.0}}");
 
     // Store specified, used store for logging
-    // logAll=false, only model features returned since the defined store is the same as the model store
+    // logAll=false, only model features returned since the defined store is the same as the model
+    // store
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:7");
     query.add("rows", "1");
     query.add("fl", "fv:[fv store=storeA logAll=false]");
     query.add("rq", "{!ltr reRankDocs=3 model=modelA}");
     assertJQ(
-            "/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'fv':'"
-                    + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
-                    + "'}");
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'fv':'"
+            + FeatureLoggerTestUtils.toFeatureVector("storeAFeature2", "6.0")
+            + "'}");
   }
 }

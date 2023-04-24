@@ -134,7 +134,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFvStoreName(
         req, (fvStoreName == null ? defaultStore : fvStoreName));
 
-
     Boolean logAll = localparams.getBool(FV_LOG_ALL);
     SolrQueryRequestContextUtils.logAllFeatures(req, logAll);
 
@@ -163,7 +162,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(
+        fvCacheName, format, logAll, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {
@@ -246,11 +246,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
         if (!logAll) {
           throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "you can only log all features from the store '" + transformerFeatureStore + "' passed in input in the logger");
+              SolrException.ErrorCode.BAD_REQUEST,
+              "you can only log all features from the store '"
+                  + transformerFeatureStore
+                  + "' passed in input in the logger");
         }
       }
-      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereReranked);
+      final LoggingModel loggingModel =
+          createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereReranked);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
@@ -261,7 +264,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      *
      * @param transformerFeatureStore the explicit transformer feature store
      */
-    private LoggingModel createLoggingModel(String transformerFeatureStore, boolean logAll, List<Feature> modelFeatures, boolean docsWereReranked) {
+    private LoggingModel createLoggingModel(
+        String transformerFeatureStore,
+        boolean logAll,
+        List<Feature> modelFeatures,
+        boolean docsWereReranked) {
       final ManagedFeatureStore featureStores =
           ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
@@ -289,7 +296,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       // if transformerFeatureStore was null before this gets actual name
       transformerFeatureStore = store.getName();
 
-      return new LoggingModel(loggingModelName, transformerFeatureStore, (logAll ? store.getFeatures():modelFeatures));
+      return new LoggingModel(
+          loggingModelName,
+          transformerFeatureStore,
+          (logAll ? store.getFeatures() : modelFeatures));
     }
 
     /**

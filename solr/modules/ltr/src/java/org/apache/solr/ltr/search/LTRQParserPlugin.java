@@ -180,8 +180,8 @@ public class LTRQParserPlugin extends QParserPlugin
           // Check if features are requested and if the model feature store and feature-transform
           // feature store are the same
           final boolean featuresRequestedFromSameStore =
-                  (modelFeatureStoreName.equals(transformerFeatureStoreName)
-                          || transformerFeatureStoreName == null);
+              (modelFeatureStoreName.equals(transformerFeatureStoreName)
+                  || transformerFeatureStoreName == null);
 
           if (isLoggingFeatures) {
             if (featuresRequestedFromSameStore) {
@@ -194,8 +194,12 @@ public class LTRQParserPlugin extends QParserPlugin
               }
               if (!isLoggingAllFeatures) {
                 throw new SolrException(
-                        SolrException.ErrorCode.BAD_REQUEST,
-                        "the feature store '" + transformerFeatureStoreName + "' in the logger is different from the model feature store '" + modelFeatureStoreName + "', you can only log all the features from the store");
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "the feature store '"
+                        + transformerFeatureStoreName
+                        + "' in the logger is different from the model feature store '"
+                        + modelFeatureStoreName
+                        + "', you can only log all the features from the store");
               }
             }
           } else {
@@ -207,20 +211,14 @@ public class LTRQParserPlugin extends QParserPlugin
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                        ltrScoringModel,
-                        externalFeatureInfo,
-                            isLoggingAllFeatures,
-                        threadManager);
+                        ltrScoringModel, externalFeatureInfo, isLoggingAllFeatures, threadManager);
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
-                    ltrScoringModel,
-                    externalFeatureInfo,
-                        isLoggingAllFeatures,
-                    threadManager);
+                    ltrScoringModel, externalFeatureInfo, isLoggingAllFeatures, threadManager);
             rerankingQueries[i] = null;
           }
-          
+
           rerankingQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
 
         } else {
