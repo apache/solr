@@ -47,7 +47,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -172,9 +171,9 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     final String collections = params.get(COLLECTIONS);
     createBody.collections =
-        StringUtils.isEmpty(collections)
+        StrUtils.isNullOrEmpty(collections)
             ? new ArrayList<>()
-            : Arrays.asList(StringUtils.split(collections, ','));
+            : StrUtils.split(collections, ',');
     createBody.async = params.get(ASYNC);
 
     // Handle routed-alias properties
