@@ -179,7 +179,6 @@ public class CreateCollectionAPI extends AdminAPIBase {
     }
   }
 
-  // TODO NOCOMMIT Try refactoring this method to make use of RequestBody.addRemoteMessageProperties
   public static ZkNodeProps createRemoteMessage(CreateCollectionRequestBody reqBody) {
     final Map<String, Object> rawProperties = new HashMap<>();
     rawProperties.put("fromApi", "true");
