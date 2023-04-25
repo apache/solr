@@ -171,9 +171,7 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     final String collections = params.get(COLLECTIONS);
     createBody.collections =
-        StrUtils.isNullOrEmpty(collections)
-            ? new ArrayList<>()
-            : StrUtils.split(collections, ',');
+        StrUtils.isNullOrEmpty(collections) ? new ArrayList<>() : StrUtils.split(collections, ',');
     createBody.async = params.get(ASYNC);
 
     // Handle routed-alias properties
