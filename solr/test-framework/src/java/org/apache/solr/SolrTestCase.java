@@ -18,7 +18,6 @@
 package org.apache.solr;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
@@ -27,7 +26,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
@@ -41,7 +39,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.ComparisonFailure;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
@@ -185,12 +182,5 @@ public class SolrTestCase extends LuceneTestCase {
     // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
-  }
-
-  public static void assertJSONEquals(String expected, String actual) {
-    Object json1 = fromJSONString(expected);
-    Object json2 = fromJSONString(actual);
-    if (Objects.equals(json2, json1)) return;
-    throw new ComparisonFailure("", expected, actual);
   }
 }
