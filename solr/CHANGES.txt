@@ -153,6 +153,8 @@ Other Changes
 
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
+* PR#1567: Remove deprecated constructor in MetricsMap (janhoy)
+
 * SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
 
 ==================  9.2.0 ==================
