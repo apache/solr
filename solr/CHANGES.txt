@@ -178,6 +178,8 @@ Other Changes
 
 * SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
 
+* PR#1566: Removed deprecated members from Tuple class (janhoy)
+
 ==================  9.2.0 ==================
 
 New Features
