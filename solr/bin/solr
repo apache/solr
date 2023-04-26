@@ -739,13 +739,13 @@ function run_tool() {
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
-    org.apache.solr.util.SolrCLI "$@"
+    org.apache.solr.cli.SolrCLI "$@"
 
   return $?
 } # end run_tool function
 
-# get information about any Solr nodes running on this host
-function get_info() {
+# get status about any Solr nodes running on this host
+function get_status() {
   CODE=4
   # first, see if Solr is running
   numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
@@ -789,7 +789,7 @@ function get_info() {
   fi
 
   return $CODE
-} # end get_info
+} # end get_status
 
 function run_package() {
   runningSolrUrl=""
@@ -919,10 +919,6 @@ if [ $# -eq 1 ]; then
         print_usage ""
         exit
     ;;
-    -info|-i|status)
-        get_info
-        exit $?
-    ;;
     -version|-v|version)
         run_tool version
         exit
@@ -946,9 +942,29 @@ else
 fi
 
 if [ "$SCRIPT_CMD" == "status" ]; then
-  # hacky - the script hits this if the user passes additional args with the status command,
-  # which is not supported but also not worth complaining about either
-  get_info
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -help|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi
+          ;;
+      esac
+    done
+  fi
+  get_status
   exit
 fi
 
