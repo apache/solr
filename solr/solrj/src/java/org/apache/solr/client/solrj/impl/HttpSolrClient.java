@@ -149,8 +149,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private final boolean internalClient;
 
   private volatile Set<String> urlParamNames = Set.of();
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private final int connectionTimeout;
+  private final int soTimeout;
 
   /** Use the builder to create this client */
   protected HttpSolrClient(Builder builder) {
@@ -168,19 +168,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       this.internalClient = false;
       this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
-      // The getParams() is not supported by this httpClient type!  Throws exception.
-      // this.soTimeout = builder.httpClient..getIntParameter(HttpClientUtil.PROP_SO_TIMEOUT,
-      // Math.toIntExact(builder.socketTimeoutMillis));
-      // this.connectionTimeout =
-      // builder.httpClient.getParams().getIntParameter(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-      // Math.toIntExact(builder.connectionTimeoutMillis));
-
     } else {
       this.internalClient = true;
       this.followRedirects = builder.followRedirects;
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
       params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, builder.compression);
+      params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, builder.connectionTimeoutMillis);
+      params.set(HttpClientUtil.PROP_SO_TIMEOUT, builder.socketTimeoutMillis);
       httpClient = HttpClientUtil.createClient(params);
     }
 
@@ -190,8 +185,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
-    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
-    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
   }
@@ -574,12 +569,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
         HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (soTimeout != null) {
-      requestConfigBuilder.setSocketTimeout(soTimeout);
-    }
-    if (connectionTimeout != null) {
-      requestConfigBuilder.setConnectTimeout(connectionTimeout);
-    }
+    requestConfigBuilder.setSocketTimeout(soTimeout);
+    requestConfigBuilder.setConnectTimeout(connectionTimeout);
+
     if (followRedirects != null) {
       requestConfigBuilder.setRedirectsEnabled(followRedirects);
     }

@@ -52,7 +52,6 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13605")
   @Test
   public void testUsesTimeoutProvidedByHttpClient() throws IOException {
 
