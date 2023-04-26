@@ -68,6 +68,17 @@ Improvements
 * SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
   `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
 
+* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
+
+* SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
+
+* SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16393: The v2 "create alias" API has been tweaked to be more intuitive.  The format of the request body has changed
+  slightly: the "create-alias" command specifier has been removed, the "name" field for individual routers has been renamed
+  to "type", and the routers themselves are now always grouped into a list. Additionally the v2 API has moved to the new path
+  `POST /api/aliases`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 

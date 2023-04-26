@@ -18,10 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.ACTION;
 
-import java.util.Locale;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
-import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -30,7 +26,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.junit.Test;
 
@@ -52,7 +47,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
 
   @Override
   public void populateApiBag() {
-    apiBag.registerObject(new CreateAliasAPI(getRequestHandler()));
     apiBag.registerObject(new RestoreCollectionAPI(getRequestHandler()));
   }
 
@@ -64,68 +58,6 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   @Override
   public boolean isCoreSpecific() {
     return false;
-  }
-
-  @Test
-  public void testCreateAliasAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/aliases",
-            "POST",
-            "{'create-alias': {"
-                + "'name': 'aliasName', "
-                + "'collections': ['techproducts1', 'techproducts2'], "
-                + "'tz': 'someTimeZone', "
-                + "'async': 'requestTrackingId', "
-                + "'router': {"
-                + "    'name': 'time', "
-                + "    'field': 'date_dt', "
-                + "    'interval': '+1HOUR', "
-                + "     'maxFutureMs': 3600, "
-                + "     'preemptiveCreateMath': 'somePreemptiveCreateMathString', "
-                + "     'autoDeleteAge': 'someAutoDeleteAgeExpression', "
-                + "     'maxCardinality': 36, "
-                + "     'mustMatch': 'someRegex', "
-                + "}, "
-                + "'create-collection': {"
-                + "     'numShards': 1, "
-                + "     'properties': {'foo': 'bar', 'foo2': 'bar2'}, "
-                + "     'replicationFactor': 3 "
-                + "}"
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.CREATEALIAS.lowerName, v1Params.get(ACTION));
-    assertEquals("aliasName", v1Params.get(CommonParams.NAME));
-    assertEquals("techproducts1,techproducts2", v1Params.get("collections"));
-    assertEquals("someTimeZone", v1Params.get(CommonParams.TZ.toLowerCase(Locale.ROOT)));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertEquals(
-        "time", v1Params.get(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_TYPE_NAME));
-    assertEquals(
-        "date_dt", v1Params.get(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_FIELD));
-    assertEquals(
-        "+1HOUR", v1Params.get(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_INTERVAL));
-    assertEquals(
-        3600,
-        v1Params.getPrimitiveInt(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_MAX_FUTURE));
-    assertEquals(
-        "somePreemptiveCreateMathString",
-        v1Params.get(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_PREEMPTIVE_CREATE_WINDOW));
-    assertEquals(
-        "someAutoDeleteAgeExpression",
-        v1Params.get(CollectionAdminRequest.CreateTimeRoutedAlias.ROUTER_AUTO_DELETE_AGE));
-    assertEquals(36, v1Params.getPrimitiveInt(CategoryRoutedAlias.ROUTER_MAX_CARDINALITY));
-    assertEquals("someRegex", v1Params.get(CategoryRoutedAlias.ROUTER_MUST_MATCH));
-    assertEquals(
-        1,
-        v1Params.getPrimitiveInt(
-            RoutedAlias.CREATE_COLLECTION_PREFIX + CollectionAdminParams.NUM_SHARDS));
-    assertEquals("bar", v1Params.get(RoutedAlias.CREATE_COLLECTION_PREFIX + "property.foo"));
-    assertEquals("bar2", v1Params.get(RoutedAlias.CREATE_COLLECTION_PREFIX + "property.foo2"));
-    assertEquals(
-        3,
-        v1Params.getPrimitiveInt(
-            RoutedAlias.CREATE_COLLECTION_PREFIX + ZkStateReader.REPLICATION_FACTOR));
   }
 
   @Test
