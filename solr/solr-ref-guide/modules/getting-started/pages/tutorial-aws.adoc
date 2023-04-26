@@ -253,7 +253,7 @@ Correct the path to the ZooKeeper installation as appropriate if where you put i
 +
 [source,bash,subs="attributes"]
 ----
-$ export ZOO_HOME=$PWD/zookeeper-{dep-version-zookeeper}
+$ export ZOO_HOME=$PWD/apache-zookeeper-{dep-version-zookeeper}
 # put the env variable in .bashrc
 # vim ~/.bashrc
 export ZOO_HOME=/home/ec2-user/apache-zookeeper-{dep-version-zookeeper}
