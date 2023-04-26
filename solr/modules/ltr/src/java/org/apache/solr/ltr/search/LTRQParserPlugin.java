@@ -205,17 +205,17 @@ public class LTRQParserPlugin extends QParserPlugin
           } else {
             isLoggingAllFeatures = false;
           }
-
           SolrQueryRequestContextUtils.logAllFeatures(req, isLoggingAllFeatures);
+          boolean extractAll = featuresRequestedFromSameStore ? isLoggingAllFeatures : false;
           if (isInterleaving) {
             rerankingQuery =
                 rerankingQueries[i] =
                     new LTRInterleavingScoringQuery(
-                        ltrScoringModel, externalFeatureInfo, isLoggingAllFeatures, threadManager);
+                        ltrScoringModel, externalFeatureInfo, extractAll, threadManager);
           } else {
             rerankingQuery =
                 new LTRScoringQuery(
-                    ltrScoringModel, externalFeatureInfo, isLoggingAllFeatures, threadManager);
+                    ltrScoringModel, externalFeatureInfo, extractAll, threadManager);
             rerankingQueries[i] = null;
           }
 
