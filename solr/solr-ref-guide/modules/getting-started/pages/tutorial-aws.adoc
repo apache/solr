@@ -242,7 +242,7 @@ On the node you're using to host ZooKeeper (`zookeeper-node`), download the pack
 [,console]
 ----
 # download stable version of ZooKeeper, here {dep-version-zookeeper}
-$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/zookeeper-{dep-version-zookeeper}.tar.gz
+$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/apache-zookeeper-{dep-version-zookeeper}.tar.gz
 # untar
 $ tar -zxvf zookeeper-{dep-version-zookeeper}.tar.gz
 ----
