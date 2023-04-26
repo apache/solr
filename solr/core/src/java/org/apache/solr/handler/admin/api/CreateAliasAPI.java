@@ -372,6 +372,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     @JsonProperty("mustMatch")
     public String mustMatch;
 
+    @Override
     public void validate() {
       ensureRequiredFieldPresent(field, "'field' on category routed alias");
     }
