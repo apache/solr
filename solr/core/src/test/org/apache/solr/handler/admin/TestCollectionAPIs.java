@@ -90,13 +90,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
 
     compareOutput(
-        apiBag,
-        "/aliases",
-        POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}",
-        "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
-
-    compareOutput(
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
 
     compareOutput(
@@ -263,9 +256,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     protected CoreContainer checkErrors() {
       return null;
     }
-
-    @Override
-    protected void copyFromClusterProp(Map<String, Object> props, String prop) {}
 
     @Override
     void invokeAction(

@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -407,6 +408,14 @@ public class CreateCollectionAPI extends AdminAPIBase {
       }
     }
 
+    public void addToRemoteMessageWithPrefix(Map<String, Object> remoteMessage, String prefix) {
+      final Map<String, Object> v1Params = toMap(new HashMap<>());
+      convertV2CreateCollectionMapToV1ParamMap(v1Params);
+      for (Map.Entry<String, Object> v1Param : v1Params.entrySet()) {
+        remoteMessage.put(prefix + v1Param.getKey(), v1Param.getValue());
+      }
+    }
+
     /**
      * Convert a map representing the v2 request body into v1-appropriate query-parameters.
      *
@@ -436,7 +445,9 @@ public class CreateCollectionAPI extends AdminAPIBase {
             v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
             break;
           case SHARD_NAMES:
-            v2MapVals.put(SHARDS_PROP, v2MapVals.remove(SHARD_NAMES));
+            final String shardsValue =
+                String.join(",", (Collection<String>) v2MapVals.remove(SHARD_NAMES));
+            v2MapVals.put(SHARDS_PROP, shardsValue);
             break;
           case V2ApiConstants.SHUFFLE_NODES:
             v2MapVals.put(
