@@ -685,7 +685,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           collectionsSet.put(
               collName,
               new ClusterState.CollectionRef(
-                  DocCollection.buildDocCollection(
+                  DocCollection.create(
                       collName,
                       new HashMap<>(),
                       props.getProperties(),

@@ -296,7 +296,7 @@ public class ZkStateWriter {
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection =
-                  DocCollection.buildDocCollection(
+                  DocCollection.create(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),
@@ -308,7 +308,7 @@ public class ZkStateWriter {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection =
-                  DocCollection.buildDocCollection(
+                  DocCollection.create(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),

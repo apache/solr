@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,8 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   /**
-   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
    */
   @Deprecated
   public DocCollection(
@@ -77,7 +78,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
    */
   @Deprecated
   public DocCollection(
@@ -95,7 +96,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props The properties of the slice. This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
    *     updates).
-   * @see DocCollection#buildDocCollection(String, Map, Map, DocRouter, int, PrsSupplier)
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
    */
   private DocCollection(
       String name,
@@ -167,7 +168,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param prsSupplier optional supplier for PerReplicaStates (PRS) for PRS enabled collections
    * @return a newly constructed DocCollection
    */
-  public static DocCollection buildDocCollection(
+  public static DocCollection create(
       String name,
       Map<String, Slice> slices,
       Map<String, Object> props,
@@ -398,12 +399,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(
-        (MapWriter)
-            ew -> {
-              propMap.forEach(ew.getBiConsumer());
-              ew.put(CollectionStateProps.SHARDS, slices);
-            });
+    LinkedHashMap<String, Object> all = CollectionUtil.newLinkedHashMap(slices.size() + 1);
+    all.putAll(propMap);
+    all.put(CollectionStateProps.SHARDS, slices);
+    jsonWriter.write(all);
   }
 
   public Replica getReplica(String coreNodeName) {

@@ -171,7 +171,7 @@ public class CollectionMutator {
     }
 
     DocCollection collection =
-        DocCollection.buildDocCollection(
+        DocCollection.create(
             coll.getName(),
             coll.getSlicesMap(),
             props,
