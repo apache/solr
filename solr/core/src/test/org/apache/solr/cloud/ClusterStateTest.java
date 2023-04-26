@@ -59,9 +59,11 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Slice slice2 = new Slice("shard2", sliceToProps, null, "collection1");
     slices.put("shard2", slice2);
     collectionStates.put(
-        "collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT, 0, null));
+        "collection1",
+        DocCollection.create("collection1", slices, props, DocRouter.DEFAULT, 0, null));
     collectionStates.put(
-        "collection2", new DocCollection("collection2", slices, props, DocRouter.DEFAULT, 0, null));
+        "collection2",
+        DocCollection.create("collection2", slices, props, DocRouter.DEFAULT, 0, null));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     assertFalse(clusterState.getCollection("collection1").getProperties().containsKey("shards"));
