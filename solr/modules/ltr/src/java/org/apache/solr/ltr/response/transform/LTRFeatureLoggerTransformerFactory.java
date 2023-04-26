@@ -333,10 +333,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (!docsWereReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
-                loggingModel,
-                transformerExternalFeatureInfo,
-                logAll,
-                threadManager);
+                loggingModel, transformerExternalFeatureInfo, logAll, threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
       } else {
         rerankingQueries = new LTRScoringQuery[rerankingQueriesFromContext.length];
