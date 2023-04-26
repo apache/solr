@@ -255,7 +255,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       final LoggingModel loggingModel =
           createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereReranked);
       setupRerankingQueriesForLogging(
-          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+          transformerFeatureStore, transformerExternalFeatureInfo, loggingModel, logAll);
       setupRerankingWeightsForLogging(context);
     }
 
@@ -328,13 +328,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private void setupRerankingQueriesForLogging(
         String transformerFeatureStore,
         Map<String, String[]> transformerExternalFeatureInfo,
-        LoggingModel loggingModel) {
+        LoggingModel loggingModel,
+        boolean logAll) {
       if (!docsWereReranked) { // no reranking query
         LTRScoringQuery loggingQuery =
             new LTRScoringQuery(
                 loggingModel,
                 transformerExternalFeatureInfo,
-                true /* extractAllFeatures */,
+                logAll,
                 threadManager);
         rerankingQueries = new LTRScoringQuery[] {loggingQuery};
       } else {
@@ -363,7 +364,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
                     (!transformerExternalFeatureInfo.isEmpty()
                         ? transformerExternalFeatureInfo
                         : rerankingQueries[i].getExternalFeatureInfo()),
-                    true /* extractAllFeatures */,
+                    logAll,
                     threadManager);
           }
         }
