@@ -66,6 +66,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
       assertEquals(67890, createdClient.getConnectionTimeout());
       assertEquals(12345, createdClient.getSocketTimeout());
     }
+    HttpClientUtil.close(httpClient);
   }
 
   @Test
