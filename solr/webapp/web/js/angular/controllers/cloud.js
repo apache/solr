@@ -107,11 +107,6 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-// Makes a shorter label if possible, by shortening 'shard1' to 's1' and 'replica_n2' to 'r2'
-function makeCoreLabel(collection, shard, replica) {
-  return collection + "_" + (shard + "_").replace(/shard(\d+)_/, 's\$1') + replica.replace(/replica_?[ntp]?(\d+)/, 'r\$1');
-}
-
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -203,7 +198,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
-            core.label = makeCoreLabel(core['collection'], core['shard'], core['replica']);
+            core.label = core['collection'] + "_"
+              + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
+              + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
 
             var node_name = core['node_name'];
             var node = getOrCreateObj(node_name, nodes);
