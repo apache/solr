@@ -17,14 +17,12 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.NAME;
@@ -37,13 +35,8 @@ import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.TIMING;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
-import java.util.Locale;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -72,7 +65,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 
   @Override
@@ -244,34 +236,5 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("tlog", v1Params.get("type"));
     assertEquals("foo1", v1Params.get("property.foo"));
     assertEquals("bar1", v1Params.get("property.bar"));
-  }
-
-  // really this is a replica API, but since there's only 1 API on the replica path, it's included
-  // here for simplicity.
-  @Test
-  public void testDeleteReplicaAllProperties() throws Exception {
-    final ModifiableSolrParams v2QueryParams = new ModifiableSolrParams();
-    v2QueryParams.add("deleteIndex", "true");
-    v2QueryParams.add("deleteDataDir", "true");
-    v2QueryParams.add("deleteInstanceDir", "true");
-    v2QueryParams.add("followAliases", "true");
-    v2QueryParams.add("count", "4");
-    v2QueryParams.add("onlyIfDown", "true");
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName/shards/shard1/someReplica", "DELETE", v2QueryParams);
-
-    assertEquals(
-        CollectionParams.CollectionAction.DELETEREPLICA.lowerName,
-        v1Params.get(ACTION).toLowerCase(Locale.ROOT));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
-    assertEquals("someReplica", v1Params.get(REPLICA));
-    assertEquals("true", v1Params.get(DELETE_INDEX));
-    assertEquals("true", v1Params.get(DELETE_DATA_DIR));
-    assertEquals("true", v1Params.get(DELETE_INSTANCE_DIR));
-    assertEquals("true", v1Params.get(FOLLOW_ALIASES));
-    assertEquals("4", v1Params.get(COUNT_PROP));
-    assertEquals("true", v1Params.get(ONLY_IF_DOWN));
   }
 }
