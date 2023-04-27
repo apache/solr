@@ -70,11 +70,10 @@ public class DeleteShardAPI extends AdminAPIBase {
       @QueryParam(FOLLOW_ALIASES) Boolean followAliases)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
-    fetchAndValidateZooKeeperAwareCoreContainer();
-    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
-
     ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
     ensureRequiredParameterProvided(SHARD_ID_PROP, shardName);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
