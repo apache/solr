@@ -228,9 +228,7 @@ IF "%1"=="-usage" goto usage
 IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
-IF "%1"=="-i" goto get_info
-IF "%1"=="-info" goto get_info
-IF "%1"=="status" goto get_info
+IF "%1"=="status" goto get_status
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
@@ -1454,7 +1452,7 @@ REM Run the requested example
 REM End of run_example
 goto done
 
-:get_info
+:get_status
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
 for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (

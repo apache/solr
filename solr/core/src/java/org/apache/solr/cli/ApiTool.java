@@ -24,6 +24,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -60,7 +61,7 @@ public class ApiTool extends ToolBase {
     if (getUrl != null) {
       getUrl = getUrl.replace("+", "%20");
       URI uri = new URI(getUrl);
-      String solrUrl = SolrCLI.getSolrUrlFromUri(uri);
+      String solrUrl = getSolrUrlFromUri(uri);
       String path = uri.getPath();
       try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
         NamedList<Object> response =
@@ -72,7 +73,7 @@ public class ApiTool extends ToolBase {
                 new GenericSolrRequest(
                     SolrRequest.METHOD.GET,
                     path.substring(path.indexOf("/", path.indexOf("/") + 1)),
-                    SolrCLI.getSolrParamsFromUri(uri)));
+                    getSolrParamsFromUri(uri)));
 
         // pretty-print the response to stdout
         CharArr arr = new CharArr();
@@ -80,5 +81,25 @@ public class ApiTool extends ToolBase {
         echo(arr.toString());
       }
     }
+  }
+
+  /**
+   * Get Solr base url with port if present and root from URI
+   *
+   * @param uri Full Solr URI (e.g. http://localhost:8983/solr/admin/info/system)
+   * @return Solr base url with port and root (from above example http://localhost:8983/solr)
+   */
+  public static String getSolrUrlFromUri(URI uri) {
+    return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
+  }
+
+  public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {
+    ModifiableSolrParams paramsMap = new ModifiableSolrParams();
+    String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
+    for (String param : params) {
+      String[] paramSplit = param.split("=");
+      paramsMap.add(paramSplit[0], paramSplit[1]);
+    }
+    return paramsMap;
   }
 }

@@ -54,6 +54,9 @@ New Features
 
 * SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
 
+* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
+  optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 
@@ -97,6 +100,13 @@ Improvements
 * SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
 
 * SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
+
+* SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16393: The v2 "create alias" API has been tweaked to be more intuitive.  The format of the request body has changed
+  slightly: the "create-alias" command specifier has been removed, the "name" field for individual routers has been renamed
+  to "type", and the routers themselves are now always grouped into a list. Additionally the v2 API has moved to the new path
+  `POST /api/aliases`. (Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -143,6 +153,10 @@ Bug Fixes
 
 * SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
 
+* SOLR-7609: Internal update requests should fail back to the client in some edge cases for shard splits. Use HTTP status 510 so the client can retry the operation. (Alex Deparvu, David Smiley, Tomás Fernández Löbbe)
+
+* SOLR-16737: Http2SolrClient needs to inherit all properties when initialized with another http2 client (Alex Deparvu, Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
@@ -170,7 +184,11 @@ Other Changes
 
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
 
+* PR#1567: Remove deprecated constructor in MetricsMap (janhoy)
+
 * SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
+
+* PR#1566: Removed deprecated members from Tuple class (janhoy)
 
 ==================  9.2.0 ==================
 
