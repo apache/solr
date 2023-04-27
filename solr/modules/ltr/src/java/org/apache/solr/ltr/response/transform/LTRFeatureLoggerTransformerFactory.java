@@ -76,6 +76,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
+  private static boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
+
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
@@ -241,7 +243,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         modelFeatures = rerankingQueriesFromContext[0].getScoringModel().getFeatures();
       } else {
         if (logAll == null) {
-          logAll = true;
+          logAll = DEFAULT_NO_RERANKING_LOGGING_ALL;
         }
         if (!logAll) {
           throw new SolrException(
