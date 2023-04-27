@@ -130,7 +130,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final HashMap<String, String[]> externalFeatureInfo = new HashMap<>();
     externalFeatureInfo.put("queryIntent", new String[] {"company"});
     externalFeatureInfo.put("user_query", new String[] {"abc"});
-    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, false, null);
+    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, null);
 
     final HashMap<String, String[]> externalFeatureInfo2 = new HashMap<>();
     externalFeatureInfo2.put("user_query", new String[] {"abc"});
@@ -138,7 +138,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     int totalPoolThreads = 10, numThreadsPerRequest = 10;
     LTRThreadModule threadManager = new LTRThreadModule(totalPoolThreads, numThreadsPerRequest);
     final LTRScoringQuery m2 =
-        new LTRScoringQuery(algorithm1, externalFeatureInfo2, false, threadManager);
+        new LTRScoringQuery(algorithm1, externalFeatureInfo2, threadManager);
 
     // Models with same algorithm and efis, just in different order should be the same
     assertEquals(m1, m2);
