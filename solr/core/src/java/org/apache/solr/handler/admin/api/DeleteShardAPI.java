@@ -21,6 +21,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
@@ -67,7 +68,8 @@ public class DeleteShardAPI extends AdminAPIBase {
       @QueryParam(DELETE_INSTANCE_DIR) Boolean deleteInstanceDir,
       @QueryParam(DELETE_DATA_DIR) Boolean deleteDataDir,
       @QueryParam(DELETE_INDEX) Boolean deleteIndex,
-      @QueryParam(FOLLOW_ALIASES) Boolean followAliases)
+      @QueryParam(FOLLOW_ALIASES) Boolean followAliases,
+      @QueryParam(ASYNC) String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
@@ -82,9 +84,10 @@ public class DeleteShardAPI extends AdminAPIBase {
             deleteInstanceDir,
             deleteDataDir,
             deleteIndex,
-            followAliases);
+            followAliases,
+            asyncId);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETESHARD, remoteMessage, null);
+        response, CollectionParams.CollectionAction.DELETESHARD, remoteMessage, asyncId);
     return response;
   }
 
@@ -94,7 +97,8 @@ public class DeleteShardAPI extends AdminAPIBase {
       Boolean deleteInstanceDir,
       Boolean deleteDataDir,
       Boolean deleteIndex,
-      Boolean followAliases) {
+      Boolean followAliases,
+      String asyncId) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETESHARD.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
@@ -103,6 +107,7 @@ public class DeleteShardAPI extends AdminAPIBase {
     insertIfNotNull(remoteMessage, DELETE_INSTANCE_DIR, deleteInstanceDir);
     insertIfNotNull(remoteMessage, DELETE_DATA_DIR, deleteDataDir);
     insertIfNotNull(remoteMessage, DELETE_INDEX, deleteIndex);
+    insertIfNotNull(remoteMessage, ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }
@@ -124,7 +129,8 @@ public class DeleteShardAPI extends AdminAPIBase {
             v1Params.getBool(DELETE_INSTANCE_DIR),
             v1Params.getBool(DELETE_DATA_DIR),
             v1Params.getBool(DELETE_INDEX),
-            v1Params.getBool(FOLLOW_ALIASES));
+            v1Params.getBool(FOLLOW_ALIASES),
+            v1Params.get(ASYNC));
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(solrQueryResponse, v2Response);
   }
 }

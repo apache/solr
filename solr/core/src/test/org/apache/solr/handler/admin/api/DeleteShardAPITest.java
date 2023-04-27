@@ -21,6 +21,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
@@ -38,7 +39,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
             SolrException.class,
             () -> {
               final var api = new DeleteShardAPI(null, null, null);
-              api.deleteShard(null, "someShard", null, null, null, null);
+              api.deleteShard(null, "someShard", null, null, null, null, null);
             });
 
     assertEquals(400, thrown.code());
@@ -52,7 +53,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
             SolrException.class,
             () -> {
               final var api = new DeleteShardAPI(null, null, null);
-              api.deleteShard("someCollection", null, null, null, null, null);
+              api.deleteShard("someCollection", null, null, null, null, null, null);
             });
 
     assertEquals(400, thrown.code());
@@ -63,10 +64,10 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
   public void testCreateRemoteMessageAllProperties() {
     final var remoteMessage =
         DeleteShardAPI.createRemoteMessage(
-                "someCollName", "someShardName", true, false, true, false)
+                "someCollName", "someShardName", true, false, true, false, "someAsyncId")
             .getProperties();
 
-    assertEquals(7, remoteMessage.size());
+    assertEquals(8, remoteMessage.size());
     assertEquals("deleteshard", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollName", remoteMessage.get(COLLECTION));
     assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
@@ -74,12 +75,14 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
     assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_DATA_DIR));
     assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INDEX));
     assertEquals(Boolean.FALSE, remoteMessage.get(FOLLOW_ALIASES));
+    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
   }
 
   @Test
   public void testMissingValuesExcludedFromRemoteMessage() {
     final var remoteMessage =
-        DeleteShardAPI.createRemoteMessage("someCollName", "someShardName", null, null, null, null)
+        DeleteShardAPI.createRemoteMessage(
+                "someCollName", "someShardName", null, null, null, null, null)
             .getProperties();
 
     assertEquals(3, remoteMessage.size());
