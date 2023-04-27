@@ -29,8 +29,7 @@ public class CSVFeatureLogger extends FeatureLogger {
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
   }
 
-  public CSVFeatureLogger(
-      String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
     super(fvCacheName, f);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;
