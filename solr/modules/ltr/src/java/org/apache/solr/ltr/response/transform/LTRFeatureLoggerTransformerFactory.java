@@ -154,7 +154,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String formatStr, boolean logAll) {
+  private FeatureLogger createFeatureLogger(String formatStr, Boolean logAll) {
     final FeatureLogger.FeatureFormat format;
     if (formatStr != null) {
       format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
@@ -284,7 +284,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           createLoggingModel(transformerFeatureStore, logAll, modelFeatures, docsWereReranked);
       setupRerankingQueriesForLogging(
           transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
-      setupRerankingWeightsForLogging(context);
+      setupRerankingWeightsForLogging(context, logAll);
     }
 
     /**
@@ -395,7 +395,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
     }
 
-    private void setupRerankingWeightsForLogging(ResultContext context) {
+    private void setupRerankingWeightsForLogging(ResultContext context, boolean logAll) {
       modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (rerankingQueries[i].getOriginalQuery() == null) {
@@ -405,8 +405,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         if (!(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery)
             || hasExplicitFeatureStore) {
           if (rerankingQueries[i].getFeatureLogger() == null) {
+            FeatureLogger loggerFromContext = SolrQueryRequestContextUtils.getFeatureLogger(req);
+            loggerFromContext.setLogAll(logAll);
             rerankingQueries[i].setFeatureLogger(
-                SolrQueryRequestContextUtils.getFeatureLogger(req));
+                    loggerFromContext);
           }
           featureLogger = rerankingQueries[i].getFeatureLogger();
           try {

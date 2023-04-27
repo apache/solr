@@ -23,13 +23,13 @@ public class CSVFeatureLogger extends FeatureLogger {
   private final char keyValueSep;
   private final char featureSep;
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, boolean logAll) {
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
     super(fvCacheName, f, logAll);
     this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
   }
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, boolean logAll,  char keyValueSep, char featureSep) {
+  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll,  char keyValueSep, char featureSep) {
     super(fvCacheName, f, logAll);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;

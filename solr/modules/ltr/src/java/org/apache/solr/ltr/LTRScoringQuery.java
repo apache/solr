@@ -201,7 +201,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     int modelFeatSize = modelFeatures.size();
 
     Collection<Feature> features;
-    if(logger !=null && logger.isLogAll()) {
+    if(logger != null && logger.isLogAll()) {
       features = allFeatures;
     } else {
       features = modelFeatures;

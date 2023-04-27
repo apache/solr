@@ -33,9 +33,9 @@ public abstract class FeatureLogger {
 
   protected final FeatureFormat featureFormat;
 
-  protected boolean logAll;
+  protected Boolean logAll;
 
-  protected FeatureLogger(String fvCacheName, FeatureFormat f, boolean logAll) {
+  protected FeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
     this.fvCacheName = fvCacheName;
     this.featureFormat = f;
     this.logAll = logAll;
@@ -84,11 +84,11 @@ public abstract class FeatureLogger {
     return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
-  public boolean isLogAll() {
+  public Boolean isLogAll() {
     return logAll;
   }
 
-  public void setLogAll(boolean logAll) {
+  public void setLogAll(Boolean logAll) {
     this.logAll = logAll;
   }
 }
