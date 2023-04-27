@@ -65,7 +65,7 @@ public class DeleteReplicaAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @javax.ws.rs.DELETE
+  @DELETE
   @Path("/{replicaName}")
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteReplicaByName(

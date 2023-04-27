@@ -39,7 +39,6 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
@@ -62,7 +61,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     apiBag.registerObject(new SplitShardAPI(collectionsHandler));
     apiBag.registerObject(new CreateShardAPI(collectionsHandler));
     apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
-    apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
   }
@@ -97,25 +95,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals(CollectionParams.CollectionAction.SYNCSHARD.lowerName, v1Params.get(ACTION));
     assertEquals("collName", v1Params.get(COLLECTION));
     assertEquals("shardName", v1Params.get(SHARD));
-  }
-
-  @Test
-  public void testDeleteShardAllProperties() throws Exception {
-    final ModifiableSolrParams v2QueryParams = new ModifiableSolrParams();
-    v2QueryParams.add("deleteIndex", "true");
-    v2QueryParams.add("deleteDataDir", "true");
-    v2QueryParams.add("deleteInstanceDir", "true");
-    v2QueryParams.add("followAliases", "true");
-    final SolrParams v1Params =
-        captureConvertedV1Params("/collections/collName/shards/shardName", "DELETE", v2QueryParams);
-
-    assertEquals(CollectionParams.CollectionAction.DELETESHARD.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shardName", v1Params.get(SHARD));
-    assertEquals("true", v1Params.get("deleteIndex"));
-    assertEquals("true", v1Params.get("deleteDataDir"));
-    assertEquals("true", v1Params.get("deleteInstanceDir"));
-    assertEquals("true", v1Params.get("followAliases"));
   }
 
   @Test
