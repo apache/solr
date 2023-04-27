@@ -451,9 +451,9 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 [[deletereplica]]
 == DELETEREPLICA: Delete a Replica
 
-Deletes a named replica from the specified collection and shard.
+Deletes a named replica (or a particular number of unnamed replicas) from the specified collection and shard.
 
-If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) delete the instanceDir and dataDir.
+If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) the instanceDir and dataDir are deleted.
 If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
 
 [.dynamic-tabs]
@@ -472,17 +472,21 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=tec
 ====
 [.tab-label]*V2 API*
 
+The v2 API has two distinct endpoints for replica-deletion, depending on how the replicas are specified.
+
+To delete a replica by name:
+
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/core_node2
+curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/replicas/core_node2
 ----
 
-To run a DELETE asynchronously then append the `async` parameter:
+To delete a specified number of (unnamed) replicas:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/core_node2?async=aaaa
+curl -X DELETE "http://localhost:8983/api/collections/techproducts/shards/shard1/replicas?count=3"
 ----
 ====
 --
@@ -497,6 +501,8 @@ s|Required |Default: none
 |===
 +
 The name of the collection.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
+
 
 `shard`::
 +
@@ -506,6 +512,8 @@ s|Required |Default: none
 |===
 +
 The name of the shard that includes the replica to be removed.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
+
 
 `replica`::
 +
@@ -515,6 +523,7 @@ The name of the shard that includes the replica to be removed.
 |===
 +
 The name of the replica to remove.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
 +
 If `count` is used instead, this parameter is not required.
 Otherwise, this parameter must be supplied.
@@ -571,6 +580,15 @@ Set this to `false` to prevent the index directory from being deleted.
 |===
 +
 When set to `true`, no action will be taken if the replica is active.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that allows treating the collection parameter as an alias for the actual collection name to be resolved.
 
 `async`::
 +
