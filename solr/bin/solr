@@ -203,6 +203,9 @@ if [ -z "${SOLR_SSL_ENABLED:-}" ]; then
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
+  if [ "$SOLR_PORT" != "$SOLR_SSL_PORT" ]; then
+    SOLR_JETTY_CONFIG+=("--module=http")
+  fi
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
@@ -1907,6 +1910,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
 fi
 
 : "${SOLR_PORT:=8983}"
+: "${SOLR_SSL_PORT:=8983}"
 
 if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
@@ -2194,8 +2198,9 @@ function start_solr() {
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
-    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
-    SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
+    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_SSL_PORT"
+    SSL_SECURE_PORT_PROP="-Dsolr.jetty.secure.port=$SOLR_SSL_PORT"
+    SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP" "$SSL_SECURE_PORT_PROP")
   fi
 
   # If authentication system props are set, add them to SOLR_OPTS
@@ -2224,6 +2229,7 @@ function start_solr() {
     echo -e "    SOLR_HOME       = $SOLR_HOME"
     echo -e "    SOLR_HOST       = ${SOLR_HOST:-}"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
+    echo -e "    SOLR_SSL_PORT   = $SOLR_SSL_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
     echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[*]}"
     echo -e "    GC_TUNE         = ${GC_TUNE_ARR[*]}"

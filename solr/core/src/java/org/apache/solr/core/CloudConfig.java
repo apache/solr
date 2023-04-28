@@ -26,6 +26,8 @@ public class CloudConfig {
 
   private final int hostPort;
 
+  private final int secureHostPort;
+
   private final String hostName;
 
   private final String hostContext;
@@ -62,6 +64,7 @@ public class CloudConfig {
       String zkHost,
       int zkClientTimeout,
       int hostPort,
+      int secureHostPort,
       String hostName,
       String hostContext,
       boolean useGenericCoreNames,
@@ -81,6 +84,7 @@ public class CloudConfig {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
+    this.secureHostPort = secureHostPort;
     this.hostName = hostName;
     this.hostContext = hostContext;
     this.useGenericCoreNames = useGenericCoreNames;
@@ -123,6 +127,10 @@ public class CloudConfig {
 
   public int getSolrHostPort() {
     return hostPort;
+  }
+
+  public int getSolrSecureHostPort() {
+    return secureHostPort;
   }
 
   public String getSolrHostContext() {
@@ -204,6 +212,7 @@ public class CloudConfig {
     private final int hostPort;
     private final String hostName;
     private final String hostContext;
+    private int secureHostPort;
     private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
@@ -233,6 +242,11 @@ public class CloudConfig {
 
     public CloudConfigBuilder setZkHost(String zkHost) {
       this.zkHost = zkHost;
+      return this;
+    }
+
+    public CloudConfigBuilder setSecureHostPort(int secureHostPort) {
+      this.secureHostPort = secureHostPort;
       return this;
     }
 
@@ -322,6 +336,7 @@ public class CloudConfig {
           zkHost,
           zkClientTimeout,
           hostPort,
+          secureHostPort,
           hostName,
           hostContext,
           useGenericCoreNames,

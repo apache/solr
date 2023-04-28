@@ -212,6 +212,7 @@ public class ZkController implements Closeable {
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
   private final int localHostPort; // example: 54065
+  private final int secureLocalHostPort; // example: 54065
   private final String hostName; // example: 127.0.0.1
   private final String nodeName; // example: 127.0.0.1:54065_solr
   private String baseURL; // example: http://127.0.0.1:54065/solr
@@ -332,13 +333,10 @@ public class ZkController implements Closeable {
     // solr.xml to indicate the root context, instead of hostContext=""
     // which means the default of "solr"
     String localHostContext = trimLeadingAndTrailingSlashes(cloudConfig.getSolrHostContext());
-
-    this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
+    this.secureLocalHostPort = cloudConfig.getSolrSecureHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
-    this.nodeName =
-        generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
-    MDCLoggingContext.setNode(nodeName);
+    this.zkServerAddress = zkServerAddress;
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
@@ -405,6 +403,31 @@ public class ZkController implements Closeable {
             () -> {
               if (cc != null) cc.securityNodeChanged();
             });
+
+    try {
+      createClusterZkNodes(zkClient);
+      zkStateReader.createClusterStateWatchersAndUpdate();
+
+      // note: Can't read cluster properties until createClusterState ^ is called
+      final String urlSchemeFromClusterProp =
+          zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
+
+      this.nodeName =
+          generateNodeName(
+              this.hostName,
+              urlSchemeFromClusterProp.equals("https") && this.secureLocalHostPort != 0
+                  ? Integer.toString(this.secureLocalHostPort)
+                  : Integer.toString(this.localHostPort),
+              localHostContext);
+      MDCLoggingContext.setNode(nodeName);
+
+      // this must happen after zkStateReader has initialized the cluster props
+      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
+    } catch (KeeperException e) {
+      // Convert checked exception to one acceptable by the caller (see also init() further down)
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    }
 
     init();
 
@@ -1008,16 +1031,6 @@ public class ZkController implements Closeable {
 
   private void init() {
     try {
-      createClusterZkNodes(zkClient);
-      zkStateReader.createClusterStateWatchersAndUpdate();
-
-      // note: Can't read cluster properties until createClusterState ^ is called
-      final String urlSchemeFromClusterProp =
-          zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
-
-      // this must happen after zkStateReader has initialized the cluster props
-      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
-
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
 
