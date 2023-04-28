@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -51,14 +50,6 @@ public class CollectionBackupsAPI {
   public void listBackups(PayloadObj<ListBackupPayload> obj) throws Exception {
     final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.LISTBACKUP.toLower());
-
-    collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-  }
-
-  @Command(name = DELETE_BACKUP_CMD)
-  public void deleteBackups(PayloadObj<DeleteBackupPayload> obj) throws Exception {
-    final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
-    v1Params.put(ACTION, CollectionParams.CollectionAction.DELETEBACKUP.toLower());
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
   }

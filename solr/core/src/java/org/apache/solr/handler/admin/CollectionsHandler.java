@@ -106,16 +106,13 @@ import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STA
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -207,6 +204,7 @@ import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
@@ -1224,73 +1222,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
-          req.getParams().required().check(NAME);
-
-          CoreContainer cc = h.coreContainer;
-          String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-          try (BackupRepository repository = cc.newBackupRepository(repo)) {
-
-            String location =
-                repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
-            if (location == null) {
-              // Refresh the cluster property file to make sure the value set for location is the
-              // latest. Check if the location is specified in the cluster property.
-              location =
-                  new ClusterProperties(h.coreContainer.getZkController().getZkClient())
-                      .getClusterProperty("location", null);
-              if (location == null) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST,
-                    "'location' is not specified as a query"
-                        + " parameter or as a default repository property or as a cluster property.");
-              }
-            }
-
-            // Check if the specified location is valid for this repository.
-            URI uri = repository.createDirectoryURI(location);
-            try {
-              if (!repository.exists(uri)) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
-              }
-            } catch (IOException ex) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR,
-                  "Failed to check the existence of " + uri + ". Is it valid?",
-                  ex);
-            }
-
-            int deletionModesProvided = 0;
-            if (req.getParams().get(MAX_NUM_BACKUP_POINTS) != null) deletionModesProvided++;
-            if (req.getParams().get(BACKUP_PURGE_UNUSED) != null) deletionModesProvided++;
-            if (req.getParams().get(BACKUP_ID) != null) deletionModesProvided++;
-            if (deletionModesProvided != 1) {
-              throw new SolrException(
-                  BAD_REQUEST,
-                  String.format(
-                      Locale.ROOT,
-                      "Exactly one of %s, %s, and %s parameters must be provided",
-                      MAX_NUM_BACKUP_POINTS,
-                      BACKUP_PURGE_UNUSED,
-                      BACKUP_ID));
-            }
-
-            final Map<String, Object> params =
-                copy(
-                    req.getParams(),
-                    null,
-                    NAME,
-                    BACKUP_REPOSITORY,
-                    BACKUP_LOCATION,
-                    BACKUP_ID,
-                    MAX_NUM_BACKUP_POINTS,
-                    BACKUP_PURGE_UNUSED);
-            params.put(BACKUP_LOCATION, location);
-            if (repo != null) {
-              params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
-            }
-            return params;
-          }
+          DeleteCollectionBackupAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     LISTBACKUP_OP(
         LISTBACKUP,
@@ -1724,6 +1657,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionAPI.class,
         CreateCollectionBackupAPI.class,
         DeleteAliasAPI.class,
+        DeleteCollectionBackupAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaPropertyAPI.class,
         InstallShardDataAPI.class,
