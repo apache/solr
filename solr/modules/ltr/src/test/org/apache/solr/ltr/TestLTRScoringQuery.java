@@ -137,8 +137,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
     externalFeatureInfo2.put("queryIntent", new String[] {"company"});
     int totalPoolThreads = 10, numThreadsPerRequest = 10;
     LTRThreadModule threadManager = new LTRThreadModule(totalPoolThreads, numThreadsPerRequest);
-    final LTRScoringQuery m2 =
-        new LTRScoringQuery(algorithm1, externalFeatureInfo2, threadManager);
+    final LTRScoringQuery m2 = new LTRScoringQuery(algorithm1, externalFeatureInfo2, threadManager);
 
     // Models with same algorithm and efis, just in different order should be the same
     assertEquals(m1, m2);

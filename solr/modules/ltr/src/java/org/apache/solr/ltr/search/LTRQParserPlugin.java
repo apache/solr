@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
@@ -67,7 +68,7 @@ public class LTRQParserPlugin extends QParserPlugin
 
   /** query parser plugin: the name of the attribute for setting the model */
   public static final String MODEL = "model";
-  
+
   /** query parser plugin: default number of documents to rerank */
   public static final int DEFAULT_RERANK_DOCS = 200;
 
@@ -156,6 +157,7 @@ public class LTRQParserPlugin extends QParserPlugin
       }
       final boolean isInterleaving = (modelNames.length > 1);
       final boolean isLoggingFeatures = SolrQueryRequestContextUtils.isLoggingFeatures(req);
+
       final Map<String, String[]> externalFeatureInfo = extractEFIParams(localParams);
 
       LTRScoringQuery rerankingQuery = null;
@@ -174,7 +176,7 @@ public class LTRQParserPlugin extends QParserPlugin
                 SolrException.ErrorCode.BAD_REQUEST,
                 "cannot find " + LTRQParserPlugin.MODEL + " " + modelNames[i]);
           }
-          
+
           if (isInterleaving) {
             rerankingQuery =
                 rerankingQueries[i] =
@@ -182,14 +184,43 @@ public class LTRQParserPlugin extends QParserPlugin
                         ltrScoringModel, externalFeatureInfo, threadManager);
           } else {
             rerankingQuery =
-                new LTRScoringQuery(
-                    ltrScoringModel, externalFeatureInfo, threadManager);
+                new LTRScoringQuery(ltrScoringModel, externalFeatureInfo, threadManager);
             rerankingQueries[i] = null;
           }
+
+          if (isLoggingFeatures) {
+            FeatureLogger featureLogger = SolrQueryRequestContextUtils.getFeatureLogger(req);
+            final String modelFeatureStore = ltrScoringModel.getFeatureStoreName();
+            final String loggerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
+            final boolean isSameFeatureStore =
+                (modelFeatureStore.equals(loggerFeatureStore) || loggerFeatureStore == null);
+
+            if (isSameFeatureStore) {
+              if (featureLogger.isLoggingAll() == null) {
+                featureLogger.setLogAll(false); // default to log only model features
+              }
+              rerankingQuery.setFeatureLogger(featureLogger);
+            } else {
+              if (featureLogger.isLoggingAll() == null) {
+                featureLogger.setLogAll(true); // default to log all features from the store
+              }
+              if (!featureLogger.isLoggingAll()) {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "the feature store '"
+                        + loggerFeatureStore
+                        + "' in the logger is different from the model feature store '"
+                        + modelFeatureStore
+                        + "', you can only log all the features from the store");
+              }
+            }
+          }
+
         } else {
           rerankingQuery =
               rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
         }
+
         // External features
         rerankingQuery.setRequest(req);
       }

@@ -201,7 +201,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     int modelFeatSize = modelFeatures.size();
 
     Collection<Feature> features;
-    if(logger != null && logger.isLogAll()) {
+    if (logger != null && logger.isLoggingAll()) {
       features = allFeatures;
     } else {
       features = modelFeatures;
@@ -217,7 +217,7 @@ public class LTRScoringQuery extends Query implements Accountable {
       createWeightsParallel(searcher, scoreMode.needsScores(), featureWeights, features);
     }
     int i = 0, j = 0;
-    if(logger != null && logger.isLogAll()) {
+    if (logger != null && logger.isLoggingAll()) {
       for (final Feature.FeatureWeight fw : featureWeights) {
         extractedFeatureWeights[i++] = fw;
       }

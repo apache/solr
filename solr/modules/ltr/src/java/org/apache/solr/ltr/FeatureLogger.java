@@ -84,7 +84,7 @@ public abstract class FeatureLogger {
     return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
-  public Boolean isLogAll() {
+  public Boolean isLoggingAll() {
     return logAll;
   }
 
