@@ -32,9 +32,6 @@ public class SolrQueryRequestContextUtils {
   /** key of the isLoggingFeatures flag in the request context */
   private static final String IS_LOGGING_FEATURES = LTR_PREFIX + "isLoggingFeatures";
 
-  /** key of the isLoggingAllFeatures flag in the request context */
-  private static final String IS_LOGGING_ALL_FEATURES = LTR_PREFIX + "isLoggingAllFeatures";
-
   /** key of the feature vector store name in the request context */
   private static final String STORE = LTR_PREFIX + "store";
 

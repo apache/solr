@@ -215,7 +215,6 @@ public class LTRQParserPlugin extends QParserPlugin
               }
             }
           }
-
         } else {
           rerankingQuery =
               rerankingQueries[i] = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
