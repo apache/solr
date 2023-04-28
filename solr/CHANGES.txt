@@ -108,6 +108,9 @@ Improvements
   to "type", and the routers themselves are now always grouped into a list. Additionally the v2 API has moved to the new path
   `POST /api/aliases`. (Jason Gerlowski)
 
+* SOLR-16394: The v2 "restore" API has been tweaked to be more intuitive.  The top-level "restore-collection" command
+  specifier has been removed, and the API now lives at the new path `POST /api/backups/backupName/restore`. (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
