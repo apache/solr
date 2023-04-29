@@ -88,7 +88,7 @@ Improvements
   `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
   `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
 
-* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
+* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)
 
 * SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
   /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
@@ -161,6 +161,8 @@ Bug Fixes
 * SOLR-7609: Internal update requests should fail back to the client in some edge cases for shard splits. Use HTTP status 510 so the client can retry the operation. (Alex Deparvu, David Smiley, Tomás Fernández Löbbe)
 
 * SOLR-16737: Http2SolrClient needs to inherit all properties when initialized with another http2 client (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-13605: Fix setting client scoped socket and connect timeouts when using HttpSolrClient.Builder.withHttpClient() method.  (Eric Pugh, Alex Deparvu)
 
 Dependency Upgrades
 ---------------------
