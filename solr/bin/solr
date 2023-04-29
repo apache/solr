@@ -1408,7 +1408,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       print_short_zk_usage "<source> and <destination> must be specified when using either the 'mv' or 'cp' commands."
     fi
     if [[ "$ZK_OP" == "cp" && "${ZK_SRC:0:3}" != "zk:" && "${ZK_DST:0:3}" != "zk:" ]]; then
-      print_short_zk_usage "One of the source or desintation paths must be prefixed by 'zk:' for the 'cp' command."
+      print_short_zk_usage "One of the source or destination paths must be prefixed by 'zk:' for the 'cp' command."
     fi
   fi
 
@@ -1652,7 +1652,7 @@ if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
       echo "     max processes:   $SOLR_RECOMMENDED_MAX_PROCESSES "
       echo "     open files:      $SOLR_RECOMMENDED_OPEN_FILES"
       echo "     virtual memory:  unlimited"
-      echo "     max memorh size: unlimited"
+      echo "     max memory size: unlimited"
     fi
   fi
 fi
