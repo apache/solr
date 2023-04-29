@@ -28,6 +28,8 @@ Bug Fixes
 
 * SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
 
+* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
+
 Other Changes
 ---------------------
 * SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
