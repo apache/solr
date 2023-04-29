@@ -746,7 +746,6 @@ function run_tool() {
 
 # get status about any Solr nodes running on this host
 function get_status() {
-  CODE=4
   # first, see if Solr is running
   numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
   if [ "$numSolrs" != "0" ]; then
@@ -758,11 +757,9 @@ function get_status() {
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
           run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-          CODE=$?
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
-          CODE=1
         fi
     done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
@@ -778,17 +775,14 @@ function get_status() {
             echo ""
             echo "Solr process $ID running on port $port"
             run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-            CODE=$?
             echo ""
           fi
       done
     else
       echo -e "\nNo Solr nodes are running.\n"
-      CODE=3
     fi
   fi
 
-  return $CODE
 } # end get_status
 
 function run_package() {
