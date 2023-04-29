@@ -87,8 +87,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   int stallTime;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private final int connectionTimeout;
+  private final int soTimeout;
   private volatile boolean closed;
 
   AtomicInteger pollInterrupts;
@@ -114,12 +114,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
-    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
-    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
-    if (stallTime < pollQueueTime * 2) {
-      throw new RuntimeException(
-          "Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
+    this.pollQueueTimeMillis = builder.pollQueueTime;
+    this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+
+    // make sure the stall time is larger than the polling time
+    // to give a chance for the queue to change
+    int minimalStallTime = pollQueueTimeMillis * 2;
+    if (minimalStallTime > this.stallTimeMillis) {
+      this.stallTimeMillis = minimalStallTime;
     }
     this.setPollQueueTime(builder.pollQueueTime);
 
@@ -341,12 +345,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
               HttpClientUtil.createDefaultRequestConfigBuilder();
-          if (soTimeout != null) {
-            requestConfigBuilder.setSocketTimeout(soTimeout);
-          }
-          if (connectionTimeout != null) {
-            requestConfigBuilder.setConnectTimeout(connectionTimeout);
-          }
+          requestConfigBuilder.setSocketTimeout(soTimeout);
+          requestConfigBuilder.setConnectTimeout(connectionTimeout);
 
           method.setConfig(requestConfigBuilder.build());
 
