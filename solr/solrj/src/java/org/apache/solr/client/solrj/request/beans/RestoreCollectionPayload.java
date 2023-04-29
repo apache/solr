@@ -32,9 +32,6 @@ public class RestoreCollectionPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String collection;
 
-  @JsonProperty(required = true)
-  public String name;
-
   @JsonProperty public String location;
 
   @JsonProperty public String repository;

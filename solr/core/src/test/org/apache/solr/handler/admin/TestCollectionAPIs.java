@@ -46,7 +46,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -81,9 +80,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
       apiBag = new ApiBag(false);
-      final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-      apiBag.registerObject(new CollectionsAPI(collectionsHandler));
-      apiBag.registerObject(collectionsAPI.collectionsCommands);
       for (Api api : collectionsHandler.getApis()) {
         apiBag.register(api);
       }
@@ -92,39 +88,10 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       apiBag.registerObject(clusterAPI);
       apiBag.registerObject(clusterAPI.commands);
     }
-    // test a simple create collection call
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
     compareOutput(
         apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    // test a create collection operation with custom properties
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
+        "/aliases",
         POST,
         "{create-alias:{name: aliasName , collections:[c1,c2] }}",
         "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");

@@ -28,14 +28,14 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.handler.CollectionsAPI;
+import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.junit.Test;
 
 /**
- * Unit tests for the API mappings found in {@link org.apache.solr.handler.CollectionsAPI}.
+ * Unit tests for the "create collection", "create alias" and "restore collection" v2 APIs.
  *
  * <p>This test bears many similarities to {@link TestCollectionAPIs} which appears to test the
  * mappings indirectly by checking message sent to the ZK overseer (which is similar, but not
@@ -52,9 +52,8 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
 
   @Override
   public void populateApiBag() {
-    final CollectionsAPI collectionsAPI = new CollectionsAPI(getRequestHandler());
-    apiBag.registerObject(collectionsAPI);
-    apiBag.registerObject(collectionsAPI.collectionsCommands);
+    apiBag.registerObject(new CreateAliasAPI(getRequestHandler()));
+    apiBag.registerObject(new RestoreCollectionAPI(getRequestHandler()));
   }
 
   @Override
@@ -68,56 +67,10 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   }
 
   @Test
-  public void testCreateCollectionAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections",
-            "POST",
-            "{'create': {"
-                + "'name': 'techproducts', "
-                + "'config':'_default', "
-                + "'router': {'name': 'composite', 'field': 'routeField', 'foo': 'bar'}, "
-                + "'shards': 'customShardName,anotherCustomShardName', "
-                + "'replicationFactor': 3,"
-                + "'nrtReplicas': 1, "
-                + "'tlogReplicas': 1, "
-                + "'pullReplicas': 1, "
-                + "'nodeSet': ['localhost:8983_solr', 'localhost:7574_solr'],"
-                + "'shuffleNodes': true,"
-                + "'properties': {'foo': 'bar', 'foo2': 'bar2'}, "
-                + "'async': 'requestTrackingId', "
-                + "'waitForFinalState': false, "
-                + "'perReplicaState': false,"
-                + "'numShards': 1}}");
-
-    assertEquals(CollectionParams.CollectionAction.CREATE.lowerName, v1Params.get(ACTION));
-    assertEquals("techproducts", v1Params.get(CommonParams.NAME));
-    assertEquals("_default", v1Params.get(CollectionAdminParams.COLL_CONF));
-    assertEquals("composite", v1Params.get("router.name"));
-    assertEquals("routeField", v1Params.get("router.field"));
-    assertEquals("bar", v1Params.get("router.foo"));
-    assertEquals("customShardName,anotherCustomShardName", v1Params.get(ShardParams.SHARDS));
-    assertEquals(3, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
-    assertEquals(1, v1Params.getPrimitiveInt(ZkStateReader.NRT_REPLICAS));
-    assertEquals(1, v1Params.getPrimitiveInt(ZkStateReader.TLOG_REPLICAS));
-    assertEquals(1, v1Params.getPrimitiveInt(ZkStateReader.PULL_REPLICAS));
-    assertEquals(
-        "localhost:8983_solr,localhost:7574_solr",
-        v1Params.get(CollectionAdminParams.CREATE_NODE_SET_PARAM));
-    assertTrue(v1Params.getPrimitiveBool(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM));
-    assertEquals("bar", v1Params.get("property.foo"));
-    assertEquals("bar2", v1Params.get("property.foo2"));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
-    assertFalse(v1Params.getPrimitiveBool(CommonAdminParams.WAIT_FOR_FINAL_STATE));
-    assertFalse(v1Params.getPrimitiveBool(CollectionAdminParams.PER_REPLICA_STATE));
-    assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
-  }
-
-  @Test
   public void testCreateAliasAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
-            "/collections",
+            "/aliases",
             "POST",
             "{'create-alias': {"
                 + "'name': 'aliasName', "
@@ -179,10 +132,9 @@ public class V2CollectionsAPIMappingTest extends V2ApiMappingTest<CollectionsHan
   public void testRestoreAllProperties() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
-            "/collections",
+            "/backups/backupName",
             "POST",
             "{'restore-collection': {"
-                + "'name': 'backupName', "
                 + "'collection': 'collectionName', "
                 + "'location': '/some/location/uri', "
                 + "'repository': 'someRepository', "
