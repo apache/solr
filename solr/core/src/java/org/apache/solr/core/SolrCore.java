@@ -126,7 +126,7 @@ import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
-import org.apache.solr.response.JacksonJsonWriter;
+import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.PHPResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PythonResponseWriter;
@@ -3024,7 +3024,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   static {
     HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JacksonJsonWriter());
+    m.put(CommonParams.JSON, new JSONResponseWriter());
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());

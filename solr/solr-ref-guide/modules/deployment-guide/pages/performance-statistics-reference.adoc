@@ -95,7 +95,7 @@ The table below shows the metric names and attributes to request:
 |`QUERY./select.timeouts`
 `UPDATE./update.timeouts` |Number of responses received with partial results. In addition to a count of timeout events, mean, 1 minute, 5 minute, and 15 minute rates are also available.
 |`QUERY./select.totalTime`
-`UPDATE./update.totalTime` |The sum of all request processing times since the Solr process was started.
+`UPDATE./update.totalTime` |The sum of all request processing times since the Solr process was started in nanoseconds.
 |`QUERY./select.handlerStart`
 `UPDATE./update.handlerStart` |Epoch time when the handler was registered.
 |===

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -46,12 +47,12 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public final String collection;
 
-  private DocCollection.PrsSupplier prsSupplier;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
-  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
-    this.prsSupplier = prsSupplier;
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
     for (Replica r : replicas.values()) {
-      r.setPrsSupplier(prsSupplier);
+      r.setPerReplicaStatesRef(perReplicaStatesRef);
     }
     if (leader == null) {
       leader = findLeader();
@@ -286,7 +287,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   public Replica getLeader() {
-    if (prsSupplier != null) {
+    if (perReplicaStatesRef != null) {
       // this  is a PRS collection. leader may keep changing
       return findLeader();
     } else {
