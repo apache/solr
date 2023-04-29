@@ -212,7 +212,7 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets
+* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
 
 Deprecation Removals
 ----------------------
