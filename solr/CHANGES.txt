@@ -161,6 +161,37 @@ Other Changes
 
 * PR#1566: Removed deprecated members from Tuple class (janhoy)
 
+==================  9.2.1 ==================
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+
+* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
+
+Deprecation Removals
+----------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.2.0 ==================
 
 New Features
