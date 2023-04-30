@@ -43,7 +43,6 @@ teardown() {
 }
 
 @test "copying files around" {
-
   touch myfile.txt
   # Umm, what is solr cp?  It's like bin/solr zk cp but not?
   run solr cp -src myfile.txt -dst zk:/myfile.txt -z localhost:9983
@@ -61,5 +60,18 @@ teardown() {
 
   rm myfile.txt
   rm myfile2.txt
+}
+
+@test "upconfig" {
+  local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
+  test -d $source_configset_dir
+
+  run solr zk zk upconfig -d ${source_configset_dir} -n techproducts2 -z localhost:9983
+  assert_output --partial "Uploading"
+  refute_output --partial "ERROR"
+
+  sleep 1
+  run curl "http://localhost:8983/api/cluster/configs?omitHeader=true"
+  assert_output --partial '"configSets":["_default","techproducts2"]'
 
 }
