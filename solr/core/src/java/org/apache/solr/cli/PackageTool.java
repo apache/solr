@@ -95,157 +95,151 @@ public class PackageTool extends ToolBase {
       log.info("ZK: {}", zkHost);
 
       try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
-        if (cmd != null) {
-          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
-          try {
-            repositoryManager = new RepositoryManager(solrClient, packageManager);
+        packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
+        try {
+          repositoryManager = new RepositoryManager(solrClient, packageManager);
 
-            switch (cmd) {
-              case "add-repo":
-                String repoName = cli.getArgs()[1];
-                String repoUrl = cli.getArgs()[2];
-                repositoryManager.addRepository(repoName, repoUrl);
-                PackageUtils.printGreen("Added repository: " + repoName);
-                break;
-              case "add-key":
-                String keyFilename = cli.getArgs()[1];
-                Path path = Path.of(keyFilename);
-                repositoryManager.addKey(Files.readAllBytes(path), path.getFileName().toString());
-                break;
-              case "list-installed":
-                PackageUtils.printGreen("Installed packages:\n-----");
-                for (SolrPackageInstance pkg : packageManager.fetchInstalledPackageInstances()) {
-                  PackageUtils.printGreen(pkg);
+          switch (cmd) {
+            case "add-repo":
+              String repoName = cli.getArgs()[1];
+              String repoUrl = cli.getArgs()[2];
+              repositoryManager.addRepository(repoName, repoUrl);
+              PackageUtils.printGreen("Added repository: " + repoName);
+              break;
+            case "add-key":
+              String keyFilename = cli.getArgs()[1];
+              Path path = Path.of(keyFilename);
+              repositoryManager.addKey(Files.readAllBytes(path), path.getFileName().toString());
+              break;
+            case "list-installed":
+              PackageUtils.printGreen("Installed packages:\n-----");
+              for (SolrPackageInstance pkg : packageManager.fetchInstalledPackageInstances()) {
+                PackageUtils.printGreen(pkg);
+              }
+              break;
+            case "list-available":
+              PackageUtils.printGreen("Available packages:\n-----");
+              for (SolrPackage pkg : repositoryManager.getPackages()) {
+                PackageUtils.printGreen(pkg.name + " \t\t" + pkg.description);
+                for (SolrPackageRelease version : pkg.versions) {
+                  PackageUtils.printGreen("\tVersion: " + version.version);
                 }
-                break;
-              case "list-available":
-                PackageUtils.printGreen("Available packages:\n-----");
-                for (SolrPackage pkg : repositoryManager.getPackages()) {
-                  PackageUtils.printGreen(pkg.name + " \t\t" + pkg.description);
-                  for (SolrPackageRelease version : pkg.versions) {
-                    PackageUtils.printGreen("\tVersion: " + version.version);
-                  }
+              }
+              break;
+            case "list-deployed":
+              if (cli.hasOption('c')) {
+                String collection = cli.getArgs()[1];
+                Map<String, SolrPackageInstance> packages =
+                    packageManager.getPackagesDeployed(collection);
+                PackageUtils.printGreen("Packages deployed on " + collection + ":");
+                for (String packageName : packages.keySet()) {
+                  PackageUtils.printGreen("\t" + packages.get(packageName));
                 }
-                break;
-              case "list-deployed":
-                if (cli.hasOption('c')) {
-                  String collection = cli.getArgs()[1];
-                  Map<String, SolrPackageInstance> packages =
-                      packageManager.getPackagesDeployed(collection);
-                  PackageUtils.printGreen("Packages deployed on " + collection + ":");
-                  for (String packageName : packages.keySet()) {
-                    PackageUtils.printGreen("\t" + packages.get(packageName));
+              } else {
+                String packageName = cli.getArgs()[1];
+                Map<String, String> deployedCollections =
+                    packageManager.getDeployedCollections(packageName);
+                if (!deployedCollections.isEmpty()) {
+                  PackageUtils.printGreen(
+                      "Collections on which package " + packageName + " was deployed:");
+                  for (String collection : deployedCollections.keySet()) {
+                    PackageUtils.printGreen(
+                        "\t"
+                            + collection
+                            + "("
+                            + packageName
+                            + ":"
+                            + deployedCollections.get(collection)
+                            + ")");
                   }
                 } else {
-                  String packageName = cli.getArgs()[1];
-                  Map<String, String> deployedCollections =
-                      packageManager.getDeployedCollections(packageName);
-                  if (deployedCollections.isEmpty() == false) {
-                    PackageUtils.printGreen(
-                        "Collections on which package " + packageName + " was deployed:");
-                    for (String collection : deployedCollections.keySet()) {
-                      PackageUtils.printGreen(
-                          "\t"
-                              + collection
-                              + "("
-                              + packageName
-                              + ":"
-                              + deployedCollections.get(collection)
-                              + ")");
-                    }
-                  } else {
-                    PackageUtils.printGreen(
-                        "Package " + packageName + " not deployed on any collection.");
-                  }
+                  PackageUtils.printGreen(
+                      "Package " + packageName + " not deployed on any collection.");
+                }
+              }
+              break;
+            case "install":
+              {
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
+                boolean success = repositoryManager.install(packageName, version);
+                if (success) {
+                  PackageUtils.printGreen(packageName + " installed.");
+                } else {
+                  PackageUtils.printRed(packageName + " installation failed.");
                 }
                 break;
-              case "install":
-                {
-                  Pair<String, String> parsedVersion =
-                      parsePackageVersion(cli.getArgList().get(1).toString());
+              }
+            case "deploy":
+              {
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean success = repositoryManager.install(packageName, version);
-                  if (success) {
-                    PackageUtils.printGreen(packageName + " installed.");
-                  } else {
-                    PackageUtils.printRed(packageName + " installation failed.");
-                  }
-                  break;
+                  boolean noprompt = cli.hasOption('y');
+                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  String[] collections =
+                      cli.hasOption("collections")
+                          ? PackageUtils.validateCollections(
+                              cli.getOptionValue("collections").split(","))
+                          : new String[] {};
+                  packageManager.deploy(
+                      packageName,
+                      version,
+                      collections,
+                      cli.hasOption("cluster"),
+                      cli.getOptionValues("param"),
+                      isUpdate,
+                      noprompt);
+                } else {
+                  PackageUtils.printRed(
+                      "Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
                 }
-              case "deploy":
-                {
-                  if (cli.hasOption("cluster") || cli.hasOption("collections")) {
-                    Pair<String, String> parsedVersion =
-                        parsePackageVersion(cli.getArgList().get(1).toString());
-                    String packageName = parsedVersion.first();
-                    String version = parsedVersion.second();
-                    boolean noprompt = cli.hasOption('y');
-                    boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                    String collections[] =
-                        cli.hasOption("collections")
-                            ? PackageUtils.validateCollections(
-                                cli.getOptionValue("collections").split(","))
-                            : new String[] {};
-                    packageManager.deploy(
-                        packageName,
-                        version,
-                        collections,
-                        cli.hasOption("cluster"),
-                        cli.getOptionValues("param"),
-                        isUpdate,
-                        noprompt);
-                  } else {
-                    PackageUtils.printRed(
-                        "Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
-                  }
-                  break;
-                }
-              case "undeploy":
-                {
-                  if (cli.hasOption("cluster") || cli.hasOption("collections")) {
-                    Pair<String, String> parsedVersion =
-                        parsePackageVersion(cli.getArgList().get(1).toString());
-                    if (parsedVersion.second() != null) {
-                      throw new SolrException(
-                          ErrorCode.BAD_REQUEST,
-                          "Only package name expected, without a version. Actual: "
-                              + cli.getArgList().get(1));
-                    }
-                    String packageName = parsedVersion.first();
-                    String collections[] =
-                        cli.hasOption("collections")
-                            ? PackageUtils.validateCollections(
-                                cli.getOptionValue("collections").split(","))
-                            : new String[] {};
-                    packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
-                  } else {
-                    PackageUtils.printRed(
-                        "Either specify -cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
-                  }
-                  break;
-                }
-              case "uninstall":
-                {
-                  Pair<String, String> parsedVersion =
-                      parsePackageVersion(cli.getArgList().get(1).toString());
-                  if (parsedVersion.second() == null) {
+                break;
+              }
+            case "undeploy":
+              {
+                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                  Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
+                  if (parsedVersion.second() != null) {
                     throw new SolrException(
                         ErrorCode.BAD_REQUEST,
-                        "Package name and version are both required. Actual: "
+                        "Only package name expected, without a version. Actual: "
                             + cli.getArgList().get(1));
                   }
                   String packageName = parsedVersion.first();
-                  String version = parsedVersion.second();
-                  packageManager.uninstall(packageName, version);
-                  break;
+                  String[] collections =
+                      cli.hasOption("collections")
+                          ? PackageUtils.validateCollections(
+                              cli.getOptionValue("collections").split(","))
+                          : new String[] {};
+                  packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
+                } else {
+                  PackageUtils.printRed(
+                      "Either specify -cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
                 }
-              default:
-                throw new RuntimeException("Unrecognized command: " + cmd);
-            }
-          } finally {
-            packageManager.close();
+                break;
+              }
+            case "uninstall":
+              {
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
+                if (parsedVersion.second() == null) {
+                  throw new SolrException(
+                      ErrorCode.BAD_REQUEST,
+                      "Package name and version are both required. Actual: "
+                          + cli.getArgList().get(1));
+                }
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
+                packageManager.uninstall(packageName, version);
+                break;
+              }
+            default:
+              throw new RuntimeException("Unrecognized command: " + cmd);
           }
+        } finally {
+          packageManager.close();
         }
       }
       log.info("Finished: {}", cmd);
@@ -288,7 +282,7 @@ public class PackageTool extends ToolBase {
     print("Print a list of collections on which a given package has been deployed.");
     print("");
     printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
-    print("Undeploys a package from specified collection(s)");
+    print("Undeploy a package from specified collection(s)");
     print("");
     printGreen("./solr package uninstall <package-name>:<version>");
     print(
