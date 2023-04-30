@@ -77,6 +77,13 @@ public class PackageTool extends ToolBase {
               + "don't print stack traces, hence special treatment is needed here.")
   public void runImpl(CommandLine cli) throws Exception {
     try {
+      String cmd = cli.getArgList().size() == 0 ? "help" : cli.getArgs()[0];
+
+      if (cmd.equalsIgnoreCase("help")) {
+        printHelp();
+        return;
+      }
+
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
@@ -86,7 +93,6 @@ public class PackageTool extends ToolBase {
       }
 
       log.info("ZK: {}", zkHost);
-      String cmd = cli.getArgList().size() == 0 ? "help" : cli.getArgs()[0];
 
       try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
@@ -234,50 +240,6 @@ public class PackageTool extends ToolBase {
                   packageManager.uninstall(packageName, version);
                   break;
                 }
-              case "help":
-              case "usage":
-                print("Package Manager\n---------------");
-                printGreen("./solr package add-repo <repository-name> <repository-url>");
-                print("Add a repository to Solr.");
-                print("");
-                printGreen("./solr package add-key <file-containing-trusted-key>");
-                print("Add a trusted key to Solr.");
-                print("");
-                printGreen("./solr package install <package-name>[:<version>] ");
-                print(
-                    "Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
-                print("");
-                printGreen(
-                    "./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
-                print(
-                    "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
-                print("");
-                printGreen("./solr package list-installed");
-                print("Print a list of packages installed in Solr.");
-                print("");
-                printGreen("./solr package list-available");
-                print("Print a list of packages available in the repositories.");
-                print("");
-                printGreen("./solr package list-deployed -c <collection>");
-                print("Print a list of packages deployed on a given collection.");
-                print("");
-                printGreen("./solr package list-deployed <package-name>");
-                print("Print a list of collections on which a given package has been deployed.");
-                print("");
-                printGreen(
-                    "./solr package undeploy <package-name> -collections <comma-separated-collections>");
-                print("Undeploys a package from specified collection(s)");
-                print("");
-                printGreen("./solr package uninstall <package-name>:<version>");
-                print(
-                    "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
-                print("\n");
-                print(
-                    "Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
-                print(
-                    "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
-                print("\n");
-                break;
               default:
                 throw new RuntimeException("Unrecognized command: " + cmd);
             }
@@ -294,6 +256,49 @@ public class PackageTool extends ToolBase {
       ex.printStackTrace();
       throw ex;
     }
+  }
+
+  private void printHelp() {
+    print("Package Manager\n---------------");
+    printGreen("./solr package add-repo <repository-name> <repository-url>");
+    print("Add a repository to Solr.");
+    print("");
+    printGreen("./solr package add-key <file-containing-trusted-key>");
+    print("Add a trusted key to Solr.");
+    print("");
+    printGreen("./solr package install <package-name>[:<version>] ");
+    print(
+        "Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
+    print("");
+    printGreen(
+        "./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
+    print(
+        "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
+    print("");
+    printGreen("./solr package list-installed");
+    print("Print a list of packages installed in Solr.");
+    print("");
+    printGreen("./solr package list-available");
+    print("Print a list of packages available in the repositories.");
+    print("");
+    printGreen("./solr package list-deployed -c <collection>");
+    print("Print a list of packages deployed on a given collection.");
+    print("");
+    printGreen("./solr package list-deployed <package-name>");
+    print("Print a list of collections on which a given package has been deployed.");
+    print("");
+    printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
+    print("Undeploys a package from specified collection(s)");
+    print("");
+    printGreen("./solr package uninstall <package-name>:<version>");
+    print(
+        "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
+    print("\n");
+    print(
+        "Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+    print(
+        "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
+    print("\n");
   }
 
   /**

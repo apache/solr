@@ -29,6 +29,7 @@ teardown() {
 }
 
 @test "package detects no running solr" {
+  # not sure this is actually a good thing..  we may not want this..
   run solr package
   assert_output --partial "No Solr nodes are running."
 }
@@ -39,5 +40,9 @@ teardown() {
   run solr package
   refute_output --partial "No Solr nodes are running."
 
+  run solr package -help
+  assert_output --partial "Add a repository to Solr"
+
   run solr package list-available
+  assert_output --partial "Available packages:"
 }

@@ -663,6 +663,10 @@ function print_usage() {
     echo ""
     echo "  -V                                     Enable more verbose output."
     echo ""
+  elif [ "$CMD" == "package" ]; then
+    echo ""
+    run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
+
   fi
 } # end print_usage
 
@@ -1459,6 +1463,24 @@ if [[ "$SCRIPT_CMD" == "export" ]]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -help|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              break # out-of-args, stop looping
+
+          ;;
+      esac
+    done
+  fi
   run_package "$@"
   exit $?
 fi
