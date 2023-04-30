@@ -58,6 +58,7 @@ This is an empty XML element that doesn't have any content, only attributes.
 Controls whether remote streaming of content is allowed.
 When set to `false`, streaming will not be allowed.
 Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
+Even when set to `true`, this will execute only on nodes with `-Dsolr.enableRemoteStreaming=true` system property.
 
 `enableStreamBody`::
 +
@@ -145,6 +146,8 @@ curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher
 ----
 ====
 --
+
+Along with this, you also need to start your Solr node(s) with a `-Dsolr.enableRemoteStreaming=true` system property.
 
 == httpCaching Element
 

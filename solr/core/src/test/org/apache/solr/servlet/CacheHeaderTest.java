@@ -38,13 +38,16 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty("solr.enableRemoteStreaming", "true"); // needed for testCacheVetoHandler
     File solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
-  public static void afterTest() {}
+  public static void afterTest() {
+    System.clearProperty("solr.enableRemoteStreaming");
+  }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 

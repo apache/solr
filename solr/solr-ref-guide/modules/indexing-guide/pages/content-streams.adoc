@@ -42,7 +42,7 @@ You could use remote streaming to send a remote or local file to an update plugi
 Remote streaming is disabled by default.
 Enabling it is not recommended in a production situation without additional security between you and untrusted remote clients.
 
-In `solrconfig.xml`, you can enable it by changing the following `enableRemoteStreaming` parameter to `true`:
+You can enable it by changing the following `enableRemoteStreaming` parameter to `true` in `solrconfig.xml`:
 
 [source,xml]
 ----
@@ -53,9 +53,11 @@ In `solrconfig.xml`, you can enable it by changing the following `enableRemoteSt
     <requestParsers enableRemoteStreaming="false" />
 ----
 
+Along with this, you also need to start your Solr node(s) with a `-Dsolr.enableRemoteStreaming=true` system property.
+
 When `enableRemoteStreaming` is not specified in `solrconfig.xml`, the default behavior is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
 
-Remote streaming can also be enabled through the xref:configuration-guide:config-api.adoc[] as follows:
+If the system property is enabled, then remote streaming for a collection can also be enabled through the xref:configuration-guide:config-api.adoc[] as follows:
 
 [.dynamic-tabs]
 --

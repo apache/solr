@@ -48,6 +48,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty("solr.enableRemoteStreaming", "true");
     // this one has handleSelect=true which a test here needs
     File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
@@ -55,7 +56,9 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   }
 
   @AfterClass
-  public static void afterTest() {}
+  public static void afterTest() {
+    System.clearProperty("solr.enableRemoteStreaming");
+  }
 
   @Before
   public void doBefore() throws IOException, SolrServerException {

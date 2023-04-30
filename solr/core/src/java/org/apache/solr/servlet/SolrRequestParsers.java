@@ -86,7 +86,11 @@ public class SolrRequestParsers {
 
   private final HashMap<String, SolrRequestParser> parsers = new HashMap<>();
   private final boolean enableRemoteStreams;
+  public final boolean enableRemoteStreamsAtNodeLevel =
+      Boolean.parseBoolean(System.getProperty("solr.enableRemoteStreaming", "false"));
   private final boolean enableStreamBody;
+  public final boolean enableStreamBodyAtNodeLevel =
+      Boolean.parseBoolean(System.getProperty("solr.enableStreamBody", "true"));
   private StandardRequestParser standard;
   private boolean handleSelect = true;
   private boolean addHttpRequestToContext;
@@ -199,7 +203,7 @@ public class SolrRequestParsers {
     // Handle anything with a remoteURL
     String[] strs = params.getParams(CommonParams.STREAM_URL);
     if (strs != null) {
-      if (!enableRemoteStreams) {
+      if (!enableRemoteStreams || !enableRemoteStreamsAtNodeLevel) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Remote Streaming is disabled.");
       }
       for (final String url : strs) {
@@ -214,7 +218,7 @@ public class SolrRequestParsers {
     // Handle streaming files
     strs = params.getParams(CommonParams.STREAM_FILE);
     if (strs != null) {
-      if (!enableRemoteStreams) {
+      if (!enableRemoteStreams || !enableRemoteStreamsAtNodeLevel) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
@@ -231,7 +235,7 @@ public class SolrRequestParsers {
     // Check for streams in the request parameters
     strs = params.getParams(CommonParams.STREAM_BODY);
     if (strs != null) {
-      if (!enableStreamBody) {
+      if (!enableStreamBody || !enableStreamBodyAtNodeLevel) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Stream Body is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
