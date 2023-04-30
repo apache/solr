@@ -98,7 +98,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       kerberosFilter.init(conf);
     } catch (ServletException e) {
       throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: " + e);
+          ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin", e);
     }
   }
 
@@ -139,7 +139,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
           putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
           params.put("zk-dt-secret-manager.enable", "true");
 
-          String chrootPath = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : "";
+          String chrootPath = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : "";
           String znodeWorkingPath =
               chrootPath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm";
           // Note - Curator complains if the znodeWorkingPath starts with /

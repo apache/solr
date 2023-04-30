@@ -61,9 +61,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -225,12 +227,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes =
-      new LinkedHashMap<>(numDeletesToKeep) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
-          return size() > numDeletesToKeep;
-        }
-      };
+      new OldDeletesLinkedHashMap(this.numDeletesToKeep);
 
   /** Holds the query and the version for a DeleteByQuery command */
   public static class DBQ {
@@ -745,7 +742,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher", e);
+        log.error("Error opening realtime searcher", e);
         return;
       }
 
@@ -762,7 +759,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        log.error("Error opening realtime searcher for deleteByQuery", e);
       }
 
       if (map != null) map.clear();
@@ -1490,7 +1487,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Exception shutting down recoveryExecutor", e);
     }
   }
 
@@ -1601,7 +1598,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       updateList = new ArrayList<>(logList.size());
       deleteByQueryList = new ArrayList<>();
       deleteList = new ArrayList<>();
-      updates = new HashMap<>(numRecordsToKeep);
+      updates = CollectionUtil.newHashMap(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
         List<Update> updatesForLog = new ArrayList<>();
@@ -1878,15 +1875,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       } catch (SolrException e) {
         if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-          SolrException.log(log, e);
+          log.error("Replay failed service unavailable", e);
           recoveryInfo.failed = true;
         } else {
           recoveryInfo.errors.incrementAndGet();
-          SolrException.log(log, e);
+          log.error("Replay failed due to exception", e);
         }
       } catch (Exception e) {
         recoveryInfo.errors.incrementAndGet();
-        SolrException.log(log, e);
+        log.error("Replay failed due to exception", e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
@@ -2007,7 +2004,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               }
             }
           } catch (Exception e) {
-            SolrException.log(log, e);
+            log.error("Exception during replay", e);
           }
 
           if (o == null) break;
@@ -2387,6 +2384,21 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
     } finally {
       versionInfo.unblockUpdates();
+    }
+  }
+
+  @SuppressForbidden(reason = "extends linkedhashmap")
+  private static class OldDeletesLinkedHashMap extends LinkedHashMap<BytesRef, LogPtr> {
+    private final int numDeletesToKeepInternal;
+
+    public OldDeletesLinkedHashMap(int numDeletesToKeep) {
+      super(numDeletesToKeep);
+      this.numDeletesToKeepInternal = numDeletesToKeep;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
+      return size() > numDeletesToKeepInternal;
     }
   }
 }

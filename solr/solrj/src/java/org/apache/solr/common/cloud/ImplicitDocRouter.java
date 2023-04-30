@@ -39,9 +39,9 @@ public class ImplicitDocRouter extends DocRouter {
       DocCollection collection) {
     String shard = null;
 
-    if (route != null) // if a route is already passed in, try to use it
-    shard = route;
-    else if (sdoc != null) {
+    if (route != null) { // if a route is already passed in, try to use it
+      shard = route;
+    } else if (sdoc != null) {
       String f = getRouteField(collection);
       if (f != null) {
         Object o = sdoc.getFieldValue(f);

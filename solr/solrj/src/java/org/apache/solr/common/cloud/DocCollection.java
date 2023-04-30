@@ -29,9 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,13 +66,29 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
-  private volatile PerReplicaStates perReplicaStates;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
+  /**
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
+   */
+  @Deprecated
   public DocCollection(
       String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, Integer.MAX_VALUE);
+    this(name, slices, props, router, Integer.MAX_VALUE, null);
   }
 
+  /**
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
+   */
+  @Deprecated
+  public DocCollection(
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion) {
+    this(name, slices, props, router, zkVersion, null);
+  }
   /**
    * @param name The name of the collection
    * @param slices The logical shards of the collection. This is used directly and a copy is not
@@ -77,13 +96,15 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props The properties of the slice. This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
    *     updates).
+   * @see DocCollection#create(String, Map, Map, DocRouter, int, PrsSupplier)
    */
-  public DocCollection(
+  private DocCollection(
       String name,
       Map<String, Slice> slices,
       Map<String, Object> props,
       DocRouter router,
-      int zkVersion) {
+      int zkVersion,
+      AtomicReference<PerReplicaStates> perReplicaStatesRef) {
     super(props);
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
     // overwrites
@@ -100,9 +121,17 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
-    ClusterState.getReplicaStatesProvider()
-        .get()
-        .ifPresent(it -> perReplicaStates = it.getStates());
+    if (this.perReplicaState) {
+      if (perReplicaStatesRef == null || perReplicaStatesRef.get() == null) {
+        throw new RuntimeException(
+            CollectionStateProps.PER_REPLICA_STATE
+                + " = true , but perReplicatStates param is not provided");
+      }
+      this.perReplicaStatesRef = perReplicaStatesRef;
+      for (Slice s : this.slices.values()) { // set the same reference to all slices too
+        s.setPerReplicaStatesRef(this.perReplicaStatesRef);
+      }
+    }
     Boolean readOnly = (Boolean) verifyProp(props, CollectionStateProps.READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
@@ -126,6 +155,64 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     assert name != null && slices != null;
   }
 
+  /**
+   * Builds a DocCollection with an optional PrsSupplier
+   *
+   * @param name The name of the collection
+   * @param slices The logical shards of the collection. This is used directly and a copy is not
+   *     made.
+   * @param props The properties of the slice. This is used directly and a copy is not made.
+   * @param router router to partition int range into n ranges
+   * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
+   *     updates).
+   * @param prsSupplier optional supplier for PerReplicaStates (PRS) for PRS enabled collections
+   * @return a newly constructed DocCollection
+   */
+  public static DocCollection create(
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion,
+      DocCollection.PrsSupplier prsSupplier) {
+    boolean perReplicaState =
+        (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
+    PerReplicaStates perReplicaStates;
+    if (perReplicaState) {
+      if (prsSupplier == null) {
+        throw new IllegalArgumentException(
+            CollectionStateProps.PER_REPLICA_STATE + " = true , but prsSuppler is not provided");
+      }
+
+      if (!hasAnyReplica(
+          slices)) { // a special case, if there is no replica, it should not fetch (first PRS
+        // collection creation with no replicas). Otherwise, it would trigger exception
+        // on fetching a state.json that does not exist yet
+        perReplicaStates = PerReplicaStates.empty(name);
+      } else {
+        perReplicaStates = prsSupplier.get();
+      }
+    } else {
+      perReplicaStates = null;
+    }
+    return new DocCollection(
+        name,
+        slices,
+        props,
+        router,
+        zkVersion,
+        perReplicaStates != null ? new AtomicReference<>(perReplicaStates) : null);
+  }
+
+  private static boolean hasAnyReplica(Map<String, Slice> slices) {
+    for (Slice slice : slices.values()) {
+      if (!slice.getReplicasMap().isEmpty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static String getCollectionPath(String coll) {
     return getCollectionPathRoot(coll) + "/state.json";
   }
@@ -135,34 +222,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * Update our state with a state of a {@link Replica} Used to create a new Collection State when
-   * only a replica is updated
+   * Update our state with a state of a {@link PerReplicaStates} which could override states of
+   * {@link Replica}.
+   *
+   * <p>Take note that it updates the underlying AtomicReference such that all Slice and Replica
+   * that holds the same AtomicReference will see the same update
+   *
+   * <p>This does not create a new DocCollection.
    */
-  public DocCollection copyWith(PerReplicaStates newPerReplicaStates) {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "collection :{} going to be updated :  per-replica state :{} -> {}",
-          name,
-          getChildNodesVersion(),
-          newPerReplicaStates.cversion);
+  public final DocCollection setPerReplicaStates(PerReplicaStates newPerReplicaStates) {
+    if (this.perReplicaStatesRef != null) {
+      log.debug("In-place update of PRS: {}", newPerReplicaStates);
+      this.perReplicaStatesRef.set(newPerReplicaStates);
     }
-    if (getChildNodesVersion() >= newPerReplicaStates.cversion) return this;
-    Set<String> modifiedReplicas =
-        PerReplicaStates.findModifiedReplicas(newPerReplicaStates, this.perReplicaStates);
-    if (modifiedReplicas.isEmpty()) return this; // nothing is modified
-    Map<String, Slice> modifiedShards = new HashMap<>(getSlicesMap());
-    for (String s : modifiedReplicas) {
-      Replica replica = getReplica(s);
-      if (replica != null) {
-        Replica newReplica = replica.copyWith(newPerReplicaStates.get(s));
-        Slice shard = modifiedShards.get(replica.shard);
-        modifiedShards.put(replica.shard, shard.copyWith(newReplica));
-      }
-    }
-    DocCollection result =
-        new DocCollection(getName(), modifiedShards, propMap, router, znodeVersion);
-    result.perReplicaStates = newPerReplicaStates;
-    return result;
+
+    return this;
   }
 
   private void addNodeNameReplica(Replica replica) {
@@ -213,8 +287,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the resulting DocCollection
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices) {
-    DocCollection result = new DocCollection(getName(), slices, propMap, router, znodeVersion);
-    result.perReplicaStates = perReplicaStates;
+    DocCollection result =
+        new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStatesRef);
     return result;
   }
   /** Return collection name. */
@@ -281,7 +355,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public int getChildNodesVersion() {
-    return perReplicaStates == null ? -1 : perReplicaStates.cversion;
+    return perReplicaStatesRef == null ? 0 : perReplicaStatesRef.get().cversion;
   }
 
   public boolean isModified(int dataVersion, int childVersion) {
@@ -318,14 +392,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         + "/"
         + znodeVersion
         + " "
-        + (perReplicaStates == null ? "" : perReplicaStates.toString())
+        + (perReplicaStatesRef == null ? "" : perReplicaStatesRef.get())
         + ")="
         + toJSONString(this);
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
+    LinkedHashMap<String, Object> all = CollectionUtil.newLinkedHashMap(slices.size() + 1);
     all.putAll(propMap);
     all.put(CollectionStateProps.SHARDS, slices);
     jsonWriter.write(all);
@@ -465,7 +539,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public PerReplicaStates getPerReplicaStates() {
-    return perReplicaStates;
+    return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
   }
 
   public int getExpectedReplicaCount(Replica.Type type, int def) {
@@ -488,4 +562,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     String SHARDS = "shards";
     String PER_REPLICA_STATE = "perReplicaState";
   }
+
+  public interface PrsSupplier extends Supplier<PerReplicaStates> {}
 }

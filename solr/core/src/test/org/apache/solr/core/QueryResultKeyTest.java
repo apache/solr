@@ -108,6 +108,63 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertKeyNotEquals(key1, key2);
   }
 
+  public void testCreateKeyWithNullFilterList() {
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, sort, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testCreateKeyWithNullFilterListAndNullSort() {
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, null, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testNullFilterInFiltersList() {
+    // the hashcode should be the same even when the list
+    // of filters has a null filter
+
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters =
+        Arrays.asList(
+            new TermQuery(new Term("test", "field")),
+            new TermQuery(new Term("test2", "field2")),
+            null);
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
+
+    List<Query> filters2 =
+        Arrays.asList(
+            new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters2, sort, 1);
+    assertKeyEquals(qrk1, qrk2);
+  }
+
+  public void testNullSortFieldInSort() {
+    // the hashcode should be the same even when the list
+    // of SortFields has a null value.
+
+    Sort sort1 = new Sort(new SortField("test", SortField.Type.INT), null);
+    Sort sort2 = new Sort(new SortField("test", SortField.Type.INT), null);
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters =
+        Arrays.asList(
+            new TermQuery(new Term("test", "field")), new TermQuery(new Term("test2", "field2")));
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort1, 1);
+
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters, sort2, 1);
+    assertKeyEquals(qrk1, qrk2);
+  }
+
   public void testRandomQueryKeyEquality() {
 
     final int minIters = atLeast(100 * 1000);

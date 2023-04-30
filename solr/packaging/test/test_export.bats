@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "Check export command" {
-  run solr start -c -Dsolr.modules=sql
+  run solr start -c
   run solr create_collection -c COLL_NAME
   run solr export -url "http://localhost:8983/solr/COLL_NAME" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
   refute_output --partial 'Unrecognized option'

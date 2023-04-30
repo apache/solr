@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -85,8 +86,8 @@ public class SolrClientCache implements Serializable {
       hosts.add(zkHost);
       var builder =
           new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(socketTimeout)
-              .withConnectionTimeout(conTimeout);
+              .withSocketTimeout(socketTimeout, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(conTimeout, TimeUnit.MILLISECONDS);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
@@ -107,8 +108,8 @@ public class SolrClientCache implements Serializable {
     } else {
       HttpSolrClient.Builder builder =
           new HttpSolrClient.Builder(baseUrl)
-              .withSocketTimeout(socketTimeout)
-              .withConnectionTimeout(conTimeout);
+              .withSocketTimeout(socketTimeout, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(conTimeout, TimeUnit.MILLISECONDS);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }

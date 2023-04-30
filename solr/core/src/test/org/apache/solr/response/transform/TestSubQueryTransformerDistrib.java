@@ -82,7 +82,6 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(people);
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);

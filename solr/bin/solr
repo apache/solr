@@ -87,6 +87,8 @@ done
 CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
 SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
 # shellcheck disable=SC2164
+SOLR_TIP_SYM=$(cd "$SOLR_TIP"; pwd -L)
+# shellcheck disable=SC2164
 SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
@@ -110,7 +112,7 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
-# if pid dir is unset, deafult to $solr_tip/bin
+# if pid dir is unset, default to $solr_tip/bin
 : "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
 
 if [ -n "${SOLR_JAVA_HOME:-}" ]; then
@@ -161,7 +163,7 @@ if [[ $? -ne 0 ]] ; then
   echo >&2 "${PATH}"
   exit 1
 else
-  JAVA_VER_NUM=$(echo "$JAVA_VER" | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
+  JAVA_VER_NUM=$(echo "$JAVA_VER" | grep -v '_OPTIONS' | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
   if [[ "$JAVA_VER_NUM" -lt "$JAVA_VER_REQ" ]] ; then
     echo >&2 "Your current version of Java is too old to run this version of Solr."
     echo >&2 "We found major version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
@@ -222,8 +224,8 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:-true}" == "false" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=false"
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
@@ -737,13 +739,13 @@ function run_tool() {
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
-    org.apache.solr.util.SolrCLI "$@"
+    org.apache.solr.cli.SolrCLI "$@"
 
   return $?
 } # end run_tool function
 
-# get information about any Solr nodes running on this host
-function get_info() {
+# get status about any Solr nodes running on this host
+function get_status() {
   CODE=4
   # first, see if Solr is running
   numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
@@ -787,7 +789,7 @@ function get_info() {
   fi
 
   return $CODE
-} # end get_info
+} # end get_status
 
 function run_package() {
   runningSolrUrl=""
@@ -917,10 +919,6 @@ if [ $# -eq 1 ]; then
         print_usage ""
         exit
     ;;
-    -info|-i|status)
-        get_info
-        exit $?
-    ;;
     -version|-v|version)
         run_tool version
         exit
@@ -944,9 +942,29 @@ else
 fi
 
 if [ "$SCRIPT_CMD" == "status" ]; then
-  # hacky - the script hits this if the user passes additional args with the status command,
-  # which is not supported but also not worth complaining about either
-  get_info
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -help|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi
+          ;;
+      esac
+    done
+  fi
+  get_status
   exit
 fi
 
@@ -1643,14 +1661,14 @@ fi
 FG="false"
 FORCE=false
 SOLR_OPTS=(${SOLR_OPTS:-})
-PASS_TO_RUN_EXAMPLE=
+PASS_TO_RUN_EXAMPLE=()
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -c"
+            PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
         -d|-dir)
@@ -1704,7 +1722,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=" -h $SOLR_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-h" "$SOLR_HOST")
             shift 2
         ;;
         -m|-memory)
@@ -1713,7 +1731,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HEAP="$2"
-            PASS_TO_RUN_EXAMPLE+=" -m $SOLR_HEAP"
+            PASS_TO_RUN_EXAMPLE+=("-m" "$SOLR_HEAP")
             shift 2
         ;;
         -p|-port)
@@ -1722,7 +1740,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
-            PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
+            PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
         -z|-zkhost|-zkHost)
@@ -1732,17 +1750,17 @@ if [ $# -gt 0 ]; then
             fi
             ZK_HOST="$2"
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -z $ZK_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
-            PASS_TO_RUN_EXAMPLE+=" -a \"$ADDITIONAL_CMD_OPTS\""
+            PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|-jettyconfig)
             ADDITIONAL_JETTY_CONFIG="$2"
-            PASS_TO_RUN_EXAMPLE+=" -j \"$ADDITIONAL_JETTY_CONFIG\""
+            PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|-key)
@@ -1754,22 +1772,22 @@ if [ $# -gt 0 ]; then
             exit 0
         ;;
         -noprompt)
-            PASS_TO_RUN_EXAMPLE+=" -noprompt"
+            PASS_TO_RUN_EXAMPLE+=("-noprompt")
             shift
         ;;
         -V|-verbose)
             verbose=true
-            PASS_TO_RUN_EXAMPLE+=" --verbose"
+            PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
+            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
+            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -all)
@@ -1778,7 +1796,7 @@ if [ $# -gt 0 ]; then
         ;;
         -force)
             FORCE=true
-            PASS_TO_RUN_EXAMPLE+=" -force"
+            PASS_TO_RUN_EXAMPLE+=("-force")
             shift
         ;;
         --)
@@ -1791,7 +1809,7 @@ if [ $# -gt 0 ]; then
             elif [ "${1:0:2}" == "-D" ]; then
               # pass thru any opts that begin with -D (java system props)
               SOLR_OPTS+=("$1")
-              PASS_TO_RUN_EXAMPLE+=" $1"
+              PASS_TO_RUN_EXAMPLE+=("$1")
               shift
             else
               print_usage "$SCRIPT_CMD" "$1 is not supported by this script"
@@ -1833,7 +1851,7 @@ fi
 # otherwise let this script proceed to process the user request
 #
 if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "$PASS_TO_RUN_EXAMPLE"
+  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi
 
@@ -2052,6 +2070,10 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
+    if [ $SOLR_PORT -gt 55535 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
+      exit 1
+    fi
     if $verbose ; then
       echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi
@@ -2185,6 +2207,10 @@ function start_solr() {
     SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
   fi
 
+  if [ -n "${SOLR_DATA_HOME:-}" ]; then
+    SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
+  fi
+
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
@@ -2246,7 +2272,6 @@ function start_solr() {
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
-      SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
       echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
     fi
     echo
@@ -2266,12 +2291,6 @@ function start_solr() {
     echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
   fi
 
-  # Added --enable-preview for JDK 19 to enable MemorySegment support in MMapDirectory, see https://issues.apache.org/jira/browse/SOLR-16500
-  if [[ "$JAVA_VER_NUM" -eq "19" ]] ; then
-    SOLR_OPTS+=("--enable-preview")
-    echo "Java $JAVA_VER_NUM detected. Added --enable-preview to enable MemorySegment support in MMapDirectory. See SOLR-16500"
-  fi
-
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" ${SOLR_LOG_LEVEL_OPT:-} -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
@@ -2281,7 +2300,7 @@ function start_solr() {
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"

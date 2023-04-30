@@ -19,7 +19,7 @@ package org.apache.solr.servlet;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.common.annotation.SolrThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.core.RateLimiterConfig;
 
 /**
@@ -28,7 +28,7 @@ import org.apache.solr.core.RateLimiterConfig;
  * <p>The control flow is as follows: Handle request -- Check if slot is available -- If available,
  * acquire slot and proceed -- else reject the same.
  */
-@SolrThreadSafe
+@ThreadSafe
 public class RequestRateLimiter {
   // Slots that are guaranteed for this request rate limiter.
   private final Semaphore guaranteedSlotsPool;

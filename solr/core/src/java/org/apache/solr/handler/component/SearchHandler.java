@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -272,18 +272,23 @@ public class SearchHandler extends RequestHandlerBase
     return result;
   }
 
+  private boolean isDistrib(SolrQueryRequest req) {
+    boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
+    boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    if (!isDistrib) {
+      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
+      // search is distributed.
+      final String shards = req.getParams().get(ShardParams.SHARDS);
+      isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
+    }
+    return isDistrib;
+  }
+
   public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
-    rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
-    if (!rb.isDistrib) {
-      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-      // search is distributed.
-      final String shards = req.getParams().get(ShardParams.SHARDS);
-      rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
-    }
 
     if (rb.isDistrib) {
       shardHandler = shardHandlerFactory.getShardHandler();
@@ -338,6 +343,7 @@ public class SearchHandler extends RequestHandlerBase
       rb.requestInfo.setResponseBuilder(rb);
     }
 
+    rb.isDistrib = isDistrib(req);
     tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
@@ -615,7 +621,7 @@ public class SearchHandler extends RequestHandlerBase
       // - ERRORs that may be logged during response writing
       MDC.put(CommonParams.REQUEST_ID, rid);
 
-      if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+      if (StrUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid); // add rid to the request so that shards see it
         rb.req.setParams(params);
@@ -640,7 +646,7 @@ public class SearchHandler extends RequestHandlerBase
    */
   public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
+    return StrUtils.isNotBlank(rid) ? rid : generateRid(req);
   }
 
   private static String generateRid(SolrQueryRequest req) {

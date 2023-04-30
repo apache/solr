@@ -35,6 +35,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -123,6 +125,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       params.set("collection", collection);
     }
     params.set("action", "CLUSTERSTATUS");
+    params.set("prs", "true");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
@@ -147,7 +150,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     Set<String> liveNodes = new HashSet<>((List<String>) (cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
-    ClusterState cs = ClusterState.createFromCollectionMap(znodeVersion, collectionsMap, liveNodes);
+    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
+    for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
+      @SuppressWarnings("rawtypes")
+      Map m = (Map) e.getValue();
+      cs = cs.copyWith(e.getKey(), fillPrs(znodeVersion, e, m));
+    }
+
     if (clusterProperties != null) {
       Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
@@ -155,6 +164,22 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       }
     }
     return cs;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private DocCollection fillPrs(int znodeVersion, Map.Entry<String, Object> e, Map m) {
+    DocCollection.PrsSupplier prsSupplier = null;
+    if (m.containsKey("PRS")) {
+      Map prs = (Map) m.remove("PRS");
+      prsSupplier =
+          () ->
+              new PerReplicaStates(
+                  (String) prs.get("path"),
+                  (Integer) prs.get("cversion"),
+                  (List<String>) prs.get("states"));
+    }
+
+    return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);
   }
 
   @Override

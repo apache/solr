@@ -28,8 +28,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -65,10 +63,8 @@ public class AddReplicaAPI {
     v1Params.put(ACTION, CollectionParams.CollectionAction.ADDREPLICA.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
-    if (MapUtils.isNotEmpty(v2Body.coreProperties)) {
-      flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
-    }
-    if (CollectionUtils.isNotEmpty(v2Body.createNodeSet)) {
+    flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
+    if (v2Body.createNodeSet != null && !v2Body.createNodeSet.isEmpty()) {
       v1Params.replace(CREATE_NODE_SET_PARAM, String.join(",", v2Body.createNodeSet));
     }
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());

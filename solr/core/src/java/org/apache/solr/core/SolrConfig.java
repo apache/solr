@@ -27,7 +27,6 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -108,6 +107,7 @@ public class SolrConfig implements MapSerializable {
 
   private int znodeVersion;
   ConfigNode root;
+  int rootDataHashCode;
   private final SolrResourceLoader resourceLoader;
   private Properties substituteProperties;
 
@@ -172,14 +172,18 @@ public class SolrConfig implements MapSerializable {
     InputStream in;
     String fileName;
 
-    ResourceProvider(SolrResourceLoader loader, String res) throws IOException {
-      this.in = loader.openResource(res);
+    ResourceProvider(InputStream in) throws IOException {
+      this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
             (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
         this.fileName = zkin.fileName;
+      } else if (in instanceof SolrResourceLoader.SolrFileInputStream) {
+        SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
+        zkVersion = (int) sfin.getLastModified();
+        hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
       }
     }
 
@@ -235,6 +239,9 @@ public class SolrConfig implements MapSerializable {
           }
         });
     try {
+      // This will hash the solrconfig.xml and user properties.
+      rootDataHashCode = this.root.txt().hashCode();
+
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
       String val =
@@ -393,8 +400,8 @@ public class SolrConfig implements MapSerializable {
   }
 
   private IndexSchemaFactory.VersionedConfig readXml(SolrResourceLoader loader, String name) {
-    try {
-      ResourceProvider rp = new ResourceProvider(loader, name);
+    try (InputStream in = loader.openResource(name)) {
+      ResourceProvider rp = new ResourceProvider(in);
       XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
       return new IndexSchemaFactory.VersionedConfig(
           rp.zkVersion,
@@ -429,100 +436,79 @@ public class SolrConfig implements MapSerializable {
   }
 
   public static final List<SolrPluginInfo> plugins =
-      ImmutableList.<SolrPluginInfo>builder()
-          .add(
-              new SolrPluginInfo(
-                  SolrRequestHandler.class,
-                  SolrRequestHandler.TYPE,
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  LAZY))
-          .add(
-              new SolrPluginInfo(
-                  QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  QueryResponseWriter.class,
-                  "queryResponseWriter",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  LAZY))
-          .add(
-              new SolrPluginInfo(
-                  ValueSourceParser.class,
-                  "valueSourceParser",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  UpdateRequestProcessorFactory.class,
-                  "updateProcessor",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK))
-          .add(new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      List.of(
+          new SolrPluginInfo(
+              SolrRequestHandler.class,
+              SolrRequestHandler.TYPE,
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK,
+              LAZY),
+          new SolrPluginInfo(
+              QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              QueryResponseWriter.class,
+              "queryResponseWriter",
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK,
+              LAZY),
+          new SolrPluginInfo(
+              ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              UpdateRequestProcessorFactory.class,
+              "updateProcessor",
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK),
+          new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
           // TODO: WTF is up with queryConverter???
           // it apparently *only* works as a singleton? - SOLR-4304
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
-          .add(
-              new SolrPluginInfo(
-                  QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
+          new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS),
           // this is hackish, since it picks up all SolrEventListeners,
           // regardless of when/how/why they are used (or even if they are
           // declared outside of the appropriate context) but there's no nice
           // way around that in the PluginInfo framework
-          .add(
-              new SolrPluginInfo(
-                  InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
-          .add(
-              new SolrPluginInfo(
-                  it -> {
-                    List<ConfigNode> result = new ArrayList<>();
-                    result.addAll(it.get("query").getAll("listener"));
-                    result.addAll(it.get("updateHandler").getAll("listener"));
-                    return result;
-                  },
-                  SolrEventListener.class,
-                  "//listener",
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  REQUIRE_NAME_IN_OVERLAY))
-          .add(new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(RecoveryStrategy.Builder.class, "recoveryStrategy"))
-          .add(
-              new SolrPluginInfo(
-                  it -> it.get("indexConfig").getAll("deletionPolicy"),
-                  IndexDeletionPolicy.class,
-                  "indexConfig/deletionPolicy",
-                  REQUIRE_CLASS))
-          .add(new SolrPluginInfo(CodecFactory.class, "codecFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(IndexReaderFactory.class, "indexReaderFactory", REQUIRE_CLASS))
-          .add(
-              new SolrPluginInfo(
-                  UpdateRequestProcessorChain.class, "updateRequestProcessorChain", MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  it -> it.get("updateHandler").getAll("updateLog"),
-                  UpdateLog.class,
-                  "updateHandler/updateLog"))
-          .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(RestManager.class, "restManager"))
-          .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"))
-          .build();
+          new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY),
+          new SolrPluginInfo(
+              it -> {
+                List<ConfigNode> result = new ArrayList<>();
+                result.addAll(it.get("query").getAll("listener"));
+                result.addAll(it.get("updateHandler").getAll("listener"));
+                return result;
+              },
+              SolrEventListener.class,
+              "//listener",
+              REQUIRE_CLASS,
+              MULTI_OK,
+              REQUIRE_NAME_IN_OVERLAY),
+          new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(RecoveryStrategy.Builder.class, "recoveryStrategy"),
+          new SolrPluginInfo(
+              it -> it.get("indexConfig").getAll("deletionPolicy"),
+              IndexDeletionPolicy.class,
+              "indexConfig/deletionPolicy",
+              REQUIRE_CLASS),
+          new SolrPluginInfo(CodecFactory.class, "codecFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(IndexReaderFactory.class, "indexReaderFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(
+              UpdateRequestProcessorChain.class, "updateRequestProcessorChain", MULTI_OK),
+          new SolrPluginInfo(
+              it -> it.get("updateHandler").getAll("updateLog"),
+              UpdateLog.class,
+              "updateHandler/updateLog"),
+          new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(RestManager.class, "restManager"),
+          new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS),
+          new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"));
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
@@ -555,7 +541,7 @@ public class SolrConfig implements MapSerializable {
     }
 
     public String getCleanTag() {
-      return tag.replaceAll("/", "");
+      return tag.replace("/", "");
     }
 
     public String getTagCleanLower() {
@@ -576,9 +562,15 @@ public class SolrConfig implements MapSerializable {
         return new ConfigOverlay(Collections.emptyMap(), -1);
       }
 
-      int version = 0; // will be always 0 for file based resourceLoader
+      int version = 0;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.debug("Config overlay loaded. version : {} ", version);
+      }
+      if (in instanceof SolrResourceLoader.SolrFileInputStream) {
+        // We should be ok, it is unlikely that a configOverlay is loaded decades apart and has the
+        // same version after casting to an int
+        version = (int) ((SolrResourceLoader.SolrFileInputStream) in).getLastModified();
         log.debug("Config overlay loaded. version : {} ", version);
       }
       @SuppressWarnings("unchecked")
@@ -781,7 +773,7 @@ public class SolrConfig implements MapSerializable {
         try {
           final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
           final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
-          tmp = (null != ttlStr && !"".equals(ttlStr)) ? Long.valueOf(ttlStr) : null;
+          tmp = (null != ttlStr && !ttlStr.isEmpty()) ? Long.valueOf(ttlStr) : null;
         } catch (Exception e) {
           log.warn(
               "Ignoring exception while attempting to extract max-age from cacheControl config: {}",
@@ -1161,5 +1153,17 @@ public class SolrConfig implements MapSerializable {
 
   public ConfigNode get(String name, Predicate<ConfigNode> test) {
     return root.get(name, test);
+  }
+
+  /**
+   * Generates a String ID to represent the {@link SolrConfig}
+   *
+   * <p>Relies on the name of the SolrConfig, {@link String#hashCode()} to generate a "unique" id
+   * for the solr.xml data (including substitutions), and the version of the overlay. These 3 pieces
+   * of data should combine to make a "unique" identifier for SolrConfigs, since those are
+   * ultimately all inputs to modifying the solr.xml result.
+   */
+  public String effectiveId() {
+    return getName() + "-" + znodeVersion + "-" + rootDataHashCode;
   }
 }

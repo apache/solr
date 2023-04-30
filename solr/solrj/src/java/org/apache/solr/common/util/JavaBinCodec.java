@@ -571,7 +571,7 @@ public class JavaBinCodec implements PushWriter {
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
-    SolrDocument doc = new SolrDocument(new LinkedHashMap<>(size));
+    SolrDocument doc = new SolrDocument(CollectionUtil.newLinkedHashMap(size));
     for (int i = 0; i < size; i++) {
       String fieldName;
       Object obj = readVal(dis); // could be a field name, or a child document
@@ -658,7 +658,7 @@ public class JavaBinCodec implements PushWriter {
   }
 
   protected SolrInputDocument createSolrInputDocument(int sz) {
-    return new SolrInputDocument(new LinkedHashMap<>(sz));
+    return new SolrInputDocument(CollectionUtil.newLinkedHashMap(sz));
   }
 
   static final Predicate<CharSequence> IGNORECHILDDOCS =
@@ -694,7 +694,7 @@ public class JavaBinCodec implements PushWriter {
    * @param size expected size, -1 means unknown size
    */
   protected Map<Object, Object> newMap(int size) {
-    return size < 0 ? new LinkedHashMap<>() : new LinkedHashMap<>(size);
+    return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
   public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {

@@ -29,7 +29,6 @@ import java.util.function.Function;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,31 +296,6 @@ public class PerReplicaStatesOps {
               return operations;
             })
         .init(rs);
-  }
-
-  /**
-   * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of state.json is
-   * updated
-   */
-  public static PerReplicaStatesOps touchChildren() {
-    PerReplicaStatesOps result =
-        new PerReplicaStatesOps(
-            prs -> {
-              List<PerReplicaStates.Operation> operations = new ArrayList<>(2);
-              PerReplicaStates.State st =
-                  new PerReplicaStates.State(
-                      ".dummy." + System.nanoTime(), Replica.State.DOWN, Boolean.FALSE, 0);
-              operations.add(
-                  new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, st));
-              operations.add(
-                  new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
-              if (log.isDebugEnabled()) {
-                log.debug("touchChildren {}", operations);
-              }
-              return operations;
-            });
-    result.ops = result.refresh(null);
-    return result;
   }
 
   PerReplicaStatesOps init(PerReplicaStates rs) {
