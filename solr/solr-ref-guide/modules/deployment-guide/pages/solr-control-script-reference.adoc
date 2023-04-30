@@ -1384,6 +1384,8 @@ Examples of this command:
 The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
 All documents can be exported, or only those that match a query.
 
+NOTE: The `export` command only works with in a Solr running in cloud mode.
+
 `bin/solr export [options]`
 
 `bin/solr export -help`
