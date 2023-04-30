@@ -97,7 +97,7 @@ This is what has been documented in xref:deployment-guide:enabling-ssl.adoc#star
 === Docker
 * The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal). Solr's Docker image now requires Docker engine version 20.10.10 or newer.
 
-TIP: Users who need to use an older version of Docker engine have a few options. The first is to stay at Solr 9.1. Another option is to build your own Solr docker image, specifying Ubuntu 20 Focal as base image. Lastly, you may be able to run version 9.2 on older Docker engine by specifying the docker commandline option `--security-opt seccomp=unconfined` when starting the container.
+TIP: Users who cannot upgrade their Docker engine will need to specify the docker commandline option `--security-opt seccomp=unconfined` when starting the container.
 
 === Streaming Expressions
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
