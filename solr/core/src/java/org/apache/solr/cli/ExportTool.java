@@ -135,7 +135,7 @@ public class ExportTool extends ToolBase {
 
       this.out = out;
       if (this.out == null) {
-        this.out = JAVABIN.equals(format) ? coll + ".javabin" : coll + ".json";
+        this.out = JAVABIN.equals(format) ? coll + ".javabin" : coll + ".jsonl";
       }
     }
 
@@ -221,7 +221,7 @@ public class ExportTool extends ToolBase {
               .hasArg()
               .required(false)
               .desc(
-                  "Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
+                  "Output format for exported docs (jsonl or javabin), defaulting to jsonl. File extension would be .jsonl.")
               .build(),
           Option.builder("limit")
               .hasArg()
@@ -251,7 +251,7 @@ public class ExportTool extends ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if (info.out.endsWith(".json.gz") || info.out.endsWith(".json."))
+      if (info.out.endsWith(".jsonl.gz") || info.out.endsWith(".jsonl."))
         fos = new GZIPOutputStream(fos);
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
