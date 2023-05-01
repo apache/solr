@@ -37,7 +37,7 @@ apply from: file('gradle/globals.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.2.0'
+  String baseVersion = '9.2.1'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
@@ -46,7 +46,11 @@ version = {
   //  -Dversion.suffix=jenkins123
   
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
-  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  if (v.endsWith("-")) {
+    v = v.substring(0, v.length() - 1)
+  }
+  return v
 }()
 description = 'Grandparent project for Apache Solr'
 

@@ -808,7 +808,7 @@ public class Http2SolrClient extends SolrClient {
           }
       }
 
-      if (wantStream(parser)) {
+      if (wantStream(processor)) {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", is);

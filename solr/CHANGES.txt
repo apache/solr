@@ -4,6 +4,41 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  9.2.1 ==================
+Bug Fixes
+---------------------
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
+* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
+  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
+
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
+
+* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
+
+* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
+Other Changes
+---------------------
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
 ==================  9.2.0 ==================
 
 New Features
@@ -217,7 +252,7 @@ Bug Fixes
 
 * SOLR-16679: Fix solr.jetty.ssl.verifyClientHostName logging (Kevin Risden)
 
-* SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax 
+* SOLR-16682: MoreLikeThis Component fails with SyntaxError: Cannot parse if document terms contains symbols from query parser syntax
   (Mikhail Khludnev)
 
 * SOLR-16656: rid parameter missing from query logs (Alex Deparvu)

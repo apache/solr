@@ -40,7 +40,8 @@ def escapeYamlSingleQuotesString(props) {
 
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
-if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+var defaultRefGuideInclude = file('${rootDir}/.git').exists()
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "${defaultRefGuideInclude}").toBoolean()) {
     check.dependsOn 'checkSiteLinks'
     assemble.dependsOn 'buildLocalSite'
 }
