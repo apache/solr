@@ -29,9 +29,24 @@ teardown() {
 }
 
 @test "Check export command" {
-  run solr start -c
-  run solr create_collection -c COLL_NAME
-  run solr export -url "http://localhost:8983/solr/COLL_NAME" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
+  run solr start -c -e techproducts
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
+
   refute_output --partial 'Unrecognized option'
   assert_output --partial 'Export complete'
+
+  assert [ -e ${BATS_TEST_TMPDIR}/output ]
+
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output.javabin"
+  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin ]
+
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format jsonl -out "${BATS_TEST_TMPDIR}/output.jsonl"
+  assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
+
+  # Confirm we don't properly support json right now.
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format json -out "${BATS_TEST_TMPDIR}/output.json"
+  assert_output --partial 'format must be one of:'
+  refute [ -e ${BATS_TEST_TMPDIR}/output.json ]
+
+
 }
