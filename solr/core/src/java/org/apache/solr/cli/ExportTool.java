@@ -128,9 +128,11 @@ public class ExportTool extends ToolBase {
 
     public void setOutFormat(String out, String format) {
       this.format = format;
-      if (format == null) format = "jsonl";
+      if (format == null) {
+        format = "jsonl";
+      }
       if (!formats.contains(format)) {
-        throw new IllegalArgumentException("format must be one of :" + formats);
+        throw new IllegalArgumentException("format must be one of: " + formats);
       }
 
       this.out = out;
@@ -140,7 +142,7 @@ public class ExportTool extends ToolBase {
     }
 
     DocsSink getSink() {
-      return JAVABIN.equals(format) ? new JavabinSink(this) : new JsonSink(this);
+      return JAVABIN.equals(format) ? new JavabinSink(this) : new JsonWithLinesSink(this);
     }
 
     abstract void exportDocs() throws Exception;
@@ -215,7 +217,7 @@ public class ExportTool extends ToolBase {
           Option.builder("out")
               .hasArg()
               .required(false)
-              .desc("File name, defaults to 'collection-name.<format>'.")
+              .desc("File name, defaults to 'collection-name'.")
               .build(),
           Option.builder("format")
               .hasArg()
@@ -239,12 +241,12 @@ public class ExportTool extends ToolBase {
               .desc("Comma separated list of fields to export. By default all fields are fetched.")
               .build());
 
-  static class JsonSink extends DocsSink {
+  static class JsonWithLinesSink extends DocsSink {
     private CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
     private Writer writer;
 
-    public JsonSink(Info info) {
+    public JsonWithLinesSink(Info info) {
       this.info = info;
     }
 

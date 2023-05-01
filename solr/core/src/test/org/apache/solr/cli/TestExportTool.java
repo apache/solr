@@ -190,7 +190,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.setLimit("-1");
       info.exportDocs();
-      long actual = ((ExportTool.JsonSink) info.sink).info.docsWritten.get();
+      long actual = ((ExportTool.JsonWithLinesSink) info.sink).info.docsWritten.get();
       assertTrue(
           "docs written :" + actual + "docs produced : " + info.docsWritten.get(),
           actual >= docCount);
