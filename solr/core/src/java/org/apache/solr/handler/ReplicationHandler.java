@@ -91,6 +91,9 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
+import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.handler.replication.CoreReplicationAPI;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -263,7 +266,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
-      getIndexVersion(rsp);
+      final CoreReplicationAPI coreReplicationAPI =
+              new CoreReplicationAPI(core.getCoreContainer(), req, rsp);
+      final SolrJerseyResponse getIndexResponse = coreReplicationAPI.IndexVersionResponse(core.getName());
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getIndexResponse);
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
@@ -772,7 +778,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  public void getIndexVersion(SolrQueryResponse rsp) throws IOException {
+  public void getIndexVersionResponse(CoreReplicationAPI.GetIndexResponse rsp) throws IOException {
 
     IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
 
@@ -791,16 +797,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       //
       core.getDeletionPolicy()
               .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
-      rsp.add(CMD_INDEX_VERSION, IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint));
-      rsp.add(GENERATION, commitPoint.getGeneration());
-      rsp.add(STATUS, OK_STATUS);
+      rsp.indexVersion = IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint);
+      rsp.generation = commitPoint.getGeneration();
     } else {
       // This happens when replication is not configured to happen after startup and no
       // commit/optimize has happened yet.
-      rsp.add(CMD_INDEX_VERSION, 0L);
-      rsp.add(GENERATION, 0L);
-      rsp.add(STATUS, OK_STATUS);
+      rsp.indexVersion = 0L;
+      rsp.generation = 0L;
     }
+    rsp.status = OK_STATUS;
 
   }
 

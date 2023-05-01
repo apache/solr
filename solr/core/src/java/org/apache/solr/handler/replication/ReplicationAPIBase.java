@@ -24,13 +24,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         this.solrQueryResponse = solrQueryResponse;
     }
 
-    protected void fetchIndexVersion(String coreName) throws IOException {
+    protected void fetchIndexVersion(String coreName, CoreReplicationAPI.GetIndexResponse rsp) throws IOException {
 
         ReplicationHandler replicationHandler = (ReplicationHandler) coreContainer
                 .getCore(coreName)
                 .getRequestHandler(ReplicationHandler.PATH);
 
-        replicationHandler.getIndexVersion(solrQueryResponse);
+        replicationHandler.getIndexVersionResponse(rsp);
 
     }
 

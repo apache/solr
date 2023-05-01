@@ -32,17 +32,14 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     @GET
     @Path("/indexversion")
     @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-    @PermissionName(READ_PERM)
+    @PermissionName(CORE_READ_PERM)
     public SolrJerseyResponse IndexVersionResponse(@Parameter(
             description = "The name of the core for which to retrieve the index version",
             required = true) @PathParam("coreName") String coreName) throws IOException {
 
         final GetIndexResponse response = instantiateJerseyResponse(GetIndexResponse.class);
-        fetchIndexVersion(coreName);
+        fetchIndexVersion(coreName, response);
 
-        response.indexVersion = (Long) solrQueryResponse.getValues().get(CMD_INDEX_VERSION);
-        response.generation = (Long) solrQueryResponse.getValues().get(GENERATION);
-        response.status = (String) solrQueryResponse.getValues().get(STATUS);
         return response;
 
     }
