@@ -1386,6 +1386,8 @@ All documents can be exported, or only those that match a query.
 
 NOTE: This hasn't been tested with nested child documents and your results will vary.
 
+NOTE: The `export` command only works with in a Solr running in cloud mode.
+
 `bin/solr export [options]`
 
 `bin/solr export -help`

@@ -88,7 +88,7 @@ Improvements
   `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
   `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
 
-* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)  
+* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)
 
 * SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
   /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
@@ -128,39 +128,21 @@ Bug Fixes
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
-* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
-
 * SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
-
-* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
-
-* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
-
-* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
-
-* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
-  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
-
-* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
-  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
 
 * SOLR-9775: NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
 
-* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
-  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
-
-* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
-
-* SOLR-16747: The Solr source release can now be built/checked using gradle.
-  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
-
 * SOLR-15083: Fix default solr-exporter-config.xml metrics with incorrect time unit conversions. (Matthew Biscocho via janhoy)
 
-* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
+* SOLR-16773: UI: Cloud>Nodes screen - fix display of cores with non-standard shard names (janhoy, hossman)
 
 * SOLR-7609: Internal update requests should fail back to the client in some edge cases for shard splits. Use HTTP status 510 so the client can retry the operation. (Alex Deparvu, David Smiley, Tomás Fernández Löbbe)
 
 * SOLR-16737: Http2SolrClient needs to inherit all properties when initialized with another http2 client (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-13605: Fix setting client scoped socket and connect timeouts when using HttpSolrClient.Builder.withHttpClient() method.  (Eric Pugh, Alex Deparvu)
+
+* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
 
 Dependency Upgrades
 ---------------------
@@ -187,13 +169,47 @@ Other Changes
 
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
 
-* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
-
 * PR#1567: Remove deprecated constructor in MetricsMap (janhoy)
 
 * SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
 
 * PR#1566: Removed deprecated members from Tuple class (janhoy)
+
+==================  9.2.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
+* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
+  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
+
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
+
+* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
+
+* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
+Other Changes
+---------------------
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
 
 ==================  9.2.0 ==================
 
