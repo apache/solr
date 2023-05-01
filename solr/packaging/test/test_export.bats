@@ -55,6 +55,9 @@ teardown() {
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format jsonl -out "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
 
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -compress -format jsonl -out "${BATS_TEST_TMPDIR}/output"
+  assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl.gz ]
+
   # Confirm we don't properly support json right now.
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format json -out "${BATS_TEST_TMPDIR}/output.json"
   assert_output --partial 'format must be one of:'

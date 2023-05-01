@@ -98,6 +98,7 @@ public class ExportTool extends ToolBase {
   public abstract static class Info {
     String baseurl;
     String format;
+    boolean compress;
     String query;
     String coll;
     String out;
@@ -112,7 +113,7 @@ public class ExportTool extends ToolBase {
 
     public Info(String url) {
       setUrl(url);
-      setOutFormat(null, "jsonl");
+      setOutFormat(null, "jsonl", false);
     }
 
     public void setUrl(String url) {
@@ -127,23 +128,25 @@ public class ExportTool extends ToolBase {
       if (limit == -1) limit = Long.MAX_VALUE;
     }
 
-    public void setOutFormat(String out, String format) {
+    public void setOutFormat(String out, String format, boolean compress) {
+      this.compress = compress;
       this.format = format;
+      this.out = out;
       if (this.format == null) {
         this.format = "jsonl";
       }
       if (!formats.contains(this.format)) {
         throw new IllegalArgumentException("format must be one of: " + formats);
       }
-
-      this.out = out;
       if (this.out == null) {
         this.out = coll;
-      }
-      else if (Files.isDirectory(Path.of(this.out))){
+      } else if (Files.isDirectory(Path.of(this.out))) {
         this.out = this.out + "/" + coll;
       }
-      this.out = JAVABIN.equals(format) ? this.out + ".javabin" : this.out + ".jsonl";
+      this.out = JAVABIN.equals(this.format) ? this.out + ".javabin" : this.out + ".jsonl";
+      if (compress) {
+        this.out = this.out + ".gz";
+      }
     }
 
     DocsSink getSink() {
@@ -187,7 +190,8 @@ public class ExportTool extends ToolBase {
     String url = cli.getOptionValue("url");
     Info info = new MultiThreadedRunner(url);
     info.query = cli.getOptionValue("query", "*:*");
-    info.setOutFormat(cli.getOptionValue("out"), cli.getOptionValue("format"));
+    info.setOutFormat(
+        cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
     info.fields = cli.getOptionValue("fields");
     info.setLimit(cli.getOptionValue("limit", "100"));
     info.output = super.stdout;
@@ -222,7 +226,8 @@ public class ExportTool extends ToolBase {
           Option.builder("out")
               .hasArg()
               .required(false)
-              .desc("Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+              .desc(
+                  "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
               .build(),
           Option.builder("format")
               .hasArg()
@@ -230,6 +235,7 @@ public class ExportTool extends ToolBase {
               .desc(
                   "Output format for exported docs (jsonl or javabin), defaulting to jsonl, appended to the output file.")
               .build(),
+          Option.builder("compress").required(false).desc("Compress the output.").build(),
           Option.builder("limit")
               .hasArg()
               .required(false)
@@ -247,7 +253,7 @@ public class ExportTool extends ToolBase {
               .build());
 
   static class JsonWithLinesSink extends DocsSink {
-    private CharArr charArr = new CharArr(1024 * 2);
+    private final CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
     private Writer writer;
 
@@ -258,8 +264,9 @@ public class ExportTool extends ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if (info.out.endsWith(".jsonl.gz") || info.out.endsWith(".jsonl."))
+      if (info.compress) {
         fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -332,8 +339,9 @@ public class ExportTool extends ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if (info.out.endsWith(".json.gz") || info.out.endsWith(".json."))
+      if (info.compress) {
         fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -353,7 +361,7 @@ public class ExportTool extends ToolBase {
       fos.close();
     }
 
-    private BiConsumer<String, Object> bic =
+    private final BiConsumer<String, Object> bic =
         new BiConsumer<>() {
           @Override
           public void accept(String s, Object o) {
@@ -385,7 +393,7 @@ public class ExportTool extends ToolBase {
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
     Map<String, CoreHandler> corehandlers = new HashMap<>();
-    private long startTime;
+    private final long startTime;
 
     @SuppressForbidden(reason = "Need to print out time")
     public MultiThreadedRunner(String url) {
@@ -467,7 +475,7 @@ public class ExportTool extends ToolBase {
       consumerThreadpool.submit(
           () -> {
             while (true) {
-              SolrDocument doc = null;
+              SolrDocument doc;
               try {
                 doc = queue.poll(30, TimeUnit.SECONDS);
               } catch (InterruptedException e) {
