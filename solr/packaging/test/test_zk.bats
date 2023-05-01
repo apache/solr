@@ -66,7 +66,7 @@ teardown() {
   local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
   test -d $source_configset_dir
 
-  run solr zk zk upconfig -d ${source_configset_dir} -n techproducts2 -z localhost:9983
+  run solr zk upconfig -d ${source_configset_dir} -n techproducts2 -z localhost:9983
   assert_output --partial "Uploading"
   refute_output --partial "ERROR"
 
