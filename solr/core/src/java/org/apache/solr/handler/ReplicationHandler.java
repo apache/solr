@@ -68,6 +68,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -1473,6 +1474,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
     log.info("Commits will be reserved for {} ms", reserveCommitDuration);
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CoreReplicationAPI.class);
   }
 
   // check leader or follower is enabled
