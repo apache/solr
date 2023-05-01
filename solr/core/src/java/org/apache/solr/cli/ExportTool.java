@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -128,17 +129,21 @@ public class ExportTool extends ToolBase {
 
     public void setOutFormat(String out, String format) {
       this.format = format;
-      if (format == null) {
-        format = "jsonl";
+      if (this.format == null) {
+        this.format = "jsonl";
       }
-      if (!formats.contains(format)) {
+      if (!formats.contains(this.format)) {
         throw new IllegalArgumentException("format must be one of: " + formats);
       }
 
       this.out = out;
       if (this.out == null) {
-        this.out = JAVABIN.equals(format) ? coll + ".javabin" : coll + ".jsonl";
+        this.out = coll;
       }
+      else if (Files.isDirectory(Path.of(this.out))){
+        this.out = this.out + "/" + coll;
+      }
+      this.out = JAVABIN.equals(format) ? this.out + ".javabin" : this.out + ".jsonl";
     }
 
     DocsSink getSink() {
@@ -217,13 +222,13 @@ public class ExportTool extends ToolBase {
           Option.builder("out")
               .hasArg()
               .required(false)
-              .desc("File name, defaults to 'collection-name'.")
+              .desc("Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
               .build(),
           Option.builder("format")
               .hasArg()
               .required(false)
               .desc(
-                  "Output format for exported docs (jsonl or javabin), defaulting to jsonl. File extension would be .jsonl.")
+                  "Output format for exported docs (jsonl or javabin), defaulting to jsonl, appended to the output file.")
               .build(),
           Option.builder("limit")
               .hasArg()
