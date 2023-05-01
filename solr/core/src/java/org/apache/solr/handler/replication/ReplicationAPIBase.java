@@ -41,7 +41,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         this.solrQueryResponse = solrQueryResponse;
     }
 
-    protected void fetchIndexVersion(String coreName, CoreReplicationAPI.GetIndexResponse rsp) throws IOException {
+    protected CoreReplicationAPI.GetIndexResponse fetchIndexVersion(String coreName) throws IOException {
 
         if(coreContainer.getCore(coreName) == null) {
             throw new SolrException(
@@ -53,7 +53,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
                 .getCore(coreName)
                 .getRequestHandler(ReplicationHandler.PATH);
 
-        replicationHandler.getIndexVersionResponse(rsp);
+        return replicationHandler.getIndexVersionResponse();
 
     }
 

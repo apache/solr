@@ -17,6 +17,7 @@
 package org.apache.solr.handler.replication;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.handler.ReplicationHandler.*;
 import static org.apache.solr.security.PermissionNameProvider.Name.*;
 
 import javax.inject.Inject;
@@ -52,14 +53,12 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
             description = "The name of the core for which to retrieve the index version",
             required = true) @PathParam("coreName") String coreName) throws IOException {
 
-        GetIndexResponse response = instantiateJerseyResponse(GetIndexResponse.class);
-        fetchIndexVersion(coreName, response);
-        return response;
-
+        return fetchIndexVersion(coreName);
     }
 
     /** Response for {@link CoreReplicationAPI}. */
     public static class GetIndexResponse extends SolrJerseyResponse {
+
         @JsonProperty("indexversion")
         public Long indexVersion;
 
@@ -68,6 +67,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
         @JsonProperty("status")
         public String status;
+
     }
 
 }

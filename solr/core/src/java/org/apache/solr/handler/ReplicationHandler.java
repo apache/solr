@@ -779,10 +779,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  public void getIndexVersionResponse(CoreReplicationAPI.GetIndexResponse rsp) throws IOException {
+  public CoreReplicationAPI.GetIndexResponse getIndexVersionResponse() throws IOException {
 
     IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
-
+    CoreReplicationAPI.GetIndexResponse rsp = new CoreReplicationAPI.GetIndexResponse();
     if (commitPoint == null) {
       // if this handler is 'lazy', we may not have tracked the last commit
       // because our commit listener is registered on inform
@@ -807,6 +807,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.generation = 0L;
     }
     rsp.status = OK_STATUS;
+
+    return rsp;
 
   }
 
