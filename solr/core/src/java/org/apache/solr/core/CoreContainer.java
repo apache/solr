@@ -125,6 +125,7 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.replication.CoreReplicationAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
@@ -813,6 +814,7 @@ public class CoreContainer {
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
       registerV2ApiIfEnabled(ZookeeperReadAPI.class);
     }
+    registerV2ApiIfEnabled(CoreReplicationAPI.class);
 
     MDCLoggingContext.setNode(this);
 

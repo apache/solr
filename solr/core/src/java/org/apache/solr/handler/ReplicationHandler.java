@@ -263,33 +263,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
-      IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
-
-      if (commitPoint == null) {
-        // if this handler is 'lazy', we may not have tracked the last commit
-        // because our commit listener is registered on inform
-        commitPoint = core.getDeletionPolicy().getLatestCommit();
-      }
-
-      if (commitPoint != null && replicationEnabled.get()) {
-        //
-        // There is a race condition here.  The commit point may be changed / deleted by the time
-        // we get around to reserving it.  This is a very small window though, and should not result
-        // in a catastrophic failure, but will result in the client getting an empty file list for
-        // the CMD_GET_FILE_LIST command.
-        //
-        core.getDeletionPolicy()
-            .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
-        rsp.add(CMD_INDEX_VERSION, IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint));
-        rsp.add(GENERATION, commitPoint.getGeneration());
-        rsp.add(STATUS, OK_STATUS);
-      } else {
-        // This happens when replication is not configured to happen after startup and no
-        // commit/optimize has happened yet.
-        rsp.add(CMD_INDEX_VERSION, 0L);
-        rsp.add(GENERATION, 0L);
-        rsp.add(STATUS, OK_STATUS);
-      }
+      getIndexVersion(rsp);
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
@@ -796,6 +770,38 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         delPol.releaseCommitPoint(commit);
       }
     }
+  }
+
+  public void getIndexVersion(SolrQueryResponse rsp) throws IOException {
+
+    IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
+
+    if (commitPoint == null) {
+      // if this handler is 'lazy', we may not have tracked the last commit
+      // because our commit listener is registered on inform
+      commitPoint = core.getDeletionPolicy().getLatestCommit();
+    }
+
+    if (commitPoint != null && replicationEnabled.get()) {
+      //
+      // There is a race condition here.  The commit point may be changed / deleted by the time
+      // we get around to reserving it.  This is a very small window though, and should not result
+      // in a catastrophic failure, but will result in the client getting an empty file list for
+      // the CMD_GET_FILE_LIST command.
+      //
+      core.getDeletionPolicy()
+              .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
+      rsp.add(CMD_INDEX_VERSION, IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint));
+      rsp.add(GENERATION, commitPoint.getGeneration());
+      rsp.add(STATUS, OK_STATUS);
+    } else {
+      // This happens when replication is not configured to happen after startup and no
+      // commit/optimize has happened yet.
+      rsp.add(CMD_INDEX_VERSION, 0L);
+      rsp.add(GENERATION, 0L);
+      rsp.add(STATUS, OK_STATUS);
+    }
+
   }
 
   /**
