@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -52,6 +53,7 @@ import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.TrackingDirectoryReader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -114,7 +116,8 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     }
     SolrIndexSearcher searcher = req.getSearcher();
 
-    SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
+    DirectoryReader indexReader = searcher.getIndexReader();
+    SegmentInfos infos = SegmentInfos.readLatestCommit(indexReader.directory());
 
     SimpleOrderedMap<Object> segmentInfos = new SimpleOrderedMap<>();
 
@@ -171,7 +174,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     List<String> mergeCandidates = new ArrayList<>();
     SimpleOrderedMap<Object> runningMerges = getMergeInformation(req, infos, mergeCandidates);
-    List<LeafReaderContext> leafContexts = searcher.getIndexReader().leaves();
+    List<LeafReaderContext> leafContexts = indexReader.leaves();
     IndexSchema schema = req.getSchema();
     for (SegmentCommitInfo segmentCommitInfo : sortable) {
       segmentInfo =
@@ -190,6 +193,11 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       rsp.add("fieldInfoLegend", FI_LEGEND);
     }
     rsp.add("segments", segmentInfos);
+
+    if (indexReader instanceof TrackingDirectoryReader) {
+      rsp.add("fieldUsage", ((TrackingDirectoryReader) indexReader).getUsage());
+    }
+
     if (withRawSizeInfo) {
       IndexSizeEstimator estimator =
           new IndexSizeEstimator(
