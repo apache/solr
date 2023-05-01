@@ -39,16 +39,16 @@ asciidoc:
     idseparator: '-'
     idprefix: ''
     # 'patch-version' is the 'z' part of x.y.z semantic version
-    page-solr-javadocs: 'https://solr.apache.org/docs/9_2_0'
-    solr-javadocs: 'https://solr.apache.org/docs/9_2_0'
+    page-solr-javadocs: 'https://solr.apache.org/docs/9_2_1'
+    solr-javadocs: 'https://solr.apache.org/docs/9_2_1'
     lucene-javadocs: 'https://lucene.apache.org/core/9_4_2'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     solr-docs-version: '9.2'
-    solr-full-version: '9.2.0'
+    solr-full-version: '9.2.1'
 
     dep-version-commons-codec: '1.15'
     dep-version-dropwizard: '4.2.17'
-    dep-version-hadoop: '3.3.4'
+    dep-version-hadoop: '3.3.5'
     dep-version-log4j: '2.20.0'
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.5'
