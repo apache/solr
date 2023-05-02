@@ -94,7 +94,6 @@ import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.replication.CoreReplicationAPI;
-import org.apache.solr.handler.replication.ReplicationAPIBase;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -268,9 +267,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
-      final CoreReplicationAPI coreReplicationAPI =
-          new CoreReplicationAPI(core.getCoreContainer(), req, rsp);
-      final SolrJerseyResponse getIndexResponse = ReplicationAPIBase.fetchIndexVersion(this);
+      final SolrJerseyResponse getIndexResponse = getIndexVersionResponse();
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getIndexResponse);
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);

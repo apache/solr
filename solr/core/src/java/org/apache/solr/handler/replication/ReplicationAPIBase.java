@@ -55,8 +55,4 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return replicationHandler.getIndexVersionResponse();
   }
 
-  public static CoreReplicationAPI.GetIndexResponse fetchIndexVersion(
-      ReplicationHandler replicationHandler) throws IOException {
-    return replicationHandler.getIndexVersionResponse();
-  }
 }
