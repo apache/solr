@@ -282,14 +282,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return znodeVersion;
   }
 
-  public int getChildNodesVersion() {
+  public long getChildNodesVersion() {
     PerReplicaStates prs = prsSupplier == null ? null : prsSupplier.get();
-    return prs == null ? 0 : prs.cversion;
+    return prs == null ? 0 : prs.pzxid;
   }
 
-  public boolean isModified(int dataVersion, int childVersion) {
+  public boolean isModified(int dataVersion, long pzxid) {
     if (dataVersion > znodeVersion) return true;
-    if (childVersion > getChildNodesVersion()) return true;
+    if (pzxid > getChildNodesVersion()) return true;
     return false;
   }
 

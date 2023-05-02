@@ -38,7 +38,7 @@ public class PerReplicaStatesFetcher {
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null, true);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
-        if (current.cversion == stat.getCversion()) return current; // not modifiedZkStateReaderTest
+        if (current.pzxid == stat.getCversion()) return current; // not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
       List<String> children = zkClient.getChildren(path, null, stat, true);

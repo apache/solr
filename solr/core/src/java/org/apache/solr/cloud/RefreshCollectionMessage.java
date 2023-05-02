@@ -46,7 +46,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
       return clusterState.copyWith(collection, null);
     }
     DocCollection coll = clusterState.getCollectionOrNull(collection);
-    if (coll != null && !coll.isModified(stat.getVersion(), stat.getCversion())) {
+    if (coll != null && !coll.isModified(stat.getVersion(), stat.getPzxid())) {
       // our state is up to date
       return clusterState;
     } else {

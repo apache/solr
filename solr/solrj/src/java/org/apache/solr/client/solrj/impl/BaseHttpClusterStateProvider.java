@@ -176,7 +176,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               () ->
                   new PerReplicaStates(
                       (String) prs.get("path"),
-                      (Integer) prs.get("cversion"),
+                      ((Number) prs.get("cversion")).longValue(),
                       (List<String>) prs.get("states")));
     }
     return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);

@@ -22,6 +22,8 @@ import java.util.Set;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 
@@ -97,7 +99,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     ZkStateReader zkStateReader = cluster.getZkStateReader();
     PerReplicaStates rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(3, rs.states.size());
-    assertTrue(rs.cversion >= 5);
+    assertTrue(getCVersion(cluster.getZkClient(), root) >= 5);
 
     PerReplicaStatesOps ops = PerReplicaStatesOps.addReplica("R5", State.ACTIVE, false, rs);
     assertEquals(1, ops.get().size());
@@ -105,7 +107,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     ops.persist(root, cluster.getZkClient());
     rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
     assertEquals(4, rs.states.size());
-    assertTrue(rs.cversion >= 6);
+    assertTrue(getCVersion(cluster.getZkClient(), root) >= 6);
     assertEquals(6, cluster.getZkClient().getChildren(root, null, true).size());
     ops = PerReplicaStatesOps.flipState("R1", State.DOWN, rs);
 
@@ -137,5 +139,10 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     ops.persist(root, cluster.getZkClient());
     rs = PerReplicaStatesFetcher.fetch(root, zkStateReader.getZkClient(), null);
     assertTrue(rs.get("R3").isLeader);
+  }
+
+  private int getCVersion( SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
+    Stat stat = zkClient.exists(path, null, true);
+    return stat.getCversion();
   }
 }
