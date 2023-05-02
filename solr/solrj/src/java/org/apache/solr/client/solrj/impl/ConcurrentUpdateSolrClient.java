@@ -83,8 +83,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
   boolean shutdownExecutor = false;
-  int pollQueueTime = 250;
-  int stallTime;
+  int pollQueueTimeMillis = 250;
+  int stallTimeMillis;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
   private final int connectionTimeout;
@@ -116,6 +116,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
+
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -155,18 +156,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
   public Set<String> getUrlParamNames() {
     return this.client.getUrlParamNames();
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param queryParams set of param keys to only send via the query string
-   * @deprecated use {@link ConcurrentUpdateSolrClient.Builder#withTheseParamNamesInTheUrl(Set)}
-   *     instead
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.client.setQueryParams(queryParams);
   }
 
   /** Opens a connection and sends everything... */
@@ -240,7 +229,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           notifyQueueAndRunnersIfEmptyQueue();
           try {
             inPoll = true;
-            update = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+            update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
             if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
             continue;
@@ -307,7 +296,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                         try {
                           while (true) {
                             try {
-                              upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                              upd = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
                               break;
                             } catch (InterruptedException e) {
                               if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
@@ -584,7 +573,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Request processing has stalled for "
                         + currentStallTime
@@ -645,7 +634,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Task queue processing has stalled for "
                         + currentStallTime
@@ -740,7 +729,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           lastStallTime = System.nanoTime();
         } else {
           long currentStallTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-          if (currentStallTime > stallTime) {
+          if (currentStallTime > stallTimeMillis) {
             throw new IOException(
                 "Task queue processing has stalled for "
                     + currentStallTime
@@ -851,12 +840,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   @Deprecated
   public void setPollQueueTime(int pollQueueTime) {
-    this.pollQueueTime = pollQueueTime;
+    this.pollQueueTimeMillis = pollQueueTime;
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
     int minimalStallTime = pollQueueTime * 2;
-    if (minimalStallTime > this.stallTime) {
-      this.stallTime = minimalStallTime;
+    if (minimalStallTime > this.stallTimeMillis) {
+      this.stallTimeMillis = minimalStallTime;
     }
   }
 
