@@ -68,5 +68,14 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
     @JsonProperty("status")
     public String status;
+
+    public GetIndexResponse() {}
+
+    public GetIndexResponse(Long indexVersion, Long generation, String status) {
+      this.indexVersion = indexVersion;
+      this.generation = generation;
+      this.status = status;
+    }
+
   }
 }
