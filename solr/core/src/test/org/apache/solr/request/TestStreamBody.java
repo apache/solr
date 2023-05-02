@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.SortedMap;
@@ -37,7 +36,7 @@ public class TestStreamBody extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String collection = "collection1";
-  
+
   public void startSolr() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
@@ -82,7 +81,7 @@ public class TestStreamBody extends RestTestBase {
   public void testQtUpdateFails() throws Exception {
     System.setProperty("solr.enableStreamBody", "true");
     startSolr();
-    
+
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("echoHandler", "true");
