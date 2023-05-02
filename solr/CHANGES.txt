@@ -123,6 +123,9 @@ Optimizations
 
 * SOLR-16693: For query timeAllowed, switch from ExitableDirectoryReader to TimeLimitingBulkScorer (David Smiley)
 
+* SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
+  Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 
