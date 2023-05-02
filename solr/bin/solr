@@ -1910,7 +1910,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
 fi
 
 : "${SOLR_PORT:=8983}"
-: "${SOLR_SSL_PORT:=8983}"
+: "${SOLR_SSL_PORT:=$SOLR_PORT}"
 
 if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
