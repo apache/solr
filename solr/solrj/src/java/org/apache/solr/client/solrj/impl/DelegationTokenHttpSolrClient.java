@@ -17,9 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,5 +43,4 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
     }
     return super.createMethod(request, collection);
   }
-
 }
