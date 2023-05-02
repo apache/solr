@@ -36,6 +36,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.WrappedSimpleMap;
@@ -149,7 +150,7 @@ public class PerReplicaStates implements ReflectMapWriter {
   public PerReplicaStates insert(State newState, long czxid) {
     State existing = states.get(newState.replica);
     if (existing == null || existing.version < newState.version) {
-      LinkedHashMap<String, State> copy = new LinkedHashMap<>(states.size());
+      LinkedHashMap<String, State> copy = CollectionUtil.newLinkedHashMap(states.size());
       states.forEachEntry(copy::put);
       copy.put(newState.replica, newState);
       return new PerReplicaStates(

@@ -391,7 +391,9 @@ public class ZkStateReader implements SolrCloseable {
       if (!collectionWatches.isWatched(coll)) {
         return;
       }
-      log.trace("an event happened for {}, event: {}", coll, event.toString());
+      if (log.isTraceEnabled()) {
+        log.trace("an event happened for {}, event: {}", coll, event.toString());
+      }
       DocCollection collectionState = getCollection(coll);
       if (collectionPath.equals(event.getPath())) {
         DocCollection newState = null;
@@ -417,7 +419,9 @@ public class ZkStateReader implements SolrCloseable {
         if ((event.getType() == EventType.NodeCreated || event.getType() == EventType.NodeDeleted)
             && path.length() > collectionState.getZNode().length()
             && path.startsWith(collectionPath)) {
-          log.debug("PRS node event : {}", event.getType());
+          if (log.isDebugEnabled()) {
+            log.debug("PRS node event : {}", event.getType());
+          }
 
           PerReplicaStates prs = collectionState.getPerReplicaStates();
           if (prs != null) {
@@ -427,13 +431,17 @@ public class ZkStateReader implements SolrCloseable {
             if (event.getType() == EventType.NodeCreated) {
               if (oldState != null && newState.version < oldState.version) {
                 // we got a notification out of order? . Shouldn't happen
-                log.trace("newState {} < oldState {}", newState, oldState);
+                if (log.isTraceEnabled()) {
+                  log.trace("newState {} < oldState {}", newState, oldState);
+                }
                 return;
               }
               if (oldState == null) {
                 // the state does not exist now. fetch everything
 
-                log.trace("fresh replica, force fetch all {}", collectionPath);
+                if (log.isTraceEnabled()) {
+                  log.trace("fresh replica, force fetch all {}", collectionPath);
+                }
 
                 prs = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
               } else {
@@ -450,7 +458,9 @@ public class ZkStateReader implements SolrCloseable {
                   return;
                 }
 
-                log.trace("PRS insert {}, v:{}", newState, stat.getCzxid());
+                if (log.isTraceEnabled()) {
+                  log.trace("PRS insert {}, v:{}", newState, stat.getCzxid());
+                }
                 prs = prs.insert(newState, stat.getCzxid());
                 if (prs == null) {
                   // something went wrong
@@ -463,19 +473,25 @@ public class ZkStateReader implements SolrCloseable {
                 return;
               }
               if (newState.version < oldState.version) {
-                log.trace("PRS in-place remove {}", path);
+                if (log.isTraceEnabled()) {
+                  log.trace("PRS in-place remove {}", path);
+                }
                 // removed the duplicate without modifying the PRS Object
                 oldState.removeDuplicate(newState);
                 return;
               } else {
-                log.trace("Replica:  {} delete, force fetch", path);
+                if (log.isTraceEnabled()) {
+                  log.trace("Replica:  {} delete, force fetch", path);
+                }
                 // a replica got removed. we can't get the pzxid reliably. fetch everything
                 prs = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
               }
             }
 
           } else {
-            log.trace("coll:{} does not have PRS, force fetch", collectionPath);
+            if (log.isTraceEnabled()) {
+              log.trace("coll:{} does not have PRS, force fetch", collectionPath);
+            }
             prs = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
           }
           collectionState = collectionState.setPerReplicaStates(prs);
@@ -1499,11 +1515,13 @@ public class ZkStateReader implements SolrCloseable {
         synchronized (getUpdateLock()) {
           constructState(Collections.singleton(coll));
         }
-        log.debug(
-            "updated per-replica states changed for: {}, ver: {} , new vals: {}",
-            coll,
-            stat.getCversion(),
-            replicaStates);
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "updated per-replica states changed for: {}, ver: {} , new vals: {}",
+              coll,
+              stat.getCversion(),
+              replicaStates);
+        }
 
       } catch (NoNodeException e) {
         log.info("{} is deleted, stop watching children", collectionPath);
