@@ -355,8 +355,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public long getChildNodesVersion() {
-    PerReplicaStates prs = prsSupplier == null ? null : prsSupplier.get();
-    return prs == null ? 0 : prs.pzxid;
+    return perReplicaStatesRef == null ? 0 : perReplicaStatesRef.get().pzxid;
   }
 
   public boolean isModified(int dataVersion, long pzxid) {

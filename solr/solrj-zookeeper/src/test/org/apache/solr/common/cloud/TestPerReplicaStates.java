@@ -141,7 +141,8 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertTrue(rs.get("R3").isLeader);
   }
 
-  private int getCVersion( SolrZkClient zkClient, String path) throws InterruptedException, KeeperException {
+  private int getCVersion(SolrZkClient zkClient, String path)
+      throws InterruptedException, KeeperException {
     Stat stat = zkClient.exists(path, null, true);
     return stat.getCversion();
   }
