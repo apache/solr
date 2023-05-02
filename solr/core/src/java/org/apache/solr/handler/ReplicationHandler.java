@@ -269,7 +269,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       final CoreReplicationAPI coreReplicationAPI =
-              new CoreReplicationAPI(core.getCoreContainer(), req, rsp);
+          new CoreReplicationAPI(core.getCoreContainer(), req, rsp);
       final SolrJerseyResponse getIndexResponse = ReplicationAPIBase.fetchIndexVersion(this);
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getIndexResponse);
     } else if (command.equals(CMD_GET_FILE)) {
@@ -798,7 +798,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // the CMD_GET_FILE_LIST command.
       //
       core.getDeletionPolicy()
-              .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
+          .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
       rsp.indexVersion = IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint);
       rsp.generation = commitPoint.getGeneration();
     } else {
@@ -810,7 +810,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.status = OK_STATUS;
 
     return rsp;
-
   }
 
   /**
