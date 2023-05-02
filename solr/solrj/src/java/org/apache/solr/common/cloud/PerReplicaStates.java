@@ -88,6 +88,12 @@ public class PerReplicaStates implements ReflectMapWriter {
     this.states = new WrappedSimpleMap<>(tmp);
   }
 
+  public PerReplicaStates(String path, SimpleMap<State> states, long pzxid) {
+    this.states = states;
+    this.pzxid = pzxid;
+    this.path = path;
+  }
+
   /** Check and return if all replicas are ACTIVE */
   public boolean allActive() {
     if (this.allActive != null) return allActive;
@@ -128,6 +134,26 @@ public class PerReplicaStates implements ReflectMapWriter {
 
   public State get(String replica) {
     return states.get(replica);
+  }
+
+  /**
+   * A new child node got created. construct a new Object with this
+   *
+   * @param newState the newly inserted state
+   * @param czxid create tx id of the child node
+   */
+  public PerReplicaStates insert(State newState, long czxid) {
+    State existing = states.get(newState.replica);
+    if (existing == null || existing.version < newState.version) {
+      LinkedHashMap<String, State> copy = new LinkedHashMap<>(states.size());
+      states.forEachEntry(copy::put);
+      copy.put(newState.replica, newState);
+      return new PerReplicaStates(
+          path,
+          new WrappedSimpleMap<>(copy),
+          czxid); // child node's czxid is same as state.json pzxid
+    }
+    return null;
   }
 
   public static class Operation {
@@ -198,7 +224,7 @@ public class PerReplicaStates implements ReflectMapWriter {
      *
      * <p>These are unlikely, but possible
      */
-    final State duplicate;
+    State duplicate;
 
     private State(String serialized, List<String> pieces) {
       this.asString = serialized;
@@ -254,6 +280,19 @@ public class PerReplicaStates implements ReflectMapWriter {
         return new State(this.replica, this.state, this.isLeader, this.version, duplicate);
       } else {
         return duplicate.insert(this);
+      }
+    }
+
+    public void removeDuplicate(State state) {
+      State parent = this;
+      for (; ; ) {
+        State child = parent.duplicate;
+        if (child == null) break;
+        if (child.version == state.version) {
+          parent.duplicate = null;
+          return;
+        }
+        parent = child;
       }
     }
 
