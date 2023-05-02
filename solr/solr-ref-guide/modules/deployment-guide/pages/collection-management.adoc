@@ -2009,17 +2009,19 @@ These backup points are each given an identifier (`backupId`) which can be used 
 Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
 Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
 These orphaned files can be detected and deleted using the `purgeUnused` option.
-See the parameter descriptions below for more information.
 
-=== DELETEBACKUP Example
+Alternately, Solr's v2 API offers separate API endpoints for each of these backup-deletion mechanisms.
+See the examples and parameter descriptions below for more information.
+
+=== DELETEBACKUP Examples
+
+==== Deleting by Backup ID
 
 *Input*
 
-The following API command deletes the first backup (`backupId=0`) at the specified repository location.
-
 [.dynamic-tabs]
 --
-[example.tab-pane#v1deletebackup]
+[example.tab-pane#v1deletebackupsingle]
 ====
 [.tab-label]*V1 API*
 
@@ -2029,21 +2031,13 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 ----
 ====
 
-[example.tab-pane#v2deletebackup]
+[example.tab-pane#v2deletebackupsingle]
 ====
 [.tab-label]*V2 API*
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "delete-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive",
-      "backupId": 0
-    }
-  }
-'
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
 ----
 ====
 --
@@ -2064,6 +2058,58 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
   "collection":"books"}
 ----
 
+==== Deleting all but N recent backups
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupmulti]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&maxNumBackupsPoints=2
+----
+====
+
+[example.tab-pane#v2deletebackupmulti]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
+----
+====
+--
+
+==== "Garbage collecting" unused files
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupgc]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&purgeUnused=true
+----
+====
+
+[example.tab-pane#v2deletebackupgc]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/unusedfiles?location=/path/to/my/shared/drive"
+----
+====
+--
+
 === DELETEBACKUP Parameters
 
 `name`::
@@ -2074,6 +2120,7 @@ s|Required |Default: none
 |===
 +
 The backup name to delete backup files from.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
 `location`::
 +
@@ -2108,7 +2155,8 @@ If no repository is specified then the local filesystem repository will be used 
 |===
 +
 Explicitly specify a single backup-ID to delete.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
 `maxNumBackupPoints`::
 +
@@ -2117,6 +2165,7 @@ Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified
 |Optional |Default: none
 |===
 +
+TODO
 Specify how many backups should be retained, deleting all others.
 Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
 

@@ -139,6 +139,7 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
             backupName, null, null, Boolean.TRUE, location, repositoryName, asyncId);
     submitRemoteMessageAndHandleResponse(
         response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+
     return response;
   }
 
