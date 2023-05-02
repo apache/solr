@@ -95,7 +95,9 @@ This is what has been documented in xref:deployment-guide:enabling-ssl.adoc#star
 * A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
 
 === Docker
-* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal). Solr's Docker image now requires Docker engine version 20.10.10 or newer.
+
+TIP: Users who cannot upgrade their Docker engine will need to specify the docker commandline option `--security-opt seccomp=unconfined` when starting the container.
 
 === Streaming Expressions
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
