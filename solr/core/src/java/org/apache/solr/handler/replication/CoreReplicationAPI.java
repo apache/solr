@@ -17,7 +17,6 @@
 package org.apache.solr.handler.replication;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.handler.ReplicationHandler.*;
 import static org.apache.solr.security.PermissionNameProvider.Name.*;
 
 import javax.inject.Inject;
