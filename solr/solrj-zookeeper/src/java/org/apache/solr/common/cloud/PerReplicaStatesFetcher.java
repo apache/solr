@@ -55,9 +55,8 @@ public class PerReplicaStatesFetcher {
     }
   }
 
-  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
-    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
-      super(() -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
-    }
+  public static DocCollection.PrsSupplier getZkClientPrsSupplier(
+      SolrZkClient zkClient, String collectionPath) {
+    return () -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
   }
 }

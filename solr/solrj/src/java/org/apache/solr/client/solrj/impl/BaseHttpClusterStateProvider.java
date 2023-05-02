@@ -179,6 +179,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                       ((Number) prs.get("cversion")).longValue(),
                       (List<String>) prs.get("states")));
     }
+
     return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);
   }
 

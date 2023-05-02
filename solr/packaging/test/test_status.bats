@@ -28,18 +28,19 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "Check export command" {
-  run solr start -c
-  run solr create_collection -c COLL_NAME
-  run solr export -url "http://localhost:8983/solr/COLL_NAME" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
-  refute_output --partial 'Unrecognized option'
-  assert_output --partial 'Export complete'
+@test "status detects locally running solr" {
+  run solr status
+  assert_output --partial "No Solr nodes are running."
+  run solr start
+  run solr status
+  assert_output --partial "Found 1 Solr nodes:"
+  run solr stop
+  run solr status
+  assert_output --partial "No Solr nodes are running."
+
 }
 
-@test "export fails on non cloud mode" {
-  run solr start
-  run solr create_core -c COLL_NAME
-  run solr export -url "http://localhost:8983/solr/COLL_NAME"
-  refute_output --partial 'Export complete'
-  assert_output --partial "ERROR: Couldn't initialize a HttpClusterStateProvider"
+@test "status does not expose cli parameters to end user" {
+  run solr status -solr http://localhost:8983/solr
+  assert_output --partial "ERROR: Unrecognized or misplaced argument: -solr!"
 }

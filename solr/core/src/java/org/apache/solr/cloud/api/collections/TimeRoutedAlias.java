@@ -248,13 +248,13 @@ public class TimeRoutedAlias extends RoutedAlias {
     return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
-  private Instant parseStringAsInstant(String str, TimeZone zone) {
+  public static Instant parseStringAsInstant(String str, TimeZone zone) {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMillis(start);
     return start;
   }
 
-  private void checkMillis(Instant date) {
+  private static void checkMillis(Instant date) {
     if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(
           BAD_REQUEST,
