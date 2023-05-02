@@ -54,5 +54,4 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
     return replicationHandler.getIndexVersionResponse();
   }
-
 }

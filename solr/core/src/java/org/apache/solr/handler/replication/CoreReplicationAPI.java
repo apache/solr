@@ -76,6 +76,5 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       this.generation = generation;
       this.status = status;
     }
-
   }
 }

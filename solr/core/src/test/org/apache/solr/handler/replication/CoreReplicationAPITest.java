@@ -27,53 +27,53 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.junit.Before;
 
 /** Unit tests for {@link CoreReplicationAPI} */
 public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
-    private CoreReplicationAPI coreReplicationAPI;
-    private CoreContainer mockCoreContainer;
-    private ReplicationHandler mockReplicationHandler;
-    private static final String coreName = "test";
-    private SolrQueryRequest mockQueryRequest;
-    private SolrQueryResponse queryResponse;
+  private CoreReplicationAPI coreReplicationAPI;
+  private CoreContainer mockCoreContainer;
+  private ReplicationHandler mockReplicationHandler;
+  private static final String coreName = "test";
+  private SolrQueryRequest mockQueryRequest;
+  private SolrQueryResponse queryResponse;
 
-    @BeforeClass
-    public static void ensureWorkingMockito() {
-        assumeWorkingMockito();
-    }
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        setUpMocks();
-        mockQueryRequest = mock(SolrQueryRequest.class);
-        when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
-        queryResponse = new SolrQueryResponse();
-        coreReplicationAPI =
-                new CoreReplicationAPI(mockCoreContainer, mockQueryRequest, queryResponse);
-    }
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    setUpMocks();
+    mockQueryRequest = mock(SolrQueryRequest.class);
+    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    queryResponse = new SolrQueryResponse();
+    coreReplicationAPI = new CoreReplicationAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
-    @Test
-    public void testGetIndexVersion() throws Exception {
-        CoreReplicationAPI.GetIndexResponse expected = new CoreReplicationAPI.GetIndexResponse(123L, 123L, "testGeneration");
-        when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
+  @Test
+  public void testGetIndexVersion() throws Exception {
+    CoreReplicationAPI.GetIndexResponse expected =
+        new CoreReplicationAPI.GetIndexResponse(123L, 123L, "testGeneration");
+    when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-        CoreReplicationAPI.GetIndexResponse response = coreReplicationAPI.IndexVersionResponse(coreName);
-        assertEquals(response.indexVersion, expected.indexVersion);
-        assertEquals(response.generation, expected.generation);
-        assertEquals(response.status, expected.status);
-    }
+    CoreReplicationAPI.GetIndexResponse response =
+        coreReplicationAPI.IndexVersionResponse(coreName);
+    assertEquals(response.indexVersion, expected.indexVersion);
+    assertEquals(response.generation, expected.generation);
+    assertEquals(response.status, expected.status);
+  }
 
-    private void setUpMocks() {
-        mockCoreContainer = mock(CoreContainer.class);
-        final SolrCore mockCore = mock(SolrCore.class);
-        mockReplicationHandler = mock(ReplicationHandler.class);
-        when(mockCoreContainer.getCore(coreName)).thenReturn(mockCore);
-        when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
-    }
+  private void setUpMocks() {
+    mockCoreContainer = mock(CoreContainer.class);
+    final SolrCore mockCore = mock(SolrCore.class);
+    mockReplicationHandler = mock(ReplicationHandler.class);
+    when(mockCoreContainer.getCore(coreName)).thenReturn(mockCore);
+    when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
+  }
 }
