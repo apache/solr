@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
@@ -144,26 +143,14 @@ public class ExportTool extends ToolBase {
       } else if (Files.isDirectory(Path.of(this.out))) {
         this.out = this.out + "/" + coll;
       }
-      this.out = this.out + '.' + this.format;
+      this.out = JAVABIN.equals(this.format) ? this.out + ".javabin" : this.out + ".jsonl";
       if (compress) {
         this.out = this.out + ".gz";
       }
     }
 
     DocsSink getSink() {
-      DocsSink docSink = null;
-      switch (format) {
-        case JAVABIN:
-          docSink = new JavabinSink(this);
-          break;
-        case JSON:
-          docSink = new JsonSink(this);
-          break;
-        case "jsonl":
-          docSink = new JsonWithLinesSink(this);
-          break;
-      }
-      return docSink;
+      return JAVABIN.equals(format) ? new JavabinSink(this) : new JsonWithLinesSink(this);
     }
 
     abstract void exportDocs() throws Exception;
@@ -196,7 +183,7 @@ public class ExportTool extends ToolBase {
     }
   }
 
-  static Set<String> formats = Set.of(JAVABIN, JSON, "jsonl");
+  static Set<String> formats = Set.of(JAVABIN, "jsonl");
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
@@ -246,7 +233,7 @@ public class ExportTool extends ToolBase {
               .hasArg()
               .required(false)
               .desc(
-                  "Output format for exported docs (json, jsonl or javabin), defaulting to jsonl, appended to the output file.")
+                  "Output format for exported docs (jsonl or javabin), defaulting to jsonl, appended to the output file.")
               .build(),
           Option.builder("compress").required(false).desc("Compress the output.").build(),
           Option.builder("limit")
@@ -316,91 +303,6 @@ public class ExportTool extends ToolBase {
             }
             m.put(s, field);
           });
-      jsonWriter.write(m);
-      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
-      writer.append('\n');
-      super.accept(doc);
-    }
-
-    private boolean hasdate(List<?> list) {
-      boolean hasDate = false;
-      for (Object o : list) {
-        if (o instanceof Date) {
-          hasDate = true;
-          break;
-        }
-      }
-      return hasDate;
-    }
-
-    private Object constructDateStr(Object field) {
-      if (field instanceof Date) {
-        field =
-            DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
-      }
-      return field;
-    }
-  }
-
-  static class JsonSink extends DocsSink {
-    private final CharArr charArr = new CharArr(1024 * 2);
-    JSONWriter jsonWriter = new JSONWriter(charArr, -1);
-    private Writer writer;
-    private boolean firstDoc = true;
-
-    public JsonSink(Info info) {
-      this.info = info;
-    }
-
-    @Override
-    public void start() throws IOException {
-      fos = new FileOutputStream(info.out);
-      if (info.compress) {
-        fos = new GZIPOutputStream(fos);
-      }
-      if (info.bufferSize > 0) {
-        fos = new BufferedOutputStream(fos, info.bufferSize);
-      }
-      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-      writer.append('[');
-    }
-
-    @Override
-    public void end() throws IOException {
-      writer.append(']');
-      writer.flush();
-      fos.flush();
-      fos.close();
-    }
-
-    @Override
-    public synchronized void accept(SolrDocument doc) throws IOException {
-      charArr.reset();
-      Map<String, Object> m = CollectionUtil.newLinkedHashMap(doc.size());
-      doc.forEach(
-          (s, field) -> {
-            if (s.equals("_version_") || s.equals("_roor_")) return;
-            if (field instanceof List) {
-              if (((List<?>) field).size() == 1) {
-                field = ((List<?>) field).get(0);
-              }
-            }
-            field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
-              if (hasdate(list)) {
-                ArrayList<Object> listCopy = new ArrayList<>(list.size());
-                for (Object o : list) listCopy.add(constructDateStr(o));
-                field = listCopy;
-              }
-            }
-            m.put(s, field);
-          });
-      if (firstDoc) {
-        firstDoc = false;
-      } else {
-        writer.append(',');
-      }
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
