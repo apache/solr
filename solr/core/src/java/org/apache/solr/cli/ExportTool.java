@@ -134,7 +134,7 @@ public class ExportTool extends ToolBase {
       this.format = format;
       this.out = out;
       if (this.format == null) {
-        this.format = "jsonl";
+        this.format = JSON;
       }
       if (!formats.contains(this.format)) {
         throw new IllegalArgumentException("format must be one of: " + formats);
@@ -246,7 +246,7 @@ public class ExportTool extends ToolBase {
               .hasArg()
               .required(false)
               .desc(
-                  "Output format for exported docs (json, jsonl or javabin), defaulting to jsonl, appended to the output file.")
+                  "Output format for exported docs (json, jsonl or javabin), defaulting to json.")
               .build(),
           Option.builder("compress").required(false).desc("Compress the output.").build(),
           Option.builder("limit")
