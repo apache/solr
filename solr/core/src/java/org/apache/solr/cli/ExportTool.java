@@ -245,8 +245,7 @@ public class ExportTool extends ToolBase {
           Option.builder("format")
               .hasArg()
               .required(false)
-              .desc(
-                  "Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+              .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
               .build(),
           Option.builder("compress").required(false).desc("Compress the output.").build(),
           Option.builder("limit")
