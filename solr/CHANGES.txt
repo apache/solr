@@ -147,6 +147,8 @@ Bug Fixes
 
 * SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
 
+* SOLR-16771: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI (hossman)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
