@@ -180,4 +180,4 @@ public class CreateCoreTool extends ToolBase {
       throw e;
     }
   }
-} // end CreateCoreTool class
+}
