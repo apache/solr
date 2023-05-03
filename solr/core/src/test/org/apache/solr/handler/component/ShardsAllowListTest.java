@@ -187,9 +187,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           "Full URL without scheme",
           numDocs(
               "*:*",
-              getShardUrl("shard1", cluster).replaceAll("http://", "")
+              getShardUrl("shard1", cluster).replace("http://", "")
                   + ","
-                  + getShardUrl("shard2", cluster).replaceAll("http://", ""),
+                  + getShardUrl("shard2", cluster).replace("http://", ""),
               cluster),
           is(10));
 

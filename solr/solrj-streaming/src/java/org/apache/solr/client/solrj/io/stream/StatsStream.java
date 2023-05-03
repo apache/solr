@@ -84,7 +84,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);

@@ -291,7 +291,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return !StrUtils.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
+    return StrUtils.isNotNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /**
@@ -624,23 +624,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(TermAndBoost[] terms) {
+  protected Query newSynonymQuery(String field, TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(term.term, term.boost));
+          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
-          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
+          builder.add(
+              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
-        return super.newSynonymQuery(terms);
+        return super.newSynonymQuery(field, terms);
       default:
         throw new AssertionError(
             "unrecognized synonymQueryStyle passed when creating newSynonymQuery");

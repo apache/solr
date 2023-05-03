@@ -42,7 +42,7 @@ For best results, please run the browser showing this tutorial and the Solr serv
 
 == Unpack Solr
 
-Begin by unzipping the Solr release and changing your working directory to the subdirectory where Solr was installed.
+Begin by unzipping the full Solr release and changing your working directory to the subdirectory where Solr was installed.
 For example, with a shell in UNIX, Cygwin, or MacOS:
 
 [,console]

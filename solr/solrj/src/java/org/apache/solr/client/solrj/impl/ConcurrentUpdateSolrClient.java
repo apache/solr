@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -43,7 +44,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -85,8 +85,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   int stallTimeMillis;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private final int connectionTimeout;
+  private final int soTimeout;
   private volatile boolean closed;
 
   AtomicInteger pollInterrupts;
@@ -112,8 +112,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
-    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
-    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -248,7 +248,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                         UpdateRequest req = upd.getRequest();
                         SolrParams currentParams = new ModifiableSolrParams(req.getParams());
                         if (!origParams.toNamedList().equals(currentParams.toNamedList())
-                            || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
+                            || !Objects.equals(origTargetCollection, upd.getCollection())) {
                           // Request has different params or destination core/collection, return to
                           // queue
                           queue.add(upd);
@@ -322,12 +322,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
               HttpClientUtil.createDefaultRequestConfigBuilder();
-          if (soTimeout != null) {
-            requestConfigBuilder.setSocketTimeout(soTimeout);
-          }
-          if (connectionTimeout != null) {
-            requestConfigBuilder.setConnectTimeout(connectionTimeout);
-          }
+          requestConfigBuilder.setSocketTimeout(soTimeout);
+          requestConfigBuilder.setConnectTimeout(connectionTimeout);
 
           method.setConfig(requestConfigBuilder.build());
 

@@ -34,7 +34,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -301,7 +300,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
         }
       }
     } catch (IOException e) {
-      SolrException.log(log, "Error deleting files from Directory", e);
+      log.error("Error deleting files from Directory", e);
       isSuccess = false;
     }
     return isSuccess;

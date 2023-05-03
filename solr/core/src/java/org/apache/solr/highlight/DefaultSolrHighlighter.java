@@ -445,8 +445,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   public NamedList<Object> doHighlighting(
       DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
-    if (!isHighlightingEnabled(params)) // also returns early if no unique key field
-    return null;
+    if (!isHighlightingEnabled(params)) { // also returns early if no unique key field
+      return null;
+    }
 
     boolean rewrite =
         query != null
@@ -761,8 +762,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
               highlighter.getBestTextFragments(
                   tstream, thisText, mergeContiguousFragments, numFragments);
           for (TextFragment bestTextFragment : bestTextFragments) {
-            if (bestTextFragment == null) // can happen via mergeContiguousFragments
-            continue;
+            if (bestTextFragment == null) { // can happen via mergeContiguousFragments
+              continue;
+            }
             // normally we want a score (must be highlighted), but if preserveMulti then we return a
             // snippet regardless.
             if (bestTextFragment.getScore() > 0 || preserveMulti) {

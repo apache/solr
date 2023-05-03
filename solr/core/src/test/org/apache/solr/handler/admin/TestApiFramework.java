@@ -57,7 +57,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
@@ -79,7 +78,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     TestCollectionAPIs.MockCollectionsHandler collectionsHandler =
         new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
-    containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
     for (Api api : collectionsHandler.getApis()) {
       containerHandlers.getApiBag().register(api);
     }
@@ -97,7 +95,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     String fullPath = "/collections/hello/shards";
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", fullPath, parts);
     assertNotNull(api);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/create", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     parts = new HashMap<>();

@@ -22,11 +22,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This comparator makes sure that the given replicas are sorted according to the given list of
@@ -184,7 +184,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return false;
     }
     if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-      return !StringUtils.isEmpty(localHostAddress) && s.startsWith(localHostAddress);
+      return StrUtils.isNotNullOrEmpty(localHostAddress) && s.startsWith(localHostAddress);
     } else {
       return s.startsWith(prefix);
     }

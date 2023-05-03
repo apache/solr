@@ -134,6 +134,9 @@ public class DateMathParser {
 
     // NOTE: Maybe eventually support NANOS
 
+    // NOTE: Any changes here should also make sure to update the list of options in the ref docs:
+    // https://solr.apache.org/guide/solr/latest/indexing-guide/date-formatting-math.html#date-math-syntax.
+
     return Map.ofEntries(
         Map.entry("YEAR", ChronoUnit.YEARS),
         Map.entry("YEARS", ChronoUnit.YEARS),
@@ -241,7 +244,7 @@ public class DateMathParser {
       }
     }
 
-    if (null == math || math.equals("")) {
+    if (null == math || math.isEmpty()) {
       return p.getNow();
     }
 

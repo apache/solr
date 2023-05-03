@@ -86,28 +86,6 @@ public class MetricUtils {
   static final String P999 = "p999";
   static final String P999_MS = P999 + MS;
 
-  /**
-   * This filter can limit what properties of a metric are returned.
-   *
-   * @deprecated use {@link Predicate} instead.
-   */
-  @Deprecated(since = "8.7")
-  public interface PropertyFilter {
-    PropertyFilter ALL = (name) -> true;
-
-    /**
-     * Return only properties that match.
-     *
-     * @param name property name
-     * @return true if this property should be returned, false otherwise.
-     */
-    boolean accept(String name);
-
-    static Predicate<CharSequence> toPredicate(PropertyFilter filter) {
-      return (name) -> filter.accept(name.toString());
-    }
-  }
-
   public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
 
   /**
@@ -139,47 +117,6 @@ public class MetricUtils {
     return ns / TimeUnit.MILLISECONDS.toNanos(1);
   }
 
-  /**
-   * Provides a representation of the given metric registry as {@link SolrInputDocument}-s. Only
-   * those metrics are converted which match at least one of the given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param metadata optional metadata. If not null and not empty then this map will be added under
-   *     a {@code _metadata_} key.
-   * @param consumer consumer that accepts produced {@link SolrInputDocument}-s
-   * @deprecated use {@link #toSolrInputDocuments(MetricRegistry, List, MetricFilter, Predicate,
-   *     boolean, boolean, boolean, Map, Consumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void toSolrInputDocuments(
-      MetricRegistry registry,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Map<String, Object> metadata,
-      Consumer<SolrInputDocument> consumer) {
-    toSolrInputDocuments(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        metadata,
-        consumer);
-  }
   /**
    * Provides a representation of the given metric registry as {@link SolrInputDocument}-s. Only
    * those metrics are converted which match at least one of the given MetricFilter instances.
@@ -261,7 +198,7 @@ public class MetricUtils {
         writer.writeIter(
             new IteratorWriter.ItemWriter() {
               @Override
-              public IteratorWriter.ItemWriter add(Object o) throws IOException {
+              public IteratorWriter.ItemWriter add(Object o) {
                 consumer.accept(name, o);
                 return this;
               }
@@ -275,44 +212,6 @@ public class MetricUtils {
     }
   }
 
-  /**
-   * Convert selected metrics to maps or to flattened objects.
-   *
-   * @param registry source of metrics
-   * @param shouldMatchFilters metrics must match any of these filters
-   * @param mustMatchFilter metrics must match this filter
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #toMaps(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean,
-   *     boolean, boolean, BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void toMaps(
-      MetricRegistry registry,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      boolean simple,
-      BiConsumer<String, Object> consumer) {
-    toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        simple,
-        consumer);
-  }
   /**
    * Convert selected metrics to maps or to flattened objects.
    *
@@ -406,7 +305,7 @@ public class MetricUtils {
               convertMetric(
                   n,
                   metric,
-                  PropertyFilter.ALL,
+                  (s) -> true,
                   skipHistograms,
                   skipAggregateValues,
                   compact,
@@ -416,43 +315,6 @@ public class MetricUtils {
             });
   }
 
-  /**
-   * Convert a single instance of metric into a map or flattened object.
-   *
-   * @param n metric name
-   * @param metric metric instance
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #convertMetric(String, Metric, Predicate, boolean, boolean, boolean,
-   *     boolean, String, BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void convertMetric(
-      String n,
-      Metric metric,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      boolean simple,
-      String separator,
-      BiConsumer<String, Object> consumer) {
-    convertMetric(
-        n,
-        metric,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        simple,
-        separator,
-        consumer);
-  }
   /**
    * Convert a single instance of metric into a map or flattened object.
    *
@@ -656,37 +518,6 @@ public class MetricUtils {
     filter.accept((ms ? P999_MS : P999), nsToMs(ms, snapshot.get999thPercentile()));
   }
 
-  /**
-   * Convert a {@link Timer} to a map.
-   *
-   * @param name metric name
-   * @param timer timer instance
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms if true then discard the histogram part of the timer.
-   * @param simple use simplified representation for complex metrics - instead of a (name, map) only
-   *     the selected (name "." key, value) pairs will be produced.
-   * @param consumer consumer that accepts produced objects
-   * @deprecated use {@link #convertTimer(String, Timer, Predicate, boolean, boolean, String,
-   *     BiConsumer)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public static void convertTimer(
-      String name,
-      Timer timer,
-      PropertyFilter propertyFilter,
-      boolean skipHistograms,
-      boolean simple,
-      String separator,
-      BiConsumer<String, Object> consumer) {
-    convertTimer(
-        name,
-        timer,
-        PropertyFilter.toPredicate(propertyFilter),
-        skipHistograms,
-        simple,
-        separator,
-        consumer);
-  }
   /**
    * Convert a {@link Timer} to a map.
    *

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -362,5 +365,25 @@ public class StrUtils {
 
   public static boolean isNullOrEmpty(String string) {
     return string == null || string.isEmpty();
+  }
+
+  public static boolean isNotNullOrEmpty(String string) {
+    return !isNullOrEmpty(string);
+  }
+
+  public static boolean isBlank(String string) {
+    return string == null || string.isBlank();
+  }
+
+  public static boolean isNotBlank(String string) {
+    return !isBlank(string);
+  }
+
+  public static String stringFromReader(Reader inReader) throws IOException {
+    try (Reader reader = inReader) {
+      StringWriter stringWriter = new StringWriter();
+      reader.transferTo(stringWriter);
+      return stringWriter.toString();
+    }
   }
 }

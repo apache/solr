@@ -99,7 +99,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     synchronized (lock) {
       if (leaderZkNodeParentVersion != null) {
         // no problem
-        // no problem
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
           // We do this by using a multi and ensuring the parent znode of the leader registration
@@ -116,7 +115,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         } catch (InterruptedException e) {
           throw e;
         } catch (IllegalArgumentException e) {
-          SolrException.log(log, e);
+          log.error("Illegal argument", e);
         }
         leaderZkNodeParentVersion = null;
       } else {

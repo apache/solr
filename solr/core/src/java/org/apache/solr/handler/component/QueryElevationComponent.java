@@ -43,7 +43,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -568,13 +567,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SolrParams params = rb.req.getParams();
 
     String tagStr = params.get(QueryElevationParams.ELEVATE_EXCLUDE_TAGS);
-    if (StringUtils.isEmpty(tagStr)) {
+    if (StrUtils.isNullOrEmpty(tagStr)) {
       // the parameter that specifies tags for exclusion was not provided or had no value
       return;
     }
 
     List<String> excludeTags = StrUtils.splitSmart(tagStr, ',');
-    excludeTags.removeIf(s -> StringUtils.isBlank(s));
+    excludeTags.removeIf(s -> StrUtils.isBlank(s));
     if (excludeTags.isEmpty()) {
       // the parameter that specifies tags for exclusion was provided but the tag names were blank
       return;
