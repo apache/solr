@@ -36,6 +36,7 @@ import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -62,7 +63,11 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
+  protected static final String LOCAL_HANDLER_SUFFIX = "[local]";
+
   protected Map<String, ContentStreamLoader> loaders = null;
+
+  private HandlerMetrics metricsLocal = HandlerMetrics.NO_OP;
 
   ContentStreamLoader instance =
       new ContentStreamLoader() {
@@ -121,6 +126,31 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
 
     // Since backed by a non-thread safe Map, it should not be modifiable
     loaders = Collections.unmodifiableMap(createDefaultLoaders(args));
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    metricsLocal =
+        new HandlerMetrics(
+            solrMetricsContext, getCategory().toString(), scope + LOCAL_HANDLER_SUFFIX);
+  }
+
+  @Override
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+    // using exactly the same logic in 8.x to preserve the behavior
+    boolean isDistrib =
+        req.getParams()
+            .getBool(
+                CommonParams.DISTRIB,
+                req.getCore() != null
+                    ? req.getCore().getCoreContainer().isZooKeeperAware()
+                    : false);
+    if (!isDistrib) {
+      return this.metricsLocal;
+    } else {
+      return this.metrics;
+    }
   }
 
   protected void setAssumeContentType(String ct) {
