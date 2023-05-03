@@ -46,7 +46,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Path("/indexversion")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public GetIndexResponse IndexVersionResponse(
+  public IndexVersionResponse IndexVersionResponse(
       @Parameter(
               description = "The name of the core for which to retrieve the index version",
               required = true)
@@ -58,7 +58,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   }
 
   /** Response for {@link CoreReplicationAPI}. */
-  public static class GetIndexResponse extends SolrJerseyResponse {
+  public static class IndexVersionResponse extends SolrJerseyResponse {
 
     @JsonProperty("indexversion")
     public Long indexVersion;
@@ -69,9 +69,9 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     @JsonProperty("status")
     public String status;
 
-    public GetIndexResponse() {}
+    public IndexVersionResponse() {}
 
-    public GetIndexResponse(Long indexVersion, Long generation, String status) {
+    public IndexVersionResponse(Long indexVersion, Long generation, String status) {
       this.indexVersion = indexVersion;
       this.generation = generation;
       this.status = status;

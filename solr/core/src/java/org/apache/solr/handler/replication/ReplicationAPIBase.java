@@ -40,7 +40,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected CoreReplicationAPI.GetIndexResponse fetchIndexVersion(String coreName)
+  protected CoreReplicationAPI.IndexVersionResponse fetchIndexVersion(String coreName)
       throws IOException {
 
     if (coreContainer.getCore(coreName) == null) {

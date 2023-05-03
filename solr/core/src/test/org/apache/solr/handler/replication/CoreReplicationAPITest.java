@@ -58,11 +58,11 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetIndexVersion() throws Exception {
-    CoreReplicationAPI.GetIndexResponse expected =
-        new CoreReplicationAPI.GetIndexResponse(123L, 123L, "testGeneration");
+    CoreReplicationAPI.IndexVersionResponse expected =
+        new CoreReplicationAPI.IndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplicationAPI.GetIndexResponse response =
+    CoreReplicationAPI.IndexVersionResponse response =
         coreReplicationAPI.IndexVersionResponse(coreName);
     assertEquals(response.indexVersion, expected.indexVersion);
     assertEquals(response.generation, expected.generation);

@@ -267,8 +267,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
-      final SolrJerseyResponse getIndexResponse = getIndexVersionResponse();
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getIndexResponse);
+      final SolrJerseyResponse indexVersionResponse = getIndexVersionResponse();
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, indexVersionResponse);
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
@@ -777,10 +777,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  public CoreReplicationAPI.GetIndexResponse getIndexVersionResponse() throws IOException {
+  public CoreReplicationAPI.IndexVersionResponse getIndexVersionResponse() throws IOException {
 
     IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
-    CoreReplicationAPI.GetIndexResponse rsp = new CoreReplicationAPI.GetIndexResponse();
+    CoreReplicationAPI.IndexVersionResponse rsp = new CoreReplicationAPI.IndexVersionResponse();
     if (commitPoint == null) {
       // if this handler is 'lazy', we may not have tracked the last commit
       // because our commit listener is registered on inform
