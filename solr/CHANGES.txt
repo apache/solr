@@ -9,6 +9,8 @@ Bug Fixes
 ---------------------
 * SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
 
+* SOLR-16783: Fixed race condition deleting empty `clusterstate.json` file that could prevent Solr 9 instances from starting with a NoNodeException (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 (No changes)
