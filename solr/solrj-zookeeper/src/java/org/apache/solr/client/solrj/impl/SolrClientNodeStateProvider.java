@@ -239,10 +239,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public ClientSnitchCtx(
-        String node,
-        Map<String, Object> session,
-        CloudLegacySolrClient solrClient) {
-      super( node, session);
+        String node, Map<String, Object> session, CloudLegacySolrClient solrClient) {
+      super(node, session);
       this.solrClient = solrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();

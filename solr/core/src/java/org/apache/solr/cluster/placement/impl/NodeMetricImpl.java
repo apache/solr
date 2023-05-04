@@ -19,7 +19,6 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Objects;
 import java.util.function.Function;
-
 import org.apache.solr.client.solrj.impl.MetricsFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
 
