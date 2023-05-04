@@ -26,7 +26,10 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
@@ -36,6 +39,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -404,6 +409,66 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         }
       }
     } finally {
+      server.shutdown();
+    }
+  }
+
+  public void testCheckNoOldClusterstate() throws Exception {
+    Path zkDir = createTempDir("testCheckNoOldClusterstate");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    CoreContainer cc = getCoreContainer();
+    int nThreads = 5;
+    final ZkController[] controllers = new ZkController[nThreads];
+    ExecutorService svc =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            nThreads, new SolrNamedThreadFactory("testCheckNoOldClusterstate-"));
+    try {
+      server.run();
+      server
+          .getZkClient()
+          .create(
+              "/clusterstate.json",
+              "{}".getBytes(StandardCharsets.UTF_8),
+              CreateMode.PERSISTENT,
+              true);
+      AtomicInteger idx = new AtomicInteger();
+      CountDownLatch latch = new CountDownLatch(nThreads);
+      CountDownLatch done = new CountDownLatch(nThreads);
+      AtomicReference<Exception> exception = new AtomicReference<>();
+      for (int i = 0; i < nThreads; i++) {
+        svc.submit(
+            () -> {
+              int index = idx.getAndIncrement();
+              latch.countDown();
+              try {
+                latch.await();
+                controllers[index] =
+                    new ZkController(
+                        cc,
+                        server.getZkAddress(),
+                        TIMEOUT,
+                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index, "solr")
+                            .build(),
+                        () -> null);
+              } catch (Exception e) {
+                exception.compareAndSet(null, e);
+              } finally {
+                done.countDown();
+              }
+            });
+      }
+      done.await();
+      assertFalse(server.getZkClient().exists("/clusterstate.json", true));
+      assertNull(exception.get());
+    } finally {
+      ExecutorUtil.shutdownNowAndAwaitTermination(svc);
+      for (ZkController controller : controllers) {
+        if (controller != null) {
+          controller.close();
+        }
+      }
+      server.getZkClient().close();
+      cc.shutdown();
       server.shutdown();
     }
   }
