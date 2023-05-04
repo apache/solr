@@ -28,7 +28,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.MetricsFetcher;
-import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
@@ -234,7 +233,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   public static String getMetricSnitchTag(NodeMetric<?> metric) {
     if (metric.getRegistry() != NodeMetric.Registry.UNSPECIFIED) {
       // regular registry + metricName
-      return SolrClientNodeStateProvider.METRICS_PREFIX
+      return MetricsFetcher.METRICS_PREFIX
           + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry()))
           + ":"
           + metric.getInternalName();
@@ -243,7 +242,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
       return metric.getInternalName();
     } else {
       // a fully-qualified metric key
-      return SolrClientNodeStateProvider.METRICS_PREFIX + metric.getInternalName();
+      return MetricsFetcher.METRICS_PREFIX + metric.getInternalName();
     }
   }
 

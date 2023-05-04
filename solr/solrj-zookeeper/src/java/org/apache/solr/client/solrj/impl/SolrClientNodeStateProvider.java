@@ -43,7 +43,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -56,14 +55,12 @@ import org.slf4j.LoggerFactory;
 
 /** The <em>real</em> {@link NodeStateProvider}, which communicates with Solr via SolrJ. */
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
-  public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String HOST_FRAG_SEPARATOR_REGEX = "\\.";
 
   private final CloudLegacySolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
-  private Map<String, Object> snitchSession = new HashMap<>();
+  private Map<String, Object> session = new HashMap<>();
 
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
@@ -121,9 +118,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     MetricsFetcher metricsFetcher = new MetricsFetcher();
-    ClientSnitchCtx ctx = new ClientSnitchCtx(node, snitchSession, solrClient);
+    RemoteCallCtx ctx = new RemoteCallCtx(node, session, solrClient);
     metricsFetcher.getTags(node, new HashSet<>(tags), ctx);
-    return ctx.getTags();
+    return ctx.tags;
   }
 
   public void forEachReplica(String node, Consumer<Replica> consumer) {
@@ -187,13 +184,13 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     Map<String, Set<Object>> collect =
         metricsKeyVsTagReplica.entrySet().stream()
             .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
-    ClientSnitchCtx ctx = new ClientSnitchCtx(null, emptyMap(), solrClient);
+    RemoteCallCtx ctx = new RemoteCallCtx(null, emptyMap(), solrClient);
     fetchReplicaMetrics(node, ctx, collect);
-    return ctx.getTags();
+    return ctx.tags;
   }
 
   static void fetchReplicaMetrics(
-      String solrNode, ClientSnitchCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
+      String solrNode, RemoteCallCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
     if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
@@ -206,9 +203,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
               if (tag instanceof Function) {
                 @SuppressWarnings({"unchecked"})
                 Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
-                ctx.getTags().put(p.first(), p.second());
+                ctx.tags.put(p.first(), p.second());
               } else {
-                if (v != null) ctx.getTags().put(tag.toString(), v);
+                if (v != null) ctx.tags.put(tag.toString(), v);
               }
             }
           });
@@ -225,11 +222,13 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return Utils.toJSONString(this);
   }
 
-  static class ClientSnitchCtx extends SnitchContext {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
     CloudLegacySolrClient solrClient;
+    public final Map<String, Object> tags = new HashMap<>();
+    private String node;
+    public Map<String, Object> session;
 
     public boolean isNodeAlive(String node) {
       if (zkClientClusterStateProvider != null) {
@@ -238,15 +237,15 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public ClientSnitchCtx(
+    public RemoteCallCtx(
         String node, Map<String, Object> session, CloudLegacySolrClient solrClient) {
-      super(node, session);
+      this.node = node;
+      this.session = session;
       this.solrClient = solrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
     }
 
-    @Override
     @SuppressWarnings({"unchecked"})
     public Map<?, ?> getZkJson(String path) throws KeeperException, InterruptedException {
       try {
@@ -320,31 +319,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         return request.response;
       }
     }
-  }
 
-  public enum Variable {
-    FREEDISK("freedisk", null, Double.class),
-    TOTALDISK("totaldisk", null, Double.class),
-    CORE_IDX("INDEX.sizeInGB", "INDEX.sizeInBytes", Double.class);
-    public final String tagName, metricsAttribute;
-    public final Class<?> type;
-
-    Variable(String tagName, String metricsAttribute, Class<?> type) {
-      this.tagName = tagName;
-      this.metricsAttribute = metricsAttribute;
-      this.type = type;
-    }
-
-    public Object convertVal(Object val) {
-      if (val instanceof String) {
-        return Double.valueOf((String) val);
-      } else if (val instanceof Number) {
-        Number num = (Number) val;
-        return num.doubleValue();
-
-      } else {
-        throw new IllegalArgumentException("Unknown type : " + val);
-      }
+    public String getNode() {
+      return node;
     }
   }
 }
