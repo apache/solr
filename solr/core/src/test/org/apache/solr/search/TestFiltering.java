@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -93,6 +94,11 @@ public class TestFiltering extends SolrTestCaseJ4 {
         searcher.search(res, cmd);
         set = res.getDocSet();
         assertSame(set, live);
+         System.out.println("Live: "+bitsString(live.getFixedBitSet()));
+         System.out.println("Set: "+bitsString(set.getFixedBitSet()));
+     //   FixedBitSet xor = live.getFixedBitSet().clone();
+     //   xor.xor(set.getFixedBitSet());
+        // System.out.println("xor: "+bitsString(xor));
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
@@ -107,7 +113,14 @@ public class TestFiltering extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCaching() throws Exception {
+  private String bitsString(Bits bits) {
+    StringBuilder s = new StringBuilder();
+    for (int i=0; i<bits.length(); i++)
+      s.append(bits.get(i) ? 1 : 0);
+    return s.toString();
+  }
+
+    public void testCaching() throws Exception {
     clearIndex();
     assertU(adoc("id", "4", "val_i", "1"));
     assertU(adoc("id", "1", "val_i", "2"));

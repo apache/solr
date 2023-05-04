@@ -46,6 +46,7 @@ public class QueryResult {
       docListAndSet = new DocListAndSet();
     }
     docListAndSet.docSet = set;
+   // log.error("set docset {}",     docListAndSet.docSet.getBits().length());
   }
 
   public boolean isPartialResults() {
