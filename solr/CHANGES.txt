@@ -149,6 +149,8 @@ Bug Fixes
 
 * SOLR-16771: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI (hossman)
 
+* SOLR-16783: Fixed race condition deleting empty `clusterstate.json` file that could prevent Solr 9 instances from starting with a NoNodeException (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
