@@ -19,8 +19,9 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Objects;
 import java.util.function.Function;
+
+import org.apache.solr.client.solrj.impl.MetricsFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 /**
  * Node metric identifier, corresponding to a node-level metric registry and the internal metric
@@ -40,10 +41,10 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NUM_CORES =
-      new NodeMetricImpl<>(ImplicitSnitch.CORES);
+      new NodeMetricImpl<>(MetricsFetcher.CORES);
 
   public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(ImplicitSnitch.HEAPUSAGE);
+      new NodeMetricImpl<>(MetricsFetcher.HEAPUSAGE);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =

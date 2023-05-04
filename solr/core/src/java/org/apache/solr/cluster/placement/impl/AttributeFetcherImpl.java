@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.MetricsFetcher;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
@@ -37,7 +38,6 @@ import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -238,7 +238,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
           + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry()))
           + ":"
           + metric.getInternalName();
-    } else if (ImplicitSnitch.tags.contains(metric.getInternalName())) {
+    } else if (MetricsFetcher.tags.contains(metric.getInternalName())) {
       // "special" well-known tag
       return metric.getInternalName();
     } else {
@@ -248,6 +248,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   public static String getSystemPropertySnitchTag(String name) {
-    return ImplicitSnitch.SYSPROP + name;
+    return MetricsFetcher.SYSPROP + name;
   }
 }
