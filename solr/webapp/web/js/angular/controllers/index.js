@@ -29,7 +29,7 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
         sessionStorage.setItem("auth.username", data.security.username);
       }
 
-      if ("authenticationPlugin" in data.security && data.security.authenticationPlugin != null) {
+      if (data.security.authenticationPlugin) {
         $scope.isSecurityEnabled = true
       }
 
