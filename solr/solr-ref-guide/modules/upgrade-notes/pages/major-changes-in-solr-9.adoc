@@ -71,7 +71,7 @@ The xref:deployment-guide:installing-solr.adoc#available-solr-packages[Installin
 Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site for information on how to download these offerings.
 
 === Shard Management
-* Solr now provides an xref:deployment-guide:shard-management.adoc#installshard[INSTALLSHARD] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
+* Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 
 == Solr 9.3
 === Improvements to Solr CLI
