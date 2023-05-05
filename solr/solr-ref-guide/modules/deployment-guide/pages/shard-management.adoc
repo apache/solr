@@ -631,13 +631,13 @@ This parameter is required.
 WARNING: This is an expert level command, and should be invoked only when regular leader election is not working.
 This may potentially lead to loss of data in the event that the new leader doesn't have certain updates, possibly recent ones, which were acknowledged by the old leader before going down.
 
-[[installshard]]
-== INSTALLSHARD: Install/Import Data to Shard
+[[installsharddata]]
+== INSTALLSHARDDATA: Install/Import Data to Shard
 
 Under normal circumstances, data is added to Solr collections (and the shards that make them up) by xref:indexing-guide:indexing-with-update-handlers.adoc[indexing] documents.
 However some use-cases require constructing per-shard indices offline.
 Often this is done as a means of insulating query traffic from indexing load, or because the ETL pipeline in use is particularly complex.
-The INSTALLSHARD API allows installation of these pre-constructed indices into individual shards within a collection.
+The INSTALLSHARDDATA API allows installation of these pre-constructed indices into individual shards within a collection.
 Installation copies the index files into all replicas within the shard, overwriting any preexisting data held by that shard.
 
 To install data into a shard, the collection owning that shard must first be put into "readOnly" mode, using the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION API].
@@ -659,7 +659,7 @@ Users are responsible for ensuring that the index installed to a shard is compat
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=INSTALLSHARD&collection=techproducts&shard=shard1&repository=localfs&location=/mounts/myNFSDrive/tech/shard1/data/index
+http://localhost:8983/solr/admin/collections?action=INSTALLSHARDDATA&collection=techproducts&shard=shard1&repository=localfs&location=/mounts/myNFSDrive/tech/shard1/data/index
 ----
 
 *Output*
@@ -703,7 +703,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/in
 ====
 --
 
-=== INSTALLSHARD Parameters
+=== INSTALLSHARDDATA Parameters
 
 `collection`::
 +
