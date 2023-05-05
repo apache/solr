@@ -18,25 +18,42 @@
 package org.apache.solr.prometheus.collector;
 
 import io.prometheus.client.Collector;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.prometheus.client.Collector.Type.COUNTER;
 
 public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
+  private Set<String> metricSamplesCache = new HashSet<String>();
+
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
+    for (Collector.MetricFamilySamples metricFamilySamples : input.values()) {
+      addSamplesToCache(metricFamilySamples);
+    }
   }
 
   public MetricSamples() {
     this(new HashMap<>());
   }
 
-  public void addSamplesIfNotPresent(String metricName, Collector.MetricFamilySamples samples) {
-    samplesByMetricName.putIfAbsent(metricName, samples);
+  private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
+    for(Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
+      if(!metricSamplesCache.contains(sample.toString())) {
+        metricSamplesCache.add(sample.toString());
+      }
+    }
+  }
+
+  public void addSamplesIfNotPresent(String metricName, Collector.MetricFamilySamples metricFamilySamples) {
+    samplesByMetricName.putIfAbsent(metricName, metricFamilySamples);
+    addSamplesToCache(metricFamilySamples);
   }
 
   public void addSampleIfMetricExists(
@@ -47,9 +64,11 @@ public class MetricSamples {
       return;
     }
 
-    if (!sampleFamily.samples.contains(sample)) {
+    if (!metricSamplesCache.contains(sample.toString())) {
+      metricSamplesCache.add(sample.toString());
       sampleFamily.samples.add(sample);
     }
+
   }
 
   public void addAll(MetricSamples other) {
@@ -62,6 +81,7 @@ public class MetricSamples {
         }
       } else {
         this.samplesByMetricName.put(key, entry.getValue());
+        addSamplesToCache(entry.getValue());
       }
     }
   }
