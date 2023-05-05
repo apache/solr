@@ -29,6 +29,10 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
         sessionStorage.setItem("auth.username", data.security.username);
       }
 
+      if (data.security.authenticationPlugin) {
+        $scope.isSecurityEnabled = true
+      }
+
       // load average, unless its negative (means n/a on windows, etc)
       if (data.system.systemLoadAverage >= 0) {
         $scope.load_average = data.system.systemLoadAverage.toFixed(2);
