@@ -875,6 +875,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       Set<String> fieldsProcessed,
       List<SchemaField> expandedFields) {
     for (FieldInfo fi : searcher.getFieldInfos()) {
+      if (CommonParams.VERSION_FIELD.equals(fi.getName())) {
+        // Ignore _version_ unless specified
+        continue;
+      }
       if (FilenameUtils.wildcardMatch(fi.getName(), fieldPattern)) {
         SchemaField schemaField = searcher.getSchema().getField(fi.getName());
         if (fieldsProcessed.add(fi.getName())

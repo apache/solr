@@ -1333,6 +1333,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertFalse(
         "Fields without docvalues and useDocValuesAsStored should not be returned",
         jq.contains("\"sortabledv\""));
+    assertFalse(
+        "_version_ should not be returned as part all fields", jq.contains("\"_version_\""));
   }
 
   @SuppressWarnings("rawtypes")
