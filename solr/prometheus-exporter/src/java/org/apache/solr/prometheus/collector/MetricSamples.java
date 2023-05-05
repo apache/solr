@@ -19,18 +19,14 @@ package org.apache.solr.prometheus.collector;
 
 import io.prometheus.client.Collector;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static io.prometheus.client.Collector.Type.COUNTER;
 
 public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
-  private Set<String> metricSamplesCache = new HashSet<String>();
+  private Set<String> sampleMetricsCache = new HashSet<String>();
 
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
@@ -45,15 +41,15 @@ public class MetricSamples {
 
   private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
     for(Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
-      if(!metricSamplesCache.contains(sample.toString())) {
-        metricSamplesCache.add(sample.toString());
-      }
+      sampleMetricsCache.add(sample.toString());
     }
   }
 
   public void addSamplesIfNotPresent(String metricName, Collector.MetricFamilySamples metricFamilySamples) {
-    samplesByMetricName.putIfAbsent(metricName, metricFamilySamples);
-    addSamplesToCache(metricFamilySamples);
+    if (!samplesByMetricName.containsKey(metricName)) {
+      samplesByMetricName.put(metricName, metricFamilySamples);
+      addSamplesToCache(metricFamilySamples);
+    }
   }
 
   public void addSampleIfMetricExists(
@@ -64,8 +60,8 @@ public class MetricSamples {
       return;
     }
 
-    if (!metricSamplesCache.contains(sample.toString())) {
-      metricSamplesCache.add(sample.toString());
+    if (!sampleMetricsCache.contains(sample.toString())) {
+      sampleMetricsCache.add(sample.toString());
       sampleFamily.samples.add(sample);
     }
 

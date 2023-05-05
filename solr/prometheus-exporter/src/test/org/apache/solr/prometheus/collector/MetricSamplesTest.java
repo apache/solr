@@ -18,12 +18,10 @@
 package org.apache.solr.prometheus.collector;
 
 import io.prometheus.client.Collector;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -39,6 +37,12 @@ public class MetricSamplesTest extends SolrTestCase {
       String metricName, Collector.Type type, Collector.MetricFamilySamples.Sample... samples) {
     return new Collector.MetricFamilySamples(
         metricName, type, "help", new ArrayList<>(Arrays.asList(samples)));
+  }
+
+  private Collector.MetricFamilySamples listSamples(
+          String metricName, Collector.Type type, List<Collector.MetricFamilySamples.Sample> samples) {
+    return new Collector.MetricFamilySamples(
+            metricName, type, "help", samples);
   }
 
   private void validateMetricSamples(
@@ -90,8 +94,14 @@ public class MetricSamplesTest extends SolrTestCase {
             Map.of(
                 "same",
                     samples(
-                        "test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)),
-                "diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0))));
+                        "test1", Collector.Type.GAUGE,
+                            sample("test1", 3.0),
+                            sample("test1", 4.0),
+                            sample("same", 1.0)),
+                "diff2",
+                    samples("diff2", Collector.Type.GAUGE,
+                            sample("diff2", 1.0))));
+
     lhs.addAll(rhs);
 
     List<Collector.MetricFamilySamples> output = lhs.asList();
@@ -100,4 +110,35 @@ public class MetricSamplesTest extends SolrTestCase {
     validateMetricSamples(output, "diff1", Collections.singletonList(1.0));
     validateMetricSamples(output, "diff2", Collections.singletonList(1.0));
   }
+
+  @Test
+  public void addSamplesIfNotPresent() {
+
+    MetricSamples testMetricSamples =
+            new MetricSamples(
+                    new HashMap<>(
+                            Map.of(
+                                    "same",
+                                    samples(
+                                            "same", Collector.Type.GAUGE, sample("same", 1.0)))));
+
+    Collector.MetricFamilySamples sameSamples = samples("same", Collector.Type.GAUGE,
+            sample("same", 1.0));
+    Collector.MetricFamilySamples newSamples = samples("new", Collector.Type.GAUGE,
+            sample("new", 2.0),
+            sample("new", 3.0));
+    Collector.MetricFamilySamples alreadyPresentSamples = samples("new", Collector.Type.GAUGE,
+            sample("new", 4.0));
+
+    testMetricSamples.addSamplesIfNotPresent("same", sameSamples);
+    testMetricSamples.addSamplesIfNotPresent("new", newSamples);
+    testMetricSamples.addSamplesIfNotPresent("new", alreadyPresentSamples);
+
+    List<Collector.MetricFamilySamples> output = testMetricSamples.asList();
+
+    validateMetricSamples(output, "same", Collections.singletonList(1.0));
+    validateMetricSamples(output, "new", Arrays.asList(2.0, 3.0));
+
+  }
+
 }
