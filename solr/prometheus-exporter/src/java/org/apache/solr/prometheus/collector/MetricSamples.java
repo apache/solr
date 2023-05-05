@@ -18,8 +18,11 @@
 package org.apache.solr.prometheus.collector;
 
 import io.prometheus.client.Collector;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MetricSamples {
@@ -40,12 +43,13 @@ public class MetricSamples {
   }
 
   private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
-    for(Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
+    for (Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
       sampleMetricsCache.add(sample.toString());
     }
   }
 
-  public void addSamplesIfNotPresent(String metricName, Collector.MetricFamilySamples metricFamilySamples) {
+  public void addSamplesIfNotPresent(
+      String metricName, Collector.MetricFamilySamples metricFamilySamples) {
     if (!samplesByMetricName.containsKey(metricName)) {
       samplesByMetricName.put(metricName, metricFamilySamples);
       addSamplesToCache(metricFamilySamples);
@@ -64,7 +68,6 @@ public class MetricSamples {
       sampleMetricsCache.add(sample.toString());
       sampleFamily.samples.add(sample);
     }
-
   }
 
   public void addAll(MetricSamples other) {
