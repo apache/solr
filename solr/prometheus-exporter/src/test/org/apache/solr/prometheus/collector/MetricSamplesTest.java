@@ -41,11 +41,6 @@ public class MetricSamplesTest extends SolrTestCase {
         metricName, type, "help", new ArrayList<>(Arrays.asList(samples)));
   }
 
-  private Collector.MetricFamilySamples listSamples(
-      String metricName, Collector.Type type, List<Collector.MetricFamilySamples.Sample> samples) {
-    return new Collector.MetricFamilySamples(metricName, type, "help", samples);
-  }
-
   private void validateMetricSamples(
       List<Collector.MetricFamilySamples> allMetrics,
       String metricName,
