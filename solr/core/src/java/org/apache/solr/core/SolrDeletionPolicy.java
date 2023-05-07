@@ -143,7 +143,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
   private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
-    // in this specific call (maybe across diff IndexWriter instances).
+    // in this specific call (which may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
     // for safety and to avoid race conditions
 
