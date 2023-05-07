@@ -3581,9 +3581,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * Run an arbitrary task in its own thread. This is an expert option and is a method you should
    * use with great care. It would be bad to run something that never stopped or run something that
    * took a very long time. Typically, this is intended for actions that take a few seconds, and
-   * therefore would be bad to wait for within a request, but would not pose a significant
-   * hindrance to server shut down times. It is not intended for long-running tasks and if you are
-   * using a Runnable with a loop in it, you are almost certainly doing it wrong.
+   * therefore would be bad to wait for within a request, but would not pose a significant hindrance
+   * to server shut down times. It is not intended for long-running tasks and if you are using a
+   * Runnable with a loop in it, you are almost certainly doing it wrong.
    *
    * <p>WARNING: Solr wil not be able to shut down gracefully until this task completes!
    *

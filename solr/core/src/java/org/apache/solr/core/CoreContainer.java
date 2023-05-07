@@ -1393,8 +1393,8 @@ public class CoreContainer {
    * preserve consistency.
    *
    * <p>Jetty already allows a grace period for in-flight requests to complete and our solr cores,
-   * searchers, etc., are reference counted to allow for graceful shutdown. So we don't worry about any
-   * other kind of requests.
+   * searchers, etc., are reference counted to allow for graceful shutdown. So we don't worry about
+   * any other kind of requests.
    *
    * <p>We do not need to unpause ever because the node is being shut down.
    */
@@ -2469,9 +2469,9 @@ public class CoreContainer {
    * use with great care. It would be bad to run something that never stopped or run something that
    * took a very long time. Typically this is intended for actions that take a few seconds, and
    * therefore would be bad to wait for within a request, or actions that need to happen when a core
-   * has zero references, but would not pose a significant hindrance to server shut down times.
-   * It is not intended for long-running tasks and if you are using a Runnable with a loop in it,
-   * you are almost certainly doing it wrong.
+   * has zero references, but would not pose a significant hindrance to server shut down times. It
+   * is not intended for long-running tasks and if you are using a Runnable with a loop in it, you
+   * are almost certainly doing it wrong.
    *
    * <p><br>
    * WARNING: Solr wil not be able to shut down gracefully until this task completes!

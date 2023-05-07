@@ -187,9 +187,9 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * Set the duration for which commit point is to be reserved by the deletion policy.
    *
    * <p><b>NOTE:</b> This method does not make any guarantees that the specified index generation
-   * exists, or that the specified generation has not already ben deleted. The only guarantee is that
-   * <em>if</em> the specified generation exists now, or is created at some point in the future,
-   * then it will be reserved for <em>at least</em> the specified <code>reserveTime</code>.
+   * exists, or that the specified generation has not already ben deleted. The only guarantee is
+   * that <em>if</em> the specified generation exists now, or is created at some point in the
+   * future, then it will be reserved for <em>at least</em> the specified <code>reserveTime</code>.
    *
    * @param indexGen gen of the commit point to be reserved
    * @param reserveTime duration in milliseconds (relative to 'now') for which the commit point is
@@ -251,9 +251,9 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Release a previously saved commit point.
    *
-   * <p>This method does not enforce that the specified generation has previously been saved,
-   * or even that it's 'non-null'. But if both are true then it will decrement the reference count
-   * for the specified generation.
+   * <p>This method does not enforce that the specified generation has previously been saved, or
+   * even that it's 'non-null'. But if both are true then it will decrement the reference count for
+   * the specified generation.
    */
   public synchronized void releaseCommitPoint(Long generation) {
     if (null == generation) {
