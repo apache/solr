@@ -836,7 +836,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
-      this.aggregateNodeLevelMetricsEnabled  =false;
+      this.aggregateNodeLevelMetricsEnabled = false;
     }
 
     public UpdateHandlerInfo(ConfigNode updateHandler) {
@@ -844,12 +844,15 @@ public class SolrConfig implements MapSerializable {
       this.className = updateHandler.attr("class");
       this.autoCommmitMaxDocs = autoCommit.get("maxDocs").intVal(-1);
       this.autoCommmitMaxTime = autoCommit.get("maxTime").intVal(-1);
-      this.autoCommitMaxSizeBytes = convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
+      this.autoCommitMaxSizeBytes =
+          convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
       this.openSearcher = autoCommit.get("openSearcher").boolVal(true);
       this.autoSoftCommmitMaxDocs = updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1);
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
-      this.commitWithinSoftCommit = updateHandler.get("commitWithin").get("softCommit").boolVal(true);
-      this.aggregateNodeLevelMetricsEnabled = updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
+      this.commitWithinSoftCommit =
+          updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.aggregateNodeLevelMetricsEnabled =
+          updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override

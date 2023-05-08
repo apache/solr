@@ -199,13 +199,13 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    if ( core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
+    if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
       this.solrMetricsContext =
-              new SolrDelegateRegistryMetricsContext(
-                      parentContext.getMetricManager(),
-                      parentContext.getRegistryName(),
-                      SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
-                      SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+          new SolrDelegateRegistryMetricsContext(
+              parentContext.getMetricManager(),
+              parentContext.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     } else {
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
