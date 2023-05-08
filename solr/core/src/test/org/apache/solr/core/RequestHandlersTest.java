@@ -128,7 +128,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     Map<String, Object> updateStats = updateHandler.getSolrMetricsContext().getMetricsSnapshot();
     Map<String, Object> termStats = termHandler.getSolrMetricsContext().getMetricsSnapshot();
 
-    Long updateTime = (Long) updateStats.get("UPDATE./update[local].totalTime");
+    Long updateTime = (Long) updateStats.get("UPDATE./update.totalTime");
     Long termTime = (Long) termStats.get("QUERY./terms.totalTime");
 
     assertNotEquals("RequestHandlers should not share statistics!", updateTime, termTime);

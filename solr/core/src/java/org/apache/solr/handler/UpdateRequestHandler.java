@@ -138,17 +138,13 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
 
   @Override
   public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
-    // using exactly the same logic in 8.x to preserve the behavior
-    boolean isDistrib =
-        req.getParams()
-            .getBool(
-                CommonParams.DISTRIB,
-                req.getCore() != null
-                    ? req.getCore().getCoreContainer().isZooKeeperAware()
-                    : false);
-    if (!isDistrib) {
+    // this is specific to FS client, we always set DISTRIB flag for all requests going straight to
+    // the core
+    Boolean distrib = req.getParams().getBool(CommonParams.DISTRIB);
+    if (distrib != null && !distrib) {
       return this.metricsLocal;
-    } else {
+    } else { // all updates not from our client (ie distrib should be null, whether it's
+      // re-distributed or not) should use this metrics
       return this.metrics;
     }
   }
