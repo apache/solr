@@ -117,9 +117,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
-    MetricsFetcher metricsFetcher = new MetricsFetcher();
+    NodeValueFetcher nodeValueFetcher = new NodeValueFetcher();
     RemoteCallCtx ctx = new RemoteCallCtx(node, session, solrClient);
-    metricsFetcher.getTags(node, new HashSet<>(tags), ctx);
+    nodeValueFetcher.getTags(node, new HashSet<>(tags), ctx);
     return ctx.tags;
   }
 

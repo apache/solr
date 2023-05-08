@@ -19,7 +19,7 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Objects;
 import java.util.function.Function;
-import org.apache.solr.client.solrj.impl.MetricsFetcher;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
 
 /**
@@ -40,14 +40,17 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NUM_CORES =
-      new NodeMetricImpl<>(MetricsFetcher.CORES);
+      new NodeMetricImpl<>(NodeValueFetcher.CORES);
 
   public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(MetricsFetcher.HEAPUSAGE);
+      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.NAME);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>("sysLoadAvg", Registry.SOLR_JVM, "os.systemLoadAverage");
+      new NodeMetricImpl<>(
+          NodeValueFetcher.Tags.SYSLOADAVG.NAME,
+          Registry.SOLR_JVM,
+          NodeValueFetcher.Tags.SYSLOADAVG.prefix);
 
   /** Number of available processors. */
   public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
