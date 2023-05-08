@@ -20,7 +20,6 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory.validateFormatter;
 
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
@@ -42,7 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -57,6 +55,7 @@ import org.apache.solr.update.processor.ParseBooleanFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDoubleFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseLongFieldUpdateProcessorFactory;
+import org.apache.solr.util.LocaleUtils;
 
 // Just a quick hack to flush out the design, more intelligence is needed
 public class DefaultSchemaSuggester implements SchemaSuggester {
@@ -298,7 +297,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
         || maxTerms > 12
         || (maxTerms > 4
             && values.size() >= 10
-            && ((float) Sets.newHashSet(values).size() / values.size()) > 0.9f));
+            && ((float) Set.of(values).size() / values.size()) > 0.9f));
   }
 
   protected String isFloatOrDouble(List<Object> values, Locale locale) {

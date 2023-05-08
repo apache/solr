@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -46,6 +47,28 @@ public abstract class AdminAPIBase extends JerseyResource {
     return coreContainer;
   }
 
+  protected String resolveAndValidateAliasIfEnabled(
+      String unresolvedCollectionName, boolean aliasResolutionEnabled) {
+    final String resolvedCollectionName =
+        aliasResolutionEnabled ? resolveAlias(unresolvedCollectionName) : unresolvedCollectionName;
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(resolvedCollectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + resolvedCollectionName + "' does not exist, no action taken.");
+    }
+
+    return resolvedCollectionName;
+  }
+
+  private String resolveAlias(String aliasName) {
+    return coreContainer
+        .getZkController()
+        .getZkStateReader()
+        .getAliases()
+        .resolveSimpleAlias(aliasName);
+  }
+
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {
     if (coreContainer == null) {
       throw new SolrException(
@@ -57,6 +80,26 @@ public abstract class AdminAPIBase extends JerseyResource {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr instance is not running in SolrCloud mode.");
     }
+  }
+
+  protected String resolveCollectionName(String collName, boolean followAliases) {
+    final String collectionName =
+        followAliases
+            ? coreContainer
+                .getZkController()
+                .getZkStateReader()
+                .getAliases()
+                .resolveSimpleAlias(collName)
+            : collName;
+
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(collectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + collectionName + "' does not exist, no action taken.");
+    }
+
+    return collectionName;
   }
 
   /**

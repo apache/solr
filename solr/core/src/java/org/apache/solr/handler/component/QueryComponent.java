@@ -1272,13 +1272,15 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+      final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
+      String keyFieldName = uniqueKey;
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
       if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
         // if id was renamed we need to use the new name
         keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
       }
-
+      String lastKeyString = "<empty>";
+      Boolean shardDocFoundInResults = null;
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
           // Don't try to get the documents if there was an exception in the shard
@@ -1323,9 +1325,11 @@ public class QueryComponent extends SearchComponent {
                 (SolrDocumentList)
                     SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
         for (SolrDocument doc : docs) {
-          Object id = doc.getFieldValue(keyFieldName);
-          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          final Object id = doc.getFieldValue(keyFieldName);
+          lastKeyString = id.toString();
+          final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
           if (sdoc != null) {
+            shardDocFoundInResults = Boolean.TRUE;
             if (returnScores) {
               doc.setField("score", sdoc.score);
             } else {
@@ -1338,8 +1342,27 @@ public class QueryComponent extends SearchComponent {
               doc.removeFields(keyFieldName);
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
+          } else {
+            if (shardDocFoundInResults == null) {
+              shardDocFoundInResults = Boolean.FALSE;
+            }
           }
         }
+      }
+      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !rb.resultIds.isEmpty()) {
+        String keyMsg =
+            !uniqueKey.equals(keyFieldName)
+                ? "(either " + uniqueKey + " or " + keyFieldName + ")"
+                : uniqueKey;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unable to merge shard response. Perhaps uniqueKey "
+                + keyMsg
+                + " was erased by renaming via fl parameters."
+                + " Expecting:"
+                + rb.resultIds.keySet()
+                + ", a sample of keys received:"
+                + lastKeyString);
       }
     }
   }

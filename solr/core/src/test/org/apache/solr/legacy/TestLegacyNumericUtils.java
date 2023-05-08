@@ -19,6 +19,7 @@ package org.apache.solr.legacy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -236,13 +237,13 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public static final double[] DOUBLE_NANs = {
-    Double.NaN,
-    Double.longBitsToDouble(0x7ff0000000000001L),
-    Double.longBitsToDouble(0x7fffffffffffffffL),
-    Double.longBitsToDouble(0xfff0000000000001L),
-    Double.longBitsToDouble(0xffffffffffffffffL)
-  };
+  public static final List<Double> DOUBLE_NANs =
+      List.of(
+          Double.NaN,
+          Double.longBitsToDouble(0x7ff0000000000001L),
+          Double.longBitsToDouble(0x7fffffffffffffffL),
+          Double.longBitsToDouble(0xfff0000000000001L),
+          Double.longBitsToDouble(0xffffffffffffffffL));
 
   public void testSortableDoubleNaN() {
     final long plusInf = NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
@@ -296,13 +297,13 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public static final float[] FLOAT_NANs = {
-    Float.NaN,
-    Float.intBitsToFloat(0x7f800001),
-    Float.intBitsToFloat(0x7fffffff),
-    Float.intBitsToFloat(0xff800001),
-    Float.intBitsToFloat(0xffffffff)
-  };
+  public static final List<Float> FLOAT_NANs =
+      List.of(
+          Float.NaN,
+          Float.intBitsToFloat(0x7f800001),
+          Float.intBitsToFloat(0x7fffffff),
+          Float.intBitsToFloat(0xff800001),
+          Float.intBitsToFloat(0xffffffff));
 
   public void testSortableFloatNaN() {
     final int plusInf = NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);

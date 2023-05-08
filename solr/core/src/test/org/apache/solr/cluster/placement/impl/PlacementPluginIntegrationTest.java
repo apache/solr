@@ -142,6 +142,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testDynamicReconfiguration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -165,6 +166,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(),
         factory instanceof MinimizeCoresPlacementFactory);
@@ -183,6 +185,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     AffinityPlacementConfig config = ((AffinityPlacementFactory) factory).getConfig();
@@ -201,6 +204,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -237,6 +241,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testWithCollectionIntegration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -347,6 +352,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);

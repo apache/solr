@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.solr.cluster.api.SimpleMap;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
@@ -85,6 +86,10 @@ public class PerReplicaStates implements ReflectMapWriter {
       }
     }
     this.states = new WrappedSimpleMap<>(tmp);
+  }
+
+  public static PerReplicaStates empty(String collectionName) {
+    return new PerReplicaStates(DocCollection.getCollectionPath(collectionName), 0, List.of());
   }
 
   /** Check and return if all replicas are ACTIVE */
@@ -301,5 +306,24 @@ public class PerReplicaStates implements ReflectMapWriter {
     public State getDuplicate() {
       return duplicate;
     }
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ReflectMapWriter.super.writeMap(
+        new EntryWriter() {
+          @Override
+          public EntryWriter put(CharSequence k, Object v) throws IOException {
+            if ("states".equals(k.toString())) {
+              ew.put(
+                  "states",
+                  (IteratorWriter)
+                      iw -> states.forEachEntry((s, state) -> iw.addNoEx(state.toString())));
+            } else {
+              ew.put(k, v);
+            }
+            return this;
+          }
+        });
   }
 }

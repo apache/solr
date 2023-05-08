@@ -34,9 +34,6 @@ jobs:
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
 
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
-
     - name: Run gradle check (without tests)
       run: ./gradlew check -x test -Ptask.times=true
 

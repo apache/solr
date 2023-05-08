@@ -16,8 +16,8 @@
  */
 package org.apache.solr.update;
 
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -133,7 +133,7 @@ public class DocumentBuilder {
     final String uniqueKeyFieldName = null == uniqueKeyField ? null : uniqueKeyField.getName();
 
     Document out = new Document();
-    Set<String> usedFields = Sets.newHashSet();
+    Set<String> usedFields = new HashSet<>();
 
     // Load fields from SolrDocument to Document
     for (SolrInputField field : doc) {
