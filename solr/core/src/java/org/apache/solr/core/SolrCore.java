@@ -408,7 +408,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * indexwriters. Use the getIndexDir() method to know the active index directory
    *
    * @return the indexdir as given in index.properties
-   * @throws SolrException if for any reason a reasonable index directory cannot be determined.
+   * @throws SolrException if for any reason an index directory cannot be determined.
    */
   public String getNewIndexDir() {
     Directory dir = null;
@@ -426,7 +426,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       String errorMessage = "Error in getNewIndexDir, exception: ";
       log.error(errorMessage, e);
       // See SOLR-11687. It is inadvisable to assume we can do the right thing for any but a small
-      // number of exceptions that ware caught and swallowed in getIndexProperty.
+      // number of exceptions that were caught and swallowed in getIndexProperty.
       throw new SolrException(ErrorCode.SERVER_ERROR, errorMessage, e);
     } finally {
       if (dir != null) {
