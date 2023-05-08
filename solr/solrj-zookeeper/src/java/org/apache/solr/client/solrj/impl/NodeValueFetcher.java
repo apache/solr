@@ -33,7 +33,7 @@ public class NodeValueFetcher {
   public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
   public static final Set<String> tags =
-      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.NAME, ROLE, Tags.HEAPUSAGE.NAME);
+      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.tagName, ROLE, Tags.HEAPUSAGE.tagName);
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
   public static final String METRICS_PREFIX = "metrics:";
 
@@ -56,12 +56,12 @@ public class NodeValueFetcher {
     },
     SYSLOADAVG("sysLoadAvg", "solr.jvm", "os.systemLoadAverage", "solr.jvm/os.systemLoadAverage"),
     HEAPUSAGE("heapUsage", "solr.jvm", "memory.heap.usage", "solr.jvm/memory.heap.usage");
-    public final String group, prefix, NAME, path;
+    public final String group, prefix, tagName, path;
 
     Tags(String name, String group, String prefix, String path) {
       this.group = group;
       this.prefix = prefix;
-      this.NAME = name;
+      this.tagName = name;
       this.path = path;
     }
 
@@ -107,7 +107,7 @@ public class NodeValueFetcher {
     Set<String> groups = new HashSet<>();
     List<String> prefixes = new ArrayList<>();
     for (Tags t : Tags.values()) {
-      if (requestedTags.contains(t.NAME)) {
+      if (requestedTags.contains(t.tagName)) {
         groups.add(t.group);
         prefixes.add(t.prefix);
       }
@@ -123,7 +123,7 @@ public class NodeValueFetcher {
       NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
       if (metrics != null) {
         for (Tags t : Tags.values()) {
-          ctx.tags.put(t.NAME, t.extractResult(metrics));
+          ctx.tags.put(t.tagName, t.extractResult(metrics));
         }
       }
     } catch (Exception e) {

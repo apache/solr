@@ -43,12 +43,12 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
       new NodeMetricImpl<>(NodeValueFetcher.CORES);
 
   public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.NAME);
+      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.tagName);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =
       new NodeMetricImpl<>(
-          NodeValueFetcher.Tags.SYSLOADAVG.NAME,
+          NodeValueFetcher.Tags.SYSLOADAVG.tagName,
           Registry.SOLR_JVM,
           NodeValueFetcher.Tags.SYSLOADAVG.prefix);
 
