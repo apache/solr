@@ -70,13 +70,13 @@ public class SolrXmlConfig {
   private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
-   * Given some node Properties, checks if non-null and a 'zkHost' is alread included. If so, the
+   * Given some node Properties, checks if non-null and a 'zkHost' is already included. If so, the
    * Properties are returned as is. If not, then the returned value will be a new Properties,
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
-   * corispond System property (if set)
+   * corresponding System property (if set)
    *
    * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundently because of how much surface area our API has for various tests to poke at
+   * re-use redundantly because of how much surface area our API has for various tests to poke at
    * us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
@@ -133,7 +133,7 @@ public class SolrXmlConfig {
     String nodeName = (String) entries.remove("nodeName");
     if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
-    // It should goes inside the fillSolrSection method but
+    // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")

@@ -252,7 +252,7 @@ public class PluginInfo implements MapSerializable {
    * Filter children by type
    *
    * @param type The type name. must not be null
-   * @return The mathcing children
+   * @return The matching children
    */
   public List<PluginInfo> getChildren(String type) {
     if (children.isEmpty()) return children;
