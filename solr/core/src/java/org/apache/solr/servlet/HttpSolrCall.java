@@ -837,7 +837,11 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          boolean hideStackTrace =
+              localCore != null
+                  ? localCore.getCoreContainer().hideStackTrace()
+                  : Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
+          int code = ResponseUtils.getErrorInfo(ex, info, log, hideStackTrace);
           sendError(code, info.toString());
         }
       } finally {
@@ -971,7 +975,11 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList<Object> info = new SimpleOrderedMap<>();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
+        boolean hideStackTrace =
+            core != null
+                ? core.getCoreContainer().hideStackTrace()
+                : Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
+        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log, hideStackTrace);
         solrRsp.add("error", info);
         response.setStatus(code);
       }

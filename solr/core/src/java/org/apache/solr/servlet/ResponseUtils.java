@@ -42,6 +42,26 @@ public class ResponseUtils {
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
+    return getErrorInfo(ex, info, log, false);
+  }
+
+  /**
+   * Adds the given Throwable's message to the given NamedList.
+   *
+   * <p>Primarily used by v1 code; v2 endpoints or dispatch code should call {@link
+   * #getTypedErrorInfo(Throwable, Logger)}
+   *
+   * <p>If the response code is not a regular code, the Throwable's stack trace is both logged and
+   * added to the given NamedList.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
+   *
+   * <p>Stack trace will not be output if hideStackTrace=true.
+   *
+   * @see #getTypedErrorInfo(Throwable, Logger)
+   */
+  public static int getErrorInfo(
+      Throwable ex, NamedList<Object> info, Logger log, boolean hideStackTrace) {
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException) ex;
@@ -70,10 +90,13 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
-      log.error("500 Exception", ex);
-      info.add("trace", sw.toString());
+      // hide all stack traces, as configured
+      if (!hideStackTrace) {
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        log.error("500 Exception", ex);
+        info.add("trace", sw.toString());
+      }
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
