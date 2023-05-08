@@ -42,8 +42,6 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
-* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
-
 ==================  9.3.0 ==================
 
 New Features
