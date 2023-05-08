@@ -37,8 +37,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 
 /**
- * This class is responsible for fetching mtrics and other attributes from a given node in Solr
- * cluster
+ * This class is responsible for fetching metrics and other attributes from a given node in Solr
+ * cluster. This is a helper class that is used by {@link SolrClientNodeStateProvider}
  */
 public class NodeValueFetcher {
   // well known tags
