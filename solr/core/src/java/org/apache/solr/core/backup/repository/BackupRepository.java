@@ -171,7 +171,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * Copy a file from specified <code>sourceDir</code> to the destination repository (i.e. backup).
    *
    * @param sourceDir The source directory hosting the file to be copied.
-   * @param fileName The name of the file to by copied
+   * @param fileName The name of the file to be copied
    * @param dest The destination backup location.
    * @throws IOException in case of errors
    */
@@ -183,7 +183,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * Copy a file from specified <code>sourceRepo</code> to the destination directory (i.e. restore).
    *
    * @param sourceRepo The source URI hosting the file to be copied.
-   * @param fileName The name of the file to by copied
+   * @param fileName The name of the file to be copied
    * @param dest The destination where the file should be copied.
    * @throws IOException in case of errors.
    */
@@ -262,7 +262,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * backup).
    *
    * @param sourceDir The source directory hosting the file to be copied.
-   * @param sourceFileName The name of the file to by copied
+   * @param sourceFileName The name of the file to be copied
    * @param destDir The destination backup location.
    * @throws IOException in case of errors
    * @throws CorruptIndexException in case checksum of the file does not match with precomputed
